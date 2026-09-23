@@ -13,8 +13,8 @@ import { atHandle, normHandle, search, targetKey, isNameKey, nameFor } from './d
 import { Ecliptic, Sparkle, Verified } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
-import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
-import { lookVars, lookAttrs, lookFor, cleanLook, nameOnDisc, chromeOf, layoutOf } from './looks.js'
+import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
+import { PixelPic } from './screen.jsx'
 import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
 
@@ -438,89 +438,6 @@ export function WriteAct({ go, className = '' }) {
   )
 }
 
-// ── the furniture ───────────────────────────────────────────────────────────
-// What a paper draws that is not its type: the parts that belong to one
-// theme and to no other (looks.js `chrome`). The letterpress's blind deboss,
-// the synthwave's sun, the receipt's barcode, the corkboard's pin. Every one
-// of them is a gradient, a border or the wall's own constellation — nothing
-// is downloaded and nothing is a picture (docs/WALL-FEATURES.md, G7).
-//
-// ONE ELEMENT, and the stylesheet does the rest. Thirty-nine papers draw
-// furniture and thirty-seven of them are a single empty span with two pseudo
-// elements ruled on it in wall.css, which is what keeps this component from
-// becoming a catalogue of thirty-nine little drawings: a paper's parts are
-// ruled where the rest of that paper is ruled, beside its ground and its
-// grain, and not in a branch here.
-//
-// The two that are not are the two that draw the CONSTELLATION — the
-// postcard's stamp box, where the sovereign's head goes, and the
-// parchment's wax seal, which is the mark pressed into a disc of ink rather
-// than struck on the sheet. It is the wall's own mark either way, so it is
-// the wall's own path, drawn once below and used twice.
-//
-// An inner surface is furniture too, and that is the other thing this holds
-// up: the arcade's screen inside its bezel, the sticker's field inside its
-// die cut, the terminal's window bar, the cassette's card in its case. Each
-// is an absolutely placed element with the ground on it and the card's
-// padding opened out around it (wall.css `--lk-pad-*`), which is how a
-// paper gets a surface inside the card without a second layout and without
-// a second component.
-//
-// All of it is aria-hidden, to the last element. A letter's meaning is its
-// words and who it is for; a battery on a screen is a costume, and a costume
-// is not read out.
-
-// The wall's mark, at the size a stamp and a seal want it: four stars and
-// the line between them, struck in the paper's own ink at the strengths
-// every other mark on the card is struck at.
-function FxMark({ size }) {
-  return (
-    <svg viewBox="0 0 100 100" width={size} height={size} focusable="false">
-      <path d="M22 66 40 28l20 26 16-20" className="wl-mark-line" />
-      <circle cx="22" cy="66" r="6" className="wl-mark-star" />
-      <circle cx="40" cy="28" r="4.4" className="wl-mark-star" />
-      <circle cx="60" cy="54" r="4.4" className="wl-mark-star" />
-      <circle cx="76" cy="34" r="6" className="wl-mark-star" />
-    </svg>
-  )
-}
-
-// The two the layouts draw themselves: the nokia's status row stands inside
-// its screen and the polaroid's chin is a slot under its plate, so neither
-// is placed over the card the way every other part is.
-const IN_LAYOUT = new Set(['nokia', 'chin'])
-
-export function Furniture({ chrome }) {
-  if (!chrome || IN_LAYOUT.has(chrome)) return null
-  if (chrome === 'stamp' || chrome === 'seal') {
-    return (
-      <span className={`wl-fx wl-fx-${chrome}`} aria-hidden="true">
-        <FxMark size={chrome === 'stamp' ? 26 : 22} />
-      </span>
-    )
-  }
-  return <span className={`wl-fx wl-fx-${chrome}`} aria-hidden="true" />
-}
-
-// The nokia's status row: the signal at one end and the battery at the other,
-// struck in the screen's ink on the screen's own lattice. Three of the four
-// signal bars are lit and two of the three battery segments are, because a
-// full battery and full signal read as a picture of a phone and a phone that
-// is nearly charged reads as one somebody is holding.
-//
-// A carrier word stood between them and it said "celestual", which is the one
-// thing a letter must never do: the product does not sign the letters. The
-// wall is the product's and the paper is the writer's, and a letter carrying
-// a brand across its top has a second author on it.
-function NokiaBar() {
-  return (
-    <span className="wl-nk-bar" aria-hidden="true">
-      <span className="wl-nk-sig"><i /><i /><i /><i /></span>
-      <span className="wl-nk-batt"><i /><i /><i /></span>
-    </span>
-  )
-}
-
 // ── the paper ───────────────────────────────────────────────────────────────
 // The one bright surface in the product, and the reference's central object:
 // a cream card with a generous radius, a dateline across the top under a
@@ -545,51 +462,12 @@ function NokiaBar() {
 // weight and read as none of them.
 // `aside` stands at the end of the crest row: the one control a card may
 // carry beside its title, which today is the pen on Main's letter.
-// ── and a look (0055) ──
-// `look` is the letter's own paper, `{ theme, tint, face }` or nothing:
-// the look's tokens go on the card inline (looks.js `lookVars`), the
-// theme's slug goes on it for the chrome the stylesheet keys on the slug,
-// and every rule on the card reads the tokens, so a themed letter is this
-// card with its tokens moved and not a second card. A card handed no look
-// is the plain paper, as every card was.
-// ── and a layout ──
-// Thirty-nine of the forty-two are that card exactly: four slots, head,
-// crest, body, foot, in that order, dressed by their tokens and their
-// furniture. Three MOVE the slots, because the thing they are a picture of
-// moves them, and each is one branch below and nothing more:
-//
-//   screen    the nokia. Head, crest and body are recessed into a screen
-//             inside the shell, with the status row above them
-//   framed    the polaroid. The picture holds the head, the letterhead and
-//             the words; the addressee is written on the chin below it,
-//             which is where a name goes on a print
-//   divided   the postcard. The message on the left of the rule and the
-//             addressee on the right of it, with the ruled lines under the
-//             name and the stamp box in the corner
-//
-// The slots are the same objects in every branch — the same header, the same
-// title, the same body — so nothing here is a second card either. And three
-// is the whole list: a paper that looks as though it has moved something,
-// like the arcade's screen or the cassette's card, has an inner surface
-// drawn as FURNITURE with the card's inset opened out around it, which needs
-// no branch here at all.
-//
-// ── and the foot is outside all three ──
-// The foot is the last child of the card on every paper, whatever the layout
-// above it did. It is the one slot that is not the letter: the heart, the pen
-// and the flag are the READER's three marks (screens/Letter.jsx `marks`), and
-// a control that moves to a different corner depending on what paper somebody
-// else chose is a control to be found again on every card. So the paper is
-// themed and the controls are not, and they stand in one place down the whole
-// deck. The nokia's softkeys stood there and are gone: the marks row is the
-// row of controls under that screen now, and two of them was one too many.
-export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', look = null, className = '', style, ...rest }) {
-  const lk = cleanLook(look)
-  const vars = lk ? lookVars(lk) : null
-  const attrs = lk ? lookAttrs(lk) : {}
-  const chrome = lk ? chromeOf(lk) : ''
-  const layout = lk ? layoutOf(lk) : ''
-
+// ── and what it is no longer ──
+// It carried a letter's paper (0055): forty-two of them, with furniture and
+// three layouts of their own. A letter on the wall is a screen now
+// (screen.jsx), and the paper is Main's again: the ping's card, the plain
+// cream sheet, and nothing on it a writer chose.
+export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', className = '', style, ...rest }) {
   const headEl = dateline ? (
     <header className="wl-paper-head">
       <span>{dateline.lead}</span>
@@ -599,8 +477,6 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
     </header>
   ) : null
   const titleEl = title ? <h2 className="wl-paper-title">{title}</h2> : null
-  const bodyEl = <div className="wl-paper-body">{children}</div>
-  const footEl = foot ? <footer className="wl-paper-foot">{foot}</footer> : null
   /* The letterhead stands whether or not the card is titled. On the core
      service every card is inside something that has already named the
      handle — the sill under the leaf, or the sheet's own head line — so
@@ -614,52 +490,13 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
     </div>
   ) : null
 
-  let inner
-  if (layout === 'screen') {
-    inner = (
-      <div className="wl-paper-screen">
-        <NokiaBar />
-        {headEl}
-        {crestEl}
-        {bodyEl}
-      </div>
-    )
-  } else if (layout === 'framed') {
-    inner = (
-      <>
-        <div className="wl-paper-plate">
-          {headEl}
-          {crest ? <div className="wl-paper-crest is-bare">{crest}</div> : null}
-          {bodyEl}
-        </div>
-        {titleEl ? <div className="wl-paper-chin">{titleEl}{aside}</div> : null}
-      </>
-    )
-  } else if (layout === 'divided') {
-    inner = (
-      <div className="wl-paper-divided">
-        <div className="wl-paper-msg">{headEl}{bodyEl}</div>
-        <div className="wl-paper-addr">
-          {crestEl}
-          <span className="wl-paper-lines" aria-hidden="true"><i /><i /><i /></span>
-        </div>
-      </div>
-    )
-  } else {
-    inner = <>{headEl}{crestEl}{bodyEl}</>
-  }
-
   return (
-    <article
-      className={`wl-paper${tone ? ` is-${tone}` : ''}${lk ? ' has-look wl-looked' : ''} ${className}`}
-      style={vars ? { ...vars, ...style } : style}
-      {...attrs}
-      {...rest}
-    >
+    <article className={`wl-paper${tone ? ` is-${tone}` : ''} ${className}`} style={style} {...rest}>
       <div className="wl-paper-grain" aria-hidden="true" />
-      <Furniture chrome={chrome} />
-      {inner}
-      {footEl}
+      {headEl}
+      {crestEl}
+      <div className="wl-paper-body">{children}</div>
+      {foot ? <footer className="wl-paper-foot">{foot}</footer> : null}
     </article>
   )
 }
@@ -1745,81 +1582,50 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 }
 
 // ── the face ────────────────────────────────────────────────────────────────
-// A disc, sized by `size`, carrying the picture when the resolver has one and
-// a monogram until then and otherwise. The monogram is already in place under
-// the picture, so a face that never arrives is a designed state and a face
-// that fails to load is the same state. `resolve` off draws the monogram only,
-// for the one identity in the product that is not an Instagram handle.
+// A person, as a small lit screen: a square of the night LCD, sized by
+// `size`, carrying their picture dithered into the screen's ink when the
+// resolver has one (screen.jsx `PixelPic`), and their monogram in the
+// screen's face until then and otherwise. The monogram is in place under
+// the picture, so a picture that never arrives is a designed state and one
+// that fails to load is the same state. `resolve` off draws the monogram
+// only, for the one identity in the product that is not an Instagram handle.
+//
+// It was a disc. Everything a person stands for on the wall is a screen now
+// (looks.js), and a round photograph among square lit screens was the one
+// object on the surface from a different product.
 //
 // A first name's key (`~sofia`, 0053) is never resolved: it draws the
 // monogram of the name as written, and asks nothing, because the resolver
 // would answer with a stranger of the same spelling.
 //
-// ── and the look on it (0055) ──
-// A disc draws the paper of the letter under its name: the look handed to
-// it (a letter's own, on that letter's card), or, when none is, the look
-// the wall last saw under the key (looks.js `lookFor`, learned from the
-// index, the search and every read), which is the newest letter's. On a
-// looked disc the name is written whole when it fits and the monogram
-// stands when it does not; on a disc with a picture the picture stays and
-// the look is a rim. `name` is the name as written, for a key the memo has
-// not learned yet.
-export function Face({ handle, size = 30, resolve = true, lit = false, look, name = '', className = '', style }) {
+// The picture's size decides how many pixels it is cut to: a face in a row
+// is eighteen a side and reads as a person at thirty pixels; the one opened
+// large is forty-four, and is a portrait in blocks rather than a blur.
+export function PixelFace({ src = '', mono = '', size = 30, lit = false, className = '', style }) {
+  const [ready, setReady] = useState('')
+  const cells = size < 40 ? 18 : size < 100 ? 28 : 44
+  const shown = !!src && ready === src
+  return (
+    <span
+      className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''} ${className}`}
+      style={{ '--s': `${size}px`, ...style }}
+      aria-hidden="true"
+    >
+      <span className="wl-face-mono">{mono}</span>
+      {src ? <PixelPic key={src} src={src} cells={cells} onReady={() => setReady(src)} /> : null}
+    </span>
+  )
+}
+
+export function Face({ handle, size = 30, resolve = true, lit = false, name = '', className = '', style }) {
   const named = isNameKey(handle)
   const p = useProfile(resolve && !named ? handle : '')
   const raw = String(handle || '').trim().replace(/^@+/, '')
   const said = named ? (name || nameFor(handle) || raw.slice(1)) : ''
-  const lk = cleanLook(look === undefined ? lookFor(String(handle || '').trim()) : look)
-  // a name's disc is its name, whole, whenever the name fits the disc, on
-  // any paper; the monogram stands when it does not
-  const whole = named ? nameOnDisc(said, size) : null
-  const mono = whole ? whole.text
-    : p ? monogram(p)
+  const mono = p ? monogram(p)
     : named ? (size >= 40 || said.includes(' ') ? monogram({ name: said }) : said.slice(0, 1).toUpperCase())
     : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
-  const vars = lk ? lookVars(lk) : null
-  // Which src has actually arrived, and which one failed — held as the URL
-  // rather than as two booleans reset by an effect. The effect version had a
-  // race the whole product could hit: a picture already in the browser's cache
-  // finishes before React attaches `onLoad`, that event is gone, and the reset
-  // effect then ran on mount and put the flag back to false — so the face sat
-  // at opacity 0 behind its monogram with the image right there in the DOM.
-  // Comparing against `src` makes a new handle's picture unshown for free.
-  //
-  // A picture the wall has already fetched and decoded (api/handles.js
-  // warmFaces, and every Face that finished loading one) is shown on the
-  // first frame, with no fade: `got` starts at the src, so the face is a
-  // person from the moment it is on the screen. The 320ms fade is for a
-  // picture that is actually arriving.
-  const src = p?.avatar || ''
-  const [got, setGot] = useState(() => (isWarm(src) ? src : ''))
-  const [bad, setBad] = useState('')
-  const shown = !!src && (got === src || isWarm(src))
-  const broken = !!src && bad === src
-  const landed = () => { markWarm(src); setGot(src) }
-  return (
-    <span
-      className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''}${lk ? ' has-look wl-looked' : ''} ${className}`}
-      style={{ '--s': `${size}px`, ...(vars || null), ...(whole ? { '--lk-name': `${whole.px}px` } : null), ...style }}
-      aria-hidden="true"
-      {...(lk ? lookAttrs(lk) : null)}
-    >
-      <span className={`wl-face-mono${whole ? ' is-name' : ''}`}>{mono}</span>
-      {/* Eager, not lazy. A face is thirty pixels and it is almost always in
-          the first screen; `loading="lazy"` held every one of them back until
-          layout had settled, which on a phone was the visible beat between
-          the row landing and the picture arriving. */}
-      {src && !broken ? (
-        <img
-          src={src} alt="" decoding="async"
-          /* the cache race, caught on the way in: an image that is already
-             complete when the ref runs never fires the handler below */
-          ref={(el) => { if (el && el.complete && el.naturalWidth > 0 && got !== src) landed() }}
-          onLoad={landed} onError={() => setBad(src)}
-        />
-      ) : null}
-    </span>
-  )
+  return <PixelFace src={p?.avatar || ''} mono={mono} size={size} lit={lit} className={className} style={style} />
 }
 
 // ── the addressee ───────────────────────────────────────────────────────────
@@ -1955,7 +1761,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
 //
 // A first name (0053) has no account and so no picture: its disc stands on
 // the card as a monogram and is not a control.
-export function OpenFace({ handle, size = 34, look, className = '' }) {
+export function OpenFace({ handle, size = 34, className = '' }) {
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState(null)
   const btn = useRef(null)
@@ -1963,7 +1769,7 @@ export function OpenFace({ handle, size = 34, look, className = '' }) {
   const named = isNameKey(handle)
   const h = named ? String(handle || '').trim() : normHandle(handle)
   if (named) {
-    return <span className={`wl-face-open is-still ${className}`}><Face handle={h} size={size} look={look} /></span>
+    return <span className={`wl-face-open is-still ${className}`}><Face handle={h} size={size} /></span>
   }
   const press = () => {
     if (!h) return
@@ -1980,7 +1786,7 @@ export function OpenFace({ handle, size = 34, look, className = '' }) {
         onClick={press}
         aria-label={`see ${atHandle(h) || 'their'} picture larger`} title="see it larger"
       >
-        <Face handle={h} size={size} look={look} />
+        <Face handle={h} size={size} />
       </button>
       {open ? <FaceViewer handle={h} onClose={close} from={from} source={btn} /> : null}
     </>
@@ -2235,15 +2041,9 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
     <Tag className={cls} aria-live="polite" aria-busy={looking || undefined} {...live}>
       <Light on={looking} />
       <span className="wl-card-disc" aria-hidden="true">
-        <span className="wl-card-mono">{mono}</span>
-        {!looking && at.avatar ? (
-          <img
-            src={at.avatar} alt="" loading="lazy" decoding="async"
-            /* A face that fails to load falls through to the monogram under it
-               rather than to a broken-image glyph in the middle of a field. */
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-          />
-        ) : null}
+        {/* the same small screen every person on the wall is: a picture that
+            fails to load falls through to the monogram under it */}
+        <PixelFace src={looking ? '' : at.avatar || ''} mono={mono} size={40} />
       </span>
       <span className="wl-card-id">
         <span className="wl-card-skel" aria-hidden="true">
@@ -2304,15 +2104,7 @@ export function Addressed({ at, onClear, looking = false, label = 'change who it
       aria-live="polite" aria-busy={looking || undefined}
     >
       <span className="wl-settled-disc" aria-hidden="true">
-        <span className="wl-settled-mono">{mono}</span>
-        {!looking && at.avatar ? (
-          <img
-            src={at.avatar} alt="" loading="lazy" decoding="async"
-            /* a picture that fails to load falls through to the monogram under
-               it rather than to a broken-image glyph in the middle of a field */
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-          />
-        ) : null}
+        <PixelFace src={looking ? '' : at.avatar || ''} mono={mono} size={40} />
       </span>
       {/* the two states share one cell and cross fade: the words land where
           the bars were, and nothing moves */}

@@ -98,9 +98,9 @@ proposal can be checked against each one by name.
 | a trending list | no | | | | no | no | | | | **no** |
 | comments and replies | no | | no | | no | | | | no | **no** |
 | more reactions, more emoji | no | | | | | | no | | | **no**. The heart stays the one mark |
-| shareables: a letter | no | no | | | | | | no | | **no** |
+| shareables: a letter | no | no | | | | | | no | | **yes**, by the owner's call on 23 September, over the no this row carried: `send` on every letter, a picture of its screen and its link. The ruling below says what it costs |
 | shareables: the wall | | | | | | | | | | **yes**. The poster, as a card |
-| a look for a letter: a paper, a colour and a face from a menu | | | | | | | | | | **yes**, as a menu and never as an input. Migration 0055. The ruling below, which reverses the one it replaced |
+| a look for a letter: a colour from a menu, each carrying its own treatment | | | | | | | | | | **yes**, as a menu and never as an input. Migrations 0055 and 0058. The ruling below, which reverses the one it replaced |
 | a colour a writer types, a picture on the card, an uploaded face | | | no | no | | | no | | no | **no**. Each is a signature, or a hole the list cannot read |
 | GIFs, pictures, stickers | no | | | no | | | no | | no | **no** |
 | the search as a field on the wall, under the ear | | | | | | | | | | **yes**. Unlit, a question and not a door. The council of 20 September |
@@ -218,26 +218,23 @@ signature by another name (G3); each is a thing the list at the keyboard
 cannot read (G4); and each is a picture or a second bright surface (G7). That
 ruling stands, on the row above, and it always will.
 
-What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of
-forty-two papers, one of twenty-nine colours and one of twenty-four faces,
-from a menu that every writer on the wall shares, stored as three slugs and
-drawn by the browser. (Nine papers and twelve colours when it shipped; then
-five, eleven and six, with the panel rebuilt as one rail over one grid —
-`Look.jsx`; then eight, twenty-three and twelve. The count has moved four
-times and the reasoning below has not: what the gates care about is that the
-menu is SHARED and CLOSED, not how long it is.)
+What is built (migrations 0055 and 0058, `app/src/wall/looks.js`) is a
+LOOK, and as of 23 September it is one axis: the COLOUR a letter's screen is
+lit in, one of eighteen, from a menu every writer on the wall shares, stored
+as one slug and drawn by the browser. Every letter is the same phone screen
+in the same face; a colour brings its own treatment with it (a lit LCD, the
+negative, a poster's four inks, a riso's two drums, a xerox), and what makes
+one screen differ from the next is not the writer's at all: it is the
+letter's own id (`quirks`), a tilt and a speck of dust nobody chose.
 
-The papers grew a third time because the axis still was not doing its job.
-The eight were well made and they were all one idea — a paper is a surface
-with a grain on it — so half the menu was a cream rectangle at a different
-temperature, and a writer who wanted their forty words to stand on a neon
-sign, a blueprint or a bar napkin had a choice of two creams and a slate. A
-paper is a picture of SOMETHING now, in seven families of six, and the
-furniture is the difference: the synthwave's slatted sun over its grid, the
-receipt torn off the roll with a barcode at its foot, the corkboard's pin,
-the terminal's window bar. That is more to look at and it is not more to
-say: every part of it is drawn, never typed, and a writer chooses which
-paper, never what is on it.
+It was forty-two papers, twenty-nine colours and twenty-four faces, and
+before that eight, twenty-three and twelve; nine and twelve when it shipped.
+The count has moved five times and the reasoning below has not: what the
+gates care about is that the menu is SHARED and CLOSED, not how long it is.
+This time it got SHORTER, which is the direction the ruling already said the
+answer lies in: eighteen colours on one design means every colour is on a
+great many letters, and the combinations a regular writer could be noticed
+by went from thirty thousand to eighteen.
 
 Through the gates:
 
@@ -250,21 +247,16 @@ Through the gates:
   refuses a fourth key, a colour and a sentence (`wall_look_clean`, and a
   constraint that holds every row to it).
 
-  **And the menu is longer than it was, which is the thing to be honest
-  about.** Forty-two papers by thirty colour cells by twenty-four faces is
-  about thirty thousand combinations, where the eight papers were two
-  thousand — and the ruling above already named the number as the thing to
-  watch. What it is watching for is a menu long enough that a regular writer
-  could pick the same look twice and be NOTICED for it, and the number that
-  decides that is not the product of the three axes. It is how many letters
-  each paper carries, because the theme is what anybody reads first and the
-  colour and the face are read after it, if at all. Eight papers meant every
-  paper was on hundreds of letters. Forty-two means every paper is on
-  dozens, which is still a crowd and is not a fingerprint; it is also the
-  last time that sentence can be said, and the ruling records it: **the next
-  proposal to lengthen this menu has to argue the same number again, and the
-  answer to a menu that has grown too long is to shorten it, never to let a
-  writer add to it.**
+  **And the menu is shorter than it was.** It grew to forty-two papers by
+  thirty colour cells by twenty-four faces, about thirty thousand
+  combinations, and the ruling said then that the next change to the menu
+  had to argue how many letters each look would still carry. The screens
+  answer it the easy way: one design, eighteen colours, so every colour is
+  on a great many letters and none is a fingerprint. What makes two letters
+  of one colour look different is the letter's own id, which is nobody's
+  choice and so nobody's signature. **The next proposal to lengthen this
+  menu still has to argue the same number, and the answer to a menu that
+  has grown too long is to shorten it, never to let a writer add to it.**
 
   The line the old ruling drew holds exactly where it was drawn: a look may
   be chosen and never typed, drawn and never uploaded, and the menu is the
@@ -274,27 +266,15 @@ Through the gates:
   text for them to miss and no picture at all. The telegram sets its body
   upper case and the classifier still reads exactly what the writer typed:
   the case is a display rule and the row is the row.
-- **G7.** Every texture is a gradient drawn by the stylesheet and every face
-  is a file served from this origin; nothing is downloaded from anywhere and
-  nothing is a picture. The furniture holds to the same rule, drawn part by
-  drawn part: the battery is a border and three boxes, the signal is four
-  rectangles, the synthwave's sun is a disc with slats masked out of it and
-  its grid is a repeating gradient in perspective, the receipt's torn foot is
-  a row of triangles taken out of the card, the stamp box is a dashed border
-  round the wall's own constellation. The paper stays the one bright thing on
-  its sheet, in the colour the writer chose it, and the system's own accent
-  is not spent — the twenty-nine colours and the forty-two grounds live in
-  `looks.js` and in theme rules keyed on `data-look`, which is where
-  design/DESIGN.md 2.5 puts a look's own colour, and none of them is
+- **G7.** Every part of a screen is drawn by the stylesheet or a canvas:
+  the status glyphs are pixel grids in the source, the LCD's grid and moiré
+  are repeating gradients, a print is an SVG filter over those, and the one
+  face is a file served from this origin. Nothing is downloaded from anywhere.
+  The one picture is the resolver's own picture of the ADDRESSEE, which the
+  wall already drew beside every letter, now dithered into the screen's ink;
+  a writer still cannot put a picture on a letter. The eighteen colours live
+  in `looks.js` and design/DESIGN.md 2.5 fences them, and none of them is
   `--accent`.
-
-  `gold` came off the eight partly for spending a second saturated colour on
-  a hairline frame, and `gilt` is in the forty-two, which is worth explaining
-  rather than glossing: `gold` was a yellow under a border, and this is a
-  FOIL — the ink is a gradient across the type rather than a colour under it,
-  it is the paper's own ink and not a second one, and it goes the moment a
-  writer picks a colour. The rule the old one broke was spending a hue on
-  furniture; this one spends nothing on furniture at all.
 - **G8.** The look is a column on the letter's row. A takedown takes it down
   with the letter, and nothing about it travels anywhere else.
 - **G9.** The desk sees the slugs beside the row and reads nothing more.
@@ -311,6 +291,34 @@ The line the ruling draws, for the next proposal: a look may be chosen and
 never typed, drawn and never uploaded, the menu is the product's to add to and
 nobody's to extend from a phone, and a proposal to lengthen it has to say how
 many letters each paper will still carry.
+
+### Sending a letter
+
+The row above said no to sharing a letter, on G1, G2 and G8, and as of 23
+September the owner has said yes: every letter's right soft key is `send`,
+and it does what a phone's Send did — the share sheet with a picture of the
+screen and the letter's link, the picture saved, or the link copied
+(`app/src/wall/share.js`). What that costs, through the gates, so the call
+is made knowing it:
+
+- **G8** is the real one. A picture that has been sent is somewhere the
+  takedown cannot reach, and one tap still takes the letter off the wall and
+  its link to "that letter has come down", but not the picture. This was
+  always true of a screenshot; a button makes it the easy thing rather than
+  the deliberate one. What keeps it from being worse: the picture carries
+  nothing the letter did not (no author, no reader, no count but the hearts),
+  and a sealed letter sends as its stars, since the words are not in the
+  page to be drawn.
+- **G1.** A letter sent off the wall is more attention on the person it is
+  about than a letter on it. The name travels with it, as it does on the
+  wall.
+- **G2.** Nothing is told to anybody: the send is not counted, logged or
+  shown, and nobody learns their letter was sent.
+- **G3, G4, G9.** Untouched: the picture is made on the phone that asked for
+  it, from the row the page already had.
+
+If this is revisited, the lever is G8: the picture could carry only the link
+and no words, which would make the takedown true again.
 
 ### The search, the miss, and a letter to a first name
 

@@ -142,9 +142,10 @@
 // leaves it.
 
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Face, Label } from './parts.jsx'
+import { Label, useProfile } from './parts.jsx'
+import { Tile } from './screen.jsx'
 import { labelFor, isNameKey } from './data.js'
-import { peekHandle, isWarm } from '../api/handles.js'
+import { peekHandle, isWarm, monogram } from '../api/handles.js'
 
 // ── the numbers ─────────────────────────────────────────────────────────────
 // At most this many names in the field. Past it the rest are a search away,
@@ -687,7 +688,23 @@ function tileUp(tiles, was) {
 // the name as written for a first name, both handed as values off the
 // index's row so the disc draws them on its first frame, and both compared
 // by the memo so a name whose paper has not changed is not redrawn.
-const Cell = memo(function Cell({ s, handle, count, d, mine, fresh, delay, look, name, bind, onOpen, onHover, onPeek }) {
+// The name's small screen: its newest letter's colour, its picture from the
+// resolver's memo when there is one, and otherwise its monogram. A first
+// name (0053) is its own monogram when it is short enough to stand whole,
+// the way a phone showed a short contact name across its standby screen.
+function NameTile({ handle, look, name, count, at }) {
+  const named = isNameKey(handle)
+  const p = useProfile(named ? '' : handle)
+  const said = named ? (name || labelFor(handle)) : ''
+  const mono = named
+    ? ([...said].length <= 5 ? said : monogram({ name: said }))
+    : p ? monogram(p) : String(handle || '').replace(/^@+/, '').slice(0, 2).toUpperCase()
+  // keyed by the name, so a slot that turns over to somebody else starts
+  // with that person's monogram and not the last one's picture
+  return <Tile key={handle} look={look} seed={handle} mono={mono} src={p?.avatar || ''} count={count} at={at} />
+}
+
+const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, look, name, bind, onOpen, onHover, onPeek }) {
   if (!handle) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
     <button
@@ -707,7 +724,7 @@ const Cell = memo(function Cell({ s, handle, count, d, mine, fresh, delay, look,
     >
       <span className="wl-cell-disc" aria-hidden="true">
         <span className="wl-cell-orb">
-          <Face handle={handle} size={d} lit={mine} look={look || null} name={name} />
+          <NameTile handle={handle} look={look || null} name={name} count={count} at={at} />
         </span>
       </span>
     </button>
@@ -1977,6 +1994,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             s={s}
             handle={t ? t.handle : ''}
             count={t ? t.count : 0}
+            at={t ? t.at : 0}
             d={t ? Math.round(S * fracOf(a.k)) : 0}
             mine={!!t && wrote.has(t.handle)}
             fresh={!!t && !!fresh && fresh.has(t.handle)}

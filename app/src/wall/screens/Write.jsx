@@ -132,19 +132,20 @@
 // it was already on, and the one thing in it worth keeping, the letter being
 // seen to land, is on the wall now, which is where the landing actually is.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, Paper, Pen, Display, Label, Pill, Locked, Allowance, OpenFace, Addressee,
-  HandleField, LetterField, Addressed, Light, useResolver, confirmWord,
-  useSuggest, Suggest, Segmented,
+  Sheet, SheetHead, Display, Label, Pill, Locked, Allowance,
+  HandleField, Addressed, Light, useResolver, confirmWord,
+  useSuggest, Suggest, Segmented, useProfile,
 } from '../parts.jsx'
 import { LookPanel } from '../Look.jsx'
+import { Screen, ScreenDraft } from '../screen.jsx'
 import { Dots } from '../art.jsx'
 import {
-  normHandle, validHandle, dateline, hash, allowance, loadQuota, write,
-  isNameKey, nameKey, cleanName, nameFor, learnName, labelFor,
+  normHandle, validHandle, hash, allowance, loadQuota, write,
+  isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
 } from '../data.js'
-import { normaliseLook } from '../looks.js'
+import { normaliseLook, freshLook } from '../looks.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { campus, needsCampus } from '../campus.js'
@@ -196,7 +197,9 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   const [name, setName] = useState(() => (named ? nameFor(prefill) : draft.name || ''))
   const [body, setBody] = useState(() => draft.body || '')
   // the paper the letter is on, kept with the draft (0055)
-  const [look, setLook] = useState(() => normaliseLook(draft.look))
+  // a draft nobody has chosen a colour for yet is lit in one of its own, so
+  // the wall is not a field of the same grey; it is kept with the draft
+  const [look, setLook] = useState(() => normaliseLook(draft.look) || freshLook())
   // whether the look panel is open under the card
   const [styling, setStyling] = useState(false)
   // Somebody who tapped "write to @them" on a letter already answered the
@@ -238,7 +241,6 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   // rather than by a button that will not press, which is a refusal with no
   // moment in it.
   const ok = [kind === 'name' ? !!nm : validHandle(h), body.trim().length > 0]
-  const dl = useMemo(() => dateline(Date.now()), [])
   const [asking, setAsking] = useState(false)
   // Whether the BODY holds the resolver rather than the field: while the
   // lookup is out, and once it has answered. One element across the two, so
@@ -284,6 +286,10 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   // press. Never for a name: looking a person up by first name is an
   // inference.
   const them = useResolver(kind === 'name' ? '' : to)
+  // the name across the top of the screen: the first name the resolver has
+  // for a handle, the handle when it has none, and a first name as written
+  const prof = useProfile(kind === 'name' ? '' : h)
+  const toFirst = kind === 'name' ? nm : ((prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : '') || h)
   // And under that, the names already on the wall that match what is typed,
   // until the card has the person: a list under a settled card would list
   // them twice. Pressing a row takes that name, in whichever kind it is.
@@ -509,32 +515,31 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
               className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
               onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
             >
-              {/* The same card the wall shows, letterhead included: the face
-                  at the head of the paper beside the name, at the size the
-                  letter sets it, on the paper the letter chose, so what is
-                  being written on is what goes up and not a plainer copy of
-                  it. The name is the way back to the first question, and the
-                  pen at the end of the row opens the look. */}
-              <Paper
-                dateline={dl}
-                look={look}
-                crest={kind === 'name' ? null : <span className="wl-letter-crest"><OpenFace handle={key} size={34} look={look} /></span>}
-                title={
-                  <button
-                    type="button" className="wl-paper-to" onClick={toWho}
-                    aria-label={`for ${labelFor(key)}. change who it is for`} title="change who it is for"
-                  >
-                    <Addressee handle={key} />
-                  </button>
-                }
-                aside={<Pen onClick={() => setStyling((s) => !s)} on={styling} label={styling ? 'done with the look' : 'change the look'} />}
-                tone={body.trim() ? '' : 'empty'}
+              {/* The same screen the wall shows, in the colour the letter is
+                  lit in and with the quirks of its own phone, so what is
+                  written on is what goes up. The name across the top is the
+                  person it is for; the left key opens the colours under it,
+                  and the right one takes a character back, or, on an empty
+                  draft, goes back to the first question. */}
+              <Screen
+                look={look} seed={`draft:${key || 'wall'}`} live
+                top={{
+                  name: toFirst, handle: kind === 'name' ? '' : atHandle(key),
+                  counter: `${MAX_BODY - body.length}/1`,
+                  mode: !body.trim() || /[.!?]\s*$/.test(body) ? 'Abc' : 'abc', icon: 'pen',
+                }}
+                keys={{
+                  l: { label: styling ? 'done' : 'colour', onClick: () => setStyling((v) => !v), on: styling, pressed: styling, aria: styling ? 'done with the colour' : 'choose the colour it is lit in' },
+                  r: body
+                    ? { label: 'clear', onClick: () => setBody(body.slice(0, -1)), aria: 'take the last character back' }
+                    : { label: 'back', onClick: toWho, aria: `for ${labelFor(key)}. change who it is for` },
+                }}
               >
-                <LetterField
-                  value={body} onChange={setBody} max={MAX_BODY} autoFocus count={false}
+                <ScreenDraft
+                  value={body} onChange={setBody} max={MAX_BODY} autoFocus
                   placeholder={EXAMPLES()[hash(key || 'wheeler') % EXAMPLES().length]}
                 />
-              </Paper>
+              </Screen>
               {/* One line under the card, and only when there is something to
                   say: the one thing the screen caught, named, or what the
                   server answered. There is no count under the card and no
@@ -545,10 +550,9 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 {caught || said ? <Label className="wl-write-caught">{caught || said}</Label> : null}
               </div>
             </div>
-            {/* the look, under the card, while the pen is on: its texture,
-                its colour and its type, one at a time, and the card above
-                is the preview */}
-            {styling ? <LookPanel look={look} onChange={setLook} /> : null}
+            {/* the colours, under the screen, while its left key is on, and
+                the screen above is the preview */}
+            {styling ? <LookPanel look={look} onChange={setLook} seed={`draft:${key || 'wall'}`} /> : null}
           </div>
         )}
 

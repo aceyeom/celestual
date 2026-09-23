@@ -153,6 +153,9 @@ if (!adminPath && !sigPath) {
   pre('/fonts/newsreader-normal-200-800-latin.woff2', 'font', 'font/woff2')
   pre('/fonts/inter-tight-normal-100-900-latin.woff2', 'font', 'font/woff2')
   pre('/fonts/geist-mono-normal-100-900-latin.woff2', 'font', 'font/woff2')
+  // the one face every screen on the wall is set in, so a letter never
+  // lights up in a stand-in and then jumps to its own pixels
+  pre('/fonts/jersey-10-normal-400-latin.woff2', 'font', 'font/woff2')
   pre('/liquid-mark.png', 'image')
 }
 

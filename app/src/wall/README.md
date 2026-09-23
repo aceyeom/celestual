@@ -363,110 +363,50 @@ lives.
 
 ## The look of a letter
 
-A letter chooses its paper (migration 0055, `looks.js`, `Look.jsx`). The pen
-at the end of the card's letterhead on the composer opens a panel under the
-card, and the card is the preview, because the card is the real card
-(`parts.jsx` `Paper`) and a look is its tokens moved: whatever is picked is
-on the letter before the finger has lifted, and what goes up is what was
-seen. One rail with the three things a paper can be changed about, one grid
-under it for the one being changed, and one line under that naming the
-choice:
+A letter is a phone screen left on in a dark room (`looks.js`, `screen.jsx`,
+`screen.css`, and design/DESIGN.md 2.5): an unsent draft with the cursor
+still after the last word. Every letter is the same screen, set in one face
+(Jersey 10, the Series 40 grid):
 
 | | |
 | --- | --- |
-| **texture** | forty-two papers in seven families, each a small tile in its own tokens with its own furniture drawn on it. The big choice, and picking one resets the other two to what it brought |
-| **color** | twenty-nine grounds and the paper's own first, as five even rows of six. A colour recolours the look and keeps its texture and its type |
-| **type** | twenty-four faces, each with its own name set in itself, as eight rows of three: the system's serif, sans and mono at the letter's job, and twenty-one fetched for the looks and used for nothing else |
+| **the status rows** | the aerial and the bars (how many people hearted it), the first name, the characters left of 280, the battery (how long it has been sitting there unsaid); then the pen and the mode, and the handle. A sealed letter says `locked` beside a padlock |
+| **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A handle with a picture carries it at the head of the message, dithered into the screen's ink, and pressed it opens large. A sealed letter is its stars |
+| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `send` (share the picture, save it, copy the link) |
 
-A paper is an OBJECT and not a fill. Each carries its own `grain` — the one
-surface layer on the card, and `none` is a real answer — and forty-one of
-the forty-two carry `chrome`, the parts drawn for that paper and no other
-(`parts.jsx` `Furniture`, ruled in `wall.css` on `data-look`). The seven
-families are how forty-two objects are found rather than scrolled past, and
-the panel draws them in this order with the caption of each standing on the
-sheet while its six go by underneath:
+The only thing a writer chooses is the COLOUR it is lit in, from one list in
+three groups (`Look.jsx`, under the composer's screen while its `colour` key
+is on): six lit screens and the negative; six posters and four risos, which
+keep their own ground; and the xerox. Each colour brings its treatment with
+it, and every letter in it is still its own phone: its tilt, proportion,
+backlight, pixel pitch, dust, battery and aerial come out of its id
+(`quirks`), so no two letters are the same photograph and no letter is a
+different design.
 
-| | |
-| --- | --- |
-| **paper** | pressed, ruled and printed. The plain paper, the letterpress, the telegram, the airmail with the barber stripe round it, the ledger with its bands and its double red margin, the engineer's graph with a ruler down two edges |
-| **post** | carried by hand, and handled. The postcard's divided back, the polaroid's chin, the scrapbook under two strips of tape, the washi with a printed tape across its head, the die-cut sticker, the manila folder with the tab cut into its top edge |
-| **ether** | light, with no hard edge in it. The aurora's curtain, the mist's drifting layers, the dawn's sun on the horizon, the silk's seams and sheen, the bloom's ring, the nebula's orbit |
-| **luxe** | the expensive object. The velvet's pile, the gilt's foil, the atelier's four rules, the marble's veins and chiselled corners, the lacquer's specular, the parchment's wax seal |
-| **neon** | lit from behind. The synthwave's slatted sun over its grid, the arcade's recessed screen in its bezel, the vapor's checkerboard floor, the neon tube and its glow, the hologram's iridescence, the glitch's channel split |
-| **cyber** | the machine. The nokia's shell and screen, the terminal's window bar and phosphor, the circuit's traces and vias, the hud's brackets and reticle, the cassette's case and hubs, the blueprint's grid and title block |
-| **object** | a thing that is not a sheet. The chalkboard's rail, the envelope's flap, the receipt torn off the roll with a barcode at its foot, the ticket's notches and perforation, the corkboard's pin, the napkin's scalloped edge |
-
-Three of them move the card's own slots rather than only dressing them
-(`looks.js` `layout`): the nokia wraps its head, crest and body into a screen,
-the polaroid puts the addressee on the chin, the postcard divides the back.
-The slots are the same objects in every branch, so none of them is a second
-card. The papers that look as though they have moved something and have not
-— the arcade's screen, the sticker's field, the cassette's card, the
-terminal's window bar — get an inner surface as FURNITURE with the card's
-inset opened out around it, which is how a paper gets a surface inside the
-card without a second layout and without a second component.
-
-And four things do not move on any of the forty-two, because they are the
-PRODUCT's and not the writer's:
-
-| | |
-| --- | --- |
-| the corner | `--r-card` on all forty-two. A paper may be a pressed sheet, a neon sign or a strip of magnetic tape and it is still a letter on the wall, and the shape it is cut to is what says so |
-| the edge | derived from the paper's own ink (`--lk-edge`), so every paper carries one weight of hairline |
-| the addressee | `for`, the display name, and the handle under it — the same three parts in the same order, on the crest row, the chin or the address side |
-| the foot | the heart, the pen and the flag, laid out against the CARD rather than the paper's inset: 20px from the edge and 18px from the bottom on every letter in the deck. A control that moves is a control to be found again on every card |
+The room an opened letter stands in is black, with the screen's own light
+falling on it (`.wl-room-light`); the wall goes out behind it. On the wall
+each name is its newest letter's screen, small (`Tile`): the bars are how many
+letters it has, the battery how long since the last, an envelope blinks on a
+name written to today, and the middle is the name's picture dithered into the
+screen or its monogram with the cursor after it. Nothing on the wall is round.
 
 The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
 it: the gate under a sealed card says `read it` and not a word of policy,
 because the card beside it has already said what it is.
 
-A chosen colour reaches the whole paper and not only its ground, which is
-what makes twenty-nine colours worth having on forty-two objects. A ground
-written in the paper's own tokens is a SHAPE — where the light falls on this
-object — and a chosen colour keeps it, so the velvet's bloom, the lacquer's
-specular and the tube's glow come out in whatever was picked. A ground
-written in hues IS the colour, and a chosen one replaces it. And every piece
-of furniture drawn in a literal hue is written twice, once in the paper's ink
-and once under `:not([data-tint])` in its own colours, so a tinted airmail
-has its stripe struck in that colour's ink and a tinted synthwave has a sun
-the same shade as its sky. Nothing on a tinted card is a colour the writer
-did not choose.
+It was forty-two papers, twenty-nine colours and twenty-four faces, on one
+rail of three over a gallery. The papers, the faces and the rail went with the
+screens; the concept is the "Screens in the Dark" study, applied, with its
+six versions folded into the colour list and its three faces into one.
 
-The three used to be three rows stacked under the card, each scrolling
-sideways, each with a label over it and a caption under every tile: half
-the menu was past the right edge of the sheet at any moment and twenty-two
-nine-pixel captions carried most of the ink. A writer is choosing one of
-the three at a time, so the panel asks which and gives that one the whole
-width. It was eight papers then and fitted in two rows; it is forty-two and
-does not, and the answer is not a longer panel but the same window walked
-down — one scroller of one height for all three axes, grouped into the
-families on the texture axis. Every tile draws the real furniture at a third
-of the size (`wall.css` `--fx`), because with eight papers a writer could
-afford to try them all and with forty-two they cannot.
-
-Seven looks have come off the menu over three rewrites — y2k, receipt,
-notebook and terminal with the panel, then candy, night and gold with the
-eight papers. A letter written on any of them keeps its slug in its row and
-draws the plain paper; the receipt and the terminal are back under those
-names as objects with furniture, which does not change the rule, since what
-a slug draws was always this build's answer and never the row's. The rail's
-words are what a writer is choosing; the row's keys are still `theme`,
-`tint` and `face`.
-
-What the row keeps is three slugs, `{ theme, tint, face }`, or nothing for
-the plain paper, cleaned to that shape by the browser, by the function and
-by the schema (`wall_look_clean`, and a constraint that holds every row to
-what it answers). What a slug DRAWS is the browser's: every theme is a set
-of custom properties on the paper (`--lk-ground`, `--lk-ink`, the strengths
-of the ink the card's own rules already use for its rule, its stamp, its
-foot and its marks, the face, the corner) and a texture the stylesheet
-draws under the type by the theme's slug. Nothing is downloaded and nothing
-is a picture: the LCD is a pixel grid drawn as a gradient, the sun on the
-synthwave is a disc with slats masked out of it, and the receipt's torn foot
-is a row of triangles taken out of the card. A new look is a
-row in `looks.js` and a rule in `wall.css`, never a migration, and a slug
-this build does not know — one of the four that came off, or one from a
-newer build — keeps its place in the row and draws the plain paper.
+What the row keeps is 0055's shape, `{ theme, tint, face }`, cleaned by the
+browser, by the function and by the schema (`wall_look_clean`, and a
+constraint that holds every row to what it answers). The screens write one
+key of it, `{ "tint": "teal" }`. What a slug DRAWS is the browser's: a new
+colour is a row in `looks.js`, never a migration, and a row this build does
+not know — a paper from before the screens — draws the colour its id picks.
+Migration 0058 gave every letter already up a colour of its own and kept
+what it had in `wall_look_backup_0058`.
 
 **The paper of a letter is the paper of its name on the field.** The index
 carries the look of the newest letter under each key, so a name's disc on
@@ -585,10 +525,14 @@ router.js    ten routes, no dependency
 art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
              ornaments: sparkle, halftone sphere, THE ORRERY, bloom,
              per-handle constellation (with its countdown gauge), the field
-looks.js     the looks: the themes, the tints and the faces a letter's paper
-             can be, the tokens each sets on a paper or a disc, and the memo
-             of which paper each name on the wall was last written on
-Look.jsx     the look panel under the composer's card: paper, colour, type
+looks.js     the colours a letter's screen can be lit in, what each is painted
+             with, the quirks each letter's id gives its screen, the glyphs,
+             and the memo of which colour each name was last written in
+screen.jsx   the screen, at three sizes (the letter, the wall's tile, the
+             panel's thumbnail), and a picture dithered into its ink
+share.js     `send`: the letter drawn as a picture, and the share sheet,
+             the save and the copied link
+Look.jsx     the colour panel under the composer's screen
 parts.jsx    display · label · prose · redaction · pill · paper · fields ·
              sheet · row · icons · the close mark · the bar · step dots
 auth.js      the domain check, what it does and does not buy, and the

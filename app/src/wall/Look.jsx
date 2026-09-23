@@ -1,279 +1,71 @@
-// ── the look panel ──────────────────────────────────────────────────────────
+// ── the colour panel ────────────────────────────────────────────────────────
 //
-// Under the composer's card while its pen is on (screens/Write.jsx): the
-// paper of the letter, chosen. ONE rail and ONE grid, and the card above
-// them is the preview, since the card is the real card (parts.jsx `Paper`)
-// and a look is its tokens moved: whatever is picked here is on the letter
-// before the finger has lifted, and what goes up is what was seen.
+// Under the composer's screen while its `colour` key is on (screens/
+// Write.jsx): the one thing a writer chooses about how their letter looks,
+// which is the colour it is lit in. The screen above is the preview, and it
+// is the real screen (screen.jsx `Screen`), so what is picked here is on the
+// letter before the finger has lifted.
 //
-//   texture   forty-two papers, whole, each in its own tokens with the two
-//             letters in its face and its own furniture drawn on it
-//             (looks.js THEMES). The big choice, and it is a choice of
-//             OBJECT and not of fill: the synthwave brings a sun and a
-//             grid, the corkboard brings a pin, the receipt is torn off
-//             the roll. Picking one resets the other two to what it brought
-//   color     the paper's own ground, and twenty-nine grounds (TINTS),
-//             which with "as is" is five even rows of six
-//   type      twenty-four faces, each with its own name set in itself
-//             (FACES)
+// It was a rail of three — texture, color, type — over a gallery of
+// forty-two papers, twenty-nine grounds and twenty-four faces. The papers,
+// the grounds and the faces went with the screens (looks.js): one face, one
+// layout, and a colour that carries its own treatment with it. So this is
+// one list, in three short groups, each colour drawn as the small screen it
+// makes:
 //
-// ── why it is one rail and not three rows ───────────────────────────────────
-// It was three rows stacked under the card, each scrolling sideways, each
-// with a label over it and a name under every tile: three scrollbars, two
-// dozen captions in nine-pixel mono, and half the options past the right
-// edge of the sheet at any moment. Everything was on the screen and nothing
-// could be read — which is the failure mode of a generated panel, where
-// every choice is given equal weight and equal room and the person is left
-// to sort it out.
-//
-// A person choosing a paper for forty words is doing ONE of three things at
-// a time. So the panel asks which, on a rail (the composer's own switch,
-// parts.jsx `Segmented`, in tab clothes), and then gives that one thing the
-// whole width: one window, tiles big enough to be looked at, and one line
-// under it naming what is chosen. Nothing scrolls sideways, and the panel's
-// height does not move between the three at all, so switching cannot shove
-// the card.
-//
-// ── and why it is a gallery ─────────────────────────────────────────────────
-// The menu was eight papers and fitted in two rows. It is forty-two and does
-// not, and the answer is not a longer panel: it is the window staying
-// exactly where it was and being WALKED, which is the model a lock screen's
-// own gallery uses. The three axes share one scroller of one height, and the
-// texture axis is grouped into the seven families (looks.js FAMILIES) with
-// the caption of each standing on the sheet while its six papers go past
-// under it. A writer who wants a machine goes to the machines.
-//
-// Every tile draws the real furniture at a third of the size (`Tile`, and
-// wall.css `--fx`), which is the other half of the same problem: with eight
-// papers a writer could afford to try them all, and with forty-two they
-// cannot, so the picker has to show the thing rather than stand for it.
-//
-// The words on the rail are what a writer is choosing — texture, color,
-// type — not what the row stores. The schema's three keys are `theme`,
-// `tint` and `face` and they do not move (looks.js).
+//   lit       the backlit screens, and the negative
+//   printed   the posters and the risos, in their own inks
+//   copied    the xerox, blown out
 //
 // Nothing here takes a colour a person typed, a picture or a word
 // (docs/WALL-FEATURES.md, G3, G4 and G7): every choice is one every writer
-// can make, which is what keeps a look a mask rather than a signature.
+// can make, which is what keeps a colour a mask rather than a signature.
 //
-// The keyboard: the rail's arrows move between the three, the grid's arrows
-// move within one, and the tab key walks rail, then grid, the way a set of
-// tabs over a panel is walked anywhere else.
+// It is one radio group to a screen reader and to a keyboard: the arrows
+// walk the whole list, across the groups, and the tab key leaves it.
 
-import { useCallback, useId, useState } from 'react'
-import { THEMES, TINTS, FACES, FAMILY_THEMES, themeOf, tokensOf, lookAttrs, chromeOf, normaliseLook } from './looks.js'
-import { Furniture } from './parts.jsx'
+import { useRef } from 'react'
+import { COLOURS, GROUPS, colourOf } from './looks.js'
+import { Mini } from './screen.jsx'
 
-// The three, in the order they are asked: the paper first because it brings
-// the other two with it, then the two dials on it.
-const AXES = [
-  { key: 'texture', label: 'texture' },
-  { key: 'color', label: 'color' },
-  { key: 'type', label: 'type' },
-]
-
-// the keyboard, along a line of choices: the arrows move the choice and take
-// the focus with it, in either axis, since a grid is walked both ways
-function arrows(e, values, current, pick) {
-  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
-  e.preventDefault()
-  const at = Math.max(0, values.indexOf(current))
-  const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1
-  const next = values[(at + dir + values.length) % values.length]
-  pick(next)
-  const el = e.currentTarget.querySelector(`[data-value="${next}"]`)
-  if (el) el.focus()
-}
-
-// ── the rail ────────────────────────────────────────────────────────────────
-// Which of the three is being chosen. It wears the bookmarks' clothes
-// (wall.css `.wl-seg`, the sliding tab and all), because on the step before
-// this one the same object asks who the letter is for, and a product with two
-// rails that look different has two rails to learn. It is a tablist rather
-// than a radio group: what it switches is the panel under it, not a value on
-// the letter — and the panel is literally under it, joined to the open tab as
-// one sheet.
-function Rail({ at, onGo, ids }) {
+export function LookPanel({ look, onChange, seed = '' }) {
+  const cur = colourOf(look, seed)
+  const box = useRef(null)
+  const pick = (c) => onChange({ tint: c.slug })
   const keys = (e) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]
+    if (!step) return
     e.preventDefault()
-    const i = AXES.findIndex((a) => a.key === at)
-    const next = AXES[(i + (e.key === 'ArrowRight' ? 1 : -1) + AXES.length) % AXES.length]
-    onGo(next.key)
-    const el = e.currentTarget.querySelector(`[data-value="${next.key}"]`)
+    const i = COLOURS.findIndex((c) => c.slug === cur.slug)
+    const next = COLOURS[(i + step + COLOURS.length) % COLOURS.length]
+    pick(next)
+    const el = box.current && box.current.querySelector(`[data-value="${next.slug}"]`)
     if (el) el.focus()
   }
-  const i = Math.max(0, AXES.findIndex((a) => a.key === at))
   return (
-    <div
-      className="wl-seg wl-look-rail" role="tablist" aria-label="what to change about the paper"
-      style={{ '--n': AXES.length, '--i': i }} onKeyDown={keys}
-    >
-      <span className="wl-seg-thumb" aria-hidden="true" />
-      {AXES.map((a) => (
-        <button
-          type="button" role="tab" key={a.key} data-value={a.key} id={ids.tab(a.key)}
-          className="wl-seg-opt" aria-selected={a.key === at} aria-controls={ids.panel}
-          tabIndex={a.key === at ? 0 : -1}
-          onClick={() => onGo(a.key)}
-        >
-          {a.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// One choice in a grid. The name is not drawn under it: twenty-two captions
-// in nine-pixel mono were most of the old panel's ink, and the one worth
-// reading — what is chosen right now — is on the line under the grid.
-// It is still said, to a pointer and to a screen reader.
-function Option({ value, on, name, pick, children }) {
-  return (
-    <button
-      type="button" role="radio" aria-checked={on} data-value={value}
-      className="wl-look-opt" tabIndex={on ? 0 : -1}
-      aria-label={name} title={name}
-      onClick={() => pick(value)}
-    >
-      {children}
-    </button>
-  )
-}
-
-// A small paper: the look's tokens on a tile, with the two letters and a few
-// lines, drawn by the same rules as the card it stands for — and, since the
-// forty-two papers, THE SAME FURNITURE. It is the real `Furniture` element
-// under the real theme rules, at a third of the size (`--fx`, wall.css), so
-// the synthwave tile has the sun on it, the corkboard tile has the pin, and
-// the terminal tile has its window bar with the type starting under it.
-//
-// It was a rectangle in the paper's colour with a border round it for three
-// of the eight and nothing for the other five, which is a picker to guess
-// in: with eight papers a writer could afford to try them all, and with
-// forty-two they cannot.
-function Tile({ look }) {
-  return (
-    <span className="wl-look-tile wl-looked" style={tokensOf(look)} {...lookAttrs(look)} aria-hidden="true">
-      {/* the same two layers the card lays under its words, in the same
-          order: the theme's surface, then the theme's drawn parts */}
-      <span className="wl-paper-grain" />
-      <Furniture chrome={chromeOf(look)} />
-      <span className="wl-look-tile-in">
-        <span className="wl-look-aa">Aa</span>
-        <span className="wl-look-bar" style={{ width: '92%' }} />
-        <span className="wl-look-bar" style={{ width: '64%' }} />
-        <span className="wl-look-bar" style={{ width: '78%' }} />
-      </span>
-    </span>
-  )
-}
-
-export function LookPanel({ look, onChange }) {
-  const [axis, setAxis] = useState('texture')
-  const uid = useId()
-  const ids = { tab: (k) => `${uid}-${k}`, panel: `${uid}-panel` }
-
-  const theme = themeOf(look)
-  const tint = look?.tint || ''
-  const face = look?.face || theme.face
-  const set = useCallback((next) => onChange(normaliseLook(next)), [onChange])
-
-  const pickTheme = useCallback((slug) => set({ theme: slug }), [set])
-  const pickTint = useCallback((slug) => set({ ...(look || {}), theme: theme.slug, tint: slug || undefined }), [set, look, theme])
-  const pickFace = useCallback((slug) => set({ ...(look || {}), theme: theme.slug, face: slug }), [set, look, theme])
-
-  // what the line under the grid says: the choice on the axis being shown,
-  // in its own word, and "as is" for a colour left as the paper brought it
-  const now = axis === 'texture' ? theme.name : axis === 'color' ? (tint || 'as is') : face
-
-  return (
-    <div
-      className="wl-look" role="group" aria-label="the look of the letter"
-      /* which tab is open, for the one corner the sheet keeps square: the
-         one the tab is standing on (wall.css `.wl-look-sheet`) */
-      style={{ '--i': Math.max(0, AXES.findIndex((a) => a.key === axis)) }}
-    >
-      {/* The rail stands OUTSIDE the panel, because the tab is the panel's
-          top edge: the open one is the same ground and the same hairline as
-          the sheet under it and interrupts the line between them, which is
-          the same join the composer's first question is built on. A tab drawn
-          inside the box it opens is a tab attached to nothing. */}
-      <Rail at={axis} onGo={setAxis} ids={ids} />
-
-      <div className="wl-look-sheet">
-      <div className="wl-look-body" role="tabpanel" id={ids.panel} aria-labelledby={ids.tab(axis)}>
-        {axis === 'texture' && (
-          /* The seven families, down one scroller, each with its six papers
-             under a caption that stands on the sheet while they go past.
-             It is ONE radio group across all forty-two and not seven of
-             them: the arrows walk the whole menu in order, families and
-             all, because what is being chosen is a paper and the groups are
-             how it is found rather than what it is. */
-          <div
-            className="wl-look-fams" role="radiogroup" aria-label="texture"
-            onKeyDown={(e) => arrows(e, THEMES.map((t) => t.slug), theme.slug, pickTheme)}
-          >
-            {FAMILY_THEMES.map((f) => (
-              <section key={f.key} className="wl-look-fam">
-                <h3 className="wl-look-fam-h"><span>{f.name}</span><i>{f.note}</i></h3>
-                <div className="wl-look-grid is-texture">
-                  {f.themes.map((t) => (
-                    <Option key={t.slug} value={t.slug} on={t.slug === theme.slug} name={t.name} pick={pickTheme}>
-                      <Tile look={{ theme: t.slug }} />
-                    </Option>
-                  ))}
-                </div>
-              </section>
-            ))}
+    <div className="wl-look" ref={box}>
+      <div className="wl-look-groups" role="radiogroup" aria-label="the colour it is lit in" onKeyDown={keys}>
+        {GROUPS.map((g) => (
+          <div className="wl-look-group" key={g.key}>
+            <span className="wl-look-h" aria-hidden="true">{g.label}</span>
+            <div className="wl-look-opts">
+              {COLOURS.filter((c) => g.kinds.includes(c.kind)).map((c) => {
+                const on = c.slug === cur.slug
+                return (
+                  <button
+                    key={c.slug} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
+                    className={`wl-look-opt${on ? ' is-on' : ''}`} data-value={c.slug}
+                    onClick={() => pick(c)} aria-label={c.name} title={c.name}
+                  >
+                    <Mini colour={c} />
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        )}
-
-        {axis === 'color' && (
-          <div
-            className="wl-look-grid is-color" role="radiogroup" aria-label="color"
-            onKeyDown={(e) => arrows(e, ['', ...TINTS.map((t) => t.slug)], tint, pickTint)}
-          >
-            {/* the paper's own colour first, which for a look with a gradient
-                is the gradient, and is the one a chosen colour is put back to */}
-            <Option value="" on={!tint} name="as is" pick={pickTint}>
-              <span className="wl-look-dot" style={tokensOf({ theme: theme.slug })} aria-hidden="true" />
-            </Option>
-            {TINTS.map((t) => (
-              <Option key={t.slug} value={t.slug} on={t.slug === tint} name={t.slug} pick={pickTint}>
-                <span className="wl-look-dot" style={tokensOf({ theme: theme.slug, tint: t.slug })} aria-hidden="true" />
-              </Option>
-            ))}
-          </div>
-        )}
-
-        {axis === 'type' && (
-          <div
-            className="wl-look-grid is-type" role="radiogroup" aria-label="type"
-            onKeyDown={(e) => arrows(e, FACES.map((f) => f.slug), face, pickFace)}
-          >
-            {FACES.map((f) => (
-              <Option key={f.slug} value={f.slug} on={f.slug === face} name={f.name} pick={pickFace}>
-                {/* the face's own name, set in the face, at the size the
-                    letter would set it: the type menu's oldest idiom, and
-                    the one that needs no caption under it */}
-                <span
-                  className="wl-look-chip" aria-hidden="true"
-                  style={{ '--chip-face': f.family, '--chip-w': f.weight, '--chip-size': f.size }}
-                >
-                  {f.name}
-                </span>
-              </Option>
-            ))}
-          </div>
-        )}
+        ))}
       </div>
-
-      {/* the one caption: what is chosen on the axis being shown. It stands
-          where a row's label used to, under the grid rather than over it,
-          because it is an answer and not a heading. */}
-      <p className="wl-look-now" aria-live="polite">{now}</p>
-      </div>
+      <p className="wl-look-now" aria-live="polite">{cur.name}</p>
     </div>
   )
 }
