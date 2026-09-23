@@ -186,7 +186,7 @@ const KINDS = [
   { value: 'name', label: 'custom name' },
 ]
 
-export default function Write({ to: prefill, go, back, up = back, reduce = false }) {
+export default function Write({ to: prefill, go, back, up = back, upLabel = 'back to the wall', reduce = false }) {
   const draft = getState().draft || {}
   // A prefill that is a name key (`~sofia`, from "write to Sofia" on a
   // letter) opens the composer on the name, in name mode.
@@ -420,11 +420,13 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
     return (
       <Sheet onClose={up} labelledBy="wl-write-h">
         <div className="wl-sheet-in wl-write">
-          <SheetHead onClose={up} label="back" />
-          <Display size="s" as="h2" id="wl-write-h">{needsCampus() ? `${campus().place} only.` : 'Sign in to write.'}</Display>
-          <div className="wl-push" />
-          <Locked onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}>
-            Your information will stay anonymous.
+          <SheetHead onClose={up} label={upLabel} />
+          <Locked
+            id="wl-write-h"
+            title={needsCampus() ? `${campus().place} only.` : 'sign in to write.'}
+            onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}
+          >
+            your information will stay anonymous.
           </Locked>
         </div>
       </Sheet>
@@ -438,7 +440,7 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
           lead={<Dots n={2} at={step} onGo={(i) => (i === 0 ? toWho() : setStep(i))} />} />
 
         <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">
-          {step === 0 ? <>{campus().someone[0]}<br />{campus().someone[1]}</> : <>And what<br />makes them so.</>}
+          {step === 0 ? <>{campus().someone[0]}<br />{campus().someone[1]}</> : <>and what<br />makes them so.</>}
         </Display>
 
         {step === 0 ? (

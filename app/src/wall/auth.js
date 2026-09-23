@@ -250,12 +250,6 @@ export function memberLabel(m) {
   return s.includes('@') ? s : `a ${s} address`
 }
 
-// The part before the @. What the account sheet shows, because the domain is
-// the same for everybody who can be here and repeating it says nothing.
-export function shortName(email) {
-  return String(email || '').split('@')[0] || ''
-}
-
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE HANDOFF — the only place the wall asks who somebody IS              ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
@@ -289,7 +283,10 @@ export function shortName(email) {
 //
 // Resolving a handle through Apify is a different thing and proves nothing.
 // Nothing on that path reaches this function.
-export const HANDOFF_MS = 1500
+//
+// HANDOFF_MS, a 1500ms beat this file exported for the screen to poll on, went
+// with the dead exports: Remove.jsx has kept its own clock since the handoff
+// moved onto the DM code, and nothing has read this one in a long time.
 
 export function verified() { return getState().verified || [] }
 

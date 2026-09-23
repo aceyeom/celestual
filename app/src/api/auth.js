@@ -48,25 +48,10 @@ export function markVerified(handle, proof) {
   return session
 }
 
-// Local verified stub — used only when real verification isn't configured, so the
-// flow stays testable. It carries no proof (the server-side gate is off in that
-// mode) and no handle (the typed @ already stands).
-export function signInStub() {
-  const stub = { verified: true, provider: 'stub', handle: '', proof: null, email: '', name: '' }
-  persist(stub)
-  return stub
-}
-
 export function signOut() {
   try {
     localStorage.removeItem(STORE)
   } catch {
     /* ignore */
   }
-}
-
-// Restore any session saved on this device (no network — there's no OAuth to
-// resume). Kept async for call-site compatibility.
-export async function resumeSession() {
-  return getSession()
 }

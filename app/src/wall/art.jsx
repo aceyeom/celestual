@@ -364,18 +364,6 @@ export function Envelope({ size = 18, className = '' }) {
   )
 }
 
-// The mark and the name, locked. The gap and the mark's size are both set in
-// ems off the type size, so one number scales the whole lockup and the two
-// halves cannot drift out of proportion at a size nobody checked.
-export function Lockup({ size = 26, sweep = false, word = 'celestual.', className = '', style }) {
-  return (
-    <span className={`wl-lockup ${className}`} style={{ fontSize: `${size}px`, ...style }}>
-      <Ecliptic size={Math.round(size * 1.13)} sweep={sweep} className="wl-lockup-mark" />
-      <span className="wl-lockup-word">{word}</span>
-    </span>
-  )
-}
-
 // The star drawn slim is still SPARK. Equal arms at `thick` 1 must redraw the
 // constant above byte for byte, which is what makes the mark provably built on
 // the curve the rest of the wall already uses rather than on a lookalike.

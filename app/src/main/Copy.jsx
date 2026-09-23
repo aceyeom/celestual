@@ -61,7 +61,7 @@ export default function Copy({ go, who }) {
       <main className="mn-page">
         <TopBar go={go} who={who} />
         <div className="mn-mid is-door">
-          <Display size="m" as="h1">No code<br />in this link.</Display>
+          <Display size="m" as="h1">no code<br />in this link.</Display>
           <Prose className="mn-copy">open the email again and take the code off it there.</Prose>
         </div>
       </main>

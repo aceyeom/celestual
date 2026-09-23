@@ -610,14 +610,67 @@ function tileUp(tiles, was) {
     at[c.j * C + c.i] = k
     seats.set(tiles[k].handle, [c.i, c.j])
   }
-  // and the cells left over take the heaviest names, in turn
+  // ── and the cells left over ──
+  // A tile has more cells than the wall has names — C is cut from sqrt(n) and
+  // rounded up, R is rounded to even — so a few cells at the rim of every
+  // tile carry a SECOND copy of somebody already seated. That is deliberate:
+  // the hive is a crowd, and a crowd with holes punched in it is a scatter.
+  //
+  // What was not deliberate is WHERE those copies landed. They were dealt in
+  // the index's own order, one pool name per free cell, with nothing looking
+  // at the seat the name already had — so on a wall of fifteen the second RT
+  // came up in the cell beside the first one, and the middle of the glass,
+  // which is where the lens is and where everybody looks, showed the same
+  // cream disc twice, side by side, at the same size. Two identical discs
+  // touching do not read as "this person has two letters". They read as a
+  // fault in the wall.
+  //
+  // So a leftover cell takes whichever name is FARTHEST from its own nearest
+  // copy, measured across the torus in the lattice's own units, with the
+  // heaviest name breaking a tie the way it always did. It is the same set of
+  // names in the same number of cells; they are just spread instead of dealt.
   if (n) {
     const pool = tiles.map((_, k) => k)
       .sort((a, b) => tiles[b].count - tiles[a].count || tiles[b].at - tiles[a].at)
-    let p = 0
+    // where each name already stands, in the flat hex coordinates `cells` uses
+    const spots = new Map()
+    const put = (k, i, j) => {
+      const list = spots.get(k) || []
+      list.push([i + (j & 1) * 0.5, j * ROW])
+      spots.set(k, list)
+    }
+    for (let j = 0; j < R; j++) {
+      for (let i = 0; i < C; i++) { const k = at[j * C + i]; if (k >= 0) put(k, i, j) }
+    }
+    // the tile wraps in both axes, so the distance to a copy is the distance
+    // to the nearest image of it
+    const W = C
+    const H = R * ROW
+    const far = (k, x, y) => {
+      const list = spots.get(k)
+      if (!list || !list.length) return Infinity
+      let best = Infinity
+      for (const [px, py] of list) {
+        let dx = Math.abs(x - px); if (dx > W / 2) dx = W - dx
+        let dy = Math.abs(y - py); if (dy > H / 2) dy = H - dy
+        const d = dx * dx + dy * dy
+        if (d < best) best = d
+      }
+      return best
+    }
     for (const c of cells) {
       const idx = c.j * C + c.i
-      if (at[idx] < 0) at[idx] = pool[p++ % n]
+      if (at[idx] >= 0) continue
+      const x = c.i + (c.j & 1) * 0.5
+      const y = c.j * ROW
+      let pick = pool[0]
+      let bestD = -1
+      for (const k of pool) {
+        const d = far(k, x, y)
+        if (d > bestD) { bestD = d; pick = k }
+      }
+      at[idx] = pick
+      put(pick, c.i, c.j)
     }
   }
   return { C, R, at, ic, jc, seats }

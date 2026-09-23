@@ -27,6 +27,20 @@
 // one of the three that lets the product tell somebody when a ping of theirs
 // is mutual, because that is where the ping lives.
 //
+// ── the door names the act that knocked on it ───────────────────────────────
+// Three acts come here and only one of them is writing, so a door that asks
+// the writer's question every time is wrong for two of the three. The
+// commonest arrival is the one it fitted worst: somebody who has read the
+// free letters (migration 0045, 0049), pressed "read it" under a shut one,
+// and met "verify you're at Berkeley" — a sentence about a room, in answer
+// to a question about a letter. The screen that sent them already leaves a
+// return address behind (store.js `setAfterGate`), so the heading reads it
+// and says what they are here to get back to: the whole wall, on the campus
+// wall named with the campus that opens it, and at the root named with
+// nothing, because three proofs open it there and the door lists them
+// underneath. A person who pressed a sign in chip on the bar left no return
+// address and gets the heading the door always had.
+//
 // ── what a signed-in person buys, and what they do not ──────────────────────
 // Reading, the heart and the report, on every wall, by any proof; writing,
 // by the proof the wall in question asks for. It is never attached to
@@ -166,6 +180,18 @@ function unstashAfter() {
     if (a && a.name) setAfterGate(a)
   } catch { /* nothing stashed */ }
 }
+// The same address, looked at without spending it. A browser coming back
+// from Google is a fresh tab with nothing in memory, and the return address
+// is not put back until the login has landed — which is after the sheet has
+// drawn its heading. This is what lets the heading be right on that first
+// frame (`why`, below) instead of on the second.
+function peekStash() {
+  try {
+    const raw = sessionStorage.getItem(STASH)
+    const a = raw ? JSON.parse(raw) : null
+    return a && a.name ? a : null
+  } catch { return null }
+}
 
 // The instagram proof's pending record, filed under its own use so the gate
 // never resumes a code Main minted for a ping, or the other way round.
@@ -175,7 +201,7 @@ function resumeIg() {
   return p && p.use === IG_USE ? p : null
 }
 
-export default function Gate({ go, back }) {
+export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // Held in state rather than read on every render: signing out has to repaint
   // this sheet, and the store is not something React is watching.
   const [who, setWho] = useState(() => member())
@@ -203,6 +229,21 @@ export default function Gate({ go, back }) {
   // telling a person who is reading the wall that the wall is not for them.
   const reads = isReader()
 
+  // Whether the act that knocked was READING: the return address left by the
+  // screen that sent somebody here is a letter or a report (the head of this
+  // file says why the heading turns on it). The composer's arrival needs no
+  // flag of its own, since asking for the campus is what the door already
+  // says to a writer, and a sign in chip on the bar leaves no address at all.
+  //
+  // Taken once, on mount, rather than read on every render: `finish` spends
+  // the address on the way out (`takeAfterGate`), and a heading that changes
+  // its mind on the last render before the sheet closes is a heading
+  // somebody sees flicker.
+  const [forReading] = useState(() => {
+    const after = peekAfterGate() || peekStash()
+    return !!after && (after.name === 'letter' || after.name === 'report')
+  })
+
   // The allowance, for the account sheet. Asked on mount rather than on the
   // composer alone, because "how many letters do I have left" is a question
   // about the account and this is the account screen.
@@ -214,7 +255,7 @@ export default function Gate({ go, back }) {
   const finish = () => {
     const after = takeAfterGate()
     if (after) go(after.name, after.id)
-    else back()
+    else up()
   }
 
   // ── a login that has just come back ──
@@ -452,9 +493,9 @@ export default function Gate({ go, back }) {
     const spent = !!left && left.left <= 0
     const out = () => { signOut(); setWho(null); setMode('signin'); setStep(0); setWay(campusWall ? 'campus' : '') }
     return (
-      <Sheet onClose={back} labelledBy="wl-gate-h">
+      <Sheet onClose={up} labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate">
-          <SheetHead onClose={back} label="back to the wall" />
+          <SheetHead onClose={up} label={upLabel} />
 
           <section className="wl-profile" aria-labelledby="wl-gate-h">
             <div className="wl-profile-id">
@@ -539,14 +580,19 @@ export default function Gate({ go, back }) {
   // ── the wall at the root: the ways in ──
   if (!campusWall && !way) {
     return (
-      <Sheet onClose={back} tall labelledBy="wl-gate-h">
+      <Sheet onClose={up} tall labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate is-door">
-          <SheetHead onClose={back} label="back to the wall" />
+          <SheetHead onClose={up} label={upLabel} />
           <div className="wl-push" />
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h"
-              title={reads ? <>Sign in to write.</> : <>Sign in to read<br />and write.</>}
+              /* What this person came for, said back to them. A reader who
+                 has run out of the free letters is here for the wall and
+                 not for an account, so the heading is the wall. */
+              title={reads ? <>sign in to write.</>
+                : forReading ? <>sign in to read<br />the whole wall.</>
+                : <>sign in to read<br />and write.</>}
               say="your information will stay anonymous."
             />
             <div className="wl-door-ways" role="group" aria-label="how to sign in">
@@ -585,9 +631,9 @@ export default function Gate({ go, back }) {
   // ── instagram, by one DM ──
   if (way === 'instagram') {
     return (
-      <Sheet onClose={back} tall labelledBy="wl-gate-h">
+      <Sheet onClose={up} tall labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate is-door">
-          <SheetHead onClose={back} label="back to the wall" />
+          <SheetHead onClose={up} label={upLabel} />
           <div className="wl-push" />
           {dm ? (
             <>
@@ -621,7 +667,7 @@ export default function Gate({ go, back }) {
               <div className="wl-door">
                 <DoorHead
                   id="wl-gate-h"
-                  title={<>Your instagram,<br />proved by one DM.</>}
+                  title={<>your instagram,<br />proved by one DM.</>}
                   say="your information will stay anonymous."
                 />
                 <div className="wl-door-ways">
@@ -650,14 +696,14 @@ export default function Gate({ go, back }) {
   // ── any address, and a code (the wall at the root) ──
   if (way === 'email') {
     return (
-      <Sheet onClose={back} tall labelledBy="wl-gate-h">
+      <Sheet onClose={up} tall labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate is-door">
-          <SheetHead onClose={back} label="back to the wall" />
+          <SheetHead onClose={up} label={upLabel} />
           <div className="wl-push" />
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h"
-              title={step === 0 ? <>An address, and<br />a code mailed to it.</> : <>The code from<br />the mail.</>}
+              title={step === 0 ? <>an address, and<br />a code mailed to it.</> : <>the code from<br />the mail.</>}
               say={step === 0 ? 'your information will stay anonymous.' : null}
             />
             {step === 0 ? (
@@ -700,9 +746,9 @@ export default function Gate({ go, back }) {
 
   // ── the campus wall: the address, the code, or the campus google ──
   return (
-    <Sheet onClose={back} tall labelledBy="wl-gate-h">
+    <Sheet onClose={up} tall labelledBy="wl-gate-h">
       <div className="wl-sheet-in wl-gate is-door">
-        <SheetHead onClose={back} label="back to the wall" />
+        <SheetHead onClose={up} label={upLabel} />
         <div className="wl-push" />
 
         <div className="wl-door">
@@ -714,10 +760,13 @@ export default function Gate({ go, back }) {
           <DoorHead
             id="wl-gate-h"
             title={step === 0
-              ? (!registering ? <>Come back in.</>
+              ? (!registering ? <>come back in.</>
                 : reads ? <>{c.place} only.</>
-                : <>Verify you&rsquo;re<br />at {c.place}.</>)
-              : <>The code from<br />the mail.</>}
+                /* the free letters are behind them: the campus is what
+                   opens the rest, and that is what the door is for */
+                : forReading ? <>sign in with {c.place}<br />to read the whole wall.</>
+                : <>verify you&rsquo;re<br />at {c.place}.</>)
+              : <>the code from<br />the mail.</>}
             /* The rule, in one line, said where somebody is deciding whether
                to answer for it. */
             say={step === 0 ? 'your information will stay anonymous.' : null}

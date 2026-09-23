@@ -124,7 +124,7 @@
 // banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, TopBar, Icon, SiteFoot, Face, Light, Roll, HandleField, WriteAct, Close, Who, useSuggest } from '../parts.jsx'
+import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Close, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -481,7 +481,7 @@ function Down({ letter: l, onLeave }) {
       <div className="wl-down-in">
         <Face handle={l.to} size={36} className="wl-down-face" />
         <div className="wl-down-text">
-          <p className="wl-down-h">Your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.</p>
+          <p className="wl-down-h">your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.</p>
           <p className="wl-down-why">{whyDown(l.downBy)}</p>
         </div>
       </div>
@@ -806,19 +806,17 @@ export default function Wall({ go, reduce, rev, under = false }) {
                       .hm-read). */}
                   <p className="wl-mast-sub">{campus().sub}</p>
                   {/* ── the way in ──
-                      The product's own capsule, with the light running inside
-                      it, and nothing round it. Two hairline rings used to
-                      leave it in turn and open out into the field; a ring is
-                      a line drawn over the crowd, and the pulse the tap sends
-                      is the crowd itself moving, so the capsule stands still
-                      and the light inside it is the whole of the invitation. */}
-                  <button type="button" className="wl-mast-go" onClick={lift}>
-                    <span className="wl-mast-go-pill">
-                      <Light plate="chalk" />
-                      <span className="wl-mast-go-t">view the wall</span>
-                      <span className="wl-mast-go-g" aria-hidden="true">&#8594;</span>
-                    </span>
-                  </button>
+                      The product's primary, and the same object as "write a
+                      letter" at the foot of the wall: `Pill tone="light"`,
+                      which is the liquid metal capsule. It was a chalk plate
+                      with the running light inside it and an arrow after the
+                      word — the last caller anywhere of the primary that came
+                      off — so the first button anybody pressed was the one
+                      button that did not match the product behind it. Two
+                      hairline rings used to leave it and open into the field;
+                      a ring is a line drawn over the crowd, and the pulse the
+                      tap sends is the crowd itself moving. */}
+                  <Pill tone="light" className="wl-mast-go" onClick={lift}>view the wall</Pill>
                 </div>
               </div>
             </div>

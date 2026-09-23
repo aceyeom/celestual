@@ -118,7 +118,7 @@ export default function Optout({ go, who, refreshWho }) {
         {held ? (
           /* ── proved: the one control, and it asks once ── */
           <>
-            <Display size="m" as="h1" ref={avoid}>Take your @<br />off celestual.</Display>
+            <Display size="m" as="h1" ref={avoid}>take your @<br />off celestual.</Display>
             <Prose className="mn-copy">
               it can never be entered again. every ping is erased both ways, and every
               letter about it comes off the wall.
@@ -141,7 +141,7 @@ export default function Optout({ go, who, refreshWho }) {
             refreshWho={refreshWho}
             onProved={(h) => { setProved(h); setPhase('idle') }}
             headRef={avoid}
-            title={<>Take your @<br />off celestual.</>}
+            title={<>take your @<br />off celestual.</>}
             copy="it can never be entered again. one instagram message proves the @ is yours first."
           />
         )}

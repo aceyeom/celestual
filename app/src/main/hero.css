@@ -80,7 +80,7 @@
   margin: 0;
   font-family: var(--f-letter);
   font-optical-sizing: auto;
-  font-size: 17px;
+  font-size: var(--t-read);
   line-height: 1.55;
   letter-spacing: 0;
   color: var(--ash);
@@ -97,20 +97,20 @@
 .hm-ask .wl-field { padding-bottom: 12px; }
 .hm-ask .wl-field input::placeholder { color: rgba(156, 151, 142, 0.5); }
 .hm-ask-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.hm-ask-row .wl-pill.wl-lq { flex: 0 0 auto; min-height: 48px; padding: 0 24px; font-size: 14.5px; }
+.hm-ask-row .wl-pill.wl-lq { flex: 0 0 auto; min-height: 48px; padding: 0 24px; font-size: var(--t-name); }
 /* A plain sentence, in place, next to what failed. Empty almost always. In
    its quiet tone it is what the resolver is doing, in ash: nothing failed. */
 .hm-said {
   margin: 0;
   min-width: 0;
   font-family: var(--f-util);
-  font-size: 12.5px;
+  font-size: var(--t-small);
   line-height: 1.4;
   color: var(--accent);
 }
 .hm-said.is-quiet { color: var(--ash); }
 /* "not them? change it", beside the capsule once the card is up */
-.hm-fix { font-size: 12.5px; text-align: left; }
+.hm-fix { font-size: var(--t-small); text-align: left; }
 
 /* ── the object ──
    Two cards, and the mark above them. See Scene.jsx for why it is this and
@@ -213,7 +213,7 @@
 
 /* ── the dateline and the stamp ── */
 .hm-scene .wl-paper-head {
-  font-size: 9.5px;
+  font-size: var(--t-label);
   min-height: 20px;
   padding-bottom: 9px;
   margin-bottom: 12px;
@@ -243,8 +243,8 @@
    not an event. */
 .hm-scene-body { display: grid; }
 .hm-scene-body > * { grid-area: 1 / 1; }
-.hm-scene .wl-prose { font-size: 13.5px; line-height: 1.46; }
-.hm-scene .wl-redacted { margin: 0; font-size: 13.5px; line-height: 1.46; gap: 0.32em 0.36em; }
+.hm-scene .wl-prose { font-size: var(--t-ctrl); line-height: 1.46; }
+.hm-scene .wl-redacted { margin: 0; font-size: var(--t-ctrl); line-height: 1.46; gap: 0.32em 0.36em; }
 .hm-scene .wl-redact-w { height: 0.66em; vertical-align: middle; }
 
 .hm-scene-open {
@@ -289,7 +289,7 @@
   display: inline-flex; align-items: baseline; gap: 9px;
   align-self: flex-start; max-width: 100%; min-width: 0;
   margin: 0 0 16px; padding: 6px 0;
-  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; line-height: 1.5;
+  font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-label); line-height: 1.5;
   text-transform: uppercase;
   color: var(--ash); text-decoration: none;
   transition: color 200ms var(--ease);
@@ -299,18 +299,39 @@
 .hm-ear-dot { color: var(--ash-dim); }
 .hm-ear-meta { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hm-ear-go {
-  font-family: var(--f-util); font-size: 14px; line-height: 1; letter-spacing: 0; text-transform: none;
+  font-family: var(--f-util); font-size: var(--t-name); line-height: 1; letter-spacing: 0; text-transform: none;
   color: var(--ash-dim);
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.hm-ear:hover .hm-ear-go { transform: translateX(4px); color: var(--chalk); }
-.hm-ear:hover .hm-ear-spark { color: var(--chalk); }
-.hm-ear:hover .hm-ear-meta { color: var(--chalk); }
+/* ── hover is gated, because a phone has no hover ──
+   A touch device fires :hover on tap and LEAVES it there until something
+   else is tapped, so an ungated hover rule is a control that lights up and
+   stays lit — or, where the rule moves something, a chevron that slides
+   four pixels and never slides back. This product is met almost entirely on
+   a phone, after picking a card up off a table. Most of the build already
+   gates it; these did not. */
+@media (hover: hover) and (pointer: fine) {
+  .hm-ear:hover .hm-ear-go { transform: translateX(4px); color: var(--chalk); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .hm-ear:hover .hm-ear-spark { color: var(--chalk); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .hm-ear:hover .hm-ear-meta { color: var(--chalk); }
+}
 .hm-ear:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
 /* the line held open while the pulse is out: the ear's own height, unlit */
 .hm-ear.is-hold { visibility: hidden; min-height: calc(11px * 1.5 + 12px); }
 /* the narrowest phones keep the name and give the count back */
 @media (max-width: 359px) { .hm-ear-meta, .hm-ear-dot { display: none; } }
+
+/* ═══ THE EARLY NOTE ═══════════════════════════════════════════════════════
+   main/Early.jsx, drawn as the wall's tab (main.css `.mn-early`). It stands
+   UNDER the fold, between the door and the foot of the site, because the
+   screen above it is one composition with exactly the height of the viewport
+   to spend, and a card wedged into that takes the room off the object. A
+   person who has scrolled past the door has read it. */
+.hm-early { margin: 0 0 30px; }
 
 /* ═══ THE FOOT ═════════════════════════════════════════════════════════════
    wall.css `.wl-colophon`. It enters last, after the object. */
@@ -333,16 +354,22 @@
      the scene and the gap. "or neither of you does." is the line the break is
      chosen for, and it holds at 48px where 52 split it. */
   .hm-title.wl-display.is-xl { font-size: clamp(40px, 3.34vw, 48px); }
-  .hm-mech { font-size: 19px; max-width: 40ch; }
+  .hm-mech { font-size: var(--t-subject); max-width: 40ch; }
   .hm-stage { flex: 0 0 auto; width: 430px; margin: 0; padding: 0; overflow: visible; }
   .hm-scene { column-gap: 14px; padding: 66px 10px 30px; }
   .hm-scene .wl-paper { min-height: 168px; padding: 17px 18px 18px; }
-  .hm-scene .wl-prose { font-size: 15px; }
+  .hm-scene .wl-prose { font-size: var(--t-wide); }
 
   .hm-fold { min-height: calc(100vh - 190px); min-height: calc(100svh - 190px); }
   .hm-page > .wl-colophon { margin-top: 0; }
   .hm-ear { margin-bottom: 20px; }
+  /* The page is a thousand pixels wide here and the note is a card, not a
+     banner: it takes the type column's own measure and stands on the type's
+     left edge, so it reads as the next thing in the column the headline is
+     in rather than as a strip laid across the screen. */
+  .hm-early { max-width: 600px; }
 }
+
 
 /* ═══ SIDEWAYS ═════════════════════════════════════════════════════════════
    A phone on its side has about 350px of height and plenty of width, which
@@ -362,17 +389,17 @@
   }
   .hm-say { flex: 1 1 0; min-width: 0; max-width: 520px; }
   .hm-title.wl-display.is-xl { font-size: clamp(24px, 3.6vw, 32px); }
-  .hm-mech { margin-top: 10px; font-size: 15px; max-width: 40ch; }
+  .hm-mech { margin-top: 10px; font-size: var(--t-wide); max-width: 40ch; }
   .hm-ask { margin-top: 12px; gap: 8px; }
-  .hm-ask .wl-field.is-lg input, .hm-ask .wl-field.is-lg .wl-at { font-size: 22px; }
-  .hm-ask-row .wl-pill.wl-lq { min-height: 40px; padding: 0 18px; font-size: 13.5px; }
+  .hm-ask .wl-field.is-lg input, .hm-ask .wl-field.is-lg .wl-at { font-size: var(--t-value); }
+  .hm-ask-row .wl-pill.wl-lq { min-height: 40px; padding: 0 18px; font-size: var(--t-ctrl); }
   .hm-stage {
     display: flex; flex: 0 0 auto; width: min(38vw, 340px);
     margin: 0; padding: 0; overflow: visible;
   }
   .hm-scene { padding: 42px 6px 14px; column-gap: 8px; }
   .hm-scene .wl-paper { min-height: 112px; padding: 11px 12px 12px; }
-  .hm-scene .wl-prose { font-size: 12px; line-height: 1.4; }
+  .hm-scene .wl-prose { font-size: var(--t-small); line-height: 1.4; }
   .hm-scene-mark { transform: translate(-50%, -30%) scale(0.8); }
   .hm-scene.is-shut .hm-scene-mark { transform: translate(-50%, -20%) scale(0.72); }
   .hm-ear { display: none; }

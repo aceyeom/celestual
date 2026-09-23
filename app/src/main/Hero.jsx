@@ -28,6 +28,7 @@ import { normHandle, validHandle } from '../wall/data.js'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import Scene from './Scene.jsx'
 import WallNotice from './Notice.jsx'
+import Early from './Early.jsx'
 import './hero.css'
 
 export default function Hero({ go, who, still = false }) {
@@ -148,6 +149,17 @@ export default function Hero({ go, who, still = false }) {
         </div>
       </section>
       </div>
+
+      {/* ── the early note ──
+          Under the fold, not in it. The door above is one composition with
+          exactly the height of the screen to spend, and a card wedged into
+          it would take that room off the object; a person who has scrolled
+          past the door has read it, and this is the first thing they meet.
+          It can be put away and it comes back (Early.jsx). It does NOT take
+          this screen's entrance class: the card carries the wall tab's own
+          rise (wall.css `wl-tab-rise`), and two animation shorthands on one
+          element is one of them silently winning. */}
+      <Early where="door" className="hm-early" />
 
       {/* ── the foot ──
           The site's, shared with the wall and the legal pages. Plain clicks on

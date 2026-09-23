@@ -63,6 +63,21 @@
 // address, or a handle proved by the DM code (migration 0044). The first
 // eight are free to anybody (0045, 0049) and are the server's count; nothing
 // here draws a meter over a letter somebody is reading.
+//
+// ── and the shut card says what shut it (`sealSay`) ─────────────────────────
+// It did not, for a while, and the argument for that was that the card
+// already says SEALED and a person who has not decided to open it does not
+// need the argument for why it is shut. That holds for somebody who arrived
+// at a shut letter. It does not hold for the person this actually happens
+// to: they read eight whole letters, were told nothing about eight, and then
+// watched the ninth arrive with its words struck out and one capsule under
+// it reading "read it". A blur nobody was warned about reads as a fault in
+// the page, and the capsule under it reads as the fault's retry. So the seal
+// says the two facts of that moment and stops: the free ones are behind
+// them, and which door opens the rest. It is the server's count and not this
+// browser's, and the first half of it is not said at all when the desk has
+// the free reads switched off (0052), because there was then never a free
+// one to have spent.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -71,11 +86,12 @@ import {
 } from '../parts.jsx'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
-  sinceline, atHandle, labelFor, heart, wall,
+  sinceline, atHandle, labelFor, heart, wall, freeReads,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
+import { campus, needsCampus } from '../campus.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
 // The one thing a reader can do to a letter that is not writing, reporting or
@@ -215,7 +231,24 @@ function Card({ l, handle, seed, id, foot }) {
   )
 }
 
-export default function Letter({ id: param, go, back, reduce = false, rev = 0 }) {
+// ── the line under a shut card ──────────────────────────────────────────────
+// Two clauses, and each one is only there while it is true. What happened,
+// from the server's own count of the free reads: `limit` is how many this
+// wall gives away and `left` is what is behind after the read that answered,
+// so a limit of nought is the desk's switch off and there is nothing to have
+// spent. Then what opens the rest, which is the only thing that differs
+// between the two walls: the campus wall's door asks for the campus, and the
+// door at the root takes any of the three proofs, so it names neither.
+function sealSay() {
+  const free = freeReads()
+  const spent = !!free && free.limit > 0 && free.left <= 0
+  const opens = needsCampus()
+    ? `sign in with ${campus().place} to read the whole wall.`
+    : 'sign in to read the whole wall.'
+  return spent ? `you have read the free ones. ${opens}` : opens
+}
+
+export default function Letter({ id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0 }) {
   // Whether the flag has been opened. Nothing else on this sheet holds state:
   // the card is the server's, and this is one control deciding whether it is
   // showing itself or the two things it opens.
@@ -489,16 +522,16 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={back} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label="back to the wall" />}>
+      <Sheet onClose={up} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
         <div className="wl-sheet-in wl-letter">
           <Paper
             dateline={{ lead: 'not on the wall' }}
             title={<span id="wl-letter-h" className="wl-letter-to">gone</span>}
           >
-            <Prose>That letter has come down.</Prose>
+            <Prose>that letter has come down.</Prose>
           </Paper>
           <SheetFoot>
-            <ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill>
+            <ClosePill tone="light" wide onClose={up}>{upLabel}</ClosePill>
           </SheetFoot>
         </div>
       </Sheet>
@@ -568,7 +601,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
           <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
             <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
             <span className="wl-act-text">
-              <span className="wl-act-h">Report this letter</span>
+              <span className="wl-act-h">report this letter</span>
               <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
             </span>
             <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
@@ -581,7 +614,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
           <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
             <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
             <span className="wl-act-text">
-              <span className="wl-act-h">Take my name off the wall</span>
+              <span className="wl-act-h">take my name off the wall</span>
               <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
             </span>
             <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
@@ -591,16 +624,20 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
         <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
       </div>
     ) : open ? null : (
-      /* The gate. It names no policy and gives no reasons: the card
-         beside it already says SEALED, and a person who has not decided
-         to open it does not need the argument for why it is shut. */
-      <Pill tone="light" wide onClick={toGate}>
-        read it
-      </Pill>
+      /* The gate, with the one line that says what it is a gate ON
+         (`sealSay`). The capsule keeps its word: the act is still reading
+         this letter, and the line above it is the reason, not a second
+         name for the same button. */
+      <div className="wl-seal">
+        <p className="wl-seal-say">{sealSay()}</p>
+        <Pill tone="light" wide onClick={toGate}>
+          read it
+        </Pill>
+      </div>
     )
 
   return (
-    <Sheet onClose={back} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label="back to the wall" />}>
+    <Sheet onClose={up} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
       <div className="wl-sheet-in wl-letter">
         {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
