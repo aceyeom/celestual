@@ -3591,9 +3591,11 @@ a.wl-lq { text-decoration: none; }
   .wl-mast-sub { max-width: 40ch; font-size: var(--t-subject); }
   /* a spread is wider than it is tall, so the corners are further out and the
      sides are what the mask has to work on */
-  /* the head clears further down: the search plate spans 114 to 170 here */
+  /* the head clears further down: the search plate spans 114 to 170 here,
+     and the crowd is at most a fifth on under it, so no screen's colour
+     reaches the glass */
   .wl-hive-crowd {
-    --crowd-v: linear-gradient(180deg, transparent 96px, rgba(0,0,0,0.22) 150px, #000 230px, #000 calc(100% - 150px), rgba(0,0,0,0.25) calc(100% - 62px), transparent 100%);
+    --crowd-v: linear-gradient(180deg, transparent 104px, rgba(0,0,0,0.22) 170px, #000 240px, #000 calc(100% - 150px), rgba(0,0,0,0.25) calc(100% - 62px), transparent 100%);
     -webkit-mask-image:
       var(--crowd-v),
       radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
@@ -3731,9 +3733,10 @@ a.wl-lq { text-decoration: none; }
   .wl-shade.is-top { height: 96px; }
   .wl-shade.is-bottom { height: 120px; }
   /* the plate spans 88 to 130 here, and the phone's head and foot would
-     leave a sliver of crowd in a 390px window */
+     leave a sliver of crowd in a 390px window; under the plate the crowd is
+     at most a fifth on, as on a desktop */
   .wl-hive-crowd {
-    --crowd-v: linear-gradient(180deg, transparent 56px, rgba(0,0,0,0.22) 100px, #000 150px, #000 calc(100% - 90px), rgba(0,0,0,0.25) calc(100% - 40px), transparent 100%);
+    --crowd-v: linear-gradient(180deg, transparent 88px, rgba(0,0,0,0.22) 146px, #000 184px, #000 calc(100% - 90px), rgba(0,0,0,0.25) calc(100% - 40px), transparent 100%);
   }
 
   /* 390px of height is the constraint here, and display type is what spends
