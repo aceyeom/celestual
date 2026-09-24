@@ -1,4 +1,3 @@
-import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -45,18 +44,8 @@ function legalRewrites() {
   }
 }
 
-// ── the ways to show the wall that are being chosen between ──
-// app/src/wall/proto holds four layouts for the wall's names, drawn so they
-// can be looked at side by side before one of them replaces the hive
-// (screens/Wall.jsx, `?layout=`). The dev server resolves `wall-protos` to
-// them and a build to an empty module, so nothing of them ever ships.
-const protos = (command) => fileURLToPath(new URL(
-  command === 'serve' ? './src/wall/proto/index.js' : './src/wall/proto/none.js', import.meta.url,
-))
-
-export default defineConfig(({ command }) => ({
+export default defineConfig({
   plugins: [react(), legalRewrites()],
-  resolve: { alias: { 'wall-protos': protos(command) } },
   server: SUPABASE
     ? {
         proxy: {
@@ -68,4 +57,4 @@ export default defineConfig(({ command }) => ({
         },
       }
     : undefined,
-}))
+})

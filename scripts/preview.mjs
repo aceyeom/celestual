@@ -20,7 +20,6 @@ import { mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
-import { COLOURS } from '../app/src/wall/looks.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.env.PREVIEW_OUT || join(root, 'design/shots')
@@ -60,21 +59,6 @@ const HANDLES = [
 
 const COUNTS = [3, 1, 2, 1, 4, 1, 1, 2, 1, 1, 1, 1]
 
-// ── a crowd ──
-// PREVIEW_CROWD=48 puts that many more invented names on the wall, for the
-// layouts that only say what they are at a wall's real size (the four in
-// app/src/wall/proto). Recency spaced like the rest, every colour somewhere.
-const CROWD = Number(process.env.PREVIEW_CROWD) || 0
-const FIRSTS = ['maya', 'theo', 'ines', 'omar', 'lena', 'jonah', 'priya', 'felix', 'noor', 'sam', 'ivy', 'tomas', 'hana', 'leo', 'zara', 'eli', 'mina', 'oscar', 'ruth', 'kian', 'aria', 'dev', 'lucia', 'emil']
-const LASTS = ['lindqvist', 'park', 'okafor', 'silva', 'moreau', 'chen', 'haas', 'ruiz', 'nakata', 'byrne', 'quinn', 'osei']
-const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1)
-for (let i = 0; i < CROWD; i++) {
-  const f = FIRSTS[i % FIRSTS.length]
-  const l = LASTS[(i * 5 + Math.floor(i / FIRSTS.length)) % LASTS.length]
-  HANDLES.push([`${f}.${l}`, `${cap(f)} ${cap(l)}`, i % 9 === 4])
-  COUNTS.push(1 + ((i * 7) % 3))
-}
-
 // 0048: the index carries the resolver's answer for each name, so the faces
 // draw off the one read and the intro can hold for the pictures.
 const INDEX = HANDLES.map(([h, name, verified], i) => ({
@@ -112,7 +96,6 @@ const LOOKS = {
   'ace03d': { tint: 'cobalt' },
 }
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
-INDEX.slice(HANDLES.length - CROWD).forEach((r, i) => { r.look = { tint: COLOURS[(i * 5) % COLOURS.length].slug } })
 const NAMES = [
   ['~sofia', 'Sofia', 2, { tint: 'green' }],
   ['~j', 'J', 1, { tint: 'orange-teal' }],
@@ -911,13 +894,6 @@ const ROUTES = [
   // a letter this browser put up has come down since: the notice stands in
   // the tab's place, with the reason and the way to the words
   { label: 'berkeley-down',   path: '/berkeley', tab: true, down: true, press: '.wl-mast-go', settle: 5200 },
-  // the four ways to show the names being chosen between (app/src/wall/proto,
-  // development only), each in the hive's place under the whole wall; shoot
-  // with PREVIEW_CROWD=48 for a wall of a real size
-  { label: 'layout-drafts',  path: '/berkeley?layout=drafts',  press: '.wl-mast-go', settle: 3400 },
-  { label: 'layout-screens', path: '/berkeley?layout=screens', press: '.wl-mast-go', settle: 3400 },
-  { label: 'layout-menu',    path: '/berkeley?layout=menu',    press: '.wl-mast-go', settle: 3400 },
-  { label: 'layout-table',   path: '/berkeley?layout=table',   press: '.wl-mast-go', settle: 3400 },
   // the wall's own search, typed into: the strip opened into the phone's
   // menu of names, the first one chosen by the pointer that typed it
   { label: 'berkeley-seek-typed', path: '/berkeley',
