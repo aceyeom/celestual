@@ -919,8 +919,8 @@ const ROUTES = [
     acts: [['click', '.wl-letter-card .wl-scr-face'], ['wait', 900], ['click', '.wl-viewer-scrim', null, 120]], settle: 0 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
-  { label: 'letter-send',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
-  { label: 'letter-sent',    path: '/berkeley/letter/pilar.echevarria',
+  { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
+  { label: 'letter-shared',  path: '/berkeley/letter/pilar.echevarria',
     acts: [['click', '.wl-letter-card .wl-sk.is-r'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'letter-poster',  path: '/berkeley/letter/jules.k' },
   { label: 'letter-riso',    path: '/berkeley/letter/k.villarreal' },

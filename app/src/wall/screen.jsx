@@ -90,7 +90,7 @@ const DITHERED = new Map() // `${src}|${cells}|${inv}|${levels}` -> Uint8Clamped
 const IMAGES = new Map()   // src -> Promise<{ img, cors }>
 const LOADED = new Map()   // src -> the image, once it has come
 
-export const PIC_CELLS = 40 // the picture at the head of a message, on the page and in the Send picture
+export const PIC_CELLS = 40 // the picture at the head of a message, on the page and in the shared picture
 
 export function loadImage(src) {
   if (IMAGES.has(src)) return IMAGES.get(src)
