@@ -577,8 +577,10 @@ export function ScreenMenu({ items, at, onAt, onPick, onBack, label }) {
       aria-activedescendant={`wl-mi-${at}`} onKeyDown={onKey}
     >
       {items.map((t, j) => (
+        // by place, not by words: a row whose words change (`share…` to
+        // `share`) stays the same row, so a press on it is not lost
         <li
-          key={t} id={`wl-mi-${j}`} role="option" aria-selected={j === at}
+          key={j} id={`wl-mi-${j}`} role="option" aria-selected={j === at}
           className={j === at ? 'is-on' : undefined}
           onClick={() => { onAt(j); onPick(j) }}
         >

@@ -587,20 +587,25 @@ export function starred(words = 0, chars = 0, seed = '') {
 // ── the three ways out ──────────────────────────────────────────────────────
 export const canShare = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
-// The picture, drawn ahead: the letter asks for it once it has settled and
-// again when the send menu opens, so by the time a finger picks `share` the
-// picture is there and the share sheet can be asked for inside that tap. A
-// phone refuses a share sheet that is asked for after the tap has finished,
-// and drawing it takes a moment. The last few are kept; one that failed is
-// dropped, so the next ask draws it again.
+// The picture, drawn ahead: the letter asks for it when the send menu opens,
+// so by the time a finger picks `share` the picture is there and the share
+// sheet can be asked for inside that tap. A phone refuses a share sheet that
+// is asked for after the tap has finished, and drawing it takes a moment,
+// which starts after the next frame so the menu that asked is on the glass
+// first. The last few are kept; one that failed is dropped, so the next ask
+// draws it again.
 const READY = new Map()
 const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}|${o.pic || ''}`
+const painted = () => new Promise((done) => {
+  if (typeof requestAnimationFrame !== 'function') { done(); return }
+  requestAnimationFrame(() => setTimeout(done, 0))
+})
 export function prepareLetter(o) {
   const k = keyOf(o)
   if (!READY.has(k)) {
     const job = { blob: null, promise: null }
     const drop = () => { if (READY.get(k) === job) READY.delete(k) }
-    job.promise = renderLetter(o)
+    job.promise = painted().then(() => renderLetter(o))
       .then((b) => { job.blob = b; if (!b) drop(); return b })
       .catch(() => { drop(); return null })
     READY.set(k, job)

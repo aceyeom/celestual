@@ -224,15 +224,10 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   const h = to && !isNameKey(to) ? atHandle(to) : ''
   const back = () => onView && onView(null)
 
-  // The Send picture, drawn ahead where there is a share sheet: once the
-  // letter has sat on the glass a moment, and again as the send menu opens,
-  // whose `share…` says `share` once it is there (share.js `prepareLetter`)
-  const warm = live && !!l && !view && canShare()
-  useEffect(() => {
-    if (!warm) return undefined
-    const t = setTimeout(() => prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })), 900)
-    return () => clearTimeout(t)
-  }, [warm, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
+  // The Send picture, drawn as the send menu opens, whose `share…` says
+  // `share` once it is there (share.js `prepareLetter`). Not ahead of that:
+  // drawing it holds a phone for most of a second, which is a stall in the
+  // turn when it lands on a letter only passed through
   const sending = live && !!l && !!view && view.kind === 'send'
   useEffect(() => {
     if (!sending) return undefined
@@ -240,6 +235,10 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })).then(() => { if (alive) drawn((n) => n + 1) })
     return () => { alive = false }
   }, [sending, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
+  // whether this letter is still the one on the glass, so what a tap
+  // answers late (a picture drawn, a file saved) is not put on the next
+  const here = useRef(true)
+  useEffect(() => { here.current = true; return () => { here.current = false } }, [])
 
   if (!l) {
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
@@ -285,6 +284,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     if (how === 'share' && !isReady(face())) {
       onView({ kind: 'note', glyph: 'env', title: 'drawing it' })
       const b = await prepareLetter(face())
+      if (!here.current) return
       onView(b ? { kind: 'send', at: 0 } : { kind: 'note', glyph: '', title: 'it did not go', text: 'try again', done: true })
       return
     }
@@ -293,6 +293,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     const going = sendLetter(how, face(), `${window.location.origin}${href('letter', l.id)}`)
     onView({ kind: 'note', glyph: 'env', title: how === 'copy' ? 'copying' : 'sending' })
     const out = await going
+    if (!here.current) return
     if (out === 'left') { onView(null); return }
     const said = {
       sent: ['check', 'sent'], saved: ['check', 'saved'], copied: ['check', 'link copied'],
