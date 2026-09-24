@@ -350,7 +350,7 @@ export function Brand({ onClick, href, back = false, label = 'celestual, the fro
 // product; it was drawn at twenty-two, the size of the glyphs beside it, and
 // a face is not a glyph: at the glyphs' size it read as a dot on the end of
 // the row, and the row read as heavy on the left and light on the right.
-export function TopBar({ go, at = 'wall', acts = true }) {
+export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
   const who = member()
   // Whether the letters are open, which is not the same question as whether
   // this browser has a campus address. A person who proved their handle on
@@ -367,7 +367,7 @@ export function TopBar({ go, at = 'wall', acts = true }) {
   // without the chevron.
   const home = onWall && !!campus().base
   return (
-    <header className="wl-top">
+    <header className="wl-top" inert={inert || undefined}>
       <Brand
         back={!onWall || home}
         href={home ? '/' : undefined}
@@ -728,11 +728,15 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // `dismiss`, for a screen that has to leave without anybody pressing
 // anything: the composer goes the moment its letter is up, and the wall
 // under it receives the name.
+//
+// `onEscape` is asked first when Escape is pressed, wherever the focus is,
+// and a screen that answers true has used the key for something smaller
+// than the sheet: the composer takes its colours down with it.
 const SheetCtx = createContext(null)
 export function useSheet() { return useContext(SheetCtx) }
 
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '', aside = null, ref = null }) {
+export function Sheet({ children, onClose, onClosing = null, onEscape = null, tall = false, labelledBy, className = '', aside = null, ref = null }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
@@ -742,6 +746,8 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
   // at the moment the key listener was attached
   const onClosingRef = useRef(onClosing)
   onClosingRef.current = onClosing
+  const onEscapeRef = useRef(onEscape)
+  onEscapeRef.current = onEscape
 
   const dismiss = useCallback((by = 'scrim') => {
     if (closingRef.current) return
@@ -771,7 +777,11 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
   }, [closing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') dismiss('key') }
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (onEscapeRef.current && onEscapeRef.current(e) === true) { e.preventDefault(); return }
+      dismiss('key')
+    }
     window.addEventListener('keydown', onKey)
     // The wall behind must not scroll while a sheet is up: on a phone the
     // touch would otherwise be taken by the wall the moment the sheet's own
@@ -809,7 +819,9 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
   return (
     <SheetCtx.Provider value={ctx}>
     <div className={`wl-sheet-wrap${closing ? ' is-closing' : ''} ${className}`}>
-      <button type="button" className="wl-scrim" aria-label="close" onClick={() => dismiss('scrim')} />
+      {/* out of the tab order: the wall under it is inert, and the scrim
+          would be the first stop, an invisible one */}
+      <button type="button" className="wl-scrim" tabIndex={-1} aria-label="close" onClick={() => dismiss('scrim')} />
       <section
         ref={box}
         className={`wl-sheet${tall ? ' is-tall' : ''}${held ? ' is-dragging' : ''}`}
@@ -996,16 +1008,17 @@ export function Allowance({ left, limit, resets = 0, kind = 'week', reading = fa
   )
 }
 
-// How long to wait, in days, said as one line. `resets` is a timestamp, or
-// nothing when the server did not say (an old schema, a refusal without a
-// date), in which case the line still says to wait and does not invent a
-// number.
+// When the next letter can go up, in days, said as one line. It is the
+// sending that waits and not the writing, since a draft is kept all week.
+// `resets` is a timestamp, or nothing when the server did not say (an old
+// schema, a refusal without a date), in which case the line still says it
+// is days off and does not invent a number.
 const DAY_MS = 86400000
 export function waitLine(resets) {
   const ms = Number(resets) > 0 ? Number(resets) - Date.now() : 0
-  if (!(ms > 0)) return 'wait a few days before you can draft more'
+  if (!(ms > 0)) return 'your next letter can go up in a few days'
   const days = Math.max(1, Math.ceil(ms / DAY_MS))
-  return days === 1 ? 'wait a day before you can draft more' : `wait ${days} days before you can draft more`
+  return days === 1 ? 'your next letter can go up tomorrow' : `your next letter can go up in ${days} days`
 }
 
 // ── the small box ───────────────────────────────────────────────────────────
@@ -1598,12 +1611,13 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 // monogram of the name as written, and asks nothing, because the resolver
 // would answer with a stranger of the same spelling.
 //
-// The picture's size decides how many pixels it is cut to: a face in a row
-// is eighteen a side and reads as a person at thirty pixels; the one opened
-// large is forty-four, and is a portrait in blocks rather than a blur.
+// The picture's size decides how many pixels it is cut to, about one to
+// every one and a half of the page's, in fours: twenty a side at thirty
+// pixels, twenty-four at thirty-six, sixteen on the smallest chip, and
+// sixty-four opened large, a portrait in blocks rather than a blur.
 export function PixelFace({ src = '', mono = '', size = 30, lit = false, className = '', style }) {
   const [ready, setReady] = useState('')
-  const cells = size < 40 ? 18 : size < 100 ? 28 : 44
+  const cells = size >= 100 ? 64 : Math.max(12, Math.round(size / 6) * 4)
   const shown = !!src && ready === src
   return (
     <span
@@ -1622,7 +1636,7 @@ export function Face({ handle, size = 30, resolve = true, lit = false, name = ''
   const p = useProfile(resolve && !named ? handle : '')
   const raw = String(handle || '').trim().replace(/^@+/, '')
   const said = named ? (name || nameFor(handle) || raw.slice(1)) : ''
-  const mono = p ? monogram(p)
+  const mono = p ? monogram(p).slice(0, size < 24 ? 1 : 2)
     : named ? (size >= 40 || said.includes(' ') ? monogram({ name: said }) : said.slice(0, 1).toUpperCase())
     : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
   return <PixelFace src={p?.avatar || ''} mono={mono} size={size} lit={lit} className={className} style={style} />
@@ -1661,10 +1675,12 @@ export function Addressee({ handle, id, className = '' }) {
 
 // ── the face, opened ────────────────────────────────────────────────────────
 // A face on a letter can be pressed, and it opens the way a profile picture
-// opens on Instagram: the picture, large, over a dimmed room, with the name
+// opens on Instagram: the picture, large, in the dark room, with the name
 // and the handle under it, and a tap anywhere puts it away. Rendered at the
-// body, because a sheet's glass is a containing block for anything fixed
-// inside it and the picture has to stand over the whole screen.
+// wall's root rather than inside the sheet, because a sheet's glass is a
+// containing block for anything fixed inside it and the picture has to
+// stand over the whole screen; at the root and not the body, because the
+// wall's type, colours and curves are declared there.
 //
 // ── it opens out of the disc, and closes back into it ───────────────────────
 // `from` is where the small face was standing when it was pressed, and
@@ -1732,6 +1748,10 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [close])
   if (typeof document === 'undefined') return null
+  // .wl-root has no transform, filter or contain, so fixed still pins to the
+  // viewport, and z 70 there is over the sheets (50) and the cut (60) and
+  // under the intro (90)
+  const host = (source && source.current && source.current.closest('.wl-root')) || document.querySelector('.wl-root') || document.body
   return createPortal(
     <div
       className={`wl-viewer${from ? ' is-from' : ''}${closing ? ' is-closing' : ''}`}
@@ -1740,7 +1760,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
       <button type="button" className="wl-viewer-scrim" aria-label="close" onClick={close} />
       <div className="wl-viewer-in" onClick={close}>
         <span className="wl-viewer-disc" ref={disc}>
-          <Face handle={handle} size={280} className="wl-viewer-face" />
+          <Face handle={handle} size={280} className="wl-viewer-face" style={{ '--s': 'min(78vw, 56svh, 380px)' }} />
         </span>
         <span className="wl-viewer-who">
           <span className={`wl-viewer-name${name ? '' : ' is-h'}`}>
@@ -1751,7 +1771,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
         </span>
       </div>
     </div>,
-    document.body,
+    host,
   )
 }
 
@@ -1847,7 +1867,7 @@ export function Me({ who, onClick, className = '' }) {
       type="button" className={`wl-pill is-ghost wl-me${on ? ' is-on' : ''} ${className}`}
       onClick={onClick} aria-label={on ? `your sky, ${atHandle(who.handle)}` : 'sign in'}
     >
-      {on ? <Face handle={who.handle} size={18} /> : null}
+      {on ? <Face handle={who.handle} size={22} /> : null}
       <span className={on ? 'wl-me-h' : undefined}>{on ? atHandle(who.handle) : 'sign in'}</span>
     </button>
   )

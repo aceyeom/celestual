@@ -567,6 +567,7 @@ one number:
 | **spacing** | the lattice is pushed *outward* from the light as it goes, half again as far apart by the rim. The crowd thins as it leaves the middle. |
 | **slack** | what is left over between a disc and its neighbour once the first two have had their say. It is the room a disc is allowed to wander in, and every wander is a fraction of it — so the middle, where there is no room, is ordered and still, and the rim, where there is a great deal, is scattered and adrift. Two discs can never collide, because neither can spend room that does not exist. |
 | **air** | and the light on it. A disc half the size is also half the way into the room, so the far faces recede rather than sitting on the same plane at a smaller scale. |
+| **focus** | and how sharp it is. Past about six tenths of the way to the window's own side a screen goes out of focus in six steps, each dimmer, the far ones lit by a round glow in their own colour, and a screen that reaches the side of the window is at least five steps out, so the frame never cuts a sharp card. Under a mouse the screens near the pointer are sharp; under the veil every screen is soft. The blur is written when a screen crosses a step or its scale has moved by an eighth, not on every frame. |
 
 That third row is what stops this reading as a grid. A hexagonal lattice with
 a size ramp on it is a grid with a size ramp on it; a lattice whose disorder
@@ -603,17 +604,17 @@ of the screen where a wheel or a finger still belongs to the page: the field
 takes both wherever it is exposed, so if it were exposed everywhere there
 would be no way left to scroll down to the foot of the site.
 
-### One name, on one plate
+### One name, under the pointer
 
-Whoever the lens is reading carries their handle on a small plate of glass —
-under a mouse that is the disc the pointer is nearest, and on a phone the disc
-in the middle. There is only ever one. It used to be one tag per cell, sixty
-of them, each fading itself in and out as a pointer swept past: two were on
-the screen at once as often as not, they sat on the faces under them, and at
-the edge of the field they were cut in half by the mask. There is no
-arrangement of sixty labels that is not messy, so there is one — a single
-element the loop moves, held inside the stage, over a soft well of the void so
-eleven pixels of type never has to stand on a photograph.
+Nothing is written on the field at rest. Under a mouse the screen the pointer
+is on brightens a little and says whose it is, on a small dark tag under it
+(`.wl-cell-tag`). The tag is the cell's own hover, so one is up at a time, and
+the loop writes it at the inverse of the disc's scale, so it reads at 15px
+wherever the disc stands. Before this it was one tag per cell fading in and
+out as a pointer swept past, two on the screen at once as often as not, and
+then a single plate the loop moved to whoever the lens was reading, which read
+as the wall picking somebody out over and over. A phone has no hover and
+shows no tag.
 
 Nothing else is written on the field: not the name, which the resolver knows
 for a few people and not for most; not the count, which is the disc's size;
@@ -921,10 +922,10 @@ the draw does.
 ### The veil, and the ear
 
 The masthead is over the field, not above it. On a fresh load the whole
-screen is the field, greyed — and still bent by the lens at rather more than
-half strength, because a flat grid of faces under a title is wallpaper and the
-poster wants its depth before anybody has pressed anything — with the title,
-the one line
+screen is the field, dimmed and out of focus — and still bent by the lens at
+rather more than half strength, because a flat grid of faces under a title
+is wallpaper and the poster wants its depth before anybody has pressed
+anything — with the title, the one line
 (`anonymous letters to the one you never told.`, in the reading face, the way
 the front door runs one line of the mechanic under its own headline) and the
 way in laid over it. The scrim is darkest where the type is and gone where it

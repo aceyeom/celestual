@@ -4,7 +4,29 @@
 //
 // The room every screen in the product is in, mounted once per shell and
 // living across every route change. design/DESIGN.md section 7 lists the
-// layers and the order, and this is the one place they are stacked:
+// layers and the order, and this is the one place they are stacked. There
+// are two rooms, and `room` picks one.
+//
+// ── the wall: the black room (`room`) ───────────────────────────────────────
+// Every letter is a screen left on in a dark room, and an opened letter is
+// one of them lit in a black room (wall.css `.is-letter .wl-scrim`). So the
+// wall is that room with every screen on: the same black, the same grain,
+// tile for tile, and opening a letter turns the other screens off without
+// changing the room they were in. There is no sky and no star in it:
+//
+//   the black       #000, the letter's room
+//   the far lights  four enormous soft glows at two or three percent, each
+//                   drifting on its own minute long clock (FAR, below): the
+//                   light of screens further off in the dark, felt more than
+//                   seen, and gone when the lights are
+//   the grain       the letter room's own sensor grain, at 7 percent
+//
+// No canvas, no WebGL and no pointer listener. The pace a sheet sets has
+// nothing to slow here, and the corners fall away over the screens in
+// wall.css (`.wl-root.is-room .wl-stage::after`).
+//
+// ── Main: the sky (the default) ─────────────────────────────────────────────
+// The front door (/ping, /sky, the hero) keeps its night:
 //
 //   the sky         the clouds, drawn by the field itself (field.js, THE SKY
 //                   BEHIND THE STARS): the void with the galaxy's violet and
@@ -20,13 +42,6 @@
 //   the grain       feTurbulence at three and a half percent, so the black is
 //                   a room rather than a screen that is off
 //
-// ── why one component ───────────────────────────────────────────────────────
-// Main mounted a WebGL field and the wall mounted a 2D one, at a different
-// count, a different drift and a different brightness curve, and the two
-// surfaces of one product had two different skies. Both shells mount this now,
-// so the front door and the wall are the same room, and the desktop sky is as
-// dense as the phone's (see field.js on the count).
-//
 // ── why one field ───────────────────────────────────────────────────────────
 // The sky was three things once: a plasma from a shader package warping in
 // place, a sheet of pink sliding on a CSS timer, and the stars drifting on a
@@ -35,11 +50,11 @@
 // one hand, which is the difference between a backdrop and a sky.
 //
 // ── what it costs ───────────────────────────────────────────────────────────
-// Two WebGL2 contexts, both the field's. The sky renders at one pixel per CSS
-// pixel and is capped under a megapixel, which is well under what the phone it
-// is on would draw for a single photograph, and both stop with the tab. A
-// browser without WebGL2 gets a still gradient, the halo, the 2D field and the
-// grain, which is the same room with the current stopped.
+// The sky is two WebGL2 contexts, both the field's. It renders at one pixel
+// per CSS pixel and is capped under a megapixel, and both stop with the tab.
+// A browser without WebGL2 gets a still gradient, the halo, the 2D field and
+// the grain, which is the same room with the current stopped. The black room
+// is a handful of CSS layers and draws nothing a frame.
 //
 // ── the pace ────────────────────────────────────────────────────────────────
 // `pace` is what the field is doing under the current screen: drifting,
@@ -88,7 +103,17 @@ export function useSkyAvoid() {
   }, [])
 }
 
-export default function Ground({ pace = 'drift', lit = true, still = false, tint = 'main', className = '' }) {
+// ── the far lights ──────────────────────────────────────────────────────────
+// The concept's own: where each glow stands, how wide it is, its colour and
+// its strength, and the clock and the reach of its drift.
+const FAR = [
+  { x: '12%', y: '28%', s: '46vmax', c: '#A3BB6B', a: 0.034, t: '71s', dx: '6vmax',  dy: '-3vmax' },
+  { x: '88%', y: '20%', s: '38vmax', c: '#DF93AF', a: 0.028, t: '83s', dx: '-5vmax', dy: '4vmax' },
+  { x: '80%', y: '84%', s: '52vmax', c: '#7EA494', a: 0.032, t: '64s', dx: '-7vmax', dy: '-2vmax' },
+  { x: '20%', y: '90%', s: '40vmax', c: '#E0A95A', a: 0.024, t: '92s', dx: '4vmax',  dy: '-5vmax' },
+]
+
+export default function Ground({ pace = 'drift', lit = true, still = false, tint = 'main', room = false, className = '' }) {
   const canvas = useRef(null)
   const sky = useRef(null)
   const field = useRef(null)
@@ -97,6 +122,7 @@ export default function Ground({ pace = 'drift', lit = true, still = false, tint
   // One instance, for the life of the shell. That is what makes it the room
   // these screens are in rather than a background each of them owns a copy of.
   useEffect(() => {
+    if (room) return undefined
     const cv = canvas.current
     if (!cv) return undefined
     const f = mountField(cv, { pace, sky: sky.current, tint })
@@ -121,11 +147,22 @@ export default function Ground({ pace = 'drift', lit = true, still = false, tint
     }
     // `pace` is fed through below; remounting the field to change it would
     // reshuffle nothing, but it would restart the drift.
-  }, [still, tint])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [still, tint, room])   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (field.current) field.current.pace(pace)
   }, [pace])
+
+  if (room) return (
+    <div className={`wl-ground is-room${lit ? ' is-lit' : ''} ${className}`} aria-hidden="true">
+      <div className="wl-far">
+        {FAR.map((g, i) => (
+          <i key={i} style={{ '--x': g.x, '--y': g.y, '--s': g.s, '--c': g.c, '--a': g.a, '--t': g.t, '--dx': g.dx, '--dy': g.dy }} />
+        ))}
+      </div>
+      <div className="wl-grain" />
+    </div>
+  )
 
   return (
     <div className={`wl-ground is-${tint}${hasWebGL2() ? ' has-gl' : ''} ${className}`} aria-hidden="true">

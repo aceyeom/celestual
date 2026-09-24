@@ -71,6 +71,12 @@ Never pure black. Pure black is a screen that is off, this is a room.
 | `--hair` | `rgba(244, 241, 234, 0.09)` | every visible dividing line |
 | `--hair-soft` | `rgba(244, 241, 234, 0.05)` | a line that should be felt, not seen |
 
+The wall is the exception: it is the letter's black room (section 7), so
+`.wl-root.is-room` sets `--void` to `#000`, `--void-1` to `#0E0E0E`, `--void-2`
+to `#131313` and `--void-3` to `#1A1A1A`. Every shade, veil and sheet the wall
+pours reads `--void-rgb` and `--void-1-rgb`, so they turn black with it. Main
+keeps the values above.
+
 ### 2.2 The light
 
 Three strengths of one near white, and the third one has a hard rule on it.
@@ -181,7 +187,11 @@ it. The one light in the room is the screen's own, falling on the dark in the
 screen's colour (`.wl-room-light`, `.wl-scene-halo-2`). A print keeps its own
 ground — a poster is teal — but the room never takes it; it was the print's
 darkest ink in the concept, and one black for every letter is what makes the
-wall one room rather than a paint chart.
+wall one room rather than a paint chart. The composer writes in the same room
+(`.wl-sheet-wrap.is-write`): no pane, the draft's screen on the black with its
+own light behind it, and the sheet the size of the window, so nothing is cut
+but by the window's edge. On a spread, and on a phone on its side, the screen
+stands on the left and the question, the colours and the act on the right.
 
 **Every screen is its own phone** (`quirks`, off the letter's id, never
 `Math.random()`): how it is tilted in the photograph, the exact proportion of
@@ -202,11 +212,20 @@ and on the wall's small screens the bars are how many letters the name has
 and an envelope blinks on a name that heard from somebody today.
 
 **A person is a picture on a screen.** There is no round face anywhere. A
-profile picture is cut square to a few dozen pixels and dithered, Atkinson,
-in four tones of the screen's ink (`PixelPic`), so the same picture is green
-on a green screen and toner on a copy; the monogram in `--f-s40` stands under
-it until it lands and whenever it does not. On a sheet, in a row or in the
-bar, the face is a small square of the night LCD (`.wl-face`).
+profile picture is cut square round the face (a fifth in from the edges, a
+touch above centre), brought down to a few dozen pixels by halving, pulled to
+its own levels and local contrast, sharpened, and dithered, Atkinson, in four
+tones of the screen's ink (`PixelPic`), so the same picture is green on a
+green screen. A near white cell stays paper, so a bright sky does not grow a
+row of dots. On a print the tones are the print's own inks, opaque, so the
+press strikes each as one ink, and a copy's picture has two. About one cell
+to every one and a half CSS pixels: 16 to 44 a side on a chip (`size / 6`,
+in fours), 32 on a tile, 40 at the head of a message and 64 opened large.
+The monogram in `--f-s40` stands under it until it lands and whenever it
+does not. On a sheet, in a row or in the bar, the face is a small square of
+the night LCD (`.wl-face`) with a screen's corner, 2px on a chip and 6px
+opened, and no pixel grid over a photo. Opened, the picture stands in the
+room's black and grain, inside `.wl-root` so it keeps the wall's type.
 
 **What the row keeps** is 0055's column: `{ theme, tint, face }`, cleaned by
 `wall_look_clean`. The screens write one key, `{ "tint": "teal" }`. A row with
@@ -575,7 +594,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-glass-out`, `wl-tab-drop` | a sheet's glass fading in place while a card flies home to its disc; the tab at the foot of the wall being put away |
 | `wl-lead`, `wl-breathe` | the circuit, the pulse |
 | `wl-light-run` | the running light, round the edge of the thing it is on |
-| the veil (`.wl-veil`) | the wall's masthead laid over its greyed hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens arrives with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
+| the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
 | the intro (`.hi`) | the same two seconds on both surfaces, at `/` and at `/berkeley`, once per tab. 2280ms: the liquid mark, uncovered in the order the mark assembles in, through a black cover whose cuts are FEATHERED — a hard edge over a material is an edge the material did not ask for, and the sweep's used to close the orbit as a notch with two square corners. The sweep's blur is taken on the stroke and the band clips it afterwards, so the ring's silhouette stays sharp and only the front of the reveal is soft. The band round its circuit at 180, the star at 520, assembled at 1180 (and the black cover fades here, under the veil, so nothing but the metal lifts), the lift at 1560. The held frame before the band stretches, up to 760ms, until the metal has drawn a frame behind the cover, so the sequence uncovers metal from its first pixel on a phone as well as on a laptop; past that ceiling it runs on the flat mark and the metal fades in over it. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
 
@@ -596,23 +615,36 @@ carrying meaning that the layout should have carried.
 
 ## 7. The ground
 
-Four fixed layers under everything, in this order, never reordered. They are
-one component, `wall/ground.jsx`, mounted once per shell, and both shells mount
-it: Main used to mount a WebGL field and the wall a 2D one, at a different
-count and a different drift, and the two surfaces of one product had two
-different skies.
+One component, `wall/ground.jsx`, mounted once per shell, and there are two
+rooms in it.
+
+**The wall is the black room** (`Ground room`). Every letter is a screen left
+on in a dark room, and an opened letter is one of them lit in a black room, so
+the wall is that room with every screen on: `#000`, four enormous far glows at
+two to three and a half percent drifting on their own minute long clocks
+(`.wl-far`), and the letter room's own grain, tile for tile (`feTurbulence` at
+`0.85`, two octaves, 7 percent, screen, 200px). The corners fall away over the
+screens (`.wl-root.is-room .wl-stage::after`). No canvas, no WebGL, no sky and
+no star. Opening a letter turns the other screens off without changing the
+room. The sheets the wall raises (find, the gate, a report, a removal) are
+black glass with the same grain, and the browser's bar and the page behind
+the wall are black too.
+
+**Main keeps its sky** (`/ping`, `/sky`, the hero): four fixed layers under
+everything, in this order, never reordered.
 
 | Layer | What it is |
 | --- | --- |
-| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with two lights in it at a whisper, the body of the cloud and the veins along its warp: the galaxy's violet and pink on Main, and the campus's blue on the wall, deep in the body and cold along the veins (`SKY_TINT`, passed as `tint` on `Ground`), so the two surfaces are two rooms and not one room with two headlines. The wall's gold is not in its sky: gold through blue mixes to olive, and it reads as gold only where it is small and alone. A domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is a layer of the one field, drifting to the right the way the stars drift, at the pace of a star in the middle of the field, churning as it goes, and shifting to the hand the way a star shifts; it lights by a few counts under the pointer, and it parts round the type: whichever screen is up registers its headline (`useSkyAvoid` in ground.jsx) and the clouds flow round it, thin under it and gather a little pink along its edge. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
+| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with two lights in it at a whisper, the body of the cloud and the veins along its warp: the galaxy's violet and pink (`SKY_TINT`). A domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is a layer of the one field, drifting to the right the way the stars drift, at the pace of a star in the middle of the field, churning as it goes, and shifting to the hand the way a star shifts; it lights by a few counts under the pointer, and it parts round the type: whichever screen is up registers its headline (`useSkyAvoid` in ground.jsx) and the clouds flow round it, thin under it and gather a little pink along its edge. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
 | `.wl-halo` | one enormous off centre warm radial at 7.5 percent, plus a cold one at 4.5. It is what stops the void reading as `#000` with things on it |
 | `.wl-starfield` | the point field, on the GPU (`wall/field.js`): depth per point, parallax off the hand, and a count that is a density, about 0.9 points per thousand CSS pixels on every screen, so a desktop is as dense as a phone. It used to be a floor of 320 points that only a phone ever hit, and the desktop sky was three times sparser |
 | `.wl-grain` | `feTurbulence` at `baseFrequency 0.84`, three octaves, desaturated, 3.6 percent, tiled at 190px |
 
 The grain is load bearing rather than decoration. Without it the black is a dead
-screen. It uses plain opacity and no `mix-blend-mode`, because a blending sheet
-over a live canvas takes every animation off the compositor's fast path and
-there is a canvas of drifting points directly underneath it.
+screen. On the sky it uses plain opacity and no `mix-blend-mode`, because a
+blending sheet over a live canvas takes every animation off the compositor's
+fast path and there is a canvas of drifting points directly underneath it. The
+black room has no canvas, so its grain screens like the letter room's.
 
 ---
 
@@ -665,7 +697,7 @@ had already said it. The role went with the caller.
 | Component | Class | Notes |
 | --- | --- | --- |
 | Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot. Every ink on it is one of its look tokens (`--lk-ground`, `--lk-ink`, `--lk-ink-2`, `--lk-rule`, the strengths of the ink, `--lk-face`, `--lk-radius`), declared at the plain paper's values on the card itself; a look (`has-look`, `wl-looked`, `data-look`) sets the same tokens inline and the card is the same card. See the looks, below |
-| Look panel | `.wl-look`, `Look.jsx` | under the composer's card while its pen is on: a row of small papers (`.wl-look-tile`, the real tokens on a tile with the two letters and a few bars), a row of colours (`.wl-look-dot`) and a row of faces (`.wl-look-chip`), each a radio group that scrolls sideways out to the sheet's edges. The chosen one is ringed the way a disc under the lens is ringed. The card above is the preview |
+| Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. Three groups, lit, printed and copied, each colour drawn as the small screen it makes (`Mini`), the chosen one ringed and named under the lot. On a phone, and on a phone on its side, the groups are one strip that scrolls sideways with the chosen one kept in the middle; on a wider column there is a row for each kind, so no row is an orphan. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
 | Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px. It is GLASS, and it has to look like it: written as glass and drawn as a panel — a tint at 66 to 80 percent over a fourteen pixel blur, which on a near-black wall is opaque — nothing came through it while the search plate twelve pixels above it read as the glass it is, which is two surfaces on one ground in two materials. A sheet is also the biggest surface here, and a big translucent surface reads as a THICKER one, so it takes the heavier blur and the deeper shadow rather than the lighter |
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters. A letter to a first name draws the name as written in the name's face, a monogram, and no handle line |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
@@ -674,8 +706,8 @@ had already said it. The role went with the caller.
 | Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash. On the wall the one act stands in it as a word: `write`, the primary capsule at the bar's scale with the nib and the running light. The three targets on the right are one height: forty pixel rings for the glass and the person, the capsule thirty-six tall between them, and the person's face fills its ring at thirty |
 | Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line and the `view the wall` capsule, centred in the glass, on a scrim that is deep under the words, gone where they are not, and is itself the way in. The capsule is the product's primary, the same liquid metal object as `write a letter` at the foot of the wall: it was the last caller anywhere of the chalk plate with the running light inside it and an arrow after the word, so the first button anybody pressed was the one button that did not match the product behind it. The arrow went with the plate — an arrow inside a capsule is the arrow LINK's voice borrowed by a control that is already a door. Nothing else is on the screen under it: no dock, no foot, no controls in the bar. It opens as a circle from the tap. Once per tab |
 | Ear | `.wl-ear`, and `.hm-ear` on the front door | one line in the identifier face, at the label's size and tracking, the word in ash and the figure in chalk: on the door, the way to the wall while one is open; on the wall, the campus and the count, under the bar, standing still through the veil's lift so the veil and the field share one masthead element. The wall's figure is a `Roll`, a step larger than its word, and turns when a letter goes up. The term stood at the end of the line for a while and came off, so the line above the search stays quiet |
-| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: blurred void in a capsule with the lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` beside it, capped at the column's measure. It reads LEFT TO RIGHT, because it is a field. The lens stood against the left edge of nothing and the question was centred in a 16ch box beside it, so the glass had a hundred pixels of dead room either side of the one thing in it and the first character typed landed in the middle of the capsule, with every character after it shoving the ones already typed sideways: the text moved while it was being read and the caret never sat still. Every other field in the build is a left-aligned baseline, and the same question on the `/find` sheet was left aligned all along. It carries a hairline, and did not until 22 September: the argument against one was that a white hairline over a crowd of PALE discs is an edge belonging to no object, and that the blur was the material and the edge both. The discs are not pale any more (2.5a), and the plate itself came down with them — it was 440px filled at ten per cent chalk over a ground at L\* 2, under a 48px drop, which made the one object on the wall that is not about a person the heaviest thing on the screen, standing over the densest part of the hive. It is a field and it weighs what a field weighs now: 348px, five and a half per cent, 44px high, seated on `--hair` rather than on a shadow. At that fill the blur can no longer be the edge as well, and the hairline has a dark crowd to sit against. Its `saturate(1.25)` came off with the rest: a backdrop filter saturates what is BEHIND it, and what is behind this is forty faces, so the glass was amplifying the colour of every disc it covered. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
-| Hive | `.wl-hive`, `Hive` | the wall's names as a crowd of faces on a hexagonal torus, bent by a lens (`wall/Hive.jsx`): one continuous function of distance from the light sets a disc's size, how far the lattice opens around it, and how much of the room left over it is allowed to wander in — so the middle is large, tight and ordered and the rim is small, far apart and scattered. It runs corner to corner behind the bar and the pill, dissolving at every edge under two gradients; it drifts by itself and every disc breathes on its own clock; it can be pulled in any direction, and under a mouse it swells where the pointer is. One handle is on the screen at a time, on one glass plate. A press flies the disc into the letter's card (`wall/Morph.jsx`). `app/src/wall/README.md`, The hive |
+| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: blurred void in a capsule with the lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` beside it, capped at the column's measure. It reads LEFT TO RIGHT, because it is a field. The lens stood against the left edge of nothing and the question was centred in a 16ch box beside it, so the glass had a hundred pixels of dead room either side of the one thing in it and the first character typed landed in the middle of the capsule, with every character after it shoving the ones already typed sideways: the text moved while it was being read and the caret never sat still. Every other field in the build is a left-aligned baseline, and the same question on the `/find` sheet was left aligned all along. It carries a hairline, and did not until 22 September: the argument against one was that a white hairline over a crowd of PALE discs is an edge belonging to no object, and that the blur was the material and the edge both. The discs are not pale any more (2.5a), and the plate itself came down with them — it was 440px filled at ten per cent chalk over a ground at L\* 2, under a 48px drop, which made the one object on the wall that is not about a person the heaviest thing on the screen, standing over the densest part of the hive. It is a field and it weighs what a field weighs now: 348px, 44px high, seated on a hairline rather than on a shadow, and in the wall's black room it is neutral grey glass (`rgba(44, 44, 44, 0.42)`), opaque enough that no screen's colour shows in it. At that fill the blur can no longer be the edge as well, and the hairline has a dark crowd to sit against. Its `saturate(1.25)` came off with the rest: a backdrop filter saturates what is BEHIND it, and what is behind this is forty faces, so the glass was amplifying the colour of every disc it covered. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
+| Hive | `.wl-hive`, `Hive` | the wall's names as a crowd of faces on a hexagonal torus, bent by a lens (`wall/Hive.jsx`): one continuous function of distance from the light sets a disc's size, how far the lattice opens around it, and how much of the room left over it is allowed to wander in — so the middle is large, tight and ordered and the rim is small, far apart and scattered. It runs corner to corner behind the bar and the pill, dissolving at every edge under two gradients, and the far screens are out of focus in six steps (`Hive.jsx BLUR`, 0.5 to 3.2px on the glass, each dimmer and from the third lit by a round glow in its own colour), so the sides of the glass are distant lights and never cards cut off by the frame; under the veil every screen is at least four steps out. It drifts by itself and every disc breathes on its own clock; it can be pulled in any direction, and under a mouse it swells where the pointer is, the screens near the pointer come into focus, and the one pointed at brightens and says whose it is on a small tag under it (15px, `.wl-cell-tag`, hover devices only). On a phone the pitch is a fifth of the width (80px at 390). A press flies the disc into the letter's card (`wall/Morph.jsx`). `app/src/wall/README.md`, The hive |
 | Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Three grounds: `star`, the dark plate the result card waits on; `chalk`, an opaque chalk plate, so the light shows around the capsule as a halo; and `none`, for a host that already has a ground of its own — the composer's body — where the beam alone is drawn, softened exactly as `star`'s is. Spent on the result card while it is looking, on the composer's body while the resolver is out, on the veil's way in (`.wl-mast-go-pill`), and on the mutual row on the sky. It came off the primary when the primary became metal: a rose point travelling round the inside of a metal capsule is two currents under one word |
 
 ### 8.3 Fields

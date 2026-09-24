@@ -9,8 +9,9 @@
 // disc stands relative to the light: at the middle the discs are large and
 // nearly touching, and outward they shrink, open apart and scatter, until at
 // the rim they are points a long way from each other and the mask has taken
-// them. Nothing is written on the field but one name: the person the lens is
-// reading carries a small plate with their handle, and there is only ever one.
+// them, and out of focus, so the sides of the glass are distant lights and
+// never cards cut off by the frame. Nothing is written on the field except
+// under a mouse, where the screen pointed at says whose it is.
 //
 // ── one function, three effects ─────────────────────────────────────────────
 // This is the whole aesthetic and it is worth stating plainly, because every
@@ -38,11 +39,9 @@
 // people and not for most; not the count, which is the disc's own size; not
 // the time since the last letter. A field with a caption under every third
 // face is a directory, and the wall is a place where people are, not a list
-// about them. One handle is on the screen at a time, on one plate, and it
-// belongs to whoever the lens is reading: under a mouse that is the disc the
-// pointer is on, and on a phone it is the disc in the middle. The plate is a
-// single element that moves — not one per cell, sixty of them fading past
-// each other under a moving pointer.
+// about them. Under a mouse the screen the pointer is on carries its handle on
+// a small tag under it (wall.css `.wl-cell-tag`), drawn by the cell's own
+// hover, so one is up at a time. On a phone nothing is written on the field.
 //
 // ── it moves by itself, and every disc moves differently ────────────────────
 // One slow drift, always, whose heading wanders so the field never runs one
@@ -109,9 +108,9 @@
 // one requestAnimationFrame, and only when they have moved; React is told only
 // when a slot changes hands or the lens moves to another person, and a slot
 // is handed a name and a count rather than the index's row, so a new reading
-// of the index re-renders only the discs whose names actually moved. The disc
-// is scaled and the plate is not, so the type stays sharp whatever the lens is
-// doing to the picture.
+// of the index re-renders only the discs whose names actually moved. The tag
+// under a hovered disc is written at the inverse of the disc's scale, so its
+// type is the same size whatever the lens is doing to the picture.
 //
 // ── the pulse ───────────────────────────────────────────────────────────────
 // The veil opens from the finger, and what opens it is not a line drawn over
@@ -145,6 +144,7 @@ import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, use
 import { Label, useProfile } from './parts.jsx'
 import { Tile } from './screen.jsx'
 import { labelFor, isNameKey } from './data.js'
+import { quirks } from './looks.js'
 import { peekHandle, isWarm, monogram } from '../api/handles.js'
 
 // ── the numbers ─────────────────────────────────────────────────────────────
@@ -197,6 +197,30 @@ const LENS = {
 // window's own shape, so a tablet gets something between and a laptop gets
 // none of it.
 const PHONE = { rim: 0.46, fall: 1.05, open: 0.16, air: 0.72, side: 0.74 }
+// ── the focus ──
+// The far screens fade to lights, so the edges of the glass are lights in
+// the distance and not cards cut off by the frame. Six steps out from sharp:
+// how much of the screen's light is left, and how bright the round glow in
+// its own colour behind it is. There is no blur: a filter on thirty moving
+// screens was a render pass each on every frame, and the wall lagged under
+// it. A disc is written only when it crosses a step, onto the two elements
+// of the small screen that draw it (wall.css, THE HIVE, the focus).
+const FOCUS = {
+  dim: ['', '', '0.9', '0.76', '0.6', '0.45', '0.32'],
+  glow: ['', '', '', '0.25', '0.45', '0.68', '0.9'],
+}
+// ── the blink ──
+// A sharp screen's envelope, or its flat battery, blinks on
+// the phone's own clock: this long a period, from the phase that phone's
+// quirks give it (looks.js `quirks`, `blink`). The loop blinks them, by a
+// class on the disc (wall.css `is-dark`), because a CSS animation on every
+// one of them was thirty elements restyled on every frame of the wall to
+// change what they showed twice a second. A screen out of focus is a light
+// and does not blink.
+const BLINK = 1060
+// The most screens a frame moves from one step of focus to another; the
+// rest wait a frame, the ones furthest from what they should be first.
+const FOCUS_PER_FRAME = 8
 // ── the pulse ──
 // The crest's width in pitches; how much a disc under it swells, and how
 // much of the gap its packing leaves it the swell may take (the rest is the
@@ -278,21 +302,31 @@ const SLOP = 6
 // and scaled by the loop, so a pinch costs no re-render. `wheel` is how much
 // a wheel notch zooms, per pixel of delta.
 //
-// `pool` is the zoom the slot pool is cut for on the first seating: a little
-// past the window's own pitch, so the first frames need no slot the pool does
-// not have. Past that the pool grows on demand and never shrinks (the slots,
-// below). `over` is how far past either limit a pinch can be dragged, in log
-// units of the zoom: about fifteen percent. The band used to let a pinch
-// through to nearly three times the limit, and a field at a third of its
-// pitch is fourteen times the discs of the field at rest, which is a DOM
-// nobody's phone can grow inside one gesture.
-const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55, over: 0.15, pool: 0.9 }
+// `over` is how far past either limit a pinch can be dragged, in log units
+// of the zoom: about fifteen percent. The band used to let a pinch through
+// to nearly three times the limit, and a field at a third of its pitch is
+// fourteen times the discs of the field at rest, which is a DOM nobody's
+// phone can grow inside one gesture.
+const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55, over: 0.15 }
 // The most cells handed a slot on one frame. A pinch pulled hard brings
 // dozens of cells onto the glass at once, every one a disc for React to
 // mount, and mounting them all on the frame they arrive is the frame that
 // drops; the ones past this wait a frame, at the rim, where they are small
 // and arriving anyway.
 const ASSIGN_PER_FRAME = 28
+// ── what is on the glass ──
+// A screen holds a slot while it, and the light round it, is on the glass
+// (the seating, in the loop). `GLOW` is how far that light reaches past the
+// screen and can still be seen, in the disc's own pixels (the tile's widest
+// shadow, screen.css `.wl-tile-in`, is a 26px blur and its last dozen pixels
+// are nothing); `take` and `keep` are how far past the edge of the window,
+// in pitches, a screen is given a slot and how far it may go before it gives
+// the slot back. The gap between them is wider than a rim screen's whole
+// breath, so one breathing across the edge does not trade it back and forth.
+// The mask takes the edge of the glass to nothing, so nothing here is seen
+// to arrive.
+const GLOW = 18
+const EDGE = { take: 0.1, keep: 0.35 }
 // How long a name that has just arrived on the wall is drawn as new.
 const FRESH_MS = 2200
 // ── the cycle ──
@@ -385,12 +419,11 @@ function turnGap(u) {
 // slot in the same frame. That was the wall seen to breathe and reshuffle
 // under a thumb. So the lens is drawn for a height that moves only when the
 // window has actually changed shape (a turn, a resize, a keyboard: more
-// than this share of it, or more than this many pixels), and the pool is
-// cut with this much headroom below the stage, so the taller stage a
-// collapsed bar leaves is already covered and no slot changes hands.
+// than this share of it, or more than this many pixels). The taller stage
+// a collapsed bar leaves only seats the screens it uncovers, in slots of
+// their own, so no disc on the glass changes hands for it either.
 const RESHAPE_PX = 160
 const RESHAPE_SHARE = 0.24
-const HEADROOM = 220
 
 const mod = (v, m) => ((v % m) + m) % m
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
@@ -418,7 +451,7 @@ const KEY_OFF = 1 << 20
 const KEY_ROW = 1 << 21
 const cellKey = (I, J) => (J + KEY_OFF) * KEY_ROW + (I + KEY_OFF)
 function newSlot() {
-  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, shown: false, used: 0, tf: '', op: '', n: 0, delay: 0, due: 0 }
+  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, screen: null, glow: null, tag: null, bk: -1, blink: 0, dark: false, fw: 0, fp: 0, shown: false, used: 0, tf: '', op: '', f: -1, tz: 0, delay: 0, due: 0 }
 }
 
 // ── the pitch ───────────────────────────────────────────────────────────────
@@ -429,7 +462,7 @@ function newSlot() {
 // caps it so a landscape phone does not get four enormous faces, and the
 // ceiling stops a very wide screen from drawing portraits.
 function pitchFor(w, h) {
-  return Math.round(Math.max(56, Math.min(w * 0.185, h * 0.142, 116)))
+  return Math.round(Math.max(56, Math.min(w * 0.205, h * 0.142, 116)))
 }
 
 // The lens, for this window. One number, `k`, says how much of a phone this
@@ -692,25 +725,27 @@ function tileUp(tiles, was) {
 // resolver's memo when there is one, and otherwise its monogram. A first
 // name (0053) is its own monogram when it is short enough to stand whole,
 // the way a phone showed a short contact name across its standby screen.
-function NameTile({ handle, look, name, count, at }) {
+// Memoised, so a cell re-rendered for something about the cell (whether it
+// is new, or out of the tab order under a sheet) does not redraw its screen.
+const NameTile = memo(function NameTile({ handle, look, name, count, at }) {
   const named = isNameKey(handle)
   const p = useProfile(named ? '' : handle)
   const said = named ? (name || labelFor(handle)) : ''
   const mono = named
     ? ([...said].length <= 5 ? said : monogram({ name: said }))
     : p ? monogram(p) : String(handle || '').replace(/^@+/, '').slice(0, 2).toUpperCase()
-  // keyed by the name, so a slot that turns over to somebody else starts
-  // with that person's monogram and not the last one's picture
   return <Tile key={handle} look={look} seed={handle} mono={mono} src={p?.avatar || ''} count={count} at={at} />
-}
+})
 
-const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, look, name, bind, onOpen, onHover, onPeek }) {
+const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, look, name, off, bind, onOpen, onHover, onPeek }) {
   if (!handle) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
     <button
       type="button"
       className={`wl-cell${mine ? ' is-mine' : ''}${fresh ? ' is-new' : ''}`}
       style={{ '--d': `${d}px`, '--in': `${delay}ms` }}
+      /* out of the tab order under the veil and under a sheet (`off`) */
+      tabIndex={off ? -1 : undefined}
       data-slot={s}
       ref={(el) => bind(s, el)}
       onClick={(e) => onOpen(handle, e)}
@@ -724,8 +759,14 @@ const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, l
     >
       <span className="wl-cell-disc" aria-hidden="true">
         <span className="wl-cell-orb">
-          <NameTile handle={handle} look={look || null} name={name} count={count} at={at} />
+          {/* keyed by the name, so a slot that turns over to somebody else
+              starts from that person's profile and monogram, not the last
+              one's picture */}
+          <NameTile key={handle} handle={handle} look={look || null} name={name} count={count} at={at} />
         </span>
+        {/* whose screen it is, under a mouse only; outside the orb, so the
+            orb's own press and turn do not move it */}
+        <span className="wl-cell-tag" aria-hidden="true">{labelFor(handle)}</span>
       </span>
     </button>
   )
@@ -833,6 +874,9 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     // the cycle (CYCLE): when the next disc is due to turn over, the ones
     // turning now, and who each cell has been turned over TO, by handle
     cycle: { at: 0, last: 0, live: [], swaps: new Map() },
+    geo: [],                  // where each cell near the glass is drawn, this
+                              // frame (the loop's `place`), kept between frames
+    cut: false,               // whether the loop has been started
     veiled, reduce, paused, opening,
     ready: false,
   })
@@ -884,7 +928,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
 
   // ── the window ──
   // Measured, and re-measured on resize, because everything here turns on it:
-  // the pitch, how many slots there are to begin with, and where the light is.
+  // the pitch, the lens, and where the light is.
   useLayoutEffect(() => {
     const el = stage.current
     if (!el) return undefined
@@ -905,16 +949,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const S0 = pitchFor(w, hL)
       const S = S0 * m.zoom
       const rowH = S * ROW
-      // The pool is cut for the field a little more open than the window
-      // draws it (ZOOM.pool), so the first frames need no slot it does not
-      // have; from there it grows on demand (the loop, below), a slot at a
-      // time and never handing a disc that is on the glass to another
-      // element, and it never shrinks. A pool the screen never uses is a
-      // pool the phone still pays for.
-      const Sm = S0 * ZOOM.pool
-      const pad = Sm * 0.6
-      const Mx = Math.ceil((w + 2 * pad) / Sm) + 3
-      const My = Math.ceil((Math.max(h, hL) + 2 * pad + HEADROOM) / (Sm * ROW)) + 3
       const was = { ...m.c }
       size.current = { w, h }
       m.c = { x: w / 2, y: hL / 2 }
@@ -942,15 +976,15 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         m.o.x += m.c.x - was.x
         m.o.y += m.c.y - was.y
       }
-      // The pool, cut once, all of it free. A turn of the phone that needs
-      // more is answered by the loop growing it, a slot at a time, and no
-      // disc on the glass moves to another element for it.
-      if (!m.slots.length) {
-        const n = Mx * My
-        m.slots = Array.from({ length: n }, newSlot)
-        m.free = Array.from({ length: n }, (_, i) => n - 1 - i)
+      // The pool starts empty and the loop grows it, a slot at a time, to
+      // what the glass actually holds (the seating, below). It used to be cut
+      // up front for every cell of a rectangle a pitch past the window, three
+      // hundred slots on a laptop, and two thirds of them were screens the
+      // lens had pushed off the glass or slots holding nothing, every one a
+      // compositor layer and a style recalc on every frame.
+      if (!m.cut) {
+        m.cut = true
         setGrid(true)
-        setAssign(new Array(n).fill(null))
       }
     }
     measure()
@@ -959,13 +993,35 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     return () => { if (ro) ro.disconnect() }
   }, [lay, worldX])
 
+  // Called on every render of a cell, since the cell's ref is a new function
+  // each time, and so it keeps what the slot last wrote unless the element
+  // it was written on has actually changed: a cell re-rendered for something
+  // about the cell (out of the tab order under a sheet, say) is not written
+  // over again from nothing on the next frame. A detach is followed by the
+  // attach in the same commit, and the pool never shrinks, so it is let be.
   const bind = useCallback((s, el) => {
     const slot = motion.current.slots[s]
-    if (!slot) return
-    slot.el = el
-    slot.disc = el ? el.querySelector('.wl-cell-disc') : null
-    // a new element has no transform on it yet, whatever the slot last wrote
-    slot.tf = ''; slot.op = ''
+    if (!slot || !el) return
+    const disc = el.querySelector('.wl-cell-disc')
+    if (el !== slot.el || disc !== slot.disc) {
+      slot.el = el
+      slot.disc = disc
+      // a new element has no transform on it yet, whatever the slot last wrote
+      slot.tf = ''; slot.op = ''; slot.f = -1; slot.tz = 0; slot.dark = false
+    }
+    // the box the screen's focus is written on, the glow behind it, and the
+    // tag, which carries its own scale: each written on the element that
+    // draws it, so a step out of focus restyles two elements and not every
+    // element of the small screen (FOCUS). A screen that turned over to
+    // somebody else is a new one, and is written from nothing.
+    const screen = disc ? disc.querySelector('.wl-tile-f') : null
+    if (screen !== slot.screen) {
+      slot.screen = screen
+      slot.glow = disc ? disc.querySelector('.wl-tile-glow') : null
+      slot.f = -1
+    }
+    const tag = disc ? disc.querySelector('.wl-cell-tag') : null
+    if (tag !== slot.tag) { slot.tag = tag; slot.tz = 0 }
   }, [])
 
   // ── the zoom, applied ──
@@ -996,7 +1052,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // could see. The plate, the ring and the halo are gone. The loop still
   // keeps `focus`, the disc nearest the pointer or the middle, because the
   // cycle leaves that one alone and a change of pitch keeps it in the light;
-  // nothing draws it.
+  // nothing draws it. The tag under a hovered screen is the pointer's own
+  // hover, not the wall choosing somebody.
 
   // ── the cycle ─────────────────────────────────────────────────────────────
   // Every disc on the glass on its own clock, turned over to somebody else
@@ -1383,22 +1440,139 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       let changed = null
       let best = null
       let curNd = 3
+      let soften = null
       const f = m.focus
 
-      // ── the seating, this frame ──
-      // Every cell on the glass keeps the slot it had. The slots whose cells
-      // have left the glass are given back, and the cells that have arrived
-      // take them, a bounded number a frame, or take new ones if none are
-      // free. So a slot changes hands only for a cell that has actually left
-      // and one that has actually arrived, and nothing on the glass moves.
-      const stamp = ++m.stamp
-      let entering = null
+      // ── where a cell is drawn ──
+      // Everything the lens, the slack, the breath, the pointer and the
+      // pulses do to one cell carrying name `k`, into `g`, and nothing
+      // written: whether the cell is drawn at all turns on where this puts
+      // it (the seating, below).
+      const place = (g, k) => {
+        const I = g.I, J = g.J
+        // where the lattice would put it, and how far that is from the light
+        const ax = worldX(I, J, S) + m.o.x
+        const ay = J * rowH + m.o.y
+        const dx = ax - lx
+        const dy = ay - ly
+        const u = Math.sqrt((dx * dx) / (Rx * Rx) + (dy * dy) / (Ry * Ry))
+
+        // SIZE: full inside the hold, then a smooth fall to the rim, and a
+        // hair over full dead centre so the light has a point
+        const e = clamp01((u - LENS.hold) / (1 - LENS.hold))
+        const q = 1 - clamp01(u / LENS.hold)
+        const zL = lens.rim + (1 - lens.rim) * Math.pow(1 - e, lens.fall) + (LENS.crown - 1) * q * q
+
+        // how much of the lens applies to THIS disc: all of it once the
+        // field is up, `veiled` under the masthead, and while the pulse is
+        // crossing the field the full lens inside the front and the veiled
+        // one outside it, over the width of the crest, so the lens is seen
+        // to arrive with the light rather than on a clock of its own
+        let bl = m.bloom
+        if (wv) bl = clamp01(0.5 - (Math.hypot(ax - wv.x, ay - wv.y) - wv.R) / W)
+        const L = LENS.veiled + (1 - LENS.veiled) * bl
+        let z = 1 + (zL - 1) * L
+
+        // SPACING: the lattice opens away from the light as it goes out
+        const open = 1 + lens.open * Math.pow(e, LENS.openPow) * L
+        let px = lx + dx * open
+        let py = ly + dy * open
+
+        // the disc's size on the glass. The element is laid out at the
+        // window's own pitch (`--d`, from S0) and the zoom rides on the
+        // transform below, so a pinch never touches layout.
+        const d = discOf(k, m.S0) * m.zoom
+
+        // SLACK: what the packing left over, and the two ways a disc spends
+        // it. Half the gap to the next disc, times how much of it we allow.
+        const room = Math.max(0, (S * open - d * z) * 0.5 * LENS.slack)
+        if (room > 0.2) {
+          const n = cellNoise(I, J)
+          const ang = ((n & 1023) / 1023) * TAU
+          const mag = 0.35 + 0.65 * (((n >>> 10) & 1023) / 1023)
+          px += Math.cos(ang) * room * mag
+          py += Math.sin(ang) * room * mag
+          if (!m.reduce) {
+            // and its own breath, on its own clock, in its own direction
+            const ph = (((n >>> 20) & 255) / 255) * TAU
+            const w1 = TAU / (BREATH.slow + (((n >>> 28) & 15) / 15) * (BREATH.fast - BREATH.slow))
+            const amp = room * BREATH.amp
+            px += Math.sin(t * w1 + ph) * amp
+            py += Math.cos(t * w1 * 0.77 + ph * 1.7) * amp
+          }
+        }
+
+        // THE POINTER: a second, smaller light. What is under it swells, and
+        // the crowd parts to make the room that swelling needs — nothing at
+        // the very middle, so the disc you are on does not run away from you.
+        if (pa > 0.002) {
+          const bx = px - m.px
+          const by = py - m.py
+          const r = Math.sqrt(bx * bx + by * by)
+          const gg = Math.exp(-(r * r) / (reach * reach))
+          if (gg > 0.004) {
+            z *= 1 + TOUCH.swell * gg * pa
+            const push = TOUCH.part * S * gg * pa * Math.min(1, r / reach)
+            if (r > 0.01) { px += (bx / r) * push; py += (by / r) * push }
+          }
+        }
+
+        // THE PULSES: a crest passes through (`crest`, above). The veil's,
+        // and a pressed disc's, and when both are on the field a disc
+        // under both is moved by both.
+        let lift = 0
+        if (wv) {
+          const c = crest(wv, ax, ay, S, W, open, d, z)
+          if (c) { z = c.z; px += c.dx; py += c.dy; lift = c.lift }
+        }
+        if (tp) {
+          const c = crest(tp, ax, ay, S, W, open, d, z)
+          if (c) { z = c.z; px += c.dx; py += c.dy; lift = Math.max(lift, c.lift) }
+        }
+        g.k = k; g.u = u; g.px = px; g.py = py; g.z = z; g.d = d; g.bl = bl; g.lift = lift
+      }
+
+      // Every cell the lattice can bring near the glass, placed. The records
+      // are kept from frame to frame, so this allocates nothing.
+      const geo = m.geo
+      let count = 0
       for (let J = J0; J <= J1; J++) {
         for (let I = I0; I <= I1; I++) {
-          const s = bySlot.get(cellKey(I, J))
-          if (s === undefined) (entering || (entering = [])).push(I, J)
-          else slots[s].used = stamp
+          const g = geo[count] || (geo[count] = { I: 0, J: 0, k: -1, s: -1, u: 0, px: 0, py: 0, z: 1, d: 0, bl: 1, lift: 0 })
+          count++
+          g.I = I; g.J = J
+          place(g, nameAt(I, J))
         }
+      }
+
+      // ── the seating, this frame ──
+      // A cell holds a slot for as long as the screen drawn for it, with the
+      // light round it, is on the glass. The lens pushes the crowd outward,
+      // so the rectangle of the lattice that can reach the window is half as
+      // large again as what the window shows, and every screen past the edge
+      // of the glass was a layer, a style recalc and a React cell on every
+      // frame for nothing anybody could see (the mask takes the edge to
+      // nothing anyway). A slot is taken a little before its screen reaches
+      // the glass and given back only once it is well past it, so a disc on
+      // the rim that breathes across the edge keeps its slot. Every cell on
+      // the glass keeps the slot it had; the slots whose cells have left are
+      // given back and the cells that have arrived take them, a bounded
+      // number a frame, or take new ones if none are free. So a slot changes
+      // hands only for a cell that has actually left and one that has
+      // actually arrived, and nothing on the glass moves.
+      const stamp = ++m.stamp
+      const zoom = m.zoom
+      let entering = null
+      for (let i = 0; i < count; i++) {
+        const g = geo[i]
+        const s = bySlot.get(cellKey(g.I, g.J))
+        // how far the screen and its glow reach from its middle
+        const he = g.d * g.z * 0.6 + GLOW * g.z * zoom
+        const edge = s === undefined ? S * EDGE.take : S * EDGE.keep
+        g.s = -1
+        if (g.px + he < -edge || g.px - he > w + edge || g.py + he < -edge || g.py - he > h + edge) continue
+        if (s === undefined) (entering || (entering = [])).push(g)
+        else { slots[s].used = stamp; g.s = s }
       }
       for (let s = 0; s < slots.length; s++) {
         const slot = slots[s]
@@ -1406,46 +1580,39 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           slot.shown = false
           bySlot.delete(slot.key)
           free.push(s)
-          if (slot.el) slot.el.style.visibility = 'hidden'
+          // out of the tree, not only out of sight: a hidden slot kept its
+          // compositor layer
+          if (slot.el) slot.el.style.display = 'none'
         }
       }
       let grew = false
       if (entering) {
         // nearest the light first, so under a pinch the middle of the glass
         // is seated before the rim
-        const cx = lx - m.o.x, cy = ly - m.o.y
-        const order = []
-        for (let i = 0; i < entering.length; i += 2) {
-          const I = entering[i], J = entering[i + 1]
-          order.push([Math.hypot(worldX(I, J, S) - cx, J * rowH - cy), I, J])
-        }
-        if (order.length > ASSIGN_PER_FRAME) order.sort((p, q) => p[0] - q[0])
-        const n = Math.min(order.length, ASSIGN_PER_FRAME)
+        if (entering.length > ASSIGN_PER_FRAME) entering.sort((p, q) => p.u - q.u)
+        const n = Math.min(entering.length, ASSIGN_PER_FRAME)
         for (let i = 0; i < n; i++) {
-          const I = order[i][1], J = order[i][2]
+          const g = entering[i]
           let s = free.pop()
           if (s === undefined) { s = slots.length; slots.push(newSlot()); grew = true }
           const slot = slots[s]
-          const ax = worldX(I, J, S) + m.o.x
-          const ay = J * rowH + m.o.y
-          const u = Math.sqrt(((ax - lx) * (ax - lx)) / (Rx * Rx) + ((ay - ly) * (ay - ly)) / (Ry * Ry))
-          slot.I = I; slot.J = J; slot.key = cellKey(I, J)
-          slot.k = nameAt(I, J)
-          slot.n = cellNoise(I, J)
+          slot.I = g.I; slot.J = g.J; slot.key = cellKey(g.I, g.J)
+          slot.k = g.k
           // the opening's ripple: each disc arrives by its distance from the
           // light, so the field fills from the middle outward
-          slot.delay = Math.round(500 + Math.min(1.4, u) * 620)
+          slot.delay = Math.round(500 + Math.min(1.4, g.u) * 620)
           // and its own clock for turning over (the cycle): its gap from
           // where it stands, from a random point in it, so the turns are
           // spread over the field from the first one
-          slot.due = now + CYCLE.first + Math.random() * turnGap(u)
+          slot.due = now + CYCLE.first + Math.random() * turnGap(g.u)
           slot.shown = true
           slot.used = stamp
           // the element is reused for a new cell: nothing it last wrote holds
-          slot.tf = ''; slot.op = ''
+          slot.tf = ''; slot.op = ''; slot.f = -1; slot.tz = 0
           bySlot.set(slot.key, s)
+          g.s = s
           ;(changed || (changed = [])).push(s)
-          if (slot.el) slot.el.style.visibility = ''
+          if (slot.el) slot.el.style.display = ''
         }
       }
 
@@ -1455,123 +1622,103 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       // frame is drawn this frame rather than on the next one.
       cycleTick(now, Rx, Ry, !!(wv || tp || m.drag || m.pinch || m.goal || m.zoomGoal))
 
-      for (let J = J0; J <= J1; J++) {
-        for (let I = I0; I <= I1; I++) {
-          const s = bySlot.get(cellKey(I, J))
-          if (s === undefined) continue
-          const slot = slots[s]
-          // where the lattice would put it, and how far that is from the light
-          const ax = worldX(I, J, S) + m.o.x
-          const ay = J * rowH + m.o.y
-          const dx = ax - lx
-          const dy = ay - ly
-          const u = Math.sqrt((dx * dx) / (Rx * Rx) + (dy * dy) / (Ry * Ry))
+      for (let i = 0; i < count; i++) {
+        const g = geo[i]
+        const s = g.s
+        if (s < 0) continue
+        const slot = slots[s]
+        const I = g.I, J = g.J
+        // a name re-seated by a new reading of the index, or a cell the
+        // cycle has turned over, changes the disc in place; the slot is
+        // the cell's whatever name the cell carries
+        const k = nameAt(I, J)
+        if (k !== g.k) place(g, k)
+        if (slot.k !== k) { slot.k = k; (changed || (changed = [])).push(s) }
+        if (slot.bk !== k) { slot.bk = k; slot.blink = names[k] ? quirks(names[k].handle).blink : 0 }
+        const px = g.px, py = g.py, z = g.z, d = g.d, bl = g.bl
 
-          // SIZE: full inside the hold, then a smooth fall to the rim, and a
-          // hair over full dead centre so the light has a point
-          const e = clamp01((u - LENS.hold) / (1 - LENS.hold))
-          const q = 1 - clamp01(u / LENS.hold)
-          const zL = lens.rim + (1 - lens.rim) * Math.pow(1 - e, lens.fall) + (LENS.crown - 1) * q * q
-
-          // how much of the lens applies to THIS disc: all of it once the
-          // field is up, `veiled` under the masthead, and while the pulse is
-          // crossing the field the full lens inside the front and the veiled
-          // one outside it, over the width of the crest, so the lens is seen
-          // to arrive with the light rather than on a clock of its own
-          let bl = m.bloom
-          if (wv) bl = clamp01(0.5 - (Math.hypot(ax - wv.x, ay - wv.y) - wv.R) / W)
-          const L = LENS.veiled + (1 - LENS.veiled) * bl
-          let z = 1 + (zL - 1) * L
-
-          // SPACING: the lattice opens away from the light as it goes out
-          const open = 1 + lens.open * Math.pow(e, LENS.openPow) * L
-          let px = lx + dx * open
-          let py = ly + dy * open
-
-          // a name re-seated by a new reading of the index, or a cell the
-          // cycle has turned over, changes the disc in place; the slot is
-          // the cell's whatever name the cell carries
-          const k = nameAt(I, J)
-          if (slot.k !== k) { slot.k = k; (changed || (changed = [])).push(s) }
-          // the disc's size on the glass. The element is laid out at the
-          // window's own pitch (`--d`, from S0) and the zoom rides on the
-          // transform below, so a pinch never touches layout.
-          const d = discOf(k, m.S0) * m.zoom
-
-          // SLACK: what the packing left over, and the two ways a disc spends
-          // it. Half the gap to the next disc, times how much of it we allow.
-          const room = Math.max(0, (S * open - d * z) * 0.5 * LENS.slack)
-          if (room > 0.2) {
-            const n = slot.n
-            const ang = ((n & 1023) / 1023) * TAU
-            const mag = 0.35 + 0.65 * (((n >>> 10) & 1023) / 1023)
-            px += Math.cos(ang) * room * mag
-            py += Math.sin(ang) * room * mag
-            if (!m.reduce) {
-              // and its own breath, on its own clock, in its own direction
-              const ph = (((n >>> 20) & 255) / 255) * TAU
-              const w1 = TAU / (BREATH.slow + (((n >>> 28) & 15) / 15) * (BREATH.fast - BREATH.slow))
-              const amp = room * BREATH.amp
-              px += Math.sin(t * w1 + ph) * amp
-              py += Math.cos(t * w1 * 0.77 + ph * 1.7) * amp
-            }
+        const isFocus = f && f.I === I && f.J === J
+        if (slot.disc) {
+          // written only when it has moved: every inline write is a style
+          // recalculation for that element on the frame, and the far discs
+          // barely move between two frames
+          const zz = z * zoom
+          const tf = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${zz.toFixed(3)})`
+          if (tf !== slot.tf) { slot.tf = tf; slot.disc.style.transform = tf }
+          // ── air ──
+          // The far discs are not only smaller, they are further away, and
+          // the one thing distance does to a face that scale alone does not
+          // is take light off it. The ramp is off the same `z` everything
+          // else is off, so a disc that is half the size is also half the
+          // way into the room. Without it the rim reads as small faces on
+          // the same plane as the near ones, which is a diagram.
+          const air = Math.min(1, lens.air + (1 - lens.air) * clamp01((z - lens.rim) / (1 - lens.rim)) + g.lift)
+          const op = air > 0.995 ? '1' : air.toFixed(2)
+          if (op !== slot.op) { slot.op = op; slot.disc.style.opacity = op }
+          // ── focus ──
+          // Measured against the window's own half-width, not the widened
+          // lens, and a screen that reaches the side of the window is at
+          // least five steps out, so the frame never cuts a sharp card.
+          // Under a mouse the screen pointed at is sharp; under the veil
+          // the whole room is soft.
+          const fx = (px - lx) / (m.c.x + S * 0.3), fy = (py - ly) / Ry
+          let df = Math.sqrt(fx * fx + fy * fy)
+          const ex = (Math.abs(px - m.c.x) + d * z * 0.37) / m.c.x
+          df = Math.max(df, ex * 2 - 1.15)
+          if (pa > 0.5) {
+            const hx = px - m.px, hy = py - m.py
+            df = Math.min(df, Math.sqrt(hx * hx + hy * hy) / (S * 2.4))
           }
-
-          // THE POINTER: a second, smaller light. What is under it swells, and
-          // the crowd parts to make the room that swelling needs — nothing at
-          // the very middle, so the disc you are on does not run away from you.
-          if (pa > 0.002) {
-            const bx = px - m.px
-            const by = py - m.py
-            const r = Math.sqrt(bx * bx + by * by)
-            const g = Math.exp(-(r * r) / (reach * reach))
-            if (g > 0.004) {
-              z *= 1 + TOUCH.swell * g * pa
-              const push = TOUCH.part * S * g * pa * Math.min(1, r / reach)
-              if (r > 0.01) { px += (bx / r) * push; py += (by / r) * push }
-            }
+          if (bl < 0.5) df = Math.max(df, 0.8)
+          const fq = df < 0.6 ? 0 : Math.min(6, 1 + Math.floor((df - 0.6) / 0.06))
+          // Not written here: it is queued, and the frame writes the most
+          // pressing few (below).
+          if (fq !== slot.f) {
+            slot.fw = fq
+            // a screen never written first, then the biggest step
+            slot.fp = slot.f < 0 ? 99 : 10 + Math.abs(fq - slot.f)
+            ;(soften || (soften = [])).push(slot)
           }
-
-          // THE PULSES: a crest passes through (`crest`, above). The veil's,
-          // and a pressed disc's, and when both are on the field a disc
-          // under both is moved by both.
-          let lift = 0
-          if (wv) {
-            const c = crest(wv, ax, ay, S, W, open, d, z)
-            if (c) { z = c.z; px += c.dx; py += c.dy; lift = c.lift }
+          // ── the blink ──
+          // off the step the screen is drawn at, which the queue can hold a
+          // frame or two behind the one it is asking for
+          const dark = !m.reduce && !slot.f && (now + slot.blink) % BLINK >= BLINK / 2
+          if (dark !== slot.dark) { slot.dark = dark; slot.disc.classList.toggle('is-dark', dark) }
+          // the name under a mouse is written at its own size, whatever
+          // the disc it hangs from is scaled by (wall.css .wl-cell-tag)
+          if (s === m.on && slot.tag) {
+            const tz = 1 / Math.max(0.2, zz)
+            if (Math.abs(tz - slot.tz) > 0.02) { slot.tz = tz; slot.tag.style.setProperty('--tag-z', tz.toFixed(3)) }
           }
-          if (tp) {
-            const c = crest(tp, ax, ay, S, W, open, d, z)
-            if (c) { z = c.z; px += c.dx; py += c.dy; lift = Math.max(lift, c.lift) }
+        }
+        // how far the pointer is from this disc, in its own drawn place,
+        // and on a phone, where there is no pointer, how far the middle is
+        const sx = px - (pa > 0.5 ? m.px : m.c.x)
+        const sy = py - (pa > 0.5 ? m.py : m.c.y)
+        const nd = Math.sqrt(sx * sx + sy * sy) / S
+        if (isFocus) curNd = nd
+        if (!best || nd < best.nd) best = { I, J, nd }
+      }
+      // ── the focus, written ──
+      // A pull or a key's travel can move thirty screens across a step on
+      // one frame, so a frame writes the most pressing few (FOCUS_PER_FRAME)
+      // and the rest a frame or two later, which on one step of light nobody
+      // can see.
+      if (soften) {
+        if (soften.length > FOCUS_PER_FRAME) soften.sort((p, q) => q.fp - p.fp)
+        const n = Math.min(soften.length, FOCUS_PER_FRAME)
+        for (let i = 0; i < n; i++) {
+          const slot = soften[i]
+          const fq = slot.fw
+          const sc = slot.screen
+          if (fq !== slot.f) {
+            slot.f = fq
+            if (sc) sc.style.opacity = FOCUS.dim[fq]
+            if (slot.glow) slot.glow.style.opacity = FOCUS.glow[fq]
           }
-
-          const isFocus = f && f.I === I && f.J === J
-          if (slot.disc) {
-            // written only when it has moved: every inline write is a style
-            // recalculation for that element on the frame, and the far discs
-            // barely move between two frames
-            const tf = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${(z * m.zoom).toFixed(3)})`
-            if (tf !== slot.tf) { slot.tf = tf; slot.disc.style.transform = tf }
-            // ── air ──
-            // The far discs are not only smaller, they are further away, and
-            // the one thing distance does to a face that scale alone does not
-            // is take light off it. The ramp is off the same `z` everything
-            // else is off, so a disc that is half the size is also half the
-            // way into the room. Without it the rim reads as small faces on
-            // the same plane as the near ones, which is a diagram.
-            const air = Math.min(1, lens.air + (1 - lens.air) * clamp01((z - lens.rim) / (1 - lens.rim)) + lift)
-            const op = air > 0.995 ? '1' : air.toFixed(2)
-            if (op !== slot.op) { slot.op = op; slot.disc.style.opacity = op }
-          }
-          // how far the pointer is from this disc, in its own drawn place,
-          // and on a phone, where there is no pointer, how far the middle is
-          const sx = px - (pa > 0.5 ? m.px : m.c.x)
-          const sy = py - (pa > 0.5 ? m.py : m.c.y)
-          const nd = Math.sqrt(sx * sx + sy * sy) / S
-          if (isFocus) curNd = nd
-          if (!best || nd < best.nd) best = { I, J, nd }
         }
       }
+
       // ── the disc nearest the pointer, or the middle ──
       // Kept, with a little hysteresis, for the cycle to leave alone and for
       // a change of pitch to keep in the light. Nothing is drawn for it.
@@ -1974,7 +2121,14 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       onPointerLeave={onOver(false)}
       onFocusCapture={onFocusIn}
       onBlurCapture={onFocusOut}
-      inert={veiled || undefined}
+      /* Not `inert` under the veil, or under a sheet (index.jsx): inert is
+         inherited by every element under it, so putting it on and taking it
+         off restyled every element of a hundred small screens at once, on
+         the frame the veil lifted and on every letter opened and closed.
+         Hidden from a reader here, and each screen leaves the tab order
+         (`off`); nothing on the field can be pressed through the veil or a
+         sheet, which both stand over it. */
+      aria-hidden={veiled || undefined}
       role="group"
       aria-label="the names on the wall, drag to move through them"
     >
@@ -2001,6 +2155,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             delay={opening && t ? a.delay : 0}
             look={t ? t.look : null}
             name={t && t.kind === 'name' ? t.name : ''}
+            off={veiled || paused}
             bind={bind}
             onOpen={open}
             onHover={onHover}

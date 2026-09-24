@@ -1,10 +1,10 @@
 // ── the colour panel ────────────────────────────────────────────────────────
 //
-// Under the composer's screen while its `colour` key is on (screens/
-// Write.jsx): the one thing a writer chooses about how their letter looks,
-// which is the colour it is lit in. The screen above is the preview, and it
-// is the real screen (screen.jsx `Screen`), so what is picked here is on the
-// letter before the finger has lifted.
+// Under the composer's screen while its `colour` key is on, and beside it
+// on a spread (screens/Write.jsx): the one thing a writer chooses about how
+// their letter looks, which is the colour it is lit in. The screen is the
+// preview, and it is the real screen (screen.jsx `Screen`), so what is
+// picked here is on the letter before the finger has lifted.
 //
 // It was a rail of three — texture, color, type — over a gallery of
 // forty-two papers, twenty-nine grounds and twenty-four faces. The papers,
@@ -23,14 +23,39 @@
 //
 // It is one radio group to a screen reader and to a keyboard: the arrows
 // walk the whole list, across the groups, and the tab key leaves it.
+//
+// On a phone the three groups are one strip that scrolls sideways, and the
+// chosen colour is kept in the middle of it. `reveal` brings the panel into
+// view when it was opened by the key, since under a tall screen it opens
+// below the fold.
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { COLOURS, GROUPS, colourOf } from './looks.js'
 import { Mini } from './screen.jsx'
 
-export function LookPanel({ look, onChange, seed = '' }) {
+export function LookPanel({ look, onChange, seed = '', reveal = false }) {
   const cur = colourOf(look, seed)
   const box = useRef(null)
+  useEffect(() => {
+    if (!reveal || !box.current) return undefined
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const id = requestAnimationFrame(() => box.current && box.current.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' }))
+    return () => cancelAnimationFrame(id)
+  }, [reveal])
+  // the chosen one stands in the middle of the strip, at once on opening
+  // and travelling there after that
+  const first = useRef(true)
+  useEffect(() => {
+    const rail = box.current && box.current.querySelector('.wl-look-groups')
+    const on = rail && rail.querySelector('.wl-look-opt.is-on')
+    const snap = first.current
+    first.current = false
+    if (!rail || !on || rail.scrollWidth <= rail.clientWidth) return
+    const r = rail.getBoundingClientRect()
+    const o = on.getBoundingClientRect()
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    rail.scrollTo({ left: rail.scrollLeft + (o.left - r.left) - (r.width - o.width) / 2, behavior: snap || still ? 'auto' : 'smooth' })
+  }, [cur.slug])
   const pick = (c) => onChange({ tint: c.slug })
   const keys = (e) => {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]

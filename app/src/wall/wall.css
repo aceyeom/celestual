@@ -48,7 +48,9 @@
   /* ── ground ──
      Never pure black. Pure black is a screen that is off; this is a room. */
   --void:        #08070B;
+  --void-rgb:    8, 7, 11;
   --void-1:      #0D0C12;   /* a sheet laid on the ground */
+  --void-1-rgb:  13, 12, 18;
   --void-2:      #131219;   /* a sheet laid on that */
   --void-3:      #1A1922;   /* a row, pressed */
   --hair:        rgba(244, 241, 234, 0.09);
@@ -209,6 +211,16 @@
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
+/* ── the wall's black room ──
+   The wall is the letter's room with every screen on (ground.jsx `room`),
+   so its void is black and every shade, veil and sheet it pours is black
+   with it. Main has no is-room and keeps the violet void above. */
+.wl-root.is-room {
+  --void: #000; --void-rgb: 0, 0, 0;
+  --void-1: #0E0E0E; --void-1-rgb: 14, 14, 14;
+  --void-2: #131313; --void-3: #1A1A1A;
+  background: #000;
+}
 
 /* production's cursor is a printer's registration mark. It belongs to the
    Bindery; it is not this brand's hand. */
@@ -282,16 +294,6 @@
    second, under a canvas nobody could see it through. Off, and the gradients
    with it, the moment WebGL2 has answered (ground.jsx `has-gl`). */
 .wl-ground.has-gl .wl-sky { animation: none; background: var(--void); }
-/* the campus wall's night, for a browser without WebGL2: the same two lights
-   the shader carries on that surface (field.js SKY_TINT.berkeley), still */
-.wl-ground.is-berkeley .wl-sky {
-  background:
-    radial-gradient(42% 34% at 26% 40%, rgba(158, 199, 255, 0.05) 0%, rgba(158, 199, 255, 0) 70%),
-    radial-gradient(30% 26% at 70% 62%, rgba(56, 107, 217, 0.08) 0%, rgba(56, 107, 217, 0) 72%),
-    var(--void);
-  background-size: 100% 100%, 100% 100%, auto;
-  background-repeat: repeat-x, repeat-x, repeat;
-}
 
 /* The poster's light source: one enormous off-centre warm halo, low enough in
    opacity that it is felt rather than seen. It is what stops the void reading
@@ -323,6 +325,46 @@
   background-size: 190px 190px;
 }
 
+/* ── the black room (ground.jsx `room`) ──
+   The wall is the letter's room with every screen on: black, four far glows
+   at two or three percent drifting on their own slow clocks, and the letter
+   room's grain. */
+.wl-ground.is-room { background: #000; }
+.wl-far {
+  position: absolute; inset: 0; overflow: hidden;
+  opacity: 0; transition: opacity 1600ms var(--ease);
+}
+.wl-ground.is-room.is-lit .wl-far { opacity: 1; }
+/* The drift moves the glow's place and not its transform, in forty steps
+   of two or three pixels each way. A transform animation is run by the
+   compositor, and it made each of the four glows, most of a screen across,
+   a layer of its own drawn again on every frame under the moving crowd;
+   stepped on the page, a glow is part of the room's one still layer and is
+   painted again when it has moved, every two seconds or so, by a step
+   nobody can see on a light this soft */
+.wl-far i {
+  position: absolute; left: var(--x); top: var(--y);
+  width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, var(--c), transparent);
+  opacity: var(--a);
+  animation: wl-far var(--t) steps(40) infinite alternate;
+}
+@keyframes wl-far { to { left: calc(var(--x) + var(--dx)); top: calc(var(--y) + var(--dy)); } }
+/* the room's grain is the letter room's, tile for tile and anchored at 0,0,
+   so opening a letter swaps one grain for an identical one */
+.wl-ground.is-room .wl-grain {
+  opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
+}
+/* the dark falls away into the corners, over the screens, as the concept's
+   vignette does over its field */
+.wl-root.is-room .wl-stage::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(125% 95% at 50% 54%, transparent 48%, rgba(0, 0, 0, 0.8) 100%);
+}
+@media (prefers-reduced-motion: reduce) { .wl-far i { animation: none; } }
+
 /* ═══ THE COLUMN ═══════════════════════════════════════════════════════════
    460px, centred, and the void bleeds to the edges of the viewport on a
    desktop. This deliberately refuses to fill a large screen: a surface met
@@ -332,8 +374,11 @@
 .wl-main { position: relative; z-index: 4; transition: opacity 480ms var(--ease-sheet), filter 480ms var(--ease-sheet); }
 /* Dimmed, and not blurred: the sheet over it is already glass with a
    backdrop blur of its own, and a second blur on a full screen layer of a
-   hundred moving faces under it was two blurs a frame while the sheet rose. */
-.wl-main.is-under { opacity: 0.30; pointer-events: none; }
+   hundred moving faces under it was two blurs a frame while the sheet rose.
+   And no `pointer-events: none`: the sheet's scrim is over the whole glass
+   and takes every press, and pointer-events is inherited, so putting it on
+   the wall restyled all two thousand elements of it as a letter opened. */
+.wl-main.is-under { opacity: 0.30; }
 /* ── and it comes back as the sheet goes, not after ──
    The route changes when the sheet has left the glass, and that is when the
    wall used to start un-blurring: the sheet fell, the wall sat dim under it
@@ -694,14 +739,15 @@
 }
 
 /* ── the hand ──
-   Hover lifts the word and pulls the shadow in under the capsule, which is
-   the capsule coming up off the void; the press puts it down again, cuts the
+   Hover pulls the shadow in under the capsule and keeps the seat's bloom,
+   which is the capsule coming up off the void; the word stays in the
+   paper's ink on the chalk face. The press puts it down again, cuts the
    shadow to nothing and sinks the face into its own inset. Both are gated to
    a device with a pointer, as everything that moves on hover here is. */
 @media (hover: hover) and (pointer: fine) {
   .wl-lq:hover:not(:disabled) {
-    color: rgba(244, 241, 234, 0.88);
     box-shadow:
+      0 0 42px -6px rgba(255, 244, 228, 0.20),
       0 0 0 1px rgba(0, 0, 0, 0.4),
       0 12px 6px -4px rgba(0, 0, 0, 0.05),
       0 8px 5px -3px rgba(0, 0, 0, 0.1),
@@ -958,6 +1004,8 @@ a.wl-lq { text-decoration: none; }
 .wl-paper .wl-mark.is-lit .wl-mark-ring { fill: rgba(23,21,15,0.05); stroke: rgba(23,21,15,0.24); }
 .wl-paper .wl-mark.is-lit .wl-mark-line { stroke: rgba(23,21,15,0.42); }
 .wl-paper .wl-mark.is-lit .wl-mark-star { fill: var(--paper-ink); filter: none; }
+/* a face on cream has no dark round it to glow into, so it takes an edge */
+.wl-paper .wl-face, .mn-letter .wl-face { box-shadow: 0 0 0 1px rgba(23, 21, 15, 0.38), 0 1px 0 1px rgba(255, 255, 255, 0.55); }
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--lk-rule); }
 /* THE MARKS STAND IN ONE PLACE. The foot is the reader's slot, not the
@@ -1075,20 +1123,12 @@ a.wl-lq { text-decoration: none; }
   to   { opacity: 1; transform: none; }
 }
 .wl-settled.is-looking { animation: none; }
-.wl-settled-disc {
-  position: relative; flex: 0 0 auto;
-  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
-  background: rgba(244, 241, 234, 0.05);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  display: grid; place-items: center;
-  transition: background 360ms var(--ease);
-}
-.wl-settled.is-looking .wl-settled-disc { background: rgba(244, 241, 234, 0.035); }
-.wl-settled-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.wl-settled-mono {
-  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-loose);
-  color: var(--ash); user-select: none;
-}
+/* the face's own square, unclipped: no disc round it */
+.wl-settled-disc, .wl-card-disc { position: relative; flex: 0 0 auto; display: grid; place-items: center; }
+/* while the name is looked up the square stands unlit, and lights when
+   the person lands */
+.wl-card .wl-face, .wl-settled .wl-face { transition: opacity 260ms var(--ease); }
+.wl-card.is-looking .wl-face, .wl-settled.is-looking .wl-face { opacity: 0.4; }
 /* the two states share one cell and cross fade: the words land where the bars
    were, and nothing moves */
 .wl-settled-id { min-width: 0; flex: 1 1 auto; display: grid; }
@@ -1185,7 +1225,7 @@ a.wl-lq { text-decoration: none; }
    different, flat room from the one it opened in. */
 .wl-scrim {
   position: absolute; inset: 0; width: 100%; padding: 0;
-  background: radial-gradient(120% 80% at 50% 100%, rgba(8,7,11,0.46) 0%, rgba(8,7,11,0.66) 60%, rgba(8,7,11,0.78) 100%);
+  background: radial-gradient(120% 80% at 50% 100%, rgba(var(--void-rgb), 0.46) 0%, rgba(var(--void-rgb), 0.66) 60%, rgba(var(--void-rgb), 0.78) 100%);
   animation: wl-fade 480ms var(--ease-sheet) both;
   border: 0;
 }
@@ -1201,7 +1241,7 @@ a.wl-lq { text-decoration: none; }
   width: 100%; max-width: 470px; margin: 0 auto;
   max-height: 92dvh;
   display: flex; flex-direction: column;
-  background: linear-gradient(180deg, rgba(13, 12, 18, 0.9) 0%, rgba(8, 7, 11, 0.94) 42%);
+  background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.9) 0%, rgba(var(--void-rgb), 0.94) 42%);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   /* ── the frame ──
      A pane, not a panel: one bright hairline along the top edge where the
@@ -1234,7 +1274,7 @@ a.wl-lq { text-decoration: none; }
    the opaque tint above stands, unchanged. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .wl-sheet {
-    background: linear-gradient(180deg, rgba(13, 12, 18, 0.58) 0%, rgba(8, 7, 11, 0.72) 42%);
+    background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.58) 0%, rgba(var(--void-rgb), 0.72) 42%);
     -webkit-backdrop-filter: blur(34px) saturate(1.3);
     backdrop-filter: blur(34px) saturate(1.3);
   }
@@ -1248,7 +1288,7 @@ a.wl-lq { text-decoration: none; }
    changes. */
 @media (prefers-reduced-transparency: reduce) {
   .wl-sheet {
-    background: linear-gradient(180deg, rgba(13, 12, 18, 0.97) 0%, rgba(8, 7, 11, 0.99) 42%);
+    background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.97) 0%, rgba(var(--void-rgb), 0.99) 42%);
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   .wl-seek-glass, .wl-seek-glass.is-open {
@@ -1262,7 +1302,7 @@ a.wl-lq { text-decoration: none; }
 /* the way out: 320ms, and parts.jsx `SHEET_OUT_MS` is the same number, so
    the route changes on the frame the sheet clears the glass */
 .wl-sheet-wrap.is-closing .wl-sheet { animation: wl-drop-sheet 320ms var(--ease-in) both; }
-.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-fade 320ms var(--ease-in) reverse both; }
+.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-unfade 320ms var(--ease-in) both; }
 
 /* the grip — a drag target with a real 24px height around a 4px bar */
 .wl-grip { flex: 0 0 auto; height: 26px; display: grid; place-items: center; touch-action: none; }
@@ -1412,6 +1452,11 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-dot.is-done { background: rgba(244,241,234,0.42); }
 .wl-dot.is-on { width: 18px; border-radius: 3px; background: var(--chalk); }
+/* a 44px tall target round a 6px dot; a step that can be gone back to wins
+   the gap it shares with the next */
+.wl-dot { position: relative; }
+.wl-dot::before { content: ''; position: absolute; inset: -19px -5px; }
+.wl-dot.is-done::before { z-index: 1; }
 
 /* the wait */
 .wl-waiting { display: flex; align-items: center; gap: 9px; color: var(--ash); }
@@ -1492,7 +1537,7 @@ a.wl-lq { text-decoration: none; }
   position: absolute; top: -78px; bottom: 0;
   left: 50%; width: 100vw; transform: translateX(-50%);
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(8,7,11,0) 0%, rgba(8,7,11,0.72) 38%, var(--void) 76%);
+  background: linear-gradient(180deg, rgba(var(--void-rgb), 0) 0%, rgba(var(--void-rgb), 0.72) 38%, var(--void) 76%);
 }
 .wl-dock-in {
   position: relative;
@@ -1529,10 +1574,10 @@ a.wl-lq { text-decoration: none; }
   pointer-events: none; z-index: 0;
   background: linear-gradient(180deg,
     var(--void) 0%,
-    rgba(8, 7, 11, 0.94) 22%,
-    rgba(8, 7, 11, 0.72) 52%,
-    rgba(8, 7, 11, 0.32) 80%,
-    rgba(8, 7, 11, 0) 100%);
+    rgba(var(--void-rgb), 0.94) 22%,
+    rgba(var(--void-rgb), 0.72) 52%,
+    rgba(var(--void-rgb), 0.32) 80%,
+    rgba(var(--void-rgb), 0) 100%);
 }
 .wl-page.is-foot .wl-colophon { position: relative; z-index: 1; border-top: 0; padding-top: 30px; }
 
@@ -1784,9 +1829,12 @@ a.wl-lq { text-decoration: none; }
   display: flex; flex-direction: column;
   width: 100%; max-width: 348px;
   border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.055);
+  /* a neutral grey, and opaque enough that no screen's colour shows in it:
+     the concept's capsule, grey glass on black */
+  background: rgba(44, 44, 44, 0.42);
   box-shadow:
-    inset 0 0 0 1px var(--hair),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 16px 34px -26px rgba(0, 0, 0, 0.9);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -1799,7 +1847,7 @@ a.wl-lq { text-decoration: none; }
    panel is over the crowd rather than in it. */
 .wl-seek-glass.is-open {
   border-radius: 24px;
-  background: rgba(244, 241, 234, 0.075);
+  background: rgba(30, 30, 30, 0.7);
   box-shadow:
     inset 0 0 0 1px var(--hair),
     0 28px 64px -24px rgba(0, 0, 0, 0.96);
@@ -1859,8 +1907,8 @@ a.wl-lq { text-decoration: none; }
 .wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.74); }
 .wl-seek .wl-field:focus-within .wl-at { color: var(--chalk); }
 @media (hover: hover) and (pointer: fine) {
-  .wl-seek-glass:hover { background: rgba(244, 241, 234, 0.085); }
-  .wl-seek-glass.is-open:hover { background: rgba(244, 241, 234, 0.075); }
+  .wl-seek-glass:hover { background: rgba(52, 52, 52, 0.46); }
+  .wl-seek-glass.is-open:hover { background: rgba(30, 30, 30, 0.7); }
 }
 
 /* ── what it found ──
@@ -1947,11 +1995,11 @@ a.wl-lq { text-decoration: none; }
 .wl-shade.is-top {
   top: 0; height: clamp(120px, 26vh, 230px);
   background: linear-gradient(180deg,
-    rgba(8, 7, 11, 0.94) 0%,
-    rgba(8, 7, 11, 0.80) 22%,
-    rgba(8, 7, 11, 0.48) 48%,
-    rgba(8, 7, 11, 0.16) 76%,
-    rgba(8, 7, 11, 0) 100%);
+    rgba(var(--void-rgb), 0.94) 0%,
+    rgba(var(--void-rgb), 0.80) 22%,
+    rgba(var(--void-rgb), 0.48) 48%,
+    rgba(var(--void-rgb), 0.16) 76%,
+    rgba(var(--void-rgb), 0) 100%);
 }
 .wl-shade.is-bottom {
   bottom: 0; height: clamp(150px, 34vh, 320px);
@@ -1959,10 +2007,10 @@ a.wl-lq { text-decoration: none; }
      foot under this page can start on the same colour and carry on */
   background: linear-gradient(0deg,
     var(--void) 0%,
-    rgba(8, 7, 11, 0.9) 18%,
-    rgba(8, 7, 11, 0.56) 44%,
-    rgba(8, 7, 11, 0.18) 74%,
-    rgba(8, 7, 11, 0) 100%);
+    rgba(var(--void-rgb), 0.9) 18%,
+    rgba(var(--void-rgb), 0.56) 44%,
+    rgba(var(--void-rgb), 0.18) 74%,
+    rgba(var(--void-rgb), 0) 100%);
 }
 
 /* ═══ THE VEIL ═════════════════════════════════════════════════════════════
@@ -2013,12 +2061,12 @@ a.wl-lq { text-decoration: none; }
   position: absolute; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--ramp));
   width: 100%; padding: 0; border: 0;
   background: linear-gradient(180deg,
-    rgba(8, 7, 11, 0) 0px,
-    rgba(8, 7, 11, 0.82) var(--ramp),
-    rgba(8, 7, 11, 0.86) 34%,
-    rgba(8, 7, 11, 0.86) 64%,
-    rgba(8, 7, 11, 0.52) 86%,
-    rgba(8, 7, 11, 0.14) 100%);
+    rgba(var(--void-rgb), 0) 0px,
+    rgba(var(--void-rgb), 0.82) var(--ramp),
+    rgba(var(--void-rgb), 0.86) 34%,
+    rgba(var(--void-rgb), 0.86) 64%,
+    rgba(var(--void-rgb), 0.52) 86%,
+    rgba(var(--void-rgb), 0.14) 100%);
   cursor: pointer;
 }
 /* the type block, centred in the glass and a little above its middle, so
@@ -2188,32 +2236,34 @@ a.wl-lq { text-decoration: none; }
    This is the phone's mask, and it is wider than the phone: on a window a
    hand across, the sides are two discs from the light and the crowd has to
    run to them, so the ellipse reaches past the glass and the side ramps are
-   a thumb's width. The spread, which has room to spare at its sides, takes
-   a tighter one below. */
+   most of a screen wide, so an edge screen dissolves rather than ends on a
+   line. The spread, which has room to spare at its sides, takes a tighter
+   one below.
+
+   A third shape, `--crowd-v`, takes the head and the foot: the crowd is
+   gone under the bar, the ear and the search plate, so the head of the room
+   is clean black, and it fades out again before the dock. */
 .wl-hive-crowd {
   position: absolute; inset: 0;
   transition: opacity 760ms var(--ease);
+  --crowd-v: linear-gradient(180deg, transparent 58px, rgba(0,0,0,0.22) 124px, #000 204px, #000 calc(100% - 150px), rgba(0,0,0,0.25) calc(100% - 62px), transparent 100%);
   -webkit-mask-image:
+    var(--crowd-v),
     radial-gradient(ellipse 106% 92% at 50% 47%, #000 32%, rgba(0,0,0,0.92) 62%, rgba(0,0,0,0.46) 87%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
   mask-image:
+    var(--crowd-v),
     radial-gradient(ellipse 106% 92% at 50% 47%, #000 32%, rgba(0,0,0,0.92) 62%, rgba(0,0,0,0.46) 87%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
-/* under the veil the field is grey: dimmed, not blurred, because a blur over
-   a hundred moving discs is a hundred rasters a frame. The monograms go
-   further, so the type stands on a texture of discs and not on a field of
-   other letters. */
-.wl-hive.is-veiled .wl-hive-crowd { opacity: 0.4; }
+/* under the veil the field is dimmed and out of focus: the loop holds every
+   screen at least four focus steps out (the focus, below), so the type stands
+   on a room of soft lights and not on a field of other letters. The blur is
+   written when a screen crosses a step, not on every frame. */
+.wl-hive.is-veiled .wl-hive-crowd { opacity: 0.55; }
 .wl-hive.is-veiled { cursor: default; }
-/* Nothing is being read while the masthead is up either — but that is decided
-   in Hive.jsx, by not putting the class on anybody, rather than by unpicking
-   it here: an override for a state that is drawn by three other rules is three
-   places to keep in step. */
-.wl-hive .wl-tile-mid { transition: opacity 760ms var(--ease); }
-.wl-hive.is-veiled .wl-tile-mid { opacity: 0.3; }
 .wl-hive.is-empty { display: grid; place-items: center; cursor: default; }
 .wl-hive-none { text-align: center; }
 
@@ -2241,7 +2291,7 @@ a.wl-lq { text-decoration: none; }
 .wl-cell-orb {
   position: absolute; inset: 0; display: block;
   transform-origin: 50% 50%;
-  transition: transform 320ms var(--ease);
+  transition: transform 320ms var(--ease), filter 200ms var(--ease);
 }
 /* ── the light on whoever is being read ──
    A soft warm halo behind the disc the lens is on, drawn as a gradient and
@@ -2275,7 +2325,7 @@ a.wl-lq { text-decoration: none; }
   content: ''; position: absolute; inset: calc(7% - 4px) calc(13% - 4px); border-radius: 5px;
   box-shadow:
     inset 0 0 0 1px rgba(244, 241, 234, 0.34),
-    0 0 0 1px rgba(8, 7, 11, 0.55);
+    0 0 0 1px rgba(var(--void-rgb), 0.55);
   opacity: 0; transform: scale(0.96);
   transition: opacity 240ms var(--ease), transform 320ms var(--ease);
   pointer-events: none;
@@ -2291,10 +2341,55 @@ a.wl-lq { text-decoration: none; }
    person where they are, and a field of forty identical circles with no
    focus ring cannot be navigated from a keyboard at all. It is not part of
    the resting picture. */
-.wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(8, 7, 11, 0.6); }
+.wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(var(--void-rgb), 0.6); }
 /* the press: the disc gives, and takes 90ms to do it, because a press is the
    one movement on this surface that has to answer instantly */
 .wl-cell:active .wl-cell-orb { transform: scale(0.93); transition-duration: 90ms; }
+
+/* ── the focus ──
+   The far screens fade to lights, so a screen the frame cuts is a light in
+   the distance rather than a card cut off. Hive.jsx works out a step, 0 to
+   6, for every screen, and writes what the step looks like (`FOCUS`: the
+   dimming, and from the third step the round glow in the screen's own colour that stands behind it) straight onto
+   the two elements of the small screen that draw it, `.wl-tile-f` and
+   `.wl-tile-glow` (screen.css). It used to be a `data-f` on the disc and a
+   rule here for each step, and every step a screen crossed restyled the
+   whole small screen, every element of it carrying the colour's two dozen
+   variables: on a pull that was thirty screens a frame, and most of the
+   frame. */
+/* the keyboard's focus is always sharp, over whatever the loop wrote */
+.wl-cell:focus-visible .wl-tile-f { opacity: 1 !important; }
+.wl-cell:focus-visible .wl-tile-glow { opacity: 0 !important; }
+/* ── the blink ──
+   A sharp screen's envelope, or its flat battery, blinks on
+   that phone's own clock, and the loop keeps it (Hive.jsx `BLINK`): the
+   half of each beat they are off, the disc carries `is-dark`. A screen out
+   of focus is a light and does not blink. */
+.wl-cell-disc.is-dark .is-blink { visibility: hidden; }
+
+/* ── whose screen it is ──
+   Under a mouse the screen pointed at says whose it is, on a small plate
+   under it. The disc is scaled by the loop, so Hive.jsx writes the inverse
+   of that scale as `--tag-z` on the plate under the pointer, and the plate is
+   the same size wherever it is read. Raised over its neighbours while it is
+   pointed at, so the row below does not cover it. */
+.wl-cell-tag {
+  position: absolute; left: 50%; top: 100%;
+  transform: translateX(-50%) scale(var(--tag-z, 1)); transform-origin: 50% 0;
+  padding: 3px 7px 4px; border-radius: 3px;
+  font: 400 15px/1 var(--f-s40); letter-spacing: 0.02em;
+  color: #F2F2F2; background: rgba(var(--void-rgb), 0.84);
+  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.14);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.45);
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 200ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-cell:hover { z-index: 1; }
+  .wl-cell:hover .wl-cell-tag { opacity: 1; }
+  /* on the orb, not the screen, which carries the focus blur */
+  .wl-cell:hover .wl-cell-orb { filter: brightness(1.16); }
+}
 /* ── a name this browser wrote to: no longer marked ──
    It used to be lit on the wall it came back to — the rim, warm, standing
    whether or not it was being read — as the one thing on this field that is
@@ -2396,20 +2491,27 @@ a.wl-lq { text-decoration: none; }
    is the one the letter throws (screen.css `.wl-scene-halo`). One black for
    every colour, lit or printed; a poster keeps its own ground, the room
    does not take it. The grain over the black is the sensor's, the way a
-   photograph of a dark room has it. */
-.wl-sheet-wrap.is-letter .wl-scrim { background: #000; }
-.wl-sheet-wrap.is-letter .wl-scrim::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: screen;
+   photograph of a dark room has it. The composer writes in the same room
+   (`.is-write`, below). */
+.wl-sheet-wrap:is(.is-letter, .is-write) .wl-scrim { background: #000; }
+.wl-sheet-wrap:is(.is-letter, .is-write) .wl-scrim::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
-/* the screen is as wide as the glass allows and never taller than the room:
-   on a short window it is sized off the height, so the keys are never below
-   the fold */
-.wl-letter-card .wl-scene, .wl-letter-slot .wl-scene {
-  /* a length, never a share of the sheet: the sheet on a wide window is a
-     dialog that takes its width from what is in it */
-  width: min(calc(100vw - 36px), 440px, calc((100svh - 190px) / 1.22)); margin: 0 auto;
+/* ── one width for the letter ──
+   The screen is as wide as the glass allows, up to 520 in a big room, and
+   never taller than the room: on a short window it is sized off the
+   height, so the keys are never below the fold. `--scene-w` is the one
+   number the sheet, the stage and the seal's foot are all sized from. */
+.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 190px) / 1.22)); }
+@media (max-height: 560px) and (orientation: landscape) {
+  /* an open letter has no seal foot to leave room for */
+  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 120px) / 1.22)); }
 }
+/* a length and not a share: the scene is an inline-size container and adds
+   no width of its own, so min(100%, ...) of a dialog that takes its width
+   from what is in it is nothing. The max-width keeps it inside its card */
+.wl-letter-card .wl-scene, .wl-letter-slot .wl-scene { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
 /* the picture at the head of a message: pressable, the way a face was */
 .wl-root .wl-scr-face {
   display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer;
@@ -2418,7 +2520,7 @@ a.wl-lq { text-decoration: none; }
 .wl-scr-face:active { transform: scale(0.95); transition-duration: 90ms; }
 .wl-scr-face:focus-visible { outline: 0.5cqw solid var(--s-ink); outline-offset: 0.5cqw; }
 .wl-sheet-wrap.is-letter .wl-sheet {
-  min-height: 0; max-height: none; max-width: 470px;
+  min-height: 0; max-height: none; max-width: calc(var(--scene-w) + 30px);
   background: none; box-shadow: none; border-radius: 0;
   -webkit-backdrop-filter: none; backdrop-filter: none;
   overflow: visible;
@@ -2429,16 +2531,111 @@ a.wl-lq { text-decoration: none; }
   padding: 0; overflow: visible;
   animation: none;
 }
-.wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
-.wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-fade 220ms var(--ease-in) reverse both; }
+/* ── the composer, in the same room ──
+   Screens/Write.jsx. A draft is written on the stage a letter is read on:
+   no pane, no grip, the black room and the light the draft's screen throws
+   on it (screen.jsx `RoomLight`). The sheet is the whole window, so the
+   only clip is the window's edge, and it is transparent to a press: a press
+   on the black round the column reaches the scrim and closes, as on the
+   letter. The column is centred when it fits and scrolls from the top when
+   it does not. */
+.wl-sheet-wrap.is-write { padding: 0; }
+.wl-sheet-wrap.is-write .wl-sheet {
+  display: flex; flex-direction: column;
+  width: 100%; max-width: none; height: 100%; min-height: 0; max-height: none; margin: 0;
+  background: none; box-shadow: none; border-radius: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  pointer-events: none;
+}
+.wl-sheet-wrap.is-write .wl-grip { display: none; }
+.wl-sheet-wrap.is-write .wl-sheet-in {
+  pointer-events: auto;
+  flex: 0 0 auto; width: 100%; max-width: 470px; margin: auto;
+  overflow: visible; isolation: isolate;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+/* The first question is not centred on what it holds: the names under the
+   field come and go as it is typed in, and the field must not move with
+   them. It stands where the column is centred with four names under it
+   (590) */
+.wl-sheet-wrap.is-write .wl-sheet-in:has(> .wl-write-who) { margin-top: max(0px, calc((100svh - 590px) / 2)); margin-bottom: auto; }
+/* The light is centred on the card (the screen and the line under it) and
+   painted behind everything in the column. Its box is laid out on its own
+   (layout containment), so the pool spilling past the window is light and
+   not something the sheet scrolls to */
+.wl-write-light { position: absolute; inset: 0; z-index: -1; contain: layout; pointer-events: none; }
+.wl-sheet-wrap.is-write :is(.wl-head, .wl-write-h, .wl-look, .wl-write-foot) { position: relative; z-index: 1; }
+.wl-sheet-wrap.is-write.is-closing .wl-room-light { animation: wl-unfade 320ms var(--ease-in) both; }
+/* The screen is as wide as the column, up to 440, and never taller than the
+   window, so the keys and the act are in view: 330 is the head, the
+   question, the line under the card and the foot, and `--notch` the
+   phone's own bars; 1.22 the tallest screen */
+.wl-write { --notch: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)); }
+.wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 330px - var(--notch)) / 1.22))); margin: 0 auto; }
+/* and the week's line over the act, when it is spent (parts.jsx `Allowance`) */
+.wl-write:has(.wl-allow) .wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 374px - var(--notch)) / 1.22))); }
+.wl-write:has(.wl-write-card) .wl-write-h { text-align: center; }
+@media (min-width: 900px) {
+  .wl-sheet-wrap.is-write .wl-sheet-in { max-width: 560px; }
+}
+/* ── every other sheet on the wall is the room's black glass ──
+   Find, the gate, a report and a removal: black glass over the black room,
+   with the letter room's grain behind the words, so a sheet is the same
+   room as the letter and the wall and not a violet pane laid on it. The
+   composer and the letter are the room itself (above), and stay out of
+   this so neither ties with its own black. */
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-scrim {
+  background: radial-gradient(120% 80% at 50% 100%, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.80) 60%, rgba(0, 0, 0, 0.90) 100%);
+}
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet { isolation: isolate; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
+    background: linear-gradient(180deg, rgba(18, 18, 18, 0.70) 0%, rgba(3, 3, 3, 0.80) 42%);
+    -webkit-backdrop-filter: blur(34px);
+    backdrop-filter: blur(34px);
+  }
+}
+/* the grain sits behind the words: the isolated sheet keeps z -1 inside it */
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
+}
+/* and asked for less of it, the same glass made opaque, and neutral */
+@media (prefers-reduced-transparency: reduce) {
+  .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
+    background: linear-gradient(180deg, rgba(16, 16, 16, 0.97) 0%, rgba(6, 6, 6, 0.99) 42%);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+/* ── on and off ──
+   The card is opaque within the first beat of opening, so the screen is
+   seen to switch on (screen.css `wl-wake`) and not to fade up through the
+   room. Closing, the screen goes to sleep first: a lit screen dims to
+   nothing (screen.css `wl-sleep`), the light it threw goes with it, and
+   only then does the card leave and the room lift. A print is not lit, so
+   it is not put to sleep; it fades with the card, over a room still black.
+   The route changes on parts.jsx Sheet's 580ms floor, since `wl-letter-out`
+   is not a drop it listens for, so the scrim's delay and length stay under
+   it. */
+.wl-sheet-wrap.is-letter .wl-scrim { animation-duration: 320ms; }
 @keyframes wl-letter-in {
   from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.97); }
+  12%  { opacity: 1; }
   to   { opacity: 1; transform: none; }
 }
 @keyframes wl-letter-out {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
+  0%, 60% { opacity: 1; transform: none; }
+  to      { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
 }
+.wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
+.wl-sheet-wrap.is-letter.is-closing .wl-letter-card .wl-scr:not([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+  animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.wl-sheet-wrap.is-letter.is-closing .wl-scene-halo-2 { opacity: 0; transition-duration: 200ms; }
+.wl-sheet-wrap.is-letter.is-closing .wl-room-light { animation: wl-unfade 220ms var(--ease-in) both; }
+.wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-unfade 300ms var(--ease-in) 180ms both; }
 /* the one mark on the glass: the way out, in the corner where every sheet
    keeps it, standing on the scrim rather than on a header row. A sibling of
    the sheet (parts.jsx Sheet `aside`), because the sheet's entrance is a
@@ -2448,7 +2645,7 @@ a.wl-lq { text-decoration: none; }
   top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px;
   animation: wl-fade 300ms var(--ease) 80ms both;
 }
-.wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-fade 160ms var(--ease-in) reverse both; }
+.wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-unfade 160ms var(--ease-in) both; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
 
 /* ── the opening ──
@@ -2469,6 +2666,10 @@ a.wl-lq { text-decoration: none; }
 
 @keyframes wl-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); } to { opacity: 1; transform: none; } }
 @keyframes wl-fade { from { opacity: 0; } to { opacity: 1; } }
+/* the way out of a fade is its own keyframe: a closing rule that reused
+   wl-fade in reverse kept the opening's name, so it never restarted and
+   the finished animation jumped straight to nothing */
+@keyframes wl-unfade { from { opacity: 1; } to { opacity: 0; } }
 @keyframes wl-rise-sheet { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
 /* The fall starts from wherever the sheet is: `--drag` is the offset a hand
    left it at (parts.jsx `Sheet`), and nothing when it was dismissed by the
@@ -2523,12 +2724,13 @@ a.wl-lq { text-decoration: none; }
    arrow keys do the same. `pan-y` hands a vertical drag to the sheet, so a
    long letter can still be scrolled past.
 
-   The TRACK is what the strip is clipped by: it reaches out to the sheet's
-   own edge, so a neighbour slides in from the edge of the glass and not from
-   the edge of the paper, and it clips sideways only, so the paper keeps its
-   shadow below. The clip is lifted while a card is opening out of a disc,
-   since the card starts wherever the disc was. The chevrons stand outside
-   the track, on the stage, so the clip never takes them.
+   The GLASS is the only clip (`.wl-sheet-wrap.is-letter`, below). The
+   track clipped the strip to the old sheet's width, and from a tablet up
+   that was a window in the middle of the black room: every swipe sliced
+   both screens and the light between them on two hard vertical lines. A
+   neighbour rests just past the window's edge instead (Letter.jsx `span`)
+   and slides in from there, so nothing is cut in the room. The chevrons go
+   quiet while the strip moves, and still take a press.
 
    The gutter on a phone is the sheet's own 22px, so the chevron is a bare
    stroke and not a ring: a ring in a 22px gutter is a ring on the paper's
@@ -2539,9 +2741,12 @@ a.wl-lq { text-decoration: none; }
   position: relative;
   margin: 0 calc(-1 * var(--gutter));
   padding: 0 var(--gutter);
-  overflow-x: clip; overflow-y: visible;
 }
-.wl-letter-stage:not(.is-landed) .wl-letter-track { overflow: visible; }
+.wl-sheet-wrap.is-letter { overflow: clip; }
+.wl-sheet-wrap.is-letter .wl-letter-track { overflow: visible; }
+/* quiet, but it still takes the click: a second press lands on a turn that
+   is already running, and not on the scrim behind */
+.wl-letter-stage.is-moving .wl-turn { opacity: 0; transition-duration: 120ms; }
 .wl-letter-card {
   position: relative; z-index: 1;
   will-change: transform;
@@ -2596,6 +2801,8 @@ a.wl-lq { text-decoration: none; }
 .wl-seal {
   width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 13px;
 }
+/* the capsule is as wide as the screen over it, and no wider */
+.wl-letter .wl-seal { width: min(100%, var(--scene-w)); margin-inline: auto; }
 .wl-seal-say {
   margin: 0;
   font-family: var(--f-util);
@@ -2704,8 +2911,8 @@ a.wl-lq { text-decoration: none; }
    stay, and the box is what the eye reads as the edge */
 .wl-write-body .wl-field { padding-bottom: 0; }
 .wl-write-body .wl-field-line { display: none; }
-/* the look panel under the card keeps the card's measure on a spread */
-.wl-write .wl-look { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+/* the look panel under the card takes the column's measure */
+.wl-write .wl-look { width: 100%; max-width: none; margin-left: auto; margin-right: auto; }
 
 /* ═══ THE BOOKMARKS ════════════════════════════════════════════════════════
    parts.jsx `Segmented`: two or three words on a rail, and the one that is
@@ -2804,6 +3011,11 @@ a.wl-lq { text-decoration: none; }
   color: var(--ash);
 }
 .wl-look-opts { display: flex; flex-wrap: wrap; gap: 9px; }
+/* while the colours are open the preview gives them room, and the line
+   under the card closes up: 470 is the head, the question, the line, the
+   strip and the foot */
+.wl-write-step:has(> .wl-look) .wl-write-floor { margin-top: 12px; }
+.wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 470px - var(--notch)) / 1.22))); }
 .wl-root .wl-look-opt {
   display: block; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
   transition: transform 200ms var(--ease);
@@ -2822,10 +3034,80 @@ a.wl-lq { text-decoration: none; }
   font-family: var(--f-s40); font-size: 20px; line-height: 1; letter-spacing: 0.02em;
   color: var(--chalk);
 }
-@media (max-width: 420px) {
-  .wl-look { padding: 12px 12px 10px; }
-  .wl-look-group { grid-template-columns: 1fr; gap: 7px; }
-  .wl-look-opts { gap: 8px; }
+/* a row for each kind, so no row is an orphan: lit 7, posters 6, risos 4,
+   copied 1 */
+@media (min-width: 561px) {
+  .wl-look-group { grid-template-columns: 52px 1fr; }
+  .wl-look-opts { display: grid; grid-template-columns: repeat(7, 40px); gap: 8px; }
+  .wl-look-opt[data-value='pink-blue'] { grid-column-start: 1; }
+  /* four rows stand taller than the phone's strip */
+  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 600px - var(--notch)) / 1.22))); }
+}
+/* on a phone the three groups are one strip, scrolled sideways, with the
+   chosen colour kept in the middle of it (Look.jsx), and on a phone on its
+   side, which has no height for three rows. The padding holds the chosen
+   ring and the focus outline inside the strip's clip */
+@media (max-width: 560px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-look { margin-top: 12px; padding: 10px 0; gap: 8px; }
+  .wl-look-groups {
+    flex-direction: row; gap: 18px;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    padding: 5px 28px 6px 18px; scroll-padding-inline: 18px 28px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+  }
+  .wl-look-groups::-webkit-scrollbar { display: none; }
+  .wl-look-group { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; flex: 0 0 auto; }
+  .wl-look-opts { display: flex; flex-wrap: nowrap; gap: 8px; }
+  .wl-look-now { margin: 0 18px; }
+}
+@media (max-width: 560px) {
+  .wl-write-step:has(> .wl-look) ~ .wl-write-foot { padding-top: 14px; }
+}
+/* ── the composer on a spread, and on a phone on its side ──
+   Two columns and nothing scrolls: the screen on the left, as tall as the
+   window lets it be, and the question, the colours and the act on the
+   right. On a spread the colours are always there (Write.jsx `wide`), so
+   the left key takes the focus to them rather than opening them; on a
+   phone on its side the key opens them in the right column. The who step
+   keeps the 560 column. */
+@media (min-width: 900px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-write .wl-sheet-in:has(.wl-write-card) { max-width: 920px; }
+  .wl-write:has(.wl-write-card) {
+    --wh: min(calc(100dvh - 64px), 940px);
+    /* 170 = the column's padding, head 62, floor 46; 1.2 = the tallest
+       screen; 504 = the gutters, the gap and 340 for the colours */
+    --wscr: min(440px, calc((var(--wh) - 170px) / 1.2), calc(100vw - 504px));
+    display: grid; grid-template-columns: var(--wscr) minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
+    column-gap: 40px;
+  }
+  .wl-write:has(.wl-write-card) > .wl-head { grid-column: 1 / -1; }
+  .wl-write:has(.wl-write-card) > .wl-write-h { grid-column: 2; grid-row: 2; text-align: left; }
+  .wl-write:has(.wl-write-card) > .wl-write-step { display: contents; }
+  .wl-write-card { grid-column: 1; grid-row: 2 / span 3; }
+  /* the step's own fade is lost to display: contents; it is kept off the
+     card so the card never becomes a stacking context over the room light */
+  .wl-write-card .wl-scene { animation: wl-fade 260ms var(--ease) both; }
+  .wl-write:has(.wl-write-card) .wl-write-card .wl-scene { width: var(--wscr); }
+  .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
+  .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
+}
+/* the kind over its row where the window is tall; on a short one it stays
+   beside the row, so the act is not pushed under the fold */
+@media (min-width: 900px) and (min-height: 641px) {
+  .wl-write .wl-look-group { grid-template-columns: 1fr; gap: 6px; }
+}
+/* on its side the screen is sized off the height alone: 134 is the
+   column's padding, the head and the line under the card at two lines. The
+   heading and the act close up round the colours' strip */
+@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-write .wl-sheet-in { padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
+  .wl-write:has(.wl-write-card) {
+    --wscr: min(400px, calc((100dvh - 134px - var(--notch)) / 1.22));
+    column-gap: 32px;
+  }
+  .wl-write:has(.wl-write-card) > .wl-write-h { margin-bottom: 14px; }
+  .wl-write:has(.wl-write-card) > .wl-write-foot { padding-top: 14px; }
 }
 
 /* the card and the line under it, in one frame, and the frame is what shakes
@@ -2852,8 +3134,8 @@ a.wl-lq { text-decoration: none; }
 /* one line under the card, when the screen has caught something or the
    server has said no: to the person writing, both are the one thing to
    change */
-.wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
-.wl-write-caught { color: var(--ember); text-align: right; }
+.wl-write-floor { min-height: 20px; margin-top: 16px; display: flex; justify-content: center; }
+.wl-write-caught { color: var(--ember); text-align: center; text-wrap: balance; }
 .wl-write-foot {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
@@ -3389,8 +3671,9 @@ a.wl-lq { text-decoration: none; }
    one face is not cut into the next */
 .wl-tab-faces { display: flex; align-items: center; flex: 0 0 auto; }
 .wl-tab-faces .wl-spark { color: var(--glow); }
-.wl-face.wl-tab-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 0 2px var(--void); }
-.wl-tab-face + .wl-tab-face { margin-left: -9px; }
+/* side by side, each with its own glow, rather than stacked like discs */
+.wl-face.wl-tab-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 8px -2px rgba(210, 210, 210, 0.28); }
+.wl-tab-face + .wl-tab-face { margin-left: 4px; }
 .wl-tab-text {
   flex: 1 1 auto; min-width: 0;
   font-family: var(--f-display); font-weight: var(--w-display);
@@ -3465,7 +3748,7 @@ a.wl-lq { text-decoration: none; }
   display: block;
   top: -150px;
   background: linear-gradient(180deg,
-    rgba(8,7,11,0) 0%, rgba(8,7,11,0.42) 26%, rgba(8,7,11,0.86) 52%, var(--void) 68%);
+    rgba(var(--void-rgb), 0) 0%, rgba(var(--void-rgb), 0.42) 26%, rgba(var(--void-rgb), 0.86) 52%, var(--void) 68%);
 }
 
 /* ═══ WIDE ═════════════════════════════════════════════════════════════════
@@ -3514,11 +3797,17 @@ a.wl-lq { text-decoration: none; }
   .wl-mast-sub { max-width: 40ch; font-size: var(--t-subject); }
   /* a spread is wider than it is tall, so the corners are further out and the
      sides are what the mask has to work on */
+  /* the head clears further down: the search plate spans 114 to 170 here,
+     and the crowd is at most a fifth on under it, so no screen's colour
+     reaches the glass */
   .wl-hive-crowd {
+    --crowd-v: linear-gradient(180deg, transparent 104px, rgba(0,0,0,0.22) 170px, #000 240px, #000 calc(100% - 150px), rgba(0,0,0,0.25) calc(100% - 62px), transparent 100%);
     -webkit-mask-image:
+      var(--crowd-v),
       radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
       linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
     mask-image:
+      var(--crowd-v),
       radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
       linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
   }
@@ -3566,15 +3855,17 @@ a.wl-lq { text-decoration: none; }
      chevrons stand in the room either side of the paper rather than on its
      edge: a ring each, the close mark's own size, centred in the band. */
   .wl-sheet-wrap.is-letter { padding: 32px 80px; }
-  .wl-sheet-wrap.is-letter .wl-sheet { max-width: 460px; animation: wl-letter-in 380ms var(--ease) both; }
-  .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
+  .wl-sheet-wrap.is-letter .wl-sheet { max-width: calc(var(--scene-w) + 20px); animation: wl-letter-in 380ms var(--ease) both; }
+  .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
   .wl-sheet-wrap.is-letter .wl-sheet-in { padding: 0; }
   .wl-letter { --gutter: 30px; }
-  .wl-letter-stage { max-width: 460px; margin: 0 auto; }
+  .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }
   .wl-letter-x { top: 26px; right: 30px; }
   .wl-turn {
     width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
-    border: 1px solid var(--hair);
+    /* brighter than a hairline at rest: on the black room a hairline ring
+       is not there */
+    border: 1px solid rgba(244, 241, 234, 0.16); color: rgba(244, 241, 234, 0.72);
     transition: color 200ms var(--ease), border-color 200ms var(--ease), opacity 200ms var(--ease);
   }
   .wl-turn.is-prev { left: -62px; }
@@ -3649,6 +3940,12 @@ a.wl-lq { text-decoration: none; }
      both give it back and the mask does the work instead */
   .wl-shade.is-top { height: 96px; }
   .wl-shade.is-bottom { height: 120px; }
+  /* the plate spans 88 to 130 here, and the phone's head and foot would
+     leave a sliver of crowd in a 390px window; under the plate the crowd is
+     at most a fifth on, as on a desktop */
+  .wl-hive-crowd {
+    --crowd-v: linear-gradient(180deg, transparent 88px, rgba(0,0,0,0.22) 146px, #000 184px, #000 calc(100% - 90px), rgba(0,0,0,0.25) calc(100% - 40px), transparent 100%);
+  }
 
   /* 390px of height is the constraint here, and display type is what spends
      it fastest */
@@ -4303,7 +4600,7 @@ a.wl-lq { text-decoration: none; }
   position: relative; flex: 0 0 auto; isolation: isolate;
   display: inline-grid; place-items: center;
   width: var(--s, 30px); height: var(--s, 30px);
-  border-radius: max(2px, calc(var(--s, 30px) * 0.06)); overflow: hidden;
+  border-radius: clamp(2px, calc(var(--s, 30px) * 0.03), 6px); overflow: hidden;
   background: radial-gradient(120% 95% at 78% 66%, #BABABA, #9D9D9D 52%, #7B7B7B);
   box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 calc(var(--s, 30px) * 0.3) calc(var(--s, 30px) * -0.06) rgba(210, 210, 210, 0.28);
   vertical-align: middle;
@@ -4316,6 +4613,11 @@ a.wl-lq { text-decoration: none; }
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
     linear-gradient(112deg, rgba(255, 255, 255, 0.1), transparent 40%, transparent 70%, rgba(0, 0, 0, 0.1));
   mix-blend-mode: multiply;
+}
+/* over a photo the grid would beat against its pixels and break up the few
+   there are, so a picture keeps only the glass's sheen */
+.wl-face.has-img::after {
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.1), transparent 40%, transparent 70%, rgba(0, 0, 0, 0.1));
 }
 .wl-face-mono {
   position: relative; z-index: 1;
@@ -4400,7 +4702,7 @@ a.wl-lq { text-decoration: none; }
 .wl-face-open:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 
 /* ── the face, opened ──
-   parts.jsx `FaceViewer`. The picture large over a dimmed room, the name and
+   parts.jsx `FaceViewer`. The picture large in the dark room, the name and
    the handle under it, and nothing else on the screen: a tap anywhere puts
    it away. Over every sheet, under the intro. */
 .wl-viewer {
@@ -4410,9 +4712,15 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-viewer-scrim {
   position: absolute; inset: 0; width: 100%; padding: 0; border: 0;
-  background: rgba(8, 7, 11, 0.86);
+  background: #000;
   animation: wl-fade 240ms var(--ease-out) both;
   cursor: pointer;
+}
+/* the room's black and its grain, as round an opened letter: the letter
+   goes out behind the picture the way the wall goes out behind a letter */
+.wl-viewer-scrim::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 .wl-viewer-in {
   position: relative;
@@ -4420,9 +4728,15 @@ a.wl-lq { text-decoration: none; }
   animation: wl-viewer-in 420ms var(--ease) both;
   cursor: pointer;
 }
+/* the whole of it puts the picture away, and .wl-root * would say otherwise */
+.wl-viewer-in * { cursor: inherit; }
 @keyframes wl-viewer-in {
   from { opacity: 0; transform: scale(0.72); }
   to   { opacity: 1; transform: none; }
+}
+@keyframes wl-viewer-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: scale(0.72); }
 }
 /* the disc's own box, which is what flies: out of the small face and back
    into it (parts.jsx FaceViewer). Given a face to come from, the box's own
@@ -4432,11 +4746,10 @@ a.wl-lq { text-decoration: none; }
 .wl-viewer.is-from .wl-viewer-in { animation: none; }
 .wl-viewer.is-from .wl-viewer-who { animation: wl-fade 320ms var(--ease) 200ms both; }
 .wl-viewer.is-closing { pointer-events: none; }
-.wl-viewer.is-closing .wl-viewer-scrim { animation: wl-fade 320ms var(--ease-out) reverse both; }
-.wl-viewer.is-closing .wl-viewer-who { animation: wl-fade 160ms var(--ease-out) reverse both; }
-.wl-viewer.is-closing:not(.is-from) .wl-viewer-in { animation: wl-viewer-in 260ms var(--ease-out) reverse both; }
+.wl-viewer.is-closing .wl-viewer-scrim { animation: wl-unfade 320ms var(--ease-out) both; }
+.wl-viewer.is-closing .wl-viewer-who { animation: wl-unfade 160ms var(--ease-out) both; }
+.wl-viewer.is-closing:not(.is-from) .wl-viewer-in { animation: wl-viewer-out 260ms var(--ease-out) both; }
 .wl-face.wl-viewer-face {
-  --s: min(72vw, 300px);
   box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.24), 0 0 60px -6px rgba(210, 210, 210, 0.34), 0 30px 80px -20px rgba(0, 0, 0, 0.9);
 }
 .wl-viewer-who { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; max-width: 80vw; }
@@ -4457,15 +4770,21 @@ a.wl-lq { text-decoration: none; }
 
 /* ── you, in the bar ──
    The one control in Main's bar, and a lit one: the bar's ash would make it
-   read as a third link. Same chip on every screen. */
-.wl-me {
+   read as a third link. Same chip on every screen. Two classes, so the
+   ghost pill's ash and hairline do not win over it. */
+.wl-pill.wl-me {
   min-height: 34px; padding: 0 14px; gap: 8px;
   font-size: var(--t-small); color: var(--chalk);
   border-color: rgba(244, 241, 234, 0.22);
 }
-.wl-me.is-on { padding: 0 12px 0 7px; }
+.wl-me.is-on { padding: 0 14px 0 6px; }
+/* a long handle ends in an ellipsis rather than pushing the chip off a phone */
+.wl-me { max-width: min(58vw, 280px); min-width: 0; }
+.wl-me-h { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* one letter, one of the face's pixels to each of the page's */
+.wl-me .wl-face-mono { font-size: 18.667px; letter-spacing: 0; }
 @media (hover: hover) and (pointer: fine) {
-  .wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
+  .wl-pill.wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
 }
 .wl-me-h { font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-normal); text-transform: none; }
 
@@ -4575,22 +4894,6 @@ a.wl-lq { text-decoration: none; }
     rgba(255, 168, 204, 0.55) 0%, rgba(255, 196, 200, 0.26) 26%, rgba(255, 196, 200, 0) 56%);
   filter: blur(5px);
 }
-
-.wl-card-disc {
-  position: relative;
-  flex: 0 0 auto;
-  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
-  background: rgba(244, 241, 234, 0.05);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  display: grid; place-items: center;
-  transition: background 360ms var(--ease);
-}
-.wl-card-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.wl-card-mono {
-  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-loose);
-  color: var(--ash); user-select: none;
-}
-.wl-card.is-looking .wl-card-disc { background: rgba(244, 241, 234, 0.035); }
 
 /* the two states of the text share one cell and cross fade. Nothing moves:
    the words land where the bars were. */

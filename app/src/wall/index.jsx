@@ -36,7 +36,7 @@
 // the reason those three take no cut — a surface that blacks out to raise a
 // sheet is a surface that just navigated.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS } from './router.js'
 import { campus } from './campus.js'
@@ -182,6 +182,16 @@ export default function WallApp() {
     }
   }, [])
 
+  // ── the browser's bar ──
+  // The wall is a black room and the bar above it takes the same black,
+  // before the first paint. The front door's colour goes back on the way out.
+  useLayoutEffect(() => {
+    const tc = document.querySelector('meta[name="theme-color"]')
+    const was = tc && tc.content
+    if (tc) tc.content = '#000000'
+    return () => { if (tc && was) tc.content = was }
+  }, [])
+
   // ── the scan ──
   // /berkeley?s=flyer-a is how the flyer, the card, the chalk and the table become
   // measurable against each other. Read once, attached to anything this
@@ -227,6 +237,23 @@ export default function WallApp() {
   // underneath, which onPop then renders. A sheet arrived at by deep link has
   // no depth and closes the old way.
   const leaving = useRef(false)
+  // A step back whose popstate never comes (a browser that drops it, or a
+  // go() that lands while another is pending) must not leave the sheet up
+  // with every way out ignored, so after a beat the wall is put back by hand.
+  const stepTimer = useRef(0)
+  const stepBack = useCallback((n) => {
+    const at = window.location.pathname
+    window.clearTimeout(stepTimer.current)
+    stepTimer.current = window.setTimeout(() => {
+      if (!leaving.current || window.location.pathname !== at) return
+      leaving.current = false
+      const to = href('wall')
+      window.history.pushState({ wall: 'wall', wallDepth: 0, wallPushed: true }, '', to)
+      setOverride(null)
+      setRoute(parse(to))
+    }, 700)
+    window.history.go(n)
+  }, [])
   const go = useCallback((name, id) => {
     if (leaving.current) return
     const to = href(name, id)
@@ -241,7 +268,17 @@ export default function WallApp() {
     if (SHEETS.has(from.name) && target.name === 'wall' && depth > 0) {
       leaving.current = true
       setOverride(null)
-      window.history.go(-depth)
+      stepBack(-depth)
+      return
+    }
+
+    // Turning to the next letter takes the place of the one on the glass
+    // rather than stacking on it, so closing goes straight back to what the
+    // first letter was opened from instead of back through every letter read.
+    if (from.name === 'letter' && target.name === 'letter') {
+      window.history.replaceState({ ...window.history.state, wall: name }, '', to)
+      setOverride(null)
+      setRoute(target)
       return
     }
 
@@ -263,9 +300,9 @@ export default function WallApp() {
     setVeil(true)
     window.clearTimeout(cut.current)
     cut.current = window.setTimeout(swap, 160)
-  }, [reduce])
+  }, [reduce, stepBack])
 
-  useEffect(() => () => window.clearTimeout(cut.current), [])
+  useEffect(() => () => { window.clearTimeout(cut.current); window.clearTimeout(stepTimer.current) }, [])
 
   // Back and forward. Backing out past the entry point is a real navigation:
   // this tree replaced the production app at mount, so there is nothing here
@@ -273,6 +310,7 @@ export default function WallApp() {
   useEffect(() => {
     const onPop = () => {
       leaving.current = false
+      window.clearTimeout(stepTimer.current)
       if (!isWallPath(window.location.pathname)) { window.location.reload(); return }
       setOverride(null)
       setRoute(parse(window.location.pathname))
@@ -307,10 +345,10 @@ export default function WallApp() {
   const up = useCallback(() => {
     if (leaving.current) return
     if (window.history.state?.wallPushed) {
-      leaving.current = true; setOverride(null); window.history.go(-1); return
+      leaving.current = true; setOverride(null); stepBack(-1); return
     }
     go('wall')
-  }, [go])
+  }, [go, stepBack])
   // ── and what is under this sheet, so the close mark can say so ──
   // Read at render, which for this component is every route change, so a
   // sheet knows on its first frame where its way out actually goes. A mark
@@ -347,8 +385,8 @@ export default function WallApp() {
   }
 
   return (
-    <div className="wl-root" data-route={route.name}>
-      <Ground pace={mode} lit={lit} still={reduce} tint="berkeley" />
+    <div className="wl-root is-room" data-route={route.name}>
+      <Ground pace={mode} lit={lit} still={reduce} room />
 
       {/* Nothing is mounted under the intro until it starts to lift, and
           then everything is: the wall's own cascade runs while the black is
@@ -356,6 +394,13 @@ export default function WallApp() {
           a logo followed by a page. */}
       {boot > 0 && (
         <>
+          {/* hidden under a sheet, and out of the tab order, so the tab key
+              stays on the sheet and never walks into the wall behind it. Not
+              by `inert` here: inert on the wall's root restyled every element
+              of a hundred small screens on the frame a letter opened and
+              again on the frame it closed. The wall makes the rest of itself
+              inert and takes its screens out of the tab order (`under`,
+              screens/Wall.jsx and Hive.jsx) */}
           <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined}>
             {base}
           </main>

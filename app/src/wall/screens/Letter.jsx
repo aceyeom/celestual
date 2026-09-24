@@ -83,9 +83,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import {
   Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic } from '../screen.jsx'
-import { colourOf, skinOf, skinVars, signalOf, chargeOf } from '../looks.js'
-import { sendLetter, prepareLetter, letterFace, starred, canShare } from '../share.js'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, RoomLight, PIC_CELLS } from '../screen.jsx'
+import { colourOf, skinOf, signalOf, chargeOf } from '../looks.js'
+import { sendLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
   atHandle, nameFor, normHandle, heart, wall, freeReads,
@@ -111,9 +111,10 @@ function useFirst(to) {
 
 // ── the picture at the head of the message ──────────────────────────────────
 // A handle the resolver has a picture for carries it the way a picture
-// message did, dithered into this screen's ink, at the head of the words;
-// pressed, it opens large (parts.jsx `FaceViewer`), out of itself and back
-// into it. A first name has no picture, and no picture stands there.
+// message did, dithered into this screen's ink (on a print, its own inks),
+// at the head of the words, framed and a whole number of lines tall; pressed,
+// it opens large (parts.jsx `FaceViewer`), out of itself and back into it. A
+// first name has no picture, and no picture stands there.
 function Picture({ handle, look, seed, live }) {
   const p = useProfile(handle)
   const [open, setOpen] = useState(false)
@@ -134,21 +135,14 @@ function Picture({ handle, look, seed, live }) {
         tabIndex={live ? undefined : -1}
         aria-label={`see ${atHandle(handle)}'s picture larger`} title="see it larger"
       >
-        <PixelPic src={p.avatar} cells={32} ink={s.print ? '#131313' : s.ink} inv={s.kind === 'neg'} />
+        <PixelPic
+          src={p.avatar} cells={PIC_CELLS} ink={s.print ? '#131313' : s.ink} inv={s.kind === 'neg'}
+          tones={s.print ? s.print.pic : null} levels={s.kind === 'xerox' ? 1 : 3}
+        />
       </button>
       {open ? <FaceViewer handle={handle} onClose={close} from={from} source={btn} /> : null}
     </span>
   )
-}
-
-// ── the light in the room ───────────────────────────────────────────────────
-// The one light in the dark is the screen's, and it falls on the room in the
-// screen's colour: a wide soft pool behind the letter, which crossfades when
-// the deck is turned onto a letter lit in another colour. It is the room's
-// and not the screen's because the strip is clipped at the glass's edge.
-function RoomLight({ l }) {
-  const v = skinVars(colourOf(l.look, l.id))
-  return <span className="wl-room-light" style={{ '--s-halo': v['--s-halo'] }} aria-hidden="true" />
 }
 
 // ── the close ──
@@ -184,8 +178,13 @@ const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 // still has its own address.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// How far a neighbour's centre stands from the card's, for a screen `w`
+// wide. It rests just past the edge of the glass and never in the room: on
+// a phone that is the screen and the gap, as it always was, and in a wide
+// room it is half the window and half the screen.
+const span = (w) => Math.max(w + GAP, (document.documentElement.clientWidth + w) / 2 + 6)
 // Where a neighbour stands, relative to the card, while the card is at `dx`.
-const beside = (dir, dx, w) => dx + dir * (w + GAP)
+const beside = (dir, dx, w) => dx + dir * span(w)
 
 // The leaf: the paper and the words, keyed per card so each arrival is its
 // own element. It tells the screen when it is on the glass, before paint, so
@@ -216,16 +215,36 @@ function Leaf({ className, onMount, children }) {
 function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
+  // the picture at the head of the words, which the Send picture carries too
+  const prof = useProfile(to && !isNameKey(to) ? to : '')
+  const pic = (prof && prof.avatar) || ''
   const [busy, setBusy] = useState(false)
+  const [, drawn] = useState(0)
   const at = view || { kind: 'letter' }
   const h = to && !isNameKey(to) ? atHandle(to) : ''
   const back = () => onView && onView(null)
 
+  // The Send picture, drawn as the send menu opens, whose `share…` says
+  // `share` once it is there (share.js `prepareLetter`). Not ahead of that:
+  // drawing it holds a phone for most of a second, which is a stall in the
+  // turn when it lands on a letter only passed through
+  const sending = live && !!l && !!view && view.kind === 'send'
+  useEffect(() => {
+    if (!sending) return undefined
+    let alive = true
+    prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })).then(() => { if (alive) drawn((n) => n + 1) })
+    return () => { alive = false }
+  }, [sending, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
+  // whether this letter is still the one on the glass, so what a tap
+  // answers late (a picture drawn, a file saved) is not put on the next
+  const here = useRef(true)
+  useEffect(() => { here.current = true; return () => { here.current = false } }, [])
+
   if (!l) {
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
-       neither shut nor open, so it is only the cursor */
+       neither shut nor open, so it is only the lit glass */
     return (
-      <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, icon: '', handle: h }} live={false} nameId={id}>
+      <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, handle: h }} live={false} nameId={id}>
         <ScreenText text="" />
       </Screen>
     )
@@ -252,19 +271,29 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
        handle proof can stand for it (0053). */
     ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
   ]
+  const face = () => letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })
   const sendItems = [
-    ...(canShare() ? [{ t: 'share', how: 'share' }] : []),
+    ...(canShare() ? [{ t: isReady(face()) ? 'share' : 'share…', how: 'share' }] : []),
     { t: 'save the picture', how: 'save' },
     { t: 'copy the link', how: 'copy' },
   ]
-  const face = () => letterFace(l, { name: first, handle: h })
   const send = async (how) => {
-    // the share sheet is asked for before anything is awaited: a phone only
-    // opens it inside the tap that asked, and the picture was drawn while
-    // the menu was up (`prepareLetter`, on the key that opened it)
+    // a phone opens the share sheet only inside the tap that asked, so a
+    // tap before the picture is drawn waits for it and puts the menu back,
+    // and the next tap shares the file
+    if (how === 'share' && !isReady(face())) {
+      onView({ kind: 'note', glyph: 'env', title: 'drawing it' })
+      const b = await prepareLetter(face())
+      if (!here.current) return
+      onView(b ? { kind: 'send', at: 0 } : { kind: 'note', glyph: '', title: 'it did not go', text: 'try again', done: true })
+      return
+    }
+    // otherwise the sheet is asked for before anything is awaited, with the
+    // picture drawn ahead (`prepareLetter`)
     const going = sendLetter(how, face(), `${window.location.origin}${href('letter', l.id)}`)
     onView({ kind: 'note', glyph: 'env', title: how === 'copy' ? 'copying' : 'sending' })
     const out = await going
+    if (!here.current) return
     if (out === 'left') { onView(null); return }
     const said = {
       sent: ['check', 'sent'], saved: ['check', 'saved'], copied: ['check', 'link copied'],
@@ -272,6 +301,14 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     onView({ kind: 'note', glyph: said[0], title: said[1], text: said[2] || '', done: true })
   }
 
+  // the letter's own status rows, kept under a note, so the band is never
+  // an empty strip and the sheet keeps its name
+  const letterTop = {
+    name: first, handle: h,
+    counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
+    mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
+    sig: signalOf(hearts), bat: chargeOf(l.at),
+  }
   let top
   let body
   let keys
@@ -283,33 +320,31 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
       if (it.how) send(it.how)
       else { onView(null); it.run() }
     }
-    top = { name: at.kind === 'options' ? 'options' : 'send', icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    // the menu's name, and where in it the chosen row is, on the right of
+    // the second row, the way the phone counted them
+    const sel = Math.min(at.at || 0, items.length - 1)
+    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
     body = (
       <ScreenMenu
-        items={items.map((x) => x.t)} at={Math.min(at.at || 0, items.length - 1)}
+        items={items.map((x) => x.t)} at={sel}
         onAt={(j) => onView({ ...at, at: j })} onPick={pick} label={at.kind}
         onBack={back}
       />
     )
     keys = {
-      l: { label: 'select', onClick: () => pick(Math.min(at.at || 0, items.length - 1)), aria: `select ${items[at.at || 0]?.t || ''}` },
+      l: { label: 'select', onClick: () => pick(sel), aria: `select ${items[sel]?.t || ''}` },
       r: { label: 'back', onClick: back, aria: 'back to the letter' },
     }
   } else if (at.kind === 'note') {
-    top = { name: '', icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    top = letterTop
     body = <ScreenNote glyph={at.glyph} title={at.title}>{at.text || null}</ScreenNote>
     keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
   } else {
-    top = {
-      name: first, handle: h,
-      counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
-      mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
-      sig: signalOf(hearts), bat: chargeOf(l.at),
-    }
+    top = letterTop
     body = (
       <ScreenText
-        text={text}
-        pic={!isNameKey(l.to) ? <Picture handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
+        text={text} sealed={!open}
+        pic={!isNameKey(l.to) ? <Picture key={pic || 'none'} handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
       />
     )
     keys = {
@@ -450,7 +485,9 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   const silent = silentRef
   const busy = useRef(false)
   const timers = useRef([])
-  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  // the frame a turn starts the strip on, kept so a late one can be put off
+  const frame = useRef(0)
+  useEffect(() => () => { timers.current.forEach(clearTimeout); cancelAnimationFrame(frame.current) }, [])
   const after = (ms, fn) => { timers.current.push(setTimeout(fn, ms)) }
 
   const place = (x, w, transition, ms = 0) => {
@@ -474,7 +511,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
       const h0 = hBase.current
       const side = x < 0 ? nextSlot.current : x > 0 ? prevSlot.current : null
       const h1 = side ? side.offsetHeight : h0
-      const f = Math.min(1, Math.abs(x) / (w + GAP))
+      const f = Math.min(1, Math.abs(x) / span(w))
       tr.style.transition = ms ? `height ${ms}ms ${EASE_SLIDE}` : 'none'
       if (h0) tr.style.height = `${(h0 + (h1 - h0) * f).toFixed(1)}px`
     }
@@ -498,7 +535,12 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     place(dx.current, move.w, 'none')
   }, [move])
 
-  const width = () => (cardBox.current && cardBox.current.offsetWidth) || 360
+  // the screen's width, and not its card's: the card is the sheet's width
+  const width = () => {
+    const box = cardBox.current
+    const scr = box && box.querySelector('.wl-scene')
+    return (scr && scr.offsetWidth) || (box && box.offsetWidth) || 360
+  }
 
   // Run on to the neighbour in `dir` (1 next, -1 previous), from wherever
   // the finger left the card, then change the address once it has landed.
@@ -512,13 +554,16 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     dx.current = fromX
     if (!hBase.current) measure()
     setMove((m) => (m && m.kind === 'drag' ? { ...m, kind: 'slide', dir } : { kind: 'slide', dir, w }))
-    requestAnimationFrame(() => {
-      place(-dir * (w + GAP), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`, SLIDE_MS)
-    })
-    after(SLIDE_MS + 20, () => {
-      silent.current = true
-      busy.current = false
-      go('letter', side.target)
+    // the landing is timed from the frame the strip starts on, so a frame
+    // that comes late cannot land the address before the strip has moved
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      place(-dir * span(w), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`, SLIDE_MS)
+      after(SLIDE_MS + 20, () => {
+        silent.current = true
+        busy.current = false
+        go('letter', side.target)
+      })
     })
   }
   const slideRef = useRef(slide)
@@ -537,6 +582,13 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // slot was showing is now the card, in the same place, with nothing seen
   // to change.
   const landed = () => {
+    // a leaf that came by another way while a turn's frame was still due
+    if (frame.current) {
+      cancelAnimationFrame(frame.current)
+      frame.current = 0
+      busy.current = false
+      setMove(null)
+    }
     rest()
     if (silent.current) { silent.current = false; setMove(null) }
   }
@@ -595,6 +647,9 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     else spring()
   }
   const onCancel = () => { drag.current = null; spring() }
+  // the way out stops a turn that is under way, so it cannot land on a letter
+  // after the letter has been closed
+  const stop = () => { timers.current.forEach(clearTimeout); cancelAnimationFrame(frame.current) }
   const swipe = canTurn
     ? { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onCancel }
     : null
@@ -625,12 +680,12 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={up} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
+      <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
         <div className="wl-sheet-in wl-letter">
           <div className="wl-letter-card">
             <Screen
               seed={String(param)} look={null} state={woke}
-              top={{ name: 'not on the wall', icon: '' }}
+              top={{ name: 'not on the wall', icon: 'lock', mode: 'locked' }}
               keys={{ r: { label: 'back', onClick: up, aria: upLabel } }}
               live nameId="wl-letter-h"
             >
@@ -676,16 +731,16 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   )
 
   return (
-    <Sheet onClose={up} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
+    <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
       <div className="wl-sheet-in wl-letter">
-        {one ? <RoomLight key={colourOf(one.look, one.id).slug} l={one} /> : null}
+        {one ? <RoomLight key={colourOf(one.look, one.id).slug} look={one.look} seed={one.id} /> : null}
         {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
             has been up, whether it is shut, who it is for, and the words.
             Either side of it, in the gutters, a chevron to the letter before
             and the one after; the card itself takes the finger; and while it
-            is moving the neighbours stand beside it on the same strip, clipped
-            at the glass's edge (wall.css `.wl-letter-track`). */}
+            is moving the neighbours stand beside it on the same strip, just
+            past the edge of the glass, which is the only clip (`span`). */}
         <div
           className={`wl-letter-stage is-landed${move ? ' is-moving' : ''}`}
           {...swipe}

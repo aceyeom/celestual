@@ -435,7 +435,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                   <span className="mn-lab">from</span>
                   {you ? (
                     <>
-                      <Face handle={you} size={24} />
+                      <Face handle={you} size={28} />
                       <span className="mn-sign-h">{atHandle(you)}</span>
                     </>
                   ) : (
