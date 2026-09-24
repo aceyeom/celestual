@@ -933,6 +933,11 @@ const ROUTES = [
   // opened from a disc on the lifted wall, then closed by the mark: the
   // card flying back into the disc it came out of, caught half way, with
   // the glass fading in place around it
+  // opened from a disc, turned twice, then closed: back on the wall in one
+  // step, not back through the letters that were turned past
+  { label: 'letter-turned-close', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400],
+           ['click', '.wl-turn.is-next'], ['wait', 900], ['click', '.wl-turn.is-next'], ['wait', 900], ['click', '.wl-close'], ['wait', 1600]], settle: 400 },
   { label: 'letter-close-disc', path: '/berkeley',
     acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400], ['click', '.wl-close', null, 150]], settle: 0 },
   // a disc pressed on the wall: the letter's card opening out of it on the

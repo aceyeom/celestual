@@ -312,10 +312,6 @@ function drawScreen(o, dots = null) {
     boxW = n * lh0 - u - px
     const widthAt = (i) => (i < n ? bw - boxW - 2.6 * u : bw)
     lines = wrap(g, text, widthAt)
-    // the cursor, 0.214em with its margin, takes a line of its own when the
-    // last has no room for it, as it does on the page
-    const k = lines.length - 1
-    if (lines[k] && g.measureText(lines[k]).width + 0.214 * step * u > widthAt(k)) lines.push('')
     return Math.max(lines.length * lh0, n * lh0 - px) <= bh + px
   }
   let step = 0
@@ -373,13 +369,7 @@ function drawScreen(o, dots = null) {
       at += run.length
     }
   })
-  // and the cursor after the last word: one pixel of the face wide, and
-  // from the top of its capitals to a pixel under the line (`.wl-scr-cur`)
-  const last = lines[lines.length - 1] || ''
-  const cx = xAt(lines.length - 1) + g.measureText(last).width + 0.107 * S
-  const foot = by + (lines.length - 1) * lh + base + 0.107 * S
-  g.fillStyle = s.cur
-  g.fillRect(cx, foot - 0.64 * S, Math.max(2, 0.107 * S), 0.64 * S)
+  // no cursor: a letter being read is not being written
   g.restore()
 
   // the picture at the head of the words, framed, in the screen's ink or a

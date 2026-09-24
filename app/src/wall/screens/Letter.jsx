@@ -242,7 +242,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
 
   if (!l) {
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
-       neither shut nor open, so it is only the cursor */
+       neither shut nor open, so it is only the lit glass */
     return (
       <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, handle: h }} live={false} nameId={id}>
         <ScreenText text="" />
