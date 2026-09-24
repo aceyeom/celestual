@@ -416,7 +416,7 @@
 }
 .wl-g.wl-g-env { height: 6cqw; margin-left: 2cqw; }
 .wl-g.is-bat { height: 7cqw; margin-left: auto; }
-/* the small screen's blink (`is-blink`, `.wl-tile-cur`) is the wall's to
+/* the small screen's blink (`is-blink`) is the wall's to
    keep, by a class on the disc (wall.css, THE HIVE, the blink): a CSS
    animation on every blinking mark was an opacity layer of its own, which
    cut the small screen round it into two more, and a style recalc on every
@@ -430,10 +430,6 @@
   display: inline-flex; align-items: center; white-space: nowrap;
   font-size: min(46cqw, calc(150cqw / var(--len, 2))); line-height: 1;
   color: var(--t-ink); text-shadow: var(--t-ts); letter-spacing: 0.01em;
-}
-.wl-tile-cur {
-  display: block; flex: 0 0 auto; width: 0.09em; height: 0.78em; margin-left: 0.07em;
-  background: var(--t-cur); box-shadow: 0 0 3px var(--t-cur);
 }
 .wl-tile-pic { width: 70cqw; height: 70cqw; display: block; }
 .wl-tile-bot {
@@ -478,7 +474,7 @@
 .wl-mini-body i:nth-child(3) { top: 62%; width: 62%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
   .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
   /* the words are fitted by measuring them at each size (`useFit`), and a
      transition, even the 1ms one this preference gives everything

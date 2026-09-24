@@ -354,7 +354,7 @@
 /* the room's grain is the letter room's, tile for tile and anchored at 0,0,
    so opening a letter swaps one grain for an identical one */
 .wl-ground.is-room .wl-grain {
-  opacity: 0.07; mix-blend-mode: screen;
+  opacity: 0.07;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 /* the dark falls away into the corners, over the screens, as the concept's
@@ -2347,11 +2347,10 @@ a.wl-lq { text-decoration: none; }
 .wl-cell:active .wl-cell-orb { transform: scale(0.93); transition-duration: 90ms; }
 
 /* ── the focus ──
-   The far screens are out of focus, so a screen the frame cuts is a light in
+   The far screens fade to lights, so a screen the frame cuts is a light in
    the distance rather than a card cut off. Hive.jsx works out a step, 0 to
    6, for every screen, and writes what the step looks like (`FOCUS`: the
-   blur in the disc's own pixels, the dimming, and from the third step the
-   round glow in the screen's own colour that stands behind it) straight onto
+   dimming, and from the third step the round glow in the screen's own colour that stands behind it) straight onto
    the two elements of the small screen that draw it, `.wl-tile-f` and
    `.wl-tile-glow` (screen.css). It used to be a `data-f` on the disc and a
    rule here for each step, and every step a screen crossed restyled the
@@ -2359,14 +2358,14 @@ a.wl-lq { text-decoration: none; }
    variables: on a pull that was thirty screens a frame, and most of the
    frame. */
 /* the keyboard's focus is always sharp, over whatever the loop wrote */
-.wl-cell:focus-visible .wl-tile-f { filter: none !important; opacity: 1 !important; }
+.wl-cell:focus-visible .wl-tile-f { opacity: 1 !important; }
 .wl-cell:focus-visible .wl-tile-glow { opacity: 0 !important; }
 /* ── the blink ──
-   A sharp screen's cursor, and its envelope or its flat battery, blink on
+   A sharp screen's envelope, or its flat battery, blinks on
    that phone's own clock, and the loop keeps it (Hive.jsx `BLINK`): the
    half of each beat they are off, the disc carries `is-dark`. A screen out
    of focus is a light and does not blink. */
-.wl-cell-disc.is-dark :is(.wl-tile-cur, .is-blink) { visibility: hidden; }
+.wl-cell-disc.is-dark .is-blink { visibility: hidden; }
 
 /* ── whose screen it is ──
    Under a mouse the screen pointed at says whose it is, on a small plate
@@ -2496,7 +2495,7 @@ a.wl-lq { text-decoration: none; }
    (`.is-write`, below). */
 .wl-sheet-wrap:is(.is-letter, .is-write) .wl-scrim { background: #000; }
 .wl-sheet-wrap:is(.is-letter, .is-write) .wl-scrim::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: screen;
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 /* ── one width for the letter ──
@@ -2600,7 +2599,7 @@ a.wl-lq { text-decoration: none; }
 /* the grain sits behind the words: the isolated sheet keeps z -1 inside it */
 .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  opacity: 0.07; mix-blend-mode: screen;
+  opacity: 0.07;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 /* and asked for less of it, the same glass made opaque, and neutral */
@@ -4720,7 +4719,7 @@ a.wl-lq { text-decoration: none; }
 /* the room's black and its grain, as round an opened letter: the letter
    goes out behind the picture the way the wall goes out behind a letter */
 .wl-viewer-scrim::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: screen;
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 .wl-viewer-in {

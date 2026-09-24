@@ -6,9 +6,8 @@
 //
 //   Screen   the letter, read. The status across the top (the aerial and the
 //            bars, the name, how many characters were left, the battery),
-//            the words with the cursor still after the last one, and the
-//            three soft keys at the foot. Opened, it is the only lit thing
-//            in the room
+//            the words, and the three soft keys at the foot. Opened, it is
+//            the only lit thing in the room
 //   Tile     the same screen, small, standing for a name on the wall: the
 //            status row, the name's monogram or their picture, and the
 //            keys' two dashes
@@ -590,13 +589,13 @@ function Bar({ of, over }) {
   return <span className="wl-scr-sb" aria-hidden="true"><i style={{ top: `${(t * 78).toFixed(1)}%` }} /></span>
 }
 
-// The message, as the phone showed a draft: the words, the cursor after the
-// last of them. `pic` stands a picture at the head of it, the way a picture
+// The message, as the phone showed it: the words, and the cursor after the
+// last of them only for a screen still being written (`cursor`). `pic` stands a picture at the head of it, the way a picture
 // message carried one: whatever node the caller hands, which draws its own
 // `.wl-scr-mms` float when it has a picture and nothing when it has none.
 // `sealed` draws each run of stars as the phone's full pixel star, one per
 // hidden letter, on the line (screen.css `.wl-scr-stars`).
-export function ScreenText({ text, pic = null, cursor = true, sealed = false, className = '' }) {
+export function ScreenText({ text, pic = null, cursor = false, sealed = false, className = '' }) {
   const ref = useRef(null)
   // the picture's key, since its float can arrive after the first fit
   const over = useFit(ref, [text, pic ? pic.key : '', sealed], true)
@@ -694,7 +693,7 @@ export function ScreenNote({ glyph = '', title, children }) {
 // small. The bars are how many letters the name has, the battery how long
 // since the last one, and an envelope blinks on a name that heard from
 // somebody today. The middle is the name's picture, dithered into the
-// screen, or its monogram with the cursor after it.
+// screen, or its monogram.
 export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, className = '' }) {
   const colour = colourOf(look, seed)
   const s = skinOf(colour)
@@ -738,7 +737,7 @@ export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, 
             ) : null}
             {shown ? null : (
               <span className="wl-tile-mono" style={{ '--len': Math.max(2, len) }}>
-                {mono}<i className="wl-tile-cur" />
+                {mono}
               </span>
             )}
           </span>

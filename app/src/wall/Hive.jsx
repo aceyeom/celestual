@@ -198,20 +198,19 @@ const LENS = {
 // none of it.
 const PHONE = { rim: 0.46, fall: 1.05, open: 0.16, air: 0.72, side: 0.74 }
 // ── the focus ──
-// The far screens are out of focus, so the edges of the glass are lights in
+// The far screens fade to lights, so the edges of the glass are lights in
 // the distance and not cards cut off by the frame. Six steps out from sharp:
-// the blur, in pixels on the glass; how much of the screen's light is left;
-// and how bright the round glow in its own colour behind it is. A disc is
-// written only when it crosses a step or its scale has moved, and it is
-// written onto the two elements of the small screen that draw it
-// (wall.css, THE HIVE, the focus).
+// how much of the screen's light is left, and how bright the round glow in
+// its own colour behind it is. There is no blur: a filter on thirty moving
+// screens was a render pass each on every frame, and the wall lagged under
+// it. A disc is written only when it crosses a step, onto the two elements
+// of the small screen that draw it (wall.css, THE HIVE, the focus).
 const FOCUS = {
-  blur: [0, 0.5, 0.9, 1.4, 1.9, 2.5, 3.2],
   dim: ['', '', '0.9', '0.76', '0.6', '0.45', '0.32'],
   glow: ['', '', '', '0.25', '0.45', '0.68', '0.9'],
 }
 // ── the blink ──
-// A sharp screen's cursor, and its envelope or its flat battery, blink on
+// A sharp screen's envelope, or its flat battery, blinks on
 // the phone's own clock: this long a period, from the phase that phone's
 // quirks give it (looks.js `quirks`, `blink`). The loop blinks them, by a
 // class on the disc (wall.css `is-dark`), because a CSS animation on every
@@ -318,13 +317,16 @@ const ASSIGN_PER_FRAME = 28
 // ── what is on the glass ──
 // A screen holds a slot while it, and the light round it, is on the glass
 // (the seating, in the loop). `GLOW` is how far that light reaches past the
-// screen, in the disc's own pixels (the tile's widest shadow, screen.css
-// `.wl-tile-in`); `take` and `keep` are how far past the edge of the window,
+// screen and can still be seen, in the disc's own pixels (the tile's widest
+// shadow, screen.css `.wl-tile-in`, is a 26px blur and its last dozen pixels
+// are nothing); `take` and `keep` are how far past the edge of the window,
 // in pitches, a screen is given a slot and how far it may go before it gives
-// the slot back, so one breathing across the edge does not trade it back
-// and forth.
-const GLOW = 30
-const EDGE = { take: 0.25, keep: 0.6 }
+// the slot back. The gap between them is wider than a rim screen's whole
+// breath, so one breathing across the edge does not trade it back and forth.
+// The mask takes the edge of the glass to nothing, so nothing here is seen
+// to arrive.
+const GLOW = 18
+const EDGE = { take: 0.1, keep: 0.35 }
 // How long a name that has just arrived on the wall is drawn as new.
 const FRESH_MS = 2200
 // ── the cycle ──
@@ -449,7 +451,7 @@ const KEY_OFF = 1 << 20
 const KEY_ROW = 1 << 21
 const cellKey = (I, J) => (J + KEY_OFF) * KEY_ROW + (I + KEY_OFF)
 function newSlot() {
-  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, screen: null, glow: null, tag: null, bk: -1, blink: 0, dark: false, fw: 0, zw: 1, fp: 0, shown: false, used: 0, tf: '', op: '', f: -1, fz: 1, tz: 0, delay: 0, due: 0 }
+  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, screen: null, glow: null, tag: null, bk: -1, blink: 0, dark: false, fw: 0, fp: 0, shown: false, used: 0, tf: '', op: '', f: -1, tz: 0, delay: 0, due: 0 }
 }
 
 // ── the pitch ───────────────────────────────────────────────────────────────
@@ -1669,16 +1671,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           }
           if (bl < 0.5) df = Math.max(df, 0.8)
           const fq = df < 0.6 ? 0 : Math.min(6, 1 + Math.floor((df - 0.6) / 0.06))
-          // The disc is scaled by z·zoom, so the blur is written in its own
-          // pixels for a fixed amount on the glass, and written again when
-          // that scale has moved by more than an eighth since. Not here: it
-          // is queued, and the frame writes the most pressing few (below).
-          if (fq !== slot.f || (fq && (zz > slot.fz * 1.12 || zz < slot.fz * 0.89))) {
+          // Not written here: it is queued, and the frame writes the most
+          // pressing few (below).
+          if (fq !== slot.f) {
             slot.fw = fq
-            slot.zw = zz
-            // a screen never written first, then the biggest step, then a
-            // scale that has drifted
-            slot.fp = slot.f < 0 ? 99 : fq !== slot.f ? 10 + Math.abs(fq - slot.f) : 1
+            // a screen never written first, then the biggest step
+            slot.fp = slot.f < 0 ? 99 : 10 + Math.abs(fq - slot.f)
             ;(soften || (soften = [])).push(slot)
           }
           // ── the blink ──
@@ -1702,11 +1700,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         if (!best || nd < best.nd) best = { I, J, nd }
       }
       // ── the focus, written ──
-      // Every step a screen crosses is a restyle and a repaint of that
-      // screen through its blur, and a pull or a key's travel can move
-      // thirty screens across a step on one frame. So a frame writes the
-      // most pressing few (FOCUS_PER_FRAME) and the rest a frame or two
-      // later, which on a half pixel of blur nobody can see.
+      // A pull or a key's travel can move thirty screens across a step on
+      // one frame, so a frame writes the most pressing few (FOCUS_PER_FRAME)
+      // and the rest a frame or two later, which on one step of light nobody
+      // can see.
       if (soften) {
         if (soften.length > FOCUS_PER_FRAME) soften.sort((p, q) => q.fp - p.fp)
         const n = Math.min(soften.length, FOCUS_PER_FRAME)
@@ -1719,8 +1716,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             if (sc) sc.style.opacity = FOCUS.dim[fq]
             if (slot.glow) slot.glow.style.opacity = FOCUS.glow[fq]
           }
-          slot.fz = slot.zw
-          if (sc) sc.style.filter = fq ? `blur(${(FOCUS.blur[fq] / Math.max(0.2, slot.zw)).toFixed(1)}px)` : ''
         }
       }
 
