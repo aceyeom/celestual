@@ -46,6 +46,28 @@ export function Pix({ name, h = 7, className = '', style }) {
   )
 }
 
+// ── the same glyphs, as the chrome's ──
+// The wall's own controls are drawn on the phone's grid too (DESIGN.md 2.6),
+// so the glyphs above stand in the page's pixels as well as in a screen's:
+// sized in px rather than `cqw`, struck in `currentColor`, and `scale` of
+// the page's pixels to each of the glyph's, so a glyph is always a whole
+// number of them and never a blurred icon. `Wait` is the hourglass the
+// phone turned while it was busy, blinking on the screen's own beat.
+export function PixIcon({ name, scale = 2, className = '', style }) {
+  const g = useMemo(() => glyphPath(name), [name])
+  return (
+    <svg
+      className={`wl-pxi ${className}`} viewBox={`0 0 ${g.w} ${g.h}`} width={g.w * scale} height={g.h * scale}
+      shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false" style={style}
+    >
+      <path d={g.d} />
+    </svg>
+  )
+}
+export function Wait({ scale = 2, className = '' }) {
+  return <PixIcon name="wait" scale={scale} className={`wl-wait ${className}`} />
+}
+
 // The tiles' glyphs are images, struck once for the page in each colour a
 // small screen is lit in: a wall of two hundred small screens is two hundred
 // references to a few dozen images, not two hundred inline drawings. They

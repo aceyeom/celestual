@@ -12,6 +12,9 @@
      that class. -->
 <link rel="stylesheet" href="../app/public/fonts/faces.css">
 <link rel="stylesheet" href="../app/src/wall/wall.css">
+<!-- the wall's phone (DESIGN.md 2.6): everything in it is under
+     .wl-root.is-room, so it reaches the one section below that carries it -->
+<link rel="stylesheet" href="../app/src/wall/phone.css">
 
 <style>
   /* The sheet's own chrome, and only its own chrome. Every colour below is a
@@ -95,6 +98,16 @@
   .no-cssom .nostate { display: block; }
 
   .rulepair { display: flex; align-items: center; gap: 14px; }
+
+  /* the wall's phone. The section is a second .wl-root, marked is-room, so the
+     tokens inside it are the wall's; it drops the root's page height and
+     ground, and the sheet's own captions keep the sheet's face, captured
+     here before the phone remaps it. */
+  .sheet { --sheet-id: var(--f-id); }
+  .phone { min-height: 0; background: none; overflow: visible; }
+  .phone :is(h3, .cap, .tok, .val, .use) { font-family: var(--sheet-id); }
+  .phone .glyphs { align-items: flex-end; }
+  .phone .glyphs .spec { align-items: center; color: var(--chalk); }
   .curve { border: 1px solid var(--hair-soft); border-radius: 10px; background: var(--void); display: block; }
 </style>
 </head>
@@ -330,8 +343,9 @@
   <section>
     <h2>Surfaces</h2>
     <p class="why">
-      The paper is the only bright surface in the product and the only place a person's
-      own words are ever set. Everything that is not the wall arrives as a sheet, rising
+      The paper is Main's bright surface, the card a ping is set on. On the wall a
+      person's words are set on a screen, and the wall's own surfaces are the phone's
+      (the section before the gate). Everything that is not the wall arrives as a sheet, rising
       off the bottom edge over a wall that stays mounted behind it.
     </p>
 
@@ -657,6 +671,73 @@
     </p>
   </section>
 
+  <!-- ── THE WALL'S PHONE ───────────────────────────────────────────────── -->
+  <section>
+    <h2>The wall's phone</h2>
+    <p class="why">
+      On the wall everything round the screens is the phone the screens are: one pixel
+      face, square keys, unlit panels and the phone's own glyphs (DESIGN.md 2.6). These
+      are the classes above, drawn under <code>.wl-root.is-room</code>, the wall's root,
+      where <code>app/src/wall/phone.css</code> remaps the tokens and the shared parts draw
+      the phone. The brand is the one thing on the wall in the room's own hand, and Main
+      keeps everything above as it is.
+    </p>
+
+    <div class="wl-root is-room phone">
+      <h3>The materials</h3>
+      <div class="grid is-sw">
+        <div class="sw"><span class="chip" style="background:var(--lcd-grid),var(--lcd);box-shadow:inset 0 0 0 1px var(--lcd-edge)"></span>
+          <span class="meta"><span class="tok">--lcd</span><span class="val">under --lcd-grid</span><span class="use">the unlit panel: the search, the tab, the notice, every sheet and field</span></span></div>
+        <div class="sw"><span class="chip" style="background:var(--lcd);box-shadow:inset 0 0 0 1px var(--lcd-edge)"></span>
+          <span class="meta"><span class="tok">--lcd-edge</span><span class="val">one pixel</span><span class="use">the bezel round every panel and every quiet key</span></span></div>
+        <div class="sw"><span class="chip" style="background:var(--lcd);box-shadow:inset 0 0 0 1px var(--lcd-edge-hi)"></span>
+          <span class="meta"><span class="tok">--lcd-edge-hi</span><span class="val">one pixel</span><span class="use">the bezel while a field inside it has the focus</span></span></div>
+        <div class="sw"><span class="chip" style="background:var(--lcd-2);box-shadow:inset 0 0 0 1px var(--lcd-edge)"></span>
+          <span class="meta"><span class="tok">--lcd-2</span><span class="val">a step up</span><span class="use">a square key standing on</span></span></div>
+      </div>
+
+      <h3>The keys</h3>
+      <div class="bed statebar">
+        <div class="spec"><span class="cap">lit key &middot; the act</span><button class="wl-pill is-light is-key is-wide"><i data-pix="pen"></i><span>write a letter</span></button></div>
+        <div class="spec"><span class="cap">lit key &middot; pressed, a pixel down</span><button class="wl-pill is-light is-key is-wide" data-state=".wl-root.is-room .wl-pill.is-key:not(:disabled):active"><i data-pix="pen"></i><span>write a letter</span></button><span class="nostate">needs a server</span></div>
+        <div class="spec"><span class="cap">lit key &middot; waiting</span><button class="wl-pill is-light is-key is-wide" aria-busy="true"><i data-pix="wait" class="wl-wait"></i><span>next</span></button></div>
+        <div class="spec"><span class="cap">lit key &middot; disabled</span><button class="wl-pill is-light is-key is-wide" disabled><span>send anonymously</span></button></div>
+        <div class="spec"><span class="cap">bezel key</span><button class="wl-pill is-ghost">not now</button></div>
+        <div class="spec"><span class="cap">bezel key &middot; pressed, inverted</span><button class="wl-pill is-ghost" data-state=".wl-root.is-room .wl-pill.is-ghost:not(:disabled):active">not now</button><span class="nostate">needs a server</span></div>
+        <div class="spec"><span class="cap">square key</span><button class="wl-iconbtn" aria-label="sign in"><i data-pix="key"></i></button></div>
+        <div class="spec"><span class="cap">close &middot; does not turn</span><button class="wl-close" aria-label="close"><i data-pix="close"></i></button></div>
+        <div class="spec"><span class="cap">square key &middot; pressed</span><button class="wl-close" aria-label="close" data-state=".wl-root.is-room .wl-close:active"><i data-pix="close"></i></button><span class="nostate">needs a server</span></div>
+        <div class="spec"><span class="cap">arrow link &middot; the pixel arrow</span><a class="wl-arrow is-s is-quiet" href="#"><span class="wl-arrow-g"><i data-pix="arrow"></i></span><span class="wl-arrow-t">view the wall</span></a></div>
+      </div>
+
+      <h3>The field &middot; at rest, and with the caret in it</h3>
+      <div class="bed is-col">
+        <div class="wl-field"><span class="wl-at">@</span><input type="text" aria-label="handle" placeholder="their handle"><span class="wl-field-line"></span></div>
+        <div class="wl-field" data-state=".wl-root.is-room .wl-field:focus-within" data-child-state=".wl-root.is-room .wl-field:focus-within .wl-at|.wl-at"><span class="wl-at">@</span><input type="text" aria-label="handle" value="jules.k"><span class="wl-field-line"></span></div>
+        <div class="wl-field is-search"><span class="wl-at wl-field-glass"><i data-pix="find"></i></span><input type="text" aria-label="look for a name" placeholder="look for a name"><span class="wl-field-line"></span></div>
+      </div>
+
+      <h3>A list of names &middot; the chosen row inverts</h3>
+      <div class="bed is-col is-tight">
+        <button class="wl-row is-person"><span class="wl-who wl-row-who"><span class="wl-face" style="--s:40px"><span class="wl-face-mono">JK</span></span><span class="wl-who-id"><span class="wl-who-name">Jules Kwarteng</span><span class="wl-who-at">@jules.k</span></span></span></button>
+        <button class="wl-row is-person is-lit"><span class="wl-who wl-row-who"><span class="wl-face" style="--s:40px"><span class="wl-face-mono">MO</span></span><span class="wl-who-id"><span class="wl-who-name">Marcus Okonkwo</span><span class="wl-who-at">@m.okonkwo</span></span></span></button>
+        <button class="wl-row is-person"><span class="wl-who wl-row-who"><span class="wl-face" style="--s:40px"><span class="wl-face-mono">SR</span></span><span class="wl-who-id"><span class="wl-who-name">Sofia Reyes</span><span class="wl-who-at">@sofiaaa.reyes</span></span></span></button>
+      </div>
+
+      <h3>The glyphs &middot; the chrome's own, beside the screen's (looks.js PIX)</h3>
+      <div class="bed glyphs" id="phone-glyphs"></div>
+
+      <h3>The type &middot; one face, and the brand in the room's</h3>
+      <div class="bed is-col">
+        <div class="spec"><span class="cap">wl-display is-m</span><p class="wl-display is-m" style="margin:0">tell them anyway.</p></div>
+        <div class="spec"><span class="cap">--t-value-lg &middot; what was typed</span><span style="font-size:var(--t-value-lg);line-height:1.1">@jules.k</span></div>
+        <div class="spec"><span class="cap">--t-read &middot; anything read or pressed</span><span style="font-size:var(--t-read);line-height:1.24">get notified if they put you up too.</span></div>
+        <div class="spec"><span class="cap">--t-meta &middot; what stands under a name</span><span style="font-size:var(--t-meta);color:var(--ash);line-height:1.2">2 letters &middot; 3d</span></div>
+        <div class="spec"><span class="cap">the brand &middot; the room's serif, on the wall</span><button class="wl-brand"><span id="brand-d" class="wl-brand-mark"></span><span class="wl-brand-word">celestual.</span></button></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── THE GATE ───────────────────────────────────────────────────────── -->
   <section>
     <h2>The gate</h2>
@@ -706,6 +787,38 @@ $('brand-mark').innerHTML = at(26, 'chalk')
 $('brand-a').innerHTML = at(26, 'chalk')
 $('brand-b').innerHTML = at(26, 'chalk')
 $('brand-c').innerHTML = at(26, 'chalk')
+$('brand-d').innerHTML = at(26, 'chalk')
+
+// ── the phone's glyphs ──
+// The rows of looks.js PIX for the glyphs this page shows, drawn the way
+// screen.jsx PixIcon draws them: a unit square per lit pixel, crisp, at a
+// whole multiple, in currentColor. Copied rather than imported, because a
+// module import is refused off disk.
+const PIX = {
+  find: ['..XXX....', '.X...X...', 'X.....X..', 'X.....X..', 'X.....X..', '.X...X...', '..XXXXX..', '......XX.', '.......XX'],
+  back: ['...XX', '..XX.', '.XX..', 'XX...', '.XX..', '..XX.', '...XX'],
+  down: ['XX...XX', '.XX.XX.', '..XXX..', '...X...'],
+  close: ['X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X...X.', 'X.....X'],
+  key: ['.XXX.', 'X...X', 'X...X', 'X...X', '.XXX.', '..X..', '..XX.', '..X..', '..XX.'],
+  flag: ['XXXXXX', 'X....X', 'X...X.', 'X....X', 'XXXXXX', 'X.....', 'X.....', 'X.....'],
+  signout: ['XXXX......', 'X.........', 'X.....X...', 'X.....XX..', 'X.XXXXXXX.', 'X.....XX..', 'X.....X...', 'X.........', 'XXXX......'],
+  arrow: ['....X..', '....XX.', 'XXXXXXX', '....XX.', '....X..'],
+  wait: ['XXXXXXX', 'X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X.X.X.', 'X.XXX.X', 'XXXXXXX'],
+  pen: ['.......XX', '......X.X', '.....X.X.', '....X.X..', '...X.X...', '..X.X....', '.XXX.....', 'XXX......', 'XX.......'],
+  env: ['XXXXXXXXXXX', 'XX.......XX', 'X.X.....X.X', 'X..X...X..X', 'X...XXX...X', 'X.........X', 'XXXXXXXXXXX'],
+  heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
+  heartO: ['.XX.XX.', 'X..X..X', 'X.....X', '.X...X.', '..X.X..', '...X...'],
+}
+const pix = (name, scale = 2, cls = '') => {
+  const rows = PIX[name]
+  let d = ''
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === 'X') d += `M${x} ${y}h1v1h-1z` }))
+  const w = rows[0].length, h = rows.length
+  return `<svg class="wl-pxi ${cls}" viewBox="0 0 ${w} ${h}" width="${w * scale}" height="${h * scale}" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false"><path d="${d}"/></svg>`
+}
+document.querySelectorAll('[data-pix]').forEach((el) => { el.outerHTML = pix(el.dataset.pix, 2, el.className) })
+$('phone-glyphs').innerHTML = Object.keys(PIX).map((k) =>
+  `<div class="spec">${pix(k, 3)}<span class="cap">${k}</span></div>`).join('')
 
 // ── the running light's route ──
 // parts.jsx Light measures its host and writes the edge, corners and all, as
@@ -916,10 +1029,13 @@ try {
     for (const r of list) if (r.selectorText) rules.push(r)
   }
   if (!rules.length) throw new Error('no rules')
+  // A rule's own text, appended, rather than property by property: a shorthand
+  // that reads a token (`background: var(--chalk)`) has no value on any of its
+  // longhands until it is computed, so copying the longhands dropped it.
   const apply = (el, selector) => {
     for (const r of rules) {
       if (!r.selectorText.split(',').some((s) => s.trim() === selector)) continue
-      for (const prop of r.style) el.style.setProperty(prop, r.style.getPropertyValue(prop))
+      el.style.cssText += ';' + r.style.cssText
     }
   }
   for (const el of document.querySelectorAll('[data-state]')) apply(el, el.dataset.state)

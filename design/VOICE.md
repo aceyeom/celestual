@@ -30,6 +30,7 @@ equivalent.
 | --- | --- |
 | place a ping, place it | submit, send, post, enter |
 | write a letter, put it up | post, publish, share |
+| share it (a letter passed on: its picture, its link) | send, export, forward |
 | standing, waiting | active, pending, in progress |
 | it's mutual | match found, congratulations, you matched |
 | let it go | delete, remove, withdraw |
@@ -42,6 +43,12 @@ equivalent.
 | slot | credit, token, quota |
 
 A ping is a ping. Never a "lil ping".
+
+`share` is never the word for putting a letter up, and `send` is never the word
+for passing one on. The composer's act is `send anonymously`; the key on a
+letter that hands its picture to somebody, saves it or copies its link is
+`share`. That key read `send` until 24 September: one word for two acts, a few
+centimetres apart.
 
 ---
 
@@ -58,6 +65,11 @@ The type system is the tone system. `design/DESIGN.md` section 4.
 
 Rules that fall out: an intent line never renders in mono, a count never renders
 in a serif, and a handle keeps its case wherever it is set.
+
+That table is Main's. On the wall one face sets every word (Jersey 10,
+`design/DESIGN.md` 2.6), so the face cannot carry the register there and the
+words have to: an intent line is still written as one, a count is still a
+figure and never a feeling, and a handle still keeps its case.
 
 ---
 

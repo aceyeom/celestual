@@ -1,10 +1,13 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  SEND: a letter, as a picture somebody can pass on                       ║
+// ║  SHARE: a letter, as a picture somebody can pass on                      ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The right soft key on every letter is `send`, and it does the three things
-// a phone's Send did: to somebody (the share sheet, with the picture and the
-// link), to the phone itself (the picture, saved), and the address, copied.
+// The right soft key on every letter is `share`, and it does the three things
+// a phone's Send menu did: to somebody (the share sheet, with the picture and
+// the link), to the phone itself (the picture, saved), and the address,
+// copied. It said `send` until the composer's act said `send anonymously`,
+// and one word for putting a letter up and for passing one on is a word a
+// person has to read twice.
 //
 // The picture is drawn here with a canvas and not photographed out of the
 // page. A screenshot of the DOM would need the page's fonts and filters to
@@ -13,7 +16,7 @@
 // second time, from the same table (looks.js `skinOf`) and the same quirks
 // (`quirks`), at 1080 by 1350, which is the portrait size every feed it will
 // be posted to takes whole: the photograph of one screen in a dark room,
-// and the address in the dark under it.
+// and the product's own signature in the dark under it (`signature`).
 //
 // A print is pulled through the same press here as on the page: the greys
 // quantised into the inks with grain, and a riso's second drum laid a hair
@@ -21,11 +24,14 @@
 // phone that asked for it.
 
 import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, dateOf, rgbTile } from './looks.js'
+import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
 import { copyText } from './handoff.js'
 
 const W = 1080
 const H = 1350
 const FACE = '"Jersey 10", "Geist Mono", ui-monospace, monospace'
+// the word's face, with the fallbacks wall.css gives `--f-display`
+const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
 
 const rgba = (hex, a) => {
   const [r, g, b] = hexRgb(hex)
@@ -497,11 +503,110 @@ function imageOf(url) {
   })
 }
 
+// ── the signature ───────────────────────────────────────────────────────────
+// The picture is signed the way every bar in the product is: the mark and
+// the word (parts.jsx `Brand`), in the lockup's own proportions (DESIGN.md
+// 3.3): the mark 1.13 times the word, 0.38em between them, the word lifted
+// 0.03em because a serif's optical centre sits below its cap line. It was
+// `celestual.us` in the screen's pixel face at 42 per cent, which on a feed
+// read as an address set in a phone's type and not as the name of anything.
+//
+// The mark is drawn from mark.js's own paths and layered the way
+// `eclipticSVG` layers them: the ring, then the star with the gutter cut out
+// of it where the ring passes in front, then the ring's near half again on
+// top. It is drawn opaque on a canvas of its own and laid on the picture
+// once, at the lockup's strength, so no layer is counted twice where two
+// overlap and the glow belongs to the whole mark rather than to each piece.
+// Paths and not an SVG image: a picture drawn from an image can taint the
+// canvas in the browser most letters are shared from, and a tainted canvas
+// cannot be made into a file.
+const WORD = 46
+const SIGN_Y = H - 86
+const SIGN_ALPHA = 0.9
+
+// the half plane the ring is in front of the star in (mark.js `NEAR`)
+function clipNear(g) {
+  g.save()
+  g.translate(50, 50)
+  g.rotate(rad(ECL.tilt))
+  g.translate(-50, -50)
+  g.beginPath()
+  g.rect(NEAR.x, NEAR.y, NEAR.width, NEAR.height)
+  g.restore()
+  g.clip()
+}
+
+function markCanvas(size) {
+  const k = size / 100
+  const ring = new Path2D(ringPath())
+  const cv = document.createElement('canvas')
+  cv.width = size
+  cv.height = size
+  const g = cv.getContext('2d')
+  // the ring, whole
+  g.fillStyle = CHALK
+  g.setTransform(k, 0, 0, k, 0, 0)
+  g.fill(ring, 'evenodd')
+  // the star, with the gutter cut out of it on the near side
+  const sc = document.createElement('canvas')
+  sc.width = size
+  sc.height = size
+  const s = sc.getContext('2d')
+  s.fillStyle = CHALK
+  s.setTransform(k, 0, 0, k, 50 * k, 50 * k)
+  s.fill(new Path2D(starPath(ECL)))
+  s.setTransform(k, 0, 0, k, 0, 0)
+  s.save()
+  clipNear(s)
+  s.globalCompositeOperation = 'destination-out'
+  s.fill(new Path2D(ringPath(ECL.gutter)), 'evenodd')
+  s.restore()
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.drawImage(sc, 0, 0)
+  // and the ring's near half in front of it
+  g.setTransform(k, 0, 0, k, 0, 0)
+  g.save()
+  clipNear(g)
+  g.fill(ring, 'evenodd')
+  g.restore()
+  return cv
+}
+
+function signature(g, cx, cy) {
+  const mark = Math.round(WORD * 1.13)
+  const gap = WORD * 0.38
+  g.save()
+  g.font = `500 ${WORD}px ${SERIF}`
+  // the display tracking, where the canvas has it; measured after, so the
+  // pair is centred on the word as it is drawn either way
+  if ('letterSpacing' in g) g.letterSpacing = `${(-0.022 * WORD).toFixed(2)}px`
+  const m = g.measureText('celestual.')
+  const x0 = Math.round(cx - (mark + gap + m.width) / 2)
+  // the word's baseline where CSS puts it in a line box one em tall centred
+  // on the mark (`.wl-brand`), then lifted
+  const fa = m.fontBoundingBoxAscent
+  const fd = m.fontBoundingBoxDescent
+  const base = fa > 0 && fd >= 0 ? cy - WORD / 2 + (WORD - fa - fd) / 2 + fa : cy + WORD * 0.3
+  g.globalAlpha = SIGN_ALPHA
+  // the mark keeps the bar's hair of light round it (wall.css `.wl-brand-mark`)
+  g.shadowColor = 'rgba(244, 241, 234, 0.18)'
+  g.shadowBlur = 20
+  g.drawImage(markCanvas(mark), x0, Math.round(cy - mark / 2))
+  g.shadowColor = 'transparent'
+  g.shadowBlur = 0
+  g.fillStyle = CHALK
+  g.textAlign = 'left'
+  g.textBaseline = 'alphabetic'
+  g.fillText('celestual.', x0 + mark + gap, base - WORD * 0.03)
+  g.restore()
+}
+
 // ── the room ────────────────────────────────────────────────────────────────
 export async function renderLetter(o) {
   if (document.fonts && document.fonts.load) {
     // with the words, so the faces for any letters past plain latin come too
     try { await document.fonts.load(`400 40px ${FACE}`, `${o.text}${o.name || ''}${o.handle || ''}`) } catch { /* the fallback, then */ }
+    try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
   // the letter's own pixels, up close, as an image the canvas can lay down;
   // a print is paper and has none
@@ -531,12 +636,8 @@ export async function renderLetter(o) {
   g.shadowBlur = s.print ? 40 : 30
   g.drawImage(scr, -sw / 2, -sh / 2)
   g.restore()
-  // the address, in the dark under it
-  g.fillStyle = 'rgba(244, 241, 234, 0.42)'
-  g.font = `400 34px ${FACE}`
-  g.textAlign = 'center'
-  g.textBaseline = 'alphabetic'
-  g.fillText(o.caption || 'celestual.us', cx, H - 64)
+  // the signature, in the dark under it
+  signature(g, cx, SIGN_Y)
   // and the sensor's grain over the whole photograph
   const n = document.createElement('canvas')
   n.width = 128
@@ -568,7 +669,7 @@ export function letterFace(l, { name, handle }) {
     icon: open ? 'pen' : 'lock', dear: true,
     date: dateOf(l.at), counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`, bat: chargeOf(l.at),
     hearts: l.hearts || 0, hearted: !!l.hearted,
-    left: 'options', right: 'send',
+    left: 'options', right: 'share',
   }
 }
 
@@ -592,8 +693,8 @@ export function starred(words = 0, chars = 0, seed = '') {
 // ── the three ways out ──────────────────────────────────────────────────────
 export const canShare = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
-// The picture, drawn ahead: the letter asks for it when the send menu opens,
-// so by the time a finger picks `share` the picture is there and the share
+// The picture, drawn ahead: the letter asks for it when the share menu opens,
+// so by the time a finger picks `to someone` the picture is there and the share
 // sheet can be asked for inside that tap. A phone refuses a share sheet that
 // is asked for after the tap has finished, and drawing it takes a moment,
 // which starts after the next frame so the menu that asked is on the glass
@@ -624,9 +725,9 @@ function fileOf(blob) {
   return blob && typeof File !== 'undefined' ? new File([blob], 'celestual-letter.jpg', { type: 'image/jpeg' }) : null
 }
 
-// Called inside the tap. Answers what happened: 'sent', 'saved', 'copied',
-// 'left' (the share sheet was closed without sending) or 'failed'.
-export function sendLetter(how, o, url) {
+// Called inside the tap. Answers what happened: 'shared', 'saved', 'copied',
+// 'left' (the share sheet was closed without sharing) or 'failed'.
+export function shareLetter(how, o, url) {
   if (how === 'copy') return copyText(url).then((ok) => (ok ? 'copied' : 'failed'))
   if (how === 'share') {
     const text = o.name ? `a letter for ${o.name}, on the wall` : 'a letter on the wall'
@@ -636,11 +737,11 @@ export function sendLetter(how, o, url) {
       const data = file && navigator.canShare && navigator.canShare({ files: [file] })
         ? { files: [file], text, url }
         : { text, url }
-      return navigator.share(data).then(() => 'sent', (e) => (e && e.name === 'AbortError' ? 'left' : 'failed'))
+      return navigator.share(data).then(() => 'shared', (e) => (e && e.name === 'AbortError' ? 'left' : 'failed'))
     }
     // the picture is ready: the sheet is asked for now, in the tap. It is
     // not: nothing goes, rather than the link alone without saying so. The
-    // letter asks here only once it is ready (Letter.jsx `send`)
+    // letter asks here only once it is ready (Letter.jsx `pass`)
     if (ready && ready.blob) return shareWith(ready.blob)
     return Promise.resolve('failed')
   }

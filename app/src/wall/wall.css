@@ -1283,19 +1283,15 @@ a.wl-lq { text-decoration: none; }
    prefers-reduced-transparency is a request to stop reading type through a
    moving room, and the answer is not a thinner blur, it is no blur: the
    sheet becomes the opaque surface it always falls back to without
-   backdrop-filter, and the search plate becomes a plate. Nothing moves and
-   nothing is laid out differently; the material is the only thing that
-   changes. */
+   backdrop-filter, and the wall's search panel lets none of the crowd
+   through at all. Nothing moves and nothing is laid out differently; the
+   material is the only thing that changes. */
 @media (prefers-reduced-transparency: reduce) {
   .wl-sheet {
     background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.97) 0%, rgba(var(--void-rgb), 0.99) 42%);
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
-  .wl-seek-glass, .wl-seek-glass.is-open {
-    background: var(--void-1);
-    box-shadow: inset 0 0 0 1px var(--hair), 0 22px 48px -28px rgba(0, 0, 0, 0.95);
-    -webkit-backdrop-filter: none; backdrop-filter: none;
-  }
+  .wl-seek-glass, .wl-seek-glass.is-open { background-color: var(--lcd); }
 }
 .wl-sheet.is-tall { min-height: 62dvh; }
 .wl-sheet.is-dragging { animation: none; transition: none; }
@@ -1615,23 +1611,23 @@ a.wl-lq { text-decoration: none; }
   text-align: center;
 }
 /* ── a caption, not a row ──
-   The campus in the display face, small, the way the brand sets its own
-   word; a middot; the count in the identifier face, the figure in chalk. It
-   stands under the plate as the fact about the wall, at a size that reads
-   as a caption under the question rather than as a third row of chrome. */
+   The phone's own operator line, the row an idle screen kept for the
+   network's name and the envelope beside the messages: the campus, a
+   middot, the envelope and the count, all in the phone's face (DESIGN.md
+   2.6), the campus and the figure in chalk and the word after it in ash. It
+   stands over the search as the fact about the wall, at a size that reads
+   as a caption under the bar rather than as a third row of chrome. */
 .wl-ear-name {
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: var(--t-wide); letter-spacing: var(--track-display);
-  color: rgba(244, 241, 234, 0.78); white-space: nowrap;
+  font-size: var(--t-wide); color: rgba(244, 241, 234, 0.84); white-space: nowrap;
 }
 .wl-ear-dot { color: var(--ash-dim); font-size: var(--t-ctrl); line-height: 1; }
 .wl-ear-meta {
-  display: inline-flex; align-items: baseline; gap: 5px;
-  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline; gap: 6px;
+  font-size: var(--t-label); letter-spacing: var(--tr-label);
   color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* the envelope sits on the line with the figure, the height of its x */
+.wl-ear-env { align-self: center; color: var(--ash); flex: 0 0 auto; }
 /* the figure: a step larger than the word after it, in chalk, its digits
    turning when a letter goes up (parts.jsx `Roll`, `.wl-roll` below) */
 .wl-ear-n { font-size: var(--t-ctrl); letter-spacing: var(--tr-open); color: var(--chalk); }
@@ -1648,10 +1644,10 @@ a.wl-lq { text-decoration: none; }
    top shade is deepest. Under the plate it stood on the faces at the point
    the shade had thinned to half, and "letters" was cut by whatever disc
    happened to be there. */
-.wl-masthead .wl-ear { padding: 0 0 9px; }
+.wl-masthead .wl-ear { padding: 0 0 10px; }
 .wl-masthead .wl-ear-name { font-size: var(--t-ctrl); }
-.wl-masthead .wl-ear-n { font-size: var(--t-small); }
-.wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-label); text-transform: uppercase; align-self: baseline; }
+.wl-masthead .wl-ear-n { font-size: var(--t-ctrl); }
+.wl-ear-again { padding: 0 0 0 2px; font-size: var(--t-meta); letter-spacing: var(--tr-label); align-self: baseline; }
 
 /* ── the roll ──
    parts.jsx `Roll`: a count whose figures turn. Each digit is a window one
@@ -1776,180 +1772,111 @@ a.wl-lq { text-decoration: none; }
    screens/Wall.jsx `Seek`: the wall's own question, centred under the ear
    once the veil has gone, and the second half of the masthead.
 
-   It is GLASS, because twice it was type alone and twice nobody could read
-   it: a bare baseline at twenty-eight pixels of mono, at the left gutter,
-   over a crowd of pale discs that showed straight through the words. The two
-   shades pour the void back at the top and the bottom of the screen and that
-   is enough for a line or two of chrome; it is not enough for the one control
-   the wall wants found. So the glass makes its own legibility where the type
-   actually is: blurred void, the lens at its head, the question inside.
-
-   ── and there is no ring on it ──
-   It carried a hairline of chalk round its edge while it had to read as a
-   button, and it is not a button: it is a field, and since the panel it opens
-   is part of it, it is a field that becomes a surface. A white outline is the
-   one edge on this screen belonging to no object — over a crowd of pale discs
-   it read as a second capsule floating a pixel off the first, and under the
-   panel it would have had to be drawn round a shape that changes height. The
-   blur is the material and the material is the edge. What is left of the ring
-   is the inner top highlight, which is not a line round a box, it is the
-   light catching the near edge of a piece of glass.
+   It is the phone's own find, a strip of unlit LCD with the lens at its head
+   and the question in the phone's face (DESIGN.md 2.6). Twice it was type
+   alone and twice nobody could read it over the crowd, so it stands on
+   something; for a while that something was grey glass, a blurred capsule
+   that answered the crowd under it by smearing it. A phone's screen does not
+   blur what is behind it, it is opaque, and so is this: the panel at nine
+   tenths over the faces, which is enough to hold the words at any contrast
+   the crowd can throw and not so much that it reads as a hole. No backdrop
+   filter at all, which is also a render pass the moving field no longer pays
+   for under the one control on it.
 
    ── the panel ──
-   The capsule and the answers are ONE piece of glass. The rows are inside the
-   same blurred box, which grows downward as they arrive and folds back to a
-   capsule when the field is emptied or left: one surface changing shape, not
-   a list appearing under a control. The radius goes from the pill to the
-   sheet's own corner over the same travel, because a capsule with a column of
-   rows in it is not a capsule any more.
+   The strip and the answers are ONE panel, as they were one piece of glass:
+   the rows arrive inside it, under a seam of pixels, and it folds back to a
+   strip when the field is emptied or left. The head does not move while it
+   opens: not its height, not the lens, not where the question starts. The
+   answers are the phone's menu, the chosen row inverted (phone.css, rows of
+   people), and the arrows and a pointer choose alike.
 
-   The row is full width so the glass can be centred in it, and the row takes
-   no pointer — only the glass does, or a tap on a disc beside the search
-   would open the search. */
+   It reads LEFT TO RIGHT because it is a field, and the first character
+   lands where the placeholder's first character was.
+
+   The row is full width so the panel can be centred in it, and the row
+   takes no pointer: only the panel does, or a tap on a screen beside the
+   search would open the search. */
 .wl-seek {
   pointer-events: none;
   display: flex; justify-content: center;
   padding: 0 0 2px;
 }
-/* ── the glass is a field, not a plate ──
-   It was 440px wide and filled at ten per cent chalk over a ground at L* 2,
-   under a 48px drop, which made the one thing on the wall that is not about
-   a person the heaviest object on the screen — and it stands directly over
-   the densest part of the hive. It is a field: it should weigh what a field
-   weighs. Narrower, filled at five and a half, seated on a hairline rather
-   than a shadow.
-
-   And the `saturate(1.25)` came off. A backdrop filter saturates what is
-   BEHIND it, and what is behind this is forty faces: the glass was
-   amplifying the colour of every disc it covered, which is the opposite of
-   the job the rest of this change is doing. The blur stays, at less. */
 .wl-seek-glass {
   pointer-events: auto;
   position: relative; z-index: 1;
   display: flex; flex-direction: column;
-  width: 100%; max-width: 348px;
-  border-radius: var(--r-pill);
-  /* a neutral grey, and opaque enough that no screen's colour shows in it:
-     the concept's capsule, grey glass on black */
-  background: rgba(44, 44, 44, 0.42);
-  box-shadow:
-    inset 0 0 0 1px rgba(244, 241, 234, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 16px 34px -26px rgba(0, 0, 0, 0.9);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  transition: background 260ms var(--ease), box-shadow 260ms var(--ease),
-              border-radius 260ms var(--ease);
+  width: 100%; max-width: 360px;
+  border-radius: var(--r-lcd);
+  background-color: rgba(11, 11, 11, 0.9);
+  background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge), 0 18px 36px -24px #000;
+  transition: box-shadow 160ms var(--ease);
 }
-/* Open, the glass is a sheet: a deeper blur, because there is more behind it
-   now and it has to hold six lines of type rather than one, and the shadow
-   under it goes from the hint that seats a capsule to the one that says the
-   panel is over the crowd rather than in it. */
-.wl-seek-glass.is-open {
-  border-radius: 24px;
-  background: rgba(30, 30, 30, 0.7);
-  box-shadow:
-    inset 0 0 0 1px var(--hair),
-    0 28px 64px -24px rgba(0, 0, 0, 0.96);
-  /* the saturate comes off here for the same reason it came off the rest
-     state: the crowd is still behind the panel while it is open */
-  -webkit-backdrop-filter: blur(30px);
-  backdrop-filter: blur(30px);
-}
+/* the bezel lights while the caret is in it, the one focus cue the field
+   carries, since the input has no outline of its own */
+.wl-seek-glass:focus-within { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi), 0 18px 36px -24px #000; }
+.wl-seek-glass.is-open { background-color: rgba(11, 11, 11, 0.96); box-shadow: inset 0 0 0 1px var(--lcd-edge-hi), 0 28px 60px -24px #000; }
 /* ── the head ──
-   The field itself is bare: the glass under it is the surface, and a field
-   with its own plate inside a plate is two boxes for one question.
-
-   And it does not move when the panel opens. Nothing about it changes — not
-   its height, not the lens's place, not the measure the question is centred
-   in — so what a person sees is one thing: the glass growing downward under
-   the line they are typing. Every version where the field also relaxed its
-   measure or gave back four pixels of height moved the letters under the
-   cursor at the moment the first answer landed. */
-.wl-seek .wl-field {
-  cursor: text; background: none; box-shadow: none;
+   The field is bare inside the panel: the panel is the edge, and a field
+   with its own box inside a box is two edges for one question. Its height is
+   set here, once, so it is the same open and shut. */
+.wl-root.is-room .wl-seek .wl-field {
+  cursor: text; background: none; border: 0; border-radius: 0; box-shadow: none;
   width: 100%;
   align-items: center; justify-content: flex-start; gap: 12px;
-  /* 54px was a capsule's height on a field's job. It is set here, once, so
-     it is the same open and closed and the invariant above still holds:
-     nothing about the head moves when the panel grows under it. */
-  min-height: 44px; padding: 0 16px;
-  border-radius: inherit;
+  min-height: 46px; padding: 0 14px;
 }
-/* the glass is the edge; the baseline under the type would be a second one */
 .wl-seek .wl-field-line { display: none; }
-.wl-seek .wl-at { color: rgba(244, 241, 234, 0.72); }
-/* ── it reads left to right, because it is a field ──
-   The lens stood against the left edge of nothing and the question was
-   centred in a 16ch box beside it, so the glass had a hundred pixels of
-   dead room on either side of the one thing in it. That is a caption's
-   layout, and this is not a caption: it is a FIELD, and what happens in a
-   centred field is that the first letter lands in the middle of the
-   capsule and then every letter after it shoves the ones already typed
-   sideways. The text a person is reading moves while they are reading it,
-   and the caret never sits still. Nothing else in the build does this —
-   every other field in the product (`.wl-field`, `.wl-addr`, the
-   composer's) is a left-aligned baseline, and the SAME question on the
-   `/find` sheet was left aligned all along.
-
-   So: the lens is at the left of the glass, the question starts beside it,
-   and the input takes the rest of the width. The first character lands
-   where the placeholder's first character was, and the line grows to the
-   right the way every line of type anybody has ever read does. */
+.wl-seek .wl-at { color: var(--ash); }
 .wl-seek .wl-field input {
   flex: 1 1 auto; width: auto; min-width: 0;
-  font-size: var(--t-read); letter-spacing: var(--tr-snug); text-align: left;
+  font-size: var(--t-read); text-align: left;
 }
-.wl-seek .wl-at { font-size: var(--t-subject); }
-/* the question itself is ash, not the field's own near-void placeholder:
-   on this surface it is a label that has to be read at a glance, not a hint
-   under a cursor */
-.wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.74); }
+.wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.62); }
 .wl-seek .wl-field:focus-within .wl-at { color: var(--chalk); }
 @media (hover: hover) and (pointer: fine) {
-  .wl-seek-glass:hover { background: rgba(52, 52, 52, 0.46); }
-  .wl-seek-glass.is-open:hover { background: rgba(30, 30, 30, 0.7); }
+  .wl-seek-glass:not(.is-open):not(:focus-within):hover { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.26), 0 18px 36px -24px #000; }
 }
 
 /* ── what it found ──
-   Inside the glass, under a hairline that is the only line drawn in here and
-   is a seam between two parts of one surface rather than a border round
-   either. The rows are the same person the sky and the sheet draw. */
+   Inside the panel, under a seam of the phone's dashed pixels, which is a
+   seam between two parts of one screen rather than a border round either.
+   The rows are the menu the phone drew, and the lit one is inverted. */
 .wl-seek-found {
   display: flex; flex-direction: column; gap: 2px;
-  padding: 6px; padding-top: 0;
+  padding: 4px 4px 6px;
   max-height: min(52vh, 380px); overflow-y: auto;
   overscroll-behavior: contain;
-  animation: wl-seek-open 260ms var(--ease) both;
+  animation: wl-seek-open 160ms steps(2, end) both;
 }
 @keyframes wl-seek-open {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .wl-seek-row {
   display: flex; align-items: center;
-  padding: 7px 10px;
-  border-radius: 14px;
+  padding: 6px 10px 6px 8px;
+  border-radius: var(--r-lcd);
   border: 1px solid transparent;
   text-align: left;
-  transition: background 160ms var(--ease), border-color 160ms var(--ease);
 }
-.wl-seek-row.is-active { background: rgba(244, 241, 234, 0.06); border-color: var(--hair-soft); }
-.wl-seek-row:active { background: rgba(244, 241, 234, 0.09); transition-duration: 100ms; }
 .wl-seek-who { width: 100%; }
 /* nothing under it, and nothing offered: the act is already at the foot of
    this screen, and a door to an account is not what somebody who has just
    failed to find their own name is owed */
 .wl-seek-none {
-  margin: 0; padding: 10px 12px 14px;
-  font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.45;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin: 0; padding: 10px 12px 12px;
+  font-size: var(--t-read); line-height: 1.2;
   color: var(--ash); text-align: center;
 }
+.wl-seek-none .wl-wait { flex: 0 0 auto; }
 /* the seam: drawn on the list and not on the field, so it is only ever there
    while there is something under it */
 .wl-seek-found::before {
-  content: ''; display: block; height: 1px; margin: 0 4px 6px;
-  background: var(--hair-soft);
+  content: ''; display: block; height: 2px; margin: 0 10px 6px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2095,40 +2022,31 @@ a.wl-lq { text-decoration: none; }
   pointer-events: none;
 }
 .wl-wallpage.is-opening .wl-mast-mark { animation: wl-fade 900ms var(--ease) 120ms both; }
-/* ── the line under the title ──
-   What the wall is, in one sentence, set the way the front door sets the
-   line under its own headline (hero.css .hm-read): the reading face at
-   seventeen pixels in ash. */
+/* ── the title and the line under it ──
+   The poster in the phone's face (DESIGN.md 2.6): the title the size of a
+   phone's welcome screen, and under it what the wall is in one sentence, in
+   ash, at the reading size. It was the serif, which on a wall that is all
+   the phone's read as the one sign in the room hung by somebody else. */
+.wl-mast-title { letter-spacing: 0.01em; }
 .wl-mast-sub {
-  margin: 16px auto 0; max-width: 30ch;
-  font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: var(--t-read); line-height: 1.5; letter-spacing: 0;
+  margin: 18px auto 0; max-width: 28ch;
+  font-size: var(--t-read); line-height: 1.24; letter-spacing: 0;
   color: var(--ash);
   text-wrap: balance;
 }
 /* ── the way in ──
-   The product's primary capsule, with the running light riding inside it,
-   and nothing round it. The button's own padding is a generous target on a
-   phone and no more; two hairline rings used to leave the capsule in turn
-   and open out into the field, and they came off, because a ring is a line
-   drawn over the crowd on a loop and the light inside the capsule already
-   says the door is live. It replaced an arrow link, which is the poster's
-   nav voice and read as a link to somewhere else rather than as the door
-   into the thing under it. */
+   The lit key, the same object as "write a letter" at the foot of the wall,
+   at the act's tier, and nothing round it. The button's own padding is a
+   generous target on a phone and no more; two hairline rings used to leave
+   it in turn and open out into the field, and they came off, because a ring
+   is a line drawn over the crowd on a loop. It replaced an arrow link, which
+   is the poster's nav voice and read as a link to somewhere else rather than
+   as the door into the thing under it; the arrow went for the same reason. */
 .wl-mast-go {
   margin-top: 30px;
   pointer-events: auto;
-  min-height: var(--c-lg); padding: 0 24px; font-size: var(--t-name);
+  min-height: var(--c-lg); padding: 0 26px; font-size: var(--t-name);
 }
-/* It was the LAST caller of the retired primary: a chalk plate with a rose
-   point running round the inside of it and an arrow after the word. Every
-   other act in the product became the liquid metal capsule when the primary
-   did (DESIGN.md 8.1), and this one did not — so the single most prominent
-   button on the wall, the one everybody presses first, was the only button
-   in the build still wearing the design that came off. It is the same
-   capsule as "write a letter" now, at the act's tier, and the arrow went
-   with the plate: an arrow inside a capsule is the arrow LINK's voice
-   (`.wl-arrow`) borrowed by a control that is already a door. */
 
 /* ── lifting ──
    The hole: transparent inside the radius, and a long soft shoulder past it
@@ -2165,8 +2083,8 @@ a.wl-lq { text-decoration: none; }
 .wl-wallpage.is-arriving .wl-dock { animation: wl-rise 700ms var(--ease) 160ms both; }
 
 /* ── the composer, at the foot ──
-   parts.jsx `WriteAct`. The primary capsule in the middle of the bottom
-   edge: the nib and the words. It is the one act on the wall; it stood in the
+   parts.jsx `WriteAct`. The lit key in the middle of the bottom edge: the
+   phone's pen and the words. It is the one act on the wall; it stood in the
    bar as a small capsule beside the person, a hundred pixels over the search
    plate, and the two capsules read as a crammed head.
 
@@ -2180,23 +2098,20 @@ a.wl-lq { text-decoration: none; }
   display: flex; justify-content: center;
   padding: 10px 0 0;
 }
-/* The one capsule on the wall that has to throw a shadow onto what is behind
-   it, because what is behind it is a crowd of moving faces. It hands the
-   metal a `--lq-lift` rather than a box-shadow, so the deep drop is ADDED to
-   the capsule's own seat in all three of its states instead of replacing it
-   (`.wl-lq` above). */
+/* The one key on the wall that has to throw a shadow onto what is behind
+   it, because what is behind it is a crowd of moving screens: the deep drop
+   is added to the lit key's own glow (phone.css `.is-key`) rather than
+   replacing it. */
 .wl-write-act {
-  min-height: 46px; min-width: min(100%, 220px);
-  padding: 0 22px; gap: 9px;
+  min-height: var(--c-lg); min-width: min(100%, 220px);
+  padding: 0 22px; gap: 10px;
   font-size: var(--t-name);
-  --lq-lift: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
 }
-/* the nib is struck in the capsule's own ink — it was the paper's while the
-   primary was chalk, and on the metal that ink is a hole */
-.wl-write-act .wl-icon { color: currentColor; opacity: 0.86; }
-/* the notice puts itself away by the mark in its corner */
-.wl-down .wl-down-x { position: absolute; top: 8px; right: 8px; }
-.wl-down .wl-down-in { padding-right: 34px; }
+.wl-root.is-room .wl-write-act.is-key {
+  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.22), 0 0 26px -8px rgba(244, 241, 234, 0.5), 0 18px 40px -18px rgba(0, 0, 0, 0.9);
+}
+/* the pen is struck in the key's own ink, the black the word is cut in */
+.wl-write-act .wl-icon { color: currentColor; }
 
 /* ═══ THE HIVE ═════════════════════════════════════════════════════════════
    Hive.jsx. A crowd of faces on a hexagonal lattice that never ends, bent by
@@ -2508,6 +2423,11 @@ a.wl-lq { text-decoration: none; }
   /* an open letter has no seal foot to leave room for */
   .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 120px) / 1.22)); }
 }
+/* a letter reached from a link gives the line to the wall its row */
+.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 236px) / 1.22)); }
+@media (max-height: 560px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 166px) / 1.22)); }
+}
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
    from what is in it is nothing. The max-width keeps it inside its card */
@@ -2572,35 +2492,29 @@ a.wl-lq { text-decoration: none; }
 @media (min-width: 900px) {
   .wl-sheet-wrap.is-write .wl-sheet-in { max-width: 560px; }
 }
-/* ── every other sheet on the wall is the room's black glass ──
-   Find, the gate, a report and a removal: black glass over the black room,
-   with the letter room's grain behind the words, so a sheet is the same
-   room as the letter and the wall and not a violet pane laid on it. The
-   composer and the letter are the room itself (above), and stay out of
-   this so neither ties with its own black. */
+/* ── every other sheet on the wall is an unlit panel ──
+   Find, the gate, a report and a removal: the phone's glass with its light
+   off (DESIGN.md 2.6), opaque over the black room, square at the corners,
+   one pixel of bezel round it and its own pixel grid under the words. It
+   was black glass with the room blurred through it, which is the room's
+   material; a phone's screen does not show what is behind it. The composer
+   and the letter are the room itself (above), and stay out of this. */
 .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-scrim {
   background: radial-gradient(120% 80% at 50% 100%, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.80) 60%, rgba(0, 0, 0, 0.90) 100%);
 }
-.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet { isolation: isolate; }
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
-    background: linear-gradient(180deg, rgba(18, 18, 18, 0.70) 0%, rgba(3, 3, 3, 0.80) 42%);
-    -webkit-backdrop-filter: blur(34px);
-    backdrop-filter: blur(34px);
-  }
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
+  isolation: isolate;
+  background-color: var(--lcd);
+  background-image: var(--lcd-grid);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--lcd-edge), 0 -30px 70px -30px #000;
 }
-/* the grain sits behind the words: the isolated sheet keeps z -1 inside it */
+/* the room's grain, faint, behind the words: the panel is lying in the same
+   dark the letters are photographed in */
 .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  opacity: 0.07;
+  opacity: 0.05;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
-}
-/* and asked for less of it, the same glass made opaque, and neutral */
-@media (prefers-reduced-transparency: reduce) {
-  .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
-    background: linear-gradient(180deg, rgba(16, 16, 16, 0.97) 0%, rgba(6, 6, 6, 0.99) 42%);
-    -webkit-backdrop-filter: none; backdrop-filter: none;
-  }
 }
 /* ── on and off ──
    The card is opaque within the first beat of opening, so the screen is
@@ -2639,6 +2553,22 @@ a.wl-lq { text-decoration: none; }
   animation: wl-fade 300ms var(--ease) 80ms both;
 }
 .wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-unfade 160ms var(--ease-in) both; }
+/* ── a letter reached from a link (screens/Letter.jsx `LetterBrand`) ──
+   The name, small, in the corner opposite the way out, on the same line as
+   it: the lockup in the room's own hand (it is the one thing on the wall
+   that keeps it, DESIGN.md 2.6), and the way to the wall. Its word is never
+   given back on a narrow phone as the bar's is, since here nothing else
+   wants the row. And under the card, the one line that says there is more
+   than this letter. */
+.wl-letter-brand {
+  position: absolute; z-index: 3;
+  top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px;
+  animation: wl-fade 300ms var(--ease) 80ms both;
+}
+.wl-sheet-wrap.is-closing .wl-letter-brand { animation: wl-unfade 160ms var(--ease-in) both; }
+.wl-brand.is-small { gap: 7px; min-height: 40px; padding: 0 8px 0 0; }
+.wl-root .wl-brand.is-small .wl-brand-word { display: inline; font-size: 17px; }
+.wl-letter .wl-letter-out { align-self: center; margin-top: 2px; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
 
 /* ── the opening ──
@@ -2759,25 +2689,28 @@ a.wl-lq { text-decoration: none; }
 .wl-foot-hold { min-height: 0; }
 .wl-letter .wl-foot { padding-top: 16px; }
 .wl-letter .wl-foot:empty { display: none; }
+/* the turn keys: the phone's own chevrons, drawn on its grid
+   (parts.jsx `Icon` on the wall), in the gutters on a phone and as square
+   keys in the room on a spread (below). The press moves the chevron a pixel
+   the way the deck is about to go, and moves it at once: a key is down or
+   up. */
 .wl-turn {
   position: absolute; top: 50%; z-index: 2;
   width: var(--gutter); height: 72px; margin-top: -36px; padding: 0;
   display: grid; place-items: center;
   border: 0; background: none; color: var(--ash);
-  transition: color 200ms var(--ease), opacity 200ms var(--ease);
+  transition: color 160ms var(--ease), opacity 200ms var(--ease);
 }
-.wl-turn .wl-icon { transition: transform 200ms var(--ease); }
 .wl-turn.is-prev { left: calc(-1 * var(--gutter)); }
 .wl-turn.is-next { right: calc(-1 * var(--gutter)); }
 .wl-turn.is-next .wl-icon { transform: scaleX(-1); }
 @media (hover: hover) and (pointer: fine) {
   .wl-turn:hover:not(:disabled) { color: var(--chalk); }
 }
-/* the press moves the chevron the way the deck is about to go */
-.wl-turn.is-prev:active:not(:disabled) .wl-icon { transform: translateX(-2px) scale(0.92); transition-duration: 120ms; }
-.wl-turn.is-next:active:not(:disabled) .wl-icon { transform: translateX(2px) scaleX(-1) scale(0.92); transition-duration: 120ms; }
+.wl-turn.is-prev:active:not(:disabled) .wl-icon { transform: translateX(-2px); }
+.wl-turn.is-next:active:not(:disabled) .wl-icon { transform: translateX(2px) scaleX(-1); }
 .wl-turn:disabled { opacity: 0.22; cursor: default; }
-.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 8px; }
+.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 2px; }
 
 /* ── the line that says what the seal is ──
    screens/Letter.jsx `sealSay`. It stands in the SHEET's foot, on the glass
@@ -2798,9 +2731,8 @@ a.wl-lq { text-decoration: none; }
 .wl-letter .wl-seal { width: min(100%, var(--scene-w)); margin-inline: auto; }
 .wl-seal-say {
   margin: 0;
-  font-family: var(--f-util);
   font-size: var(--t-small);
-  line-height: 1.45;
+  line-height: 1.24;
   color: var(--ash);
   text-align: center;
   text-wrap: pretty;
@@ -3266,7 +3198,7 @@ a.wl-lq { text-decoration: none; }
 /* the rule, in the poster's nav voice */
 .wl-rule-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .wl-rule-line {
-  display: flex; align-items: baseline; gap: 12px;
+  display: flex; align-items: center; gap: 12px;
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
   font-size: clamp(20px, 5.6vw, 25px); line-height: 1.24;
@@ -3619,14 +3551,14 @@ a.wl-lq { text-decoration: none; }
    it: a panel that is already there when the screen arrives is a banner, and
    a banner is the thing people have learned to look past.
 
-   It is a card now, the same pane the account sheet draws the person on: a
-   step up from the void with the light caught along its top edge, the faces
-   of the names this device wrote to at the head of the sentence, and the way
-   through at its end. Under it one quiet line puts it away, and it comes back
-   after a few days, or at once after another letter goes up (screens/Wall.jsx
-   `tabDue`). It used to be a drawer with a grip on it, docked under the
-   composer's pill; the pill is in the bar now and the drawer had nothing to
-   hang from. */
+   It is a panel of the phone's (DESIGN.md 2.6): the unlit glass with its
+   bezel, the faces of the names this device wrote to at the head of the
+   sentence, the sentence in the phone's face, and the way through at its end
+   as a square key with the phone's arrow in it. Under it one quiet line puts
+   it away, and it comes back after a few days, or at once after another
+   letter goes up (screens/Wall.jsx `tabDue`). It was a frosted card with a
+   round button at its end, the room's material on the one thing at the foot
+   of a wall that is otherwise all the phone's. */
 .wl-tab {
   position: relative;
   display: flex; flex-direction: column; align-items: stretch; gap: 0;
@@ -3638,47 +3570,35 @@ a.wl-lq { text-decoration: none; }
 .wl-tab-main {
   position: relative;
   display: flex; align-items: center; gap: 14px;
-  width: 100%; padding: 14px 14px 14px 16px;
-  border-radius: var(--r-card);
+  width: 100%; padding: 12px 12px 12px 14px;
+  border-radius: var(--r-lcd);
   text-align: left;
-  background: linear-gradient(168deg, rgba(244, 241, 234, 0.07) 0%, rgba(244, 241, 234, 0.036) 55%, rgba(244, 241, 234, 0.022) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 0 0 1px rgba(244, 241, 234, 0.09),
-    0 24px 50px -30px rgba(0, 0, 0, 0.9);
-  transition: background 240ms var(--ease), box-shadow 240ms var(--ease), transform 240ms var(--ease);
+  background-color: var(--lcd);
+  background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge), 0 24px 50px -30px #000;
+  transition: box-shadow 160ms var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .wl-tab-main:hover {
-    background: linear-gradient(168deg, rgba(244, 241, 234, 0.1) 0%, rgba(244, 241, 234, 0.05) 55%, rgba(244, 241, 234, 0.03) 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.14),
-      inset 0 0 0 1px rgba(244, 241, 234, 0.16),
-      0 24px 50px -30px rgba(0, 0, 0, 0.9);
-  }
-  .wl-tab-main:hover .wl-tab-go { transform: translateX(3px); background: rgba(255,244,228,0.07); }
+  .wl-tab-main:hover { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi), 0 24px 50px -30px #000; }
+  .wl-tab-main:hover .wl-tab-go { background: var(--chalk); color: #000; border-color: var(--chalk); }
 }
-.wl-tab-main:active { transform: scale(0.985); transition-duration: 120ms; }
+.wl-tab-main:active .wl-tab-go { background: var(--chalk); color: #000; border-color: var(--chalk); }
 /* the people the sentence is about: the faces of the names written to,
-   overlapping the way a row of people stands, each ringed in the void so
-   one face is not cut into the next */
+   side by side, each its own small lit square */
 .wl-tab-faces { display: flex; align-items: center; flex: 0 0 auto; }
 .wl-tab-faces .wl-spark { color: var(--glow); }
-/* side by side, each with its own glow, rather than stacked like discs */
 .wl-face.wl-tab-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 8px -2px rgba(210, 210, 210, 0.28); }
 .wl-tab-face + .wl-tab-face { margin-left: 4px; }
 .wl-tab-text {
   flex: 1 1 auto; min-width: 0;
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: var(--t-read); line-height: 1.24;
+  font-size: var(--t-read); line-height: 1.12;
   color: var(--chalk);
 }
+/* the way through: a key, pressed with the panel */
 .wl-tab-go {
   flex: 0 0 auto; display: grid; place-items: center;
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 1px solid rgba(255,244,228,0.22); color: var(--glow);
-  transition: transform 240ms var(--ease), background 240ms var(--ease);
+  width: 36px; height: 36px; border-radius: var(--r-lcd);
+  border: 1px solid var(--lcd-edge); color: var(--chalk); background: var(--lcd);
 }
 .wl-tab-hide { padding: 9px 10px 5px; }
 @keyframes wl-tab-rise {
@@ -3694,42 +3614,43 @@ a.wl-lq { text-decoration: none; }
 .wl-wallpage .wl-dock { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 
 /* ═══ THE NOTICE ═══════════════════════════════════════════════════════════
-   screens/Wall.jsx `Down`. A letter this person put up has come down since:
-   the same pane as the tab, standing in its place, with the face of the name
-   it was written to, the fact in the display face, the reason in one line of
-   the reading face, and the one thing worth doing about it. It rises the way
-   the tab rises and it stands until it is answered. */
+   screens/Wall.jsx `Down`. A letter this person put up has come down since,
+   and the wall says so the way the phone said anything it needed read: a
+   note on the unlit panel, the envelope and the fact in chalk, the reason
+   under it in ash, and one soft key at its foot, `ok`, which puts it away.
+   It rises the way the tab rises and it stands until it is answered. */
 .wl-down {
   position: relative;
-  display: flex; flex-direction: column; gap: 12px;
-  width: 100%; margin: 0 0 2px; padding: 16px 16px 14px;
-  border-radius: var(--r-card);
-  background: linear-gradient(168deg, rgba(244, 241, 234, 0.07) 0%, rgba(244, 241, 234, 0.036) 55%, rgba(244, 241, 234, 0.022) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 0 0 1px rgba(244, 241, 234, 0.09),
-    0 24px 50px -30px rgba(0, 0, 0, 0.9);
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; margin: 0 0 2px; padding: 14px 14px 6px;
+  border-radius: var(--r-lcd);
+  background-color: var(--lcd);
+  background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge), 0 24px 50px -30px #000;
   animation: wl-tab-rise 900ms var(--ease) both;
 }
-.wl-down-in { display: flex; align-items: flex-start; gap: 13px; }
+.wl-down-in { display: flex; align-items: flex-start; gap: 12px; }
 .wl-down-face { margin-top: 2px; }
-.wl-down-text { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.wl-down-text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .wl-down-h {
   margin: 0;
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: var(--t-read); line-height: 1.24; color: var(--chalk);
+  font-size: var(--t-read); line-height: 1.12; color: var(--chalk);
   overflow-wrap: anywhere;
 }
-.wl-down-h .wl-h { font-family: var(--f-id); font-weight: 400; font-size: 0.84em; letter-spacing: var(--tr-tight); }
-.wl-down-why {
-  margin: 0;
-  font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: var(--t-name); line-height: 1.5; color: var(--ash);
+.wl-down-env { display: inline-block; vertical-align: -1px; margin-right: 8px; color: var(--chalk); }
+.wl-down-why { margin: 0; font-size: var(--t-small); line-height: 1.24; color: var(--ash); }
+/* the soft key, at the foot of the note, where the phone put it: the word
+   alone, and pressed it inverts */
+.wl-down-keys { display: flex; justify-content: flex-end; border-top: 2px solid transparent;
+  border-image: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px) 2; padding-top: 4px; }
+.wl-root .wl-down-ok {
+  min-width: 56px; padding: 6px 12px; border-radius: 2px;
+  font-size: var(--t-ctrl); line-height: 1; color: var(--chalk); text-align: right;
 }
-.wl-down-acts { display: flex; align-items: center; gap: 10px; padding-left: 49px; }
-.wl-down-acts .wl-pill { min-height: var(--c-md); padding: 0 16px; font-size: var(--t-ctrl); }
-.wl-down-acts .wl-quiet { padding: 8px 6px; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-root .wl-down-ok:hover { background: rgba(244, 241, 234, 0.1); }
+}
+.wl-root .wl-down-ok:active { background: var(--chalk); color: #000; }
 /* On the wall the bottom of the screen is already dark: `.wl-shade.is-bottom`
    pours the void back over the field on a much longer ramp than this one, and
    two gradients over each other put a visible waist across the field where
@@ -3780,7 +3701,7 @@ a.wl-lq { text-decoration: none; }
   .wl-masthead { grid-row: 1; width: 100%; padding-top: 14px; }
   .wl-seek { width: 100%; }
   .wl-seek-glass { max-width: 480px; }
-  .wl-seek .wl-field { min-height: 56px; }
+  .wl-root.is-room .wl-seek .wl-field { min-height: 54px; }
   .wl-seek .wl-field input { font-size: var(--t-subject); }
   /* the veil's type keeps the column while the field, which is the whole
      window at every width, does not: the block stands in the middle of the
@@ -3854,19 +3775,22 @@ a.wl-lq { text-decoration: none; }
   .wl-letter { --gutter: 30px; }
   .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }
   .wl-letter-x { top: 26px; right: 30px; }
+  .wl-letter-brand { top: 26px; left: 30px; }
   .wl-turn {
-    width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
-    /* brighter than a hairline at rest: on the black room a hairline ring
-       is not there */
-    border: 1px solid rgba(244, 241, 234, 0.16); color: rgba(244, 241, 234, 0.72);
-    transition: color 200ms var(--ease), border-color 200ms var(--ease), opacity 200ms var(--ease);
+    width: 40px; height: 40px; margin-top: -20px; border-radius: var(--r-lcd);
+    /* the navi key under a phone's screen: the unlit panel and its bezel,
+       brighter than a hairline, since on the black room a hairline is not
+       there */
+    border: 1px solid var(--lcd-edge); background: var(--lcd); color: var(--chalk);
+    transition: border-color 160ms var(--ease), opacity 200ms var(--ease);
   }
-  .wl-turn.is-prev { left: -62px; }
-  .wl-turn.is-next { right: -62px; }
+  .wl-turn.is-prev { left: -64px; }
+  .wl-turn.is-next { right: -64px; }
   @media (hover: hover) and (pointer: fine) {
-    .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
+    .wl-turn:hover:not(:disabled) { border-color: var(--lcd-edge-hi); }
   }
-  .wl-turn:focus-visible { outline-offset: 3px; border-radius: 50%; }
+  .wl-turn:active:not(:disabled) { background: var(--chalk); color: #000; border-color: var(--chalk); }
+  .wl-turn:focus-visible { outline-offset: 3px; border-radius: 2px; }
   /* the composer's act stands under the card, at the card's measure: a pill
      the width of the dialog under a paper narrower than it is a pill about
      the dialog */
@@ -3919,7 +3843,7 @@ a.wl-lq { text-decoration: none; }
   /* 390px of height: the glass gives back what it can, and its panel with
      it — six rows over a 390px window is the window */
   .wl-seek-glass { max-width: 420px; }
-  .wl-seek .wl-field { min-height: 42px; }
+  .wl-root.is-room .wl-seek .wl-field { min-height: 42px; }
   .wl-seek .wl-field input { font-size: var(--t-wide); }
   .wl-seek-found { max-height: 44vh; }
   .wl-veil-in { padding: 0 18px 2vh; }

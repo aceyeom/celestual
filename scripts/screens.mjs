@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// screens.mjs — every colour a letter can be lit in, as the picture it sends.
+// screens.mjs: every colour a letter can be lit in, as the picture it shares.
 //
 // The screens are the one part of the wall that cannot be reasoned about.
 // Whether a colour's treatment (the lit panel, the negative, the poster's
@@ -8,7 +8,7 @@
 // eye answers, and the composer that offers them is behind a sign in.
 //
 // So this asks the running app to draw them. It opens the dev server, imports
-// the wall's own share.js in the page, and renders the picture `send` makes
+// the wall's own share.js in the page, and renders the picture `share` makes
 // for one letter in every colour, and then the same colour on a handful of
 // letter ids, which is the check on looks.js `quirks`: the same colour on
 // five letters should be five phones, and none of them a different design.

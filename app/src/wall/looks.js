@@ -577,6 +577,22 @@ export const PIX = {
   send: ['X..........', 'XXX........', 'X..XXX.....', 'X.....XXX..', 'X........XX', 'X.....XXX..', 'X..XXX.....', 'XXX........', 'X..........'],
   link: ['..XX..XX...', '.X..XX..X..', 'X...XX...X.', 'X..X..X..X.', '.X..XX..X..', '..XX..XX...'],
   save: ['...XXX...', '...XXX...', '...XXX...', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....', 'XXXXXXXXX'],
+  // ── the chrome's own ──
+  // The whole wall is the phone now (DESIGN.md 2.6), so the controls round
+  // the screens are drawn on the same grid as the glyphs on them: the lens,
+  // the back and down chevrons, the close mark, the key, the flag, the way
+  // out, the arrow a link follows, and the hourglass the phone turned while
+  // it was busy. Drawn by screen.jsx `PixIcon`, a whole number of the page's
+  // pixels to each of theirs, and never an icon set's.
+  find: ['..XXX....', '.X...X...', 'X.....X..', 'X.....X..', 'X.....X..', '.X...X...', '..XXXXX..', '......XX.', '.......XX'],
+  back: ['...XX', '..XX.', '.XX..', 'XX...', '.XX..', '..XX.', '...XX'],
+  down: ['XX...XX', '.XX.XX.', '..XXX..', '...X...'],
+  close: ['X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X...X.', 'X.....X'],
+  key: ['.XXX.', 'X...X', 'X...X', 'X...X', '.XXX.', '..X..', '..XX.', '..X..', '..XX.'],
+  flag: ['XXXXXX', 'X....X', 'X...X.', 'X....X', 'XXXXXX', 'X.....', 'X.....', 'X.....'],
+  signout: ['XXXX......', 'X.........', 'X.....X...', 'X.....XX..', 'X.XXXXXXX.', 'X.....XX..', 'X.....X...', 'X.........', 'XXXX......'],
+  arrow: ['....X..', '....XX.', 'XXXXXXX', '....XX.', '....X..'],
+  wait: ['XXXXXXX', 'X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X.X.X.', 'X.XXX.X', 'XXXXXXX'],
 }
 // the battery as the phone drew it, its nub on the left and its cells
 // draining from that end; the charge in it is how fresh the letter is

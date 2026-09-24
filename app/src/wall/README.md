@@ -232,7 +232,7 @@ campus address or a handle proved after that code was scanned (migration 0047).
                                     │  tab at the bottom │
                                     └─────────┬──────────┘
                                               ▼
-                             "Get notified if they put you up too."
+                             "get notified if they put you up too."
                                               │
                                               ▼
                                       THE CORE SERVICE
@@ -268,21 +268,24 @@ The one in twenty who came here looking for themselves, and the nineteen who
 came looking for one other name, are nearly everybody who scans the wall off a
 flyer, and the way to look was a 40px glass in the corner of the bar a thumb
 reaches last. It is the wall's own question now: a piece of glass under the
-ear, blurred void in a capsule with the lens in the place a field paints its
+ear, an unlit LCD strip with the pixel lens in the place a field paints its
 @, `look for a name` inside it, capped at the column's measure (`screens/Wall.jsx`
-`Seek`, `parts.jsx` `HandleField kind="search"`). It carried a chalk hairline
-round its edge while it had to read as a button and does not now: a white
-outline over a crowd of pale discs is an edge belonging to no object, and the
-blur is the material and the edge both.
+`Seek`, `parts.jsx` `HandleField kind="search"`). It is the phone's
+(design/DESIGN.md 2.6): the panel at ninety percent under its pixel grid, a
+one pixel bezel that lights while it has the focus, and the question in
+Jersey. It was grey glass over a blur until 24 September, the last piece of
+an Apple interface on a wall of phones.
 
-And it answers in place. It used to behave as a door — any touch pushed
+And it answers in place. It used to behave as a door: any touch pushed
 `/find` onto the history and a sheet came up over the wall carrying a SECOND
 field, which is one question, two fields, a route and a keyboard handed
-between them. The glass itself opens now: it is the head of a panel that
-grows downward as the answers arrive, over the crowd, and folds back to a
-capsule when the field is emptied or left. The head does not move while it
-opens — not its height, not the lens, not the measure the question is centred
-in — so what is seen is one thing growing. A name is found and pressed from
+between them. The strip itself opens now: it is the head of a panel that
+grows downward as the answers arrive, under a dotted seam, with the active
+answer inverted the way a phone's menu showed the chosen line, and it folds
+back when the field is emptied or left. While the answers come it says
+`looking` beside the blinking hourglass. The head does not move while it
+opens, not its height, not the lens, not the measure the question is set
+in, so what is seen is one thing growing. A name is found and pressed from
 the surface the names are on, which is the whole argument for the wall being
 the landing. The sheet is still there at `/find`: a link into the search, and
 the fuller answer for somebody who arrived looking rather than browsing.
@@ -372,7 +375,7 @@ still after the last word. Every letter is the same screen, set in one face
 | --- | --- |
 | **the status rows** | the aerial and the day it went up; the characters left of 280 and the battery (how long it has been sitting there unsaid); then the pen, `dear` and the first name, and the handle. Where the resolver has no name it is `dear` and the handle alone. A sealed letter has a padlock where the pen is |
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter is its stars |
-| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `send` (share the picture, save it, copy the link) |
+| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
 The only thing a writer chooses is the COLOUR it is lit in, from one list in
 three groups (`Look.jsx`, under the composer's screen while its `colour` key
@@ -392,6 +395,20 @@ name written to today, and the middle is the name's picture, in the screen's
 own tones with some of the photograph's colour left in, or its monogram with
 the cursor after it. Nothing on the wall is round.
 
+Everything round the screens is the same phone (design/DESIGN.md 2.6,
+`phone.css`): one face for every word but the brand's, square keys, unlit
+panels with a one pixel bezel, the phone's pixel glyphs (`screen.jsx`
+`PixIcon`), a lit key for the one act on a screen, and the chosen row
+inverted. The brand, the mark at a door's head and the poured mark of the
+intro are the only things on the wall that are not the phone. The shared
+parts learn which surface they are on from `PhoneChrome` (`parts.jsx`), which
+only the wall's root turns on, so Main draws them as it always has.
+
+A letter reached from a link, before the tab has been to the wall, carries
+the brand at its top left and `view the wall` under it (`Letter.jsx`
+`LetterBrand`, `ViewWall`). Either one drops the wall's poster and closes
+the letter onto the names; the close key still lands on the poster.
+
 The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
 it: the gate under a sealed card says `read it` and not a word of policy,
 because the card beside it has already said what it is.
@@ -410,23 +427,21 @@ not know — a paper from before the screens — draws the colour its id picks.
 Migration 0058 gave every letter already up a colour of its own and kept
 what it had in `wall_look_backup_0058`.
 
-**The paper of a letter is the paper of its name on the field.** The index
-carries the look of the newest letter under each key, so a name's disc on
-the wall draws that look's ground, and the name on it in the look's ink and
-face, whole when it fits and as a monogram when it does not (`parts.jsx`
-`Face`, `looks.js` `nameOnDisc`). A disc that carries a picture keeps the
-picture, since a face is the strongest name there is, and wears the look as
-a rim. The search rows, the suggestions, the tab at the foot and the notice
-draw the same disc. Every letter under a name is read on its own paper, so
-a deck turned from a letter on the nokia screen to an older one on the plain
-paper is two papers.
+**The screen of a name is the screen of its newest letter.** The index
+carries the look of the newest letter under each key, so a name's small
+screen on the wall is lit in that colour (`screen.jsx` `Tile`), with the
+name's picture dithered into its ink or its monogram. The search rows, the
+suggestions, the tab at the foot and the notice draw the name as its face, a
+small square of the night LCD (`parts.jsx` `Face`). Every letter under a name
+is read on its own screen, so a deck turned from a green letter to an older
+amber one is two phones.
 
 **And what it does not change.** A look is a choice from a menu that every
 writer shares, structured and not written, so it is not a signature; the
 list at the keyboard and the classifier still read every word; a takedown
 takes the look with the letter; the desk sees the slugs beside the row; and
-the paper stays the one bright thing on a sheet, in whatever colour the
-writer chose it. [../../../docs/WALL-FEATURES.md](../../../docs/WALL-FEATURES.md)
+the letter's screen stays the one lit thing in the room, in whatever colour
+the writer chose it. [../../../docs/WALL-FEATURES.md](../../../docs/WALL-FEATURES.md)
 records the ruling, which reverses the one the document made before there
 was a menu.
 
@@ -532,8 +547,10 @@ looks.js     the colours a letter's screen can be lit in, what each is painted
              and the memo of which colour each name was last written in
 screen.jsx   the screen, at three sizes (the letter, the wall's tile, the
              panel's thumbnail), and a picture dithered into its ink
-share.js     `send`: the letter drawn as a picture, and the share sheet,
-             the save and the copied link
+share.js     `share`: the letter drawn as a picture signed with the mark
+             and the word, and the share sheet, the save and the copied link
+phone.css    the wall as the phone: the tokens remapped for the wall's root,
+             and the parts both surfaces share drawn as the phone
 Look.jsx     the colour panel under the composer's screen
 parts.jsx    display · label · prose · redaction · pill · paper · fields ·
              sheet · row · icons · the close mark · the bar · step dots

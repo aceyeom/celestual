@@ -137,7 +137,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
           <Display size="s" as="h2" id="wl-rep-h">you have to be<br />signed in for this.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'report', id }); go('gate') }}>
-            Sign in to take a letter down.
+            sign in to take a letter down.
           </Locked>
         </div>
       </Sheet>
@@ -171,7 +171,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
               here to think about. Somebody standing on this screen wants to know
               what the tap does, which is one sentence long. */}
           <Prose className="wl-gate-copy">
-            It comes off the wall now, and someone reads it after.
+            it comes off the wall now, and someone reads it after.
           </Prose>
 
           <div className="wl-push" />

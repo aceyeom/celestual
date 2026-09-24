@@ -14,9 +14,24 @@ import { Ecliptic, Sparkle, Verified } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
-import { PixelPic } from './screen.jsx'
+import { PixelPic, PixIcon, Wait } from './screen.jsx'
 import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
+
+// ── the wall is the phone ───────────────────────────────────────────────────
+// Every control on the wall is drawn in the phone's own language (DESIGN.md
+// 2.6): its pixel glyphs, its keys, its one face. Main shares these parts
+// and keeps the room's, so the switch is a context the wall's shell turns on
+// (index.jsx) rather than a prop on every call: the parts that DRAW read it
+// (the primary, the icons, the close mark, the arrow link, the light, the
+// heart), and phone.css restyles everything else under `.wl-root.is-room`.
+export const PhoneChrome = createContext(false)
+export const usePhone = () => useContext(PhoneChrome)
+// the stroke icons below, as the phone's glyphs (looks.js PIX)
+const PIX_OF = { back: 'back', find: 'find', write: 'pen', join: 'arrow', close: 'close', key: 'key', down: 'down', flag: 'flag', signout: 'signout' }
+// one of a glyph's pixels is this many of the page's, whatever its size, so
+// every glyph on a screen of the wall shares one grid the way a phone's did
+const pixScale = (size) => Math.max(2, Math.round((size - 2) / 9))
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -109,8 +124,11 @@ export function Rule({ tone = '', className = '', style }) {
 // can travel on hover without dragging the word with it, and it sits dimmer
 // than the label so the WORD is what you read and the arrow is what you follow.
 export function ArrowLink({ children, onClick, href, tone = '', size = '', disabled = false, className = '', ...rest }) {
+  const phone = usePhone()
   const cls = ['wl-arrow', tone && `is-${tone}`, size && `is-${size}`, className].filter(Boolean).join(' ')
-  const body = <><span className="wl-arrow-g" aria-hidden="true">→</span><span className="wl-arrow-t">{children}</span></>
+  // the phone's face has no arrows, so on the wall the arrow is its glyph
+  const g = phone ? <PixIcon name="arrow" scale={2} /> : '→'
+  const body = <><span className="wl-arrow-g" aria-hidden="true">{g}</span><span className="wl-arrow-t">{children}</span></>
   if (href && !disabled) return <a className={cls} href={href} onClick={onClick} {...rest}>{body}</a>
   return (
     <button type="button" className={cls} onClick={onClick} disabled={disabled} {...rest}>{body}</button>
@@ -154,6 +172,7 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 // The prop and the component stay for the one caller that is not a pill — the
 // veil's "view the wall" (screens/Wall.jsx `.wl-mast-go`).
 export function Pill({ children, onClick, href, tone = 'ghost', wide = false, lit = tone === 'light', disabled = false, icon = null, className = '', ...rest }) {
+  const phone = usePhone()
   // ── the primary is a material now ──
   // Every `light` capsule in the build — "write a letter" at the foot of the
   // wall, "place a ping" on the front door, the step buttons on the composer,
@@ -165,6 +184,22 @@ export function Pill({ children, onClick, href, tone = 'ghost', wide = false, li
   // The running light does not come with it. `Light` is a chalk plate with a
   // rose point travelling round its inside, and a rose point travelling round
   // the inside of a metal capsule is two currents under one word.
+  //
+  // ── and on the wall it is the phone's lit key ──
+  // The wall is the phone (DESIGN.md 2.6), and metal poured into a capsule is
+  // the room's material, not the phone's. There the primary is a key: a chalk
+  // plate with the word struck out of it in the phone's face, the way the
+  // chosen row of a menu is drawn (screen.css `.wl-scr-menu li.is-on`), so the
+  // one bright control on a screen of the wall is the one the phone would
+  // light. It keeps `wl-pill` for its metrics, like the metal did, and
+  // `is-light` so every rule and script that finds the primary still finds it.
+  if (tone === 'light' && phone) {
+    const cls = ['wl-pill', 'is-light', 'is-key', wide && 'is-wide', className].filter(Boolean).join(' ')
+    const busy = !!rest['aria-busy']
+    const body = <>{busy ? <Wait /> : icon}<span>{children}</span></>
+    if (href && !disabled) return <a className={cls} href={href} onClick={onClick} {...rest}>{body}</a>
+    return <button type="button" className={cls} onClick={onClick} disabled={disabled} {...rest}>{body}</button>
+  }
   if (tone === 'light') {
     return (
       <LiquidButton
@@ -238,15 +273,19 @@ const PATHS = {
 // place you navigate to, and typesetting the exit as a sentence made it the
 // loudest thing on three screens.
 export function Close({ onClick, label = 'close', className = '' }) {
+  const phone = usePhone()
   return (
     <button
       type="button" className={`wl-close ${className}`}
       onClick={onClick} aria-label={label} title={label}
     >
-      <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"
-        fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round">
-        <path d="M5.1 5.1 14.9 14.9M14.9 5.1 5.1 14.9" />
-      </svg>
+      {/* on the wall, the phone's own cross, in a square key (phone.css) */}
+      {phone ? <PixIcon name="close" scale={2} /> : (
+        <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"
+          fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round">
+          <path d="M5.1 5.1 14.9 14.9M14.9 5.1 5.1 14.9" />
+        </svg>
+      )}
     </button>
   )
 }
@@ -258,6 +297,9 @@ export function Close({ onClick, label = 'close', className = '' }) {
 // reason every glyph is: it has to sit on the paper beside the letter's own
 // type, struck in the paper's ink, and a set would not know it was there.
 export function Heart({ size = 18, on = false, className = '' }) {
+  const phone = usePhone()
+  // on the wall, the heart the letters' own centre key draws
+  if (phone) return <PixIcon name={on ? 'heart' : 'heartO'} scale={pixScale(size)} className={`wl-icon wl-heart-glyph${on ? ' is-on' : ''} ${className}`} />
   return (
     <svg
       className={`wl-icon wl-heart-glyph${on ? ' is-on' : ''} ${className}`}
@@ -272,6 +314,11 @@ export function Heart({ size = 18, on = false, className = '' }) {
 }
 
 export function Icon({ name, size = 20, className = '' }) {
+  const phone = usePhone()
+  // on the wall, the phone's glyph for the same destination
+  if (phone && PIX_OF[name]) {
+    return <PixIcon name={PIX_OF[name]} scale={pixScale(size)} className={`wl-icon ${className}`} />
+  }
   return (
     <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
       fill="none" stroke="currentColor"
@@ -292,11 +339,11 @@ export function Icon({ name, size = 20, className = '' }) {
 // `.wl-brand`). `back` grows the chevron the wall's sheets use, so "back" and
 // "home" stay the same target in the same place. A real anchor when it is
 // given an href, so it opens in a new tab and copies like one.
-export function Brand({ onClick, href, back = false, label = 'celestual, the front', title = 'the front', className = '' }) {
+export function Brand({ onClick, href, back = false, label = 'celestual, the front', title = 'the front', mark = 26, className = '' }) {
   const body = (
     <>
       {back ? <Icon name="back" size={17} /> : null}
-      <Ecliptic size={26} className="wl-brand-mark" />
+      <Ecliptic size={mark} className="wl-brand-mark" />
       <span className="wl-brand-word">celestual.</span>
     </>
   )
@@ -1952,6 +1999,7 @@ function edgePath(w, h, r) {
 }
 
 export function Light({ on = true, plate = 'star', className = '' }) {
+  const phone = usePhone()
   const beam = useRef(null)
   useLayoutEffect(() => {
     const el = beam.current
@@ -1968,6 +2016,10 @@ export function Light({ on = true, plate = 'star', className = '' }) {
     if (ro) ro.observe(frame)
     return () => { if (ro) ro.disconnect() }
   }, [])
+  // A point of light running an edge is the room's way of saying "wait".
+  // On the wall the phone says it, with its own blinking glyphs where the
+  // answer will land (phone.css `.wl-settled-skel`), so no beam is drawn.
+  if (phone) return null
   return (
     <span className={`wl-light is-${plate}${on ? ' is-on' : ''} ${className}`} aria-hidden="true">
       <span className="wl-light-beam" ref={beam} />

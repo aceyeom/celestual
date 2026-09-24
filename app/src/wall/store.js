@@ -123,6 +123,24 @@ export function setAfterGate(route) { AFTER = route && route.name ? route : null
 export function takeAfterGate() { const a = AFTER; AFTER = null; return a }
 export function peekAfterGate() { return AFTER }
 
+// Whether this tab came in on a letter's own address, a link somebody was
+// sent, and has not reached the wall yet. A letter opened like that is the
+// first thing of the product the person has seen, so it carries the name and
+// a way to the wall (screens/Letter.jsx `LetterBrand`). Kept in the TAB's
+// session storage rather than in memory, because signing in to read it can
+// leave the page for Google and come back on another load, and rather than in
+// the blob above, because it is about this tab and dies with it.
+const COLD = 'celestual.cold'
+export function setCold(on) {
+  try {
+    if (on) window.sessionStorage.setItem(COLD, '1')
+    else window.sessionStorage.removeItem(COLD)
+  } catch { /* storage refused: the letter simply goes unsigned */ }
+}
+export function isCold() {
+  try { return window.sessionStorage.getItem(COLD) === '1' } catch { return false }
+}
+
 // Append to one of the list buckets, once. Written here rather than at four
 // call sites so `[...removed(), h]` cannot be spelled two different ways and
 // end up with a duplicate in one of them.

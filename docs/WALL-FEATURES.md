@@ -33,7 +33,7 @@ weighed only against them:
 1. **In four seconds, off a flyer, show that other people already did this.**
 2. **Get a letter written.**
 3. **After the letter, open the one door into the product.** The tab at the
-   foot of the wall, `Get notified if they put you up too.`, is the whole
+   foot of the wall, `get notified if they put you up too.`, is the whole
    reason the wall exists. The letters are the argument for the product; the
    wall is not the product.
 
