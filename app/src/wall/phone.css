@@ -1,0 +1,381 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  THE WALL IS THE PHONE                                                   ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+
+   design/DESIGN.md 2.6. Every letter on the wall is a Series 40 screen left
+   on in a dark room, and for a while everything round the screens was a
+   different product: glass that blurred the crowd under it, capsules poured
+   in liquid metal, round close marks, a stroke icon set, a serif for the
+   headings and a grotesque for the controls. Two languages on one surface,
+   and the one people had come to read was the one the chrome did not speak.
+
+   So the whole wall speaks the phone's. One face, the phone's (Jersey 10,
+   `--f-s40`), for every word but the product's own name; the phone's pixel
+   glyphs for every icon (looks.js PIX, drawn by screen.jsx `PixIcon`);
+   square LCD corners; an UNLIT panel for anything that holds type, a black a
+   step off the room's with a one pixel bezel round it; and the one lit
+   control on a screen drawn the way the phone lit the chosen row of a menu,
+   a chalk plate with the word struck out of it in black. Nothing new is
+   BACKLIT, so a letter's screen is still the one bright thing in the room.
+
+   What stays the room's, and only this: the mark and the word `celestual.`
+   (the bar, the site's foot, a letter reached from a link, the shared
+   picture), the mark at the head of the door, and the poured mark of the
+   intro and the root wall's poster. The product signs its name in its own
+   hand; everything else on the wall is the phone.
+
+   ── how it is scoped ──
+   Main (/ping, /sky, /place) shares these parts and keeps the room's
+   language, so nothing here reaches it: every rule is under
+   `.wl-root.is-room`, which is the wall's root and nobody else's
+   (index.jsx). wall.css already names every face, size, tracking and corner
+   as a token, so most of the change is the tokens below, remapped for this
+   root. The parts that DRAW rather than style (the primary, the icons, the
+   close mark, the arrow link, the light, the heart) read `PhoneChrome`
+   (parts.jsx), which the wall's shell turns on. The wall's own surfaces (the
+   search, the ear, the veil, the dock, the letter's keys, the room's sheets)
+   are drawn in place in wall.css; this file is for the parts both surfaces
+   share. */
+
+.wl-root {
+  /* the room's serif, named once, for the one word on the wall set in it */
+  --f-serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+.wl-root.is-room {
+  /* ── one face ──
+     The four jobs the faces carried on Main (the display, the reading, the
+     controls, the identifiers) are all the phone's one face here. A phone
+     had one font, and the register moves into the words (VOICE.md 3). */
+  --f-display: var(--f-s40);
+  --f-letter:  var(--f-s40);
+  --f-util:    var(--f-s40);
+  --f-id:      var(--f-s40);
+  --w-display: 400;
+  --track-display: 0;
+  /* a pixel face has one weight and is never thickened by the browser */
+  font-synthesis: none;
+
+  /* ── the ladder, on the face's own grid ──
+     Jersey 10 at 20px is a grotesque at about fifteen: the same jobs, three
+     sizes. Twenty for anything read or pressed, sixteen for what stands
+     under a name, and the larger steps for what was typed. */
+  --t-label:    16px;
+  --t-meta:     16px;
+  --t-small:    16px;
+  --t-ctrl:     20px;
+  --t-name:     20px;
+  --t-wide:     20px;
+  --t-read:     20px;
+  --t-subject:  24px;
+  --t-value:    24px;
+  --t-value-lg: 30px;
+
+  /* a pixel face is drawn with its spacing in it: tracked in, its pixels
+     touch; tracked out, it stops being a word */
+  --tr-tight:   0;
+  --tr-snug:    0;
+  --tr-normal:  0.01em;
+  --tr-open:    0.02em;
+  --tr-loose:   0.03em;
+  --tr-label:   0.03em;
+  --tr-label-2: 0.03em;
+
+  /* ── the corners: an LCD's, never a card's ── */
+  --r-card:  3px;
+  --r-sheet: 4px;
+  --r-pill:  3px;
+  --r-field: 3px;
+  --r-lcd:   3px;
+
+  /* ── the phone's materials ──
+     `--lcd` is a panel with its backlight off: a step up from the room's
+     black, so it reads as glass lying in the dark rather than a hole in it.
+     `--lcd-edge` is its bezel, one pixel, and `-hi` the bezel of the panel
+     being typed into. `--lcd-grid` is the panel's own pixel grid, the same
+     three pixel pitch the small faces carry (wall.css `.wl-face::after`), at
+     a strength that is felt rather than seen. */
+  --lcd:         #0B0B0B;
+  --lcd-2:       #161616;
+  --lcd-edge:    rgba(244, 241, 234, 0.16);
+  --lcd-edge-hi: rgba(244, 241, 234, 0.38);
+  --lcd-grid:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 3px);
+}
+
+/* ═══ THE NAME ═════════════════════════════════════════════════════════════
+   The one word on the wall that keeps the room's hand. It reads
+   `--f-display` and `--t-value` on Main, and both are the phone's here. */
+.wl-root.is-room .wl-brand-word {
+  font-family: var(--f-serif); font-weight: 500; font-size: 22px;
+  letter-spacing: -0.022em; font-variation-settings: normal;
+}
+.wl-root.is-room .wl-brand-mark { color: var(--chalk); }
+
+/* ═══ TYPE ═════════════════════════════════════════════════════════════════
+   The display steps restated for the pixel face: it holds a line at a size
+   the serif could not, and its leading is the phone's, close. */
+.wl-root.is-room .wl-display { line-height: 1.02; font-optical-sizing: none; }
+.wl-root.is-room .wl-display.is-xl { font-size: clamp(36px, 11.2vw, 48px); }
+.wl-root.is-room .wl-display.is-l  { font-size: clamp(32px, 9.4vw, 40px); }
+.wl-root.is-room .wl-display.is-m  { font-size: clamp(28px, 8.2vw, 34px); }
+.wl-root.is-room .wl-display.is-s  { font-size: clamp(26px, 7.4vw, 30px); line-height: 1.04; }
+/* a paragraph in the pixel face, at the phone's own leading rather than a
+   book's: at a book's the lines drift apart into single words */
+.wl-root.is-room p { line-height: 1.24; }
+/* and the explanations that set their own leading for the serif */
+.wl-root.is-room :is(.wl-door-say, .wl-door-why, .wl-gate-copy, .wl-seal-say, .wl-mast-sub, .wl-down-why) { line-height: 1.24; }
+.wl-root.is-room .wl-door-foot { line-height: 1.5; }
+/* the labels were small caps in mono; the phone wrote its labels as it
+   wrote everything else, and a label here says so in the same case */
+.wl-root.is-room :is(.wl-label, .wl-look-h, .wl-or-word, .wl-gate-fault, .wl-ear-meta, .wl-ear-again) {
+  text-transform: none;
+}
+.wl-root.is-room .wl-label { line-height: 1.2; }
+/* a quiet control has to be read at sixteen pixels of a pixel face, and
+   ash-dim at that size is a sentence nobody finds */
+.wl-root.is-room .wl-quiet { color: var(--ash); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-quiet:hover { color: var(--chalk); }
+}
+/* the arrow link: the phone's arrow, centred on the word it follows */
+.wl-root.is-room .wl-arrow { align-items: center; gap: 10px; line-height: 1.1; }
+.wl-root.is-room .wl-arrow-g { display: inline-grid; place-items: center; color: var(--ash); }
+.wl-root.is-room .wl-arrow-g .wl-pxi { display: block; }
+/* a count that turns: each window as wide as the widest figure, because
+   the phone's figures are not all one width and a narrower window cuts the
+   eight and the nine in half */
+.wl-root.is-room .wl-roll-d { width: 0.44em; }
+
+/* ═══ THE KEYS ═════════════════════════════════════════════════════════════
+   ── the lit key: the one primary on a screen (parts.jsx `Pill`) ──
+   The phone lit a choice by inverting it, the whole row turned to the ink
+   with the word cut out of it, and that is the primary here: a chalk plate,
+   the word in black, square at the corners. It throws a little of its own
+   light on the dark, as the screens do. It does not glide: a key on a phone
+   is down or it is up, so the press is a pixel of travel and a step of
+   grey, at once. */
+.wl-root.is-room .wl-pill.is-key {
+  position: relative;
+  gap: 10px;
+  border: 0; border-radius: var(--r-lcd);
+  background: var(--chalk); color: #000;
+  font-size: var(--t-ctrl); font-weight: 400; line-height: 1;
+  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.22), 0 0 26px -8px rgba(244, 241, 234, 0.5);
+  transition: background 90ms steps(1, end), box-shadow 200ms var(--ease), opacity 200ms var(--ease);
+}
+.wl-root.is-room .wl-pill.is-key.is-wide { font-size: var(--t-name); }
+.wl-root.is-room .wl-pill.is-key .wl-pxi { flex: 0 0 auto; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-pill.is-key:not(:disabled):hover { background: #FFFDF8; }
+}
+.wl-root.is-room .wl-pill.is-key:not(:disabled):active {
+  transform: translateY(1px); background: #CFCBC3; transition-duration: 0ms;
+}
+.wl-root.is-room .wl-pill.is-key:disabled {
+  background: rgba(244, 241, 234, 0.12); color: var(--ash-dim); box-shadow: none;
+}
+.wl-root.is-room .wl-pill.is-key[aria-busy='true'] { cursor: progress; }
+
+/* ── the bezel key: every other control that is a capsule on Main ──
+   The panel with its light off and its bezel round it, the word in chalk;
+   pressed, it inverts, the way the lit key is drawn. */
+.wl-root.is-room .wl-pill.is-ghost {
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+  background: var(--lcd); color: var(--chalk);
+  transition: border-color 160ms var(--ease), color 160ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-pill.is-ghost:hover:not(:disabled) { border-color: var(--lcd-edge-hi); color: var(--chalk); }
+}
+.wl-root.is-room .wl-pill.is-ghost:not(:disabled):active {
+  transform: none; background: var(--chalk); color: #000; border-color: var(--chalk); transition-duration: 0ms;
+}
+.wl-root.is-room .wl-pill.is-tag { border-radius: var(--r-lcd); }
+/* at the door the alternatives stand beside the lit key at its height, so
+   they drop the room's fill and highlight and keep only the bezel */
+.wl-root.is-room .wl-door-ways > .wl-pill.is-ghost {
+  background: var(--lcd); box-shadow: none; border: 1px solid var(--lcd-edge);
+  border-radius: var(--r-lcd); font-size: var(--t-name);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-door-ways > .wl-pill.is-ghost:not(:disabled):hover {
+    background: var(--lcd); box-shadow: none; border-color: var(--lcd-edge-hi);
+  }
+}
+.wl-root.is-room .wl-door-ways > .wl-pill.is-ghost:not(:disabled):active { background: var(--chalk); color: #000; }
+.wl-root.is-room .wl-door-ways > .wl-pill.is-key { align-self: stretch; }
+
+/* ── the square keys: the icon button and the close mark ──
+   Round on Main, where a round target is a finger's; square here, the way
+   every key under a phone's screen was. The close mark does not turn a
+   quarter under the pointer: a key is pressed, it does not spin. */
+.wl-root.is-room .wl-iconbtn,
+.wl-root.is-room .wl-close {
+  border-radius: var(--r-lcd);
+  border: 1px solid var(--lcd-edge);
+  background: var(--lcd);
+  color: var(--chalk);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-iconbtn:hover,
+  .wl-root.is-room .wl-close:hover {
+    border-color: var(--lcd-edge-hi); background: var(--lcd); color: var(--chalk); transform: none;
+  }
+  .wl-root.is-room .wl-close:active { transform: none; }
+}
+.wl-root.is-room .wl-iconbtn:active,
+.wl-root.is-room .wl-close:active {
+  transform: none; background: var(--chalk); color: #000; border-color: var(--chalk); transition-duration: 0ms;
+}
+.wl-root.is-room .wl-iconbtn.is-on { border-color: var(--lcd-edge-hi); background: var(--lcd-2); }
+.wl-root.is-room .wl-close .wl-pxi,
+.wl-root.is-room .wl-iconbtn .wl-pxi { display: block; }
+
+/* ═══ FIELDS ═══════════════════════════════════════════════════════════════
+   A bare baseline on Main; on the phone a field is a panel you type into:
+   the unlit glass with its bezel, the `@` painted in ash inside it, and the
+   bezel lighting while the caret is in it, which is the one focus cue an
+   input carries (it has no outline of its own, wall.css `.wl-field input`).
+   A field that stands inside something that is already a panel (the
+   composer's body, the wall's search) keeps that panel's edge instead. */
+.wl-root.is-room .wl-field,
+.wl-root.is-room .wl-addr {
+  align-items: center; gap: 10px;
+  min-height: 52px; padding: 0 14px;
+  background: var(--lcd);
+  border: 1px solid var(--lcd-edge);
+  border-radius: var(--r-lcd);
+  transition: border-color 160ms var(--ease);
+}
+.wl-root.is-room .wl-field.is-lg { min-height: 62px; }
+.wl-root.is-room .wl-field-line { display: none; }
+.wl-root.is-room .wl-field:focus-within,
+.wl-root.is-room .wl-addr:focus-within { border-color: var(--lcd-edge-hi); }
+.wl-root.is-room .wl-at { color: var(--ash); line-height: 1; }
+.wl-root.is-room .wl-field:focus-within .wl-at { color: var(--chalk); }
+.wl-root.is-room .wl-field input,
+.wl-root.is-room .wl-addr-in,
+.wl-root.is-room .wl-addr-fix { line-height: 1.1; }
+.wl-root.is-room .wl-field input,
+.wl-root.is-room .wl-addr-in,
+.wl-root.is-room textarea { caret-color: var(--chalk); }
+.wl-root.is-room .wl-field input::placeholder,
+.wl-root.is-room .wl-addr-in::placeholder { color: rgba(244, 241, 234, 0.3); }
+.wl-root.is-room .wl-addr-fix { color: var(--ash); }
+/* the field inside a panel that is already the field's edge */
+.wl-root.is-room .wl-write-body .wl-field {
+  min-height: 0; padding: 0; background: none; border: 0; border-radius: 0;
+}
+
+/* ── the code box ──
+   The same box the mail draws (DESIGN.md 8.5): the ground, the corner, the
+   size and the tracking are held; the face was never the mail's to hold,
+   and on the wall it is the phone's. */
+.wl-root.is-room .wl-codebox {
+  background: var(--lcd); border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+}
+.wl-root.is-room .wl-codebox:focus-within { border-color: var(--lcd-edge-hi); }
+.wl-root.is-room .wl-codebox-in,
+.wl-root.is-room .wl-codebox-digits { font-size: 44px; font-weight: 400; letter-spacing: 0.14em; line-height: 1; }
+.wl-root.is-room .wl-codebox-in::placeholder { color: rgba(244, 241, 234, 0.24); }
+
+/* ── the reason, on the report ── */
+.wl-root.is-room .wl-reason textarea { line-height: 1.24; }
+
+/* ═══ ROWS OF PEOPLE ═══════════════════════════════════════════════════════
+   A list of names on the wall is a menu on the phone, and a menu has one
+   state that matters: the chosen row, drawn inverted, chalk with the words
+   struck out of it in black (screen.css `.wl-scr-menu li.is-on`). The face
+   keeps its own panel, which is the same square either way. The pointer
+   chooses as it moves, the way the arrows did. */
+.wl-root.is-room :is(.wl-row, .wl-seek-row, .wl-suggest-row, .wl-wrote-row) {
+  border-radius: var(--r-lcd);
+  transition: none;
+}
+.wl-root.is-room .wl-row.is-lit,
+.wl-root.is-room .wl-row:active,
+.wl-root.is-room .wl-seek-row.is-active,
+.wl-root.is-room .wl-seek-row:active,
+.wl-root.is-room .wl-suggest-row.is-active,
+.wl-root.is-room .wl-suggest-row:active,
+.wl-root.is-room .wl-wrote-row:not(:disabled):active {
+  background: var(--chalk); border-color: var(--chalk);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-row:hover,
+  .wl-root.is-room .wl-wrote-row:not(:disabled):hover {
+    background: var(--chalk); border-color: var(--chalk);
+  }
+  .wl-root.is-room :is(.wl-row:hover, .wl-wrote-row:not(:disabled):hover) :is(.wl-who-name, .wl-who-at, .wl-wrote-name, .wl-wrote-meta, .wl-wrote-n) { color: #000; }
+}
+.wl-root.is-room :is(.wl-row.is-lit, .wl-row:active, .wl-seek-row.is-active, .wl-seek-row:active, .wl-suggest-row.is-active, .wl-suggest-row:active, .wl-wrote-row:not(:disabled):active) :is(.wl-who-name, .wl-who-at, .wl-wrote-name, .wl-wrote-meta, .wl-wrote-n) {
+  color: #000;
+}
+/* the badge keeps Instagram's shape and takes the row's ink while chosen */
+.wl-root.is-room :is(.wl-row.is-lit, .wl-seek-row.is-active, .wl-suggest-row.is-active) .wl-who-badge { color: #000; }
+.wl-root.is-room .wl-who { gap: 12px; }
+.wl-root.is-room .wl-who-name { line-height: 1.1; }
+.wl-root.is-room .wl-who-at { line-height: 1.1; color: var(--ash); }
+.wl-root.is-room .wl-row-action { display: none; }
+
+/* ═══ SHEETS ═══════════════════════════════════════════════════════════════
+   A sheet on the wall is a panel with its light off, raised over the room:
+   opaque, its own pixel grid, square at the corners, a bezel round it. The
+   room's black glass and its blur are drawn in wall.css `.is-room` rules;
+   the shape is here. The grip is three pixels of the phone's dash. */
+.wl-root.is-room .wl-sheet { border-radius: var(--r-sheet) var(--r-sheet) 0 0; }
+.wl-root.is-room .wl-grip span {
+  width: 26px; height: 4px; border-radius: 0;
+  background: repeating-linear-gradient(90deg, rgba(244, 241, 234, 0.34) 0 6px, transparent 6px 10px);
+}
+
+/* ═══ THE SMALL THINGS ═════════════════════════════════════════════════════ */
+/* the steps: square pixels, the one being walked a bar of them */
+.wl-root.is-room .wl-dot { border-radius: 0; }
+.wl-root.is-room .wl-dot.is-on { border-radius: 0; }
+/* `or`: a rule of pixels either side of the word rather than a hairline */
+.wl-root.is-room .wl-or::before,
+.wl-root.is-room .wl-or::after {
+  height: 2px; background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+/* the bookmark tabs keep their shape and lose their round shoulders */
+.wl-root.is-room .wl-seg-thumb { border-radius: var(--r-lcd) var(--r-lcd) 0 0; }
+.wl-root.is-room .wl-seg-opt:focus-visible { border-radius: 2px; }
+/* the colour panel: the unlit glass, its labels in the phone's case */
+.wl-root.is-room .wl-look {
+  border-radius: var(--r-lcd); background: var(--lcd);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+}
+.wl-root.is-room .wl-look-opt { border-radius: 2px; }
+/* the answer being looked up: two bars of pixels blinking on the phone's
+   own beat where the words will land, and no light running an edge */
+.wl-root.is-room .wl-settled-bar {
+  border-radius: 0; background: rgba(244, 241, 234, 0.16);
+  animation: wl-px-blink 1060ms steps(1, end) infinite;
+}
+.wl-root.is-room .wl-settled-bar.is-short { animation-delay: 530ms; }
+.wl-root.is-room .wl-settled-name { font-weight: 400; }
+.wl-root.is-room .wl-settled-clear { width: 32px; height: 32px; }
+/* the hourglass the phone turned while it was busy */
+.wl-root.is-room .wl-wait { animation: wl-px-blink 1060ms steps(1, end) infinite; }
+@keyframes wl-px-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.32; }
+}
+/* the account's own card: a panel, and the heart the letters draw */
+.wl-root.is-room .wl-profile {
+  background: var(--lcd); border-radius: var(--r-lcd);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+}
+.wl-root.is-room .wl-profile-sect,
+.wl-root.is-room .wl-profile-cap { border-top-color: var(--lcd-edge); }
+.wl-root.is-room .wl-wrote-row.is-down { opacity: 0.45; }
+/* the picture opened large keeps its square; its name is the phone's */
+.wl-root.is-room .wl-viewer-name { font-weight: 400; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-root.is-room .wl-settled-bar,
+  .wl-root.is-room .wl-wait { animation: none; }
+}

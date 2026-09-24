@@ -38,12 +38,15 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import './wall.css'
+// the wall is the phone (DESIGN.md 2.6): the layer over wall.css that draws
+// every shared part in the phone's language, scoped to this shell's root
+import './phone.css'
 import { parse, href, isWallPath, SHEETS } from './router.js'
 import { campus } from './campus.js'
 import { eclipticSVG, INK, CHALK } from './art.jsx'
-import { prefersReducedMotion } from './parts.jsx'
+import { prefersReducedMotion, PhoneChrome } from './parts.jsx'
 import Ground from './ground.jsx'
-import { getState, patch } from './store.js'
+import { getState, patch, setCold, isCold } from './store.js'
 import { normSource } from './seed.js'
 import { revision, subscribe, warmWall, watchWall } from './data.js'
 import { ensureFaces, warmType } from './type.js'
@@ -87,7 +90,16 @@ let BOOTED = false
 const READY_CEILING_MS = 4200
 
 export default function WallApp() {
-  const [route, setRoute] = useState(() => parse(window.location.pathname))
+  const [route, setRoute] = useState(() => {
+    const r = parse(window.location.pathname)
+    // A tab that opens straight onto a letter's address, a link somebody
+    // was sent, is COLD until it reaches the wall: that letter is the first
+    // of the product the person sees, so it carries the name and a way in
+    // (screens/Letter.jsx `LetterBrand`, store.js `isCold`). A letter this
+    // shell pushed has the wall behind it and is not.
+    if (r.name === 'letter' && !window.history.state?.wallPushed) setCold(true)
+    return r
+  })
   // 0 the intro has the screen · 1 the wall is mounted and cascading under
   // a black that is on its way out · 2 the intro is gone
   const [boot, setBoot] = useState(() => (BOOTED ? 2 : 0))
@@ -357,6 +369,24 @@ export default function WallApp() {
   const st = window.history.state
   const nested = !!(st?.wallPushed && Number(st.wallDepth) > 1)
   const upLabel = nested ? 'back' : 'back to the wall'
+  // ── the way to the wall, from a letter reached from a link ──
+  // `toWall` is pressed while the letter is still on the glass: the wall
+  // under it drops its veil there and then (screens/Wall.jsx `open`), so the
+  // closing letter reveals the names rather than the poster and a second
+  // `view the wall`. `pushWall` is where the sheet lands once it has gone:
+  // a NEW wall entry, because `go('wall')` from a letter pushed on top of the
+  // link (after a sign in, say) steps back through history to the link's
+  // letter, which is the one screen the person just asked to leave.
+  const [opened, setOpened] = useState(0)
+  const toWall = useCallback(() => { setCold(false); setOpened((n) => n + 1) }, [])
+  const pushWall = useCallback(() => {
+    if (leaving.current) return
+    const to = href('wall')
+    window.history.pushState({ wall: 'wall', wallDepth: 0, wallPushed: true }, '', to)
+    setOverride(null)
+    setRoute(parse(to))
+  }, [])
+  const cold = route.name === 'letter' && isCold()
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
 
@@ -368,7 +398,7 @@ export default function WallApp() {
   const onSheet = SHEETS.has(route.name)
   // `under` is whether a sheet is up over the wall: the hive stops moving and
   // stops writing to the DOM while it is dimmed and blurred behind one.
-  const shared = { go, back, up, nested, upLabel, setField, reduce, rev: revision(), under: onSheet }
+  const shared = { go, back, up, nested, upLabel, setField, reduce, rev: revision(), under: onSheet, cold, toWall, pushWall }
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />
@@ -381,10 +411,11 @@ export default function WallApp() {
   let base
   switch (route.name) {
     case 'join':   base = <Join {...shared} />; break
-    default:       base = <Wall {...shared} />   // and everything a sheet sits on
+    default:       base = <Wall {...shared} open={opened} />   // and everything a sheet sits on
   }
 
   return (
+    <PhoneChrome.Provider value>
     <div className="wl-root is-room" data-route={route.name}>
       <Ground pace={mode} lit={lit} still={reduce} room />
 
@@ -412,6 +443,7 @@ export default function WallApp() {
 
       <div className={`wl-cut${veil ? ' is-down' : ''}`} aria-hidden="true" />
     </div>
+    </PhoneChrome.Provider>
   )
 }
 

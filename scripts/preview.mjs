@@ -894,12 +894,26 @@ const ROUTES = [
   // a letter this browser put up has come down since: the notice stands in
   // the tab's place, with the reason and the way to the words
   { label: 'berkeley-down',   path: '/berkeley', tab: true, down: true, press: '.wl-mast-go', settle: 5200 },
+  // the wall's own search, typed into: the strip opened into the phone's
+  // menu of names, the first one chosen by the pointer that typed it
+  { label: 'berkeley-seek-typed', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['fill', '.wl-seek .wl-field input', 'a']], settle: 1200 },
   // the same two under prefers-reduced-motion (rebuild-spec 7.2): the veil
   // composed with nothing arriving, and the field still, with the lens on
   { label: 'berkeley-still',        path: '/berkeley', still: true, settle: 1200 },
   { label: 'berkeley-lifted-still', path: '/berkeley', still: true, press: '.wl-mast-go', settle: 1200 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
+  // a letter reached from a link, by its own id: the name in the corner and
+  // `view the wall` under the card, and that line pressed, which lands on
+  // the names and not on the poster (screens/Letter.jsx `LetterBrand`)
+  { label: 'letter-cold',   path: '/berkeley/letter/11110111-2222-4333-8444-555566660000' },
+  { label: 'letter-view-wall', path: '/berkeley/letter/11110111-2222-4333-8444-555566660000',
+    acts: [['wait', 900], ['click', '.wl-letter-out'], ['wait', 1800]], settle: 900 },
+  // and one opened from the wall itself, which is the wall's and carries
+  // neither
+  { label: 'letter-warm',   path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400]], settle: 400 },
   // the stack, turned once: the second letter under the name, in from the right
   { label: 'letter-turned', path: '/berkeley/letter/pilar.echevarria', press: '.wl-turn.is-next', settle: 1200 },
   // and turned back: the previous letter, in from the left
@@ -919,8 +933,8 @@ const ROUTES = [
     acts: [['click', '.wl-letter-card .wl-scr-face'], ['wait', 900], ['click', '.wl-viewer-scrim', null, 120]], settle: 0 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
-  { label: 'letter-send',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
-  { label: 'letter-sent',    path: '/berkeley/letter/pilar.echevarria',
+  { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
+  { label: 'letter-shared',  path: '/berkeley/letter/pilar.echevarria',
     acts: [['click', '.wl-letter-card .wl-sk.is-r'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'letter-poster',  path: '/berkeley/letter/jules.k' },
   { label: 'letter-riso',    path: '/berkeley/letter/k.villarreal' },

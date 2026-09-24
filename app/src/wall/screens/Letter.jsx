@@ -81,11 +81,11 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
+  Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, RoomLight, PIC_CELLS } from '../screen.jsx'
 import { colourOf, skinOf, signalOf, chargeOf } from '../looks.js'
-import { sendLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
+import { shareLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
   atHandle, nameFor, normHandle, heart, wall, freeReads,
@@ -151,6 +151,43 @@ function LetterX({ label }) {
   return <Close className="wl-letter-x" onClick={() => sheet && sheet.dismiss('mark')} label={label} />
 }
 
+// ── a letter reached from a link ────────────────────────────────────────────
+// Somebody sent this person a link and this letter is the first of the
+// product they have seen: a screen, a close mark, and a black room, which
+// read as a confessions page anybody could be running. So a letter opened
+// that way (`cold`, index.jsx) signs itself the way every bar in the product
+// does: the mark and the word, small, in the corner opposite the close mark,
+// in the room's own hand (DESIGN.md 3.6 and 2.6), and under the card one line
+// that says what else is here, `view the wall`. Both go to the wall and land
+// on the names, not on the poster (screens/Wall.jsx `open`). The close mark
+// keeps doing what it does. A letter opened from the wall carries neither:
+// the person already knows whose wall they are on.
+function wallClick(e, sheet, onWall) {
+  // a click that asks for a new tab or a window keeps the anchor's own way
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  onWall()
+  if (sheet) sheet.dismiss('wall')
+}
+function LetterBrand({ onWall }) {
+  const sheet = useSheet()
+  return (
+    <Brand
+      className="wl-letter-brand is-small" mark={19} href={href('wall')}
+      label="celestual, the wall" title="the wall"
+      onClick={(e) => wallClick(e, sheet, onWall)}
+    />
+  )
+}
+function ViewWall({ onWall }) {
+  const sheet = useSheet()
+  return (
+    <ArrowLink size="s" tone="quiet" className="wl-letter-out" href={href('wall')} onClick={(e) => wallClick(e, sheet, onWall)}>
+      view the wall
+    </ArrowLink>
+  )
+}
+
 // ── the swipe ───────────────────────────────────────────────────────────────
 // How far a finger has to travel, or how fast, for the strip to run on rather
 // than spring back; how much of the travel the card follows (all of it: a
@@ -201,12 +238,17 @@ function Leaf({ className, onMount, children }) {
 // for the neighbours beside it, so what slides in is what lands.
 // ── one letter, as its screen ───────────────────────────────────────────────
 // What the phone shows depends on `view`: the letter itself, the options
-// menu, the send menu, or a note ("sent", "saved"). Only the live card has
-// a view of its own; the neighbours on the strip are always the letter.
+// menu, the share menu, or a note ("shared", "saved"). Only the live card
+// has a view of its own; the neighbours on the strip are always the letter.
 //
-//   the letter   options · the heart and its count · send
+//   the letter   options · the heart and its count · share
 //   a menu       select · back
 //   a note       ok
+//
+// The right key said `send` until the composer's own act said `send
+// anonymously`: one word for putting a letter up and for passing one on is a
+// word somebody has to stop and read twice. `send` is the writer's; passing a
+// letter on is `share`, and the menu the key opens says so in its top row.
 //
 // The heart is the reader's one mark that is not writing or reporting: once
 // per person, the count is a count and nothing else, and zero says nothing
@@ -215,7 +257,7 @@ function Leaf({ className, onMount, children }) {
 function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
-  // the picture at the head of the words, which the Send picture carries too
+  // the picture at the head of the words, which the shared picture carries too
   const prof = useProfile(to && !isNameKey(to) ? to : '')
   const pic = (prof && prof.avatar) || ''
   const [busy, setBusy] = useState(false)
@@ -224,17 +266,17 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   const h = to && !isNameKey(to) ? atHandle(to) : ''
   const back = () => onView && onView(null)
 
-  // The Send picture, drawn as the send menu opens, whose `share…` says
-  // `share` once it is there (share.js `prepareLetter`). Not ahead of that:
-  // drawing it holds a phone for most of a second, which is a stall in the
-  // turn when it lands on a letter only passed through
-  const sending = live && !!l && !!view && view.kind === 'send'
+  // The shared picture, drawn as the share menu opens, whose `to someone…`
+  // says `to someone` once it is there (share.js `prepareLetter`). Not ahead
+  // of that: drawing it holds a phone for most of a second, which is a stall
+  // in the turn when it lands on a letter only passed through
+  const sharing = live && !!l && !!view && view.kind === 'share'
   useEffect(() => {
-    if (!sending) return undefined
+    if (!sharing) return undefined
     let alive = true
     prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })).then(() => { if (alive) drawn((n) => n + 1) })
     return () => { alive = false }
-  }, [sending, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sharing, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
   // whether this letter is still the one on the glass, so what a tap
   // answers late (a picture drawn, a file saved) is not put on the next
   const here = useRef(true)
@@ -272,12 +314,14 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
   ]
   const face = () => letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })
-  const sendItems = [
-    ...(canShare() ? [{ t: isReady(face()) ? 'share' : 'share…', how: 'share' }] : []),
+  // Under a menu titled `share`, the row that opens the phone's own share
+  // sheet says where it goes rather than `share` a second time
+  const shareItems = [
+    ...(canShare() ? [{ t: isReady(face()) ? 'to someone' : 'to someone…', how: 'share' }] : []),
     { t: 'save the picture', how: 'save' },
     { t: 'copy the link', how: 'copy' },
   ]
-  const send = async (how) => {
+  const pass = async (how) => {
     // a phone opens the share sheet only inside the tap that asked, so a
     // tap before the picture is drawn waits for it and puts the menu back,
     // and the next tap shares the file
@@ -285,18 +329,18 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
       onView({ kind: 'note', glyph: 'env', title: 'drawing it' })
       const b = await prepareLetter(face())
       if (!here.current) return
-      onView(b ? { kind: 'send', at: 0 } : { kind: 'note', glyph: '', title: 'it did not go', text: 'try again', done: true })
+      onView(b ? { kind: 'share', at: 0 } : { kind: 'note', glyph: '', title: 'it did not go', text: 'try again', done: true })
       return
     }
     // otherwise the sheet is asked for before anything is awaited, with the
     // picture drawn ahead (`prepareLetter`)
-    const going = sendLetter(how, face(), `${window.location.origin}${href('letter', l.id)}`)
-    onView({ kind: 'note', glyph: 'env', title: how === 'copy' ? 'copying' : 'sending' })
+    const going = shareLetter(how, face(), `${window.location.origin}${href('letter', l.id)}`)
+    onView({ kind: 'note', glyph: 'env', title: { share: 'sharing', save: 'saving', copy: 'copying' }[how] || 'sharing' })
     const out = await going
     if (!here.current) return
     if (out === 'left') { onView(null); return }
     const said = {
-      sent: ['check', 'sent'], saved: ['check', 'saved'], copied: ['check', 'link copied'],
+      shared: ['check', 'shared'], saved: ['check', 'saved'], copied: ['check', 'link copied'],
     }[out] || ['', 'it did not go', 'try again']
     onView({ kind: 'note', glyph: said[0], title: said[1], text: said[2] || '', done: true })
   }
@@ -312,12 +356,12 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   let top
   let body
   let keys
-  if (at.kind === 'options' || at.kind === 'send') {
-    const items = at.kind === 'options' ? optionItems : sendItems
+  if (at.kind === 'options' || at.kind === 'share') {
+    const items = at.kind === 'options' ? optionItems : shareItems
     const pick = (j) => {
       const it = items[j]
       if (!it) return
-      if (it.how) send(it.how)
+      if (it.how) pass(it.how)
       else { onView(null); it.run() }
     }
     // the menu's name, and where in it the chosen row is, on the right of
@@ -356,7 +400,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
         aria: !isReader() ? 'sign in to heart this letter'
           : `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
       },
-      r: { label: 'send', onClick: () => { prepareLetter(face()); onView({ kind: 'send', at: 0 }) }, aria: 'send this letter: share it, save it, or copy its link' },
+      r: { label: 'share', onClick: () => { prepareLetter(face()); onView({ kind: 'share', at: 0 }) }, aria: 'share this letter, save its picture, or copy its link' },
     }
   }
   return (
@@ -379,7 +423,26 @@ function sealSay() {
   return spent ? `you have read the free ones. ${opens}` : opens
 }
 
-export default function Letter({ id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0 }) {
+export default function Letter({
+  id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0,
+  cold = false, toWall = null, pushWall = null,
+}) {
+  // Where the sheet lands once it has gone: the way it was opened FROM, as
+  // every sheet does, unless it was left by the way to the wall, which lands
+  // on a wall entry of its own (index.jsx `pushWall`).
+  const via = useRef('up')
+  const leave = useCallback(() => {
+    if (via.current === 'wall' && pushWall) pushWall()
+    else up()
+  }, [pushWall, up])
+  const onWall = useCallback(() => {
+    via.current = 'wall'
+    if (toWall) toWall()
+  }, [toWall])
+  const aside = cold
+    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} /></>
+    : <LetterX label={upLabel} />
+  const wrap = `is-letter${cold ? ' is-cold' : ''}`
   // What the live screen is showing: the letter (null), a menu, or a note.
   // Nothing else on this sheet holds state: the letter is the server's.
   const [view, setView] = useState(null)
@@ -680,7 +743,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
+      <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside}>
         <div className="wl-sheet-in wl-letter">
           <div className="wl-letter-card">
             <Screen
@@ -717,7 +780,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
 
   // ── what stands under the screen ──
   // Nothing, almost always: writing to them, reporting it and taking a name
-  // off are in the screen's own options, and sending it is its own key. On
+  // off are in the screen's own options, and sharing it is its own key. On
   // a sealed letter, the way to the gate, with the one line that says what
   // it is a gate ON (`sealSay`). The capsule keeps its word: the act is
   // still reading this letter, and the line above it is the reason.
@@ -731,7 +794,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   )
 
   return (
-    <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
+    <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-to" className={wrap} aside={aside}>
       <div className="wl-sheet-in wl-letter">
         {one ? <RoomLight key={colourOf(one.look, one.id).slug} look={one.look} seed={one.id} /> : null}
         {/* ── the card, and the two ways past it ──
@@ -776,7 +839,12 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
           ) : null}
         </div>
 
-        {foot ? <SheetFoot>{foot}</SheetFoot> : null}
+        {foot || cold ? (
+          <SheetFoot>
+            {foot}
+            {cold ? <ViewWall onWall={onWall} /> : null}
+          </SheetFoot>
+        ) : null}
       </div>
     </Sheet>
   )

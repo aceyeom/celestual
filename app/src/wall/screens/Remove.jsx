@@ -219,7 +219,7 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
                 the pings both ways, and takes the name off the wall as part
                 of the same act (migration 0046). */}
             <Prose className="wl-gate-copy">
-              The rest of celestual is its own door.{' '}
+              the rest of celestual is its own door.{' '}
               <a className="wl-quiet" href="/optout">take the handle off there</a> and it
               goes from both, for good.
             </Prose>
