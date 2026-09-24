@@ -24,11 +24,15 @@ is unlit: type at three strengths of the same near white, hairlines at nine
 percent, a field of drifting points that is felt more than seen, and a grain
 over all of it so the black is a room rather than a screen that is off. Two
 things are allowed to be bright, and both are rationed to once per screen: a
-cream card, which is the only true surface in the product and is where anything
-a person wrote actually lives, and one pale blue, which is the whole colour
-budget. Four faces carry four different jobs and never each other's. Nothing is
-downloaded: every ornament is a path or a loop, drawn from the same numbers as
-the thing beside it.
+lit surface, which is where anything a person wrote actually lives, and one
+pale blue, which is the whole colour budget. The lit surface is a different
+object on each side of the product. On the wall it is the letter's own screen,
+a phone left on in a black room (2.5), and the wall around it speaks that
+phone's language, one pixel face, square keys and unlit panels, so that only
+the mark and the word are the room's (2.6). On Main it is the chalk card a
+ping is set on (2.3), and four faces carry four different jobs and never each
+other's. Nothing is downloaded: every ornament is a path or a loop, drawn from
+the same numbers as the thing beside it.
 
 ---
 
@@ -42,9 +46,10 @@ by asking which of these three it serves.
 dot. An interface with a saturated accent everywhere is the most recognisable
 machine made look on the web, and this product cannot afford to look generated.
 
-**2. One bright thing per screen.** Either the paper or the bloom, never both
-competing, and never two of either. The eye has to land somewhere, and a screen
-where three objects are shouting has no landing place.
+**2. One bright thing per screen.** Either the lit surface or the bloom, never
+both competing, and never two of either. The lit surface is a letter's screen on
+the wall and the chalk card on Main (section 0). The eye has to land somewhere,
+and a screen where three objects are shouting has no landing place.
 
 **3. Everything is drawn.** No icon set, no stock illustration, no bitmap
 texture. The grain is `feTurbulence` generated in code, the field is a canvas
@@ -94,8 +99,9 @@ easiest way to make this system look careless.
 
 ### 2.3 The paper
 
-The only bright surface in the product, and the only place a person's own words
-are ever set.
+Main's bright surface: the card a ping is set on (`.wl-paper`, `main/Reveal.jsx`).
+It is not the wall's. On the wall a person's words are set on a screen (2.5),
+and the paper that stood under a letter there went with the looks.
 
 | Token | Value | Where |
 | --- | --- | --- |
@@ -161,10 +167,10 @@ the build names a hue", and eight tokens in the build named one.
 One exception to the sentence above, and it is fenced. A letter on the wall
 is a phone screen left on in a dark room (`app/src/wall/looks.js`,
 `screen.jsx`, `screen.css`): an unsent draft, the cursor still after the last
-word. Every letter is the same screen — the status rows across the top (the
+word. Every letter is the same screen: the status rows across the top (the
 aerial, the signal bars, the name, the characters left, the battery; the pen,
 the mode, the handle), the words, and the three soft keys at the foot
-(`options`, the heart and its count, `send`) — set in one face, Jersey 10, the
+(`options`, the heart and its count, `share`), set in one face, Jersey 10, the
 Series 40 grid (`--f-s40`). The only thing a writer chooses is the COLOUR it is
 lit in, and each colour carries its own treatment with it:
 
@@ -233,11 +239,96 @@ anything else draws the colour its id picks, and migration 0058 gave every
 letter already up a colour of its own, keeping the old looks in
 `wall_look_backup_0058`.
 
-`send` makes a picture of the letter with a canvas (`share.js`), from the same
-table and the same quirks, at 1080 by 1350 on black with the address under it,
-and hands it to the share sheet, saves it, or copies the letter's link.
+`share`, the right soft key, opens a menu of three, drawn the way the phone
+drew one: `to someone` hands the letter's picture to the share sheet, `save
+the picture` saves it, and `copy the link` copies the letter's link. The
+picture is drawn with a canvas (`share.js`), from the same table and the same
+quirks, at 1080 by 1350 on black, and signed under the screen with the lockup
+(3.3): the mark and `celestual.` in the room's serif, chalk at ninety percent,
+the mark in its own glow. The mark is built from `mark.js` in the layers
+`eclipticSVG()` draws, so it is the favicon's geometry and not a picture of it.
+The address stood there before, in the pixel face at 42 percent, and it was
+the only thing on the picture that said whose it was. The key read `send`
+until 24 September, which is the composer's word for putting a letter up
+(`send anonymously`), on a key that puts nothing up.
 `npm run screens` draws that picture for every colour on five letter ids, which
 is the check on the quirks: five phones, and none of them a different design.
+
+### 2.6 The wall is the phone
+
+A letter is a Series 40 screen (2.5), and the wall is where those screens are
+kept, so everything on the wall round them is the same phone: one pixel face,
+square keys, unlit panels and pixel glyphs. Only the brand (the mark and
+`celestual.`) and the intro stay the room's own objects. Main (`/ping`, `/sky`,
+`/place`) and the desk are not the phone, and sections 4 and 8 describe them
+as written.
+
+It was an Apple interface with Nokia screens in it: a blurred grey search
+capsule, frosted sheets with 26px corners and a grip, liquid metal capsules,
+round close marks, a stroke icon set and serif headings, round a crowd of
+square pixels. Two languages a centimetre apart read as two products, and the
+screens are the product's idea, so the chrome took theirs.
+
+**How it is scoped.** `app/src/wall/phone.css`, imported after `wall.css`,
+declares everything under `.wl-root.is-room`, which only the wall's root
+carries (Main's is `.wl-root.sg-root.mn-root`). It remaps the tokens rather
+than restyling the components, so a rule in `wall.css` that reads a token
+draws the phone on the wall and the system on Main.
+
+| Token | On the wall |
+| --- | --- |
+| `--f-display`, `--f-letter`, `--f-util`, `--f-id` | `var(--f-s40)`, Jersey 10 |
+| `--f-serif` | Newsreader, for the brand's word and nothing else |
+| `--w-display`, `--track-display` | 400, and none |
+| `--tr-*` | 0 to `0.03em`: a pixel face carries its spacing in its grid |
+| `--t-label`, `--t-meta`, `--t-small` | 16px |
+| `--t-ctrl`, `--t-name`, `--t-wide`, `--t-read` | 20px |
+| `--t-subject`, `--t-value` | 24px |
+| `--t-value-lg` | 30px |
+| `--r-card`, `--r-pill`, `--r-field`, `--r-lcd` | 3px |
+| `--r-sheet` | 4px |
+
+Jersey at 20px reads as a grotesque at about fifteen, so the nine steps of the
+ladder (4.2a) are three here: twenty for anything read or pressed, sixteen for
+what stands under a name, and the larger steps for what was typed. The display
+scale is restated from 26 to 48px at a close leading, and `font-synthesis` is
+off, because a pixel face thickened or slanted by the browser is a smear.
+
+**The materials.**
+
+| | What | Where |
+| --- | --- | --- |
+| unlit panel | `--lcd`, `#0B0B0B`, a step off the room's black, under `--lcd-grid`, the panel's pixel grid at a strength that is felt | the search, the tab, the notice, every sheet and field, the colour panel |
+| bezel | `--lcd-edge`, chalk at 16 percent, one pixel; `--lcd-edge-hi`, at 38, while a field inside it has the focus | round every panel, and round every quiet key |
+| lit key | a chalk plate with the word struck out of it in `#000`, the way the phone lit the chosen row of a menu. Pressed it drops a pixel and goes a step darker | the act on every screen: `write a letter`, `view the wall`, `next`, `send anonymously`, a door's default way in |
+| inversion | the chosen row takes the chalk ground and its type goes `#000`, as a screen's own menu does (`.wl-scr-menu li.is-on`) | the search's answers, the composer's suggestions, every row of names |
+
+No blur and no big soft shadow. A panel is opaque, as a phone's glass is, and
+nothing new is backlit, so a letter's screen stays the one bright thing in the
+room.
+
+**The glyphs.** `PIX` in `looks.js` holds the screen's own glyphs and, beside
+them, the chrome's: `find`, `back`, `down`, `close`, `key`, `flag`,
+`signout`, `arrow` and `wait`. `PixIcon` (`screen.jsx`) draws one at a whole
+multiple of its grid with `crispEdges`, in `currentColor`. `Wait` is the
+hourglass, blinking at the screen's own 1060ms, and it is how the wall waits:
+Main runs a light round an edge.
+
+**The context.** `PhoneChrome` (`parts.jsx`) is turned on at the wall's root
+(`index.jsx`) and read by the shared parts that draw rather than lay out:
+`Pill tone="light"` is the lit key and not `LiquidButton`; `Icon`, `Close`,
+`ArrowLink` and `Heart` draw pixel glyphs; `Light` draws nothing. Main never
+turns it on, so every one of them draws there as section 8 says.
+
+**What stays the room's.** `Brand` (the bar, the site's foot, a letter
+reached from a link), pinned to Newsreader at 22px, 500 and `-0.022em`
+whatever the tokens say; `Ecliptic` at the head of a door; `LiquidMark` in the
+intro and on the root wall's poster; Instagram's and Google's own marks on
+their keys; and the lockup on the shared picture. They are the product's name
+and the product's own events, and a name is not set in a phone's font.
+
+`design/components.html` draws the phone under its own heading, beside the
+system it remaps.
 
 ---
 
@@ -345,6 +436,19 @@ the same place: on the wall it is a real anchor to `/`, the front, and on a
 sheet it is the way back to the wall under it. It used to scroll the wall to
 its top, which on a wall one screen tall was a control that did nothing.
 
+On the wall it is the one object in the room's own hand (2.6): the lockup in
+Newsreader over a surface set in Jersey, so the name is the product's and
+everything round it is the phone. And a letter reached from a link carries it,
+until the tab has been to the wall: small, the mark at 19px and the word at
+17px, at the top left across from the close key, a real anchor to the wall;
+and under the letter, after the seal's `read it` on a sealed one, `view the
+wall`. Before that, a letter somebody was sent was a screen with a real
+handle on it, a close key and nothing else, which is what a confessions page
+run by anybody looks like. Both links drop the wall's poster and land on the
+names, so the letter closing reveals the wall rather than a second `view the
+wall`; the close key still lands on the poster (`index.jsx` `toWall`, the
+`celestual.cold` flag in `store.js`).
+
 ---
 
 ## 4. Type
@@ -352,6 +456,9 @@ its top, which on a wall one screen tall was a control that did nothing.
 Three faces, and the first does two jobs at two ends of one axis. Files are in
 `app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` and served from
 this origin. Nothing renders from a CDN.
+
+This section is Main's type. On the wall one face carries every word but the
+brand's, Jersey 10 (4.0a), and the tokens below are remapped to it (2.6).
 
 | Token | Face | Job |
 | --- | --- | --- |
@@ -424,11 +531,15 @@ All four at `--w-display`, tracking `--track-display`, line 1.06, `text-wrap: ba
 ### 4.0a The face a letter is set in
 
 The four faces above are the system's and carry its four jobs. One more is in
-`app/public/fonts/` and it is not the system's: Jersey 10, drawn on the ten
-pixel grid the Series 40 phones set their messages on (`--f-s40`). Every word
-on a letter's screen is set in it — the status rows, the words, the soft keys,
-the menus — and so is the monogram on a small screen and on a face. It is
-never a headline, a label or a control anywhere outside a screen.
+`app/public/fonts/`: Jersey 10, drawn on the ten pixel grid the Series 40
+phones set their messages on (`--f-s40`). Every word on a letter's screen is
+set in it (the status rows, the words, the soft keys, the menus), and so is
+the monogram on a small screen and on a face.
+
+On the wall it is every other word too: the headings, the labels, the
+controls, the fields and the explanations (2.6), because the wall is the
+phone and a phone has one font. The brand's word is the one exception. On
+Main it is never a headline, a label or a control outside a screen.
 
 It was twenty-four faces a writer chose between, one menu per paper. The
 screen took the choice away with the papers (2.5): a phone has one font, and
@@ -539,6 +650,9 @@ reference poster has no boxes at all.
 
 A row uses 14px, which is the one exception, because a 18px radius on a 60px tall
 row reads as a card and a row is not one.
+
+On the wall every one of them is an LCD's corner, 3px, and a sheet's is 4px
+(2.6).
 
 A letter is not a paper any more (2.5), so `--r-card` is Main's ping card and
 the plain cream sheet. A screen's corner is its own quirk, between 0.8% and
@@ -652,6 +766,12 @@ black room has no canvas, so its grain screens like the letter room's.
 
 Every one of these is on `design/components.html` in each of its states.
 
+The tables describe each as Main draws it. On the wall the same component is
+drawn as the phone (2.6): the metal capsule is the lit key, the ghost capsule
+is a bezel key, a tag takes an LCD's corner, the icon button and the close mark
+are square keys with pixel glyphs, a field is an LCD box, a sheet is an unlit panel, and the chosen
+row inverts. Where a wall surface differs beyond that, its row says so.
+
 ### 8.1 Controls
 
 | Component | Class | Notes |
@@ -698,17 +818,17 @@ had already said it. The role went with the caller.
 | --- | --- | --- |
 | Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot. Every ink on it is one of its look tokens (`--lk-ground`, `--lk-ink`, `--lk-ink-2`, `--lk-rule`, the strengths of the ink, `--lk-face`, `--lk-radius`), declared at the plain paper's values on the card itself; a look (`has-look`, `wl-looked`, `data-look`) sets the same tokens inline and the card is the same card. See the looks, below |
 | Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. Three groups, lit, printed and copied, each colour drawn as the small screen it makes (`Mini`), the chosen one ringed and named under the lot. On a phone, and on a phone on its side, the groups are one strip that scrolls sideways with the chosen one kept in the middle; on a wider column there is a row for each kind, so no row is an orphan. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
-| Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px. It is GLASS, and it has to look like it: written as glass and drawn as a panel — a tint at 66 to 80 percent over a fourteen pixel blur, which on a near-black wall is opaque — nothing came through it while the search plate twelve pixels above it read as the glass it is, which is two surfaces on one ground in two materials. A sheet is also the biggest surface here, and a big translucent surface reads as a THICKER one, so it takes the heavier blur and the deeper shadow rather than the lighter |
+| Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px. It is GLASS, and it has to look like it. Written as glass and drawn as a panel (a tint at 66 to 80 percent over a fourteen pixel blur, which on a near-black wall is opaque), nothing came through it while the search plate twelve pixels above it read as the glass it is, which is two surfaces on one ground in two materials. A sheet is also the biggest surface here, and a big translucent surface reads as a THICKER one, so it takes the heavier blur and the deeper shadow rather than the lighter. On the wall it is not glass: an opaque unlit panel under the pixel grid, a one pixel bezel, 4px corners and a grip of three pixel dashes (2.6) |
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters. A letter to a first name draws the name as written in the name's face, a monogram, and no handle line |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
 | You | `.wl-me` | the chip on Main's bar, on every screen: the face and the handle once one is proved, and the way in before that |
-| Dock | `.wl-dock` | a sticky gradient off the bottom edge. On the wall it carries only what is about the person looking, one thing at a time: the tab (`.wl-tab`), a card with the faces of the names they wrote to, the one door out of the wall, and `not now` under it, which puts it away for a few days or until another letter goes up; or the notice (`.wl-down`), when a letter of theirs has been taken down, saying it went against the terms, with their words back. The composer's act is the metal capsule in the dock (`WriteAct`, `.wl-write-act`); it read `.wl-top-write` here for a while and no such class has ever been in the markup or the stylesheet, which is how a preview route that pressed it went on shooting the bare wall |
-| Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash. On the wall the one act stands in it as a word: `write`, the primary capsule at the bar's scale with the nib and the running light. The three targets on the right are one height: forty pixel rings for the glass and the person, the capsule thirty-six tall between them, and the person's face fills its ring at thirty |
-| Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line and the `view the wall` capsule, centred in the glass, on a scrim that is deep under the words, gone where they are not, and is itself the way in. The capsule is the product's primary, the same liquid metal object as `write a letter` at the foot of the wall: it was the last caller anywhere of the chalk plate with the running light inside it and an arrow after the word, so the first button anybody pressed was the one button that did not match the product behind it. The arrow went with the plate — an arrow inside a capsule is the arrow LINK's voice borrowed by a control that is already a door. Nothing else is on the screen under it: no dock, no foot, no controls in the bar. It opens as a circle from the tap. Once per tab |
-| Ear | `.wl-ear`, and `.hm-ear` on the front door | one line in the identifier face, at the label's size and tracking, the word in ash and the figure in chalk: on the door, the way to the wall while one is open; on the wall, the campus and the count, under the bar, standing still through the veil's lift so the veil and the field share one masthead element. The wall's figure is a `Roll`, a step larger than its word, and turns when a letter goes up. The term stood at the end of the line for a while and came off, so the line above the search stays quiet |
-| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: blurred void in a capsule with the lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` beside it, capped at the column's measure. It reads LEFT TO RIGHT, because it is a field. The lens stood against the left edge of nothing and the question was centred in a 16ch box beside it, so the glass had a hundred pixels of dead room either side of the one thing in it and the first character typed landed in the middle of the capsule, with every character after it shoving the ones already typed sideways: the text moved while it was being read and the caret never sat still. Every other field in the build is a left-aligned baseline, and the same question on the `/find` sheet was left aligned all along. It carries a hairline, and did not until 22 September: the argument against one was that a white hairline over a crowd of PALE discs is an edge belonging to no object, and that the blur was the material and the edge both. The discs are not pale any more (2.5a), and the plate itself came down with them — it was 440px filled at ten per cent chalk over a ground at L\* 2, under a 48px drop, which made the one object on the wall that is not about a person the heaviest thing on the screen, standing over the densest part of the hive. It is a field and it weighs what a field weighs now: 348px, 44px high, seated on a hairline rather than on a shadow, and in the wall's black room it is neutral grey glass (`rgba(44, 44, 44, 0.42)`), opaque enough that no screen's colour shows in it. At that fill the blur can no longer be the edge as well, and the hairline has a dark crowd to sit against. Its `saturate(1.25)` came off with the rest: a backdrop filter saturates what is BEHIND it, and what is behind this is forty faces, so the glass was amplifying the colour of every disc it covered. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
+| Dock | `.wl-dock` | a sticky gradient off the bottom edge. On the wall it carries only what is about the person looking, one thing at a time: the tab (`.wl-tab`), an unlit panel with the faces of the names they wrote to, the one door out of the wall, and `not now` under it, which puts it away for a few days or until another letter goes up; or the notice (`.wl-down`), when a letter of theirs has been taken down, an unlit phone note with the envelope, saying it went against the terms, with their words back and one soft key, `ok`. The composer's act is the lit key in the dock, with the pixel pen (`WriteAct`, `.wl-write-act`); it read `.wl-top-write` here for a while and no such class has ever been in the markup or the stylesheet, which is how a preview route that pressed it went on shooting the bare wall |
+| Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash. On the wall the bar carries the brand and the person and nothing else: the search stands under it (Seek) and the act at the foot (Dock). The person is a 40px square key round the square face, which fills it at thirty, or the pixel key while nobody is signed in. The `write` capsule and the glass that stood beside it came off when the search and the act moved |
+| Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line and the `view the wall` capsule, centred in the glass, on a scrim that is deep under the words, gone where they are not, and is itself the way in. The capsule is the product's primary, the same object as `write a letter` at the foot of the wall, which on the wall is the lit key (2.6): it was the last caller anywhere of the chalk plate with the running light inside it and an arrow after the word, so the first button anybody pressed was the one button that did not match the product behind it. The arrow went with the plate: an arrow inside a capsule is the arrow LINK's voice borrowed by a control that is already a door. Nothing else is on the screen under it: no dock, no foot, no controls in the bar. It opens as a circle from the tap. Once per tab |
+| Ear | `.wl-ear`, and `.hm-ear` on the front door | one line in the identifier face, at the label's size and tracking, the word in ash and the figure in chalk: on the door, the way to the wall while one is open; on the wall, the campus and the count, under the bar, standing still through the veil's lift so the veil and the field share one masthead element. The wall's figure is a `Roll`, a step larger than its word, and turns when a letter goes up. The term stood at the end of the line for a while and came off, so the line above the search stays quiet. On the wall it is the phone's operator line (2.6): the campus, the envelope, the figure in chalk and `letters` in ash, all in Jersey |
+| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: an unlit LCD strip with the pixel lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` beside it, capped at the column's measure. It reads LEFT TO RIGHT, because it is a field. The lens stood against the left edge of nothing and the question was centred in a 16ch box beside it, so the glass had a hundred pixels of dead room either side of the one thing in it and the first character typed landed in the middle of the capsule, with every character after it shoving the ones already typed sideways: the text moved while it was being read and the caret never sat still. Every other field in the build is a left-aligned baseline, and the same question on the `/find` sheet was left aligned all along. It carries a hairline, and did not until 22 September: the argument against one was that a white hairline over a crowd of PALE discs is an edge belonging to no object, and that the blur was the material and the edge both. The discs are not pale any more (2.5a), and the plate itself came down with them. It was 440px filled at ten per cent chalk over a ground at L\* 2, under a 48px drop, which made the one object on the wall that is not about a person the heaviest thing on the screen, standing over the densest part of the hive. It is a field and it weighs what a field weighs now: 348px, 44px high, seated on a hairline rather than on a shadow, and in the wall's black room it is neutral grey glass (`rgba(44, 44, 44, 0.42)`), opaque enough that no screen's colour shows in it. At that fill the blur can no longer be the edge as well, and the hairline has a dark crowd to sit against. Its `saturate(1.25)` came off with the rest: a backdrop filter saturates what is BEHIND it, and what is behind this is forty faces, so the glass was amplifying the colour of every disc it covered. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It was grey glass until 24 September, the last piece of an Apple interface on a wall of phones, and it is the phone's now (2.6): the unlit panel at ninety percent under the pixel grid, the bezel lit while it has the focus, the question in Jersey, and the answers opening under a dotted seam with the active one inverted and `looking` beside the blinking hourglass while they come. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
 | Hive | `.wl-hive`, `Hive` | the wall's names as a crowd of faces on a hexagonal torus, bent by a lens (`wall/Hive.jsx`): one continuous function of distance from the light sets a disc's size, how far the lattice opens around it, and how much of the room left over it is allowed to wander in — so the middle is large, tight and ordered and the rim is small, far apart and scattered. It runs corner to corner behind the bar and the pill, dissolving at every edge under two gradients, and the far screens are out of focus in six steps (`Hive.jsx BLUR`, 0.5 to 3.2px on the glass, each dimmer and from the third lit by a round glow in its own colour), so the sides of the glass are distant lights and never cards cut off by the frame; under the veil every screen is at least four steps out. It drifts by itself and every disc breathes on its own clock; it can be pulled in any direction, and under a mouse it swells where the pointer is, the screens near the pointer come into focus, and the one pointed at brightens and says whose it is on a small tag under it (15px, `.wl-cell-tag`, hover devices only). On a phone the pitch is a fifth of the width (80px at 390). A press flies the disc into the letter's card (`wall/Morph.jsx`). `app/src/wall/README.md`, The hive |
-| Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Three grounds: `star`, the dark plate the result card waits on; `chalk`, an opaque chalk plate, so the light shows around the capsule as a halo; and `none`, for a host that already has a ground of its own — the composer's body — where the beam alone is drawn, softened exactly as `star`'s is. Spent on the result card while it is looking, on the composer's body while the resolver is out, on the veil's way in (`.wl-mast-go-pill`), and on the mutual row on the sky. It came off the primary when the primary became metal: a rose point travelling round the inside of a metal capsule is two currents under one word |
+| Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Three grounds: `star`, the dark plate the result card waits on; `chalk`, an opaque chalk plate, so the light shows around the capsule as a halo; and `none`, for a host that already has a ground of its own (the composer's body), where the beam alone is drawn, softened exactly as `star`'s is. Spent on the result card while it is looking, on the composer's body while the resolver is out, on the veil's way in (`.wl-mast-go-pill`), and on the mutual row on the sky. It came off the primary when the primary became metal: a rose point travelling round the inside of a metal capsule is two currents under one word. It is not drawn on the wall (2.6): a wait there is the pixel hourglass, blinking |
 
 ### 8.3 Fields
 
@@ -716,9 +836,13 @@ A bare baseline, not a box. The `@` is painted beside the input, is never in the
 value, and cannot be backspaced away. On focus a gradient line draws across the
 rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 
+That is Main's field. On the wall every field is an LCD box (2.6): the unlit
+panel, the value in Jersey, no line drawn across it, and the bezel lit while it
+has the focus, since the input itself carries no outline.
+
 | Component | Class |
 | --- | --- |
-| Handle field | `.wl-field`, `.wl-field.is-lg`. Three kinds, one baseline: `handle`, the painted `@`; `name` (`.is-name`), the `@` gone and the input set in the display face, because a name is something a person means and a handle is an identifier, for a letter to a first name; `search` (`.is-search`), the glass in the `@`'s place, since a name is as good an answer as a handle |
+| Handle field | `.wl-field`, `.wl-field.is-lg`. Three kinds, one baseline: `handle`, the painted `@`; `name` (`.is-name`), the `@` gone and the input set in the display face, because a name is something a person means and a handle is an identifier, for a letter to a first name; `search` (`.is-search`), the lens in the `@`'s place (the pixel `find` glyph on the wall), since a name is as good an answer as a handle |
 | The result card | `.wl-card`, under a handle field, on Main. The resolver's answer while somebody is still typing: the face, the name, the badge, the handle, and no fifth thing. While it is looking a point of light runs round the card's own edge; given a handler it is a button from the first frame, disabled while looking and live the moment the answer lands, one element throughout so the light going out and the arrow arriving are one transition |
 | The answer in the field's place | `.wl-settled`, `Addressed`, inside the composer's `.wl-write-body`. The same answer, standing where the handle was typed rather than under it: the same measure, the same ground, the same height, and no plate and no frame of its own, because it is not a second object arriving under the field — it IS the field, answered. One element in every state: while the resolver is out the disc is empty, two bars breathe where the words will land, and the running light goes round the BODY'S edge (`Light plate="none"`, since the body brought its own ground), and nothing is said in words beside it. That wait is the result card's wait and not a copy of it: the beam resolves identical in every property (`is-none` shares `is-star`'s rule), and the disc, the bars and their breath are the card's own numbers and its own keyframe. The way out of it is the close mark at its end and not an arrow: an arrow says the row is the way on, and the way on is the capsule at the foot of the sheet |
 | Letter field | `.wl-letterfield`, on paper, with `.wl-count` under it |
@@ -743,7 +867,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
 | `Flap` | a count on split flaps: one per digit, the digit in `--gold` on a flat plate a step up from the void, a hairline round it and a seam across it, the word beside it. The one count in the build set in the util face rather than the mono, because on a board a figure is a thing on a plate and not an identifier in a line of type. The top half of the old digit folds down over the new one when the number changes, and on mount it can roll into place. It was the wall's count on the masthead; that is a line in the ear now, and the flaps are kept, drawn on the components sheet and by nothing in the product. Nothing moves under reduced motion (`.wl-flap`) |
-| `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands in a letter's foot on the wall with the count beside it in the identifier face, struck in the paper's ink, and nowhere else (`.wl-hearts`, `.wl-heart`) |
+| `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands on the account screen beside each of a person's letters (`Gate.jsx`), and on the wall it is the screen's own pixel heart, outlined and filled (`PIX.heartO`, `PIX.heart`, 2.6). A letter's heart is not this component: it is the centre soft key on the letter's screen (2.5). It stood in a letter's foot while letters were paper |
 | `Roll` | a count whose figures turn: each digit a window one figure tall over a column of the ten, slid to the figure it shows, 640ms on `--ease` when the number changes and still on mount. Keyed from the right so a hundredth letter mounts a column at the head and keeps the two it had. The wall's count in the ear. Under reduced motion the columns do not slide (`.wl-roll`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. The flat mark stands under it until the metal is opaque and leaves after, 900ms on `--ease-out` then 320ms: a fade in over the flat, never a crossfade, because two opaque shapes of one silhouette crossfading on black dip to three quarters halfway and blink. `onReady` says when the metal has drawn a frame; `cut` makes the swap instant for a mark under a cover. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
@@ -842,6 +966,10 @@ Every interactive thing has all five, and `components.html` shows them.
 | active | `scale(0.975)` on a capsule, nothing on a link |
 | disabled | `--ash-dim` type, `rgba(244, 241, 234, 0.13)` fill, `cursor: default` |
 
+On the wall (2.6) nothing shrinks when it is pressed: the lit key drops a pixel
+and goes a step darker, and a bezel key or a square key inverts. Focus rings
+follow the keys' square corners.
+
 `prefers-reduced-transparency: reduce` is answered too, and the answer is not a
 thinner blur: the sheet and the search plate become the opaque surfaces they
 already fall back to without `backdrop-filter`. Nothing moves and nothing is
@@ -922,6 +1050,7 @@ every route shoots an empty wall reading `not connected here`.
 | `design/source/eclipse.html` | the mark's specimen sheet |
 | `design/logo/` | the exports, all generated |
 | `app/src/wall/wall.css` | the tokens and the components, in code |
+| `app/src/wall/phone.css` | the wall's phone: the tokens remapped for `.wl-root.is-room`, and the parts both surfaces share, drawn as the phone (2.6) |
 | `app/src/wall/mark.js` | the mark's geometry |
 | `app/src/wall/art.jsx` | every drawn ornament |
 | `app/public/fonts/` | the three faces, and the `faces.css` that declares them |
