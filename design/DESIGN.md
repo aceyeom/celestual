@@ -239,9 +239,10 @@ anything else draws the colour its id picks, and migration 0058 gave every
 letter already up a colour of its own, keeping the old looks in
 `wall_look_backup_0058`.
 
-`share`, the right soft key, opens a menu of three, drawn the way the phone
-drew one: `to someone` hands the letter's picture to the share sheet, `save
-the picture` saves it, and `copy the link` copies the letter's link. The
+`share`, the right soft key, opens a menu drawn the way the phone drew one:
+`to someone` hands the letter's picture to the share sheet, on a device that
+has one, `save the picture` saves it, and `copy the link` copies the letter's
+link. The
 picture is drawn with a canvas (`share.js`), from the same table and the same
 quirks, at 1080 by 1350 on black, and signed under the screen with the lockup
 (3.3): the mark and `celestual.` in the room's serif, chalk at ninety percent,

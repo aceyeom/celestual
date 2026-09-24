@@ -375,7 +375,7 @@ still after the last word. Every letter is the same screen, set in one face
 | --- | --- |
 | **the status rows** | the aerial and the bars (how many people hearted it), the first name, the characters left of 280, the battery (how long it has been sitting there unsaid); then the pen and the mode, and the handle. A sealed letter says `locked` beside a padlock |
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A handle with a picture carries it at the head of the message, dithered into the screen's ink, and pressed it opens large. A sealed letter is its stars |
-| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `share` (to someone, which hands the letter's picture to the share sheet; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
+| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
 The only thing a writer chooses is the COLOUR it is lit in, from one list in
 three groups (`Look.jsx`, under the composer's screen while its `colour` key
