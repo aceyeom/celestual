@@ -83,8 +83,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import {
   Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, PIC_CELLS } from '../screen.jsx'
-import { colourOf, skinOf, skinVars, signalOf, chargeOf } from '../looks.js'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, RoomLight, PIC_CELLS } from '../screen.jsx'
+import { colourOf, skinOf, signalOf, chargeOf } from '../looks.js'
 import { sendLetter, prepareLetter, letterFace, starred, canShare } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
@@ -143,16 +143,6 @@ function Picture({ handle, look, seed, live }) {
       {open ? <FaceViewer handle={handle} onClose={close} from={from} source={btn} /> : null}
     </span>
   )
-}
-
-// ── the light in the room ───────────────────────────────────────────────────
-// The one light in the dark is the screen's, and it falls on the room in the
-// screen's colour: a wide soft pool behind the letter, which crossfades when
-// the deck is turned onto a letter lit in another colour. It is the room's
-// and not the screen's because the strip is clipped at the glass's edge.
-function RoomLight({ l }) {
-  const v = skinVars(colourOf(l.look, l.id))
-  return <span className="wl-room-light" style={{ '--s-halo': v['--s-halo'] }} aria-hidden="true" />
 }
 
 // ── the close ──
@@ -713,7 +703,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   return (
     <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
       <div className="wl-sheet-in wl-letter">
-        {one ? <RoomLight key={colourOf(one.look, one.id).slug} l={one} /> : null}
+        {one ? <RoomLight key={colourOf(one.look, one.id).slug} look={one.look} seed={one.id} /> : null}
         {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
             has been up, whether it is shut, who it is for, and the words.

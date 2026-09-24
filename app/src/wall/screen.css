@@ -41,8 +41,9 @@
 
 /* on the letter's strip the wide light is the room's (`.wl-room-light`),
    because the strip is clipped at the glass's edge and a glow cut by it
-   is a lit rectangle; the tight one stays on the screen */
-.wl-letter-track .wl-scene-halo { display: none; }
+   is a lit rectangle; the tight one stays on the screen. And the
+   composer's, for the same reason */
+.wl-letter-track .wl-scene-halo, .wl-write-card .wl-scene-halo { display: none; }
 .wl-room-light {
   position: absolute; left: 50%; top: 50%; z-index: 0; pointer-events: none;
   width: min(170vw, 1100px); aspect-ratio: 1; transform: translate(-50%, -50%);
@@ -132,9 +133,17 @@
 /* the draft: the same words, in a field, with the phone's own caret */
 .wl-root .wl-scr-draft {
   display: block; width: 100%; height: 100%; border: 0; outline: 0; background: none; padding: 0; margin: 0;
-  resize: none; font-family: inherit; caret-color: var(--s-cur); border-radius: 0;
+  resize: none; font-family: inherit; caret-color: var(--s-ink); border-radius: 0;
 }
 .wl-scr-draft::placeholder { color: var(--s-ink); opacity: 0.38; }
+/* an empty draft that is not being typed in keeps the phone's cursor, a
+   blinking bar before the example, the size of the letter's (`.wl-scr-cur`) */
+.wl-root .wl-scr-draft:placeholder-shown { text-indent: 0.25em; }
+.wl-root .wl-scr-draft:placeholder-shown:not(:focus) {
+  background: linear-gradient(currentColor, currentColor) 0 0.24em / 0.107em 0.64em no-repeat;
+  animation: wl-draft-cur 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms);
+}
+@keyframes wl-draft-cur { 50% { background-size: 0 0; } }
 .wl-scr-cur {
   /* one pixel of the face wide, from the top of its capitals to the foot
      of its descenders */
@@ -448,6 +457,6 @@
 .wl-mini-body i:nth-child(3) { top: 62%; width: 62%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
   .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
 }

@@ -332,7 +332,8 @@ function Press({ id, colour, q }) {
 // letter's `sig` and `bat`. `pos` stands where the handle does, a menu's
 // '1/3', hidden from a screen reader, which hears the chosen row itself.
 // `keys` is the three soft keys, `l`, `c` and `r`, each
-// `{ label, onClick, aria }` or nothing. The body is the children.
+// `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
+// it was when the key is pressed with a pointer. The body is the children.
 //
 // `live` off draws the keys without letting them be pressed or tabbed to:
 // the neighbours on the letter's strip are pictures of the next letter, not
@@ -356,6 +357,7 @@ export function Screen({
       <button
         type="button" className={`wl-sk ${cls}${d.on ? ' is-on' : ''}`}
         onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
+        onMouseDown={live && d.keepFocus ? (e) => e.preventDefault() : undefined}
         aria-label={d.aria || undefined} aria-pressed={d.pressed}
         tabIndex={live ? undefined : -1}
       >
@@ -423,6 +425,17 @@ export function Screen({
       </div>
     </div>
   )
+}
+
+// ── the light in the room ───────────────────────────────────────────────────
+// The one light in the dark is the screen's, and it falls on the room in the
+// screen's colour: a wide soft pool behind the letter or the draft, which
+// crossfades when the screen is lit in another colour (keyed by the colour
+// where it is drawn). It is the room's and not the screen's (screen.css
+// `.wl-room-light`), because a glow cut by a clip is a lit rectangle.
+export function RoomLight({ look, seed = '' }) {
+  const v = skinVars(colourOf(look, seed))
+  return <span className="wl-room-light" style={{ '--s-halo': v['--s-halo'] }} aria-hidden="true" />
 }
 
 // ── the words ───────────────────────────────────────────────────────────────
@@ -518,8 +531,9 @@ export function ScreenText({ text, pic = null, cursor = true, sealed = false, cl
 // The draft, being written: the same words in the same place, in a
 // textarea, with the phone's own caret. It autofocuses only where there is a
 // fine pointer, because on a phone the keyboard coming up unasked covers the
-// screen the person has not looked at yet.
-export function ScreenDraft({ value, onChange, max = 280, placeholder = '', autoFocus = false, label = 'your letter' }) {
+// screen the person has not looked at yet. `inputRef` is handed the
+// textarea too, for a key that edits at the caret.
+export function ScreenDraft({ value, onChange, max = 280, placeholder = '', autoFocus = false, label = 'your letter', inputRef = null }) {
   const ref = useRef(null)
   const over = useFit(ref, [value])
   useEffect(() => {
@@ -534,7 +548,8 @@ export function ScreenDraft({ value, onChange, max = 280, placeholder = '', auto
   return (
     <>
       <textarea
-        ref={ref} className="wl-scr-msg wl-scr-draft" value={value} placeholder={placeholder}
+        ref={(n) => { ref.current = n; if (inputRef) inputRef.current = n }}
+        className="wl-scr-msg wl-scr-draft" value={value} placeholder={placeholder}
         maxLength={max} rows={1} spellCheck="true" aria-label={label}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
       />

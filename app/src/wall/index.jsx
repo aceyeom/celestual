@@ -366,7 +366,9 @@ export default function WallApp() {
           a logo followed by a page. */}
       {boot > 0 && (
         <>
-          <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined}>
+          {/* inert under a sheet as well as hidden, so the tab key stays on
+              the sheet and never walks into the wall behind it */}
+          <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined} inert={onSheet || undefined}>
             {base}
           </main>
           {sheet}

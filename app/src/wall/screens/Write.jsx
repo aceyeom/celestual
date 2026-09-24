@@ -15,9 +15,11 @@
 // The card is live from the first keystroke of step 2. That is the single most
 // important decision on this screen: a person typing into a plain box is
 // filling in a form, and a person watching their own words settle onto the
-// same cream card they were reading a minute ago is writing a letter. It is
-// the same component the wall renders (parts.jsx `Paper`), not a lookalike, so
-// what they see here is exactly what goes up.
+// same kind of screen they were reading a minute ago is writing a letter. It
+// is the component the wall renders (screen.jsx `Screen`), not a lookalike,
+// in the colour and with the words that go up. It is not yet the same phone:
+// the draft's quirks are seeded off the draft and not the letter, and the
+// picture the letter will carry is not on it.
 //
 // ── the door, and what it does not change ──────────────────────────────────
 // The composer is behind the berkeley.edu address, and it is the only thing on
@@ -31,10 +33,11 @@
 // its most prolific writer, and the cheapest way to stop that is a number
 // everybody can hold in their head. The number itself is never drawn, here or
 // anywhere: while any letter is left the foot says nothing about it, and when
-// none is, one line stands over the act saying how many days to wait before
-// drafting more, and the act goes dark (parts.jsx `Allowance`). The count and
-// the date are the server's, from `wall_quota` (migrations 0044 and 0051), so
-// the letter somebody is refused on is the one the server refuses.
+// none is, one line stands over the act saying when the next letter can go
+// up, and the act goes dark (parts.jsx `Allowance`). Drafting goes on. The
+// count and the date are the server's, from `wall_quota` (migrations 0044
+// and 0051), so the letter somebody is refused on is the one the server
+// refuses.
 //
 // The desk can switch the whole ration off (0052), and while it is off the
 // server answers with an infinite allowance: `spent` is never true, the foot
@@ -139,13 +142,13 @@ import {
   useSuggest, Suggest, Segmented, useProfile,
 } from '../parts.jsx'
 import { LookPanel } from '../Look.jsx'
-import { Screen, ScreenDraft } from '../screen.jsx'
+import { Screen, ScreenDraft, RoomLight } from '../screen.jsx'
 import { Dots } from '../art.jsx'
 import {
   normHandle, validHandle, hash, allowance, loadQuota, write,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
 } from '../data.js'
-import { normaliseLook, freshLook } from '../looks.js'
+import { normaliseLook, freshLook, colourOf } from '../looks.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { campus, needsCampus } from '../campus.js'
@@ -187,6 +190,23 @@ const KINDS = [
   { value: 'name', label: 'custom name' },
 ]
 
+// Whether the composer is on a spread, where the colours stand beside the
+// screen and not under it (wall.css, the composer's two columns). The same
+// width as the stylesheet's.
+const WIDE = '(min-width: 900px)'
+function useWide() {
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(WIDE).matches)
+  useEffect(() => {
+    if (!window.matchMedia) return undefined
+    const m = window.matchMedia(WIDE)
+    const f = () => setWide(m.matches)
+    f()
+    m.addEventListener('change', f)
+    return () => m.removeEventListener('change', f)
+  }, [])
+  return wide
+}
+
 export default function Write({ to: prefill, go, back, up = back, upLabel = 'back to the wall', reduce = false }) {
   const draft = getState().draft || {}
   // A prefill that is a name key (`~sofia`, from "write to Sofia" on a
@@ -200,8 +220,18 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   // a draft nobody has chosen a colour for yet is lit in one of its own, so
   // the wall is not a field of the same grey; it is kept with the draft
   const [look, setLook] = useState(() => normaliseLook(draft.look) || freshLook())
-  // whether the look panel is open under the card
+  // and the first colour a person sees is the one that stays: kept at once,
+  // since the draft is otherwise only written once something changes
+  useEffect(() => {
+    const d = getState().draft
+    if (!normaliseLook(d && d.look)) patch({ draft: { ...(d || {}), look } })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // whether the look panel is open under the card; on a spread it is always
+  // there, beside it (`wide`)
   const [styling, setStyling] = useState(false)
+  const wide = useWide()
+  // the letter's own field, for the key that takes a character back
+  const letterRef = useRef(null)
   // Somebody who tapped "write to @them" on a letter already answered the
   // first question.
   const [step, setStep] = useState(() => (prefill ? 1 : 0))
@@ -418,13 +448,62 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   // back to the first question: from the dots, or from the name on the card
   const toWho = useCallback(() => { setStyling(false); setStep(0) }, [])
 
+  // ── the key that takes a character back ──
+  // At the caret, the way a field does, and without taking the focus off the
+  // field (the key keeps it, screen.jsx `keepFocus`), so a phone's keyboard
+  // stays up and a desk's next keystroke lands in the letter. A draft that is
+  // not being edited, a phone that never tapped in or a key pressed from the
+  // keyboard, loses its last character, which is what the phone's key did.
+  // A pair of surrogates is one character.
+  const clearOne = () => {
+    const el = letterRef.current
+    if (!el || document.activeElement !== el) {
+      setBody(body.replace(/(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S])$/, ''))
+      return
+    }
+    let a = el.selectionStart
+    const b = el.selectionEnd
+    if (a === b) {
+      if (!a) return
+      a -= 1
+      if (a && /[\uDC00-\uDFFF]/.test(el.value[a])) a -= 1
+    }
+    el.setRangeText('', a, b, 'end')
+    // through the field's own change: the body, the counter and the draft
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  // Escape takes the colours down before it takes the sheet (parts.jsx
+  // Sheet `onEscape`), and a focus that was in them goes back to their key.
+  // On a spread they stay, and only the focus leaves them.
+  const onEscape = () => {
+    const inPanel = document.activeElement && document.activeElement.closest('.wl-look')
+    if (wide ? !inPanel : !styling) return false
+    if (!wide) setStyling(false)
+    if (inPanel) document.querySelector('.wl-write-card .wl-sk.is-l')?.focus()
+    return true
+  }
+  // the colours' key: on a spread the colours are already beside the
+  // screen, so it takes the focus to the chosen one
+  const colourKey = wide
+    ? {
+      label: 'colour', aria: 'choose the colour it is lit in',
+      onClick: () => document.querySelector('.wl-write .wl-look-opt[aria-checked="true"]')?.focus(),
+    }
+    : {
+      label: styling ? 'done' : 'colour', onClick: () => setStyling((v) => !v), on: styling, pressed: styling,
+      aria: styling ? 'done with the colour' : 'choose the colour it is lit in',
+    }
+  // the draft's own phone, until the draft carries the letter's seed
+  const seed = `draft:${key || 'wall'}`
+
   // ── the door ──
   // Instead of the composer, not in front of a disabled one. A greyed-out form
   // with an explanation beside it makes somebody read a sentence to find out
   // they cannot use the thing they are looking at.
   if (!isMember()) {
     return (
-      <Sheet onClose={up} labelledBy="wl-write-h">
+      <Sheet onClose={up} labelledBy="wl-write-h" className="is-write">
         <div className="wl-sheet-in wl-write">
           <SheetHead onClose={up} label={upLabel} />
           <Locked
@@ -440,7 +519,10 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   }
 
   return (
-    <Sheet ref={sheet} onClose={leave} onClosing={(b) => { by.current = b }} tall labelledBy="wl-write-h">
+    <Sheet
+      ref={sheet} onClose={leave} onClosing={(b) => { by.current = b }} onEscape={onEscape}
+      tall labelledBy="wl-write-h" className="is-write"
+    >
       <div className="wl-sheet-in wl-write">
         <SheetHead onClose={leave} label="back"
           lead={<Dots n={2} at={step} onGo={(i) => (i === 0 ? toWho() : setStep(i))} />} />
@@ -515,28 +597,35 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
               className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
               onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
             >
-              {/* The same screen the wall shows, in the colour the letter is
-                  lit in and with the quirks of its own phone, so what is
-                  written on is what goes up. The name across the top is the
-                  person it is for; the left key opens the colours under it,
-                  and the right one takes a character back, or, on an empty
-                  draft, goes back to the first question. */}
+              {/* the light the draft throws on the room, as the letter's
+                  does, behind everything in the column (wall.css
+                  `.wl-write-light`) */}
+              <span className="wl-write-light" aria-hidden="true">
+                <RoomLight key={colourOf(look, seed).slug} look={look} seed={seed} />
+              </span>
+              {/* The same screen the wall shows, in the colour the letter
+                  goes up in and with the same words. The phone is the
+                  draft's own for now (its quirks are seeded off the draft,
+                  and the picture is not on it). The name across the top is
+                  the person it is for; the left key opens the colours under
+                  it, and the right one takes a character back, or, on an
+                  empty draft, goes back to the first question. */}
               <Screen
-                look={look} seed={`draft:${key || 'wall'}`} live
+                look={look} seed={seed} live
                 top={{
                   name: toFirst, handle: kind === 'name' ? '' : atHandle(key),
                   counter: `${MAX_BODY - body.length}/1`,
                   mode: !body.trim() || /[.!?]\s*$/.test(body) ? 'Abc' : 'abc', icon: 'pen',
                 }}
                 keys={{
-                  l: { label: styling ? 'done' : 'colour', onClick: () => setStyling((v) => !v), on: styling, pressed: styling, aria: styling ? 'done with the colour' : 'choose the colour it is lit in' },
+                  l: colourKey,
                   r: body
-                    ? { label: 'clear', onClick: () => setBody(body.slice(0, -1)), aria: 'take the last character back' }
+                    ? { label: 'clear', onClick: clearOne, keepFocus: true, aria: 'take a character back' }
                     : { label: 'back', onClick: toWho, aria: `for ${labelFor(key)}. change who it is for` },
                 }}
               >
                 <ScreenDraft
-                  value={body} onChange={setBody} max={MAX_BODY} autoFocus
+                  value={body} onChange={setBody} max={MAX_BODY} autoFocus inputRef={letterRef}
                   placeholder={EXAMPLES()[hash(key || 'wheeler') % EXAMPLES().length]}
                 />
               </Screen>
@@ -550,16 +639,17 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 {caught || said ? <Label className="wl-write-caught">{caught || said}</Label> : null}
               </div>
             </div>
-            {/* the colours, under the screen, while its left key is on, and
-                the screen above is the preview */}
-            {styling ? <LookPanel look={look} onChange={setLook} seed={`draft:${key || 'wall'}`} /> : null}
+            {/* the colours, under the screen while its left key is on, and
+                beside it on a spread; the screen is the preview. Opened by
+                the key, the panel is brought into view (Look.jsx `reveal`) */}
+            {styling || wide ? <LookPanel look={look} onChange={setLook} seed={seed} reveal={styling && !wide} /> : null}
           </div>
         )}
 
         <div className="wl-write-foot">
           {/* Nothing over the act while any letter is left. When none is,
-              the one line stands over it, and the act is dark, and says
-              how many days to wait. */}
+              the one line stands over it, saying when the next letter can
+              go up, and the act is dark. */}
           {left ? <Allowance left={left.left} limit={left.limit} resets={left.resets} /> : null}
           {/* "send anonymously", not "put it up": the word on the button is
               the one fact a person hesitating over it wants, said at the

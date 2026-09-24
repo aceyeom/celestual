@@ -187,7 +187,11 @@ it. The one light in the room is the screen's own, falling on the dark in the
 screen's colour (`.wl-room-light`, `.wl-scene-halo-2`). A print keeps its own
 ground — a poster is teal — but the room never takes it; it was the print's
 darkest ink in the concept, and one black for every letter is what makes the
-wall one room rather than a paint chart.
+wall one room rather than a paint chart. The composer writes in the same room
+(`.wl-sheet-wrap.is-write`): no pane, the draft's screen on the black with its
+own light behind it, and the sheet the size of the window, so nothing is cut
+but by the window's edge. On a spread, and on a phone on its side, the screen
+stands on the left and the question, the colours and the act on the right.
 
 **Every screen is its own phone** (`quirks`, off the letter's id, never
 `Math.random()`): how it is tilted in the photograph, the exact proportion of
@@ -693,7 +697,7 @@ had already said it. The role went with the caller.
 | Component | Class | Notes |
 | --- | --- | --- |
 | Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot. Every ink on it is one of its look tokens (`--lk-ground`, `--lk-ink`, `--lk-ink-2`, `--lk-rule`, the strengths of the ink, `--lk-face`, `--lk-radius`), declared at the plain paper's values on the card itself; a look (`has-look`, `wl-looked`, `data-look`) sets the same tokens inline and the card is the same card. See the looks, below |
-| Look panel | `.wl-look`, `Look.jsx` | under the composer's card while its pen is on: a row of small papers (`.wl-look-tile`, the real tokens on a tile with the two letters and a few bars), a row of colours (`.wl-look-dot`) and a row of faces (`.wl-look-chip`), each a radio group that scrolls sideways out to the sheet's edges. The chosen one is ringed the way a disc under the lens is ringed. The card above is the preview |
+| Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. Three groups, lit, printed and copied, each colour drawn as the small screen it makes (`Mini`), the chosen one ringed and named under the lot. On a phone, and on a phone on its side, the groups are one strip that scrolls sideways with the chosen one kept in the middle; on a wider column there is a row for each kind, so no row is an orphan. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
 | Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px. It is GLASS, and it has to look like it: written as glass and drawn as a panel — a tint at 66 to 80 percent over a fourteen pixel blur, which on a near-black wall is opaque — nothing came through it while the search plate twelve pixels above it read as the glass it is, which is two surfaces on one ground in two materials. A sheet is also the biggest surface here, and a big translucent surface reads as a THICKER one, so it takes the heavier blur and the deeper shadow rather than the lighter |
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters. A letter to a first name draws the name as written in the name's face, a monogram, and no handle line |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |

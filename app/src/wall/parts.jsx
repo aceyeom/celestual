@@ -728,11 +728,15 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // `dismiss`, for a screen that has to leave without anybody pressing
 // anything: the composer goes the moment its letter is up, and the wall
 // under it receives the name.
+//
+// `onEscape` is asked first when Escape is pressed, wherever the focus is,
+// and a screen that answers true has used the key for something smaller
+// than the sheet: the composer takes its colours down with it.
 const SheetCtx = createContext(null)
 export function useSheet() { return useContext(SheetCtx) }
 
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '', aside = null, ref = null }) {
+export function Sheet({ children, onClose, onClosing = null, onEscape = null, tall = false, labelledBy, className = '', aside = null, ref = null }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
@@ -742,6 +746,8 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
   // at the moment the key listener was attached
   const onClosingRef = useRef(onClosing)
   onClosingRef.current = onClosing
+  const onEscapeRef = useRef(onEscape)
+  onEscapeRef.current = onEscape
 
   const dismiss = useCallback((by = 'scrim') => {
     if (closingRef.current) return
@@ -771,7 +777,11 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
   }, [closing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') dismiss('key') }
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (onEscapeRef.current && onEscapeRef.current(e) === true) { e.preventDefault(); return }
+      dismiss('key')
+    }
     window.addEventListener('keydown', onKey)
     // The wall behind must not scroll while a sheet is up: on a phone the
     // touch would otherwise be taken by the wall the moment the sheet's own
@@ -809,7 +819,9 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
   return (
     <SheetCtx.Provider value={ctx}>
     <div className={`wl-sheet-wrap${closing ? ' is-closing' : ''} ${className}`}>
-      <button type="button" className="wl-scrim" aria-label="close" onClick={() => dismiss('scrim')} />
+      {/* out of the tab order: the wall under it is inert, and the scrim
+          would be the first stop, an invisible one */}
+      <button type="button" className="wl-scrim" tabIndex={-1} aria-label="close" onClick={() => dismiss('scrim')} />
       <section
         ref={box}
         className={`wl-sheet${tall ? ' is-tall' : ''}${held ? ' is-dragging' : ''}`}
@@ -996,16 +1008,17 @@ export function Allowance({ left, limit, resets = 0, kind = 'week', reading = fa
   )
 }
 
-// How long to wait, in days, said as one line. `resets` is a timestamp, or
-// nothing when the server did not say (an old schema, a refusal without a
-// date), in which case the line still says to wait and does not invent a
-// number.
+// When the next letter can go up, in days, said as one line. It is the
+// sending that waits and not the writing, since a draft is kept all week.
+// `resets` is a timestamp, or nothing when the server did not say (an old
+// schema, a refusal without a date), in which case the line still says it
+// is days off and does not invent a number.
 const DAY_MS = 86400000
 export function waitLine(resets) {
   const ms = Number(resets) > 0 ? Number(resets) - Date.now() : 0
-  if (!(ms > 0)) return 'wait a few days before you can draft more'
+  if (!(ms > 0)) return 'your next letter can go up in a few days'
   const days = Math.max(1, Math.ceil(ms / DAY_MS))
-  return days === 1 ? 'wait a day before you can draft more' : `wait ${days} days before you can draft more`
+  return days === 1 ? 'your next letter can go up tomorrow' : `your next letter can go up in ${days} days`
 }
 
 // ── the small box ───────────────────────────────────────────────────────────

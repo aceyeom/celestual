@@ -1442,6 +1442,11 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-dot.is-done { background: rgba(244,241,234,0.42); }
 .wl-dot.is-on { width: 18px; border-radius: 3px; background: var(--chalk); }
+/* a 44px tall target round a 6px dot; a step that can be gone back to wins
+   the gap it shares with the next */
+.wl-dot { position: relative; }
+.wl-dot::before { content: ''; position: absolute; inset: -19px -5px; }
+.wl-dot.is-done::before { z-index: 1; }
 
 /* the wait */
 .wl-waiting { display: flex; align-items: center; gap: 9px; color: var(--ash); }
@@ -2437,9 +2442,10 @@ a.wl-lq { text-decoration: none; }
    is the one the letter throws (screen.css `.wl-scene-halo`). One black for
    every colour, lit or printed; a poster keeps its own ground, the room
    does not take it. The grain over the black is the sensor's, the way a
-   photograph of a dark room has it. */
-.wl-sheet-wrap.is-letter .wl-scrim { background: #000; }
-.wl-sheet-wrap.is-letter .wl-scrim::after {
+   photograph of a dark room has it. The composer writes in the same room
+   (`.is-write`, below). */
+.wl-sheet-wrap:is(.is-letter, .is-write) .wl-scrim { background: #000; }
+.wl-sheet-wrap:is(.is-letter, .is-write) .wl-scrim::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: screen;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
@@ -2475,6 +2481,49 @@ a.wl-lq { text-decoration: none; }
 .wl-sheet-wrap.is-letter .wl-sheet-in {
   padding: 0; overflow: visible;
   animation: none;
+}
+/* ── the composer, in the same room ──
+   Screens/Write.jsx. A draft is written on the stage a letter is read on:
+   no pane, no grip, the black room and the light the draft's screen throws
+   on it (screen.jsx `RoomLight`). The sheet is the whole window, so the
+   only clip is the window's edge, and it is transparent to a press: a press
+   on the black round the column reaches the scrim and closes, as on the
+   letter. The column is centred when it fits and scrolls from the top when
+   it does not. */
+.wl-sheet-wrap.is-write { padding: 0; }
+.wl-sheet-wrap.is-write .wl-sheet {
+  display: flex; flex-direction: column;
+  width: 100%; max-width: none; height: 100%; min-height: 0; max-height: none; margin: 0;
+  background: none; box-shadow: none; border-radius: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  pointer-events: none;
+}
+.wl-sheet-wrap.is-write .wl-grip { display: none; }
+.wl-sheet-wrap.is-write .wl-sheet-in {
+  pointer-events: auto;
+  flex: 0 0 auto; width: 100%; max-width: 470px; margin: auto;
+  overflow: visible; isolation: isolate;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+/* The light is centred on the card (the screen and the line under it) and
+   painted behind everything in the column. Its box is laid out on its own
+   (layout containment), so the pool spilling past the window is light and
+   not something the sheet scrolls to */
+.wl-write-light { position: absolute; inset: 0; z-index: -1; contain: layout; pointer-events: none; }
+.wl-sheet-wrap.is-write :is(.wl-head, .wl-write-h, .wl-look, .wl-write-foot) { position: relative; z-index: 1; }
+.wl-sheet-wrap.is-write.is-closing .wl-room-light { animation: wl-unfade 320ms var(--ease-in) both; }
+/* The screen is as wide as the column, up to 440, and never taller than the
+   window, so the keys and the act are in view: 330 is the head, the
+   question, the line under the card and the foot, and `--notch` the
+   phone's own bars; 1.22 the tallest screen */
+.wl-write { --notch: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)); }
+.wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 330px - var(--notch)) / 1.22))); margin: 0 auto; }
+/* and the week's line over the act, when it is spent (parts.jsx `Allowance`) */
+.wl-write:has(.wl-allow) .wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 374px - var(--notch)) / 1.22))); }
+.wl-write:has(.wl-write-card) .wl-write-h { text-align: center; }
+@media (min-width: 900px) {
+  .wl-sheet-wrap.is-write .wl-sheet-in { max-width: 560px; }
 }
 /* ── every other sheet on the wall is the room's black glass ──
    Find, the gate, a report and a removal: black glass over the black room,
@@ -2808,8 +2857,8 @@ a.wl-lq { text-decoration: none; }
    stay, and the box is what the eye reads as the edge */
 .wl-write-body .wl-field { padding-bottom: 0; }
 .wl-write-body .wl-field-line { display: none; }
-/* the look panel under the card keeps the card's measure on a spread */
-.wl-write .wl-look { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+/* the look panel under the card takes the column's measure */
+.wl-write .wl-look { width: 100%; max-width: none; margin-left: auto; margin-right: auto; }
 
 /* ═══ THE BOOKMARKS ════════════════════════════════════════════════════════
    parts.jsx `Segmented`: two or three words on a rail, and the one that is
@@ -2908,6 +2957,11 @@ a.wl-lq { text-decoration: none; }
   color: var(--ash);
 }
 .wl-look-opts { display: flex; flex-wrap: wrap; gap: 9px; }
+/* while the colours are open the preview gives them room, and the line
+   under the card closes up: 470 is the head, the question, the line, the
+   strip and the foot */
+.wl-write-step:has(> .wl-look) .wl-write-floor { margin-top: 12px; }
+.wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 470px - var(--notch)) / 1.22))); }
 .wl-root .wl-look-opt {
   display: block; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
   transition: transform 200ms var(--ease);
@@ -2926,10 +2980,78 @@ a.wl-lq { text-decoration: none; }
   font-family: var(--f-s40); font-size: 20px; line-height: 1; letter-spacing: 0.02em;
   color: var(--chalk);
 }
-@media (max-width: 420px) {
-  .wl-look { padding: 12px 12px 10px; }
-  .wl-look-group { grid-template-columns: 1fr; gap: 7px; }
-  .wl-look-opts { gap: 8px; }
+/* a row for each kind, so no row is an orphan: lit 7, posters 6, risos 4,
+   copied 1 */
+@media (min-width: 561px) {
+  .wl-look-group { grid-template-columns: 52px 1fr; }
+  .wl-look-opts { display: grid; grid-template-columns: repeat(7, 40px); gap: 8px; }
+  .wl-look-opt[data-value='pink-blue'] { grid-column-start: 1; }
+  /* four rows stand taller than the phone's strip */
+  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 600px - var(--notch)) / 1.22))); }
+}
+/* on a phone the three groups are one strip, scrolled sideways, with the
+   chosen colour kept in the middle of it (Look.jsx), and on a phone on its
+   side, which has no height for three rows. The padding holds the chosen
+   ring and the focus outline inside the strip's clip */
+@media (max-width: 560px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-look { margin-top: 12px; padding: 10px 0; gap: 8px; }
+  .wl-look-groups {
+    flex-direction: row; gap: 18px;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    padding: 5px 28px 6px 18px; scroll-padding-inline: 18px 28px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+  }
+  .wl-look-groups::-webkit-scrollbar { display: none; }
+  .wl-look-group { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; flex: 0 0 auto; }
+  .wl-look-opts { display: flex; flex-wrap: nowrap; gap: 8px; }
+  .wl-look-now { margin: 0 18px; }
+}
+@media (max-width: 560px) {
+  .wl-write-step:has(> .wl-look) ~ .wl-write-foot { padding-top: 14px; }
+}
+/* ── the composer on a spread, and on a phone on its side ──
+   Two columns and nothing scrolls: the screen on the left, as tall as the
+   window lets it be, and the question, the colours and the act on the
+   right. On a spread the colours are always there (Write.jsx `wide`), so
+   the left key takes the focus to them rather than opening them; on a
+   phone on its side the key opens them in the right column. The who step
+   keeps the 560 column. */
+@media (min-width: 900px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-write .wl-sheet-in:has(.wl-write-card) { max-width: 920px; }
+  .wl-write:has(.wl-write-card) {
+    --wh: min(calc(100dvh - 64px), 940px);
+    /* 170 = the column's padding, head 62, floor 46; 1.2 = the tallest
+       screen; 504 = the gutters, the gap and 340 for the colours */
+    --wscr: min(440px, calc((var(--wh) - 170px) / 1.2), calc(100vw - 504px));
+    display: grid; grid-template-columns: var(--wscr) minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
+    column-gap: 40px;
+  }
+  .wl-write:has(.wl-write-card) > .wl-head { grid-column: 1 / -1; }
+  .wl-write:has(.wl-write-card) > .wl-write-h { grid-column: 2; grid-row: 2; text-align: left; }
+  .wl-write:has(.wl-write-card) > .wl-write-step { display: contents; }
+  .wl-write-card { grid-column: 1; grid-row: 2 / span 3; }
+  /* the step's own fade is lost to display: contents; it is kept off the
+     card so the card never becomes a stacking context over the room light */
+  .wl-write-card .wl-scene { animation: wl-fade 260ms var(--ease) both; }
+  .wl-write:has(.wl-write-card) .wl-write-card .wl-scene { width: var(--wscr); }
+  .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
+  .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
+}
+@media (min-width: 900px) and (min-height: 561px) {
+  .wl-write .wl-look-group { grid-template-columns: 1fr; gap: 6px; }
+}
+/* on its side the screen is sized off the height alone: 134 is the
+   column's padding, the head and the line under the card at two lines. The
+   heading and the act close up round the colours' strip */
+@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-write .wl-sheet-in { padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
+  .wl-write:has(.wl-write-card) {
+    --wscr: min(400px, calc((100dvh - 134px - var(--notch)) / 1.22));
+    column-gap: 32px;
+  }
+  .wl-write:has(.wl-write-card) > .wl-write-h { margin-bottom: 14px; }
+  .wl-write:has(.wl-write-card) > .wl-write-foot { padding-top: 14px; }
 }
 
 /* the card and the line under it, in one frame, and the frame is what shakes
@@ -2956,8 +3078,8 @@ a.wl-lq { text-decoration: none; }
 /* one line under the card, when the screen has caught something or the
    server has said no: to the person writing, both are the one thing to
    change */
-.wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
-.wl-write-caught { color: var(--ember); text-align: right; }
+.wl-write-floor { min-height: 20px; margin-top: 16px; display: flex; justify-content: center; }
+.wl-write-caught { color: var(--ember); text-align: center; text-wrap: balance; }
 .wl-write-foot {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
