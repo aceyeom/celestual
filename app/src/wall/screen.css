@@ -365,6 +365,14 @@
    for a filter, so a print is drawn flat in its own inks with a screen of
    halftone over it, and a lit one with the LCD's grid. */
 .wl-tile { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+/* the box the wall's focus is written on (wall.css, THE HIVE, the focus):
+   the tile's own box again, so the screen inside it sits where it did */
+.wl-tile-f { position: absolute; inset: 0; display: grid; place-items: center; }
+/* and the light a far screen throws, behind it, off until the wall lights it */
+.wl-tile-glow {
+  position: absolute; inset: 10%; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side, var(--s-glow-2) 0 55%, var(--s-glow) 82%, transparent 100%);
+}
 .wl-tile-in {
   position: relative; width: 74%; aspect-ratio: 1 / var(--q-ar, 1.16);
   container-type: inline-size;
@@ -400,13 +408,19 @@
   position: relative; flex: 0 0 18%; display: flex; align-items: center; gap: 3cqw; padding: 0 6cqw;
   background: var(--t-top); color: var(--t-lit);
 }
+/* each glyph's image, in the screen's lit colour, is its own class
+   (screen.jsx `glyph`); only where it sits is said here */
 .wl-g {
-  display: block; flex: 0 0 auto; height: 8cqw; background: currentColor;
-  -webkit-mask: var(--m) center / 100% 100% no-repeat; mask: var(--m) center / 100% 100% no-repeat;
+  display: block; flex: 0 0 auto; height: 8cqw;
+  background-position: center; background-size: 100% 100%; background-repeat: no-repeat;
 }
 .wl-g.wl-g-env { height: 6cqw; margin-left: 2cqw; }
 .wl-g.is-bat { height: 7cqw; margin-left: auto; }
-.is-blink, .wl-tile-cur { animation: wl-blink 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms); }
+/* the small screen's blink (`is-blink`, `.wl-tile-cur`) is the wall's to
+   keep, by a class on the disc (wall.css, THE HIVE, the blink): a CSS
+   animation on every blinking mark was an opacity layer of its own, which
+   cut the small screen round it into two more, and a style recalc on every
+   frame, thirty screens at a time on the moving wall */
 .wl-tile-mid {
   position: relative; flex: 1 1 auto; min-height: 0; display: grid; place-items: center;
   padding: 0 4cqw 2cqw;

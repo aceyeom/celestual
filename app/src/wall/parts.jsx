@@ -350,7 +350,7 @@ export function Brand({ onClick, href, back = false, label = 'celestual, the fro
 // product; it was drawn at twenty-two, the size of the glyphs beside it, and
 // a face is not a glyph: at the glyphs' size it read as a dot on the end of
 // the row, and the row read as heavy on the left and light on the right.
-export function TopBar({ go, at = 'wall', acts = true }) {
+export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
   const who = member()
   // Whether the letters are open, which is not the same question as whether
   // this browser has a campus address. A person who proved their handle on
@@ -367,7 +367,7 @@ export function TopBar({ go, at = 'wall', acts = true }) {
   // without the chevron.
   const home = onWall && !!campus().base
   return (
-    <header className="wl-top">
+    <header className="wl-top" inert={inert || undefined}>
       <Brand
         back={!onWall || home}
         href={home ? '/' : undefined}

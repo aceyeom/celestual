@@ -25,7 +25,7 @@
 // looks.js `quirks`, off the letter's id.
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, PIX, hexRgb } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb } from './looks.js'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -45,23 +45,31 @@ export function Pix({ name, h = 7, className = '', style }) {
   )
 }
 
-// The tiles' glyphs are masks, made once for the page: a wall of two hundred
-// small screens is two hundred references to one image each, not two hundred
-// inline drawings.
-let glyphSheet = false
-function ensureGlyphs() {
-  if (glyphSheet || typeof document === 'undefined') return
-  glyphSheet = true
-  const names = Object.keys(PIX).filter((k) => /^(anty|antt|env|sig\d|bat[abc]\d)$/.test(k))
-  const css = names.map((k) => {
-    const g = glyphPath(k)
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.w} ${g.h}" shape-rendering="crispEdges"><path d="${g.d}"/></svg>`
-    return `.wl-g-${k}{--m:url("data:image/svg+xml,${encodeURIComponent(svg)}");aspect-ratio:${g.w}/${g.h}}`
-  }).join('\n')
-  const el = document.createElement('style')
-  el.dataset.glyphs = ''
-  el.textContent = css
-  document.head.appendChild(el)
+// The tiles' glyphs are images, struck once for the page in each colour a
+// small screen is lit in: a wall of two hundred small screens is two hundred
+// references to a few dozen images, not two hundred inline drawings. They
+// were masks over the screen's own colour, and every mask is a layer of its
+// own in the compositor's bookkeeping, redone on every frame the wall moves:
+// four to a screen, on a field of a hundred moving screens, was a fifth of
+// every frame. The screen's lit colours are all plain hexes (looks.js
+// `skinOf`), so the colour goes into the image.
+const GLYPHS = new Set()
+let glyphSheet = null
+function glyph(k, fill) {
+  const c = String(fill || '#000')
+  const cls = `wl-g-${k}-${c.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`
+  if (GLYPHS.has(cls) || typeof document === 'undefined') return cls
+  GLYPHS.add(cls)
+  if (!glyphSheet) {
+    const el = document.createElement('style')
+    el.dataset.glyphs = ''
+    document.head.appendChild(el)
+    glyphSheet = el.sheet
+  }
+  const g = glyphPath(k)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.w} ${g.h}" shape-rendering="crispEdges"><path fill="${c}" d="${g.d}"/></svg>`
+  glyphSheet.insertRule(`.${cls}{background-image:url("data:image/svg+xml,${encodeURIComponent(svg)}");aspect-ratio:${g.w}/${g.h}}`, glyphSheet.cssRules.length)
+  return cls
 }
 
 // ── the picture ─────────────────────────────────────────────────────────────
@@ -256,52 +264,115 @@ function usePicture(src, cells, inv, levels = 3) {
   return { got, img }
 }
 
+// The tones struck into a canvas: a print's in its own inks, opaque, so the
+// press prints each tone as one ink, and a screen's as alpha in its ink over
+// the panel. A picture that came without CORS is drawn as it is.
+function strike(g, got, img, cells, ink, tones) {
+  g.clearRect(0, 0, cells, cells)
+  if (got === 'taint') {
+    if (img) drawCover(g, img, cells, cells)
+  } else if (tones) {
+    const rgb = tones.map(hexRgb)
+    const top = tones.length - 1
+    const px = g.createImageData(cells, cells)
+    for (let i = 0; i < got.length; i++) {
+      const t = rgb[Math.round((got[i] / 255) * top)]
+      px.data[i * 4] = t[0]
+      px.data[i * 4 + 1] = t[1]
+      px.data[i * 4 + 2] = t[2]
+      px.data[i * 4 + 3] = 255
+    }
+    g.putImageData(px, 0, 0)
+  } else {
+    const [r, gg, b] = hexRgb(ink)
+    const px = g.createImageData(cells, cells)
+    for (let i = 0; i < got.length; i++) {
+      px.data[i * 4] = r
+      px.data[i * 4 + 1] = gg
+      px.data[i * 4 + 2] = b
+      px.data[i * 4 + 3] = got[i]
+    }
+    g.putImageData(px, 0, 0)
+  }
+}
+
+// ── the picture, still ──
+// The small screens on the wall draw the same picture as an image and not
+// as a canvas. A canvas is a compositor layer of its own, and every small
+// screen with a face on it was cut round that layer into three, on a field
+// of a hundred moving screens; an image is painted into the screen's own
+// layer. One PNG per picture, colour and size, struck once for the page,
+// so the same face on forty screens is forty references to one file. A
+// picture that came without CORS cannot be read back into a file and stays
+// a canvas.
+const STILLS = new Map()   // `${picture}|${ink}|${tones}` -> a PNG data URL, or ''
+const DECODED = new Set()  // the ones this page has decoded once
+
+function stillOf(id, got, cells, ink, tones) {
+  const k = `${id}|${ink}|${tones ? tones.join(',') : ''}`
+  if (STILLS.has(k)) return STILLS.get(k)
+  let url = ''
+  const cv = document.createElement('canvas')
+  cv.width = cells
+  cv.height = cells
+  const g = cv.getContext('2d')
+  if (g) {
+    strike(g, got, null, cells, ink, tones)
+    try { url = cv.toDataURL('image/png') } catch { url = '' }
+  }
+  STILLS.set(k, url)
+  return url
+}
+
 // `ink` is the colour the dither is struck in, a hex; the stylesheet puts the
 // panel under it. `tones`, on a print, is its inks from paper to darkest, one
 // per tone, and `levels` is one less than how many tones there are. `onReady`
 // tells a caller the picture has landed, so a monogram under it can step
-// aside.
-export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels = 3, tones = null, className = '', onReady }) {
+// aside. `still` draws it as an image (above), and only once it is decoded,
+// so the monogram steps aside for a picture that is there.
+export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels = 3, tones = null, still = false, className = '', onReady }) {
   const { got, img } = usePicture(src, cells, inv, levels)
   const ref = useRef(null)
   const ready = useRef(onReady)
   ready.current = onReady
+  const url = useMemo(() => (
+    still && got && got !== 'taint' && typeof document !== 'undefined'
+      ? stillOf(`${src}|${cells}|${inv ? 1 : 0}|${levels}`, got, cells, ink, tones)
+      : ''
+  ), [still, got, src, cells, inv, levels, ink, tones])
+  const [seen, setSeen] = useState('')
+  const decoded = !!url && (seen === url || DECODED.has(url))
+  useEffect(() => {
+    if (!url || DECODED.has(url)) return undefined
+    let live = true
+    const im = new Image()
+    im.src = url
+    const done = () => { DECODED.add(url); if (live) setSeen(url) }
+    if (im.decode) im.decode().then(done, done)
+    else im.onload = done
+    return () => { live = false }
+  }, [url])
   useLayoutEffect(() => {
+    if (url) {
+      if (decoded && ready.current) ready.current(true)
+      return
+    }
     const cv = ref.current
     if (!cv || !got) return
     const g = cv.getContext('2d')
     if (!g) return
-    g.clearRect(0, 0, cells, cells)
-    if (got === 'taint') {
-      if (img) drawCover(g, img, cells, cells)
-    } else if (tones) {
-      // a print's picture is struck in the print's own inks, opaque, so the
-      // press prints each tone as one ink
-      const rgb = tones.map(hexRgb)
-      const top = tones.length - 1
-      const px = g.createImageData(cells, cells)
-      for (let i = 0; i < got.length; i++) {
-        const t = rgb[Math.round((got[i] / 255) * top)]
-        px.data[i * 4] = t[0]
-        px.data[i * 4 + 1] = t[1]
-        px.data[i * 4 + 2] = t[2]
-        px.data[i * 4 + 3] = 255
-      }
-      g.putImageData(px, 0, 0)
-    } else {
-      const [r, gg, b] = hexRgb(ink)
-      const px = g.createImageData(cells, cells)
-      for (let i = 0; i < got.length; i++) {
-        px.data[i * 4] = r
-        px.data[i * 4 + 1] = gg
-        px.data[i * 4 + 2] = b
-        px.data[i * 4 + 3] = got[i]
-      }
-      g.putImageData(px, 0, 0)
-    }
+    strike(g, got, img, cells, ink, tones)
     if (ready.current) ready.current(true)
-  }, [got, img, ink, cells, tones])
+  }, [url, decoded, got, img, ink, cells, tones])
   if (!src || !got) return null
+  if (url) {
+    return decoded ? (
+      <img
+        src={url} width={cells} height={cells} alt="" aria-hidden="true" draggable={false}
+        className={`wl-pic ${className}`}
+      />
+    ) : null
+  }
   return (
     <canvas
       ref={ref} width={cells} height={cells} aria-hidden="true"
@@ -452,11 +523,18 @@ export function useFit(ref, deps, fill = false) {
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return undefined
+    // the box the last fit was made in, so the observer's first report,
+    // which is always of the box as it already is, does not fit it again:
+    // every fit sets the words at a dozen sizes and lays the screen out for
+    // each, and a letter turned was three screens fitted three times over
+    const was = { w: -1, h: -1, sh: -1 }
     const fit = () => {
       // the room is the body's, measured without its padding: the message
       // itself may be clamped from the last fit, and is not unclamped mid-fit
       const box = el.parentElement
       if (!box) return
+      was.w = box.clientWidth
+      was.h = box.clientHeight
       const bs = getComputedStyle(box)
       const room = box.clientHeight - parseFloat(bs.paddingTop) - parseFloat(bs.paddingBottom)
       el.style.overflowY = 'hidden'
@@ -473,18 +551,26 @@ export function useFit(ref, deps, fill = false) {
         }
         fits(lo)
       }
-      const o = el.scrollHeight > room + 1
+      was.sh = el.scrollHeight
+      const o = was.sh > room + 1
       const lh = parseFloat(getComputedStyle(el).lineHeight)
       el.style.maxHeight = o && lh > 0 ? `${Math.floor(room / lh + 0.02) * lh}px` : ''
       el.style.overflowY = o ? 'auto' : 'hidden'
       setOver(o)
     }
     fit()
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null
+    const refit = () => {
+      const box = el.parentElement
+      if (box && box.clientWidth === was.w && box.clientHeight === was.h) return
+      fit()
+    }
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(refit) : null
     // the body: once clamped, the message alone would never see it grow
     if (ro) ro.observe(el.parentElement || el)
     let off = false
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!off) fit() })
+    // and again once the face has loaded, if the words came out another
+    // height in it
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!off && el.scrollHeight !== was.sh) fit() })
     return () => { off = true; if (ro) ro.disconnect() }
   }, deps) // eslint-disable-line react-hooks/exhaustive-deps
   return over
@@ -610,7 +696,6 @@ export function ScreenNote({ glyph = '', title, children }) {
 // somebody today. The middle is the name's picture, dithered into the
 // screen, or its monogram with the cursor after it.
 export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, className = '' }) {
-  ensureGlyphs()
   const colour = colourOf(look, seed)
   const s = skinOf(colour)
   const q = quirks(seed)
@@ -629,29 +714,36 @@ export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, 
     '--q-pitch': q.vars['--q-pitch'],
   }
   const len = [...String(mono || '')].length
+  // `wl-tile-glow` and `wl-tile-f` are the wall's focus (Hive.jsx `FOCUS`):
+  // the round light a far screen throws, and the one box the blur and the
+  // dimming are written on, so a screen going out of focus restyles those
+  // two and nothing inside the screen
   return (
     <span className={`wl-tile ${className}`} data-kind={s.kind} style={vars} aria-hidden="true">
-      <span className="wl-tile-in">
-        <span className="wl-tile-top">
-          <i className={`wl-g wl-g-${q.ant === 't' ? 'antt' : 'anty'}`} />
-          <i className={`wl-g wl-g-sig${sig}`} />
-          {fresh ? <i className="wl-g wl-g-env is-blink" /> : null}
-          <i className={`wl-g wl-g-bat${q.bat}${bat} is-bat${bat ? '' : ' is-blink'}`} />
+      <i className="wl-tile-glow" />
+      <span className="wl-tile-f">
+        <span className="wl-tile-in">
+          <span className="wl-tile-top">
+            <i className={`wl-g ${glyph(q.ant === 't' ? 'antt' : 'anty', s.flat.lit)}`} />
+            <i className={`wl-g ${glyph(`sig${sig}`, s.flat.lit)}`} />
+            {fresh ? <i className={`wl-g wl-g-env ${glyph('env', s.flat.lit)} is-blink`} /> : null}
+            <i className={`wl-g ${glyph(`bat${q.bat}${bat}`, s.flat.lit)} is-bat${bat ? '' : ' is-blink'}`} />
+          </span>
+          <span className={`wl-tile-mid${shown ? ' is-pic' : ''}`}>
+            {src ? (
+              <PixelPic
+                key={src} src={src} cells={32} ink={s.flat.ink} inv={s.kind === 'neg'} tones={s.flat.pic || null}
+                still className="wl-tile-pic" onReady={() => setShownFor(src)}
+              />
+            ) : null}
+            {shown ? null : (
+              <span className="wl-tile-mono" style={{ '--len': Math.max(2, len) }}>
+                {mono}<i className="wl-tile-cur" />
+              </span>
+            )}
+          </span>
+          <span className="wl-tile-bot"><i /><i /></span>
         </span>
-        <span className={`wl-tile-mid${shown ? ' is-pic' : ''}`}>
-          {src ? (
-            <PixelPic
-              key={src} src={src} cells={32} ink={s.flat.ink} inv={s.kind === 'neg'} tones={s.flat.pic || null}
-              className="wl-tile-pic" onReady={() => setShownFor(src)}
-            />
-          ) : null}
-          {shown ? null : (
-            <span className="wl-tile-mono" style={{ '--len': Math.max(2, len) }}>
-              {mono}<i className="wl-tile-cur" />
-            </span>
-          )}
-        </span>
-        <span className="wl-tile-bot"><i /><i /></span>
       </span>
     </span>
   )

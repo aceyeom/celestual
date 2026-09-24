@@ -749,13 +749,16 @@ export default function Wall({ go, reduce, rev, under = false }) {
       {/* the bar keeps its brand throughout and gains its controls when the
           veil has gone: under the veil the poster has one door and the way
           home, and nothing else to press */}
-      <TopBar go={go} at="wall" acts={lifted} />
+      {/* under a sheet everything on the wall that can be pressed is inert,
+          piece by piece and not at the root (index.jsx, the main), and the
+          crowd takes its own screens out of the tab order (Hive.jsx `off`) */}
+      <TopBar go={go} at="wall" acts={lifted} inert={under} />
 
       {/* ── the room ──
           The masthead, and while it is up the veil. Both stand over the field
           rather than beside it: the veil's scrim runs from the bar down, and
           the masthead stands where the veil's title stood over the bar. */}
-      <div className="wl-room">
+      <div className="wl-room" inert={under || undefined}>
         {/* the campus and the count as one small line under the bar, and
             the wall's own question under it, once the veil has gone. They
             arrive with the bar's controls, a beat after the circle has
@@ -830,7 +833,7 @@ export default function Wall({ go, reduce, rev, under = false }) {
           looking: the notice when a letter of theirs has come down, else the
           tab. Nothing at all under the veil. */}
       {docked && (
-      <div className="wl-dock">
+      <div className="wl-dock" inert={under || undefined}>
         <div className="wl-dock-veil" aria-hidden="true" />
         {down ? (
           <Down letter={down} onLeave={() => answer(down)} />
@@ -851,7 +854,7 @@ export default function Wall({ go, reduce, rev, under = false }) {
         one screen exactly, and there is nothing to scroll to until it has
         gone. */}
     {lifted && (
-    <div className="wl-page is-foot">
+    <div className="wl-page is-foot" inert={under || undefined}>
       <SiteFoot />
     </div>
     )}

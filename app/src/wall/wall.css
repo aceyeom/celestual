@@ -335,15 +335,22 @@
   opacity: 0; transition: opacity 1600ms var(--ease);
 }
 .wl-ground.is-room.is-lit .wl-far { opacity: 1; }
+/* The drift moves the glow's place and not its transform, in forty steps
+   of two or three pixels each way. A transform animation is run by the
+   compositor, and it made each of the four glows, most of a screen across,
+   a layer of its own drawn again on every frame under the moving crowd;
+   stepped on the page, a glow is part of the room's one still layer and is
+   painted again when it has moved, every two seconds or so, by a step
+   nobody can see on a light this soft */
 .wl-far i {
   position: absolute; left: var(--x); top: var(--y);
   width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
   border-radius: 50%;
   background: radial-gradient(circle closest-side, var(--c), transparent);
   opacity: var(--a);
-  animation: wl-far var(--t) ease-in-out infinite alternate;
+  animation: wl-far var(--t) steps(40) infinite alternate;
 }
-@keyframes wl-far { to { transform: translate(var(--dx), var(--dy)); } }
+@keyframes wl-far { to { left: calc(var(--x) + var(--dx)); top: calc(var(--y) + var(--dy)); } }
 /* the room's grain is the letter room's, tile for tile and anchored at 0,0,
    so opening a letter swaps one grain for an identical one */
 .wl-ground.is-room .wl-grain {
@@ -367,8 +374,11 @@
 .wl-main { position: relative; z-index: 4; transition: opacity 480ms var(--ease-sheet), filter 480ms var(--ease-sheet); }
 /* Dimmed, and not blurred: the sheet over it is already glass with a
    backdrop blur of its own, and a second blur on a full screen layer of a
-   hundred moving faces under it was two blurs a frame while the sheet rose. */
-.wl-main.is-under { opacity: 0.30; pointer-events: none; }
+   hundred moving faces under it was two blurs a frame while the sheet rose.
+   And no `pointer-events: none`: the sheet's scrim is over the whole glass
+   and takes every press, and pointer-events is inherited, so putting it on
+   the wall restyled all two thousand elements of it as a letter opened. */
+.wl-main.is-under { opacity: 0.30; }
 /* ── and it comes back as the sheet goes, not after ──
    The route changes when the sheet has left the glass, and that is when the
    wall used to start un-blurring: the sheet fell, the wall sat dim under it
@@ -2338,34 +2348,30 @@ a.wl-lq { text-decoration: none; }
 
 /* ── the focus ──
    The far screens are out of focus, so a screen the frame cuts is a light in
-   the distance rather than a card cut off. Hive.jsx puts a step, 0 to 6, on
-   the disc as `data-f` and the blur for it as `--blur`, in the disc's own
-   pixels. Each step out is dimmer, and from the third a round glow in the
-   screen's own colour stands behind it. A blurred screen is a light: its
-   cursor and envelope do not blink, which also takes their layers away. */
-.wl-cell-disc[data-f]:not([data-f="0"]) .wl-tile-in { filter: blur(var(--blur, 0px)); }
-.wl-cell-disc[data-f="2"] .wl-tile-in { opacity: 0.9; }
-.wl-cell-disc[data-f="3"] .wl-tile-in { opacity: 0.76; }
-.wl-cell-disc[data-f="4"] .wl-tile-in { opacity: 0.6; }
-.wl-cell-disc[data-f="5"] .wl-tile-in { opacity: 0.45; }
-.wl-cell-disc[data-f="6"] .wl-tile-in { opacity: 0.32; }
-.wl-cell-disc[data-f]:not([data-f="0"]) :is(.wl-tile-cur, .is-blink) { animation: none; }
-.wl-cell-disc:is([data-f="3"], [data-f="4"], [data-f="5"], [data-f="6"]) .wl-tile::before {
-  content: ''; position: absolute; inset: 10%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, var(--s-glow-2) 0 55%, var(--s-glow) 82%, transparent 100%);
-}
-.wl-cell-disc[data-f="3"] .wl-tile::before { opacity: 0.25; }
-.wl-cell-disc[data-f="4"] .wl-tile::before { opacity: 0.45; }
-.wl-cell-disc[data-f="5"] .wl-tile::before { opacity: 0.68; }
-.wl-cell-disc[data-f="6"] .wl-tile::before { opacity: 0.9; }
-/* the keyboard's focus is always sharp; after the steps, which weigh the same */
-.wl-cell:focus-visible .wl-cell-disc .wl-tile-in { filter: none; opacity: 1; }
-.wl-cell:focus-visible .wl-cell-disc .wl-tile::before { opacity: 0; }
+   the distance rather than a card cut off. Hive.jsx works out a step, 0 to
+   6, for every screen, and writes what the step looks like (`FOCUS`: the
+   blur in the disc's own pixels, the dimming, and from the third step the
+   round glow in the screen's own colour that stands behind it) straight onto
+   the two elements of the small screen that draw it, `.wl-tile-f` and
+   `.wl-tile-glow` (screen.css). It used to be a `data-f` on the disc and a
+   rule here for each step, and every step a screen crossed restyled the
+   whole small screen, every element of it carrying the colour's two dozen
+   variables: on a pull that was thirty screens a frame, and most of the
+   frame. */
+/* the keyboard's focus is always sharp, over whatever the loop wrote */
+.wl-cell:focus-visible .wl-tile-f { filter: none !important; opacity: 1 !important; }
+.wl-cell:focus-visible .wl-tile-glow { opacity: 0 !important; }
+/* ── the blink ──
+   A sharp screen's cursor, and its envelope or its flat battery, blink on
+   that phone's own clock, and the loop keeps it (Hive.jsx `BLINK`): the
+   half of each beat they are off, the disc carries `is-dark`. A screen out
+   of focus is a light and does not blink. */
+.wl-cell-disc.is-dark :is(.wl-tile-cur, .is-blink) { visibility: hidden; }
 
 /* ── whose screen it is ──
    Under a mouse the screen pointed at says whose it is, on a small plate
    under it. The disc is scaled by the loop, so Hive.jsx writes the inverse
-   of that scale as `--tag-z` on the disc under the pointer, and the plate is
+   of that scale as `--tag-z` on the plate under the pointer, and the plate is
    the same size wherever it is read. Raised over its neighbours while it is
    pointed at, so the row below does not cover it. */
 .wl-cell-tag {

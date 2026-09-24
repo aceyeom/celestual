@@ -394,9 +394,14 @@ export default function WallApp() {
           a logo followed by a page. */}
       {boot > 0 && (
         <>
-          {/* inert under a sheet as well as hidden, so the tab key stays on
-              the sheet and never walks into the wall behind it */}
-          <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined} inert={onSheet || undefined}>
+          {/* hidden under a sheet, and out of the tab order, so the tab key
+              stays on the sheet and never walks into the wall behind it. Not
+              by `inert` here: inert on the wall's root restyled every element
+              of a hundred small screens on the frame a letter opened and
+              again on the frame it closed. The wall makes the rest of itself
+              inert and takes its screens out of the tab order (`under`,
+              screens/Wall.jsx and Hive.jsx) */}
+          <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined}>
             {base}
           </main>
           {sheet}
