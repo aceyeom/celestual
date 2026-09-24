@@ -9,8 +9,9 @@
 // disc stands relative to the light: at the middle the discs are large and
 // nearly touching, and outward they shrink, open apart and scatter, until at
 // the rim they are points a long way from each other and the mask has taken
-// them. Nothing is written on the field but one name: the person the lens is
-// reading carries a small plate with their handle, and there is only ever one.
+// them, and out of focus, so the sides of the glass are distant lights and
+// never cards cut off by the frame. Nothing is written on the field except
+// under a mouse, where the screen pointed at says whose it is.
 //
 // ── one function, three effects ─────────────────────────────────────────────
 // This is the whole aesthetic and it is worth stating plainly, because every
@@ -38,11 +39,9 @@
 // people and not for most; not the count, which is the disc's own size; not
 // the time since the last letter. A field with a caption under every third
 // face is a directory, and the wall is a place where people are, not a list
-// about them. One handle is on the screen at a time, on one plate, and it
-// belongs to whoever the lens is reading: under a mouse that is the disc the
-// pointer is on, and on a phone it is the disc in the middle. The plate is a
-// single element that moves — not one per cell, sixty of them fading past
-// each other under a moving pointer.
+// about them. Under a mouse the screen the pointer is on carries its handle on
+// a small tag under it (wall.css `.wl-cell-tag`), drawn by the cell's own
+// hover, so one is up at a time. On a phone nothing is written on the field.
 //
 // ── it moves by itself, and every disc moves differently ────────────────────
 // One slow drift, always, whose heading wanders so the field never runs one
@@ -109,9 +108,9 @@
 // one requestAnimationFrame, and only when they have moved; React is told only
 // when a slot changes hands or the lens moves to another person, and a slot
 // is handed a name and a count rather than the index's row, so a new reading
-// of the index re-renders only the discs whose names actually moved. The disc
-// is scaled and the plate is not, so the type stays sharp whatever the lens is
-// doing to the picture.
+// of the index re-renders only the discs whose names actually moved. The tag
+// under a hovered disc is written at the inverse of the disc's scale, so its
+// type is the same size whatever the lens is doing to the picture.
 //
 // ── the pulse ───────────────────────────────────────────────────────────────
 // The veil opens from the finger, and what opens it is not a line drawn over
@@ -197,6 +196,12 @@ const LENS = {
 // window's own shape, so a tablet gets something between and a laptop gets
 // none of it.
 const PHONE = { rim: 0.46, fall: 1.05, open: 0.16, air: 0.72, side: 0.74 }
+// ── the focus ──
+// The far screens are out of focus, so the edges of the glass are lights in
+// the distance and not cards cut off by the frame. Six steps, in pixels of
+// blur on the glass; a disc is written only when it crosses a step or its
+// scale has moved (wall.css, THE HIVE, dims and glows each step).
+const BLUR = [0, 0.5, 0.9, 1.4, 1.9, 2.5, 3.2]
 // ── the pulse ──
 // The crest's width in pitches; how much a disc under it swells, and how
 // much of the gap its packing leaves it the swell may take (the rest is the
@@ -418,7 +423,7 @@ const KEY_OFF = 1 << 20
 const KEY_ROW = 1 << 21
 const cellKey = (I, J) => (J + KEY_OFF) * KEY_ROW + (I + KEY_OFF)
 function newSlot() {
-  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, shown: false, used: 0, tf: '', op: '', n: 0, delay: 0, due: 0 }
+  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, shown: false, used: 0, tf: '', op: '', f: -1, fz: 1, tz: 0, n: 0, delay: 0, due: 0 }
 }
 
 // ── the pitch ───────────────────────────────────────────────────────────────
@@ -429,7 +434,7 @@ function newSlot() {
 // caps it so a landscape phone does not get four enormous faces, and the
 // ceiling stops a very wide screen from drawing portraits.
 function pitchFor(w, h) {
-  return Math.round(Math.max(56, Math.min(w * 0.185, h * 0.142, 116)))
+  return Math.round(Math.max(56, Math.min(w * 0.205, h * 0.142, 116)))
 }
 
 // The lens, for this window. One number, `k`, says how much of a phone this
@@ -727,6 +732,9 @@ const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, l
               one's picture */}
           <NameTile key={handle} handle={handle} look={look || null} name={name} count={count} at={at} />
         </span>
+        {/* whose screen it is, under a mouse only; outside the orb, so the
+            orb's own press and turn do not move it */}
+        <span className="wl-cell-tag" aria-hidden="true">{labelFor(handle)}</span>
       </span>
     </button>
   )
@@ -966,7 +974,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     slot.el = el
     slot.disc = el ? el.querySelector('.wl-cell-disc') : null
     // a new element has no transform on it yet, whatever the slot last wrote
-    slot.tf = ''; slot.op = ''
+    slot.tf = ''; slot.op = ''; slot.f = -1; slot.tz = 0
   }, [])
 
   // ── the zoom, applied ──
@@ -997,7 +1005,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // could see. The plate, the ring and the halo are gone. The loop still
   // keeps `focus`, the disc nearest the pointer or the middle, because the
   // cycle leaves that one alone and a change of pitch keeps it in the light;
-  // nothing draws it.
+  // nothing draws it. The tag under a hovered screen is the pointer's own
+  // hover, not the wall choosing somebody.
 
   // ── the cycle ─────────────────────────────────────────────────────────────
   // Every disc on the glass on its own clock, turned over to somebody else
@@ -1443,7 +1452,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           slot.shown = true
           slot.used = stamp
           // the element is reused for a new cell: nothing it last wrote holds
-          slot.tf = ''; slot.op = ''
+          slot.tf = ''; slot.op = ''; slot.f = -1; slot.tz = 0
           bySlot.set(slot.key, s)
           ;(changed || (changed = [])).push(s)
           if (slot.el) slot.el.style.visibility = ''
@@ -1551,7 +1560,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             // written only when it has moved: every inline write is a style
             // recalculation for that element on the frame, and the far discs
             // barely move between two frames
-            const tf = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${(z * m.zoom).toFixed(3)})`
+            const zz = z * m.zoom
+            const tf = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${zz.toFixed(3)})`
             if (tf !== slot.tf) { slot.tf = tf; slot.disc.style.transform = tf }
             // ── air ──
             // The far discs are not only smaller, they are further away, and
@@ -1563,6 +1573,37 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             const air = Math.min(1, lens.air + (1 - lens.air) * clamp01((z - lens.rim) / (1 - lens.rim)) + lift)
             const op = air > 0.995 ? '1' : air.toFixed(2)
             if (op !== slot.op) { slot.op = op; slot.disc.style.opacity = op }
+            // ── focus ──
+            // Measured against the window's own half-width, not the widened
+            // lens, and a screen that reaches the side of the window is at
+            // least five steps out, so the frame never cuts a sharp card.
+            // Under a mouse the screen pointed at is sharp; under the veil
+            // the whole room is soft.
+            const fx = (px - lx) / (m.c.x + S * 0.3), fy = (py - ly) / Ry
+            let df = Math.sqrt(fx * fx + fy * fy)
+            const ex = (Math.abs(px - m.c.x) + d * z * 0.37) / m.c.x
+            df = Math.max(df, ex * 2 - 1.15)
+            if (pa > 0.5) {
+              const hx = px - m.px, hy = py - m.py
+              df = Math.min(df, Math.sqrt(hx * hx + hy * hy) / (S * 2.4))
+            }
+            if (bl < 0.5) df = Math.max(df, 0.8)
+            const fq = df < 0.6 ? 0 : Math.min(6, 1 + Math.floor((df - 0.6) / 0.06))
+            // The disc is scaled by z·zoom, so the blur is written in its own
+            // pixels for a fixed amount on the glass, and written again when
+            // that scale has moved by more than an eighth since.
+            if (fq !== slot.f || (fq && (zz > slot.fz * 1.12 || zz < slot.fz * 0.89))) {
+              if (fq !== slot.f) { slot.f = fq; slot.disc.dataset.f = fq }
+              slot.fz = zz
+              if (fq) slot.disc.style.setProperty('--blur', `${(BLUR[fq] / Math.max(0.2, zz)).toFixed(1)}px`)
+              else slot.disc.style.removeProperty('--blur')
+            }
+            // the name under a mouse is written at its own size, whatever
+            // the disc it hangs from is scaled by (wall.css .wl-cell-tag)
+            if (s === m.on) {
+              const tz = 1 / Math.max(0.2, zz)
+              if (Math.abs(tz - slot.tz) > 0.02) { slot.tz = tz; slot.disc.style.setProperty('--tag-z', tz.toFixed(3)) }
+            }
           }
           // how far the pointer is from this disc, in its own drawn place,
           // and on a phone, where there is no pointer, how far the middle is

@@ -2248,18 +2248,12 @@ a.wl-lq { text-decoration: none; }
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
-/* under the veil the field is grey: dimmed, not blurred, because a blur over
-   a hundred moving discs is a hundred rasters a frame. The monograms go
-   further, so the type stands on a texture of discs and not on a field of
-   other letters. */
-.wl-hive.is-veiled .wl-hive-crowd { opacity: 0.4; }
+/* under the veil the field is dimmed and out of focus: the loop holds every
+   screen at least four focus steps out (the focus, below), so the type stands
+   on a room of soft lights and not on a field of other letters. The blur is
+   written when a screen crosses a step, not on every frame. */
+.wl-hive.is-veiled .wl-hive-crowd { opacity: 0.55; }
 .wl-hive.is-veiled { cursor: default; }
-/* Nothing is being read while the masthead is up either — but that is decided
-   in Hive.jsx, by not putting the class on anybody, rather than by unpicking
-   it here: an override for a state that is drawn by three other rules is three
-   places to keep in step. */
-.wl-hive .wl-tile-mid { transition: opacity 760ms var(--ease); }
-.wl-hive.is-veiled .wl-tile-mid { opacity: 0.3; }
 .wl-hive.is-empty { display: grid; place-items: center; cursor: default; }
 .wl-hive-none { text-align: center; }
 
@@ -2287,7 +2281,7 @@ a.wl-lq { text-decoration: none; }
 .wl-cell-orb {
   position: absolute; inset: 0; display: block;
   transform-origin: 50% 50%;
-  transition: transform 320ms var(--ease);
+  transition: transform 320ms var(--ease), filter 200ms var(--ease);
 }
 /* ── the light on whoever is being read ──
    A soft warm halo behind the disc the lens is on, drawn as a gradient and
@@ -2341,6 +2335,56 @@ a.wl-lq { text-decoration: none; }
 /* the press: the disc gives, and takes 90ms to do it, because a press is the
    one movement on this surface that has to answer instantly */
 .wl-cell:active .wl-cell-orb { transform: scale(0.93); transition-duration: 90ms; }
+
+/* ── the focus ──
+   The far screens are out of focus, so a screen the frame cuts is a light in
+   the distance rather than a card cut off. Hive.jsx puts a step, 0 to 6, on
+   the disc as `data-f` and the blur for it as `--blur`, in the disc's own
+   pixels. Each step out is dimmer, and from the third a round glow in the
+   screen's own colour stands behind it. A blurred screen is a light: its
+   cursor and envelope do not blink, which also takes their layers away. */
+.wl-cell-disc[data-f]:not([data-f="0"]) .wl-tile-in { filter: blur(var(--blur, 0px)); }
+.wl-cell-disc[data-f="2"] .wl-tile-in { opacity: 0.9; }
+.wl-cell-disc[data-f="3"] .wl-tile-in { opacity: 0.76; }
+.wl-cell-disc[data-f="4"] .wl-tile-in { opacity: 0.6; }
+.wl-cell-disc[data-f="5"] .wl-tile-in { opacity: 0.45; }
+.wl-cell-disc[data-f="6"] .wl-tile-in { opacity: 0.32; }
+.wl-cell-disc[data-f]:not([data-f="0"]) :is(.wl-tile-cur, .is-blink) { animation: none; }
+.wl-cell-disc:is([data-f="3"], [data-f="4"], [data-f="5"], [data-f="6"]) .wl-tile::before {
+  content: ''; position: absolute; inset: 10%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, var(--s-glow-2) 0 55%, var(--s-glow) 82%, transparent 100%);
+}
+.wl-cell-disc[data-f="3"] .wl-tile::before { opacity: 0.25; }
+.wl-cell-disc[data-f="4"] .wl-tile::before { opacity: 0.45; }
+.wl-cell-disc[data-f="5"] .wl-tile::before { opacity: 0.68; }
+.wl-cell-disc[data-f="6"] .wl-tile::before { opacity: 0.9; }
+/* the keyboard's focus is always sharp; after the steps, which weigh the same */
+.wl-cell:focus-visible .wl-cell-disc .wl-tile-in { filter: none; opacity: 1; }
+.wl-cell:focus-visible .wl-cell-disc .wl-tile::before { opacity: 0; }
+
+/* ── whose screen it is ──
+   Under a mouse the screen pointed at says whose it is, on a small plate
+   under it. The disc is scaled by the loop, so Hive.jsx writes the inverse
+   of that scale as `--tag-z` on the disc under the pointer, and the plate is
+   the same size wherever it is read. Raised over its neighbours while it is
+   pointed at, so the row below does not cover it. */
+.wl-cell-tag {
+  position: absolute; left: 50%; top: 100%;
+  transform: translateX(-50%) scale(var(--tag-z, 1)); transform-origin: 50% 0;
+  padding: 3px 7px 4px; border-radius: 3px;
+  font: 400 15px/1 var(--f-s40); letter-spacing: 0.02em;
+  color: #F2F2F2; background: rgba(var(--void-rgb), 0.84);
+  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.14);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.45);
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 200ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-cell:hover { z-index: 1; }
+  .wl-cell:hover .wl-cell-tag { opacity: 1; }
+  /* on the orb, not the screen, which carries the focus blur */
+  .wl-cell:hover .wl-cell-orb { filter: brightness(1.16); }
+}
 /* ── a name this browser wrote to: no longer marked ──
    It used to be lit on the wall it came back to — the rim, warm, standing
    whether or not it was being read — as the one thing on this field that is
@@ -3814,7 +3858,9 @@ a.wl-lq { text-decoration: none; }
   .wl-letter-x { top: 26px; right: 30px; }
   .wl-turn {
     width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
-    border: 1px solid var(--hair);
+    /* brighter than a hairline at rest: on the black room a hairline ring
+       is not there */
+    border: 1px solid rgba(244, 241, 234, 0.16); color: rgba(244, 241, 234, 0.72);
     transition: color 200ms var(--ease), border-color 200ms var(--ease), opacity 200ms var(--ease);
   }
   .wl-turn.is-prev { left: -62px; }

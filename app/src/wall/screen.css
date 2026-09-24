@@ -208,6 +208,13 @@
 .wl-sk .wl-px { transition: transform 420ms var(--ease, ease); }
 .wl-sk.is-on .wl-px { animation: wl-sk-heart 420ms var(--ease, ease); }
 @keyframes wl-sk-heart { 0% { transform: scale(0.6); } 50% { transform: scale(1.4); } 100% { transform: none; } }
+/* under a mouse a soft key and the picture answer the pointer: a key is lit
+   behind, in the screen's own light or a print's own ink */
+@media (hover: hover) and (pointer: fine) {
+  .wl-root .wl-sk:not(:disabled):hover { background: color-mix(in srgb, var(--s-lit) 16%, transparent); border-radius: 1cqw; }
+  .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-sk:not(:disabled):hover { background: color-mix(in srgb, var(--s-ink) 12%, transparent); }
+  .wl-root .wl-scr-face:hover { outline: 0.5cqw solid var(--s-ink); outline-offset: 0.5cqw; }
+}
 
 /* the LCD itself, over everything: its pixels, the moiré a camera makes of
    them, a ghost column on the right, dust and a scratch on the glass, the
