@@ -894,6 +894,10 @@ const ROUTES = [
   // a letter this browser put up has come down since: the notice stands in
   // the tab's place, with the reason and the way to the words
   { label: 'berkeley-down',   path: '/berkeley', tab: true, down: true, press: '.wl-mast-go', settle: 5200 },
+  // the wall's own search, typed into: the strip opened into the phone's
+  // menu of names, the first one chosen by the pointer that typed it
+  { label: 'berkeley-seek-typed', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['fill', '.wl-seek .wl-field input', 'a']], settle: 1200 },
   // the same two under prefers-reduced-motion (rebuild-spec 7.2): the veil
   // composed with nothing arriving, and the field still, with the lens on
   { label: 'berkeley-still',        path: '/berkeley', still: true, settle: 1200 },

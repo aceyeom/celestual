@@ -38,10 +38,13 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import './wall.css'
+// the wall is the phone (DESIGN.md 2.6): the layer over wall.css that draws
+// every shared part in the phone's language, scoped to this shell's root
+import './phone.css'
 import { parse, href, isWallPath, SHEETS } from './router.js'
 import { campus } from './campus.js'
 import { eclipticSVG, INK, CHALK } from './art.jsx'
-import { prefersReducedMotion } from './parts.jsx'
+import { prefersReducedMotion, PhoneChrome } from './parts.jsx'
 import Ground from './ground.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
@@ -385,6 +388,7 @@ export default function WallApp() {
   }
 
   return (
+    <PhoneChrome.Provider value>
     <div className="wl-root is-room" data-route={route.name}>
       <Ground pace={mode} lit={lit} still={reduce} room />
 
@@ -412,6 +416,7 @@ export default function WallApp() {
 
       <div className={`wl-cut${veil ? ' is-down' : ''}`} aria-hidden="true" />
     </div>
+    </PhoneChrome.Provider>
   )
 }
 

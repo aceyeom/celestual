@@ -124,8 +124,9 @@
 // banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Close, Who, useSuggest } from '../parts.jsx'
+import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
+import { PixIcon, Wait } from '../screen.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
@@ -265,8 +266,10 @@ function Ear({ letters }) {
       </>
     )
   } else if (letters > 0) {
+    // the envelope a phone's idle screen stood beside its messages
     meta = (
       <span className="wl-ear-meta">
+        <PixIcon name="env" scale={1} className="wl-ear-env" />
         <Roll value={letters} className="wl-ear-n" /> {letters === 1 ? 'letter' : 'letters'}
       </span>
     )
@@ -297,17 +300,13 @@ function Ear({ letters }) {
 // same brightness, and the one question the wall asks was the least legible
 // thing on it. Type alone cannot hold a surface that moves.
 //
-// It is glass: blurred void in a capsule, the lens at its head and the
-// question inside, centred and capped at the column's measure. The blur is
-// what makes it readable over whatever face happens to be under it — the same
-// argument the two shades make, made locally, where the type actually is.
-//
-// There is no ring round it any more. A hairline of chalk was drawn on it
-// while it was a plate that had to read as a button, and a button is exactly
-// what it is not: a white outline on a piece of glass is the one edge on this
-// screen that belongs to no object, and over a crowd of pale discs it read as
-// a second capsule floating a pixel off the first. The blur is the material
-// and the material is the edge.
+// It is the phone's own find (DESIGN.md 2.6): a strip of unlit LCD with the
+// lens at its head and the question inside, in the phone's face, centred
+// and capped at the column's measure. It was grey glass for a while, a
+// blurred capsule that held the words by smearing the crowd under them; a
+// phone's screen is opaque, and so is this, which is what makes it readable
+// over whatever face happens to be under it. Its one pixel bezel lights
+// while the caret is in it (wall.css `.wl-seek-glass`).
 //
 // ── and it answers in place ─────────────────────────────────────────────────
 // It used to be a field that behaved as a door: any touch on it pushed
@@ -315,9 +314,9 @@ function Ear({ letters }) {
 // second field, which the person then typed into. One question, two fields,
 // a route, and a keyboard handed between them.
 //
-// Now the glass itself opens: the capsule is the head of a panel that grows
-// downward as the answers arrive, over the crowd, and closes back to a
-// capsule when the field is emptied or left. Nothing is navigated to, so
+// Now the strip itself opens: it is the head of a panel that grows downward
+// as the answers arrive, over the crowd, a phone's menu with the chosen row
+// inverted, and closes back to a strip when the field is emptied or left. Nothing is navigated to, so
 // nothing has to be navigated back from — a name is found and pressed from
 // the surface the names are on, which is the whole argument for the wall
 // being the landing in the first place.
@@ -416,7 +415,7 @@ function Seek({ go }) {
               </button>
             ))}
             {!rows.length && (
-              <p className="wl-seek-none">{asking ? 'looking' : 'no letters under this name yet'}</p>
+              <p className="wl-seek-none">{asking ? <><Wait />looking</> : 'no letters under this name yet'}</p>
             )}
           </div>
         )}
@@ -449,7 +448,7 @@ function Tab({ faces, onGo, onHide, going }) {
             : <Sparkle size={12} />}
         </span>
         <span className="wl-tab-text">
-          Get notified if they<br />put you up too.
+          get notified if they<br />put you up too.
         </span>
         <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
       </button>
@@ -470,20 +469,31 @@ function Tab({ faces, onGo, onHide, going }) {
 // pointing them at the person who is likeliest to have done it.
 //
 // It stands until it is put away, once, and then it is remembered as read.
-// One control on it, the close mark in its corner: it used to carry a pill
-// that reopened the composer on the words and a quiet line beside it, and
-// the quiet line changed the store without telling React, so the card
-// stayed where it was under a finger that had just pressed "leave it".
+// One control on it: it used to carry a pill that reopened the composer on
+// the words and a quiet line beside it, and the quiet line changed the store
+// without telling React, so the card stayed where it was under a finger that
+// had just pressed "leave it".
+//
+// It is the phone's own note now (DESIGN.md 2.6): an unlit panel, the
+// envelope, the fact, the reason, and the one soft key a phone put under a
+// note it wanted read, `ok`, which puts it away. It had the close mark in
+// its corner, which on a note the phone is telling you is a way of saying
+// "not now" to something that is not a question.
 function Down({ letter: l, onLeave }) {
   return (
     <div className="wl-down" role="status">
-      <Close onClick={onLeave} label="put this away" className="wl-down-x" />
       <div className="wl-down-in">
         <Face handle={l.to} size={36} className="wl-down-face" />
         <div className="wl-down-text">
-          <p className="wl-down-h">your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.</p>
+          <p className="wl-down-h">
+            <PixIcon name="env" scale={2} className="wl-down-env" />
+            your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.
+          </p>
           <p className="wl-down-why">{whyDown(l.downBy)}</p>
         </div>
+      </div>
+      <div className="wl-down-keys">
+        <button type="button" className="wl-down-ok" onClick={onLeave} aria-label="ok, put this away">ok</button>
       </div>
     </div>
   )

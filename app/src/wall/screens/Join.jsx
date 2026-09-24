@@ -78,6 +78,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Display, Pill, Close } from '../parts.jsx'
 import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
+import { PixIcon } from '../screen.jsx'
 import { cardStep } from '../seed.js'
 import { getState } from '../store.js'
 import { isNameKey, validHandle } from '../data.js'
@@ -308,7 +309,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           that says what pressing the button GETS them, and it is the same
           sentence, word for word, as the tab they pressed to get here. */}
       <Display size="l" className="wl-join-h">
-        Get notified if they<br />put you up too.
+        get notified if they<br />put you up too.
       </Display>
 
       <div className="wl-join-fig">
@@ -322,7 +323,8 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
       <ol className="wl-rule-list">
         {LINES.map((l, i) => (
           <li key={l} className={`wl-rule-line${at > i ? ' is-in' : ''}`}>
-            <span className="wl-arrow-g" aria-hidden="true">→</span>
+            {/* the phone's arrow: its face has none of its own */}
+            <span className="wl-arrow-g" aria-hidden="true"><PixIcon name="arrow" scale={2} /></span>
             <span>{l}</span>
           </li>
         ))}
