@@ -459,4 +459,9 @@
 @media (prefers-reduced-motion: reduce) {
   .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
   .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
+  /* the words are fitted by measuring them at each size (`useFit`), and a
+     transition, even the 1ms one this preference gives everything
+     (wall.css), hands the measure the size before, so the fit ran off the
+     screen or fell to the smallest size */
+  .wl-root .wl-scr-msg, .wl-root .wl-scr-msg * { transition: none !important; }
 }
