@@ -2506,6 +2506,11 @@ a.wl-lq { text-decoration: none; }
   overflow: visible; isolation: isolate;
   padding-top: calc(14px + env(safe-area-inset-top, 0px));
 }
+/* The first question is not centred on what it holds: the names under the
+   field come and go as it is typed in, and the field must not move with
+   them. It stands where the column is centred with four names under it
+   (590) */
+.wl-sheet-wrap.is-write .wl-sheet-in:has(> .wl-write-who) { margin-top: max(0px, calc((100svh - 590px) / 2)); margin-bottom: auto; }
 /* The light is centred on the card (the screen and the line under it) and
    painted behind everything in the column. Its box is laid out on its own
    (layout containment), so the pool spilling past the window is light and
@@ -3038,7 +3043,9 @@ a.wl-lq { text-decoration: none; }
   .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
   .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
 }
-@media (min-width: 900px) and (min-height: 561px) {
+/* the kind over its row where the window is tall; on a short one it stays
+   beside the row, so the act is not pushed under the fold */
+@media (min-width: 900px) and (min-height: 641px) {
   .wl-write .wl-look-group { grid-template-columns: 1fr; gap: 6px; }
 }
 /* on its side the screen is sized off the height alone: 134 is the
