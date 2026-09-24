@@ -85,7 +85,7 @@ import {
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, RoomLight, PIC_CELLS } from '../screen.jsx'
 import { colourOf, skinOf, signalOf, chargeOf } from '../looks.js'
-import { sendLetter, prepareLetter, letterFace, starred, canShare } from '../share.js'
+import { sendLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
   atHandle, nameFor, normHandle, heart, wall, freeReads,
@@ -215,10 +215,31 @@ function Leaf({ className, onMount, children }) {
 function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
+  // the picture at the head of the words, which the Send picture carries too
+  const prof = useProfile(to && !isNameKey(to) ? to : '')
+  const pic = (prof && prof.avatar) || ''
   const [busy, setBusy] = useState(false)
+  const [, drawn] = useState(0)
   const at = view || { kind: 'letter' }
   const h = to && !isNameKey(to) ? atHandle(to) : ''
   const back = () => onView && onView(null)
+
+  // The Send picture, drawn ahead where there is a share sheet: once the
+  // letter has sat on the glass a moment, and again as the send menu opens,
+  // whose `share…` says `share` once it is there (share.js `prepareLetter`)
+  const warm = live && !!l && !view && canShare()
+  useEffect(() => {
+    if (!warm) return undefined
+    const t = setTimeout(() => prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })), 900)
+    return () => clearTimeout(t)
+  }, [warm, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
+  const sending = live && !!l && !!view && view.kind === 'send'
+  useEffect(() => {
+    if (!sending) return undefined
+    let alive = true
+    prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })).then(() => { if (alive) drawn((n) => n + 1) })
+    return () => { alive = false }
+  }, [sending, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!l) {
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
@@ -251,16 +272,24 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
        handle proof can stand for it (0053). */
     ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
   ]
+  const face = () => letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })
   const sendItems = [
-    ...(canShare() ? [{ t: 'share', how: 'share' }] : []),
+    ...(canShare() ? [{ t: isReady(face()) ? 'share' : 'share…', how: 'share' }] : []),
     { t: 'save the picture', how: 'save' },
     { t: 'copy the link', how: 'copy' },
   ]
-  const face = () => letterFace(l, { name: first, handle: h })
   const send = async (how) => {
-    // the share sheet is asked for before anything is awaited: a phone only
-    // opens it inside the tap that asked, and the picture was drawn while
-    // the menu was up (`prepareLetter`, on the key that opened it)
+    // a phone opens the share sheet only inside the tap that asked, so a
+    // tap before the picture is drawn waits for it and puts the menu back,
+    // and the next tap shares the file
+    if (how === 'share' && !isReady(face())) {
+      onView({ kind: 'note', glyph: 'env', title: 'drawing it' })
+      const b = await prepareLetter(face())
+      onView(b ? { kind: 'send', at: 0 } : { kind: 'note', glyph: '', title: 'it did not go', text: 'try again', done: true })
+      return
+    }
+    // otherwise the sheet is asked for before anything is awaited, with the
+    // picture drawn ahead (`prepareLetter`)
     const going = sendLetter(how, face(), `${window.location.origin}${href('letter', l.id)}`)
     onView({ kind: 'note', glyph: 'env', title: how === 'copy' ? 'copying' : 'sending' })
     const out = await going
@@ -314,7 +343,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     body = (
       <ScreenText
         text={text} sealed={!open}
-        pic={!isNameKey(l.to) ? <Picture handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
+        pic={!isNameKey(l.to) ? <Picture key={pic || 'none'} handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
       />
     )
     keys = {
