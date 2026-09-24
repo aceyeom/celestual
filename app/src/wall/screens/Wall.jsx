@@ -133,12 +133,23 @@ import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
 import { campus } from '../campus.js'
 import Hive from '../Hive.jsx'
+import PROTOS from 'wall-protos'
 import LiquidMark from '../LiquidMark.jsx'
 import { Bloom } from '../art.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
 // from a letter should land on the wall, not on a title.
 let OPENED = false
+
+// ── the ways to show the names that are being chosen between ──
+// `?layout=drafts` (or `screens`, `menu`, `table`) draws one of
+// app/src/wall/proto in the hive's place, with the same props and the same
+// way into a letter, so the whole wall can be looked at around it. In
+// development only: a build resolves `wall-protos` to nothing
+// (vite.config.js). Read once, because a route change drops the query.
+const LAYOUT = import.meta.env.DEV && typeof window !== 'undefined'
+  ? PROTOS[new URLSearchParams(window.location.search).get('layout') || ''] || null
+  : null
 
 // ── the wave's clock ──
 // How long the front takes to reach the far corner of the glass from the tap
@@ -742,6 +753,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
   // dock pour the void under itself (`has-tab`).
   const docked = lifted
   const carded = lifted && (!!down || tab)
+  const Field = LAYOUT || Hive
 
   return (
     <>
@@ -754,7 +766,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
           in. What keeps the type on top of it legible is not a box around the
           field but two gradients over it, below. */}
       <div className="wl-stage">
-        <Hive
+        <Field
           ref={hive}
           tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
           opening={playing} mine={wroteTo} wave={wave} onOpen={open} onPeek={peek}
