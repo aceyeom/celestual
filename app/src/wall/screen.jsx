@@ -4,19 +4,21 @@
 //
 // Every letter on the wall is drawn by this file, at three sizes:
 //
-//   Screen   the letter, read. The status across the top (the aerial and the
-//            bars, the name, how many characters were left, the battery),
-//            the words, and the three soft keys at the foot. Opened, it is
-//            the only lit thing in the room
+//   Screen   the letter, read. The status across the top (the aerial and
+//            the date, the characters left by the battery, then the pen,
+//            "dear" and the name, and the handle), the words, and the three
+//            soft keys at the foot. Opened, it is the only lit thing in the
+//            room
 //   Tile     the same screen, small, standing for a name on the wall: the
 //            status row, the name's monogram or their picture, and the
 //            keys' two dashes
 //   Mini     the panel's thumbnail of a colour
 //
 // and `PixelPic`, the picture of a person the way those screens drew one:
-// cut to a few dozen pixels a side and dithered into the screen's own ink.
-// There is no round face anywhere on the wall; a person is a picture on a
-// screen.
+// cut to a few dozen pixels a side and dithered into the screen's own ink,
+// or, on the wall's small screens, drawn in the screen's two tones with some
+// of the photograph's own colour left in. There is no round face anywhere on
+// the wall; a person is a picture on a screen.
 //
 // Every size inside a screen is in `cqw` of its own width, so one layout
 // draws at 470 pixels and at 60 without a second one. What the colour does
@@ -24,7 +26,7 @@
 // looks.js `quirks`, off the letter's id.
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS } from './looks.js'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -112,7 +114,10 @@ const DITHERED = new Map() // `${src}|${cells}|${inv}|${levels}` -> Uint8Clamped
 const IMAGES = new Map()   // src -> Promise<{ img, cors }>
 const LOADED = new Map()   // src -> the image, once it has come
 
-export const PIC_CELLS = 40 // the picture at the head of a message, on the page and in the shared picture
+// How many steps of ink a lit screen's picture is struck in: seven tones,
+// so a face reads as a face and not as a scatter of dots. A print keeps its
+// own inks (looks.js `pic`), and a copy the toner's four greys.
+export const PIC_LEVELS = 6
 
 export function loadImage(src) {
   if (IMAGES.has(src)) return IMAGES.get(src)
@@ -206,16 +211,21 @@ function blurBox(src, n, r) {
 
 const ATKINSON = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]
 
-export function dither(img, cells, inv, levels = 3) {
+// The picture's own light, cell by cell, in 0..1: the crop brought down to
+// `cells` a side, stretched to its own levels, pulled off its background and
+// sharpened. The dither and the tint (below) both start from it; `raw` is
+// the light before any of that, and `data` the crop's colour, for the tint.
+function toneOf(img, cells) {
   const cv = shrink(img, cells)
   if (!cv) return null
   // throws on a picture that came without CORS, which is the fallback
   const { data } = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cells, cells)
   const n = cells * cells
-  let lum = new Float32Array(n)
+  const raw = new Float32Array(n)
   for (let i = 0; i < n; i++) {
-    lum[i] = (0.2126 * data[i * 4] + 0.7152 * data[i * 4 + 1] + 0.0722 * data[i * 4 + 2]) / 255
+    raw[i] = (0.2126 * data[i * 4] + 0.7152 * data[i * 4 + 1] + 0.0722 * data[i * 4 + 2]) / 255
   }
+  let lum = Float32Array.from(raw)
   // its own levels: the darkest and lightest two percent set the ends, so a
   // grey picture uses the whole ramp
   const sorted = Float32Array.from(lum).sort()
@@ -233,13 +243,21 @@ export function dither(img, cells, inv, levels = 3) {
   const sharp = new Float32Array(n)
   for (let i = 0; i < n; i++) sharp[i] = Math.min(1, Math.max(0, lum[i] + 0.5 * (lum[i] - near[i])))
   lum = sharp
+  return { lum, raw, data }
+}
+
+export function dither(img, cells, inv, levels = PIC_LEVELS) {
+  const t = toneOf(img, cells)
+  if (!t) return null
+  const { lum } = t
+  const n = cells * cells
   // ink is shadow: how much of the screen's ink each cell wants, in 0..1
   const want = new Float32Array(n)
   for (let i = 0; i < n; i++) {
     const v = lum[i] ** 0.92
     want[i] = inv ? v : 1 - v
   }
-  const LEVELS = levels // levels + 1 tones: four on a screen (none, a third, two thirds, all), two on a copy
+  const LEVELS = levels // levels + 1 tones: seven on a lit screen, four on a print, two on a copy
   const out = new Uint8ClampedArray(n)
   for (let y = 0; y < cells; y++) {
     for (let x = 0; x < cells; x++) {
@@ -261,8 +279,38 @@ export function dither(img, cells, inv, levels = 3) {
   return out
 }
 
-function usePicture(src, cells, inv, levels = 3) {
-  const key = `${src}|${cells}|${inv ? 1 : 0}|${levels}`
+// ── and in colour ──
+// A lit screen's small picture on the wall keeps some of the photograph's
+// own colour, so a face reads from across the field and not only as a shape
+// in the screen's one ink. Each cell is the screen's own drawing of it (the
+// panel where the picture is light, the ink where it is dark, by the light
+// the dither reads) with `amount` of the photograph's colour mixed back over
+// it, moved to that same light. Every cell whole, in RGBA.
+export function tint(img, cells, { inv = false, ink = '#131313', panel = '#FFFFFF', amount = 0.5 } = {}) {
+  const t = toneOf(img, cells)
+  if (!t) return null
+  const { lum, raw, data } = t
+  const I = hexRgb(ink)
+  const P = hexRgb(panel)
+  const n = cells * cells
+  const out = new Uint8ClampedArray(n * 4)
+  for (let i = 0; i < n; i++) {
+    const v = lum[i] ** 0.92
+    const w = inv ? v : 1 - v
+    const d = (lum[i] - raw[i]) * 255
+    for (let c = 0; c < 3; c++) {
+      const screen = P[c] + (I[c] - P[c]) * w
+      out[i * 4 + c] = screen + (data[i * 4 + c] + d - screen) * amount
+    }
+    out[i * 4 + 3] = 255
+  }
+  return out
+}
+
+// `amount` over nothing is the dither; over something, the tint, with the
+// screen's `ink` and `panel` under it
+function usePicture(src, cells, inv, levels = PIC_LEVELS, amount = 0, ink = '', panel = '') {
+  const key = `${src}|${cells}|${inv ? 1 : 0}|${levels}${amount ? `|${amount}|${ink}|${panel}` : ''}`
   const [got, setGot] = useState(() => (src && DITHERED.has(key) ? DITHERED.get(key) : null))
   const [img, setImg] = useState(() => (src && LOADED.get(src)) || null)
   useEffect(() => {
@@ -274,24 +322,29 @@ function usePicture(src, cells, inv, levels = 3) {
       if (!r) { setGot(null); return }
       let out = 'taint'
       if (r.cors) {
-        try { out = dither(r.img, cells, inv, levels) || 'taint' } catch { out = 'taint' }
+        try {
+          out = (amount ? tint(r.img, cells, { inv, ink, panel, amount }) : dither(r.img, cells, inv, levels)) || 'taint'
+        } catch { out = 'taint' }
       }
       DITHERED.set(key, out)
       setImg(r.img)
       setGot(out)
     })
     return () => { live = false }
-  }, [src, key, cells, inv, levels])
+  }, [src, key, cells, inv, levels, amount, ink, panel])
   return { got, img }
 }
 
 // The tones struck into a canvas: a print's in its own inks, opaque, so the
-// press prints each tone as one ink, and a screen's as alpha in its ink over
-// the panel. A picture that came without CORS is drawn as it is.
+// press prints each tone as one ink, a screen's as alpha in its ink over the
+// panel, and a tint as it is. A picture that came without CORS is drawn as
+// it is too.
 function strike(g, got, img, cells, ink, tones) {
   g.clearRect(0, 0, cells, cells)
   if (got === 'taint') {
     if (img) drawCover(g, img, cells, cells)
+  } else if (got.length === cells * cells * 4) {
+    g.putImageData(new ImageData(got, cells, cells), 0, 0)
   } else if (tones) {
     const rgb = tones.map(hexRgb)
     const top = tones.length - 1
@@ -347,20 +400,24 @@ function stillOf(id, got, cells, ink, tones) {
 
 // `ink` is the colour the dither is struck in, a hex; the stylesheet puts the
 // panel under it. `tones`, on a print, is its inks from paper to darkest, one
-// per tone, and `levels` is one less than how many tones there are. `onReady`
+// per tone, and `levels` is one less than how many tones there are. `colour`,
+// on a lit screen, is how much of the photograph's own colour is left in it
+// (`tint`), drawn whole over `panel`, the screen's lit colour. `onReady`
 // tells a caller the picture has landed, so a monogram under it can step
 // aside. `still` draws it as an image (above), and only once it is decoded,
 // so the monogram steps aside for a picture that is there.
-export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels = 3, tones = null, still = false, className = '', onReady }) {
-  const { got, img } = usePicture(src, cells, inv, levels)
+export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels = PIC_LEVELS, tones = null, colour = 0, panel = '', still = false, className = '', onReady }) {
+  // a print is struck in its own inks, and never tinted
+  const amount = tones ? 0 : colour
+  const { got, img } = usePicture(src, cells, inv, levels, amount, ink, panel)
   const ref = useRef(null)
   const ready = useRef(onReady)
   ready.current = onReady
   const url = useMemo(() => (
     still && got && got !== 'taint' && typeof document !== 'undefined'
-      ? stillOf(`${src}|${cells}|${inv ? 1 : 0}|${levels}`, got, cells, ink, tones)
+      ? stillOf(`${src}|${cells}|${inv ? 1 : 0}|${levels}|${amount}|${panel}`, got, cells, ink, tones)
       : ''
-  ), [still, got, src, cells, inv, levels, ink, tones])
+  ), [still, got, src, cells, inv, levels, amount, panel, ink, tones])
   const [seen, setSeen] = useState('')
   const decoded = !!url && (seen === url || DECODED.has(url))
   useEffect(() => {
@@ -419,10 +476,14 @@ function Press({ id, colour, q }) {
 }
 
 // ── the screen ──────────────────────────────────────────────────────────────
-// `top` is what the status rows say: `name`, `counter`, `mode` ('abc',
-// 'Abc', 'locked'), `icon` ('pen', 'lock' or none), `handle`, and the
-// letter's `sig` and `bat`. `pos` stands where the handle does, a menu's
-// '1/3', hidden from a screen reader, which hears the chosen row itself.
+// `top` is what the status rows say: the aerial and the letter's `date`
+// across the first, and its `counter` by its `bat`; under them the `name`
+// and the `handle`, with
+// the pen before the name (`icon: 'pen'`), or the lock on a sealed letter
+// (`icon: 'lock'`). `dear` opens the name as a letter opens, "dear Sofia",
+// for the screens that are a letter to somebody and not a menu. `pos`
+// stands where the handle does, a menu's '1/3', hidden from a screen
+// reader, which hears the chosen row itself.
 // `keys` is the three soft keys, `l`, `c` and `r`, each
 // `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
 // it was when the key is pressed with a pointer. The body is the children.
@@ -441,7 +502,9 @@ export function Screen({
   const raw = useId()
   const fid = `wl-press-${raw.replace(/[^a-zA-Z0-9_-]/g, '')}`
   const vars = { ...skinVars(colour), ...q.vars }
-  const { name = '', counter = '', mode = 'abc', icon = 'pen', handle = '', pos = '', sig = 4, bat = 4 } = top
+  // this phone's own pixels, up close (looks.js `rgbTile`); a print has none
+  const rgb = useMemo(() => (s.print ? '' : rgbTile(seed)), [s.print, seed])
+  const { name = '', dear = false, date = '', counter = '', icon = '', handle = '', pos = '', bat = 4 } = top
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -453,7 +516,7 @@ export function Screen({
         aria-label={d.aria || undefined} aria-pressed={d.pressed}
         tabIndex={live ? undefined : -1}
       >
-        {d.glyph ? <Pix name={d.glyph} h={5.6} className="wl-lit-g" /> : null}
+        {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
         {d.label ? <span className="wl-lit">{d.label}</span> : null}
       </button>
     )
@@ -479,25 +542,20 @@ export function Screen({
           role="group" aria-labelledby={nameId}
         >
           <div className="wl-scr-bg" aria-hidden="true" />
-          <div className="wl-scr-top" data-name={q.nameAt}>
+          <div className="wl-scr-top">
             <div className="wl-scr-r1">
               <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
-                <Pix name={q.ant === 't' ? 'antt' : 'anty'} h={7.4} />
-                <Pix name={`sig${sig}`} h={7.4} />
+                <Pix name="ant" h={9} />
               </span>
-              <span className="wl-scr-nm wl-lit" id={nameId}>{name}</span>
+              {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
               {counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
               <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
-                <Pix name={`bat${q.bat}${bat}`} h={5.4} />
+                <Pix name={`bata${bat}`} h={8} />
               </span>
             </div>
             <div className="wl-scr-r2">
-              {icon ? (
-                <>
-                  <Pix name={icon} h={7} className="wl-lit-g" />
-                  <span className="wl-scr-mode wl-lit" aria-hidden="true">{mode}</span>
-                </>
-              ) : null}
+              {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
+              <span className="wl-scr-nm wl-lit" id={nameId}>{dear && name ? `dear ${name}` : name}</span>
               <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle}</span>
             </div>
           </div>
@@ -507,7 +565,14 @@ export function Screen({
             {key('c', 'is-c')}
             {key('r', 'is-r')}
           </div>
+          <span className="wl-scr-fx is-light" aria-hidden="true" />
           <span className="wl-scr-fx is-grid" aria-hidden="true" />
+          {rgb ? (
+            <span
+              className="wl-scr-fx is-rgb" aria-hidden="true"
+              style={{ backgroundImage: `url(${rgb})`, backgroundSize: `calc(var(--q-pitch, 3px) * ${RGB_CELLS})` }}
+            />
+          ) : null}
           <span className="wl-scr-fx is-moire" aria-hidden="true" />
           <span className="wl-scr-fx is-streak" aria-hidden="true" />
           <span className="wl-scr-fx is-glass" aria-hidden="true" />
@@ -612,19 +677,15 @@ function Bar({ of, over }) {
 }
 
 // The message, as the phone showed it: the words, and the cursor after the
-// last of them only for a screen still being written (`cursor`). `pic` stands a picture at the head of it, the way a picture
-// message carried one: whatever node the caller hands, which draws its own
-// `.wl-scr-mms` float when it has a picture and nothing when it has none.
+// last of them only for a screen still being written (`cursor`).
 // `sealed` draws each run of stars as the phone's full pixel star, one per
 // hidden letter, on the line (screen.css `.wl-scr-stars`).
-export function ScreenText({ text, pic = null, cursor = false, sealed = false, className = '' }) {
+export function ScreenText({ text, cursor = false, sealed = false, className = '' }) {
   const ref = useRef(null)
-  // the picture's key, since its float can arrive after the first fit
-  const over = useFit(ref, [text, pic ? pic.key : '', sealed], true)
+  const over = useFit(ref, [text, sealed], true)
   return (
     <>
       <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1}>
-        {pic}
         {sealed
           ? String(text).split(/(\*+)/).map((p, i) => (/^\*+$/.test(p) ? <span key={i} className="wl-scr-stars">{p}</span> : p))
           : text}
@@ -711,12 +772,17 @@ export function ScreenNote({ glyph = '', title, children }) {
 }
 
 // ── the small screen ────────────────────────────────────────────────────────
+// How much of the photograph's own colour a lit small screen's picture keeps
+// (`tint`): enough that a face reads from across the wall, not so much that
+// it stops being a picture on that screen.
+const TILE_COLOUR = 0.5
+
 // A name on the wall: its newest letter's screen, in that letter's colour,
-// small. The bars are how many letters the name has, the battery how long
-// since the last one, and an envelope blinks on a name that heard from
-// somebody today. The middle is the name's picture, dithered into the
-// screen, or its monogram.
-export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, className = '' }) {
+// small. The aerial across the top, the battery how long since the last
+// letter, and an envelope blinks on a name that heard from
+// somebody today. The middle is the name's picture, in the screen's own
+// tones with some of the photograph's colour left in, or its monogram.
+export function Tile({ look, seed = '', mono = '', src = '', at = 0, className = '' }) {
   const colour = colourOf(look, seed)
   const s = skinOf(colour)
   const q = quirks(seed)
@@ -724,7 +790,6 @@ export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, 
   // name has no picture any more gets its monogram back
   const [shownFor, setShownFor] = useState('')
   const shown = !!src && shownFor === src
-  const sig = Math.min(4, Math.max(1, count))
   const hrs = at ? (Date.now() - at) / 3600000 : 99
   const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
   const fresh = hrs < 24
@@ -745,15 +810,19 @@ export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, 
       <span className="wl-tile-f">
         <span className="wl-tile-in">
           <span className="wl-tile-top">
-            <i className={`wl-g ${glyph(q.ant === 't' ? 'antt' : 'anty', s.flat.lit)}`} />
-            <i className={`wl-g ${glyph(`sig${sig}`, s.flat.lit)}`} />
+            <i className={`wl-g ${glyph('ant', s.flat.lit)}`} />
             {fresh ? <i className={`wl-g wl-g-env ${glyph('env', s.flat.lit)} is-blink`} /> : null}
-            <i className={`wl-g ${glyph(`bat${q.bat}${bat}`, s.flat.lit)} is-bat${bat ? '' : ' is-blink'}`} />
+            <i className={`wl-g ${glyph(`bata${bat}`, s.flat.lit)} is-bat${bat ? '' : ' is-blink'}`} />
           </span>
           <span className={`wl-tile-mid${shown ? ' is-pic' : ''}`}>
             {src ? (
               <PixelPic
-                key={src} src={src} cells={32} ink={s.flat.ink} inv={s.kind === 'neg'} tones={s.flat.pic || null}
+                key={src} src={src} cells={64} ink={s.flat.ink} inv={s.kind === 'neg'} tones={s.flat.pic || null}
+                /* a print in its own inks, a copy in the toner's four greys
+                   (looks.js `skinOf`), and a lit screen in its own two tones
+                   with some of the photograph's colour left in */
+                levels={s.flat.pic ? s.flat.pic.length - 1 : s.kind === 'xerox' ? 3 : PIC_LEVELS}
+                colour={s.print ? 0 : TILE_COLOUR} panel={s.mid}
                 still className="wl-tile-pic" onReady={() => setShownFor(src)}
               />
             ) : null}

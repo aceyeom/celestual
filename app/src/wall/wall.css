@@ -2432,13 +2432,6 @@ a.wl-lq { text-decoration: none; }
    no width of its own, so min(100%, ...) of a dialog that takes its width
    from what is in it is nothing. The max-width keeps it inside its card */
 .wl-letter-card .wl-scene, .wl-letter-slot .wl-scene { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
-/* the picture at the head of a message: pressable, the way a face was */
-.wl-root .wl-scr-face {
-  display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer;
-  transition: transform 200ms var(--ease);
-}
-.wl-scr-face:active { transform: scale(0.95); transition-duration: 90ms; }
-.wl-scr-face:focus-visible { outline: 0.5cqw solid var(--s-ink); outline-offset: 0.5cqw; }
 .wl-sheet-wrap.is-letter .wl-sheet {
   min-height: 0; max-height: none; max-width: calc(var(--scene-w) + 30px);
   background: none; box-shadow: none; border-radius: 0;

@@ -148,7 +148,7 @@ import {
   normHandle, validHandle, hash, allowance, loadQuota, write,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
 } from '../data.js'
-import { normaliseLook, freshLook, colourOf } from '../looks.js'
+import { normaliseLook, freshLook, colourOf, dateOf } from '../looks.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { campus, needsCampus } from '../campus.js'
@@ -316,10 +316,13 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   // press. Never for a name: looking a person up by first name is an
   // inference.
   const them = useResolver(kind === 'name' ? '' : to)
-  // the name across the top of the screen: the first name the resolver has
-  // for a handle, the handle when it has none, and a first name as written
+  // the name across the top of the screen, after "dear": the first name the
+  // resolver has for a handle, with the handle beside it; the handle alone
+  // when it has none; and a first name as written
   const prof = useProfile(kind === 'name' ? '' : h)
-  const toFirst = kind === 'name' ? nm : ((prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : '') || h)
+  const profFirst = prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : ''
+  const toFirst = kind === 'name' ? nm : (profFirst || atHandle(h))
+  const toHandle = kind === 'name' || !profFirst ? '' : atHandle(h)
   // And under that, the names already on the wall that match what is typed,
   // until the card has the person: a list under a settled card would list
   // them twice. Pressing a row takes that name, in whichever kind it is.
@@ -613,9 +616,8 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
               <Screen
                 look={look} seed={seed} live
                 top={{
-                  name: toFirst, handle: kind === 'name' ? '' : atHandle(key),
-                  counter: `${MAX_BODY - body.length}/1`,
-                  mode: !body.trim() || /[.!?]\s*$/.test(body) ? 'Abc' : 'abc', icon: 'pen',
+                  name: toFirst, handle: toHandle, dear: true, icon: 'pen',
+                  date: dateOf(Date.now()), counter: `${MAX_BODY - body.length}/1`,
                 }}
                 keys={{
                   l: colourKey,
