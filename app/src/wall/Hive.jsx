@@ -727,14 +727,14 @@ function tileUp(tiles, was) {
 // the way a phone showed a short contact name across its standby screen.
 // Memoised, so a cell re-rendered for something about the cell (whether it
 // is new, or out of the tab order under a sheet) does not redraw its screen.
-const NameTile = memo(function NameTile({ handle, look, name, count, at }) {
+const NameTile = memo(function NameTile({ handle, look, name, at }) {
   const named = isNameKey(handle)
   const p = useProfile(named ? '' : handle)
   const said = named ? (name || labelFor(handle)) : ''
   const mono = named
     ? ([...said].length <= 5 ? said : monogram({ name: said }))
     : p ? monogram(p) : String(handle || '').replace(/^@+/, '').slice(0, 2).toUpperCase()
-  return <Tile key={handle} look={look} seed={handle} mono={mono} src={p?.avatar || ''} count={count} at={at} />
+  return <Tile key={handle} look={look} seed={handle} mono={mono} src={p?.avatar || ''} at={at} />
 })
 
 const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, look, name, off, bind, onOpen, onHover, onPeek }) {
@@ -762,7 +762,7 @@ const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, l
           {/* keyed by the name, so a slot that turns over to somebody else
               starts from that person's profile and monogram, not the last
               one's picture */}
-          <NameTile key={handle} handle={handle} look={look || null} name={name} count={count} at={at} />
+          <NameTile key={handle} handle={handle} look={look || null} name={name} at={at} />
         </span>
         {/* whose screen it is, under a mouse only; outside the orb, so the
             orb's own press and turn do not move it */}

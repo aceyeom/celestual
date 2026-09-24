@@ -406,11 +406,10 @@ export function quirks(seed) {
       return `linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)) ${x.toFixed(1)}% ${yy.toFixed(1)}% / 0.9cqw 0.9cqw no-repeat`
     })()
     : 'none'
-  // the model: which battery and which aerial it draws, and whether the
-  // name sits in the middle of the top row or beside the aerial
-  const bat = pick(r, ['a', 'a', 'b', 'c'])
-  const ant = pick(r, ['y', 'y', 't'])
-  const nameAt = r() < 0.3 ? 'start' : 'center'
+  // the model: which battery and aerial it drew, and where the name sat.
+  // Every phone draws the same ones now (screen.jsx), but the three draws
+  // stay, so every quirk after them lands where it always did
+  r(); r(); r()
   // the words: where the lines start and how far down the first one sits.
   // The start is about in line with the aerial, which stands 3cqw in
   const pad = range(r, 2.4, 3.4)
@@ -436,9 +435,30 @@ export function quirks(seed) {
   // xerox: the roller's streaks, and the grey the lid let in down one edge
   const rollers = `linear-gradient(90deg, transparent ${range(r, 8, 30).toFixed(1)}%, rgba(0,0,0,0.12) 0, transparent ${range(r, 0.3, 0.8).toFixed(2)}rem, transparent ${range(r, 55, 92).toFixed(1)}%, rgba(0,0,0,0.08) 0, transparent ${range(r, 0.2, 0.5).toFixed(2)}rem)`
   const lid = sign() > 0 ? 'left' : 'right'
+  // the backlight, which is never even: a few clouds where the diffuser
+  // sits badly, darker mostly and now and then lighter; one edge the lamps
+  // bleed in along; and the corners falling away. Drawn on the page as
+  // `--q-mura` and on the Send picture from the same numbers (share.js)
+  const clouds = []
+  const nClouds = 2 + Math.floor(r() * 3)
+  for (let i = 0; i < nClouds; i++) {
+    const white = r() < 0.3
+    clouds.push({
+      w: range(r, 24, 52), h: range(r, 16, 36), x: range(r, 6, 94), y: range(r, 14, 94),
+      a: white ? range(r, 0.05, 0.11) : range(r, 0.07, 0.17), white,
+    })
+  }
+  const bleed = { to: pick(r, ['top', 'bottom', 'left', 'right']), a: range(r, 0.04, 0.1), len: range(r, 8, 20) }
+  const vig = { w: range(r, 118, 140), h: range(r, 112, 134), x: range(r, 42, 58), y: range(r, 40, 56), a: range(r, 0.16, 0.32) }
+  const light = { clouds, bleed, vig }
+  const mura = [
+    ...clouds.map((c) => `radial-gradient(${c.w.toFixed(1)}% ${c.h.toFixed(1)}% at ${c.x.toFixed(1)}% ${c.y.toFixed(1)}%, rgba(${c.white ? '255,255,255' : '0,0,0'},${c.a.toFixed(3)}), transparent 100%)`),
+    `linear-gradient(to ${bleed.to}, rgba(255,255,255,${bleed.a.toFixed(3)}), transparent ${bleed.len.toFixed(1)}%)`,
+    `radial-gradient(${vig.w.toFixed(1)}% ${vig.h.toFixed(1)}% at ${vig.x.toFixed(1)}% ${vig.y.toFixed(1)}%, transparent 52%, rgba(0,0,0,${vig.a.toFixed(3)}) 100%)`,
+  ].join(', ')
   const out = {
     rz, rx, ry, ar, rad, hx, hy, pitch, moire, glare, glareA, dust, scratch, streak, streakX, dead,
-    bat, ant, nameAt, pad, lift, topPad, blink, halo, grainSeed, slipX, slipY, exposure, spot, rollers, lid,
+    pad, lift, topPad, blink, halo, grainSeed, slipX, slipY, exposure, spot, rollers, lid, light,
   }
   out.vars = {
     '--q-rz': `${rz.toFixed(3)}deg`, '--q-rx': `${rx.toFixed(3)}deg`, '--q-ry': `${ry.toFixed(3)}deg`,
@@ -450,10 +470,77 @@ export function quirks(seed) {
     '--q-streak-x': `${streakX.toFixed(1)}%`, '--q-streak-a': streak ? '1' : '0', '--q-dead': dead,
     '--q-pad': `${pad.toFixed(2)}cqw`, '--q-lift': `${lift.toFixed(2)}cqw`, '--q-top-pad': `${topPad.toFixed(2)}cqw`,
     '--q-blink': `-${blink}ms`, '--q-halo': halo.toFixed(3),
-    '--q-spot': spot, '--q-rollers': rollers,
+    '--q-spot': spot, '--q-rollers': rollers, '--q-mura': mura,
   }
   memo.set(key, out)
   return out
+}
+
+// ── the pixels, up close ────────────────────────────────────────────────────
+// What a camera catches of an LCD in the dark: every pixel's three stripes,
+// and no two pixels lit quite alike. A tile of RGB_CELLS pixels a side, three
+// image pixels to a pixel and one column to a stripe, drawn round a neutral
+// grey, so that laid over the screen in `overlay` it tints and does not
+// darken. Each pixel is pushed a little off by the letter's own seed, and the
+// push gathers in soft patches the way a sensor's colour noise does, so the
+// screen reads as photographed rather than drawn and each letter's is its
+// own. Struck once per seed, as a PNG the page and the Send picture share.
+export const RGB_CELLS = 64
+const RGBS = new Map()
+export function rgbTile(seed) {
+  const key = String(seed || '')
+  if (RGBS.has(key)) return RGBS.get(key)
+  if (typeof document === 'undefined') return ''
+  const r = prng(`${key}#rgb`)
+  const n = RGB_CELLS
+  const side = n * 3
+  const cv = document.createElement('canvas')
+  cv.width = side
+  cv.height = side
+  const g = cv.getContext('2d')
+  if (!g) return ''
+  // a coarse field per channel, four by four and wrapping, read smoothly
+  // across the tile: where the colour noise gathers
+  const F = 4
+  const field = [0, 1, 2].map(() => Array.from({ length: F * F }, () => r() * 2 - 1))
+  const ease = (t) => t * t * (3 - 2 * t)
+  const at = (c, i, j) => field[c][(j % F) * F + (i % F)]
+  const patch = (c, x, y) => {
+    const fx = (x / n) * F
+    const fy = (y / n) * F
+    const i = Math.floor(fx)
+    const j = Math.floor(fy)
+    const tx = ease(fx - i)
+    const ty = ease(fy - j)
+    const top = at(c, i, j) + (at(c, i + 1, j) - at(c, i, j)) * tx
+    const bot = at(c, i, j + 1) + (at(c, i + 1, j + 1) - at(c, i, j + 1)) * tx
+    return top + (bot - top) * ty
+  }
+  const img = g.createImageData(side, side)
+  const d = img.data
+  const tint = [0, 0, 0]
+  for (let cy = 0; cy < n; cy++) {
+    for (let cx = 0; cx < n; cx++) {
+      // the pixel a hair brighter or dimmer, and its colour pushed off
+      const lum = (r() - 0.5) * 22
+      for (let c = 0; c < 3; c++) tint[c] = patch(c, cx, cy) * 18 + (r() - 0.5) * 36
+      for (let py = 0; py < 3; py++) {
+        for (let s = 0; s < 3; s++) {
+          const i = ((cy * 3 + py) * side + cx * 3 + s) * 4
+          // each stripe carries its own colour a little over the others
+          for (let c = 0; c < 3; c++) d[i + c] = 128 + lum + tint[c] + (c === s ? 22 : -8)
+          d[i + 3] = 255
+        }
+      }
+    }
+  }
+  g.putImageData(img, 0, 0)
+  let url
+  try { url = cv.toDataURL('image/png') } catch { url = '' }
+  // a strip of letters is a few dozen seeds; the oldest go first
+  if (RGBS.size >= 64) RGBS.delete(RGBS.keys().next().value)
+  RGBS.set(key, url)
+  return url
 }
 
 // ── the wall's memo ─────────────────────────────────────────────────────────
@@ -477,10 +564,11 @@ export function lookFor(key) {
 // masks made once, and the picture a letter is sent as with fillRect: one
 // drawing, three ways of putting it on glass.
 export const PIX = {
-  // the aerial, two models of it
-  anty: ['X.......X', 'XX.....XX', '.XX...XX.', '..XX.XX..', '...XXX...', '....X....', '....X....', '....X....', '....X....'],
-  antt: ['XXXXXXXXX', '.X..X..X.', '..X.X.X..', '...XXX...', '....X....', '....X....', '....X....', '....X....', '....X....'],
-  pen: ['.......XX', '......X.X', '.....X.X.', '....X.X..', '...X.X...', '..X.X....', '.XXX.....', 'XXX......', 'XX.......'],
+  // the aerial as the phone drew it: a bar, the mast through a hollow
+  // triangle, and a heavy stem
+  ant: ['XXXXXXXXX', 'XX..X..XX', '.X..X..X.', '.XX.X.XX.', '..XXXXX..', '...XXX...', '...XXX...', '...XXX...', '...XXX...', '...XXX...'],
+  // the pen, down to the right: two edges, and the square nib they close on
+  pen: ['XX...XX....', '.XX...XX...', '..XX...XX..', '...XX...XXX', '....XX...XX', '.....XX..XX', '......XX.XX', '.......XXXX', '.......XXXX', '....XXXXXXX'],
   lock: ['..XXX..', '.X...X.', '.X...X.', 'XXXXXXX', 'XXX.XXX', 'XXX.XXX', 'XXXXXXX'],
   heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
   heartO: ['.XX.XX.', 'X..X..X', 'X.....X', '.X...X.', '..X.X..', '...X...'],
@@ -490,17 +578,14 @@ export const PIX = {
   link: ['..XX..XX...', '.X..XX..X..', 'X...XX...X.', 'X..X..X..X.', '.X..XX..X..', '..XX..XX...'],
   save: ['...XXX...', '...XXX...', '...XXX...', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....', 'XXXXXXXXX'],
 }
-// the signal is how many hearts a letter has had; three batteries, one per
-// model, and the charge in each is how fresh the letter is
+// the battery as the phone drew it, its nub on the left and its cells
+// draining from that end; the charge in it is how fresh the letter is
 const BAT = {
   a: ['..XXXXXXXXXXXXXXX', '..X.............X', 'XXX.............X', 'X.X.............X', 'X.X.............X', 'XXX.............X', '..X.............X', '..XXXXXXXXXXXXXXX'],
-  b: ['XXXXXXXXXXXXXXX..', 'X.............X..', 'X.............XXX', 'X.............X.X', 'X.............X.X', 'X.............XXX', 'X.............X..', 'XXXXXXXXXXXXXXX..'],
-  c: ['.XXXXXXXXXXXXXXX.', 'X...............X', 'X...............XX', 'X...............XX', 'X...............XX', 'X...............XX', 'X...............X', '.XXXXXXXXXXXXXXX.'],
 }
-// cells inside each battery, left to right, and which end they drain from
-const CELLS = { a: { x0: 4, rev: true }, b: { x0: 2, rev: false }, c: { x0: 3, rev: false } }
+// the cells inside it, left to right, and which end they drain from
+const CELLS = { a: { x0: 4, rev: true } }
 for (let n = 0; n <= 4; n++) {
-  PIX[`sig${n}`] = Array.from({ length: 9 }, (_, y) => Array.from({ length: 7 }, (_, x) => (x % 2 ? '.' : (x / 2 < n ? y >= 6 - x : y === 8) ? 'X' : '.')).join(''))
   for (const m of Object.keys(BAT)) {
     const { x0, rev } = CELLS[m]
     const cell = (x) => {
@@ -513,16 +598,23 @@ for (let n = 0; n <= 4; n++) {
   }
 }
 
-// The four bars and the charge, off a letter: the bars are how many people
-// hearted it, the battery how long it has been sitting there unsaid.
-export function signalOf(hearts) {
-  const h = Number(hearts) || 0
-  return h >= 7 ? 4 : h >= 5 ? 3 : h >= 3 ? 2 : h >= 1 ? 1 : 0
-}
+// The charge, off a letter: how long it has been sitting there unsaid.
 export function chargeOf(ts) {
   if (!ts) return 4
   const hrs = (Date.now() - ts) / 3600000
   return hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
+}
+
+// And the day it went up, beside the bars, the way the phone kept the date
+// in its status row: the month and the day, and the year only when it is
+// not this one. Lowercase, as every other word on the wall is.
+const MONTH = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+export function dateOf(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return ''
+  const day = `${MONTH[d.getMonth()]} ${d.getDate()}`
+  return d.getFullYear() === new Date().getFullYear() ? day : `${day} ${d.getFullYear()}`
 }
 
 // The path of a glyph, for an SVG `d` or a mask made once.

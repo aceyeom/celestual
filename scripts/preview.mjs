@@ -911,12 +911,6 @@ const ROUTES = [
   // and let go past the threshold: the strip ran on to the next letter
   { label: 'letter-swiped', path: '/berkeley/letter/pilar.echevarria',
     acts: [['swipe', '.wl-letter-card', -220]], settle: 900 },
-  // the picture at the head of the message, pressed: the picture, large
-  { label: 'letter-face',   path: '/berkeley/letter/jules.k', press: '.wl-letter-card .wl-scr-face', settle: 900 },
-  // and put away: the picture on its way back into the screen, caught a
-  // third of the way there
-  { label: 'letter-face-close', path: '/berkeley/letter/jules.k',
-    acts: [['click', '.wl-letter-card .wl-scr-face'], ['wait', 900], ['click', '.wl-viewer-scrim', null, 120]], settle: 0 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
   { label: 'letter-send',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },

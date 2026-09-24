@@ -13,16 +13,14 @@
 // second time, from the same table (looks.js `skinOf`) and the same quirks
 // (`quirks`), at 1080 by 1350, which is the portrait size every feed it will
 // be posted to takes whole: the photograph of one screen in a dark room,
-// and the address in the dark under it. The picture at the head of the
-// words is dithered by the page's own hand (screen.jsx `dither`).
+// and the address in the dark under it.
 //
 // A print is pulled through the same press here as on the page: the greys
 // quantised into the inks with grain, and a riso's second drum laid a hair
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, signalOf, chargeOf } from './looks.js'
-import { dither, loadImage, PIC_CELLS } from './screen.jsx'
+import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, dateOf, rgbTile } from './looks.js'
 import { copyText } from './handoff.js'
 
 const W = 1080
@@ -195,13 +193,50 @@ function press(g, w, h, s, q) {
   g.putImageData(img, 0, 0)
 }
 
+// ── the backlight ───────────────────────────────────────────────────────────
+// The clouds, the bleed along one edge and the falling corners the page
+// draws as `--q-mura` (looks.js `quirks`), from the same numbers. A CSS
+// radial gradient's size is a share of the box's width and of its height,
+// so each is a circle drawn squashed.
+function backlight(g, light, sw, sh) {
+  const oval = (x, y, rx, ry, stops) => {
+    g.save()
+    g.translate(x, y)
+    g.scale(1, ry / rx)
+    const rg = g.createRadialGradient(0, 0, 0, 0, 0, rx)
+    for (const [at, c] of stops) rg.addColorStop(at, c)
+    g.fillStyle = rg
+    // past its edge a gradient keeps its last colour, which for the corners
+    // is the point, so the fill runs well past the screen
+    g.fillRect(-4 * sw, -4 * sh * (rx / ry), 8 * sw, 8 * sh * (rx / ry))
+    g.restore()
+  }
+  for (const c of light.clouds) {
+    const rgb = c.white ? '255,255,255' : '0,0,0'
+    oval((c.x / 100) * sw, (c.y / 100) * sh, (c.w / 100) * sw, (c.h / 100) * sh, [[0, `rgba(${rgb},${c.a})`], [1, `rgba(${rgb},0)`]])
+  }
+  const { to, a, len } = light.bleed
+  const k = len / 100
+  const line = {
+    top: [0, sh, 0, sh * (1 - k)], bottom: [0, 0, 0, sh * k],
+    left: [sw, 0, sw * (1 - k), 0], right: [0, 0, sw * k, 0],
+  }[to]
+  const lg = g.createLinearGradient(...line)
+  lg.addColorStop(0, `rgba(255,255,255,${a})`)
+  lg.addColorStop(1, 'rgba(255,255,255,0)')
+  g.fillStyle = lg
+  g.fillRect(0, 0, sw, sh)
+  const v = light.vig
+  oval((v.x / 100) * sw, (v.y / 100) * sh, (v.w / 100) * sw, (v.h / 100) * sh, [[0.52, 'rgba(0,0,0,0)'], [1, `rgba(0,0,0,${v.a})`]])
+}
+
 // ── the screen ──────────────────────────────────────────────────────────────
 // Drawn flat, at its own size, onto its own canvas; the room turns it.
-// `dots` is the picture at the head of the words, dithered, or nothing.
+// `tile` is the letter's own pixels up close (looks.js `rgbTile`), loaded.
 // The words step down the page's sizes (screen.jsx `useFit`) and then three
 // more, where the page would scroll and a picture cannot.
 const SIZES = [15.4, 13.8, 12.4, 11.2, 10, 9.2, 8.4, 7.6, 6.8, 6.2, 5.4]
-function drawScreen(o, dots = null) {
+function drawScreen(o, tile = null) {
   const colour = colourOf(o.look, o.seed)
   const s = skinOf(colour)
   const q = quirks(o.seed)
@@ -214,7 +249,7 @@ function drawScreen(o, dots = null) {
   const g = cv.getContext('2d', { willReadFrequently: !!s.print })
   const flat = s.kind === 'poster' || s.kind === 'riso'
   // how far in the status rows stand: on a print, clear of its rule
-  const ex = flat ? 4 * u : 3 * u
+  const ex = flat ? 3.2 * u : 2.2 * u
 
   roundRect(g, 0, 0, sw, sh, Math.max(4, (q.rad / 100) * sw))
   g.save()
@@ -231,8 +266,8 @@ function drawScreen(o, dots = null) {
   g.fillRect(0, 0, sw, sh)
 
   // the bands
-  const topH = (q.topPad + 9.6 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
-  const botH = 15 * u
+  const topH = (q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
+  const botH = 14 * u
   if (!flat) {
     const tg = g.createLinearGradient(0, 0, 0, topH)
     tg.addColorStop(0, s.top)
@@ -252,45 +287,49 @@ function drawScreen(o, dots = null) {
     g.restore()
   }
 
-  // row one: the aerial and the bars, the name, the count, the battery
+  // row one: the aerial and the date, and the characters left by the battery
   const r1 = (q.topPad + (flat ? 1 : 0)) * u
-  const rowH = 9.6 * u
+  const rowH = 10.4 * u
   const mid1 = r1 + rowH / 2
   withBloom(() => {
-    let x = ex
-    x += glyph(g, q.ant === 't' ? 'antt' : 'anty', x, mid1 - 3.7 * u, 7.4 * u, lit) + u
-    glyph(g, `sig${o.sig}`, x, mid1 - 3.7 * u, 7.4 * u, lit)
-    const bw = (5.4 * u * 17) / 8
-    glyph(g, `bat${q.bat}${o.bat}`, sw - ex - bw, mid1 - 2.7 * u, 5.4 * u, lit)
+    const aw = glyph(g, 'ant', ex, mid1 - 4.5 * u, 9 * u, lit)
+    const bw = 17 * u
+    glyph(g, `bata${o.bat}`, sw - ex - bw, mid1 - 4 * u, 8 * u, lit)
     g.fillStyle = lit
     g.textBaseline = 'middle'
-    g.font = `400 ${10.6 * u}px ${FACE}`
-    const cw = g.measureText(o.counter).width
-    g.textAlign = 'left'
-    g.fillText(o.counter, sw - ex - bw - 2.4 * u - cw, mid1 + 0.4 * u)
-    g.font = `400 ${9.2 * u}px ${FACE}`
-    const left = ex + 19 * u
-    const right = sw - ex - bw - 2.4 * u - cw - 2.4 * u
-    if (q.nameAt === 'start') { g.textAlign = 'left'; g.fillText(fit(g, o.name || '', right - left - u), left + u, mid1 + 0.4 * u) }
-    else { g.textAlign = 'center'; g.fillText(fit(g, o.name || '', right - left), (left + right) / 2, mid1 + 0.4 * u) }
-    // row two: the pen and the mode, and the handle in what is left of it
+    g.font = `400 ${11 * u}px ${FACE}`
+    if (o.date) { g.textAlign = 'left'; g.fillText(o.date, ex + aw + 1.4 * u, mid1 + 0.4 * u) }
+    if (o.counter) { g.textAlign = 'right'; g.fillText(o.counter, sw - ex - bw - 2.6 * u, mid1 + 0.4 * u) }
+    // row two: the pen, or a lock on a sealed letter, "dear" and the name,
+    // and the handle in what is left of it
     const mid2 = r1 + rowH + 0.6 * u + rowH / 2
-    const pw = glyph(g, o.icon, ex, mid2 - 3.5 * u, 7 * u, lit)
+    const ih = o.icon === 'pen' ? 8.6 * u : 7 * u
+    const lw = o.icon ? glyph(g, o.icon, ex, mid2 - ih / 2, ih, lit) + 1.4 * u : 0
+    g.fillStyle = lit
+    g.textBaseline = 'middle'
     g.textAlign = 'left'
-    g.font = `400 ${10.6 * u}px ${FACE}`
-    g.fillText(o.mode, ex + pw + 2.4 * u, mid2 + 0.4 * u)
-    const modeEnd = ex + pw + 2.4 * u + g.measureText(o.mode).width + 2.4 * u
+    // the name first; the handle gives way to it, down to two fifths of the row
+    const room = sw - 2 * ex - lw
+    const said = o.dear && o.name ? `dear ${o.name}` : o.name || ''
+    g.font = `400 ${11 * u}px ${FACE}`
+    const nw = g.measureText(said).width
+    g.font = `400 ${7.4 * u}px ${FACE}`
+    const hw = o.handle ? Math.min(g.measureText(o.handle).width, Math.max(room - nw - 2.4 * u, room * 0.4)) : 0
+    g.font = `400 ${11 * u}px ${FACE}`
+    const name = fit(g, said, room - (hw ? hw + 2.4 * u : 0))
+    g.fillText(name, ex + lw, mid2 + 0.4 * u)
     if (o.handle) {
+      const nameEnd = ex + lw + g.measureText(name).width + 2.4 * u
       g.globalAlpha = 0.82
       g.textAlign = 'right'
       g.font = `400 ${7.4 * u}px ${FACE}`
-      g.fillText(fit(g, o.handle, sw - ex - modeEnd), sw - ex, mid2 + 0.4 * u)
+      g.fillText(fit(g, o.handle, sw - ex - nameEnd), sw - ex, mid2 + 0.4 * u)
       g.globalAlpha = 1
     }
   })
 
-  // the words, as large as the screen will hold them, and beside the
-  // picture its first lines (screen.css `.wl-scr-body` and `.wl-scr-mms`)
+  // the words, as large as the screen will hold them (screen.css
+  // `.wl-scr-body`)
   const bx = (q.pad + (s.print ? 1.4 : 0)) * u
   const by = topH + q.lift * u
   const bw = sw - bx - (flat ? 5 : s.kind === 'xerox' ? 4.4 : 3.6) * u
@@ -300,19 +339,13 @@ function drawScreen(o, dots = null) {
   const px = 0.25 * u // one of the page's pixels, on a phone
   let size = SIZES[0]
   let lines = []
-  let n = 0
-  let boxW = 0
-  // the words at `step`: the picture the fewest whole lines tall that keep
-  // it 27cqw inside its frame, those lines beside it. Answers whether it fits
+  // the words at `step`. Answers whether they fit
   const setAt = (step) => {
     const lh0 = step * u * 1.02
     size = step
     g.font = `400 ${step * u}px ${FACE}`
-    n = dots ? Math.ceil((30 * u + px) / lh0) : 0
-    boxW = n * lh0 - u - px
-    const widthAt = (i) => (i < n ? bw - boxW - 2.6 * u : bw)
-    lines = wrap(g, text, widthAt)
-    return Math.max(lines.length * lh0, n * lh0 - px) <= bh + px
+    lines = wrap(g, text, () => bw)
+    return lines.length * lh0 <= bh + px
   }
   let step = 0
   while (step < SIZES.length && !setAt(SIZES[step])) step++
@@ -332,7 +365,6 @@ function drawScreen(o, dots = null) {
   const lh = S * 1.02
   const max = Math.max(1, Math.floor((bh + px) / lh))
   if (lines.length > max) { lines = lines.slice(0, max); lines[max - 1] = `${lines[max - 1].replace(/\s*\S*$/, '')}…` }
-  const xAt = (i) => (i < n ? bx + boxW + 2.6 * u : bx)
   const font = `400 ${S}px ${FACE}`
   const star = `400 ${(S * 4) / 3}px ${FACE}`
   g.save()
@@ -357,7 +389,7 @@ function drawScreen(o, dots = null) {
     g.font = font
   }
   lines.forEach((line, i) => {
-    const x = xAt(i)
+    const x = bx
     const y = by + i * lh + base
     if (!o.sealed) { g.fillText(line, x, y); return }
     let at = 0
@@ -372,64 +404,51 @@ function drawScreen(o, dots = null) {
   // no cursor: a letter being read is not being written
   g.restore()
 
-  // the picture at the head of the words, framed, in the screen's ink or a
-  // print's own inks (Letter.jsx `Picture`), drawn once and scaled square
-  if (dots && n) {
-    const t = document.createElement('canvas')
-    t.width = dots.cells
-    t.height = dots.cells
-    const tg = t.getContext('2d')
-    const img = tg.createImageData(dots.cells, dots.cells)
-    const tones = s.print ? s.print.pic.map(hexRgb) : null
-    const top = tones ? tones.length - 1 : 0
-    const [r, gg, b] = hexRgb(s.ink)
-    for (let i = 0; i < dots.alpha.length; i++) {
-      const k = i * 4
-      const c = tones ? tones[Math.round((dots.alpha[i] / 255) * top)] : null
-      img.data[k] = c ? c[0] : r
-      img.data[k + 1] = c ? c[1] : gg
-      img.data[k + 2] = c ? c[2] : b
-      img.data[k + 3] = c ? 255 : dots.alpha[i]
-    }
-    tg.putImageData(img, 0, 0)
-    g.save()
-    g.imageSmoothingEnabled = false
-    if (s.kind === 'neg') { g.shadowColor = 'rgba(255, 255, 255, 0.35)'; g.shadowBlur = 1.2 * u }
-    g.drawImage(t, bx + u, by + u, boxW - 2 * u, boxW - 2 * u)
-    g.shadowBlur = 0
-    g.lineWidth = 0.5 * u
-    g.globalAlpha = s.print && s.kind !== 'xerox' ? 1 : 0.55
-    g.strokeStyle = s.ink
-    g.strokeRect(bx + 0.25 * u, by + 0.25 * u, boxW - 0.5 * u, boxW - 0.5 * u)
-    g.restore()
-  }
-
   // the soft keys, and the heart, which says nothing of a count of none
   withBloom(() => {
     const my = sh - botH / 2 - 0.3 * u
     g.fillStyle = lit
     g.textBaseline = 'middle'
-    g.font = `400 ${11.4 * u}px ${FACE}`
+    g.font = `400 ${13.4 * u}px ${FACE}`
+    // as close to the edge as the page sets them (screen.css `.wl-scr-bot`)
+    const kx = flat ? 3.2 * u : 2.4 * u
     g.textAlign = 'left'
-    g.fillText(o.left, 3.6 * u, my)
+    g.fillText(o.left, kx, my)
     g.textAlign = 'right'
-    g.fillText(o.right, sw - 3.6 * u, my)
-    g.font = `400 ${9 * u}px ${FACE}`
-    const hw = (5.6 * u * 7) / 6
+    g.fillText(o.right, sw - kx, my)
+    g.font = `400 ${11 * u}px ${FACE}`
+    const hw = (6.8 * u * 7) / 6
     const count = o.hearts ? String(o.hearts) : ''
-    const tw = count ? g.measureText(count).width + 1.6 * u : 0
+    const tw = count ? g.measureText(count).width + u : 0
     const x0 = sw / 2 - (hw + tw) / 2
-    glyph(g, o.hearted ? 'heart' : 'heartO', x0, my - 2.8 * u, 5.6 * u, lit)
+    glyph(g, o.hearted ? 'heart' : 'heartO', x0, my - 3.4 * u, 6.8 * u, lit)
     g.textAlign = 'left'
-    if (count) g.fillText(count, x0 + hw + 1.6 * u, my + 0.3 * u)
+    if (count) g.fillText(count, x0 + hw + u, my + 0.3 * u)
   })
 
-  // the LCD over all of it: the grid, the glare, the dust, a ghost column
+  // the LCD over all of it: the backlight's faults, the grid, the pixels up
+  // close, the glare, the dust, a ghost column
   const pitch = q.pitch * (sw / 470)
+  if (!s.print) backlight(g, q.light, sw, sh)
   g.fillStyle = s.kind === 'neg' ? 'rgba(0, 0, 0, 0.26)' : 'rgba(0, 0, 0, 0.14)'
   for (let y = 0; y < sh; y += pitch) g.fillRect(0, y, sw, Math.max(1, pitch * 0.34))
   g.fillStyle = s.kind === 'neg' ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.11)'
   for (let x = 0; x < sw; x += pitch) g.fillRect(x, 0, Math.max(1, pitch * 0.34), sh)
+  if (tile) {
+    // one stripe to an image pixel, three to a pixel of the grid's pitch,
+    // laid over as the page lays them (screen.css `.wl-scr-fx.is-rgb`)
+    const pat = g.createPattern(tile, 'repeat')
+    if (pat) {
+      pat.setTransform(new DOMMatrix().scale(pitch / 3))
+      g.save()
+      g.globalCompositeOperation = 'overlay'
+      g.globalAlpha = 0.6
+      g.imageSmoothingEnabled = false
+      g.fillStyle = pat
+      g.fillRect(0, 0, sw, sh)
+      g.restore()
+    }
+  }
   if (q.streak && s.kind !== 'xerox') {
     const sx = (q.streakX / 100) * sw
     const sg = g.createLinearGradient(0, sh * 0.22, 0, sh * 0.86)
@@ -468,28 +487,26 @@ function drawScreen(o, dots = null) {
   return { cv, s, q, sw, sh }
 }
 
+function imageOf(url) {
+  if (!url) return Promise.resolve(null)
+  return new Promise((done) => {
+    const im = new Image()
+    im.onload = () => done(im)
+    im.onerror = () => done(null)
+    im.src = url
+  })
+}
+
 // ── the room ────────────────────────────────────────────────────────────────
 export async function renderLetter(o) {
   if (document.fonts && document.fonts.load) {
     // with the words, so the faces for any letters past plain latin come too
     try { await document.fonts.load(`400 40px ${FACE}`, `${o.text}${o.name || ''}${o.handle || ''}`) } catch { /* the fallback, then */ }
   }
-  // the picture, dithered as the page dithers it. Only one that came with
-  // CORS: a picture that did not would taint the canvas, and a tainted
-  // canvas cannot be made into a file
-  let dots = null
-  if (o.pic) {
-    const got = await loadImage(o.pic)
-    const k = skinOf(colourOf(o.look, o.seed)).kind
-    const cells = o.picCells || PIC_CELLS
-    if (got && got.cors) {
-      try {
-        const a = dither(got.img, cells, k === 'neg', k === 'xerox' ? 1 : 3)
-        if (a) dots = { cells, alpha: a }
-      } catch { dots = null }
-    }
-  }
-  const { cv: scr, s, q, sw, sh } = drawScreen(o, dots)
+  // the letter's own pixels, up close, as an image the canvas can lay down;
+  // a print is paper and has none
+  const tile = skinOf(colourOf(o.look, o.seed)).print ? null : await imageOf(rgbTile(o.seed))
+  const { cv: scr, s, q, sw, sh } = drawScreen(o, tile)
   const cv = document.createElement('canvas')
   cv.width = W
   cv.height = H
@@ -541,17 +558,15 @@ export async function renderLetter(o) {
   return new Promise((done) => cv.toBlob((b) => done(b), 'image/jpeg', 0.92))
 }
 
-// What the picture says, off a letter: the same rows the screen shows, and
-// the picture at the head of the words, when the page has one (`pic`).
-export function letterFace(l, { name, handle, pic = '', cells = PIC_CELLS }) {
+// What the picture says, off a letter: the same rows the screen shows.
+export function letterFace(l, { name, handle }) {
   const open = l.body !== null && l.body !== undefined
   const text = open ? l.body : starred(l.words, l.chars, l.id)
   return {
     look: l.look, seed: l.id, text, sealed: !open,
-    name, handle, pic, picCells: cells,
-    counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
-    mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
-    sig: signalOf(l.hearts), bat: chargeOf(l.at),
+    name, handle,
+    icon: open ? 'pen' : 'lock', dear: true,
+    date: dateOf(l.at), counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`, bat: chargeOf(l.at),
     hearts: l.hearts || 0, hearted: !!l.hearted,
     left: 'options', right: 'send',
   }
@@ -585,7 +600,7 @@ export const canShare = () => typeof navigator !== 'undefined' && typeof navigat
 // first. The last few are kept; one that failed is dropped, so the next ask
 // draws it again.
 const READY = new Map()
-const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}|${o.pic || ''}`
+const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}`
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }
   requestAnimationFrame(() => setTimeout(done, 0))

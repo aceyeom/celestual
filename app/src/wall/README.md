@@ -370,8 +370,8 @@ still after the last word. Every letter is the same screen, set in one face
 
 | | |
 | --- | --- |
-| **the status rows** | the aerial and the bars (how many people hearted it), the first name, the characters left of 280, the battery (how long it has been sitting there unsaid); then the pen and the mode, and the handle. A sealed letter says `locked` beside a padlock |
-| **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A handle with a picture carries it at the head of the message, dithered into the screen's ink, and pressed it opens large. A sealed letter is its stars |
+| **the status rows** | the aerial and the day it went up; the characters left of 280 and the battery (how long it has been sitting there unsaid); then the pen, `dear` and the first name, and the handle. Where the resolver has no name it is `dear` and the handle alone. A sealed letter has a padlock where the pen is |
+| **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter is its stars |
 | **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `send` (share the picture, save it, copy the link) |
 
 The only thing a writer chooses is the COLOUR it is lit in, from one list in
@@ -379,16 +379,18 @@ three groups (`Look.jsx`, under the composer's screen while its `colour` key
 is on): six lit screens and the negative; six posters and four risos, which
 keep their own ground; and the xerox. Each colour brings its treatment with
 it, and every letter in it is still its own phone: its tilt, proportion,
-backlight, pixel pitch, dust, battery and aerial come out of its id
-(`quirks`), so no two letters are the same photograph and no letter is a
-different design.
+backlight and the clouds in it, pixel pitch, the colour each pixel is lit a
+little off (`rgbTile`) and dust come out of its id (`quirks`), so no two
+letters are the same photograph and no letter is a different design. The
+aerial, the battery and the pen are the one phone's, drawn at its sizes.
 
 The room an opened letter stands in is black, with the screen's own light
 falling on it (`.wl-room-light`); the wall goes out behind it. On the wall
-each name is its newest letter's screen, small (`Tile`): the bars are how many
-letters it has, the battery how long since the last, an envelope blinks on a
-name written to today, and the middle is the name's picture dithered into the
-screen or its monogram with the cursor after it. Nothing on the wall is round.
+each name is its newest letter's screen, small (`Tile`): the aerial across the
+top, the battery how long since the last, an envelope blinks on a
+name written to today, and the middle is the name's picture, in the screen's
+own tones with some of the photograph's colour left in, or its monogram with
+the cursor after it. Nothing on the wall is round.
 
 The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
 it: the gate under a sealed card says `read it` and not a word of policy,

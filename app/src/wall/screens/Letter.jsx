@@ -79,12 +79,12 @@
 // the free reads switched off (0052), because there was then never a free
 // one to have spent.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
+  Sheet, SheetFoot, Pill, Close, Icon, useProfile, useSheet,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, RoomLight, PIC_CELLS } from '../screen.jsx'
-import { colourOf, skinOf, signalOf, chargeOf } from '../looks.js'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
+import { colourOf, chargeOf, dateOf } from '../looks.js'
 import { sendLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
@@ -107,42 +107,6 @@ function useFirst(to) {
   if (named) return nameFor(to) || String(to).slice(1)
   const n = p && p.name ? String(p.name).trim().split(/\s+/)[0] : ''
   return n || normHandle(to)
-}
-
-// ── the picture at the head of the message ──────────────────────────────────
-// A handle the resolver has a picture for carries it the way a picture
-// message did, dithered into this screen's ink (on a print, its own inks),
-// at the head of the words, framed and a whole number of lines tall; pressed,
-// it opens large (parts.jsx `FaceViewer`), out of itself and back into it. A
-// first name has no picture, and no picture stands there.
-function Picture({ handle, look, seed, live }) {
-  const p = useProfile(handle)
-  const [open, setOpen] = useState(false)
-  const [from, setFrom] = useState(null)
-  const btn = useRef(null)
-  const close = useCallback(() => setOpen(false), [])
-  const s = skinOf(colourOf(look, seed))
-  if (!p || !p.avatar) return null
-  const press = () => {
-    const r = btn.current ? btn.current.getBoundingClientRect() : null
-    setFrom(r && r.width ? { x: r.left, y: r.top, w: r.width, h: r.height } : null)
-    setOpen(true)
-  }
-  return (
-    <span className="wl-scr-mms">
-      <button
-        ref={btn} type="button" className="wl-scr-face" onClick={live ? press : undefined}
-        tabIndex={live ? undefined : -1}
-        aria-label={`see ${atHandle(handle)}'s picture larger`} title="see it larger"
-      >
-        <PixelPic
-          src={p.avatar} cells={PIC_CELLS} ink={s.print ? '#131313' : s.ink} inv={s.kind === 'neg'}
-          tones={s.print ? s.print.pic : null} levels={s.kind === 'xerox' ? 1 : 3}
-        />
-      </button>
-      {open ? <FaceViewer handle={handle} onClose={close} from={from} source={btn} /> : null}
-    </span>
-  )
 }
 
 // ── the close ──
@@ -215,13 +179,16 @@ function Leaf({ className, onMount, children }) {
 function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
-  // the picture at the head of the words, which the Send picture carries too
-  const prof = useProfile(to && !isNameKey(to) ? to : '')
-  const pic = (prof && prof.avatar) || ''
   const [busy, setBusy] = useState(false)
   const [, drawn] = useState(0)
   const at = view || { kind: 'letter' }
   const h = to && !isNameKey(to) ? atHandle(to) : ''
+  // who it is to, as the screen says it: "dear" and the first name, with
+  // the handle beside it, or "dear" and the handle alone where the resolver
+  // has no name, so the row never says the handle twice
+  const plain = !!h && first === normHandle(to)
+  const toName = plain ? h : first
+  const toHandle = plain ? '' : h
   const back = () => onView && onView(null)
 
   // The Send picture, drawn as the send menu opens, whose `share…` says
@@ -232,9 +199,9 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   useEffect(() => {
     if (!sending) return undefined
     let alive = true
-    prepareLetter(letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })).then(() => { if (alive) drawn((n) => n + 1) })
+    prepareLetter(letterFace(l, { name: toName, handle: toHandle })).then(() => { if (alive) drawn((n) => n + 1) })
     return () => { alive = false }
-  }, [sending, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, first, h, pic]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sending, l && l.id, l && l.body != null, l && l.hearts, l && l.hearted, toName, toHandle]) // eslint-disable-line react-hooks/exhaustive-deps
   // whether this letter is still the one on the glass, so what a tap
   // answers late (a picture drawn, a file saved) is not put on the next
   const here = useRef(true)
@@ -244,7 +211,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
        neither shut nor open, so it is only the lit glass */
     return (
-      <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, handle: h }} live={false} nameId={id}>
+      <Screen seed={String(seed || handle || '')} look={null} top={{ name: toName, handle: toHandle, dear: true, icon: 'pen' }} live={false} nameId={id}>
         <ScreenText text="" />
       </Screen>
     )
@@ -271,7 +238,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
        handle proof can stand for it (0053). */
     ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
   ]
-  const face = () => letterFace(l, { name: first, handle: h, pic, cells: PIC_CELLS })
+  const face = () => letterFace(l, { name: toName, handle: toHandle })
   const sendItems = [
     ...(canShare() ? [{ t: isReady(face()) ? 'share' : 'share…', how: 'share' }] : []),
     { t: 'save the picture', how: 'save' },
@@ -304,10 +271,9 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   // the letter's own status rows, kept under a note, so the band is never
   // an empty strip and the sheet keeps its name
   const letterTop = {
-    name: first, handle: h,
-    counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
-    mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
-    sig: signalOf(hearts), bat: chargeOf(l.at),
+    name: toName, handle: toHandle, dear: true,
+    icon: open ? 'pen' : 'lock',
+    date: dateOf(l.at), counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`, bat: chargeOf(l.at),
   }
   let top
   let body
@@ -323,7 +289,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     // the menu's name, and where in it the chosen row is, on the right of
     // the second row, the way the phone counted them
     const sel = Math.min(at.at || 0, items.length - 1)
-    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', date: dateOf(l.at), bat: chargeOf(l.at) }
     body = (
       <ScreenMenu
         items={items.map((x) => x.t)} at={sel}
@@ -341,12 +307,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
   } else {
     top = letterTop
-    body = (
-      <ScreenText
-        text={text} sealed={!open}
-        pic={!isNameKey(l.to) ? <Picture key={pic || 'none'} handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
-      />
-    )
+    body = <ScreenText text={text} sealed={!open} />
     keys = {
       l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: open ? 'options: write to them, report' : 'options: read it, report' },
       c: {
@@ -685,7 +646,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
           <div className="wl-letter-card">
             <Screen
               seed={String(param)} look={null} state={woke}
-              top={{ name: 'not on the wall', icon: 'lock', mode: 'locked' }}
+              top={{ name: 'not on the wall', icon: 'lock' }}
               keys={{ r: { label: 'back', onClick: up, aria: upLabel } }}
               live nameId="wl-letter-h"
             >

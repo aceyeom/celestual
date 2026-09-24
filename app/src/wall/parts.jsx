@@ -1612,12 +1612,12 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 // would answer with a stranger of the same spelling.
 //
 // The picture's size decides how many pixels it is cut to, about one to
-// every one and a half of the page's, in fours: twenty a side at thirty
-// pixels, twenty-four at thirty-six, sixteen on the smallest chip, and
-// sixty-four opened large, a portrait in blocks rather than a blur.
+// every one of the page's, in fours: thirty-two a side at thirty pixels,
+// sixty-four at sixty-four, sixteen on the smallest chip, and a hundred and
+// ninety-two opened large, so a face is clear at every size.
 export function PixelFace({ src = '', mono = '', size = 30, lit = false, className = '', style }) {
   const [ready, setReady] = useState('')
-  const cells = size >= 100 ? 64 : Math.max(12, Math.round(size / 6) * 4)
+  const cells = Math.min(192, Math.max(16, Math.round(size / 4) * 4))
   const shown = !!src && ready === src
   return (
     <span
