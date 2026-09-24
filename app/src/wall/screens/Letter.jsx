@@ -81,7 +81,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
+  Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, RoomLight, PIC_CELLS } from '../screen.jsx'
 import { colourOf, skinOf, signalOf, chargeOf } from '../looks.js'
@@ -149,6 +149,43 @@ function Picture({ handle, look, seed, live }) {
 function LetterX({ label }) {
   const sheet = useSheet()
   return <Close className="wl-letter-x" onClick={() => sheet && sheet.dismiss('mark')} label={label} />
+}
+
+// ── a letter reached from a link ────────────────────────────────────────────
+// Somebody sent this person a link and this letter is the first of the
+// product they have seen: a screen, a close mark, and a black room, which
+// read as a confessions page anybody could be running. So a letter opened
+// that way (`cold`, index.jsx) signs itself the way every bar in the product
+// does: the mark and the word, small, in the corner opposite the close mark,
+// in the room's own hand (DESIGN.md 3.6 and 2.6), and under the card one line
+// that says what else is here, `view the wall`. Both go to the wall and land
+// on the names, not on the poster (screens/Wall.jsx `open`). The close mark
+// keeps doing what it does. A letter opened from the wall carries neither:
+// the person already knows whose wall they are on.
+function wallClick(e, sheet, onWall) {
+  // a click that asks for a new tab or a window keeps the anchor's own way
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  onWall()
+  if (sheet) sheet.dismiss('wall')
+}
+function LetterBrand({ onWall }) {
+  const sheet = useSheet()
+  return (
+    <Brand
+      className="wl-letter-brand is-small" mark={19} href={href('wall')}
+      label="celestual, the wall" title="the wall"
+      onClick={(e) => wallClick(e, sheet, onWall)}
+    />
+  )
+}
+function ViewWall({ onWall }) {
+  const sheet = useSheet()
+  return (
+    <ArrowLink size="s" tone="quiet" className="wl-letter-out" href={href('wall')} onClick={(e) => wallClick(e, sheet, onWall)}>
+      view the wall
+    </ArrowLink>
+  )
 }
 
 // ── the swipe ───────────────────────────────────────────────────────────────
@@ -386,7 +423,26 @@ function sealSay() {
   return spent ? `you have read the free ones. ${opens}` : opens
 }
 
-export default function Letter({ id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0 }) {
+export default function Letter({
+  id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0,
+  cold = false, toWall = null, pushWall = null,
+}) {
+  // Where the sheet lands once it has gone: the way it was opened FROM, as
+  // every sheet does, unless it was left by the way to the wall, which lands
+  // on a wall entry of its own (index.jsx `pushWall`).
+  const via = useRef('up')
+  const leave = useCallback(() => {
+    if (via.current === 'wall' && pushWall) pushWall()
+    else up()
+  }, [pushWall, up])
+  const onWall = useCallback(() => {
+    via.current = 'wall'
+    if (toWall) toWall()
+  }, [toWall])
+  const aside = cold
+    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} /></>
+    : <LetterX label={upLabel} />
+  const wrap = `is-letter${cold ? ' is-cold' : ''}`
   // What the live screen is showing: the letter (null), a menu, or a note.
   // Nothing else on this sheet holds state: the letter is the server's.
   const [view, setView] = useState(null)
@@ -687,7 +743,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
+      <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside}>
         <div className="wl-sheet-in wl-letter">
           <div className="wl-letter-card">
             <Screen
@@ -738,7 +794,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   )
 
   return (
-    <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
+    <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-to" className={wrap} aside={aside}>
       <div className="wl-sheet-in wl-letter">
         {one ? <RoomLight key={colourOf(one.look, one.id).slug} look={one.look} seed={one.id} /> : null}
         {/* ── the card, and the two ways past it ──
@@ -783,7 +839,12 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
           ) : null}
         </div>
 
-        {foot ? <SheetFoot>{foot}</SheetFoot> : null}
+        {foot || cold ? (
+          <SheetFoot>
+            {foot}
+            {cold ? <ViewWall onWall={onWall} /> : null}
+          </SheetFoot>
+        ) : null}
       </div>
     </Sheet>
   )

@@ -128,7 +128,7 @@ import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAc
 import { Sparkle } from '../art.jsx'
 import { PixIcon, Wait } from '../screen.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
-import { getState, patch } from '../store.js'
+import { getState, patch, setCold } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
 import { campus } from '../campus.js'
@@ -499,7 +499,7 @@ function Down({ letter: l, onLeave }) {
   )
 }
 
-export default function Wall({ go, reduce, rev, under = false }) {
+export default function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   // The index, shaped (data.js `wall`). The same array until the index is
   // read again, whatever else the corpus does, so the hive under it, which
   // keys its layout off the array's identity, is laid out once per reading
@@ -676,6 +676,23 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // the rest of the faces, once the field is up and again when the index
   // moves, in idle time (data.js warmRest)
   useEffect(() => { if (lifted) warmRest() }, [lifted, rev])
+
+  // ── from a letter reached from a link ──
+  // Its `view the wall` (screens/Letter.jsx) asks for the names while the
+  // letter is still closing over them, so the veil goes down under it with
+  // no circle and no wave: what the closing letter reveals is the wall, and
+  // the bar, the search and the dock arrive as they do after a lift. And
+  // once the wall is up, however it got there, the tab has reached it, and
+  // a letter opened from here on is the wall's and not a link's.
+  useEffect(() => {
+    if (!opened || veil !== 'up') return
+    OPENED = true
+    setVeil('down')
+    if (reduce) return
+    setArriving(true)
+    timers.current.push(window.setTimeout(() => setArriving(false), ARRIVE_MS))
+  }, [opened]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (lifted) setCold(false) }, [lifted])
 
   // ── the arrival, rippled ──
   // The composer goes the moment its letter is up, and the wall under it

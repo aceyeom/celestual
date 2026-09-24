@@ -904,6 +904,16 @@ const ROUTES = [
   { label: 'berkeley-lifted-still', path: '/berkeley', still: true, press: '.wl-mast-go', settle: 1200 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
+  // a letter reached from a link, by its own id: the name in the corner and
+  // `view the wall` under the card, and that line pressed, which lands on
+  // the names and not on the poster (screens/Letter.jsx `LetterBrand`)
+  { label: 'letter-cold',   path: '/berkeley/letter/11110111-2222-4333-8444-555566660000' },
+  { label: 'letter-view-wall', path: '/berkeley/letter/11110111-2222-4333-8444-555566660000',
+    acts: [['wait', 900], ['click', '.wl-letter-out'], ['wait', 1800]], settle: 900 },
+  // and one opened from the wall itself, which is the wall's and carries
+  // neither
+  { label: 'letter-warm',   path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400]], settle: 400 },
   // the stack, turned once: the second letter under the name, in from the right
   { label: 'letter-turned', path: '/berkeley/letter/pilar.echevarria', press: '.wl-turn.is-next', settle: 1200 },
   // and turned back: the previous letter, in from the left

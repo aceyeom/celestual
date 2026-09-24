@@ -2423,6 +2423,11 @@ a.wl-lq { text-decoration: none; }
   /* an open letter has no seal foot to leave room for */
   .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 120px) / 1.22)); }
 }
+/* a letter reached from a link gives the line to the wall its row */
+.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 236px) / 1.22)); }
+@media (max-height: 560px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 166px) / 1.22)); }
+}
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
    from what is in it is nothing. The max-width keeps it inside its card */
@@ -2555,6 +2560,22 @@ a.wl-lq { text-decoration: none; }
   animation: wl-fade 300ms var(--ease) 80ms both;
 }
 .wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-unfade 160ms var(--ease-in) both; }
+/* ── a letter reached from a link (screens/Letter.jsx `LetterBrand`) ──
+   The name, small, in the corner opposite the way out, on the same line as
+   it: the lockup in the room's own hand (it is the one thing on the wall
+   that keeps it, DESIGN.md 2.6), and the way to the wall. Its word is never
+   given back on a narrow phone as the bar's is, since here nothing else
+   wants the row. And under the card, the one line that says there is more
+   than this letter. */
+.wl-letter-brand {
+  position: absolute; z-index: 3;
+  top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px;
+  animation: wl-fade 300ms var(--ease) 80ms both;
+}
+.wl-sheet-wrap.is-closing .wl-letter-brand { animation: wl-unfade 160ms var(--ease-in) both; }
+.wl-brand.is-small { gap: 7px; min-height: 40px; padding: 0 8px 0 0; }
+.wl-root .wl-brand.is-small .wl-brand-word { display: inline; font-size: 17px; }
+.wl-letter .wl-letter-out { align-self: center; margin-top: 2px; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
 
 /* ── the opening ──
@@ -3761,6 +3782,7 @@ a.wl-lq { text-decoration: none; }
   .wl-letter { --gutter: 30px; }
   .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }
   .wl-letter-x { top: 26px; right: 30px; }
+  .wl-letter-brand { top: 26px; left: 30px; }
   .wl-turn {
     width: 40px; height: 40px; margin-top: -20px; border-radius: var(--r-lcd);
     /* the navi key under a phone's screen: the unlit panel and its bezel,
