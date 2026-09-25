@@ -3142,48 +3142,6 @@ a.wl-lq { text-decoration: none; }
    because a limit met is a fact about the week and not an alarm about it */
 .wl-allow.is-week { display: block; color: var(--ash); letter-spacing: var(--tr-label-2); animation: wl-fade 320ms var(--ease) both; }
 
-/* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
-.wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
-.wl-join-h { animation: wl-rise 900ms var(--ease) both; }
-.wl-join-fig { position: relative; margin: 18px 0 20px; display: grid; place-items: center; }
-
-/* ── the figure ──
-   A letter's screen with the story on it (screens/Join.jsx, pixmark.js
-   `joinStory`): @you comes in and waits, @them comes in and waits, and both
-   run at once and become the mark. As wide as the column allows up to 300,
-   and narrower on a short window so the key under it is in view without a
-   scroll: 470 is the bar, the question, the three lines and the key. */
-.wl-join-fig .wl-join-scr { width: clamp(200px, calc((100svh - 470px) / 1.2), 300px); }
-/* it comes on as the page does, a beat after the question */
-.wl-join-scr .wl-scr.is-waking { animation-delay: 180ms; }
-.wl-join-scr .wl-scene-halo,
-.wl-join-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 180ms both; }
-/* each of them is dim in the status row until they have come in, and lit
-   the frame they do: on or off, the way a phone's row changed */
-.wl-join-scr.is-pair.is-at0 .wl-scr-nm,
-.wl-join-scr.is-pair:is(.is-at0, .is-at1) .wl-scr-hd { opacity: 0.34; }
-
-/* the rule, in the poster's nav voice */
-.wl-rule-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.wl-rule-line {
-  display: flex; align-items: center; gap: 12px;
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: clamp(20px, 5.6vw, 25px); line-height: 1.24;
-  color: var(--chalk);
-  opacity: 0; transform: translate3d(-8px, 0, 0);
-  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
-}
-.wl-rule-line.is-in { opacity: 1; transform: none; }
-.wl-rule-line:last-child { color: var(--glow); }
-
-.wl-join-foot {
-  flex: 0 0 auto; opacity: 0; transform: translate3d(0, 10px, 0);
-  transition: opacity 800ms var(--ease), transform 800ms var(--ease);
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-}
-.wl-join-foot.is-in { opacity: 1; transform: none; }
-
 /* ── the quiet sentence ────────────────────────────────────────────────────
    The build has four type roles and a sentence of plain explanation is none
    of them: the Didone is for statements, the serif is for letters, and the
@@ -3202,107 +3160,6 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-say.is-lead { font-size: var(--t-name); line-height: 1.62; color: var(--ash); max-width: 38ch; }
 .wl-say .wl-h { font-family: var(--f-id); font-size: 0.95em; color: var(--ash); }
-
-/* ═══ IT'S MUTUAL ══════════════════════════════════════════════════════════
-   screens/Reveal.jsx. A sheet in the black room a letter is read in, like the
-   composer's: no pane and no grip, the story's screen lit on the black with
-   its own light round it, the sentence typed under it, the two lines on
-   unlit panels, and the key. The sheet is the whole window and the column is
-   centred in it when it fits and scrolls from the top when it does not. */
-.wl-sheet-wrap.is-reveal { padding: 0; }
-.wl-sheet-wrap.is-reveal .wl-scrim { background: #000; }
-.wl-sheet-wrap.is-reveal .wl-scrim::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
-}
-.wl-sheet-wrap.is-reveal .wl-sheet {
-  display: flex; flex-direction: column;
-  width: 100%; max-width: none; height: 100%; min-height: 0; max-height: none; margin: 0;
-  background: none; box-shadow: none; border-radius: 0;
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
-  pointer-events: none;
-  /* the room goes dark and the phone comes on in it: nothing slides */
-  animation: wl-fade 380ms var(--ease) both;
-}
-.wl-sheet-wrap.is-reveal .wl-grip { display: none; }
-/* and it goes the way a letter goes: the screen to sleep, the column out,
-   the room lifting off the wall, on the Sheet's 580ms floor */
-.wl-sheet-wrap.is-reveal.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
-.wl-sheet-wrap.is-reveal.is-closing .wl-reveal-scr .wl-scr { animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both; }
-.wl-sheet-wrap.is-reveal .wl-sheet-in {
-  pointer-events: auto;
-  flex: 0 0 auto; width: 100%; max-width: 440px; min-height: 100%; margin: 0 auto;
-  overflow: visible;
-  padding-top: calc(14px + env(safe-area-inset-top, 0px));
-}
-.wl-reveal-in { flex: 1 1 auto; display: flex; flex-direction: column; isolation: isolate; }
-
-/* ── the screen ──
-   As wide as the column up to 300, and narrower on a short window, so the
-   sentence, both lines and the key are in view with it: 580 is the head,
-   the sentence, two lines at two rows each, the key and the way out. */
-.wl-reveal-card { display: grid; place-items: center; }
-.wl-reveal-card .wl-reveal-scr { width: min(100%, 300px, max(200px, calc((100svh - 580px) / 1.2))); }
-.wl-reveal-scr .wl-scene-halo,
-.wl-reveal-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-
-/* ── the sentence ──
-   Set whole from the first frame and typed over itself: the characters not
-   yet in are there and invisible, so the line never moves as it fills, and
-   the caret stands after the last one in. The caret is the letter's own
-   (screen.css `.wl-scr-cur`), one pixel of the face wide, in chalk, on the
-   phone's beat. */
-.wl-reveal-say { margin: 18px 0 14px; text-align: center; }
-.wl-reveal-rest { visibility: hidden; }
-.wl-reveal-cur {
-  display: inline-block; width: 0.107em; height: 0.64em; margin: 0 -0.107em 0 0; vertical-align: -0.02em;
-  background: var(--chalk);
-  animation: wl-blink 1.06s steps(1) infinite;
-}
-
-/* ── the two lines ──
-   The phone's glass with its light off, one for each of them, and they rise
-   on the same frame. */
-.wl-reveal-pair { display: grid; gap: 10px; }
-.wl-reveal-side {
-  min-width: 0; padding: 12px 14px 14px;
-  background-color: var(--lcd); background-image: var(--lcd-grid);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge);
-  border-radius: var(--r-lcd);
-}
-.wl-reveal-line {
-  margin: 10px 0 0;
-  font-family: var(--f-letter); font-size: var(--t-read); line-height: 1.12;
-  color: var(--chalk); overflow-wrap: break-word;
-}
-.wl-reveal-pair, .wl-reveal-foot { visibility: hidden; opacity: 0; }
-.wl-reveal-in:is(.is-at1, .is-at2) .wl-reveal-pair { visibility: visible; opacity: 1; animation: wl-rise 620ms var(--ease) both; }
-.wl-reveal-in.is-at2 .wl-reveal-foot { visibility: visible; opacity: 1; animation: wl-fade 420ms var(--ease) both; }
-/* landed by a tap: everything where it was going, at once */
-.wl-reveal-in.is-landed :is(.wl-reveal-pair, .wl-reveal-foot) { animation: none; }
-
-.wl-reveal-foot { padding-top: 14px; }
-.wl-reveal-mech { margin: 0 0 10px; text-align: center; font-size: var(--t-small); color: var(--ash); }
-/* the key is a link out, to their account, and a key is not underlined */
-.wl-reveal-foot a.wl-pill { text-decoration: none; }
-
-/* waiting on the server, and nothing here */
-.wl-reveal-wait { flex: 1 1 auto; display: grid; place-items: center; min-height: 60svh; color: var(--ash); }
-.wl-reveal-none { flex: 1 1 auto; display: flex; flex-direction: column; padding-top: 18svh; text-align: center; }
-
-/* on a spread the two lines stand side by side under the sentence, and the
-   column widens to hold them */
-@media (min-width: 900px) {
-  /* and the whole of it stands in the middle of the room, the screen as
-     large as the height leaves it: 440 is the head, the sentence, one row
-     of lines at three rows each, the key and the way out */
-  .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: 620px; min-height: 0; margin: auto; }
-  .wl-reveal .wl-push { display: none; }
-  .wl-reveal-card .wl-reveal-scr { width: min(340px, max(220px, calc((100svh - 440px) / 1.2))); }
-  .wl-reveal-pair { grid-template-columns: 1fr 1fr; }
-  .wl-reveal-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
-}
 
 /* ═══ THE CORE SERVICE ═════════════════════════════════════════════════════
    One letter at a time, laid sideways, with everything about it that is NOT
@@ -3533,9 +3390,6 @@ a.wl-lq { text-decoration: none; }
 .wl-place-floor .wl-say { max-width: 30ch; }
 
 /* ═══ THE SHEETS OVER IT ═══════════════════════════════════════════════════ */
-
-.wl-reveal { padding-top: 8px; }
-.wl-reveal-head { display: flex; flex-direction: column; gap: 10px; padding-bottom: 22px; }
 
 
 /* the pair. Both cards are in the document from the first frame and the second
@@ -3863,10 +3717,6 @@ a.wl-lq { text-decoration: none; }
      the width of the dialog under a paper narrower than it is a pill about
      the dialog */
   .wl-write .wl-write-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
-
-  /* ── the standalone screens keep the column, and gain air ── */
-  .wl-join { max-width: 640px; }
-  .wl-join-fig { margin: 40px 0 30px; }
 }
 
 @keyframes wl-dialog-in {
@@ -3946,9 +3796,6 @@ a.wl-lq { text-decoration: none; }
   .wl-grip { display: none; }
   .wl-sheet-in { --sheet-pad: 22px; padding: 18px var(--sheet-pad) 22px; }
 
-  .wl-join-air { height: 8px; min-height: 0; }
-  .wl-join-fig { margin: 12px 0 12px; }
-  .wl-join-fig .wl-join-scr { width: 170px; }
   /* ── the core service, lying down ──
      Three hundred and fifty pixels of height: the leaf gives back the floor it
      cannot have, and the writing steps down one size with it. The composition

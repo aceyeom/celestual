@@ -1,0 +1,346 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  THE DOOR AND THE MUTUAL                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+   screens/Join.jsx, which says how it works, and screens/Reveal.jsx, where it
+   has. Both are a phone with the story on it (pixmark.js) and a few lines
+   round it, and both are built to be read in one pass, top to bottom, with
+   one thing at each volume: the phone the brightest, then one large line,
+   then what explains it, then the one key. Moved out of wall.css, which
+   carried both screens as they were before this. */
+
+/* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
+.wl-join-in { flex: 1 1 auto; display: flex; flex-direction: column; }
+
+/* how it works, and what it gets you: a kicker small and dim over the
+   headline, so the headline is the offer and not a label */
+.wl-join-head { display: grid; gap: 6px; padding-top: clamp(4px, 2svh, 22px); }
+.wl-join-kick {
+  margin: 0;
+  font-family: var(--f-util); font-size: var(--t-label); line-height: 1; letter-spacing: var(--tr-open);
+  color: var(--ash);
+  animation: wl-fade 700ms var(--ease) both;
+}
+.wl-join-h { margin: 0; animation: wl-rise 900ms var(--ease) 60ms both; }
+
+/* ── the figure ──
+   As wide as the column allows up to 290, and narrower on a short window so
+   the three steps and the key under it are in view without a scroll: 500 is
+   the bar, the head, the steps and the key. */
+.wl-join-fig { position: relative; display: grid; place-items: center; margin: clamp(14px, 2.6svh, 26px) 0; }
+.wl-join-scr { width: clamp(160px, calc((100svh - 500px) / 1.16), 290px); }
+/* When the pink leaves the two of them on the glass it leaves the phone
+   too, as it does in the intro (intro.css `.hi-halo`): the light a lit
+   phone throws round itself, turned pink and cooling back to nothing. A
+   tap that lands the story before then does not send it. */
+.wl-join-light {
+  position: absolute; left: 50%; top: 50%; z-index: -1;
+  width: min(150vw, 760px); aspect-ratio: 1; pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side,
+    rgba(var(--story-glow-rgb), 0.42) 0%,
+    rgba(var(--story-glow-rgb), 0.3) 30%,
+    rgba(var(--story-glow-rgb), 0.1) 60%,
+    rgba(var(--story-glow-rgb), 0) 100%);
+  transform: translate3d(-50%, -50%, 0) scale(0.6);
+}
+.wl-join-fig.is-lit .wl-join-light { animation: wl-join-light 1700ms var(--ease-out) both; }
+@keyframes wl-join-light {
+  0%   { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.6); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.1); }
+}
+.wl-join-fig { isolation: isolate; }
+
+/* it comes on as the page does, a beat after the question */
+.wl-join-scr .wl-scr.is-waking { animation-delay: 180ms; }
+.wl-join-scr .wl-scene-halo,
+.wl-join-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 180ms both; }
+
+/* ── the steps ──
+   A number, one strong line and one quiet line under it that answers the
+   question the first raises. The step the phone is on is lit the way the
+   phone lights a chosen row, its number struck out of a chalk key, on the
+   frame it starts: on or off, not faded. What the phone has told stays at
+   full strength, and what it has not reached waits at a third. */
+.wl-join-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.wl-join-step {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; align-items: start;
+  opacity: 0.36; transition: opacity 420ms var(--ease);
+}
+.wl-join-step.is-told { opacity: 1; }
+.wl-join-n {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: var(--r-lcd);
+  background: var(--lcd); box-shadow: inset 0 0 0 1px var(--lcd-edge);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash);
+  transition: background 90ms steps(1, end), color 90ms steps(1, end), box-shadow 200ms var(--ease);
+}
+.wl-join-step.is-on .wl-join-n {
+  background: var(--chalk); color: #000;
+  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.22), 0 0 18px -6px rgba(244, 241, 234, 0.55);
+}
+.wl-join-say { display: grid; gap: 3px; min-width: 0; padding-top: 1px; }
+.wl-join-line {
+  font-family: var(--f-display); font-size: var(--t-read); line-height: 1.1;
+  color: var(--chalk); text-wrap: pretty;
+}
+.wl-join-sub {
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.15;
+  color: var(--ash); text-wrap: pretty;
+}
+
+.wl-join-foot {
+  flex: 0 0 auto; margin-top: auto; padding-top: 24px;
+  opacity: 0; transform: translate3d(0, 10px, 0);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.wl-join-foot.is-in { opacity: 1; transform: none; }
+
+/* on a spread the phone stands on the right, as large as the window's
+   height leaves it, and the head, the steps and the key read down the
+   left beside it */
+@media (min-width: 900px) {
+  .wl-page.wl-join { max-width: 1000px; }
+  .wl-join-in {
+    display: grid; align-content: center; column-gap: 72px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'head fig' 'steps fig' 'foot fig';
+    padding-bottom: 6svh;
+  }
+  .wl-join-head { grid-area: head; align-self: end; padding-top: 0; gap: 10px; }
+  .wl-root.is-room .wl-join .wl-join-h.wl-display { font-size: clamp(40px, 3.6vw, 52px); }
+  .wl-join-steps { grid-area: steps; margin-top: 30px; gap: 18px; }
+  .wl-join-fig { grid-area: fig; margin: 0; }
+  .wl-join-scr { width: clamp(300px, calc((100svh - 220px) / 1.16), 400px); }
+  .wl-join-foot { grid-area: foot; margin-top: 0; padding-top: 30px; align-self: start; }
+  .wl-join-foot .wl-pill { max-width: 320px; }
+}
+/* a phone on its side: the head and the steps smaller, the phone small */
+@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-join-fig { margin: 10px 0; }
+  .wl-join-scr { width: 170px; }
+}
+
+/* ═══ IT'S MUTUAL ══════════════════════════════════════════════════════════
+   A sheet in the black room a letter is read in, like the composer's: no
+   pane and no grip, the story's screen lit on the black with its own light
+   round it, the pair under it, their note, and the key. The sheet is the
+   whole window and the column is centred in it when it fits and scrolls
+   from the top when it does not. */
+.wl-sheet-wrap.is-reveal { padding: 0; }
+.wl-sheet-wrap.is-reveal .wl-scrim { background: #000; }
+.wl-sheet-wrap.is-reveal .wl-scrim::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
+}
+.wl-sheet-wrap.is-reveal .wl-sheet {
+  display: flex; flex-direction: column;
+  width: 100%; max-width: none; height: 100%; min-height: 0; max-height: none; margin: 0;
+  background: none; box-shadow: none; border-radius: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  pointer-events: none;
+  /* the room goes dark and the phone comes on in it: nothing slides */
+  animation: wl-fade 380ms var(--ease) both;
+}
+.wl-sheet-wrap.is-reveal .wl-grip { display: none; }
+/* and it goes the way a letter goes: the screen to sleep, the column out,
+   the room lifting off the wall, on the Sheet's 580ms floor */
+.wl-sheet-wrap.is-reveal.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
+.wl-sheet-wrap.is-reveal.is-closing .wl-mutual-scr .wl-scr { animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both; }
+.wl-sheet-wrap.is-reveal .wl-sheet-in {
+  pointer-events: auto;
+  flex: 0 0 auto; width: 100%; max-width: 440px; min-height: 100%; margin: 0 auto;
+  overflow: visible;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+.wl-reveal .wl-head { padding-bottom: 6px; }
+
+.wl-mutual { flex: 1 1 auto; display: flex; flex-direction: column; isolation: isolate; }
+
+/* ── the phone ──
+   As wide as the column up to 300, and narrower on a short window, so the
+   pair, the line, a note of three lines and the key are in view with it:
+   480 is all of those and the head. A longer note scrolls, under a phone
+   that has already said what it had to. */
+.wl-mutual-fig { position: relative; display: grid; place-items: center; padding: 6px 0 4px; }
+.wl-mutual-scr { width: min(100%, 300px, max(210px, calc((100svh - 480px) / 1.16))); }
+.wl-mutual-scr .wl-scene-halo,
+.wl-mutual-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* The sentence, on the glass, under the mark: in the phone's face and its
+   ink, the size of a letter's words on a small screen, set whole from the
+   first frame and typed over itself, the characters not yet in there and
+   invisible, and the letter's own cursor after the last one in. */
+.wl-mutual-say {
+  position: absolute; left: 0; right: 0; bottom: 5.5%; z-index: 1;
+  margin: 0; padding: 0 4cqw;
+  text-align: center; white-space: nowrap;
+  font: 400 12.4cqw/1 var(--f-s40); letter-spacing: 0.01em;
+  color: var(--s-ink); text-shadow: 0 0 0.35cqw var(--s-soft);
+}
+.wl-mutual-rest { visibility: hidden; }
+.wl-mutual-say .wl-scr-cur { margin-right: -0.214em; }
+
+/* ── alive ──
+   The glass is alive on its own (pixmark.js `revealStory`); round it, the
+   phone rises and settles a few pixels, slowly, and its light in the room
+   breathes in the story's pink with it, once every 4.2 seconds. The light
+   comes up as the pink leaves the two of them on the glass, 1.6s in, and
+   the phone starts to move once the mark is whole. Transform and opacity,
+   on a radial gradient already painted, and paused with the tab. */
+.wl-mutual-halo {
+  position: absolute; left: 50%; top: 50%; z-index: -1;
+  width: min(150vw, 720px); aspect-ratio: 1; pointer-events: none;
+  background: radial-gradient(closest-side,
+    rgba(var(--story-glow-rgb), 0.42) 0%,
+    rgba(var(--story-glow-rgb), 0.26) 34%,
+    rgba(var(--story-glow-rgb), 0.09) 62%,
+    rgba(var(--story-glow-rgb), 0) 100%);
+  transform: translate3d(-50%, -50%, 0);
+  opacity: 0;
+  animation: wl-mutual-light 1100ms var(--ease-out) 1500ms both, wl-mutual-breathe 4200ms ease-in-out 2600ms infinite;
+  will-change: transform, opacity;
+}
+.wl-mutual-float {
+  position: relative; width: 100%; display: grid; place-items: center;
+  animation: wl-mutual-float 4200ms ease-in-out 2600ms infinite;
+  will-change: transform;
+}
+@keyframes wl-mutual-light { from { opacity: 0; } to { opacity: 0.75; } }
+@keyframes wl-mutual-breathe {
+  0%, 100% { opacity: 0.75; transform: translate3d(-50%, -50%, 0) scale(0.96); }
+  50%      { opacity: 1;    transform: translate3d(-50%, -50%, 0) scale(1.04); }
+}
+@keyframes wl-mutual-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -6px, 0); }
+}
+/* landed by a tap: alive at once */
+.wl-mutual.is-landed .wl-mutual-halo { animation: wl-mutual-breathe 4200ms ease-in-out infinite; }
+.wl-mutual.is-landed .wl-mutual-float { animation-delay: 0ms; }
+.wl-mutual.is-hidden :is(.wl-mutual-halo, .wl-mutual-float) { animation-play-state: paused; }
+
+/* ── the two of them ──
+   One row, the same size, a face and an @ each, and the name under it when
+   the resolver has one; then the one plain line. */
+.wl-mutual-text { display: flex; flex-direction: column; flex: 1 1 auto; }
+.wl-mutual-pair {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 20px; min-width: 0;
+}
+.wl-mutual-one { display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 45%; }
+.wl-mutual-id { display: grid; gap: 1px; min-width: 0; text-align: left; }
+.wl-mutual-at, .wl-mutual-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-mutual-at { font-family: var(--f-id); font-size: var(--t-name); line-height: 1.05; color: var(--chalk); }
+.wl-mutual-name { font-family: var(--f-util); font-size: var(--t-small); line-height: 1.05; color: var(--ash); }
+.wl-mutual-and { flex: 0 0 auto; font-family: var(--f-util); font-size: var(--t-name); line-height: 1; color: var(--ash); }
+.wl-mutual-plain {
+  margin: 10px 0 0; text-align: center;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.2; color: var(--ash);
+}
+
+/* ── their note ──
+   Set like a letter, because it is one: on the phone's unlit glass, who it
+   is to over it, the words at the size of what somebody typed, and who it
+   is from under them, at its foot. The largest words under the phone. */
+.wl-mutual-note {
+  margin: 20px 0 0; padding: 14px 16px 12px;
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+  border-radius: var(--r-lcd);
+}
+.wl-mutual-kick {
+  font-family: var(--f-util); font-size: var(--t-label); line-height: 1; letter-spacing: var(--tr-open);
+  color: var(--ash);
+}
+.wl-mutual-words {
+  margin: 10px 0 0;
+  font-family: var(--f-letter); font-size: var(--t-value); line-height: 1.08;
+  color: var(--chalk); overflow-wrap: break-word; text-wrap: pretty;
+}
+.wl-mutual-sign {
+  margin: 8px 0 0; text-align: right;
+  font-family: var(--f-id); font-size: var(--t-small); line-height: 1; color: var(--ash);
+}
+
+/* yours, behind a quiet key: you know what you wrote */
+.wl-mutual-yours { display: flex; flex-direction: column; align-items: center; margin-top: 6px; }
+.wl-mutual-toggle { padding: 8px 6px; }
+.wl-mutual-mine {
+  margin: 2px 0 0; width: 100%; padding: 10px 14px;
+  border-radius: var(--r-lcd); box-shadow: inset 0 0 0 1px var(--lcd-edge);
+  font-family: var(--f-letter); font-size: var(--t-name); line-height: 1.1;
+  color: var(--ash); overflow-wrap: break-word;
+  animation: wl-fade 260ms var(--ease) both;
+}
+.wl-mutual-mine[hidden] { display: none; }
+
+.wl-mutual-foot { padding-top: 18px; margin-top: auto; }
+/* the key is a link out, to their account, and a key is not underlined */
+.wl-mutual-foot a.wl-pill { text-decoration: none; }
+
+/* ── the order ──
+   Nothing under the phone is there until the sentence is said on it: then
+   the pair and the line rise, together, their note a beat after, and the
+   keys a beat after that. Laid out from the first frame, so nothing moves
+   when it comes. */
+.wl-mutual-text > * { visibility: hidden; }
+.wl-mutual.is-said .wl-mutual-text > * { visibility: visible; }
+.wl-mutual.is-said :is(.wl-mutual-pair, .wl-mutual-plain) { animation: wl-rise 620ms var(--ease) both; }
+.wl-mutual.is-said .wl-mutual-note { animation: wl-rise 620ms var(--ease) 140ms both; }
+.wl-mutual.is-said :is(.wl-mutual-yours, .wl-mutual-foot) { animation: wl-fade 420ms var(--ease) 300ms both; }
+.wl-mutual.is-landed .wl-mutual-text > * { animation: none; }
+
+/* waiting on the server, and nothing here */
+.wl-reveal-wait { flex: 1 1 auto; display: grid; place-items: center; min-height: 60svh; color: var(--ash); }
+.wl-reveal-none { flex: 1 1 auto; display: flex; flex-direction: column; padding-top: 18svh; text-align: center; }
+
+/* ── on a spread ──
+   The phone stands on the left, as large as the window's height leaves it,
+   in its light, and the pair, the note and the keys read down the right
+   beside it, the whole of it in the middle of the room. */
+@media (min-width: 900px) {
+  .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: 1000px; min-height: 0; margin: auto; padding-bottom: 40px; }
+  .wl-mutual {
+    display: grid; align-items: center; column-gap: 72px;
+    grid-template-columns: auto minmax(0, 420px); justify-content: center;
+  }
+  /* While the story is told the phone stands in the middle of the room,
+     alone, and when the sentence is said it steps aside for the column: a
+     transform, half the column and the gap, so nothing is laid out again */
+  .wl-mutual-fig {
+    padding: 0;
+    transform: translate3d(246px, 0, 0);
+    transition: transform 900ms var(--ease);
+  }
+  .wl-mutual.is-said .wl-mutual-fig { transform: none; }
+  .wl-mutual.is-landed .wl-mutual-fig { transition: none; }
+  /* and the column comes once the phone has cleared its place */
+  .wl-mutual.is-said :is(.wl-mutual-pair, .wl-mutual-plain) { animation-delay: 380ms; }
+  .wl-mutual.is-said .wl-mutual-note { animation-delay: 520ms; }
+  .wl-mutual.is-said :is(.wl-mutual-yours, .wl-mutual-foot) { animation-delay: 680ms; }
+  .wl-mutual-scr { width: clamp(280px, calc((100svh - 200px) / 1.16), 400px); }
+  .wl-mutual-text { flex: 0 0 auto; }
+  .wl-mutual-pair { justify-content: flex-start; margin-top: 0; }
+  .wl-mutual-plain { text-align: left; }
+  .wl-mutual-yours { align-items: flex-start; }
+  .wl-mutual-yours .wl-quiet { align-self: flex-start; padding-left: 0; }
+  .wl-mutual-foot { margin-top: 0; }
+  .wl-mutual-foot .wl-quiet { align-self: flex-start; padding-left: 0; }
+  /* the way out stands in the corner of the room, where every sheet's is on
+     a spread, and not over the column */
+  .wl-reveal .wl-head { position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); right: 28px; padding: 0; z-index: 2; }
+}
+
+/* ── still ──
+   Under reduced motion the glass is one frame of the live screen, the
+   words are there, and the phone and its light stand still, the light at
+   the strength it breathes at. */
+.wl-mutual.is-still .wl-mutual-halo { animation: none; opacity: 0.8; }
+.wl-mutual.is-still .wl-mutual-float { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .wl-mutual-halo { animation: none; opacity: 0.8; }
+  .wl-mutual-float { animation: none; }
+  .wl-mutual-fig, .wl-join-step, .wl-join-foot { transition: none; }
+}

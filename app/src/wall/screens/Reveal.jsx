@@ -1,9 +1,9 @@
 // ── /berkeley/reveal/:handle — IT'S MUTUAL ──────────────────────────────────
 //
-// The screen the whole product exists to reach. Two people each put the
-// other's name down without knowing the other had, and this is where each of
-// them is told, on the same phone the letters are written on, that the other
-// did.
+// The screen the whole product exists to reach. Two people each sent the
+// other a note without knowing the other had, and this is where each of them
+// is told, on the same phone the letters are written on, that the other did,
+// and reads what the other wrote.
 //
 // It was Main's (/reveal), in the room's language: a liquid metal seal, the
 // sentence in the serif, two chalk cards. It is a sheet on the wall now, and
@@ -13,27 +13,39 @@
 //
 // ── the order is the meaning ────────────────────────────────────────────────
 //
-//   1  the story         the two of them, named in the status row, run in
-//                        from either edge of the glass, meet, and become the
-//                        mark (pixmark.js `revealStory`). The screen is the
-//                        one lit thing in the room.
-//   2  the sentence      "it's mutual." typed out under it from the frame
-//                        they touch, a character at a time, with the phone's
-//                        caret after it. Exactly those words: no congratulations,
-//                        no match (VOICE.md 2).
-//   3  the two lines     what each of them wrote, on the phone's unlit
-//                        panels, rising TOGETHER, never one before the other.
-//                        A stagger would say one of them mattered more, and
-//                        the whole premise is that neither did. Each side
-//                        carries its own time and nothing carries the pair's:
-//                        the server hands this person their own, so theirs is
-//                        dated and the other is not.
-//   4  the way on        `open @them`, the lit key, and a quiet way out that
-//                        closes onto the wall and says nothing to anybody.
+//   1  the phone         a boy and a girl run in from either edge of the
+//                        glass, she falls into his arms, the pink leaves them
+//                        and they become the mark (pixmark.js `revealStory`).
+//                        The mark gathers up into the top of the glass, and
+//                        under it, IN the phone, in its own face and with its
+//                        own cursor, "it's mutual." is typed a character at a
+//                        time. Exactly those words: no congratulations, no
+//                        match (VOICE.md 2). And the phone never stops: its
+//                        backlight beats in the pink, lub and dub, a light
+//                        goes round the ring, the star twinkles, a heart
+//                        floats up off it now and then, and the phone itself
+//                        rises and settles in its own pink light, the way a
+//                        thing that is on and alive does.
+//   2  the two of them   the pair, face and handle, one beside the other and
+//                        never one before the other: a stagger would say one
+//                        of them mattered more, and the whole premise is that
+//                        neither did. Then one plain line of what happened.
+//   3  their note        what they wrote to you, set like a letter: the one
+//                        thing on the sheet that is theirs, so it is the
+//                        largest thing under the phone. Yours is behind a
+//                        quiet key, because you know what you wrote.
+//   4  the way on        the lit key, to their account, and a quiet way back
+//                        to the wall that says nothing to anybody.
+//
+// It used to set the two handles in the phone's status row, type the sentence
+// under the phone in the display face, stack two panels of the two notes at
+// one weight, and close with a line about the product's part being done, the
+// key, and "keep this to yourself": six things at one volume, and the
+// sentence the page is for standing outside the phone it was told on.
 //
 // A tap anywhere that is not a control lands the whole thing, and under
-// reduced motion it is drawn landed. The screen reader hears the same four
-// facts in order, from a line nobody sees.
+// reduced motion it is drawn landed and still. The screen reader hears the
+// same facts in order, from a heading nobody sees and the page itself.
 //
 // ── where the facts come from ───────────────────────────────────────────────
 // Who this is, off the server's row (main/data.js `me`), and the handle the
@@ -53,7 +65,7 @@
 // server no longer takes, or no @ at all.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Who, useProfile } from '../parts.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfile } from '../parts.jsx'
 import { Screen, Wait } from '../screen.jsx'
 import PixelStory, { SQUARE } from '../PixelStory.jsx'
 import { revealStory } from '../pixmark.js'
@@ -63,6 +75,7 @@ import { href } from '../router.js'
 import { getSession } from '../../api/auth.js'
 import { me } from '../../main/data.js'
 import { myHandle, myPings, heldPings, sinceAgo } from '../pings.js'
+import '../mutual.css'
 
 // The mutual this address names, out of an answer already in hand. Null when
 // there is none to read, which is not the same as "not a mutual".
@@ -81,33 +94,44 @@ function guessHandle() {
 }
 
 const SAY = 'it’s mutual.'
-const STORY = revealStory(250)
-// the sentence from the frame they touch, a character every 70ms, which is
-// how fast the phone put a message on its screen
-const SAY_AT = STORY.times.touch
+const STORY = revealStory(200)
+// The sentence, typed on the glass as the mark gathers up to make room for
+// it, a character every 70ms, which is how fast the phone put a message on
+// its screen.
+const SAY_AT = STORY.times.gather + 160
 const TYPE_MS = 70
-// the two lines once the mark has formed, and the way on a beat after
-const PAIR_AT = STORY.times.done
-const FOOT_AT = PAIR_AT + 360
+// and the rest of the sheet once it is said: the pair and the line, their
+// note, then the keys, each a beat after the last (mutual.css `is-said`)
+const SAID_AT = SAY_AT + SAY.length * TYPE_MS + 180
 
 const LOOK = { tint: 'night' }
 const NO_KEYS = {}
+const NO_TOP = {}
 
-// One side of it: the person, and what they wrote, on an unlit panel.
-function Side({ handle, line, meta }) {
+// One of the two: the face and the handle, with the name under it when the
+// resolver has one.
+function One({ handle, fallback }) {
+  const p = useProfile(handle)
   return (
-    <article className="wl-reveal-side">
-      <Who handle={handle} size={30} meta={meta} />
-      {line ? <p className="wl-reveal-line">{line}</p> : null}
-    </article>
+    <span className="wl-mutual-one">
+      <Face handle={handle || fallback} size={34} resolve={!!handle} />
+      <span className="wl-mutual-id">
+        <span className="wl-mutual-at">{handle ? atHandle(handle) : fallback}</span>
+        {p?.name ? <span className="wl-mutual-name">{p.name}</span> : null}
+      </span>
+    </span>
   )
 }
 
 function Mutual({ mine, them, mutual, reduce }) {
   const [landed, setLanded] = useState(!!reduce)
   const [typed, setTyped] = useState(reduce ? SAY.length : 0)
-  const [stage, setStage] = useState(reduce ? 2 : 0)
+  const [said, setSaid] = useState(!!reduce)
+  const [mineOpen, setMineOpen] = useState(false)
   const t0 = useRef(performance.now()).current
+  // when the glass's clock started: from the mount, or, once landed, from
+  // far enough back that it is already alive
+  const [from, setFrom] = useState(t0)
   const timers = useRef([])
   const theirs = useProfile(them)
 
@@ -115,8 +139,7 @@ function Mutual({ mine, them, mutual, reduce }) {
     if (landed) return undefined
     const at = (ms, fn) => timers.current.push(setTimeout(fn, Math.max(0, ms - (performance.now() - t0))))
     for (let i = 1; i <= SAY.length; i++) at(SAY_AT + i * TYPE_MS, () => setTyped(i))
-    at(PAIR_AT, () => setStage(1))
-    at(FOOT_AT, () => setStage(2))
+    at(SAID_AT, () => setSaid(true))
     const all = timers.current
     return () => all.forEach(clearTimeout)
   }, [landed, t0])
@@ -126,7 +149,8 @@ function Mutual({ mine, them, mutual, reduce }) {
     timers.current = []
     setLanded(true)
     setTyped(SAY.length)
-    setStage(2)
+    setSaid(true)
+    setFrom(performance.now() - STORY.times.live)
   }, [])
 
   // a tap on the room, or a key, lands it; a press on a control is that
@@ -139,58 +163,93 @@ function Mutual({ mine, them, mutual, reduce }) {
   }, [landed, land])
   const onPress = (e) => { if (!landed && !e.target.closest('a, button')) land() }
 
-  // Each side carries its own time and nothing carries the pair's
-  // (celestual_my_pings hands this person their own and not the other's).
+  // The phone's own float and light stop with the tab, as its glass does
+  // (PixelStory.jsx), rather than running on unseen.
+  const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
+  useEffect(() => {
+    const on = () => setHidden(document.hidden)
+    document.addEventListener('visibilitychange', on)
+    return () => document.removeEventListener('visibilitychange', on)
+  }, [])
+
   const ago = sinceAgo(mutual.at)
+  const theirName = theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)
+  const note = mutual.theirLine
+  const yours = mutual.line
 
   return (
-    <div className={`wl-reveal-in is-at${stage}${landed ? ' is-landed' : ''}`} onPointerDown={onPress}>
-      <div className="wl-reveal-card" aria-hidden="true">
-        <Screen
-          look={LOOK} seed={`mutual:${mine}:${them}`} top={{ name: atHandle(mine), handle: atHandle(them) }}
-          keys={NO_KEYS} live={false} state={landed && reduce ? '' : 'waking'}
-          className="wl-reveal-scr is-pair" style={SQUARE}
-        >
-          <PixelStory story={STORY} at={landed ? STORY.end : null} from={t0} />
-        </Screen>
-      </div>
-
-      {/* The sentence, typed. What a screen reader hears is the sentence
-          whole; what is seen is each character arriving on the phone's beat,
-          laid out from the first frame so the line never moves as it fills,
-          and the caret after the last one in. */}
-      <Display size="l" as="h2" id="wl-reveal-h" className="wl-reveal-say">
-        <span className="wl-sr">{SAY}</span>
-        <span aria-hidden="true">
-          {SAY.slice(0, typed)}
-          <span className="wl-reveal-cur" />
-          <span className="wl-reveal-rest">{SAY.slice(typed)}</span>
-        </span>
-      </Display>
-
-      {/* Together, not staggered. See the note at the top of this file. */}
-      <div className="wl-reveal-pair">
-        <Side handle={mine} line={mutual.line} meta={ago ? `you, ${ago}` : 'you'} />
-        <Side handle={them} line={mutual.theirLine} meta="them" />
-      </div>
-
-      <div className="wl-push" />
-
-      <SheetFoot className="wl-reveal-foot">
-        <p className="wl-reveal-mech">the rest is yours. celestual&#8217;s part is done.</p>
-        <Pill tone="light" wide href={`https://instagram.com/${them}`} rel="noreferrer noopener" target="_blank">
-          open {atHandle(them)}
-        </Pill>
-        <CloseQuiet>keep this to yourself</CloseQuiet>
-      </SheetFoot>
-
-      {/* the same facts, in the order they matter, for a reader that never
-          sees the composition above */}
+    <div
+      className={`wl-mutual${said ? ' is-said' : ''}${landed ? ' is-landed' : ''}${reduce ? ' is-still' : ''}${hidden ? ' is-hidden' : ''}`}
+      onPointerDown={onPress}
+    >
+      {/* what the page is, for a reader that never sees the phone */}
+      <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual with {theirName}</h2>
       <p className="wl-sr">
-        it&#8217;s mutual with {theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)}
-        {theirs?.verified ? ', verified on Instagram' : ''}.
-        {ago ? ` you placed yours ${ago}.` : ''}
+        you both sent a note, and nobody else was told.
+        {theirs?.verified ? ` ${atHandle(them)} is verified on Instagram.` : ''}
+        {ago ? ` you sent yours ${ago}.` : ''}
       </p>
+
+      <div className="wl-mutual-fig" aria-hidden="true">
+        <span className="wl-mutual-halo" />
+        <div className="wl-mutual-float">
+          <Screen
+            look={LOOK} seed={`mutual:${mine}:${them}`} top={NO_TOP}
+            keys={NO_KEYS} live={false} state={reduce ? '' : 'waking'}
+            className="wl-mutual-scr" style={SQUARE}
+          >
+            <PixelStory story={STORY} at={reduce ? STORY.still : null} from={from} />
+            {/* The sentence, on the glass, in the phone's face and its ink,
+                laid out whole from the first frame so it never moves as it
+                fills, with the phone's cursor after the last character in. */}
+            <p className="wl-mutual-say">
+              {SAY.slice(0, typed)}
+              {typed > 0 ? <span className="wl-scr-cur" /> : null}
+              <span className="wl-mutual-rest">{SAY.slice(typed)}</span>
+            </p>
+          </Screen>
+        </div>
+      </div>
+
+      <div className="wl-mutual-text">
+        {/* the two of them, at one size, in one row */}
+        <div className="wl-mutual-pair">
+          <One handle={mine} fallback="you" />
+          <span className="wl-mutual-and" aria-hidden="true">+</span>
+          <One handle={them} fallback={atHandle(them)} />
+        </div>
+        <p className="wl-mutual-plain">you both said yes. nobody else was told.</p>
+
+        {note ? (
+          <figure className="wl-mutual-note">
+            <figcaption className="wl-mutual-kick">their note to you</figcaption>
+            <blockquote className="wl-mutual-words">{note}</blockquote>
+            <p className="wl-mutual-sign" aria-hidden="true">{atHandle(them)}</p>
+          </figure>
+        ) : null}
+
+        {yours ? (
+          <div className={`wl-mutual-yours${mineOpen ? ' is-open' : ''}`}>
+            <button
+              type="button" className="wl-quiet wl-mutual-toggle"
+              aria-expanded={mineOpen} aria-controls="wl-mutual-mine"
+              onClick={() => setMineOpen((o) => !o)}
+            >
+              {mineOpen ? 'hide your note' : 'your note'}
+            </button>
+            <p id="wl-mutual-mine" className="wl-mutual-mine" hidden={!mineOpen}>{yours}</p>
+          </div>
+        ) : null}
+
+        <SheetFoot className="wl-mutual-foot">
+          <Pill tone="light" wide href={`https://instagram.com/${them}`} rel="noreferrer noopener" target="_blank">
+            message {atHandle(them)} on instagram
+          </Pill>
+          {/* The quiet way out closes onto the wall and says nothing to
+              anybody (`onClosing` in Reveal below). */}
+          <CloseQuiet>back to the wall</CloseQuiet>
+        </SheetFoot>
+      </div>
     </div>
   )
 }
