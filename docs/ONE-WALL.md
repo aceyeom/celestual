@@ -11,20 +11,29 @@ wall at `/`. The old addresses redirect: `/berkeley/<path>` → `/<path>`, `/bet
 A letter's `campus` is no longer which wall it is on. It is the school it
 carries.
 
-**Posting.**
-- An **@-note** (a letter to an Instagram handle) needs a verified **.edu**
-  address, asked for at submit, after the note is written. Any `*.edu`
-  domain. The domain sets the campus (`berkeley.edu` → `berkeley`,
-  `cs.stanford.edu` → `stanford`). The letter carries `verified: true`, and the
-  wall draws the school's sticker on it (Berkeley's is a Cal sticker).
-- A **name-only note** needs no proof. It always goes through moderation
-  before it is published: the classifier reads it first, and it publishes on a
-  pass, waits for the desk on a review (or when no classifier is configured),
-  and never goes up on a reject. The writer picks a campus, or none. It never
-  carries the verified sticker.
-- A name-only note can carry the person's Instagram @ as well. With the @ it
-  is an @-note (keyed to the handle, the custom name in its salutation) and
-  follows the @-note rule.
+**Posting: one composer, one choice.** The writer writes the note and picks
+who it is for (an @, or a name). At submit there is one decision, framed as
+how public the note is, never as which proof goes with which act:
+
+- **Post on the Berkeley wall.** Public, and Berkeley students only when it is
+  to an @, so it asks "confirm you're at Berkeley" (a berkeley.edu magic link,
+  once per device). The letter carries `verified: true` and the Cal sticker.
+- **Send privately.** Only they will ever know, and only if it is mutual, so it
+  asks "confirm this is your Instagram" (the DM proof). It is a ping carrying
+  the note as its card: they read it only if they send one back, and then
+  both notes open at once. It needs an @.
+- **Somebody not at Berkeley** can still post on the wall, to a name rather
+  than an @. A name-only note needs no proof and always goes through
+  moderation before it is published (the classifier first: a pass publishes,
+  a review or no classifier waits for the desk, a reject never goes up). The
+  writer picks a campus for it, or none, and it never carries the sticker.
+- A name note can carry the person's @ as well (the nudge: without it there
+  is a lower chance they end up reading it). With the @ it is an @-note, keyed
+  to the handle, the custom name in its salutation.
+
+Which schools may post to an @ is a flag on the campus (`handle_notes`), on
+for `berkeley` alone. Any `.edu` still verifies as a proof for reading and
+for alerts.
 
 **The salutation.** The `dear {name}` line is the writer's to edit: up to 40
 characters, stored as `salutation`. With none stored, the line is
@@ -67,6 +76,8 @@ error    { ok: false, error: 'edu' | 'throttle' | 'salutation' | 'gate' | 'no_se
 ```
 
 - `edu`: an @-note from a device that is not edu-verified.
+- `campus`: an @-note from a device verified at a school whose campus does not
+  take @-notes (not Berkeley). The composer offers the name instead.
 - `throttle`: too many name-only notes from this device or this address.
 - The same `(author, nonce)` returns the first send's answer and writes nothing
   new, so a held draft that posts from two tabs is one letter.
@@ -76,7 +87,7 @@ error    { ok: false, error: 'edu' | 'throttle' | 'salutation' | 'gate' | 'no_se
 The old `send` / `verify` code actions stay for old tabs.
 
 ```
-link     { action: 'link', email, session, purpose: 'edu'|'alerts' }
+link     { action: 'link', email, session, purpose: 'edu'|'alerts', campus?: 'berkeley' }
        → { ok: true, request, match, domain, campus, school }
        | { ok: false, error: 'email'|'domain'|'rate'|'send'|'taken' }
 confirm  { action: 'confirm', token, session }
@@ -90,11 +101,19 @@ status   { action: 'status', request, session }
 - `match` is a number from 10 to 99, shown on the device that asked and printed
   in the email. It is how a person tells their own request from somebody
   else's.
+- With `campus`, the address must be at that campus's domain (or a
+  subdomain) or on the pass list, else `domain`.
 - `status` only answers the session that made the request.
 - `confirm` for `edu` binds the address to the user of the session that asked,
   and to the session that clicked if it is a different one. It sets the campus
   up, and fills the alert email if it is empty.
 - `confirm` for `alerts` confirms the alert email of the user that asked.
+
+### The private send
+
+A ping placed through the existing `celestual_submit` path (app/src/wall/pings.js,
+api/celestual.js `placePing`), with the note as its card's `words`. The card
+takes a note as long as a letter now: 280 characters, not twenty words.
 
 ### Database, read by the browser
 
