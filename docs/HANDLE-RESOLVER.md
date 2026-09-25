@@ -429,9 +429,12 @@ and suggestions come from the index, which is public on purpose: a name on
 the wall is a name somebody wrote to in public. The profile fields ride on
 those names and never the other way round.
 
-That is also why Main's front door has no suggestions at all. Its field peeks
-the cache for the exact handle typed and offers the person's own history
-(the chips on the place screen), and nothing about anybody else.
+That is also why the ping's field (the wall's ping sheet, which replaced
+Main's front door and its place screen) suggests only from the index, and
+only the names there that are an @ (`useSuggest` with `handles`). Under an
+empty field it offers the person's own history, the names they have written
+to, and nothing about anybody else; a handle typed in full is peeked in the
+cache like any other.
 
 ## 11. The faces, and what a screen costs
 
