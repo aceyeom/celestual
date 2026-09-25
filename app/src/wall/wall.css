@@ -2391,15 +2391,16 @@ a.wl-lq { text-decoration: none; }
    A bottom sheet took the card's own height, so a short letter stood low and
    a long one high, and turning the deck from one to the other moved the
    card under the eye. Centred, a card of any height is read from the same
-   place, and the chrome round it is one mark in the corner of the glass and
-   the two chevrons in the gutters.
+   place, and the chrome round it is one mark in the corner of the glass;
+   the letters either side of it, asleep, are the rest of the deck (THE
+   LETTER, below).
 
    The card used to open OUT of the disc that was pressed, its corner warped
    from a circle to the paper's radius while it flew, and close back into
    it. That was a border radius and a transform animating on the real card
    over a blurred sheet, and it dropped frames on every phone it was tried
    on. It rises a little and fades now, and goes the same way. */
-.wl-sheet-wrap.is-letter { justify-content: center; align-items: center; padding: 0 18px; }
+.wl-sheet-wrap.is-letter { justify-content: center; align-items: center; padding: 0 var(--gutter); }
 /* ── the room ──
    An opened letter is one lit screen in a dark room, so the room is black:
    the wall goes out behind it, every screen on it, and the only light left
@@ -2417,16 +2418,18 @@ a.wl-lq { text-decoration: none; }
    The screen is as wide as the glass allows, up to 520 in a big room, and
    never taller than the room: on a short window it is sized off the
    height, so the keys are never below the fold. `--scene-w` is the one
-   number the sheet, the stage and the seal's foot are all sized from. */
-.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 190px) / 1.22)); }
+   number the sheet, the stage, the deck and the seal's foot are all sized
+   from, and on a phone it leaves `--gutter` of glass either side for the
+   letters beside it (THE LETTER, below). */
+.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 190px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
   /* an open letter has no seal foot to leave room for */
-  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 120px) / 1.22)); }
+  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 120px) / 1.22)); }
 }
 /* a letter reached from a link gives the line to the wall its row */
-.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 236px) / 1.22)); }
+.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 236px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 166px) / 1.22)); }
+  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 166px) / 1.22)); }
 }
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
@@ -2633,84 +2636,140 @@ a.wl-lq { text-decoration: none; }
 .wl-foot > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
-.wl-letter { --gutter: 22px; padding: 0; position: relative; }
+.wl-letter { padding: 0; position: relative; }
 /* the count that stood in the header, `3 / 19`, is gone: a person reading a
    letter is not asking where in the deck they are, and a number over the
    card was the busiest thing on the sheet */
 
-/* ── the strip, and turning it ──
+/* ── the deck ──
    Letter.jsx. Every letter on the wall is a card in one deck, and the deck
-   is turned like a carousel: the card follows the finger, its neighbours
-   stand beside it on the same strip while it moves, and a turn runs the
-   strip on so the next card comes in from the side the finger is going. A
-   chevron in each gutter, bare, in ash, says the same on a desktop, and the
-   arrow keys do the same. `pan-y` hands a vertical drag to the sheet, so a
-   long letter can still be scrolled past.
+   shows itself rather than being pointed at: the letter before and the
+   letter after stand either side of the card, asleep, the way the phones
+   round the lit one on a table are there in the dark. Dimmer than the card
+   and a little smaller, each drawn in toward its near edge so the room
+   between two screens stays the room. On a phone the glass leaves a sliver
+   of each at its edges (`--peek`, inside `--gutter`); in a wide room they
+   are the two screens themselves (the dialog, below). Two chevrons in the
+   gutters said the same thing once, and a chevron is a control somebody has
+   to find and read.
 
-   The GLASS is the only clip (`.wl-sheet-wrap.is-letter`, below). The
-   track clipped the strip to the old sheet's width, and from a tablet up
-   that was a window in the middle of the black room: every swipe sliced
-   both screens and the light between them on two hard vertical lines. A
-   neighbour rests just past the window's edge instead (Letter.jsx `span`)
-   and slides in from there, so nothing is cut in the room. The chevrons go
-   quiet while the strip moves, and still take a press.
+   The deck is turned like a carousel: the card follows the hand, the
+   neighbours travel with it, and each screen is lit and sized by how near
+   the middle it stands, all written by the gesture over these rests
+   (Letter.jsx `place`). The gap, the dim and the size are read back by that
+   gesture, so they stay plain numbers here and never a calc. `pan-y` hands
+   a vertical drag to the sheet, so a long letter can still be scrolled.
 
-   The gutter on a phone is the sheet's own 22px, so the chevron is a bare
-   stroke and not a ring: a ring in a 22px gutter is a ring on the paper's
-   edge. In the dialog the gutters are wide and the chevrons stand in rings,
-   the way the close mark does. */
+   The GLASS is the only clip (`.wl-sheet-wrap.is-letter`): a neighbour is
+   cut by the window's edge and by nothing in the room. */
+.wl-sheet-wrap.is-letter {
+  --peek: 14px;
+  --peek-gap: 10px;
+  --peek-dim: 0.4;
+  --peek-scale: 0.94;
+  --gutter: calc(var(--peek) + var(--peek-gap));
+  --span: calc(var(--scene-w) + var(--peek-gap));
+  overflow: clip;
+}
+/* a phone on its side has the room a desk has, and the neighbours stand in
+   it whole */
+@media (max-height: 560px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-letter { --peek-gap: 36px; --peek-dim: 0.3; --peek-scale: 0.9; }
+}
 .wl-letter-stage { position: relative; isolation: isolate; touch-action: pan-y; }
-.wl-letter-track {
-  position: relative;
-  margin: 0 calc(-1 * var(--gutter));
-  padding: 0 var(--gutter);
-}
-.wl-sheet-wrap.is-letter { overflow: clip; }
-.wl-sheet-wrap.is-letter .wl-letter-track { overflow: visible; }
-/* quiet, but it still takes the click: a second press lands on a turn that
-   is already running, and not on the scrim behind */
-.wl-letter-stage.is-moving .wl-turn { opacity: 0; transition-duration: 120ms; }
-.wl-letter-card {
-  position: relative; z-index: 1;
-  will-change: transform;
-}
-/* a neighbour: the card beside the card, in the same measure, off the glass
-   until the strip brings it on. Placed by the gesture, never by this file. */
+/* every screen on the strip stands on the track's middle, so a turn from a
+   short letter to a long one grows the glass about the card's own middle */
+.wl-letter-track { position: relative; display: flex; flex-direction: column; justify-content: center; }
+.wl-letter-card { position: relative; z-index: 1; will-change: transform, opacity; }
 .wl-letter-slot {
-  position: absolute; top: 0; left: var(--gutter); right: var(--gutter); z-index: 0;
-  pointer-events: none;
-  will-change: transform;
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  pointer-events: none; will-change: transform, opacity;
+  opacity: var(--peek-dim);
+  transform: translate3d(var(--span), 0, 0) scale(var(--peek-scale));
+  transform-origin: 0% 50%;
 }
+.wl-letter-slot[data-side='prev'] {
+  transform: translate3d(calc(-1 * var(--span)), 0, 0) scale(var(--peek-scale));
+  transform-origin: 100% 50%;
+}
+/* ── what a print asleep costs ──
+   A print is pulled through its press (screen.jsx `Press`, an SVG filter)
+   over a screen turned in depth, and a press over a screen in depth is drawn
+   again on every frame the page draws: three of them standing in a wide room
+   were most of every frame. So a print asleep beside the card is turned in
+   its own plane only, and takes its depth back the moment the strip moves
+   its way (`data-moving`, Letter.jsx), while it is still dim at the side;
+   the difference is a pixel at a corner of a screen at a quarter light */
+.wl-letter-stage:not([data-moving='next']) .wl-letter-slot[data-side='next'] .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']),
+.wl-letter-stage:not([data-moving='prev']) .wl-letter-slot[data-side='prev'] .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+  transform: rotate(var(--q-rz, -0.7deg));
+}
+/* they come up out of the dark once the card has woken, the way the eye
+   finds the rest of a dark room after the one light in it. One that comes
+   to stand there later is brought up by Letter.jsx `Cell` */
+.wl-letter-stage.is-waking .wl-letter-slot.is-early { animation: wl-peek-in 480ms var(--ease) 420ms both; }
+@keyframes wl-peek-in { from { opacity: 0; } }
 .wl-letter-leaf { position: relative; }
-/* an arrival that is not the strip landing: a back button, a link */
+/* an arrival that is not the strip landing: a link, the history */
 .wl-letter-leaf.is-arrived { animation: wl-fade 260ms var(--ease) both; }
+/* the light in the room, handed from one screen to the next on a turn
+   (Letter.jsx `Lights`): the one going out fades as the new one comes up */
+.wl-letter-light { position: absolute; inset: 0; pointer-events: none; }
+.wl-letter-light.is-out { animation: wl-unfade 520ms var(--ease-in) both; }
 /* the foot, while the words are on their way: the pill's own height and
    nothing on it, so the card does not move when they land */
 .wl-foot-hold { min-height: 0; }
 .wl-letter .wl-foot { padding-top: 16px; }
 .wl-letter .wl-foot:empty { display: none; }
-/* the turn keys: the phone's own chevrons, drawn on its grid
-   (parts.jsx `Icon` on the wall), in the gutters on a phone and as square
-   keys in the room on a spread (below). The press moves the chevron a pixel
-   the way the deck is about to go, and moves it at once: a key is down or
-   up. */
+/* ── the turn keys ──
+   A key over each neighbour with nothing drawn on it, so a press on the
+   letter beside the card turns to it and never reaches the room behind,
+   which is the way out. They are the turn a keyboard and a screen reader
+   find too (Letter.jsx `aria-label`). On a phone the key is all of the glass
+   beside the card, gap and sliver, since a thumb at the edge of the glass is
+   aiming at the sliver; in a wide room it is the neighbour itself, and the
+   dark round it is still the room. */
 .wl-turn {
-  position: absolute; top: 50%; z-index: 2;
-  width: var(--gutter); height: 72px; margin-top: -36px; padding: 0;
-  display: grid; place-items: center;
-  border: 0; background: none; color: var(--ash);
-  transition: color 160ms var(--ease), opacity 200ms var(--ease);
+  position: absolute; top: 0; bottom: 0; z-index: 2;
+  width: calc(var(--peek-gap) + var(--scene-w) * var(--peek-scale));
+  margin: 0; padding: 0; border: 0; border-radius: var(--r-lcd);
+  background: none; -webkit-tap-highlight-color: transparent;
 }
-.wl-turn.is-prev { left: calc(-1 * var(--gutter)); }
-.wl-turn.is-next { right: calc(-1 * var(--gutter)); }
-.wl-turn.is-next .wl-icon { transform: scaleX(-1); }
+.wl-turn.is-next { left: calc(50% + var(--scene-w) / 2); }
+.wl-turn.is-prev { right: calc(50% + var(--scene-w) / 2); }
+.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; }
+/* a neighbour that is about to be turned to wakes a little and leans in:
+   under a mouse, or under the focus of a key */
+.wl-letter-stage:not([data-moving]):has(> .wl-turn.is-next:focus-visible) .wl-letter-slot[data-side='next'],
+.wl-letter-stage:not([data-moving]):has(> .wl-turn.is-prev:focus-visible) .wl-letter-slot[data-side='prev'] {
+  opacity: calc(var(--peek-dim) + 0.16);
+}
 @media (hover: hover) and (pointer: fine) {
-  .wl-turn:hover:not(:disabled) { color: var(--chalk); }
+  .wl-letter-slot { transition: opacity 240ms var(--ease), translate 360ms var(--ease); }
+  .wl-letter-stage:not([data-moving]):has(> .wl-turn.is-next:hover) .wl-letter-slot[data-side='next'] {
+    opacity: calc(var(--peek-dim) + 0.16); translate: -8px 0;
+  }
+  .wl-letter-stage:not([data-moving]):has(> .wl-turn.is-prev:hover) .wl-letter-slot[data-side='prev'] {
+    opacity: calc(var(--peek-dim) + 0.16); translate: 8px 0;
+  }
+  /* ── and under a mouse the card is a thing picked up ──
+     A hand on it, open, where the deck turns, and closed while it holds it,
+     as the wall's own field is (THE HIVE). No words are selected under it:
+     a drag across the card is a turn, and a letter half highlighted after
+     one reads as broken. The soft keys and a menu's rows keep their own
+     hand. */
+  .wl-letter-stage.can-turn { -webkit-user-select: none; user-select: none; }
+  .wl-letter-stage.can-turn .wl-letter-card,
+  .wl-letter-stage.can-turn .wl-letter-card * { cursor: grab; }
+  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li) { cursor: pointer; }
+  .wl-letter-stage[data-grab], .wl-letter-stage[data-grab] * { cursor: grabbing !important; }
 }
-.wl-turn.is-prev:active:not(:disabled) .wl-icon { transform: translateX(-2px); }
-.wl-turn.is-next:active:not(:disabled) .wl-icon { transform: translateX(2px) scaleX(-1); }
-.wl-turn:disabled { opacity: 0.22; cursor: default; }
-.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 2px; }
+/* asked for less movement: the neighbours are simply there, and one about
+   to be turned to wakes where it stands without leaning in */
+@media (prefers-reduced-motion: reduce) {
+  .wl-letter-slot { animation: none !important; translate: none !important; }
+}
 
 /* ── the line that says what the seal is ──
    screens/Letter.jsx `sealSay`. It stands in the SHEET's foot, on the glass
@@ -3765,32 +3824,24 @@ a.wl-lq { text-decoration: none; }
   .wl-sheet-in { --sheet-pad: 30px; padding: 26px var(--sheet-pad) 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
   /* ── the letter's dialog is wider than the card in it ──
-     The card keeps its measure and the dialog grows round it, so the two
-     chevrons stand in the room either side of the paper rather than on its
-     edge: a ring each, the close mark's own size, centred in the band. */
-  .wl-sheet-wrap.is-letter { padding: 32px 80px; }
+     The card keeps its measure and the room grows round it, so the letters
+     either side stand in the room whole, dim, a hand's width off the card:
+     three phones on a table with one of them on. Each key is the neighbour
+     it stands over, and its focus is drawn round that screen. */
+  .wl-sheet-wrap.is-letter { padding: 32px 80px; --peek-gap: 64px; --peek-dim: 0.24; --peek-scale: 0.9; }
   .wl-sheet-wrap.is-letter .wl-sheet { max-width: calc(var(--scene-w) + 20px); animation: wl-letter-in 380ms var(--ease) both; }
   .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
   .wl-sheet-wrap.is-letter .wl-sheet-in { padding: 0; }
-  .wl-letter { --gutter: 30px; }
   .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }
   .wl-letter-x { top: 26px; right: 30px; }
   .wl-letter-brand { top: 26px; left: 30px; }
   .wl-turn {
-    width: 40px; height: 40px; margin-top: -20px; border-radius: var(--r-lcd);
-    /* the navi key under a phone's screen: the unlit panel and its bezel,
-       brighter than a hairline, since on the black room a hairline is not
-       there */
-    border: 1px solid var(--lcd-edge); background: var(--lcd); color: var(--chalk);
-    transition: border-color 160ms var(--ease), opacity 200ms var(--ease);
+    top: calc(50% * (1 - var(--peek-scale))); bottom: calc(50% * (1 - var(--peek-scale)));
+    width: calc(var(--scene-w) * var(--peek-scale));
   }
-  .wl-turn.is-prev { left: -64px; }
-  .wl-turn.is-next { right: -64px; }
-  @media (hover: hover) and (pointer: fine) {
-    .wl-turn:hover:not(:disabled) { border-color: var(--lcd-edge-hi); }
-  }
-  .wl-turn:active:not(:disabled) { background: var(--chalk); color: #000; border-color: var(--chalk); }
-  .wl-turn:focus-visible { outline-offset: 3px; border-radius: 2px; }
+  .wl-turn.is-next { left: calc(50% + var(--scene-w) / 2 + var(--peek-gap)); }
+  .wl-turn.is-prev { right: calc(50% + var(--scene-w) / 2 + var(--peek-gap)); }
+  .wl-turn:focus-visible { outline-offset: 6px; }
   /* the composer's act stands under the card, at the card's measure: a pill
      the width of the dialog under a paper narrower than it is a pill about
      the dialog */

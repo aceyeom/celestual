@@ -456,7 +456,7 @@ foot, at a width a thumb finds.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and under it the edges of the deck: every letter on the wall is one card in one deck, turned where the card is, by a swipe on the card, a chevron in each gutter or the arrow keys, and the header keeps the count over the whole wall |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
@@ -762,26 +762,74 @@ next name's letters are asked for while this one is being read, so the turn
 onto them lands on its card and not on a request; the turn back lands on the
 name before's last letter.
 
-What says there is more is the deck itself: the edges of the next card and
-the one after it stand under the card, drawn as two sheets of paper a step
-darker than the letter's, hung from their bottom edges so the peek is the
-peek whatever the card's height (`wall.css .wl-letter-stage::before`). A
-swipe takes the card off the top, following the finger and tilting a little
-with it, leaving the glass the way it was going, and the next rises from the
-stack; a turn back slides in from the side it went to. A chevron in each
-gutter says the same on a desktop and the arrow keys do the same, and the
-header keeps the count over the whole wall, `3 / 19`. It used to stop at the
-name, and a stack of one — which is most names — had no turn at all: a person
-who swiped the card got a spring back and no way to read on.
+What says there is more is the deck itself. The letter before and the
+letter after stand either side of the card at rest, asleep: dimmer than it
+and a little smaller, each drawn toward its near edge, as the phones round
+the lit one on a table are there in the dark. On a phone the glass leaves a
+sliver of each at its edges (the screen gives up `--gutter` of the glass
+for it); in a wide room, and on a phone on its side, they are the two
+screens themselves, dim, a hand's width off the card (`wall.css --peek-*`).
+They come up out of the dark while the card wakes, a beat behind it, and
+one that comes to stand there later fades up where it stands. Two chevrons in the
+gutters said the same thing until 25 September, and a chevron is a control
+somebody has to find and read. There is no line saying to swipe (VOICE.md
+section 7), no dots and no count: the deck is the whole wall, and a count of
+it is the header `3 / 19` again, which came off for being a number nobody
+reading a letter asked for.
+
+A hand has the card, a finger or a mouse, one to one once it is clearly
+sideways (eight pixels, and the card does not jump the slack). The
+neighbours travel with it and each screen is lit and sized by how near the
+middle it stands, so the one leaving goes to sleep as the one arriving
+wakes. Let go past three tenths of the screen, or thrown the way it is
+going, and the strip runs on at the speed it was let go at (`handoff` bends
+the curve so the strip leaves at the hand's speed); let go short, or thrown
+back, and it springs home. The throw is read off the last ninety
+milliseconds, so a flick at the end of a slow drag is a flick. Past either
+end of the deck the card still gives, less the further it is pulled. The
+stage keeps the pointer once the drag is sideways, only the first finger
+counts, and the click a drag ends in is swallowed, so a drag let go of over
+a soft key does not heart the letter. Under a mouse the card takes the open
+hand and the closed one while it is held, and selects no words.
+
+A press on a neighbour turns to it: over each stands a key with nothing
+drawn on it (`.wl-turn`, `the letter before this one` and `the letter
+after this one`), which is also the turn a keyboard and a screen reader
+find, and which keeps a press on a neighbour from reaching the room behind
+it, the way out. The arrow keys turn it, and the soft key that had the
+focus has it again on the card the turn lands on. Two fingers sideways on a
+trackpad turn it one letter a swipe, and the swipe is kept from the
+browser, which would take it as the history going back. A turn asked for
+past an end leans the card a little and brings it home.
+
+The first two times a device opens the deck, until it has turned it once,
+the card leans toward the next letter about a second after it has woken
+and comes home (`nudge`, `hinted` and `turned` in the store). Never under
+reduced motion and never over a menu, and a hand or a key that gets there
+first puts it off. Under reduced motion a turn is the next card, at once.
+
+A turn is still a route change, so every letter keeps its own address, and
+it changes when the neighbour's own travel has ended, not on a clock beside
+it. Nothing is drawn again when it does: every screen on the strip is keyed
+by its letter (`Cell`), so the neighbour that landed is the card from then
+on, the same element in the same place, and the card that left is the
+neighbour on the other side. Only the screen past the new card is new. The
+room's light is handed across in the same beat (`Lights`), the old colour
+going out while the new one comes up.
 
 The height goes with the strip. A short letter beside a long one is a card
 beside a taller card, and the glass used to take the new height on the frame
 the address changed: everything under the card jumped. The track's height
 follows the strip instead, from this card's height toward the neighbour's by
-how far the strip has gone, so the sheet is seen to grow or shrink with the
-finger, a turn from a chevron carries its height on the same clock as its
-travel, and the next card takes over at exactly the height the strip arrived
-at (`Letter.jsx place`).
+how far the strip has gone, and every screen on it stands on its middle, so
+the sheet is seen to grow or shrink about the card's middle, and the next
+card takes over at exactly the height the strip arrived at
+(`Letter.jsx place`).
+
+A print asleep beside the card is turned in its own plane only, and takes
+its depth back the moment the strip moves its way: a print's press (an SVG
+filter) over a screen turned in depth is drawn again on every frame the
+page draws, and three of them in a wide room were most of every frame.
 
 ### It has to work at five names and at five hundred
 
