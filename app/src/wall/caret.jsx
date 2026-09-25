@@ -91,7 +91,8 @@ function mirrorOf() {
   mirror.setAttribute('aria-hidden', 'true')
   mirror.dataset.caretMirror = ''
   const st = mirror.style
-  st.position = 'absolute'
+  // fixed, so however many lines it holds it never lengthens the page
+  st.position = 'fixed'
   st.top = '0'
   st.left = '-9999px'
   st.visibility = 'hidden'
@@ -165,7 +166,8 @@ function nextOf(value, pos) {
 
 // `of` is a ref to the field. `screen` is the draft's screen: sized in the
 // face's own pixels and left unrounded, since the screen is turned and
-// blurred round it; otherwise a field of the wall's chrome, in whole pixels.
+// blurred round it; otherwise a field of the wall's chrome, on the device's
+// own pixels.
 export function Caret({ of, screen = false }) {
   const bar = useRef(null)
   useLayoutEffect(() => {
