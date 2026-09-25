@@ -104,7 +104,10 @@ export default function WallApp() {
   })
   // 0 the intro has the screen · 1 the wall is mounted and cascading under
   // a black that is on its way out · 2 the intro is gone
-  const [boot, setBoot] = useState(() => (BOOTED ? 2 : 0))
+  // A tab that opens on a mutual does not play the intro: the mutual tells
+  // the same story on its own screen, and the second telling would be the
+  // one that was waited through.
+  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)

@@ -83,16 +83,21 @@ const NO_KEYS = {}
 // ── the screenshot loop's holds ──
 // Development only; nothing in production reads the query string. `?beat=3`
 // holds the mark, as the loop's `intro` frame has always done; `?t=900`
-// holds the clock at 900ms, for a frame of the run or of the hug; and
-// `?intro=ascii` draws the same story typed, for the owner to set beside it.
+// holds the clock at 900ms, for a frame of the run or of the hug;
+// `?intro=ascii` draws the same story typed, and `?tint=green` lights it in
+// the classic Nokia colour, for the owner to set beside the shipped one.
 function dev() {
-  if (!import.meta.env.DEV) return { beat: null, t: null, mode: 'pixel' }
+  if (!import.meta.env.DEV) return { beat: null, t: null, mode: 'pixel', look: LOOK }
   const q = new URLSearchParams(window.location.search)
   const b = q.get('beat')
   const t = q.get('t')
   const beat = b === null ? null : Math.max(0, Math.min(LIFT, Number(b) || 0))
   const at = t === null ? null : Math.max(0, Number(t) || 0)
-  return { beat, t: at, mode: q.get('intro') === 'ascii' ? 'ascii' : 'pixel' }
+  const tint = q.get('tint')
+  return {
+    beat, t: at, mode: q.get('intro') === 'ascii' ? 'ascii' : 'pixel',
+    look: tint && /^[a-z-]{2,24}$/.test(tint) ? { tint } : LOOK,
+  }
 }
 // the beat a held clock is on
 const beatAt = (t) => BEATS.reduce((n, ms, i) => (i < LIFT && t >= ms ? i : n), 0)
@@ -169,7 +174,7 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
     <div className={`hi is-at${at}${held ? ' is-held' : ''}`} aria-hidden="true">
       <div className="hi-veil" />
       <div className="hi-stage">
-        <Screen look={LOOK} seed="intro" keys={NO_KEYS} live={false} state="waking" className="hi-screen" style={SQUARE}>
+        <Screen look={hold.look} seed="intro" keys={NO_KEYS} live={false} state="waking" className="hi-screen" style={SQUARE}>
           <PixelStory story={STORY} at={clock} from={t0} mode={hold.mode} />
         </Screen>
       </div>

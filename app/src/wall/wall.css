@@ -3178,6 +3178,10 @@ a.wl-lq { text-decoration: none; }
   animation: wl-fade 380ms var(--ease) both;
 }
 .wl-sheet-wrap.is-reveal .wl-grip { display: none; }
+/* and it goes the way a letter goes: the screen to sleep, the column out,
+   the room lifting off the wall, on the Sheet's 580ms floor */
+.wl-sheet-wrap.is-reveal.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
+.wl-sheet-wrap.is-reveal.is-closing .wl-reveal-scr .wl-scr { animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both; }
 .wl-sheet-wrap.is-reveal .wl-sheet-in {
   pointer-events: auto;
   flex: 0 0 auto; width: 100%; max-width: 440px; min-height: 100%; margin: 0 auto;

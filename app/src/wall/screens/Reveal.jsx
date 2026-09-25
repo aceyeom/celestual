@@ -176,7 +176,7 @@ function Mutual({ mine, them, mutual, reduce }) {
       {/* the same facts, in the order they matter, for a reader that never
           sees the composition above */}
       <p className="wl-sr">
-        it&#8217;s mutual with {theirs?.name || atHandle(them)}, {atHandle(them)}
+        it&#8217;s mutual with {theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)}
         {theirs?.verified ? ', verified on Instagram' : ''}.
         {ago ? ` you placed yours ${ago}.` : ''}
       </p>

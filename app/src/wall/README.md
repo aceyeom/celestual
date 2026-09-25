@@ -1238,7 +1238,8 @@ square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
 any tap or key, which lands the mark and lifts at once; it never plays twice in
 a tab; under `prefers-reduced-motion` it draws the mark and lifts almost at
 once. In development `?beat=3` holds the mark, `?t=900` holds the clock on any
-frame, and `?intro=ascii` draws the same story in characters for comparison.
+frame, and `?intro=ascii` and `?tint=green` draw the same story in characters
+or on the classic green, for comparison.
 
 The door (`screens/Join.jsx`) and the mutual (`screens/Reveal.jsx`) tell the
 same story on the same screen: on the door @you runs in and waits, @them runs
