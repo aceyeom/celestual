@@ -697,8 +697,8 @@ thirteen pixels sliding past is a handle nobody reads.
   The nudge carries nothing: it says the index moved, and the read is the
   public read the wall makes on landing. A letter from another phone then
   rises in place, its name's disc coming up past its size and settling, and
-  the count in the ear turns up one. A project with Realtime off keeps the
-  clock and loses the nudge.
+  the count in the ear turns up one, when the ear carries it (The count,
+  below). A project with Realtime off keeps the clock and loses the nudge.
 - **The disc is placed by the loop and animated by the stylesheet, and they
   are two elements.** Two owners on one transform is how these end up fighting
   each other at 60Hz.
@@ -1029,6 +1029,15 @@ whose index did not load says so in the same place, because a wall that has
 not loaded has no number; and while the index is still loading there is no
 count at all, since a wall that has not answered is not a wall that is open
 with nothing on it.
+
+**It is off for now** (`screens/Wall.jsx COUNTED`, 25 September). While the
+wall is young a small number over the question read as an empty room
+rather than an open one, so the ear is the campus alone, the operator's
+name an idle phone kept in that row. Everything above is still wired and
+comes back with the switch: the figure, its roll and `open now`. The line a
+wall that did not load says stays on either way, since it is not a count.
+The `N letters` under a name in the search's rows is a different fact (how
+many letters that one name has) and stays.
 
 ### What is not on the wall any more
 

@@ -252,6 +252,16 @@ function tabDue(state) {
 // chrome in three vocabularies. It is one small line now, the campus and
 // the count, standing as the label over the plate where the shade is
 // deepest, so the masthead is one object: the fact, and the question.
+//
+// ── and for now it is the campus alone (`COUNTED`) ──
+// The count is off while the wall is young. A wall of a few dozen letters
+// printed its number over the question as the one fact about it, and a small
+// number reads as an empty room rather than an open one. The figure, its roll
+// and the line an empty wall says are all still here and come back with the
+// switch; until then the line is what an idle phone kept in that row, the
+// network's name and nothing after it. A wall that did not load still says
+// so, since that is not a count.
+const COUNTED = false
 function Ear({ letters }) {
   const err = wallError()
   const loaded = wallLoaded()
@@ -265,7 +275,7 @@ function Ear({ letters }) {
         )}
       </>
     )
-  } else if (letters > 0) {
+  } else if (COUNTED && letters > 0) {
     // the envelope a phone's idle screen stood beside its messages
     meta = (
       <span className="wl-ear-meta">
@@ -273,7 +283,7 @@ function Ear({ letters }) {
         <Roll value={letters} className="wl-ear-n" /> {letters === 1 ? 'letter' : 'letters'}
       </span>
     )
-  } else if (loaded) {
+  } else if (COUNTED && loaded) {
     meta = <span className="wl-ear-meta">open now</span>
   }
   return (
