@@ -61,6 +61,7 @@ import Join from './screens/Join.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
+import Reveal from './screens/Reveal.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -75,6 +76,7 @@ const FIELD = {
   gate:   'slow',
   remove: 'still',   // the room stops moving where the act cannot be undone
   report: 'still',   // and where something is coming down
+  reveal: 'still',   // and where two people have just found out
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -84,7 +86,7 @@ const FIELD = {
 let BOOTED = false
 
 // The longest the intro is held for the index and the first faces, measured
-// from the shell mounting. The intro's own lift is at 1560ms, so on any
+// from the shell mounting. The intro's own lift is at 2870ms, so on any
 // ordinary connection this never applies; on a bad one the wall arrives with
 // its monograms, which is a designed state, and the pictures fill in.
 const READY_CEILING_MS = 4200
@@ -407,6 +409,7 @@ export default function WallApp() {
   if (route.name === 'gate') sheet = <Gate {...shared} />
   if (route.name === 'remove') sheet = <Remove handle={route.id} {...shared} />
   if (route.name === 'report') sheet = <Report id={route.id} {...shared} />
+  if (route.name === 'reveal') sheet = <Reveal id={route.id} {...shared} />
 
   let base
   switch (route.name) {

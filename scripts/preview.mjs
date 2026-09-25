@@ -800,8 +800,13 @@ async function fulfil(route) {
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
 const ROUTES = [
-  // The intro, held on its assembled beat: the liquid mark and the name.
+  // The intro, held on its last beat: the phone, and the mark in its pixels.
+  // Then held on the run and on the hug by the clock (Intro.jsx `?t=`), and
+  // the same last beat typed, for setting beside it (`?intro=ascii`).
   { label: 'intro',         path: '/?beat=3' },
+  { label: 'intro-run',     path: '/?t=900' },
+  { label: 'intro-hug',     path: '/?t=1500' },
+  { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
   // The hero scrolls: it is a page with three sections rather than one
   // composition, so it is shot whole as well as at the fold. Without the intro
   // in front of it, which has its own frame above.
@@ -834,7 +839,12 @@ const ROUTES = [
   { label: 'sky-prove',     path: '/sky', verified: false },
   { label: 'sky-prove-code', path: '/sky', verified: false,
     acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
-  { label: 'reveal',        path: '/reveal/jules.k' },
+  // It's mutual, a sheet on the wall now: the fixture's mutual with jules.k,
+  // once the story on its screen has landed, and a handle that is not one.
+  // `?beat=4` lifts the intro at once, so the sheet is what is shot.
+  { label: 'reveal',        path: '/reveal/jules.k?beat=4', settle: 4200 },
+  { label: 'reveal-berkeley', path: '/berkeley/reveal/jules.k?beat=4', settle: 4200 },
+  { label: 'reveal-none',   path: '/berkeley/reveal/sofiaaa.reyes?beat=4' },
   // the veil over the field, with the flaps rolled into place (art.jsx
   // Flap), so the wall is shot once they have landed; then the field with
   // the veil lifted, once the lens has bloomed and the walk has taken its
@@ -1022,7 +1032,7 @@ const ROUTES = [
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
-  { label: 'join',          path: '/berkeley/join' },
+  { label: 'join',          path: '/berkeley/join?beat=4', settle: 5200 },
   // the letter caught at the keyboard: a street address in it, the button
   // pressed anyway, and the card shaking under the press with the line under
   // it saying what was caught (Write.jsx `shake`)

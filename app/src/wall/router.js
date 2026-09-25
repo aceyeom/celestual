@@ -36,13 +36,13 @@ export function setBase(b) { BASE = String(b || '') }
 // to stay a sheet: the letter it is about is a scroll position away, and a
 // takedown screen that has replaced the thing it is taking down makes somebody
 // trust their memory instead of their eyes.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report'])
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'reveal'])
 
 // Every address under a wall's base, by its first segment. At the root this
 // is also what decides which addresses are the wall's at all: `/place` is
 // Main's, `/letter/x` is the wall's, and nothing under `/` is claimed by
 // the wall on the strength of not being anybody else's.
-const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join'])
+const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'reveal'])
 
 const norm = (pathname) => String(pathname || '/').replace(/\/+$/, '') || '/'
 const rootOf = (base) => base || '/'
@@ -62,6 +62,9 @@ export function parse(pathname) {
     case 'remove': return { name: 'remove', id }   // a whole name coming off, once it is proven
     case 'report': return id ? { name: 'report', id } : { name: 'wall' }   // one letter coming down, now
     case 'join':   return { name: 'join' }         // the door to the core service, which is Main
+    // It's mutual: the other one's handle, raised over the wall. Main drew
+    // it at /reveal until it was the phone's, and the address came with it.
+    case 'reveal': return id ? { name: 'reveal', id } : { name: 'wall' }
     // /berkeley/orbit was a drawn stand-in for the core service with a seeded
     // ledger in it, reachable by anybody who typed the address. The core
     // service is Main, and /berkeley/join sends people there. The stand-in is
