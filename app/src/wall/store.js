@@ -51,6 +51,8 @@ const EMPTY = {
                       // this device, it is cleared with everything else, and
                       // nothing on a letter points back at it.
   seen: false,        // the opening cascade has played once
+  joined: false,      // this device has been shown what a ping is (screens/Join.jsx),
+                      // so the tab goes straight to placing one from now on
   turned: false,      // this device has turned the letter's deck once, so the
                       // lean toward the next letter is not shown again
   hinted: 0,          // how many times it has been shown the lean, which is

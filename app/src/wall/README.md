@@ -232,7 +232,7 @@ campus address or a handle proved after that code was scanned (migration 0047).
                                     │  tab at the bottom │
                                     └─────────┬──────────┘
                                               ▼
-                             "get notified if they put you up too."
+                             "get notified if they ping you too."
                                               │
                                               ▼
                                       THE CORE SERVICE

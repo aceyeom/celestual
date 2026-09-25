@@ -1,8 +1,8 @@
 // ── /berkeley/join — THE ONE DOOR ───────────────────────────────────────────
 //
-// The only route from the wall into the core service, reached from one place:
-// the tab at the bottom of the wall, which does not exist until somebody has
-// put a letter up.
+// What a ping is, drawn, reached from one place: the tab at the bottom of the
+// wall, which does not exist until somebody has put a letter up, the first
+// time this device presses it. After that the tab raises the ping itself.
 //
 // That gating is the whole point. The wall asks nothing of anybody until they
 // try to read or write, and the moment it starts offering an ACCOUNT it stops
@@ -22,10 +22,10 @@
 // it (pixmark.js `joinStory`), and the story is the mechanic, in the order
 // it happens:
 //
-//   1  you put their name up     @you runs in from the left and stops, and
+//   1  you ping them             @you runs in from the left and stops, and
 //                                stands there. Nothing comes back. That is
 //                                what a ping is.
-//   2  they put yours up         @them runs in from the right and stands
+//   2  they ping you             @them runs in from the right and stands
 //                                there too, the width of the screen away.
 //                                Neither can see the other has.
 //   3  you both find out.        and only then do both set off, on the same
@@ -53,11 +53,12 @@ import { PixIcon, Screen } from '../screen.jsx'
 import PixelStory, { SQUARE } from '../PixelStory.jsx'
 import { joinStory } from '../pixmark.js'
 import { cardStep } from '../seed.js'
+import { patch } from '../store.js'
 import { href } from '../router.js'
 
 const LINES = [
-  'you put their name up.',
-  'they put yours up.',
+  'you ping them.',
+  'they ping you.',
   'you both find out. at once.',
 ]
 
@@ -82,6 +83,8 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
   const t0 = useRef(performance.now()).current
   const timers = useRef([])
   useEffect(() => { setField('slow') }, [setField])
+  // Shown once: the tab goes straight to the ping from here on (Wall.jsx `Tab`).
+  useEffect(() => { patch({ joined: true }) }, [])
 
   useEffect(() => {
     if (reduce) return
@@ -148,7 +151,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           that says what pressing the button GETS them, and it is the same
           sentence, word for word, as the tab they pressed to get here. */}
       <Display size="l" className="wl-join-h">
-        get notified if they<br />put you up too.
+        get notified if they<br />ping you too.
       </Display>
 
       {/* The figure is a picture of the three lines under it, and the lines

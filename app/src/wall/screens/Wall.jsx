@@ -459,7 +459,7 @@ function Tab({ faces, onGo, onHide, going }) {
             : <Sparkle size={12} />}
         </span>
         <span className="wl-tab-text">
-          get notified if they<br />put you up too.
+          get notified if they<br />ping you too.
         </span>
         <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
       </button>
@@ -876,7 +876,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
         {down ? (
           <Down letter={down} onLeave={() => answer(down)} />
         ) : tab ? (
-          <Tab faces={wroteTo.slice(0, 3)} onGo={() => { hideTab(); go('ping') }} onHide={hideTab} going={going} />
+          <Tab faces={wroteTo.slice(0, 3)} onGo={() => { hideTab(); go(getState().joined ? 'ping' : 'join') }} onHide={hideTab} going={going} />
         ) : null}
         <div className="wl-dock-act">
           <WriteAct go={go} />
