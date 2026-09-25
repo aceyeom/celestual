@@ -160,6 +160,8 @@ function PingScreen({ p, me, onBack, onChange }) {
   const sel = Math.min(at, items.length - 1)
   const pick = (j) => { const it = items[j]; if (it) { setSaid(''); it.run() } }
 
+  // the day it was placed by the battery, as a letter that is up carries
+  // its own, and the same row under the menu so nothing moves when it opens
   const dated = { stamp: stampOf(p.at), bat: batOf(expires) }
   let top = { ...dated, name: first || atHandle(p.to), handle: first ? atHandle(p.to) : '', dear: true, icon: 'pen' }
   let body

@@ -3001,6 +3001,13 @@ a.wl-lq { text-decoration: none; }
    two rows and the name under them, and the foot */
 .wl-write-step:has(> .wl-look) .wl-write-floor { margin-top: 12px; }
 .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 500px - var(--notch)) / 1.22))); }
+/* on the shortest phones (320 by 568) a screen of 180 left the act under
+   the fold while the colours were open; there the preview gives way down
+   to 128, which is still the colour lit on a screen, and the act stays in
+   reach. 420 is the rest of the column at that width */
+@media (max-height: 600px) and (max-width: 560px) {
+  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(128px, calc((100svh - 420px - var(--notch)) / 1.22))); }
+}
 .wl-root .wl-look-opt {
   display: block; min-width: 0; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
 }
@@ -3666,6 +3673,13 @@ a.wl-lq { text-decoration: none; }
   border: 1px solid var(--lcd-edge); color: var(--chalk); background: var(--lcd);
 }
 .wl-tab-hide { padding: 9px 10px 5px; }
+/* on the narrowest phones three faces left the sentence a column too narrow
+   for its first line, and "they" stood on a line of its own. The first face
+   stands for the rest there, and the sentence keeps its two lines */
+@media (max-width: 359px) {
+  .wl-tab-main { gap: 10px; }
+  .wl-tab-face + .wl-tab-face { display: none; }
+}
 @keyframes wl-tab-rise {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
   to   { opacity: 1; transform: none; }
@@ -4395,10 +4409,6 @@ a.wl-lq { text-decoration: none; }
 /* the field stands alone, with no bookmark on its top edge, so it keeps all
    four of its corners */
 .wl-ping .wl-write-body { border-radius: var(--r-field); }
-/* the ping's screen is addressed to a person, and when the name and the @
-   will not both fit it is the @ that gives way: "dear Pilar" and a cut
-   handle, not "dear Pil" and most of one */
-:is(.wl-ping, .wl-you-ping) .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
 /* the people written to stand where the wall's own names stand as a name is
    typed, at the same scale, so one list gives way to the other in place */
 .wl-ping-wrote { margin-top: 10px; }

@@ -268,6 +268,11 @@
    while it is drawn the hairline is put out, and a selection is the
    phone's inversion, since the bar is away while there is one */
 .wl-root.is-room :is(input, textarea)[data-caret] { caret-color: transparent; }
+/* an empty field's hint stands a little in from the caret, as the draft's
+   example does (screen.css), so the bar never covers its first letter, or
+   the code box's first dot. Not the campus address, whose hint stands
+   against the painted domain */
+.wl-root.is-room :is(.wl-field input, .wl-addr.is-whole .wl-addr-in, .wl-codebox-in, .wl-reason textarea):placeholder-shown { text-indent: 0.3em; }
 .wl-root.is-room :is(.wl-field input, .wl-addr-in, .wl-codebox-in, .wl-reason textarea)::selection { background: var(--chalk); color: #000; }
 .wl-root.is-room .wl-field input::placeholder,
 .wl-root.is-room .wl-addr-in::placeholder { color: rgba(244, 241, 234, 0.3); }
@@ -290,7 +295,17 @@
 .wl-root.is-room .wl-codebox-digits { font-size: 44px; font-weight: 400; letter-spacing: 0.14em; line-height: 1; }
 .wl-root.is-room .wl-codebox-in::placeholder { color: rgba(244, 241, 234, 0.24); }
 
-/* ── the reason, on the report ── */
+/* ── the reason, on the report ──
+   A panel you type into, as every field on the wall is. Its baseline is
+   the room's and goes with the rest (above), and without the panel the box
+   was three lines of hint on the bare sheet, with no edge to say where a
+   person types. */
+.wl-root.is-room .wl-reason {
+  padding: 12px 14px;
+  background: var(--lcd); border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+  transition: border-color 160ms var(--ease);
+}
+.wl-root.is-room .wl-reason:focus-within { border-color: var(--lcd-edge-hi); }
 .wl-root.is-room .wl-reason textarea { line-height: 1.24; }
 
 /* ═══ ROWS OF PEOPLE ═══════════════════════════════════════════════════════

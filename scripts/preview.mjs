@@ -985,6 +985,12 @@ const ROUTES = [
   { label: 'reveal',        path: '/reveal/jules.k?beat=4', settle: 4200 },
   { label: 'reveal-berkeley', path: '/berkeley/reveal/jules.k?beat=4', settle: 4200 },
   { label: 'reveal-none',   path: '/berkeley/reveal/sofiaaa.reyes?beat=4' },
+  // the three stories and the deck under prefers-reduced-motion, where each
+  // is drawn on its last frame and has to be whole as a still
+  { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
+  { label: 'join-still',    path: '/berkeley/join', still: true, settle: 1600 },
+  { label: 'intro-still',   path: '/?beat=3', still: true, settle: 900 },
+  { label: 'letter-still',  path: '/berkeley/letter/ren.tanaka', still: true, settle: 1200 },
   // the veil over the field, with the flaps rolled into place (art.jsx
   // Flap), so the wall is shot once they have landed; then the field with
   // the veil lifted, once the lens has bloomed and the walk has taken its
@@ -1002,12 +1008,12 @@ const ROUTES = [
   { label: 'home-gate-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
   { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
     ['fill', '.wl-codebox-in', '481920'],
   ] },
   // the DM code, on the door: the one screen whose success depends on what
@@ -1015,11 +1021,11 @@ const ROUTES = [
   { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="instagram"]'],
     ['fill', '.wl-field input', 'ace03d'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
   { label: 'berkeley-gate-code', path: '/berkeley/gate', anon: true, acts: [
     ['fill', '.wl-addr-in', 'you'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
     ['fill', '.wl-codebox-in', '481920'],
   ] },
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
@@ -1089,6 +1095,10 @@ const ROUTES = [
   // leans in, and a press there turns to it
   { label: 'letter-hover',  path: '/berkeley/letter/ren.tanaka',
     acts: [['mouse', '.wl-turn.is-next', 0, 'hover']], settle: 600 },
+  // the keyboard's rings on the deck: the letter after this one, which the
+  // turn's own button covers, and a soft key on the card
+  { label: 'letter-focus',  path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-turn.is-next']], settle: 500 },
+  { label: 'letter-focus-key', path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-letter-card .wl-sk.is-r']], settle: 500 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
   // the heart, pressed: by a campus reader, and by somebody signed in with
@@ -1171,6 +1181,15 @@ const ROUTES = [
     acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="teal"]']], settle: 1200 },
   { label: 'write-look-xerox', path: '/berkeley/write/sofiaaa.reyes',
     acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="xerox"]']], settle: 1200 },
+  // the phone's caret (caret.jsx): after the last word, in the middle of a
+  // word, where it is the letter after it struck out of a cell of its own,
+  // and in an empty field, just before the hint, on the ping and on both
+  // of the door's fields
+  { label: 'caret-end',     path: '/berkeley/write/sofiaaa.reyes', acts: [['caret', '.wl-write-card textarea', -1]], settle: 150 },
+  { label: 'caret-mid',     path: '/berkeley/write/sofiaaa.reyes', acts: [['caret', '.wl-write-card textarea', 9]], settle: 150 },
+  { label: 'caret-empty',   path: '/berkeley/ping', acts: [['caret', '.wl-ping .wl-field input', 0]], settle: 150 },
+  { label: 'caret-door',    path: '/gate', anon: true, acts: [['click', '[data-way="email"]'], ['caret', '.wl-addr-in', 0]], settle: 150 },
+  { label: 'caret-door-ig', path: '/gate', anon: true, acts: [['click', '[data-way="instagram"]'], ['caret', '.wl-door .wl-field input', 0]], settle: 150 },
   // a letter to a name, read; and the same deck turned to the older letter
   // under the name, in the colour its own id picks
   { label: 'letter-name',   path: '/berkeley/letter/~sofia' },
@@ -1190,6 +1209,9 @@ const ROUTES = [
   { label: 'gate-in',       path: '/berkeley/gate' },
   { label: 'gate-in-more',  path: '/berkeley/gate', many: true },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
+  // and taken down: the box for why, with the caret before its example
+  { label: 'report-why',    path: '/berkeley/report/11110111-2222-4333-8444-555566660000',
+    acts: [['click', '.wl-foot .wl-pill.is-light'], ['caret', '.wl-reason textarea', 0]], settle: 150 },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
   { label: 'join',          path: '/berkeley/join?beat=4', settle: 5200 },
@@ -1357,6 +1379,14 @@ for (const r of list) {
 
     await page.goto(BASE + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
+    // The intro plays on every cold address but the reveal, and it is three
+    // and a half seconds to a bare page now, longer than a route's settle.
+    // So the shot waits for it to have gone, unless the route holds it on a
+    // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes,
+    // or on the last beat, which lifts it at once (`?beat=4`).
+    if (!/[?&](beat|t)=/.test(r.path)) {
+      await page.waitForFunction(() => !document.querySelector('.hi'), null, { timeout: 8000 }).catch(() => {})
+    }
 
     // Some states only exist once somebody has typed: the result card is the
     // one spec section 5 calls the main affordance, and it does not draw until
@@ -1393,6 +1423,36 @@ for (const r of list) {
       // until the page says so, for a frame inside a movement nothing
       // pressed started: `sel` is the expression, `arg` how long to wait
       if (act === 'until') { await page.waitForFunction(sel, null, { timeout: Number(arg) || 6000 }).catch(() => {}); continue }
+      // a control reached by the keyboard: focused, then a step back and
+      // forward again with Tab, so the ring is the keyboard's and it shows,
+      // which nothing else here reaches
+      if (act === 'focus') {
+        await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+        await page.focus(sel).catch(() => {})
+        await page.keyboard.press('Shift+Tab').catch(() => {})
+        await page.keyboard.press('Tab').catch(() => {})
+        await page.waitForTimeout(Number(more) || 400)
+        continue
+      }
+      // the caret put in a field, `arg` characters in, or counted back from
+      // the end when it is negative (-1 is after the last one). It blinks on
+      // the phone's beat, so once it has been drawn its beat is held on the
+      // lit half, and the shot is of the caret and not of the half it is out
+      if (act === 'caret') {
+        await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+        await page.$eval(sel, (el, at) => {
+          el.focus()
+          const n = at < 0 ? el.value.length + at + 1 : at
+          el.setSelectionRange(n, n)
+        }, Number(arg) || 0).catch(() => {})
+        await page.waitForTimeout(Number(more) || 160)
+        await page.evaluate(() => {
+          for (const a of document.getAnimations()) {
+            if (String(a.animationName || '').startsWith('wl-caret')) { a.pause(); a.currentTime = 0 }
+          }
+        }).catch(() => {})
+        continue
+      }
       await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
       if (act === 'fill') await page.fill(sel, arg).catch(() => {})
       // a click's fourth field, when it is a number, is how long to wait

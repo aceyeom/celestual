@@ -111,6 +111,11 @@
   margin-left: auto; padding-left: 1cqw; min-width: 0; font-size: 7.4cqw; line-height: 1; opacity: 0.82;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* a screen is addressed to a person, and when the name and the @ will not
+   both fit it is the @ that gives way: "dear Pilar" and a cut handle, not
+   "dear Pil" and most of one. The shared picture gives way the same way
+   (share.js). The two names on a story are one weight and share the row */
+.wl-scene:not(.is-pair) .wl-scr-r2 > .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
 /* the words in a row share a baseline, whatever their size; the glyphs
    beside them stay centred */
 .wl-scr-r2 > .wl-scr-nm, .wl-scr-r2 > .wl-scr-hd { align-self: baseline; }
