@@ -170,6 +170,16 @@ export function deskLog(password, { limit = 100, offset = 0 } = {}) {
   return call({ password, action: 'desk_log', limit, offset })
 }
 
+// The daily check on apify, run now (0060). It spends one call, counted with
+// the rest, and holds the request until apify answers or has been given two
+// tries, which can be most of two minutes. The answer is the run as the desk
+// reads it, `{ ok, canary }`, or `running` or `too_soon` when one is already
+// out or has just been. What the check has said so far rides on the
+// overview, as `canary`, so there is no read of its own.
+export function deskCanaryRun(password) {
+  return call({ password, action: 'desk_canary_run' })
+}
+
 // ── the legacy layer (0017 to 0020) ──────────────────────────────────────────
 // The DM code flow still writes celestual_members and
 // celestual_ig_verifications, so these still do the job they did.

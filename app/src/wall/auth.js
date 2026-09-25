@@ -210,12 +210,19 @@ export async function refresh() {
   if (me === null) return member()
   const verified = me.handleVerified && me.handle ? [me.handle] : (getState().verified || [])
 
-  // Either proof opens the letters (migration 0044). The cache is dropped when
-  // this ANSWER changes rather than when the address does: a person who proved
-  // their handle on Main and walked over here has a cache full of redactions
-  // and no address, and a cache keyed on the address would never drop it.
+  // Any of the four proofs opens the letters, and the heart and the report
+  // with them: the handle, the campus address, google, or a mailed code
+  // (migrations 0044, 0057). This used to count the first two only, so a
+  // person signed in by google or by a mailed code read the wall and could
+  // never heart it: every press was sent to a gate they had already been
+  // through, and the server that would have taken it was never asked.
+  //
+  // The cache is dropped when this ANSWER changes rather than when the
+  // address does: a person who proved their handle on Main and walked over
+  // here has a cache full of redactions and no address, and a cache keyed on
+  // the address would never drop it.
   const was = isReader()
-  const now = !!(me.signedIn && (me.eduVerified || me.handleVerified))
+  const now = isProved(me)
   if (was !== now) forgetLetters()
 
   // ── who may write here ──

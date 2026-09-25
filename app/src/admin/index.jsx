@@ -44,6 +44,7 @@ import './desk.css'
 import { Ecliptic } from '../wall/art.jsx'
 import { deskOverview, deskConflictResolve } from '../api/admin.js'
 import { Btn } from './parts.jsx'
+import { CanaryAlarm } from './Canary.jsx'
 import Overview from './Overview.jsx'
 import Guide from './Guide.jsx'
 import People from './People.jsx'
@@ -124,6 +125,27 @@ export default function AdminApp() {
     return r
   }, [password, lock])
 
+  // ── read again, on its own ──
+  // The desk used to read the overview when it opened and when somebody
+  // pressed "read it again", so a desk left open all afternoon never learned
+  // that the daily check had failed after lunch (Canary.jsx). It reads again
+  // every ten minutes while the tab is in front of somebody, and when the tab
+  // comes back to the front after a minute or more away.
+  const readAt = useRef(0)
+  useEffect(() => {
+    if (!ok) return undefined
+    readAt.current = Date.now()
+    const again = (min) => {
+      if (document.visibilityState !== 'visible' || Date.now() - readAt.current < min) return
+      readAt.current = Date.now()
+      refresh()
+    }
+    const tick = window.setInterval(() => again(0), 10 * 60_000)
+    const back = () => again(60_000)
+    document.addEventListener('visibilitychange', back)
+    return () => { window.clearInterval(tick); document.removeEventListener('visibilitychange', back) }
+  }, [ok, refresh])
+
   useEffect(() => {
     if (!password || validated.current === password) return
     let alive = true
@@ -169,6 +191,10 @@ export default function AdminApp() {
                 <div className="ad-nav-gl">{g.word}</div>
                 {g.items.map((s) => {
                   const n = s.count ? c[s.count] : null
+                  // the resolver's figure gives way to the daily check's
+                  // word while the check is failing: the line above the page
+                  // says what is wrong, and the rail says where to look
+                  const down = s.id === 'cache' && overview?.canary?.state === 'failing'
                   return (
                     <button
                       key={s.id}
@@ -181,9 +207,10 @@ export default function AdminApp() {
                         {s.word}
                         <small>{s.say}</small>
                       </span>
-                      {typeof n === 'number' && n > 0
-                        ? <span className={`ad-nav-n ${s.live ? 'is-live' : ''}`}>{n.toLocaleString()}</span>
-                        : null}
+                      {down ? <span className="ad-nav-n is-stop">failed</span>
+                        : typeof n === 'number' && n > 0
+                          ? <span className={`ad-nav-n ${s.live ? 'is-live' : ''}`}>{n.toLocaleString()}</span>
+                          : null}
                     </button>
                   )
                 })}
@@ -197,6 +224,12 @@ export default function AdminApp() {
         </nav>
 
         <main className="ad-body">
+          {/* the daily check on apify, above every screen while it is failing
+              or has stopped running (Canary.jsx) */}
+          <CanaryAlarm
+            canary={overview?.canary} password={password} onLock={lock}
+            onRan={() => refresh()} go={go} here={section}
+          />
           {said ? <p className="ad-head-note" style={{ margin: '0 0 12px' }}>{said}</p> : null}
           {section === 'overview' ? <Overview data={overview} go={go} password={password} onLock={lock} onConflictResolve={onConflictResolve} />
             : section === 'guide' ? <Guide go={go} />

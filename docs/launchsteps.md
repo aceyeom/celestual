@@ -682,21 +682,28 @@ still nobody's decision; see `docs/deletions.md` group D.
 
 ## 8. Scheduled jobs
 
-One cron job exists today: `celestual-mutual-dm`.
+Six jobs on the live project, and a seventh with migration 0060. None of them
+is ever run by hand; each is idempotent and nothing breaks if one is late.
 
-- [ ] **`select celestual_sessions_prune();`** daily. Added by Phase 4b. Deletes
-      sessions a day past their thirty day expiry. Nothing breaks if it never
-      runs; the table just grows.
+- [x] **`celestual-mutual-dm`**, every ten minutes: `net.http_post` to the
+      mutual DM drain. Scheduled by hand in the SQL editor
+      (docs/MANYCHAT-MUTUAL-DM.md, 7).
 
-- [ ] **`select wall_expire();`** daily. Added by Phase 6a. Closes out letters
-      that have sat at `pending` for more than seven days, which happens when
-      the classifier was unreachable the day they were written. Without it a
-      letter can sit in the queue forever and nobody is told.
+- [x] **The four sweeps**, hourly, scheduled by migration 0038 wherever
+      pg_cron is installed: `celestual_purge_expired()` (the sixty day broom),
+      `wall_expire()` (closes out a letter held at `pending` for seven days),
+      `celestual_sessions_prune()` (sessions a day past their expiry) and
+      `handle_search_prune()` (ledger rows past 48 hours, twice the counting
+      window). Each is its own job so one failing cannot stop the others.
 
-- [ ] **`select handle_search_prune();`** daily. Added by Phase 5. Deletes
-      `handle_search_events` rows older than 48 hours, which is twice the
-      counting window. Spec section 5. Nothing breaks if it is late; the
-      counting query is bounded by its own 24 hour window either way.
+- [ ] **`celestual-resolver-canary`**, at minute 41 of every hour, scheduled by
+      migration 0060 wherever pg_cron and pg_net are installed. It posts
+      `{ canary: true }` to `celestual-resolve` only when
+      `resolver_canary_due()` says a check is owed: a day after one that
+      passed, three hours after one that did not, never with the resolver
+      switched off. pg_net is given two minutes (`timeout_milliseconds :=
+      120000`), because a check can take a minute and a quarter. See
+      docs/HANDLE-RESOLVER.md, 12, and "The resolver canary" below.
 
 ---
 
@@ -955,6 +962,88 @@ It found two em dashes in aria-labels the first time it ran.
 
 
 ---
+
+## The resolver canary (migration 0060)
+
+Once a day the resolver asks Apify about @instagram past the cache and writes
+down what came back, and the desk draws a red line above every screen while
+the last check has failed (amber while none has run for a day and a half, or
+ever). Why and how: docs/HANDLE-RESOLVER.md, 12. Three deploys and a check,
+in this order; until the new resolver is up, the hourly post gets a harmless
+`bad_input` and nothing is written.
+
+1. **Deploy `celestual-resolve`**, with `--no-verify-jwt` (pg_net sends no
+   JWT). It takes `{ canary: true }` before it reads a handle, and a timeout
+   or a refusal now carries Apify's status and words to the one caller that
+   keeps them. Nothing about a lookup changes.
+2. **Deploy `celestual-admin`.** It adds `desk_canary_run`, which calls the
+   resolver with the service role key and logs the run as `canary run`.
+3. **Apply `0060_the_resolver_canary.sql`.** `resolver_canary_runs`, the four
+   functions over it, `celestual_desk_overview()` carrying `canary` (0050's
+   body kept word for word), and the hourly job. Re-runnable. Verified by
+   `scripts/verify-migrations.sh --test` (`test-canary.sql`).
+4. **Deploy the app.** Vercel, as usual: the line, the record on the resolver
+   screen, the rail's `failed`, and a desk that reads its overview again every
+   ten minutes.
+5. **Check it.** On the desk, the resolver screen, "check it now" (it arms,
+   and spends one call). Then:
+
+```sql
+select jobname, schedule from cron.job where jobname = 'celestual-resolver-canary';
+select id, ran_at, source, status, http_status, latency_ms, attempts, face_ok, detail
+  from resolver_canary_runs order by ran_at desc limit 5;
+select status_code, left(content::text, 200) from net._http_response order by created desc limit 3;
+```
+
+`RESOLVER_CANARY_HANDLE` is an optional secret on the function, `instagram`
+by default.
+
+## The hearts the wall began with (migration 0059), and the heart that did not count
+
+Two things about the heart. The like button did not count for anybody signed
+in with google or a mailed code, and that was the browser: since 0057 the
+server lets any proof read and heart, and `auth.js` `refresh` still drew only
+a campus address or a handle as a reader, so every press from anybody else
+went to the gate and the server was never asked. It asks now. A press from
+outside the gate is carried through the sign in and pressed on the way back
+in, and a read that set out before a press landed can no longer take it back.
+That part is the app alone.
+
+The other part is the database. Every letter already up when 0059 runs is
+given a number of hearts to start from, once: most none, the rest drawn from a
+bell folded at nought, never more than 12 on the campus wall and 30 on the
+wall at the root. Letters written after start from none. The count every read
+answers is that number and the hearts people pressed, added; nothing returns
+the seed on its own. This is a padded number, and design/VOICE.md ("Truth,
+exactly") says no count may be one. It was asked for by name. It comes out in
+one statement and goes back from its record:
+
+```sql
+update wall_letters set hearts_seed = 0;
+update wall_letters l set hearts_seed = s.seed from wall_hearts_seed_0059 s where s.id = l.id;
+```
+
+1. **Apply `0059_the_hearts_the_wall_began_with.sql`.** `wall_letters.hearts_seed`
+   (0 to 30), the record `wall_hearts_seed_0059`, the one draw, guarded by the
+   `wall_hearts_seeded_0059` row in `celestual_settings` so a second run draws
+   nothing, and `wall_letters_for`, `wall_letter`, `wall_heart` and
+   `wall_mine` re-emitted from 0055, 0044 and 0056 with the count as the sum.
+   Re-runnable. Verified by `scripts/verify-migrations.sh --test`
+   (`test-hearts-seed.sql`; `test-hearts.sql`, `test-reading-room.sql` and
+   `test-wall.sql` brought to 0057's read gate on the way).
+2. **Deploy the app.** The reader flag, the replay and the held press.
+3. **Check it.**
+
+```sql
+select campus, count(*) as letters, count(*) filter (where hearts_seed = 0) as none,
+       max(hearts_seed) as most, round(avg(hearts_seed), 1) as mean
+  from wall_letters group by campus;
+select count(*) from wall_hearts_seed_0059;
+select value from celestual_settings where key = 'wall_hearts_seeded_0059';
+```
+
+Berkeley's `most` is 12 or under and the root's 30 or under, and the record
+holds one row for every letter there was when it ran.
 
 ## The audit of 4 September (migration 0038)
 

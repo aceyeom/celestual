@@ -16,7 +16,7 @@ const SCREENS = [
   ['reports', 'reports', 'letters somebody flagged. the letter is already down; you decide whether it goes back up.'],
   ['waiting', 'waitlist', 'names people looked for on the wall and did not find, and which flyer brought them.'],
   ['the cards', 'cards', 'the five printed cards. what each one was scanned, read, and joined off, best first, and the address that goes in its QR.'],
-  ['the resolver', 'cache', 'the face and name under a typed handle, the apify switch, and who has spent what against the caps.'],
+  ['the resolver', 'cache', 'the face and name under a typed handle, the apify switch, the daily check on apify, and who has spent what against the caps.'],
   ['access', 'access', 'the pass list: an address that gets the wall\'s code at any inbox, a handle that skips the DM. and a link that signs one browser in.'],
   ['settings', 'settings', 'the release gate, the resolver switch, the four caps, the walls, and the log of what the desk did.'],
 ]
@@ -51,6 +51,11 @@ const WHEN = [
     t: 'the apify bill is climbing',
     say: 'the resolver screen says who is spending. one device at its cap is a person typing a lot; hundreds of calls in a day is somebody scripting. turn the resolver off there and the bill stops at once; lower the daily ceiling on settings if it should never get that high again.',
     to: ['cache', 'settings'],
+  },
+  {
+    t: 'a line at the top of the desk says the daily check on apify failed',
+    say: 'once a day the resolver asks apify about @instagram, an account that always exists, and the line stands there while apify is not answering properly. its own words are on the line. a token it does not know is fixed at apify and in the function\'s secrets, an account out of credit is fixed at apify, and "missing" or "changed" means the actor answers differently now. until then a handle that is not in the cache draws no card. after a fix, check it now from the resolver screen: the line goes on its own once a check passes, and the schedule tries every three hours meanwhile.',
+    to: ['cache'],
   },
   {
     t: 'the card under the field never shows up for somebody',

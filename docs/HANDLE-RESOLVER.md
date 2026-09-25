@@ -348,6 +348,7 @@ In order. Every step is also in `docs/launchsteps.md`.
 | `RESOLVE_PROXY_SECRET` | Supabase secret **and** Vercel env | yes | The same value in both. Proves a request came through `api/resolve.js`, so the visitor's address is the one counted. Without it the backstop counts Vercel's egress |
 | `VITE_HANDLE_RESOLVE` | Vercel env | yes | `1` to render the card. `0` and nothing about the product changes |
 | `VITE_RESOLVE_ENDPOINT` | Vercel env | no | Leave unset. Defaults to `/api/resolve`, which is the function. Only set it on a preview that is not behind it |
+| `RESOLVER_CANARY_HANDLE` | Supabase secret | no | The account the daily check asks about (section 12). Defaults to `instagram`. Change it only for an account that will always exist and always have a name and a picture |
 
 ## 9. When it misbehaves
 
@@ -399,6 +400,14 @@ and nothing else. The log says `private account, header shut`. Check that
 allowed to run that actor: the run log names the actor beside the status.
 The row is cached as found and private, and the face is retried on the next
 lookup after seven days like any other faceless row.
+
+**A red line at the top of the desk says the daily check on apify failed.**
+Section 12. The line carries Apify's own status and words. A token Apify does
+not know is fixed at Apify and in `APIFY_TOKEN`; an account out of credit is
+fixed at Apify; `missing` or `changed` means the actor answers differently
+now, and the check's row (`resolver_canary_runs.detail`) says which field it
+came back without. The resolver screen can run the check again after a fix,
+and the line goes by itself once one passes.
 
 ## 10. Suggestions, and what they may list
 
@@ -456,3 +465,87 @@ and the first RPC do not pay for the handshake.
 
 What is still true: the cache is never listed. A list of handles is still a
 list somebody typed in full, one at a time, on screens they are looking at.
+
+## 12. The daily check
+
+A provider failure draws nothing, on purpose (section 9, and rule 2): the card
+never tells somebody their friend does not exist because Apify did not
+answer. The cost of that rule is that an outage is silent. A token that stopped
+working, an account out of credit and an actor whose answer changed shape all
+look exactly like a quiet day, and until migration 0060 the only record of any
+of them was a line in the function's log.
+
+So once a day the function asks Apify about one account that always exists,
+`RESOLVER_CANARY_HANDLE` (`instagram` unless told otherwise), and writes down
+what came back in `resolver_canary_runs`. The desk reads it.
+
+**What it asks.** `POST { canary: true }` to `celestual-resolve`. The first
+look exactly as a lookup runs it (`firstLookInput`, the same actor and the same
+input), straight past the cache: no remembered miss, no caps, nothing written
+to `ig_profiles` and no face stored. A run that times out is tried once more,
+because one run in ten goes past twenty seconds on a good day. The face is
+downloaded and thrown away, to say whether it would have been stored; that
+never decides the answer, because the face comes from Instagram's own servers
+and this is a check on Apify. The call is written to the ledger on the
+`global` key alone (`handle_search_record` with no person, device or address),
+so `searches_24h` is still the bill; the caps are not asked, because a spent
+ceiling must not hide a broken provider.
+
+**What it writes.** One row per check: opened before Apify is asked, closed
+with the answer. `ok` is null while it runs. `status` is one of
+
+| status | what came back |
+| --- | --- |
+| `ok` | the account, with its username, a name and a picture |
+| `shape` | the account without a name or a picture, or as another account, or an empty dataset: the actor's answer has changed |
+| `missing` | the actor said there is no such account |
+| `unclear` | the actor could not see into the page |
+| `timeout` | no answer inside the run's thirty seconds, twice |
+| `refused` | Apify turned the call away; `http_status` and Apify's own message (`detail.said`, `detail.type`) are kept |
+| `off` | the function has no `APIFY_TOKEN` |
+| `error` | anything else, with what was thrown, or a check that never closed (read as failed after three minutes, and closed as such when the next one opens) |
+
+beside `latency_ms`, `attempts`, `face_ok`, `source` (`cron` or `desk`) and
+the handle. Rows are kept ninety days.
+
+**When it runs.** A pg_cron job, `celestual-resolver-canary`, ticks at minute
+41 of every hour and posts to the function through pg_net only when
+`resolver_canary_due()` says a check is owed: a day after the last one that
+passed, three hours after one that did not, and never while the desk has the
+resolver switched off. So a healthy week costs seven calls, and a failure
+clears itself within three hours of Apify answering again. pg_net is given two
+minutes (`timeout_milliseconds := 120000`) rather than its default five
+seconds. Anybody can post `{ canary: true }`; what they get is the check that
+was owed anyway, or `{ ok:false, error:'not_due' }`.
+
+**Checking it now.** The desk's resolver screen, and the line at the top of
+every screen while it is failing, have a "check it now" that arms before it
+fires. It goes through `celestual-admin` (`desk_canary_run`), which calls this
+function with the service role key in the Authorization header; that is the
+one caller that runs a check whenever it asks, one at a time and a minute
+apart. The run is written to the desk's log as `canary run`.
+
+**What the desk shows.** `celestual_desk_overview()` carries `canary`
+(`resolver_canary_status(7)`): a `state` of `never`, `failing`, `stale` (the
+last check passed more than thirty six hours ago), `ok` or `paused` (never or
+stale with the switch off), the last check, the streak since the last pass,
+and the latest runs. While the state is `failing` a red line stands above the
+heading of every screen and the rail marks the resolver `failed`; while it is
+`stale` or `never` the line is amber. The resolver screen keeps the record: the
+last check, what came back, and the seven before. The desk reads the overview
+again every ten minutes while its tab is in front of somebody.
+
+**Deploying it.** `supabase functions deploy celestual-resolve --no-verify-jwt`
+(the flag matters: pg_net sends no JWT), `supabase functions deploy
+celestual-admin`, then migration 0060, which schedules the job where pg_cron
+and pg_net are installed and says so where they are not. The project's
+functions address is written into the job, as it is in `api/resolve.js`; a
+move to another project is a change to that line. Then:
+
+```sql
+select jobname, schedule from cron.job where jobname = 'celestual-resolver-canary';
+select id, ran_at, source, status, http_status, latency_ms, attempts, face_ok, detail
+  from resolver_canary_runs order by ran_at desc limit 5;
+select status_code, left(content::text, 200) from net._http_response order by created desc limit 3;
+```
+

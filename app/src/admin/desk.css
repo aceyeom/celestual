@@ -123,6 +123,9 @@
 }
 .ad-nav button.is-on .ad-nav-n { color: var(--ash); }
 .ad-nav-n.is-live { color: var(--accent); }
+/* the resolver's place in the rail while the daily check on apify is failing */
+.ad-nav-n.is-stop,
+.ad-nav button.is-on .ad-nav-n.is-stop { color: var(--ad-stop); font-family: var(--f-util); }
 
 .ad-rail-foot { padding: 20px 18px 0; margin-top: 14px; border-top: 1px solid var(--hair-soft); }
 
@@ -226,6 +229,60 @@
 }
 @media (hover: hover) and (pointer: fine) {
   button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
+}
+
+/* ── the alarm ──
+   The one line on the desk allowed to be loud, and loud only while it is
+   true: the daily check on apify failed (red), or has not run for a day and
+   a half or ever (amber). It stands above the heading of every screen,
+   because the person who opened the desk for a report is the person who has
+   to learn that new handles are drawing nothing. The tint is the state's own,
+   laid as a wash under a hairline of the same, which is the stop button's
+   language (.ad-btn.is-stop) at the size of a sentence; the words stay chalk
+   and ash, so they read at the contrast of every other sentence here. Three
+   columns on a desk (the mark, the words, the acts) and one on a phone. */
+.ad-alarm {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start;
+  gap: 8px 16px; max-width: 900px; margin: 0 0 22px; padding: 13px 16px 14px;
+  border: 1px solid rgba(200, 117, 106, 0.5); border-radius: var(--r-card);
+  background: rgba(200, 117, 106, 0.1);
+}
+.ad-alarm.is-hold { border-color: rgba(200, 169, 106, 0.42); background: rgba(200, 169, 106, 0.07); }
+.ad-alarm-k { padding-top: 3px; }
+.ad-alarm-body { min-width: 0; }
+.ad-alarm-t { margin: 0; font-family: var(--f-util); font-size: var(--t-wide); line-height: 1.4; color: var(--chalk); }
+.ad-alarm-why {
+  margin: 4px 0 0; max-width: 64ch; font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.5;
+  color: var(--ash); overflow-wrap: anywhere;
+}
+.ad-alarm-why.is-said, .ad-canary-why.is-said { color: var(--ad-stop); }
+.ad-alarm-acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+@media (max-width: 700px) {
+  .ad-alarm { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 14px 14px; }
+  .ad-alarm-k { padding-top: 0; }
+  .ad-alarm-acts { justify-content: flex-start; margin-top: 4px; }
+}
+
+/* ── the daily check, on the resolver screen ──
+   A panel like the switch above it: the last check as a state, its time and
+   its seconds, what came back in a sentence, the button at the right, and
+   under a hairline the checks before it as a table. The table scrolls inside
+   the panel on a phone rather than past its edge. */
+.ad-canary-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 28px; }
+.ad-canary-now { flex: 1 1 320px; min-width: 0; }
+.ad-canary-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.ad-canary-why {
+  margin: 8px 0 0; max-width: 64ch; font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.5;
+  color: var(--chalk); overflow-wrap: anywhere;
+}
+.ad-canary-act { flex: none; padding-top: 2px; }
+.ad-canary-runs { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--hair-soft); overflow-x: auto; }
+.ad-canary-runs .ad-table { min-width: 620px; }
+.ad-canary-runs .ad-table tr:last-child td { border-bottom: 0; }
+/* one line a row, cut where the column ends; the whole of it is the title */
+.ad-canary-said {
+  display: block; max-width: 420px; font-size: var(--t-small); line-height: 1.45; color: var(--ash);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* ── the ledger ──

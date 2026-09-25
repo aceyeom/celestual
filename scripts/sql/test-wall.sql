@@ -29,10 +29,13 @@ insert into celestual_settings (key, value) values ('handle_salt', 'test-salt')
 -- ── the cast ────────────────────────────────────────────────────────────────
 -- author   at berkeley, no handle. The ordinary wall writer.
 -- subject  at berkeley AND holds the verified handle the letter is about.
--- outsider at stanford. Verified, just not here.
+-- outsider at stanford. Verified, just not here. Since 0057 any proof reads
+--          any open wall, so the outsider reads here and cannot write here.
+-- unproved a session, and nothing proved on it: the one person with a
+--          session the read gate still turns away.
 -- stranger no session at all.
 do $$
-declare a uuid; s uuid; o uuid;
+declare a uuid; s uuid; o uuid; u uuid;
 begin
   insert into celestual_users (edu_email, edu_verified_at) values ('author@berkeley.edu', now())
     returning id into a;
@@ -43,6 +46,8 @@ begin
   perform w_session(a, 'token-author-0000000000');
   perform w_session(s, 'token-subject-000000000');
   perform w_session(o, 'token-outsider-00000000');
+  insert into celestual_users (email) values ('unproved@nowhere.org') returning id into u;
+  perform w_session(u, 'token-unproved-00000000');
 end $$;
 
 -- ── 1. the gate ─────────────────────────────────────────────────────────────
@@ -142,7 +147,7 @@ begin
 end $$;
 select w_ok('the eight spend out',
   (wall_letters_for('token-nobody-00000000000', 'spendthem')->'free'->>'left')::int = 0
-  and (wall_letters_for('token-outsider-00000000', 'spendthem')->'free'->>'left')::int = 0);
+  and (wall_letters_for('token-unproved-00000000', 'spendthem')->'free'->>'left')::int = 0);
 
 select w_ok('a stranger gets the letter with no words',
   (wall_letters_for('token-nobody-00000000000', 'subject')->'letters'->0->>'body') is null);
@@ -152,8 +157,11 @@ select w_ok('but still sees that a letter exists',
   jsonb_array_length(wall_letters_for('token-nobody-00000000000', 'subject')->'letters') = 1);
 select w_ok('and that it carries a seal',
   (wall_letters_for('token-nobody-00000000000', 'subject')->'letters'->0->>'has_seal')::boolean);
-select w_ok('the outsider gets no words either',
-  (wall_letters_for('token-outsider-00000000', 'subject')->'letters'->0->>'body') is null);
+select w_ok('a session with nothing proved on it gets no words either',
+  (wall_letters_for('token-unproved-00000000', 'subject')->'letters'->0->>'body') is null);
+select w_ok('the outsider is handed them, since 0057',
+  (wall_letters_for('token-outsider-00000000', 'subject')->'letters'->0->>'body')
+    = 'i should have said something in march');
 select w_ok('somebody at berkeley gets the words',
   (wall_letters_for('token-author-0000000000', 'subject')->'letters'->0->>'body')
     = 'i should have said something in march');
@@ -244,10 +252,10 @@ declare lid uuid;
 begin
   select id into lid from wall_letters where target_handle = 'subject';
 
-  if (wall_report('token-outsider-00000000', lid, 'i do not like it')->>'error') <> 'gate' then
-    raise exception 'FAIL  somebody off campus could report';
+  if (wall_report('token-unproved-00000000', lid, 'i do not like it')->>'error') <> 'gate' then
+    raise exception 'FAIL  somebody with nothing proved could report';
   end if;
-  raise notice 'PASS  reporting needs the campus';
+  raise notice 'PASS  reporting needs a proof';
 
   if not (wall_report('token-author-0000000000', lid, 'on reflection')->>'ok')::boolean then
     raise exception 'FAIL  a report from campus was refused';

@@ -56,7 +56,7 @@ import {
   HandleField, DmCode, VerifyHead, DoorHead, DoorFoot, Or, CodeBox, Resend,
 } from '../parts.jsx'
 import { Ecliptic, Envelope, Google, Provider } from '../art.jsx'
-import { normHandle, validHandle } from '../data.js'
+import { normHandle, validHandle, heart } from '../data.js'
 import { takeAfterGate, peekAfterGate, setAfterGate } from '../store.js'
 import {
   DOMAIN, anyEmail, isReader, isMember, member, normEmail, signedIn,
@@ -192,9 +192,14 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   })
 
   // Back to whatever sent somebody here: the letter they pressed "read it"
-  // on, the composer, the report. The wall, when nothing did.
+  // on, the composer, the report. The wall, when nothing did. A heart
+  // pressed from outside the gate rides the same address (Letter.jsx
+  // `pressHeart`) and is pressed here, on the way back in, so the letter
+  // opens with it already on; the cache it lands in was emptied by the
+  // sign in, and data.js `heart` holds the press until the letter is read.
   const finish = () => {
     const after = takeAfterGate()
+    if (after && after.name === 'letter' && after.heart && after.id && isReader()) heart(after.id, true)
     if (after) go(after.name, after.id)
     else up()
   }
@@ -217,7 +222,11 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     if (!alive.current) return
     unstashAfter()
     if (isMember()) { setWho(member()); finish(); return }
-    // signed in, and reading, and not at this campus
+    // signed in, and reading, and not at this campus. Somebody who came for
+    // a letter, to read it or to heart it, has what they came for and goes
+    // back to it, with the heart pressed; only a writer is asked for the
+    // campus address next
+    if (forReading && isReader()) { finish(); return }
     setWay('campus')
     setSaid(out.email ? `signed in as ${out.email}. a ${c.domain} address is what writes here` : `a ${c.domain} address is what writes here`)
   }
