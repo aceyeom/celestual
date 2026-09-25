@@ -2920,71 +2920,61 @@ a.wl-lq { text-decoration: none; }
 
 /* ═══ THE COLOUR PANEL ═════════════════════════════════════════════════════
    Look.jsx, under the composer's screen while its `colour` key is on: the
-   one thing a writer chooses about how the letter looks. Three short groups,
-   each colour drawn as the small screen it makes, the chosen one ringed, and
-   its name under the lot. The screen above is the preview. */
+   one thing a writer chooses about how the letter looks. One pool of
+   thirteen, in the order of a spectrum and under no heading, each colour
+   drawn as the small screen it makes, the chosen one ringed, and its name
+   under the lot. The screen above is the preview.
+
+   Seven to a row, two rows, on every width: the swatches take what the row
+   has, up to their own size, so a phone of 320 has the whole pool in view
+   and nothing scrolls sideways. The second row stands under the first from
+   the left, the way the rows of a phone's menu grid do. */
 .wl-look {
   display: flex; flex-direction: column; gap: 12px;
-  margin-top: 18px; padding: 14px 16px 12px; border-radius: 16px;
+  margin-top: 18px; padding: 16px 16px 12px; border-radius: 16px;
   background: rgba(12, 12, 12, 0.86); box-shadow: inset 0 0 0 1px var(--hair);
   animation: wl-act-in 300ms var(--ease) both;
 }
-.wl-look-groups { display: flex; flex-direction: column; gap: 12px; }
-.wl-look-group { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 10px; }
-.wl-look-h {
-  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
-  color: var(--ash);
+.wl-look-opts {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 40px)); justify-content: center;
+  gap: 12px 8px;
 }
-.wl-look-opts { display: flex; flex-wrap: wrap; gap: 9px; }
 /* while the colours are open the preview gives them room, and the line
-   under the card closes up: 470 is the head, the question, the line, the
-   strip and the foot */
+   under the card closes up: 500 is the head, the question, the line, the
+   two rows and the name under them, and the foot */
 .wl-write-step:has(> .wl-look) .wl-write-floor { margin-top: 12px; }
-.wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 470px - var(--notch)) / 1.22))); }
+.wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 500px - var(--notch)) / 1.22))); }
 .wl-root .wl-look-opt {
-  display: block; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
-  transition: transform 200ms var(--ease);
+  display: block; min-width: 0; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
 }
-.wl-look-opt .wl-mini { transition: box-shadow 200ms var(--ease); }
+.wl-look-opt .wl-mini { width: 100%; height: auto; aspect-ratio: 40 / 46; transition: box-shadow 200ms var(--ease); }
+/* the chosen one keeps its own rule, or its keyline, inside the ring
+   (screen.css `--mini-in`) */
 .wl-look-opt.is-on .wl-mini {
-  box-shadow: inset 0 0 0 2px var(--t-border), 0 0 0 2px #0C0C0C, 0 0 0 3.5px var(--chalk), 0 0 14px -2px var(--s-glow);
+  box-shadow: var(--mini-in), 0 0 0 2px #0C0C0C, 0 0 0 3.5px var(--chalk), 0 0 14px -2px var(--s-glow);
 }
+/* a step brighter under a pointer, and a pixel down under a finger: a
+   swatch is a key on the wall, and nothing on the wall shrinks when it is
+   pressed (DESIGN.md 9) */
 @media (hover: hover) and (pointer: fine) {
-  .wl-look-opt:hover { transform: scale(1.06); }
+  .wl-look-opt:not(.is-on):hover .wl-mini { box-shadow: var(--mini-in), 0 0 0 2px #0C0C0C, 0 0 0 3px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
 }
-.wl-look-opt:active { transform: scale(0.94); transition-duration: 90ms; }
-.wl-look-opt:focus-visible { outline: 1.5px solid rgba(244, 241, 234, 0.8); outline-offset: 3px; }
+.wl-look-opt:active { transform: translateY(1px); }
+.wl-look-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 5px; border-radius: 2px; }
 .wl-look-now {
   margin: 0; padding-top: 10px; border-top: 1px solid var(--hair); text-align: center;
   font-family: var(--f-s40); font-size: 20px; line-height: 1; letter-spacing: 0.02em;
   color: var(--chalk);
 }
-/* a row for each kind, so no row is an orphan: lit 7, posters 6, risos 4,
-   copied 1 */
-@media (min-width: 561px) {
-  .wl-look-group { grid-template-columns: 52px 1fr; }
-  .wl-look-opts { display: grid; grid-template-columns: repeat(7, 40px); gap: 8px; }
-  .wl-look-opt[data-value='pink-blue'] { grid-column-start: 1; }
-  /* four rows stand taller than the phone's strip */
-  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 600px - var(--notch)) / 1.22))); }
-}
-/* on a phone the three groups are one strip, scrolled sideways, with the
-   chosen colour kept in the middle of it (Look.jsx), and on a phone on its
-   side, which has no height for three rows. The padding holds the chosen
-   ring and the focus outline inside the strip's clip */
+/* on a phone the panel stands closer under the screen, and the row gives
+   the swatches all of its width it can */
 @media (max-width: 560px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
-  .wl-look { margin-top: 12px; padding: 10px 0; gap: 8px; }
-  .wl-look-groups {
-    flex-direction: row; gap: 18px;
-    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
-    padding: 5px 28px 6px 18px; scroll-padding-inline: 18px 28px;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
-  }
-  .wl-look-groups::-webkit-scrollbar { display: none; }
-  .wl-look-group { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; flex: 0 0 auto; }
-  .wl-look-opts { display: flex; flex-wrap: nowrap; gap: 8px; }
-  .wl-look-now { margin: 0 18px; }
+  .wl-look { margin-top: 12px; padding: 14px 12px 10px; gap: 10px; }
+  .wl-look-opts { gap: 10px 7px; }
+}
+@media (max-width: 359px) {
+  .wl-look { padding-left: 8px; padding-right: 8px; }
+  .wl-look-opts { gap: 9px 5px; }
 }
 @media (max-width: 560px) {
   .wl-write-step:has(> .wl-look) ~ .wl-write-foot { padding-top: 14px; }
@@ -3017,10 +3007,10 @@ a.wl-lq { text-decoration: none; }
   .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
   .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
 }
-/* the kind over its row where the window is tall; on a short one it stays
-   beside the row, so the act is not pushed under the fold */
-@media (min-width: 900px) and (min-height: 641px) {
-  .wl-write .wl-look-group { grid-template-columns: 1fr; gap: 6px; }
+/* beside the screen the pool stands at the column's left, under the
+   question it answers */
+@media (min-width: 900px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .wl-write .wl-look-opts { justify-content: start; }
 }
 /* on its side the screen is sized off the height alone: 134 is the
    column's padding, the head and the line under the card at two lines. The
@@ -4868,8 +4858,8 @@ a.wl-lq { text-decoration: none; }
   .wl-write-card, .wl-acts-pane, .wl-act, .wl-seal-say { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
-  .wl-look, .wl-look-grid { animation: none !important; }
-  .wl-seg-thumb, .wl-look-tile, .wl-look-dot, .wl-look-chip { transition: none; }
+  .wl-look { animation: none !important; }
+  .wl-seg-thumb, .wl-look-opt .wl-mini { transition: none; }
   /* the answer arrives where the field was without travelling to get there,
      and the rule under a lookup holds still: the words under it are the
      account of the wait under this preference */

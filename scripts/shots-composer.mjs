@@ -125,12 +125,13 @@ for (const v of VIEWPORTS) {
   await page.waitForTimeout(600)
   await shot('6-name')
 
-  // 7. the letter, and the look panel's rail, which wears the same tabs
+  // 7. the letter, and the colours under its screen, opened by the
+  // screen's left key
   await page.click('.wl-write-foot .wl-pill')
   await page.waitForTimeout(700)
   await page.fill('.wl-write-card textarea', 'You gave me your umbrella outside Wheeler and walked home in it. I still have it.')
   await page.waitForTimeout(500)
-  await page.click('.wl-pen')
+  await page.click('.wl-write-card .wl-sk.is-l')
   await page.waitForTimeout(900)
   await shot('7-look')
 

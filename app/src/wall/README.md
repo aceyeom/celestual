@@ -377,11 +377,20 @@ still after the last word. Every letter is the same screen, set in one face
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter is its stars |
 | **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
-The only thing a writer chooses is the COLOUR it is lit in, from one list in
-three groups (`Look.jsx`, under the composer's screen while its `colour` key
-is on): six lit screens and the negative; six posters and four risos, which
-keep their own ground; and the xerox. Each colour brings its treatment with
-it, and every letter in it is still its own phone: its tilt, proportion,
+The only thing a writer chooses is the COLOUR it is lit in, from one pool of
+thirteen under no heading, in the order of a spectrum (`Look.jsx`, under the
+composer's screen while its `colour` key is on): six lit screens, the
+negative, four posters and a riso, which keep their own ground, and the
+xerox. Each colour brings its treatment with it, and a print its own light
+(`LIGHTS`): acid keeps the backlight's hot corner, teal has a keyline inside
+its rule, ember the light falling from the top, lilac its light as a
+halftone, and violet / yellow the phone's two bands in the violet drum. The
+light is drawn the same on the letter, the tile, the thumbnail and the
+shared picture, and `/looks.html` on the dev server draws all four side by
+side. Blush, cobalt, pink / blue, orange / teal and red / green left the
+pool, and a letter in one draws the colour nearest its hue (`RETIRED`;
+migration 0061 moved the rows). Every letter in a colour is still its own
+phone: its tilt, proportion,
 backlight and the clouds in it, pixel pitch, the colour each pixel is lit a
 little off (`rgbTile`) and dust come out of its id (`quirks`), so no two
 letters are the same photograph and no letter is a different design. The
@@ -392,8 +401,8 @@ falling on it (`.wl-room-light`); the wall goes out behind it. On the wall
 each name is its newest letter's screen, small (`Tile`): the aerial across the
 top, the battery how long since the last, an envelope blinks on a
 name written to today, and the middle is the name's picture, in the screen's
-own tones with some of the photograph's colour left in, or its monogram with
-the cursor after it. Nothing on the wall is round.
+own tones with some of the photograph's colour left in, or its monogram. A
+print's small screen carries its print's light. Nothing on the wall is round.
 
 Everything round the screens is the same phone (design/DESIGN.md 2.6,
 `phone.css`): one face for every word but the brand's, square keys, unlit
@@ -423,9 +432,13 @@ browser, by the function and by the schema (`wall_look_clean`, and a
 constraint that holds every row to what it answers). The screens write one
 key of it, `{ "tint": "teal" }`. What a slug DRAWS is the browser's: a new
 colour is a row in `looks.js`, never a migration, and a row this build does
-not know — a paper from before the screens — draws the colour its id picks.
+not know (a paper from before the screens) draws the colour its id picks.
 Migration 0058 gave every letter already up a colour of its own and kept
-what it had in `wall_look_backup_0058`.
+what it had in `wall_look_backup_0058`. A colour that leaves the pool is the
+one exception to never a migration: its letters would otherwise draw a
+colour their id picks, so it goes into `RETIRED` with the colour nearest its
+hue, and a migration moves its rows (0061, backed up in
+`wall_look_backup_0061`).
 
 **The screen of a name is the screen of its newest letter.** The index
 carries the look of the newest letter under each key, so a name's small
