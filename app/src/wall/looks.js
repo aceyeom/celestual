@@ -694,22 +694,11 @@ export function chargeOf(ts) {
   return hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
 }
 
-// A day said in words: the month and the day, and the year only when it is
-// not this one. Lowercase, as every other word on the wall is.
-const MONTH = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
-export function dateOf(ts) {
-  if (!ts) return ''
-  const d = new Date(ts)
-  if (Number.isNaN(d.getTime())) return ''
-  const day = `${MONTH[d.getMonth()]} ${d.getDate()}`
-  return d.getFullYear() === new Date().getFullYear() ? day : `${day} ${d.getFullYear()}`
-}
-
-// And the day a letter went up, the way the phone stamped a message it had
-// kept: 09/24/26, month, day and year in two figures each, by the clock of
-// the phone it is read on. It stands in the status row where the draft
-// counted its characters (screen.jsx `stamp`), so a letter being written
-// says how much is left and a letter that is up says when.
+// The day a letter went up, or a ping was placed, the way the phone stamped
+// a message it had kept: 09/24/26, month, day and year in two figures each,
+// by the clock of the phone it is read on. It stands in the status row where
+// the draft counted its characters (screen.jsx `stamp`), so a screen being
+// written says how much is left and one that is up or placed says when.
 const two = (n) => String(n).padStart(2, '0')
 export function stampOf(ts) {
   if (!ts) return ''

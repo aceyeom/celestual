@@ -46,7 +46,7 @@ import {
 import { Screen, ScreenDraft, ScreenNote, RoomLight } from '../screen.jsx'
 import { Dots, Ecliptic, Provider } from '../art.jsx'
 import { normHandle, validHandle, atHandle, loadMine } from '../data.js'
-import { colourOf, dateOf } from '../looks.js'
+import { colourOf, stampOf } from '../looks.js'
 import { heldProof, refresh } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
 import { signOut as dropProof } from '../../api/auth.js'
@@ -611,12 +611,15 @@ export default function Ping({
                 is sealed on the server until both sides exist; the right key
                 takes a character back, or, on an empty line, goes back to
                 the name. Once it is out the screen says so, the way the
-                phone said a message had gone, and asks nothing. */}
+                phone said a message had gone, and asks nothing. By the
+                battery, as on the composer, what the line has left while it
+                is being written, and the day it was placed once it is out,
+                as on a letter that is up (screen.jsx `stamp`). */}
             <Screen
               look={null} seed={seed} live state={dip}
               top={{
                 name: first || atHandle(h), handle: first ? atHandle(h) : '', dear: true, icon: 'pen',
-                date: dateOf(Date.now()), counter: done ? '' : `${MAX_LINE - line.length}/1`,
+                ...(done ? { stamp: stampOf(Date.now()) } : { counter: `${MAX_LINE - line.length}/1` }),
               }}
               keys={done ? {} : {
                 r: line

@@ -44,7 +44,7 @@ import { Provider } from '../art.jsx'
 import {
   labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
 } from '../data.js'
-import { dateOf } from '../looks.js'
+import { stampOf } from '../looks.js'
 import { getState } from '../store.js'
 import { member, memberLabel, isReader, signOut, refresh, toWrite, heldProof } from '../auth.js'
 import { loadPending } from '../handoff.js'
@@ -114,9 +114,9 @@ function Wrote({ go }) {
 
 // ── a ping's own screen ─────────────────────────────────────────────────────
 // A standing ping, opened: the screen it was placed on, lit in the colour its
-// name picks, with the line on it and the day it was placed across the top,
-// and the battery running down with the sixty days, the way the phone's
-// did. Its left key is the phone's own options, and the two things that can
+// name picks, with the line on it and the day it was placed by the battery,
+// as a letter that is up carries its day (screen.jsx `stamp`), and the
+// battery running down with the sixty days, the way the phone's did. Its left key is the phone's own options, and the two things that can
 // be done to a ping are the menu's two rows: sixty more days, which is free
 // and undoes nothing, and letting it go, which frees the slot and asks once,
 // on the screen, in the words the product always asks it in.
@@ -160,7 +160,7 @@ function PingScreen({ p, me, onBack, onChange }) {
   const sel = Math.min(at, items.length - 1)
   const pick = (j) => { const it = items[j]; if (it) { setSaid(''); it.run() } }
 
-  const dated = { date: dateOf(p.at), bat: batOf(expires) }
+  const dated = { stamp: stampOf(p.at), bat: batOf(expires) }
   let top = { ...dated, name: first || atHandle(p.to), handle: first ? atHandle(p.to) : '', dear: true, icon: 'pen' }
   let body
   let keys
