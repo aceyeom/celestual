@@ -42,13 +42,13 @@ export function setBase(b) { BASE = String(b || '') }
 // and it closes back onto the wall it was raised over; the account is a look
 // at what this person has out, taken without leaving the names. The mutual
 // is the end of that same story, so it is raised over the wall too.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal'])
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal', 'claim', 'r', 'alerts'])
 
 // Every address under a wall's base, by its first segment. At the root this
 // is also what decides which addresses are the wall's at all: `/optout` is
 // Main's, `/letter/x` is the wall's, and nothing under `/` is claimed by
 // the wall on the strength of not being anybody else's.
-const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal'])
+const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal', 'claim', 'r', 'alerts'])
 
 const norm = (pathname) => String(pathname || '/').replace(/\/+$/, '') || '/'
 const rootOf = (base) => base || '/'
@@ -73,6 +73,11 @@ export function parse(pathname) {
     // It's mutual: the other one's handle, raised over the wall. Main drew
     // it at /reveal until it was the phone's, and the address came with it.
     case 'reveal': return id ? { name: 'reveal', id } : { name: 'wall' }
+    // The owner of an @ (docs/ONE-WALL.md): claiming it from a letter, and the
+    // two links in the alert emails, the removal and the stop.
+    case 'claim':  return id ? { name: 'claim', id } : { name: 'wall' }
+    case 'r':      return { name: 'r' }
+    case 'alerts': return { name: 'alerts' }
     // /berkeley/orbit was a drawn stand-in for the core service with a seeded
     // ledger in it, reachable by anybody who typed the address. The ping is
     // a sheet on the wall now, and the stand-in is gone.

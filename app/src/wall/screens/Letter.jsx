@@ -94,15 +94,16 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetFoot, Pill, Close, Brand, ArrowLink, useProfile, useSheet,
+  Sheet, SheetFoot, Pill, Close, Brand, ArrowLink, Toast, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
 import { colourOf, chargeOf, stampOf } from '../looks.js'
 import { shareLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
-  atHandle, nameFor, normHandle, heart, wall, freeReads,
+  atHandle, nameFor, normHandle, heart, wall, freeReads, loadWall, removeLetter,
 } from '../data.js'
+import { ownerRemove, ownerRestore } from '../../api/alerts.js'
 import { href } from '../router.js'
 import { mark, setAfterGate, getState, patch } from '../store.js'
 import { cardStep } from '../seed.js'
@@ -316,7 +317,7 @@ function Lights({ look, seed }) {
 // per person, the count is a count and nothing else, and zero says nothing
 // rather than "0". Behind the same gate as reading, so on a letter from
 // outside it the heart is the way to the gate.
-function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
+function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '', onRemove = null }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
   const [busy, setBusy] = useState(false)
@@ -373,14 +374,22 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     setBusy(false)
   }
 
+  /* A first name is nobody's to claim or to empty: forty people share it,
+     and no handle proof can stand for it (0053). A letter to an @ is its
+     owner's (docs/ONE-WALL.md): to the person who has proved it (`mine`,
+     api.js), the first row takes this one letter down, with an undo
+     (`removeMine`, below); to anybody else, "this is about me" is the way
+     to prove it (screens/Claim.jsx). Taking the whole name off for good
+     stays under both (screens/Remove.jsx). */
+  const toAt = !isNameKey(l.to)
   const optionItems = [
+    ...(l.mine && onRemove ? [{ t: 'remove this letter', run: () => onRemove(l) }] : []),
     ...(open
       ? [{ t: `write to ${first || 'them'}`, run: () => toWrite(go, l.to) }]
       : [{ t: 'read it', run: toGate }]),
     { t: 'report this letter', run: () => go('report', l.id) },
-    /* A first name is nobody's to empty: forty people share it, and no
-       handle proof can stand for it (0053). */
-    ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
+    ...(toAt && !l.mine ? [{ t: 'this is about me', run: () => go('claim', l.to) }] : []),
+    ...(toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
   ]
   const face = () => letterFace(l, { name: toName, handle: toHandle })
   // Under a menu titled `share`, the row that opens the phone's own share
@@ -454,11 +463,20 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     top = letterTop
     body = <ScreenNote glyph={at.glyph} title={at.title}>{at.text || null}</ScreenNote>
     keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
+  } else if (at.kind === 'ask') {
+    /* a question the screen puts before an act that cannot be taken back:
+       the act on the left key, and keeping things as they are on the right */
+    top = letterTop
+    body = <ScreenNote title={at.title}>{at.text || null}</ScreenNote>
+    keys = {
+      l: { label: at.yes, onClick: at.onYes, aria: at.aria || at.yes },
+      r: { label: 'keep it', onClick: back, aria: 'keep it on the wall' },
+    }
   } else {
     top = letterTop
     body = <ScreenText text={text} sealed={!open} />
     keys = {
-      l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: open ? 'options: write to them, report' : 'options: read it, report' },
+      l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: `options: ${optionItems.map((x) => x.t).join(', ')}` },
       /* never disabled while a press is out: the heart is drawn at once
          (data.js `heart`), and a key that dimmed until the server answered
          read as a press that had not taken, and let go of the focus */
@@ -508,13 +526,73 @@ export default function Letter({
     via.current = 'wall'
     if (toWall) toWall()
   }, [toWall])
-  const aside = cold
-    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} /></>
-    : <LetterX label={upLabel} />
   const wrap = `is-letter${cold ? ' is-cold' : ''}`
   // What the live screen is showing: the letter (null), a menu, or a note.
   // Nothing else on this sheet holds state: the letter is the server's.
   const [view, setView] = useState(null)
+
+  // ── the owner takes it down ──
+  // One tap from the menu, by the person who has proved the letter's @
+  // (docs/ONE-WALL.md `wall_owner_remove`): it comes down, the card says so,
+  // and for five seconds a line at the foot of the glass offers it back
+  // (`wall_owner_restore`, good for a day on the server). It files no claim
+  // and shuts nothing else. A database that does not have the call yet is
+  // answered with the old removal, which cannot be undone and closes the @
+  // to new letters, so it is asked for first, on the screen.
+  const [toast, setToast] = useState(null)   // { id, to, said, stamp, busy }
+  const freshen = (l) => Promise.all([loadLetter(l.id, true), loadHandle(l.to, true), loadWall(true)])
+  const removeForGood = async (l) => {
+    setView({ kind: 'note', glyph: 'wait', title: 'removing' })
+    const out = await removeLetter(l.id)
+    if (out?.ok) { setView(null); return }
+    setView({
+      kind: 'note', glyph: '', title: 'it did not come down', done: true,
+      text: out?.error === 'unverified' || out?.error === 'no_session' ? 'confirm your Instagram again, then try' : 'try again',
+    })
+  }
+  const removeMine = async (l) => {
+    setView({ kind: 'note', glyph: 'wait', title: 'removing' })
+    const out = await ownerRemove(l.id)
+    if (out?.ok) {
+      setView({ kind: 'note', glyph: 'check', title: 'removed', done: true })
+      setToast({ id: l.id, to: l.to, said: 'removed.', stamp: Date.now() })
+      await freshen(l)
+      return
+    }
+    if (out?.error === 'missing') {
+      setView({
+        kind: 'ask', title: 'remove it for good?', yes: 'remove', aria: 'remove it for good',
+        text: 'this cannot be undone, and nobody can write to your @ again.',
+        onYes: () => removeForGood(l),
+      })
+      return
+    }
+    setView({ kind: 'note', glyph: '', title: 'it did not come down', text: 'try again', done: true })
+  }
+  const undoMine = async () => {
+    const t = toast
+    if (!t || t.busy) return
+    setToast({ ...t, said: 'putting it back.', busy: true })
+    const out = await ownerRestore(t.id)
+    if (out?.ok) {
+      setToast(null)
+      setView(null)
+      await freshen(t)
+      return
+    }
+    setToast({ ...t, busy: false, said: 'it did not come back. try again.', stamp: Date.now() })
+  }
+  const owned = toast ? (
+    <Toast
+      act={toast.busy ? '' : 'undo'} onAct={undoMine} stamp={toast.stamp}
+      ms={toast.busy ? 0 : 5000} onDone={() => setToast(null)}
+    >
+      {toast.said}
+    </Toast>
+  ) : null
+  const aside = cold
+    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} />{owned}</>
+    : <><LetterX label={upLabel} />{owned}</>
   // The screen wakes once, on the first letter the sheet opens on, the way a
   // phone's backlight comes up; a turn does not wake it again.
   const [woke, setWoke] = useState('waking')
@@ -1163,7 +1241,7 @@ export default function Letter({
                   <LetterScreen
                     l={one || null} handle={one ? null : handle} seed={String(param)}
                     id="wl-letter-to" live view={view} onView={setView} go={go} toGate={toGate}
-                    woke={moved.current ? '' : woke}
+                    woke={moved.current ? '' : woke} onRemove={removeMine}
                   />
                 )}
               </Cell>

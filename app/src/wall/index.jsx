@@ -64,6 +64,9 @@ import Report from './screens/Report.jsx'
 import Ping from './screens/Ping.jsx'
 import You from './screens/You.jsx'
 import Reveal from './screens/Reveal.jsx'
+import Claim from './screens/Claim.jsx'
+import Unwrite from './screens/Unwrite.jsx'
+import Alerts from './screens/Alerts.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -81,6 +84,9 @@ const FIELD = {
   ping:   'slow',
   you:    'slow',
   reveal: 'still',   // and where two people have just found out
+  claim:  'slow',
+  r:      'still',
+  alerts: 'slow',
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -111,7 +117,10 @@ export default function WallApp() {
   // A tab that opens on a mutual does not play the intro: the mutual tells
   // the same story on its own screen, and the second telling would be the
   // one that was waited through.
-  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' ? 2 : 0))
+  // Nor does a tab opened by an alert's link: somebody taking a letter about
+  // them down, or stopping the emails, is not kept behind a logo while it
+  // happens.
+  const [boot, setBoot] = useState(() => (BOOTED || ['reveal', 'r', 'alerts'].includes(route.name) ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)
@@ -438,6 +447,9 @@ export default function WallApp() {
   if (route.name === 'ping') sheet = <Ping to={route.id} {...shared} />
   if (route.name === 'you') sheet = <You {...shared} />
   if (route.name === 'reveal') sheet = <Reveal id={route.id} {...shared} />
+  if (route.name === 'claim') sheet = <Claim handle={route.id} {...shared} />
+  if (route.name === 'r') sheet = <Unwrite {...shared} />
+  if (route.name === 'alerts') sheet = <Alerts {...shared} />
 
   let base
   switch (route.name) {
