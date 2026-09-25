@@ -40,15 +40,13 @@
 //              goes with reading on purpose otherwise: the person a letter is
 //              about is the likeliest reader to want it down and the least
 //              likely to hold a berkeley.edu address at that moment.
-//   WRITING    the campus address, and only the campus address. An anonymous
-//              letter about a named person, publishable by anybody on earth
-//              with a browser, is not anonymity: it is an open relay pointed
-//              at a student. The address does not sign the letter and is never
-//              stored beside it. What it does is make the wall a room with a
-//              door on it, which is the only reason the letters in it can be
-//              worth reading. Three in any seven days, because a wall whose
-//              contents are decided by whoever writes the most is a wall about
-//              its most prolific writer.
+//   WRITING    since 25 September (docs/ONE-WALL.md), not a door at all
+//              until the letter is written. A letter to an @ goes up on the
+//              Berkeley wall from a verified Berkeley address, asked for when
+//              it is posted, or goes privately to the @ as a ping, from the @
+//              the writer proves is theirs. A letter to a name needs nothing,
+//              and is read before it goes up. The address does not sign the
+//              letter and is never stored beside it (screens/Write.jsx).
 //
 // ── what this is not ────────────────────────────────────────────────────────
 // It is not an identity, and being signed in is still not being known. The
@@ -69,16 +67,16 @@
 // wall with no words on it. What this module holds is the copy of that answer
 // the interface draws from, not the answer.
 
-import { getState, patch, push, setAfterGate } from './store.js'
+import { getState, patch, push } from './store.js'
 import { cardStep } from './seed.js'
 import { normHandle, targetKey, forgetLetters } from './data.js'
 import { whoamiStrict, bindHandle, forgetSession, isProved } from '../api/identity.js'
 import { getSession, markVerified, signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../api/igverify.js'
-import { campus, needsCampus } from './campus.js'
+import { atBerkeley } from './schools.js'
 
-// The campus wall's domain. The wall at the root has none (campus.js), and
-// the two callers that paint it beside a field only run on the campus wall.
+// The one school whose addresses post to an @ on the wall (docs/ONE-WALL.md),
+// painted beside the field that asks for one (screens/Write.jsx).
 export const DOMAIN = 'berkeley.edu'
 
 export function normEmail(raw) {
@@ -88,9 +86,12 @@ export function normEmail(raw) {
 // The local part is deliberately loose. Berkeley issues addresses with dots,
 // hyphens, underscores and digits in them, and a regex tight enough to be
 // clever is a regex that turns somebody's real address away at the door.
-export function validEmail(raw) {
+// The domain is the school's or any department's under it (`eecs.berkeley.edu`),
+// and with no domain named, any `.edu`. The function checks again, and it is
+// the one that decides.
+export function validEmail(raw, domain = DOMAIN) {
   const e = normEmail(raw)
-  const d = (campus().domain || DOMAIN).replace(/\./g, '\\.')
+  const d = domain ? `(?:[a-z0-9-]+\\.)*${String(domain).replace(/\./g, '\\.')}` : '(?:[a-z0-9-]+\\.)+edu'
   return new RegExp(`^[a-z0-9][a-z0-9._%+-]{0,63}@${d}$`).test(e)
 }
 
@@ -134,19 +135,23 @@ export function member() { return getState().member || null }
 export function isMember() { return !!getState().member }
 export function isReader() { return !!getState().reader }
 
-// ── the composer, or the door in front of it ────────────────────────────────
+// The school address this device has verified, as the server last said it:
+// its domain (`berkeley.edu`), or null. It is what the composer reads to know
+// whether a post to the Berkeley wall can go up without asking (`eduBerkeley`),
+// and what a name note's school starts on. Never trusted for access: the
+// function checks the address on every post.
+export function eduDomain() { return getState().edu || null }
+export function eduBerkeley() { return atBerkeley(eduDomain() || '') }
+
+// ── the composer ────────────────────────────────────────────────────────────
 // Every way into the composer comes through here: the pill on the wall, the
-// nib in the bar, "write to @them" on a letter. A member lands on the
-// composer. Anybody else lands on the campus gate with the composer set as
-// where the gate opens onto, so the one press says "write" and the next
-// screen is the address, not a greyed composer with a sentence beside it
-// explaining that the address comes first.
+// nib in the bar, "write to @them" on a letter. Everybody lands on the
+// composer (docs/ONE-WALL.md): the letter is written first, and what it asks
+// for is asked when it is sent, by how it is sent (screens/Write.jsx).
 export function toWrite(go, handle = '') {
   // a handle, or a first name's tilde key, which opens the composer in name mode
   const h = targetKey(handle)
-  if (isMember()) { go('write', h || undefined); return }
-  setAfterGate({ name: 'write', id: h })
-  go('gate')
+  go('write', h || undefined)
 }
 
 // Called after celestual-edu-verify confirms a code. The address it takes is
@@ -158,7 +163,7 @@ export function toWrite(go, handle = '') {
 export function signIn(email) {
   const e = normEmail(email)
   if (!anyEmail(e)) return null
-  patch({ member: e, reader: true })
+  patch({ member: e, reader: true, edu: e.split('@')[1] || null })
   forgetLetters()
   // Which piece of paper this person came in off has an answer now, and this is
   // the moment it is worth writing down: a proof landed. Nothing about the
@@ -187,7 +192,7 @@ export async function signedIn() {
 // next person on the same laptop is not shown a count that was somebody
 // else's.
 export function signOut() {
-  patch({ member: null, reader: false, verified: [], pingCap: 0 })
+  patch({ member: null, reader: false, verified: [], pingCap: 0, edu: null })
   forgetSession()
   dropProof()
   clearPending()
@@ -228,26 +233,28 @@ export async function refresh() {
   const now = isProved(me)
   if (was !== now) forgetLetters()
 
-  // ── who may write here ──
-  // The campus wall: the campus address, and nothing else opens the composer
-  // (the address is never attached to a letter, and never is any of this).
-  // The wall at the root: any proof at all, since there is no campus to be
-  // at, and the composer opens for a proved person whichever door they came
-  // in by.
-  const writes = needsCampus() ? !!me.eduVerified : isProved(me)
+  // ── the school address ──
+  // Whether this device is verified at a school, and which (its domain), so
+  // the composer knows before it asks whether a post to the Berkeley wall
+  // needs a link (`eduBerkeley`). The server's answer, every time.
+  const edu = me.signedIn && me.eduVerified ? String(me.campus || 'edu') : null
+
+  // ── who this is ──
+  // Anybody the product has proved, by any proof, is signed in: `member` is
+  // what the bar and the account sheet call them. Writing asks nothing of it
+  // any more (the composer asks, at the send, for what that send needs).
+  const writes = isProved(me)
   if (!me.signedIn || !writes) {
-    patch({ member: null, reader: now, verified })
+    patch({ member: null, reader: now, verified, edu })
     return null
   }
   // What to call them on the account sheet. The row does not carry the
   // campus address (0030 keeps it server side on purpose), so a device that
-  // lost its own copy is signed in as the campus rather than as an invented
-  // someone@ at it; on the root wall the login's address, or the handle.
+  // lost its own copy is signed in as the login's address, or the handle, or
+  // the school rather than as an invented someone@ at it.
   const held = member()
-  const label = needsCampus()
-    ? (held || me.campus || DOMAIN)
-    : (held || me.loginEmail || (me.handle ? `@${me.handle}` : me.campus || 'you'))
-  patch({ member: label, reader: now, verified })
+  const label = held || me.loginEmail || (me.handle ? `@${me.handle}` : me.campus || 'you')
+  patch({ member: label, reader: now, verified, edu })
   return member()
 }
 
@@ -327,10 +334,10 @@ export async function verifyHandle(handle, proof) {
     // A proved handle is one of the proofs wall_read_gate takes (0044), so
     // the wall this browser was reading redacted a second ago is readable now.
     // Every letter in the cache was read through the old answer, so the cache
-    // goes, exactly as it does when a campus address lands. On the wall at the
-    // root the handle opens the composer too (0057).
+    // goes, exactly as it does when a campus address lands, and the handle
+    // is who the bar and the account sheet call this person.
     if (!isReader()) { patch({ reader: true }); forgetLetters() }
-    if (!needsCampus() && !isMember()) patch({ member: `@${h}` })
+    if (!isMember()) patch({ member: `@${h}` })
     // ── AND THE PROOF IS KEPT ──
     // This line is the difference between a verification that finishes and one
     // that finishes and then cannot do anything. `proof` is not a receipt: it

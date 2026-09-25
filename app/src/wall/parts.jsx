@@ -412,9 +412,9 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
   // even has a face the resolver can draw.
   const mine = who || verified()[0] || ''
   const onWall = at === 'wall'
-  // On the campus wall the brand goes to the front, which is the wall for
-  // everybody at the root; on that wall it is home already, and stands
-  // without the chevron.
+  // The wall at the root is home already, and the brand stands on it without
+  // the chevron. A wall mounted under a base of its own (there has been one,
+  // at /berkeley, campus.js) would send it to the root instead.
   const home = onWall && !!campus().base
   return (
     <header className="wl-top" inert={inert || undefined}>
@@ -2274,7 +2274,7 @@ export function SiteFoot({ go = null, className = '' }) {
         <div className="wl-colophon-col">
           <Label tone="dim">celestual</Label>
           {link(href('ping'), 'place a ping', 'ping')}
-          {link('/berkeley', 'the wall at berkeley')}
+          {link(href('write'), 'write a letter', 'write')}
         </div>
         <div className="wl-colophon-col">
           <Label tone="dim">legal</Label>

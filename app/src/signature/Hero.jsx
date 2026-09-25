@@ -134,7 +134,7 @@ export default function Hero({ still = false }) {
         {/* The wall, as a door rather than as a mention. It carries its own two
             real numbers, because a campus surface that will not say how many
             letters are on it is a campus surface nobody believes. */}
-        <a className="sg-gate sg-in" href="/berkeley" style={{ '--d': '620ms' }}>
+        <a className="sg-gate sg-in" href="/" style={{ '--d': '620ms' }}>
           <span className="sg-gate-l">
             <span className="wl-label is-dim">the wall at {WALL.campus}</span>
             <span className="sg-gate-h">{WALL.letters} letters, {WALL.standing} of them still sealed</span>

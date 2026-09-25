@@ -59,7 +59,7 @@ export function prefersReducedMotion() {
 // wall that is home, and the shell's own history is not asked to draw a
 // screen it no longer has.
 const MOVED = {
-  hero:   () => HOME_BASE,
+  hero:   () => HOME_BASE || '/',
   place:  (id) => `${HOME_BASE}/ping${id ? `/${encodeURIComponent(id)}` : ''}`,
   sky:    () => `${HOME_BASE}/you`,
   reveal: (id) => `${HOME_BASE}/reveal/${encodeURIComponent(id || '')}`,

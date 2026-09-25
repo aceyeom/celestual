@@ -10,20 +10,21 @@
 // (main.jsx) and this build does the same, in forty lines, so the wall adds
 // nothing to the dependency tree the rest of the product is judged from.
 //
-// ── the address, and the two walls ──────────────────────────────────────────
-// It was /beta while this was one. The wall is the Berkeley campus surface at
-// /berkeley, a place that reads correctly on a printed card, and since the
-// wall for everybody opened at the root of the site (campus.js) the same
-// table is read under two bases: `/berkeley/letter/x` on the campus wall and
-// `/letter/x` on the one at `/`. The base is set once, by the entry, before
-// anything builds an address (`setBase`, campus.js `configure`).
+// ── the address, and the one wall ───────────────────────────────────────────
+// It was /beta while this was one, then /berkeley, the campus surface, beside
+// a second wall for everybody at the root of the site. Since the rulings of
+// 25 September there is one wall and it is at the root: every letter,
+// Berkeley's included, is on it, and a letter's campus is the school it
+// carries rather than the wall it is on (docs/ONE-WALL.md). The table is read
+// under an empty base, `/letter/x`, and the base stays settable (`setBase`)
+// so the table is still one table if the wall ever moves again.
 //
-// /beta still resolves. Cards and flyers are already out with it on them and
-// paper cannot be redeployed, so main.jsx rewrites the old prefix onto the
-// campus wall before the shell ever mounts.
-export let BASE = '/berkeley'
-export const BERKELEY_BASE = '/berkeley'
-export const LEGACY_BASE = '/beta'
+// /beta and /berkeley still resolve. Cards and flyers are already out with
+// them on them and paper cannot be redeployed, so vercel.json redirects both
+// for good, and `legacyRewrite` below does the same in the history for a dev
+// server and for a tab that was open before the redirect existed.
+export let BASE = ''
+export const LEGACY_BASES = ['/berkeley', '/beta']
 
 export function setBase(b) { BASE = String(b || '') }
 
@@ -42,13 +43,13 @@ export function setBase(b) { BASE = String(b || '') }
 // and it closes back onto the wall it was raised over; the account is a look
 // at what this person has out, taken without leaving the names. The mutual
 // is the end of that same story, so it is raised over the wall too.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal'])
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal', 'verify'])
 
 // Every address under a wall's base, by its first segment. At the root this
 // is also what decides which addresses are the wall's at all: `/optout` is
 // Main's, `/letter/x` is the wall's, and nothing under `/` is claimed by
 // the wall on the strength of not being anybody else's.
-const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal'])
+const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal', 'verify'])
 
 const norm = (pathname) => String(pathname || '/').replace(/\/+$/, '') || '/'
 const rootOf = (base) => base || '/'
@@ -73,9 +74,12 @@ export function parse(pathname) {
     // It's mutual: the other one's handle, raised over the wall. Main drew
     // it at /reveal until it was the phone's, and the address came with it.
     case 'reveal': return id ? { name: 'reveal', id } : { name: 'wall' }
-    // /berkeley/orbit was a drawn stand-in for the core service with a seeded
-    // ledger in it, reachable by anybody who typed the address. The ping is
-    // a sheet on the wall now, and the stand-in is gone.
+    // the school email's magic link lands here, with its token in the hash
+    // (screens/Verify.jsx), raised over the wall like the gate
+    case 'verify': return { name: 'verify' }
+    // /orbit was a drawn stand-in for the core service with a seeded ledger
+    // in it, reachable by anybody who typed the address. The ping is a sheet
+    // on the wall now, and the stand-in is gone.
     default:       return { name: 'wall' }
   }
 }
@@ -104,22 +108,27 @@ export function isWallPath(pathname) {
   return ownsAt(BASE, pathname)
 }
 
-// The old address, and only the old address. A visitor who scanned a card
-// printed before the rename lands on /berkeley/find; this is what turns that into
-// /berkeley/find without a round trip to a server that would only redirect it
-// back to the same single-page document anyway.
+// The old addresses, and only those. A visitor who scanned a card printed
+// before the one wall lands on /berkeley/find or /beta/find; this is what
+// turns that into /find without a round trip to a server that would only
+// redirect it to the same single-page document. vercel.json redirects the
+// same addresses for good, before any of this loads; this is the same rule
+// for a dev server, and for a tab that cached the old document.
 export function legacyRewrite(pathname) {
   const p = norm(pathname)
-  if (p !== LEGACY_BASE && !p.startsWith(LEGACY_BASE + '/')) return null
-  return BERKELEY_BASE + p.slice(LEGACY_BASE.length)
+  for (const old of LEGACY_BASES) {
+    if (p === old) return '/'
+    if (p.startsWith(old + '/')) return p.slice(old.length)
+  }
+  return null
 }
 
 // ── the wall that is home ───────────────────────────────────────────────────
-// Berkeley is the wall the product is built round, and an address that says
-// nothing about which wall it wants lands there: the old front door at /ping,
-// Main's flow at /place and /@handle, and the sky at /sky, which is what the
-// mutual mail has always linked to. One constant, so home can move.
-export const HOME_BASE = BERKELEY_BASE
+// An address that says nothing about which wall it wants lands on the one
+// there is: the old front door at /ping, Main's flow at /place and /@handle,
+// and the sky at /sky, which is what the mutual mail has always linked to.
+// One constant, so home can move.
+export const HOME_BASE = ''
 
 function decode(s) {
   try { return decodeURIComponent(s) } catch { return s }
@@ -145,12 +154,18 @@ export function movedRewrite(pathname) {
   const [rawHead = '', rawId = ''] = p.slice(1).split('/')
   const head = decode(rawHead)
   const at = (name, h) => `${HOME_BASE}/${name}${h ? `/${h}` : ''}`
-  if (head.startsWith('@')) return at('ping', bare(head))
-  switch (head) {
-    case 'ping':
-    case 'place':  return at('ping', bare(decode(rawId)))
-    case 'sky':    return at('you')
-    case 'reveal': return rawId ? at('reveal', bare(decode(rawId))) : at('you')
-    default:       return null
+  let to
+  if (head.startsWith('@')) to = at('ping', bare(head))
+  else {
+    switch (head) {
+      case 'ping':
+      case 'place':  to = at('ping', bare(decode(rawId))); break
+      case 'sky':    to = at('you'); break
+      case 'reveal': to = rawId ? at('reveal', bare(decode(rawId))) : at('you'); break
+      default:       to = null
+    }
   }
+  // at the root an address can already be where it is going (/ping is the
+  // ping's own address now), and that is not a move
+  return to && to !== p ? to : null
 }
