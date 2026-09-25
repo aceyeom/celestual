@@ -133,7 +133,7 @@ import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
 import { campus } from '../campus.js'
 import Hive from '../Hive.jsx'
-import LiquidMark from '../LiquidMark.jsx'
+import { PixelMark } from '../PixelStory.jsx'
 import { Bloom } from '../art.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -252,6 +252,16 @@ function tabDue(state) {
 // chrome in three vocabularies. It is one small line now, the campus and
 // the count, standing as the label over the plate where the shade is
 // deepest, so the masthead is one object: the fact, and the question.
+//
+// ── and for now it is the campus alone (`COUNTED`) ──
+// The count is off while the wall is young. A wall of a few dozen letters
+// printed its number over the question as the one fact about it, and a small
+// number reads as an empty room rather than an open one. The figure, its roll
+// and the line an empty wall says are all still here and come back with the
+// switch; until then the line is what an idle phone kept in that row, the
+// network's name and nothing after it. A wall that did not load still says
+// so, since that is not a count.
+const COUNTED = false
 function Ear({ letters }) {
   const err = wallError()
   const loaded = wallLoaded()
@@ -265,7 +275,7 @@ function Ear({ letters }) {
         )}
       </>
     )
-  } else if (letters > 0) {
+  } else if (COUNTED && letters > 0) {
     // the envelope a phone's idle screen stood beside its messages
     meta = (
       <span className="wl-ear-meta">
@@ -273,7 +283,7 @@ function Ear({ letters }) {
         <Roll value={letters} className="wl-ear-n" /> {letters === 1 ? 'letter' : 'letters'}
       </span>
     )
-  } else if (loaded) {
+  } else if (COUNTED && loaded) {
     meta = <span className="wl-ear-meta">open now</span>
   }
   return (
@@ -425,8 +435,8 @@ function Seek({ go }) {
 }
 
 // ── the tab ─────────────────────────────────────────────────────────────────
-// THE ONLY DOOR OUT OF THE WALL, and it is not here until somebody has put a
-// letter up. Offering an account to a person who has not written anything is
+// THE WALL'S DOOR TO THE PING, and it is not here until somebody has put a
+// letter up. Offering a ping to a person who has not written anything is
 // asking them to register for a result they have not earned and cannot
 // receive; offering it thirty seconds after they have named somebody is
 // asking the one question they are now actually carrying. So it waits, and
@@ -434,10 +444,11 @@ function Seek({ go }) {
 //
 // It is a card now, and it says who "they" are: the faces of the names this
 // device wrote to stand at the head of the sentence, so the offer is about
-// the people this person actually named and not about a pronoun. It says the
-// same sentence the screen it opens says, word for word. A door and the room
-// behind it that describe themselves differently is a door somebody has to
-// decide about twice. Under it, one quiet line puts it away.
+// the people this person actually named and not about a pronoun. It raises
+// the ping over the wall (screens/Ping.jsx), and the same people are the
+// first thing on it, one press each. Taken, it is put away, as a door that
+// has been used is: the sheet closes onto the names, not onto the same
+// offer again. Under it, one quiet line puts it away without taking it.
 function Tab({ faces, onGo, onHide, going }) {
   return (
     <div className={`wl-tab${going ? ' is-going' : ''}`}>
@@ -448,7 +459,7 @@ function Tab({ faces, onGo, onHide, going }) {
             : <Sparkle size={12} />}
         </span>
         <span className="wl-tab-text">
-          get notified if they<br />put you up too.
+          get notified if they<br />ping you too.
         </span>
         <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
       </button>
@@ -812,16 +823,16 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
               <div className="wl-veil-in">
                 <div className="wl-mast">
                   {/* ── the mark, on the wall at the root ──
-                      The front door used to open on the mark as a material,
-                      the metal with a current under it, over its own title.
-                      The wall is the front door now, so the poster carries
-                      it: the same object the intro poured, at the size of a
-                      seal, with the bloom behind it, over the title. The
-                      campus wall keeps its poster as it was (campus.js). */}
+                      It was the liquid metal, a material, straight after an
+                      intro that ends on the mark in pixels. It is those same
+                      pixels now, at the size of a seal, with the bloom
+                      behind it, over the title, so the first screen after
+                      the intro is the mark the intro ended on. The campus
+                      wall keeps its poster as it was (campus.js). */}
                   {campus().mark ? (
                     <div className="wl-mast-mark" aria-hidden="true">
                       <Bloom size={210} opacity={0.34} className="wl-mast-bloom" />
-                      <LiquidMark size={78} speed={0.55} still={reduce} quality="row" />
+                      <PixelMark cell={2} />
                     </div>
                   ) : null}
                   <Display size="xl" as="h1" className="wl-mast-title">
@@ -865,7 +876,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
         {down ? (
           <Down letter={down} onLeave={() => answer(down)} />
         ) : tab ? (
-          <Tab faces={wroteTo.slice(0, 3)} onGo={() => go('join')} onHide={hideTab} going={going} />
+          <Tab faces={wroteTo.slice(0, 3)} onGo={() => { hideTab(); go(getState().joined ? 'ping' : 'join') }} onHide={hideTab} going={going} />
         ) : null}
         <div className="wl-dock-act">
           <WriteAct go={go} />
@@ -882,7 +893,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
         gone. */}
     {lifted && (
     <div className="wl-page is-foot" inert={under || undefined}>
-      <SiteFoot />
+      <SiteFoot go={go} />
     </div>
     )}
     </>

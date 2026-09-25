@@ -227,7 +227,7 @@ export default function Access({ password, go, onLock }) {
         <div className="ad-guide-row">
           <div className="ad-guide-t">you want to walk the product as a person</div>
           <Note>
-            mint a link with any handle you own, open it on your phone, and place a ping from the sky
+            mint a link with any handle you own, open it on your phone, and place a ping from the wall
             exactly as a person would. pair it with a campus address to walk the wall too. to be two people
             at once, use two browsers or a private window.
           </Note>

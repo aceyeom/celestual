@@ -5,22 +5,35 @@
 // A letter on the wall is a phone screen, left on in a dark room: an unsent
 // draft, the cursor still blinking after the last word. Every letter is that
 // one screen, set in one face (Jersey 10, the Series 40 grid), with the same
-// three rows on it — the status across the top, the words, the soft keys —
+// three rows on it (the status across the top, the words, the soft keys),
 // and the only thing a writer chooses is the COLOUR it is lit in.
 //
 // It was forty-two papers in seven families, twenty-nine tints and
-// twenty-four faces. Now it is one list, and each colour carries its own
-// treatment with it, because on a real screen the two are the same fact:
+// twenty-four faces, and then eighteen colours in three groups. Now it is
+// one pool of thirteen, in the order of a spectrum, and each colour carries
+// its own treatment with it, because on a real screen the two are the same
+// fact:
 //
 //   lit       a backlit LCD photographed in the dark. The panel glows, the
 //             bands above and below it are the phone's own dark glass, and
-//             the words bloom a little. night, green, ice, amber, rose, white
+//             the words bloom a little. night, white, ice, green, amber, rose
 //   negative  the same screen with the panel dark and the words the bright
 //             thing
 //   poster    that photograph screen printed in four flat inks, the paper
-//             the colour. teal, blush, cobalt, acid, ember, lilac
-//   riso      two drum inks laid a hair out of register on warm paper
+//             the colour. teal, acid, ember, lilac
+//   riso      two drum inks laid a hair out of register on warm paper.
+//             violet / yellow
 //   xerox     photocopied, and blown out: the toner exposure is the effect
+//
+// A print carries its own LIGHT with it as well, and the light is the
+// colour's and never a second choice (`light`, and screen.css, the prints'
+// lights). The backlight's hot corner, printed in the palest ink, was on
+// every print, and read as the same white stain on each. It stays on acid
+// alone. Each of the others has a light of its own out of the same press:
+// teal a keyline inside its rule, ember the light falling from the top of
+// the sheet, lilac its light carried as a halftone screen, and violet /
+// yellow the phone's two bands of glass laid in the violet drum, with its
+// status and its keys struck out of them in paper.
 //
 // The prints keep their own ground: a poster is teal, whatever room it is
 // in. The room is not theirs. Every screen, lit or printed, stands in the
@@ -33,8 +46,9 @@
 // and never a face: there is one. A row written before the screens (a theme,
 // a face, a tint this list does not have) is not an error. It draws the
 // colour its own id picks (`colourOf`), so an old letter is still a lit
-// screen and never a blank one — and migration 0058 has already given every
-// letter on the wall a colour of its own.
+// screen and never a blank one, and migration 0058 has already given every
+// letter on the wall a colour of its own. A colour that has left the pool
+// (`RETIRED`) draws the one nearest its hue, and 0061 moved its rows.
 //
 // ── and what makes each one its own (`quirks`) ──────────────────────────────
 // Two screens of the same colour are still two phones. Out of the letter's
@@ -50,35 +64,41 @@
 // ── the colours ─────────────────────────────────────────────────────────────
 // `hue` is the one colour a lit screen is made from; the bands, the ink, the
 // glow and the bloom are arithmetic on it (`skinOf`). A print carries its
-// four inks, darkest first, because a print IS its inks.
+// four inks, darkest first, because a print IS its inks, and its `light`,
+// which is where the press lays the palest of them (`skinOf`).
+//
+// One pool, in the order the panel draws it and the arrows walk it: the
+// greys, then round the wheel from the cold blue through the greens and the
+// yellows to the reds, the pink and the violet, and last the two that are
+// not lit.
 export const COLOURS = [
   { slug: 'night', name: 'night', kind: 'lit', hue: '#9D9D9D' },
-  { slug: 'green', name: 'green', kind: 'lit', hue: '#A3BB6B' },
-  { slug: 'ice', name: 'ice', kind: 'lit', hue: '#8FB8DC' },
-  { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
-  { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
   { slug: 'white', name: 'white', kind: 'lit', hue: '#D7DDE3' },
+  { slug: 'ice', name: 'ice', kind: 'lit', hue: '#8FB8DC' },
+  { slug: 'teal', name: 'teal', kind: 'poster', light: 'keyline', stops: ['#101412', '#3D6257', '#7EA494', '#E3A58C'] },
+  { slug: 'green', name: 'green', kind: 'lit', hue: '#A3BB6B' },
+  { slug: 'acid', name: 'acid', kind: 'poster', light: 'corner', stops: ['#0F1104', '#4A580C', '#C2E13A', '#FFF5A6'] },
+  { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', light: 'bands', paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
+  { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
+  { slug: 'ember', name: 'ember', kind: 'poster', light: 'sky', stops: ['#130905', '#782912', '#DF663A', '#FFD59E'] },
+  { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
+  { slug: 'lilac', name: 'lilac', kind: 'poster', light: 'dots', stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
   { slug: 'negative', name: 'negative', kind: 'neg', hue: '#BDBDBD' },
-  { slug: 'teal', name: 'teal', kind: 'poster', stops: ['#101412', '#3D6257', '#7EA494', '#E3A58C'] },
-  { slug: 'blush', name: 'blush', kind: 'poster', stops: ['#1A0E12', '#6D3346', '#D38AA0', '#F6E2B2'] },
-  { slug: 'cobalt', name: 'cobalt', kind: 'poster', stops: ['#0A0F25', '#1E3E98', '#6E9AE8', '#F4B45B'] },
-  { slug: 'acid', name: 'acid', kind: 'poster', stops: ['#0F1104', '#4A580C', '#C2E13A', '#FFF5A6'] },
-  { slug: 'ember', name: 'ember', kind: 'poster', stops: ['#130905', '#782912', '#DF663A', '#FFD59E'] },
-  { slug: 'lilac', name: 'lilac', kind: 'poster', stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
-  { slug: 'pink-blue', name: 'pink / blue', kind: 'riso', paper: '#F2EEE6', a: '#2C4BC8', b: '#FF5C98' },
-  { slug: 'orange-teal', name: 'orange / teal', kind: 'riso', paper: '#F1ECE0', a: '#1B6E74', b: '#FF7A2E' },
-  { slug: 'red-green', name: 'red / green', kind: 'riso', paper: '#F3EFE7', a: '#1E7A50', b: '#EC3F33' },
-  { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
   { slug: 'xerox', name: 'xerox', kind: 'xerox', stops: ['#0D0D0C', '#0D0D0C', '#ECEAE4', '#ECEAE4'] },
 ]
 
-// The panel's groups, in order: the words are the panel's and the kinds are
-// this file's.
-export const GROUPS = [
-  { key: 'lit', label: 'lit', kinds: ['lit', 'neg'] },
-  { key: 'print', label: 'printed', kinds: ['poster', 'riso'] },
-  { key: 'copy', label: 'copied', kinds: ['xerox'] },
-]
+// The colours that have left the pool, and the one each is drawn as now:
+// the nearest by the hue of its main ink, so a letter that went up in blush
+// is still a pink letter. Read wherever a row's colour is read (`colourOf`,
+// `normaliseLook`); migration 0061 moved the rows themselves, and this is
+// what a row the migration has not reached, or a draft kept in a browser,
+// is drawn as. A Map, so a slug is never read as one of an object's own
+// names.
+export const RETIRED = new Map([
+  ['blush', 'rose'], ['pink-blue', 'rose'], ['cobalt', 'ice'],
+  ['orange-teal', 'ember'], ['red-green', 'ember'],
+])
+const current = (slug) => RETIRED.get(slug) || slug
 
 const BY_SLUG = new Map(COLOURS.map((c) => [c.slug, c]))
 const SLUG = /^[a-z][a-z0-9-]{0,23}$/
@@ -123,7 +143,8 @@ export function cleanLook(raw) {
 // What THIS build writes: one colour, or nothing when it is not one of ours.
 export function normaliseLook(raw) {
   const l = cleanLook(raw)
-  return l && BY_SLUG.has(l.tint) ? { tint: l.tint } : null
+  const t = l && current(l.tint)
+  return t && BY_SLUG.has(t) ? { tint: t } : null
 }
 
 export function lookKey(look) {
@@ -131,17 +152,19 @@ export function lookKey(look) {
   return l ? `${l.theme || ''}/${l.tint || ''}/${l.face || ''}` : ''
 }
 
-// The colour a letter is lit in: its own when it chose one of these, and
-// otherwise the one its id picks, so a letter with no colour in its row is
-// still a screen and still the same one every time.
+// The colour a letter is lit in: its own when it chose one of these (or the
+// one a retired colour became), and otherwise the one its id picks, so a
+// letter with no colour in its row is still a screen and still the same one
+// every time.
 export function colourOf(look, seed = '') {
   const l = cleanLook(look)
-  if (l && BY_SLUG.has(l.tint)) return BY_SLUG.get(l.tint)
+  const t = l && current(l.tint)
+  if (t && BY_SLUG.has(t)) return BY_SLUG.get(t)
   return COLOURS[hash(`${seed}#colour`) % COLOURS.length]
 }
 
 export function colourBySlug(slug) {
-  return BY_SLUG.get(slug) || BY_SLUG.get(DEFAULT_COLOUR)
+  return BY_SLUG.get(current(slug)) || BY_SLUG.get(DEFAULT_COLOUR)
 }
 
 // A colour for a draft nobody has chosen one for yet, so the wall is not a
@@ -196,7 +219,45 @@ export function hexRgb(hex) { return rgb(hex) }
 //   flat             the small screen's own fill, for the tiles and the
 //                    thumbnails, which are too small for a filter, and on
 //                    a print the inks a tile's picture is struck in
+//   light            on a print, which of the prints' lights it is (below)
 const cache = new Map()
+
+// ── the prints' lights ──
+// The press lays a print's palest ink wherever the greys under it are over
+// three quarters, so where a print's light falls is decided by the panel's
+// three greys (hi, mid and lo, as a lit panel's are), and the stylesheet
+// draws each light in its own shape out of them (screen.css, the prints'
+// lights; share.js draws the same). Every light here is in the colour's own
+// inks, so none of them is a new hue.
+//
+//   corner    the backlight's hot corner: hi crosses into the palest ink
+//             round the point the panel is brightest at. It was every
+//             print's, and is acid's alone
+//   keyline   no light on the panel, which is flat in the main ink, and a
+//             line of the palest ink inside the rule instead
+//   sky       the light falling from the top of the sheet: the status rows
+//             stand in the palest ink, and it breaks up into the main one
+//             in the press's grain a third of the way down
+//   dots      the hot corner held under the palest ink and carried by a
+//             halftone screen, so it prints as dots that grow towards the
+//             point it is brightest at
+//   bands     no light on the panel, and the phone's own two bands of glass
+//             laid in the second ink, with the status and the keys on them
+//             struck out of it in the palest
+const LIGHTS = {
+  corner: ['#D4D4D4', '#A9A9A9', '#8C8C8C'],
+  keyline: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
+  sky: ['#D4D4D4', '#A3A3A3', '#9F9F9F'],
+  dots: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
+  bands: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
+}
+// and each light on the small screens, which are too small for the press:
+// a layer of the palest ink over the main one, in the same place
+const SPOTS = {
+  corner: 'radial-gradient(31% 25% at var(--q-hx, 78%) var(--q-hy, 64%), var(--t-accent) 62%, transparent 100%)',
+  sky: 'linear-gradient(180deg, var(--t-accent) calc(var(--q-hy, 64%) * 0.4 + 8%), transparent calc(var(--q-hy, 64%) * 0.4 + 14%))',
+  dots: 'radial-gradient(80% 64% at var(--q-hx, 78%) var(--q-hy, 64%), transparent, var(--t-body) 66%), radial-gradient(var(--t-accent) 34%, transparent 44%) 0 0 / 4px 4px, radial-gradient(var(--t-accent) 34%, transparent 44%) 2px 2px / 4px 4px',
+}
 export function skinOf(colour) {
   const c = typeof colour === 'string' ? colourBySlug(colour) : colour || colourBySlug(DEFAULT_COLOUR)
   if (cache.has(c.slug)) return cache.get(c.slug)
@@ -234,10 +295,18 @@ export function skinOf(colour) {
     // a copy's bands go to toner at every exposure and its panel to paper,
     // and its lit words have no bloom for the threshold to turn into blobs
     const xer = c.kind === 'xerox'
+    const light = xer ? '' : LIGHTS[c.light] ? c.light : 'corner'
+    const [hi, mid, lo] = xer ? ['#DCDCDC', '#BEBEBE', '#A0A0A0'] : LIGHTS[light]
+    // the bands, where a print keeps them, are one flat grey well inside
+    // the second ink's bin, so neither the grain nor the grid breaks them
+    // into the first or the third
+    const banded = light === 'bands'
     s = {
-      kind: c.kind,
-      top: xer ? '#1F1F1F' : '#5A5A5A', top2: xer ? '#191919' : '#4B4B4B', bot: xer ? '#0E0E0E' : '#121212',
-      hi: xer ? '#DCDCDC' : '#D4D4D4', mid: xer ? '#BEBEBE' : '#A9A9A9', lo: xer ? '#A0A0A0' : '#8C8C8C',
+      kind: c.kind, light,
+      top: xer ? '#1F1F1F' : banded ? '#606060' : '#5A5A5A',
+      top2: xer ? '#191919' : banded ? '#606060' : '#4B4B4B',
+      bot: xer ? '#0E0E0E' : banded ? '#606060' : '#121212',
+      hi, mid, lo,
       ink: '#131313', lit: '#F4F4F4', cur: '#131313',
       bloom: xer ? 'transparent' : 'rgba(255, 255, 255, 0.4)', soft: 'rgba(0, 0, 0, 0.3)',
       glow: c.kind === 'xerox' ? '#ECEAE4' : stops[2], k: c.kind === 'xerox' ? 0.55 : 0.8,
@@ -256,14 +325,15 @@ export function skinOf(colour) {
   }
   // the small screen's own fill: a lit one is its panel and its bands; a
   // print is its paper colour edge to edge with the words in its darkest
-  // ink and a rule of it round the edge
+  // ink and a rule of it round the edge, and its light over that
   if (s.print) {
-    const [dark, , main, accent] = s.print.stops
+    const [dark, second, main, accent] = s.print.stops
     s.flat = {
       top: 'transparent', bot: 'transparent', ink: dark, lit: dark, cur: dark,
       body: c.kind === 'xerox' ? '#ECEAE4' : main,
       accent: c.kind === 'xerox' ? '' : accent,
       border: dark,
+      spot: SPOTS[s.light] || 'none',
       ts: c.kind === 'riso' ? `1.5px 1px 0 ${alpha(c.a, 0.75)}` : c.kind === 'xerox' ? '0 0 0.7px rgba(13, 13, 12, 0.8)' : 'none',
     }
     if (c.kind === 'xerox') { s.flat.top = '#0D0D0C'; s.flat.bot = '#0D0D0C'; s.flat.lit = '#ECEAE4'; s.flat.border = '' }
@@ -271,6 +341,9 @@ export function skinOf(colour) {
     // poster's accent, main, mid and dark, a riso's paper, b, a and their
     // overprint. A copy's tile keeps the toner's four greys
     else s.flat.pic = [...s.print.stops].reverse()
+    // and where a print keeps the bands, they are in the second ink, and
+    // what stands on them is in the palest
+    if (s.light === 'bands') { s.flat.top = second; s.flat.bot = second; s.flat.lit = accent; s.flat.cur = accent }
   } else {
     s.flat = {
       top: s.top, bot: s.bot, ink: s.ink, lit: s.lit, cur: s.cur,
@@ -283,6 +356,7 @@ export function skinOf(colour) {
   }
   s.slug = c.slug
   s.name = c.name
+  s.light = s.light || ''
   cache.set(c.slug, s)
   return s
 }
@@ -303,6 +377,7 @@ export function skinVars(colour) {
     '--t-top': s.flat.top, '--t-bot': s.flat.bot, '--t-body': s.flat.body,
     '--t-ink': s.flat.ink, '--t-lit': s.flat.lit, '--t-cur': s.flat.cur,
     '--t-ts': s.flat.ts, '--t-border': s.flat.border || 'transparent', '--t-accent': s.flat.accent || 'transparent',
+    '--t-spot': s.flat.spot || 'none',
   }
 }
 
@@ -419,19 +494,17 @@ export function quirks(seed) {
   const blink = Math.round(range(r, 0, 1060))
   // the light it throws on the room
   const halo = range(r, 0.85, 1.12)
-  // the prints: the grain, the drum's slip, the copier's heat, and on a
-  // print now and then the hot corner of the backlight caught as a soft
-  // wash of the accent ink, somewhere of its own. It was a round spot on
-  // every print, in the same corner, and read as a sticker on the screen;
-  // it is a light now, when it is there at all
+  // the prints: the grain, the drum's slip, the copier's heat
   const grainSeed = 1 + Math.floor(r() * 97)
   const slipX = range(r, 0.6, 1.9) * sign()
   const slipY = range(r, 0.4, 1.3) * sign()
   const exposure = range(r, -0.6, 0.6)
-  const spotOn = r() < 0.34
-  const spot = spotOn
-    ? `radial-gradient(${range(r, 42, 70).toFixed(1)}% ${range(r, 34, 58).toFixed(1)}% at ${pick(r, [range(r, 10, 34), range(r, 66, 92)]).toFixed(1)}% ${range(r, 54, 92).toFixed(1)}%, color-mix(in srgb, var(--t-accent) ${Math.round(range(r, 38, 62))}%, transparent), transparent 100%)`
-    : 'none'
+  // A third of the small screens of a print used to carry a wash of the
+  // accent ink in a corner of their own. A print's light is its colour's
+  // now (`skinOf`, the prints' lights), the same on the letter, the tile
+  // and the picture, and the seven draws the wash took stay, so every
+  // quirk after them lands where it always did
+  if (r() < 0.34) for (let i = 0; i < 7; i++) r()
   // xerox: the roller's streaks, and the grey the lid let in down one edge
   const rollers = `linear-gradient(90deg, transparent ${range(r, 8, 30).toFixed(1)}%, rgba(0,0,0,0.12) 0, transparent ${range(r, 0.3, 0.8).toFixed(2)}rem, transparent ${range(r, 55, 92).toFixed(1)}%, rgba(0,0,0,0.08) 0, transparent ${range(r, 0.2, 0.5).toFixed(2)}rem)`
   const lid = sign() > 0 ? 'left' : 'right'
@@ -458,7 +531,7 @@ export function quirks(seed) {
   ].join(', ')
   const out = {
     rz, rx, ry, ar, rad, hx, hy, pitch, moire, glare, glareA, dust, scratch, streak, streakX, dead,
-    pad, lift, topPad, blink, halo, grainSeed, slipX, slipY, exposure, spot, rollers, lid, light,
+    pad, lift, topPad, blink, halo, grainSeed, slipX, slipY, exposure, rollers, lid, light,
   }
   out.vars = {
     '--q-rz': `${rz.toFixed(3)}deg`, '--q-rx': `${rx.toFixed(3)}deg`, '--q-ry': `${ry.toFixed(3)}deg`,
@@ -470,7 +543,7 @@ export function quirks(seed) {
     '--q-streak-x': `${streakX.toFixed(1)}%`, '--q-streak-a': streak ? '1' : '0', '--q-dead': dead,
     '--q-pad': `${pad.toFixed(2)}cqw`, '--q-lift': `${lift.toFixed(2)}cqw`, '--q-top-pad': `${topPad.toFixed(2)}cqw`,
     '--q-blink': `-${blink}ms`, '--q-halo': halo.toFixed(3),
-    '--q-spot': spot, '--q-rollers': rollers, '--q-mura': mura,
+    '--q-rollers': rollers, '--q-mura': mura,
   }
   memo.set(key, out)
   return out
@@ -621,16 +694,17 @@ export function chargeOf(ts) {
   return hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
 }
 
-// And the day it went up, beside the bars, the way the phone kept the date
-// in its status row: the month and the day, and the year only when it is
-// not this one. Lowercase, as every other word on the wall is.
-const MONTH = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
-export function dateOf(ts) {
+// The day a letter went up, or a ping was placed, the way the phone stamped
+// a message it had kept: 09/24/26, month, day and year in two figures each,
+// by the clock of the phone it is read on. It stands in the status row where
+// the draft counted its characters (screen.jsx `stamp`), so a screen being
+// written says how much is left and one that is up or placed says when.
+const two = (n) => String(n).padStart(2, '0')
+export function stampOf(ts) {
   if (!ts) return ''
   const d = new Date(ts)
   if (Number.isNaN(d.getTime())) return ''
-  const day = `${MONTH[d.getMonth()]} ${d.getDate()}`
-  return d.getFullYear() === new Date().getFullYear() ? day : `${day} ${d.getFullYear()}`
+  return `${two(d.getMonth() + 1)}/${two(d.getDate())}/${two(d.getFullYear() % 100)}`
 }
 
 // The path of a glyph, for an SVG `d` or a mask made once.

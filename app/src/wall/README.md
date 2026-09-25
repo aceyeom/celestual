@@ -79,8 +79,8 @@ the letters" on a surface they had signed in to.
 
 | | | |
 | --- | --- | --- |
-| **reading** | the first eight are free to anybody. After that, either proof: a `berkeley.edu` address, or a handle verified by the DM code | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
-| **reporting** | either proof, with reading | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
+| **reading** | the first eight are free to anybody. After that, any proof: a `berkeley.edu` address, a handle verified by the DM code, a google account or a mailed code (migration 0057). The heart goes with reading. This browser's copy of that answer (`auth.js` `refresh`, the `reader` flag) counted only the first two until the like fix, so a person signed in by google or a code read every letter and could never heart one: each press went to a gate they had already been through | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
+| **reporting** | any proof, with reading | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
 | **writing** | the `berkeley.edu` address, and three letters in any five days (seven until migration 0051). The number is never drawn; once they are spent the composer says only how many days to wait before drafting more. Since 0052 both the number and whether it is counted at all are rows the desk holds, and the ration is **currently switched off** while the wall is being filled by the people who built it — the address is not | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
 
 **Being let in is not being known.** The address is never attached to a letter,
@@ -232,7 +232,7 @@ campus address or a handle proved after that code was scanned (migration 0047).
                                     │  tab at the bottom │
                                     └─────────┬──────────┘
                                               ▼
-                             "get notified if they put you up too."
+                             "get notified if they ping you too."
                                               │
                                               ▼
                                       THE CORE SERVICE
@@ -240,8 +240,9 @@ campus address or a handle proved after that code was scanned (migration 0047).
 
 Two things called *register* live on this surface and they are not the same
 thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
-control — and buys nothing else. `/berkeley/join` is the door into the product — accounts, pings, mutuals — and it
-is still gated on having put a letter up.
+control, and buys nothing else. `/berkeley/ping` is the door into the rest of
+the product: the ping, and through it the mutual. It is a sheet on the wall,
+and its tab at the foot of the wall still waits until a letter has gone up.
 
 The search ends on its results. Two capsules stood under them, `write instead`
 and `take a name off`, and both were doors to other rooms on a sheet whose one
@@ -358,11 +359,10 @@ to empty; only the desk shuts a name, and `wall_name_shut` applies only its
 desk branch to a tilde key, so one Sofia's takedown does not shut every Sofia
 and an opted out @sofia does not shut the first name either.
 
-Where the @ matters is the ping, and Main asks for it there. The tab after a
-letter is unchanged; `/berkeley/join` leaves for `/place/<handle>` when the
-letter carried a handle and for `/place` when it carried a name, and `Who's
-on your mind.` is the ask, made by the writer, on the surface where a ping
-lives.
+Where the @ matters is the ping, and the ping sheet asks for it. It lists the
+people this person has written to by handle, one press each; a letter to a
+name carried no @, so the name is not listed, and `who's on your mind.` over
+the field is the ask, made by the writer, as the ping's own object.
 
 ## The look of a letter
 
@@ -373,15 +373,24 @@ still after the last word. Every letter is the same screen, set in one face
 
 | | |
 | --- | --- |
-| **the status rows** | the aerial and the day it went up; the characters left of 280 and the battery (how long it has been sitting there unsaid); then the pen, `dear` and the first name, and the handle. Where the resolver has no name it is `dear` and the handle alone. A sealed letter has a padlock where the pen is |
+| **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. Then the pen, `dear` and the first name, and the handle. Where the resolver has no name it is `dear` and the handle alone. A sealed letter has a padlock where the pen is. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 140 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and a story screen (the intro, the door, the mutual) carries the glyphs, or the two handles, and neither |
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter is its stars |
-| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count, and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
+| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; a press from outside the gate is carried through it and pressed on the way back in, and a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
-The only thing a writer chooses is the COLOUR it is lit in, from one list in
-three groups (`Look.jsx`, under the composer's screen while its `colour` key
-is on): six lit screens and the negative; six posters and four risos, which
-keep their own ground; and the xerox. Each colour brings its treatment with
-it, and every letter in it is still its own phone: its tilt, proportion,
+The only thing a writer chooses is the COLOUR it is lit in, from one pool of
+thirteen under no heading, in the order of a spectrum (`Look.jsx`, under the
+composer's screen while its `colour` key is on): six lit screens, the
+negative, four posters and a riso, which keep their own ground, and the
+xerox. Each colour brings its treatment with it, and a print its own light
+(`LIGHTS`): acid keeps the backlight's hot corner, teal has a keyline inside
+its rule, ember the light falling from the top, lilac its light as a
+halftone, and violet / yellow the phone's two bands in the violet drum. The
+light is drawn the same on the letter, the tile, the thumbnail and the
+shared picture, and `/looks.html` on the dev server draws all four side by
+side. Blush, cobalt, pink / blue, orange / teal and red / green left the
+pool, and a letter in one draws the colour nearest its hue (`RETIRED`;
+migration 0061 moved the rows). Every letter in a colour is still its own
+phone: its tilt, proportion,
 backlight and the clouds in it, pixel pitch, the colour each pixel is lit a
 little off (`rgbTile`) and dust come out of its id (`quirks`), so no two
 letters are the same photograph and no letter is a different design. The
@@ -392,17 +401,27 @@ falling on it (`.wl-room-light`); the wall goes out behind it. On the wall
 each name is its newest letter's screen, small (`Tile`): the aerial across the
 top, the battery how long since the last, an envelope blinks on a
 name written to today, and the middle is the name's picture, in the screen's
-own tones with some of the photograph's colour left in, or its monogram with
-the cursor after it. Nothing on the wall is round.
+own tones with some of the photograph's colour left in, or its monogram. A
+print's small screen carries its print's light. Nothing on the wall is round.
 
 Everything round the screens is the same phone (design/DESIGN.md 2.6,
 `phone.css`): one face for every word but the brand's, square keys, unlit
 panels with a one pixel bezel, the phone's pixel glyphs (`screen.jsx`
 `PixIcon`), a lit key for the one act on a screen, and the chosen row
-inverted. The brand, the mark at a door's head and the poured mark of the
-intro are the only things on the wall that are not the phone. The shared
+inverted. The brand and the mark at a door's head are the only things on
+the wall that are not the phone; the intro, the door's figure and the mutual
+are told on a letter's screen in the phone's own pixels (`pixmark.js`,
+`PixelStory.jsx`, and The intro below). The shared
 parts learn which surface they are on from `PhoneChrome` (`parts.jsx`), which
 only the wall's root turns on, so Main draws them as it always has.
+
+The caret is the phone's too (`caret.jsx`, design/DESIGN.md 8.3): where a
+person types on the wall (the draft's screen, and the handle, search,
+address, code and reason fields) it is drawn, measured in one mirror kept off
+the glass, as a bar two strokes of the face wide between words and at the
+end, and as the letter after it inverted in the middle of a word. In the
+words' ink on the screen, chalk in the chrome, blinking on the phone's beat
+and solid while somebody types. Main keeps the browser's caret.
 
 A letter reached from a link, before the tab has been to the wall, carries
 the brand at its top left and `view the wall` under it (`Letter.jsx`
@@ -423,9 +442,13 @@ browser, by the function and by the schema (`wall_look_clean`, and a
 constraint that holds every row to what it answers). The screens write one
 key of it, `{ "tint": "teal" }`. What a slug DRAWS is the browser's: a new
 colour is a row in `looks.js`, never a migration, and a row this build does
-not know — a paper from before the screens — draws the colour its id picks.
+not know (a paper from before the screens) draws the colour its id picks.
 Migration 0058 gave every letter already up a colour of its own and kept
-what it had in `wall_look_backup_0058`.
+what it had in `wall_look_backup_0058`. A colour that leaves the pool is the
+one exception to never a migration: its letters would otherwise draw a
+colour their id picks, so it goes into `RETIRED` with the colour nearest its
+hue, and a migration moves its rows (0061, backed up in
+`wall_look_backup_0061`).
 
 **The screen of a name is the screen of its newest letter.** The index
 carries the look of the newest letter under each key, so a name's small
@@ -456,24 +479,34 @@ foot, at a width a thumb finds.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and under it the edges of the deck: every letter on the wall is one card in one deck, turned where the card is, by a swipe on the card, a chevron in each gutter or the arrow keys, and the header keeps the count over the whole wall |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `place a ping` leaves for Main: at `/place/<handle>` when the letter this device wrote last carried a handle, so the ping's target is already in the field, and at `/place` when it carried a first name, so Main asks `Who's on your mind.` with its own painted @. That field is where the @ is asked, and the only place |
+| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its ping is doing, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, twenty words at most, read by them only if it is ever mutual. The proof, only when this browser does not hold one: the gate's Instagram door, in place. Then `it's out.` and the sixty days, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen |
+| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their pings (mutuals first, each opening the reveal; standing ones with their days, each opening its own screen, whose options are `sixty more days` and `let it go`), what is left of the slots, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `place a ping` and `sign out`. With no @ proved here it says so and proves it; with nobody known it is the door |
+| `/berkeley/reveal/:handle` | **it's mutual.** A sheet in the black room: the two of them run into each other on a letter's screen and become the mark, the sentence is typed under it, the two lines rise together on unlit panels, and `open @them` is the key; `keep this to yourself` closes onto the wall, with its names and not its poster. Its facts are who this is (`main/data.js` `me`, then the handle the ping and the account sheets use, `pings.js` `myHandle`), `celestual_my_pings` and the held copy (`pings.js`). When there is nothing to show it says `nothing here.` whatever the reason, and its key is `your pings`, the account sheet, where the reason has its own words. At the root it is `/reveal/:handle`, which the wall took from Main |
+| `/berkeley/join` | what a ping is, drawn: three lines and the mark assembling, and `place a ping` raises the ping sheet over the wall, giving this page's place in the history to the wall first |
+
+The wall at the root reads the same table: `/ping`, `/you` and the rest,
+raised over the wall for everybody. Main's old addresses for all of this,
+`/ping`, `/place`, `/place/:handle`, `/@handle`, `/sky` and `/reveal/:handle`,
+are rewritten onto the Berkeley wall before a shell is chosen (`router.js`
+`movedRewrite`, `HOME_BASE`), so a link already out there opens the sheet it
+meant over the wall that is home.
 
 `/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
 (the audit of 4 September). They were a drawn stand-in for the core service
 with a seeded ledger in it, still reachable by typing the address after the
-wall went live; the core service is Main, and `/berkeley/join` sends people
-there. Anything below that describes the orbit, `orbit.js`, `Core.jsx`, the
+wall went live. The ping is a sheet on the wall now. Anything below that
+describes the orbit, `orbit.js`, `Core.jsx`, the
 seeded ledger or the printed date is a record of what was built, not of what
 runs.
 
-Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
-`report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
+Nine of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
+`report`, `remove`, `ping`, `you` and `reveal` rise off the bottom edge over a wall that stays mounted, scrolled
 where it was, dimmed and slightly out of focus behind them — and on a wide
 screen they become centred dialogs instead, because a sheet dragged up from the
 bottom of a 1400px display is a phone gesture on furniture that is not a phone.
@@ -502,7 +535,7 @@ ear (below):
 | --- | --- |
 | ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
 | write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: the metal capsule carrying the nib and the word (`wall/LiquidButton.jsx`), at the foot where a thumb is. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about; it was chalk with the running light inside it until the primary became a material |
-| ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
+| ⚷ | **the person**: a keyhole while nobody is known here, and the face of the address or the @ that is, once somebody is. It opens `/you`, their pings, drafts and letters, for anybody known by any proof, and the gate for anybody else, with `/you` as where the gate lands |
 
 There used to be a fourth, a `wall` glyph at the head of the row, lit whenever
 you were on the wall. On the wall itself, which is where almost everybody met
@@ -528,8 +561,13 @@ on each of them.
 ```
 index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
              and the intro
-Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
-             skippable on any key, and the same intro Main plays at `/`
+Intro.jsx    the first three seconds, on black: a phone's screen, and two
+             shadows on it who run into each other and become the mark. Once
+             per tab, skippable on any key, and the same intro Main plays
+pixmark.js   the mark on a grid of the phone's cells, the two runners drawn
+             by hand, and the stories they are in, as functions of the clock
+PixelStory.jsx  a story on a screen's body, on a canvas, drawn only when its
+             frame changes
 Hive.jsx     the field: the lattice and its tile, the lens, the drift, the
              pull, the pointer, and the pool of slots that draws it
 morph.js     the hand-off: the circle the wall leaves behind when a disc is
@@ -697,8 +735,8 @@ thirteen pixels sliding past is a handle nobody reads.
   The nudge carries nothing: it says the index moved, and the read is the
   public read the wall makes on landing. A letter from another phone then
   rises in place, its name's disc coming up past its size and settling, and
-  the count in the ear turns up one. A project with Realtime off keeps the
-  clock and loses the nudge.
+  the count in the ear turns up one, when the ear carries it (The count,
+  below). A project with Realtime off keeps the clock and loses the nudge.
 - **The disc is placed by the loop and animated by the stylesheet, and they
   are two elements.** Two owners on one transform is how these end up fighting
   each other at 60Hz.
@@ -762,26 +800,74 @@ next name's letters are asked for while this one is being read, so the turn
 onto them lands on its card and not on a request; the turn back lands on the
 name before's last letter.
 
-What says there is more is the deck itself: the edges of the next card and
-the one after it stand under the card, drawn as two sheets of paper a step
-darker than the letter's, hung from their bottom edges so the peek is the
-peek whatever the card's height (`wall.css .wl-letter-stage::before`). A
-swipe takes the card off the top, following the finger and tilting a little
-with it, leaving the glass the way it was going, and the next rises from the
-stack; a turn back slides in from the side it went to. A chevron in each
-gutter says the same on a desktop and the arrow keys do the same, and the
-header keeps the count over the whole wall, `3 / 19`. It used to stop at the
-name, and a stack of one — which is most names — had no turn at all: a person
-who swiped the card got a spring back and no way to read on.
+What says there is more is the deck itself. The letter before and the
+letter after stand either side of the card at rest, asleep: dimmer than it
+and a little smaller, each drawn toward its near edge, as the phones round
+the lit one on a table are there in the dark. On a phone the glass leaves a
+sliver of each at its edges (the screen gives up `--gutter` of the glass
+for it); in a wide room, and on a phone on its side, they are the two
+screens themselves, dim, a hand's width off the card (`wall.css --peek-*`).
+They come up out of the dark while the card wakes, a beat behind it, and
+one that comes to stand there later fades up where it stands. Two chevrons in the
+gutters said the same thing until 25 September, and a chevron is a control
+somebody has to find and read. There is no line saying to swipe (VOICE.md
+section 7), no dots and no count: the deck is the whole wall, and a count of
+it is the header `3 / 19` again, which came off for being a number nobody
+reading a letter asked for.
+
+A hand has the card, a finger or a mouse, one to one once it is clearly
+sideways (eight pixels, and the card does not jump the slack). The
+neighbours travel with it and each screen is lit and sized by how near the
+middle it stands, so the one leaving goes to sleep as the one arriving
+wakes. Let go past three tenths of the screen, or thrown the way it is
+going, and the strip runs on at the speed it was let go at (`handoff` bends
+the curve so the strip leaves at the hand's speed); let go short, or thrown
+back, and it springs home. The throw is read off the last ninety
+milliseconds, so a flick at the end of a slow drag is a flick. Past either
+end of the deck the card still gives, less the further it is pulled. The
+stage keeps the pointer once the drag is sideways, only the first finger
+counts, and the click a drag ends in is swallowed, so a drag let go of over
+a soft key does not heart the letter. Under a mouse the card takes the open
+hand and the closed one while it is held, and selects no words.
+
+A press on a neighbour turns to it: over each stands a key with nothing
+drawn on it (`.wl-turn`, `the letter before this one` and `the letter
+after this one`), which is also the turn a keyboard and a screen reader
+find, and which keeps a press on a neighbour from reaching the room behind
+it, the way out. The arrow keys turn it, and the soft key that had the
+focus has it again on the card the turn lands on. Two fingers sideways on a
+trackpad turn it one letter a swipe, and the swipe is kept from the
+browser, which would take it as the history going back. A turn asked for
+past an end leans the card a little and brings it home.
+
+The first two times a device opens the deck, until it has turned it once,
+the card leans toward the next letter about a second after it has woken
+and comes home (`nudge`, `hinted` and `turned` in the store). Never under
+reduced motion and never over a menu, and a hand or a key that gets there
+first puts it off. Under reduced motion a turn is the next card, at once.
+
+A turn is still a route change, so every letter keeps its own address, and
+it changes when the neighbour's own travel has ended, not on a clock beside
+it. Nothing is drawn again when it does: every screen on the strip is keyed
+by its letter (`Cell`), so the neighbour that landed is the card from then
+on, the same element in the same place, and the card that left is the
+neighbour on the other side. Only the screen past the new card is new. The
+room's light is handed across in the same beat (`Lights`), the old colour
+going out while the new one comes up.
 
 The height goes with the strip. A short letter beside a long one is a card
 beside a taller card, and the glass used to take the new height on the frame
 the address changed: everything under the card jumped. The track's height
 follows the strip instead, from this card's height toward the neighbour's by
-how far the strip has gone, so the sheet is seen to grow or shrink with the
-finger, a turn from a chevron carries its height on the same clock as its
-travel, and the next card takes over at exactly the height the strip arrived
-at (`Letter.jsx place`).
+how far the strip has gone, and every screen on it stands on its middle, so
+the sheet is seen to grow or shrink about the card's middle, and the next
+card takes over at exactly the height the strip arrived at
+(`Letter.jsx place`).
+
+A print asleep beside the card is turned in its own plane only, and takes
+its depth back the moment the strip moves its way: a print's press (an SVG
+filter) over a screen turned in depth is drawn again on every frame the
+page draws, and three of them in a wide room were most of every frame.
 
 ### It has to work at five names and at five hundred
 
@@ -1030,6 +1116,15 @@ not loaded has no number; and while the index is still loading there is no
 count at all, since a wall that has not answered is not a wall that is open
 with nothing on it.
 
+**It is off for now** (`screens/Wall.jsx COUNTED`, 25 September). While the
+wall is young a small number over the question read as an empty room
+rather than an open one, so the ear is the campus alone, the operator's
+name an idle phone kept in that row. Everything above is still wired and
+comes back with the switch: the figure, its roll and `open now`. The line a
+wall that did not load says stays on either way, since it is not a count.
+The `N letters` under a name in the search's rows is a different fact (how
+many letters that one name has) and stays.
+
 ### What is not on the wall any more
 
 Two controls stood under the names and both came off. `the rest of
@@ -1200,30 +1295,44 @@ The rule under the date separates the masthead from the ledger, so on a spread
 
 ## The intro
 
-The mark, poured, on an empty black screen, once per tab, before anything else
-exists. Not a spinner and not a splash: nothing is loading behind it and it
-never claims to be. It is `Intro.jsx`, and it is the same two seconds Main
-plays at `/`: the wall used to open on an overture of its own, a flat mark
-assembling beside the name with a bloom behind it, and the two surfaces of one
-product opened on two different logos.
+A phone, on black, once per tab, before anything else exists. Not a spinner
+and not a splash: nothing is loading behind it and it never claims to be. It
+is `Intro.jsx`, and it is the same three seconds Main plays over its front
+door. It was the mark poured in liquid metal, which was the room's material on
+a surface that had become the phone; now it is one of the letters' own
+screens, the night one, with the product's story on it in the phone's pixels
+(`pixmark.js`, drawn by `PixelStory.jsx`).
 
 | | |
 | --- | --- |
-| `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`): the index carries every face since migration 0048, so the pictures are the next request and not the one after a peek |
-| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants, and its head is FEATHERED, so the metal lights along the orbit rather than being wiped by a rectangle: the cut used to be a straight chord across the band, and wherever the metal was bright under it the mark was drawn in with a blunt white wedge on the end of it. The blur is taken on the stroke and the band clips it afterwards, so the ring's own silhouette stays as sharp as it is drawn and only the front of the reveal is soft. 900ms to close. Not before the metal is there: the held frame stretches, up to 760ms from mount, until the shader has drawn a frame behind the cover (`LiquidMark onReady`), and the swap from the flat mark to the metal is instant while the cover is over it (`cut`). It used to run on the clock alone, and on a phone, where the compile takes longer than the held frame, the circuit was cut open over the chalk mark and the metal arrived a moment later on a ring already on the screen, which was a blink. Past the ceiling the sequence runs on the chalk mark and the metal fades in over it, gently, the designed state for a driver that is slow or never answers |
-| `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out. Its hole in the cover is feathered too, and dilated by what the feather reaches: a crisp silhouette held at a third of its opacity is a crisp outline of the star, drawn in grey |
-| `1180ms` | **assembled.** Nothing moves but the metal. The cover, black on black and doing nothing now, fades out here, while the veil is still opaque, so what lifts is the metal alone |
-| `1560ms` | **the lift**, after a hold, and not before the wall is ready. The lift waits on the index and the first screen's faces having landed, with a ceiling at 4200ms from mount so a dead network is a wall of monograms and not a logo forever; on an ordinary connection they are there long before the clock is. The mark is the one thing in the product built to be looked at while something else finishes, and a wall drawn with sixty grey discs that fill in a second later is a wall that arrived too early. Then the mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone, every face on it a picture from its first frame. One movement, not two screens |
-| `2280ms` | the black is gone |
+| `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`) |
+| `120ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in |
+| `300ms` | **the run.** Two shadows come in off either edge of the panel, three cells a frame and a frame every 80ms, which is the stride the drawings take, so no foot slides. The runners are drawn by hand in two inks, the far arm and leg thinner, so one drawing gives both steps; the one from the right is the same drawing turned round |
+| `1180ms` | **the meeting.** Arms out; on the frame they touch the whole panel inverts for 70ms, the way a phone's screen flashed when something came in; the catch, and the hold, one foot off the ground |
+| `1810ms` | **the mark.** The dashed ground they ran on lifts into the ring, left to right along both halves, and the two of them gather into the star from its middle out. Every pixel is rounded to a whole cell each frame, so they hop across the glass. The mark is `mark.js` rasterised at 47 cells, whole at `2470ms` |
+| `2870ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
+| `3590ms` | the black is gone |
 
-No name, because the name is in the bar of the page underneath; no bloom,
-because a material with a current in it is already the light.
+No name, because the name is in the bar of the page underneath. A canvas has
+nothing to compile, so the held frame no longer waits on a shader, and the
+cover, the feathered cuts and the fallback for a slow driver went with the
+metal.
 
-Everything that animates is a transform, an opacity or a dash offset; nothing
-touches layout after the first frame. It is skippable on any tap or key, it
-never plays twice in a tab, and under `prefers-reduced-motion` it renders
-assembled and lifts almost at once. A brand animation that cannot be got out of
-is a toll gate.
+The canvas is drawn only when the frame changes, twelve times a second while
+they run and thirty while the mark forms, and the loop stops at the last
+frame. The screen is held square to the camera, because a tilted canvas of
+square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
+any tap or key, which lands the mark and lifts at once; it never plays twice in
+a tab; under `prefers-reduced-motion` it draws the mark and lifts almost at
+once. In development `?beat=3` holds the mark, `?t=900` holds the clock on any
+frame, and `?intro=ascii` and `?tint=green` draw the same story in characters
+or on the classic green, for comparison.
+
+The door (`screens/Join.jsx`) and the mutual (`screens/Reveal.jsx`) tell the
+same story on the same screen: on the door @you runs in and waits, @them runs
+in and waits, and both set off on the same frame, which is the mechanic; on the
+mutual it is the two handles in the status row, and `it's mutual.` is typed
+under the screen from the frame they touch.
 
 ## The design, and where it comes from
 

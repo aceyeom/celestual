@@ -23,8 +23,9 @@
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, dateOf, rgbTile } from './looks.js'
-import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
+import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } from './looks.js'
+import { CHALK } from './mark.js'
+import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
 
 const W = 1080
@@ -254,6 +255,8 @@ function drawScreen(o, tile = null) {
   cv.height = sh
   const g = cv.getContext('2d', { willReadFrequently: !!s.print })
   const flat = s.kind === 'poster' || s.kind === 'riso'
+  // a print that keeps the phone's two bands of glass (looks.js `LIGHTS`)
+  const banded = s.light === 'bands'
   // how far in the status rows stand: on a print, clear of its rule
   const ex = flat ? 3.2 * u : 2.2 * u
 
@@ -261,20 +264,67 @@ function drawScreen(o, tile = null) {
   g.save()
   g.clip()
 
-  // the panel, brightest where this phone's backlight is
+  // the panel, brightest where this phone's backlight is; or, on a print
+  // whose light falls from the top, in that light (screen.css, the prints'
+  // lights, in the same stops)
   const hx = (q.hx / 100) * sw
   const hy = (q.hy / 100) * sh
-  const pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
-  pg.addColorStop(0, s.hi)
-  pg.addColorStop(0.52, s.mid)
-  pg.addColorStop(1, s.lo)
+  let pg
+  if (s.light === 'sky') {
+    const e = q.hy * 0.4
+    pg = g.createLinearGradient(0, 0, 0, sh)
+    pg.addColorStop((e + 5) / 100, s.hi)
+    pg.addColorStop((e + 19) / 100, s.mid)
+    pg.addColorStop(1, s.lo)
+  } else {
+    pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
+    pg.addColorStop(0, s.hi)
+    pg.addColorStop(0.52, s.mid)
+    pg.addColorStop(1, s.lo)
+  }
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
+  // and a light carried by a halftone screen, as the page draws it: white
+  // cones on the forty five degree lattice, a cone in the middle of each
+  // cell and a quarter of one in each corner, faded out from where this
+  // phone's backlight is brightest, for the press to cut into dots
+  if (s.light === 'dots') {
+    const c = Math.max(4, Math.round(3.2 * u))
+    const cell = document.createElement('canvas')
+    cell.width = c
+    cell.height = c
+    const cg = cell.getContext('2d')
+    for (const [x, y] of [[c / 2, c / 2], [0, 0], [c, 0], [0, c], [c, c]]) {
+      const dg = cg.createRadialGradient(x, y, 0, x, y, c / 2)
+      dg.addColorStop(0, 'rgba(255, 255, 255, 1)')
+      dg.addColorStop(1, 'rgba(255, 255, 255, 0)')
+      cg.fillStyle = dg
+      cg.fillRect(0, 0, c, c)
+    }
+    const screen = document.createElement('canvas')
+    screen.width = sw
+    screen.height = sh
+    const sg = screen.getContext('2d')
+    const pat = sg.createPattern(cell, 'repeat')
+    if (pat) {
+      sg.fillStyle = pat
+      sg.fillRect(0, 0, sw, sh)
+      sg.globalCompositeOperation = 'destination-in'
+      sg.translate(hx, hy)
+      sg.scale(1, (0.64 * sh) / (0.8 * sw))
+      const mg = sg.createRadialGradient(0, 0, 0, 0, 0, 0.8 * sw)
+      mg.addColorStop(0, 'rgba(0, 0, 0, 1)')
+      mg.addColorStop(1, 'rgba(0, 0, 0, 0)')
+      sg.fillStyle = mg
+      sg.fillRect(-4 * sw, -8 * sw, 8 * sw, 16 * sw)
+      g.drawImage(screen, 0, 0)
+    }
+  }
 
   // the bands
   const topH = (q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
   const botH = 14 * u
-  if (!flat) {
+  if (!flat || banded) {
     const tg = g.createLinearGradient(0, 0, 0, topH)
     tg.addColorStop(0, s.top)
     tg.addColorStop(1, s.top2)
@@ -283,7 +333,7 @@ function drawScreen(o, tile = null) {
     g.fillStyle = s.bot
     g.fillRect(0, sh - botH, sw, botH)
   }
-  const lit = flat ? s.ink : s.lit
+  const lit = flat && !banded ? s.ink : s.lit
   const bloom = flat ? 'transparent' : s.bloom
   const withBloom = (fn) => {
     g.save()
@@ -293,7 +343,7 @@ function drawScreen(o, tile = null) {
     g.restore()
   }
 
-  // row one: the aerial and the date, and the characters left by the battery
+  // row one: the aerial, and by the battery the day the letter went up
   const r1 = (q.topPad + (flat ? 1 : 0)) * u
   const rowH = 10.4 * u
   const mid1 = r1 + rowH / 2
@@ -306,6 +356,9 @@ function drawScreen(o, tile = null) {
     g.font = `400 ${11 * u}px ${FACE}`
     if (o.date) { g.textAlign = 'left'; g.fillText(o.date, ex + aw + 1.4 * u, mid1 + 0.4 * u) }
     if (o.counter) { g.textAlign = 'right'; g.fillText(o.counter, sw - ex - bw - 2.6 * u, mid1 + 0.4 * u) }
+    // a letter's day stands in the middle of the space between the two
+    // glyphs, as it does on the page (screen.css `.wl-scr-stamp`)
+    if (o.stamp) { g.textAlign = 'center'; g.fillText(o.stamp, (ex + aw + sw - ex - bw) / 2, mid1 + 0.4 * u) }
     // row two: the pen, or a lock on a sealed letter, "dear" and the name,
     // and the handle in what is left of it
     const mid2 = r1 + rowH + 0.6 * u + rowH / 2
@@ -488,6 +541,13 @@ function drawScreen(o, tile = null) {
     g.lineWidth = 2.8 * u
     g.strokeRect(0, 0, sw, sh)
   }
+  // a keyline of the palest ink inside the rule, clear of it
+  if (s.light === 'keyline') {
+    const k = 2.05 * u
+    g.strokeStyle = '#FFF'
+    g.lineWidth = 0.7 * u
+    g.strokeRect(k, k, sw - 2 * k, sh - 2 * k)
+  }
   g.restore()
   if (s.print) press(g, sw, sh, s, q)
   return { cv, s, q, sw, sh }
@@ -519,58 +579,11 @@ function imageOf(url) {
 // overlap and the glow belongs to the whole mark rather than to each piece.
 // Paths and not an SVG image: a picture drawn from an image can taint the
 // canvas in the browser most letters are shared from, and a tainted canvas
-// cannot be made into a file.
+// cannot be made into a file. The drawing itself is pixmark.js `markCanvas`,
+// the same one the pixel mark on the intro's screen is rasterised from.
 const WORD = 46
 const SIGN_Y = H - 86
 const SIGN_ALPHA = 0.9
-
-// the half plane the ring is in front of the star in (mark.js `NEAR`)
-function clipNear(g) {
-  g.save()
-  g.translate(50, 50)
-  g.rotate(rad(ECL.tilt))
-  g.translate(-50, -50)
-  g.beginPath()
-  g.rect(NEAR.x, NEAR.y, NEAR.width, NEAR.height)
-  g.restore()
-  g.clip()
-}
-
-function markCanvas(size) {
-  const k = size / 100
-  const ring = new Path2D(ringPath())
-  const cv = document.createElement('canvas')
-  cv.width = size
-  cv.height = size
-  const g = cv.getContext('2d')
-  // the ring, whole
-  g.fillStyle = CHALK
-  g.setTransform(k, 0, 0, k, 0, 0)
-  g.fill(ring, 'evenodd')
-  // the star, with the gutter cut out of it on the near side
-  const sc = document.createElement('canvas')
-  sc.width = size
-  sc.height = size
-  const s = sc.getContext('2d')
-  s.fillStyle = CHALK
-  s.setTransform(k, 0, 0, k, 50 * k, 50 * k)
-  s.fill(new Path2D(starPath(ECL)))
-  s.setTransform(k, 0, 0, k, 0, 0)
-  s.save()
-  clipNear(s)
-  s.globalCompositeOperation = 'destination-out'
-  s.fill(new Path2D(ringPath(ECL.gutter)), 'evenodd')
-  s.restore()
-  g.setTransform(1, 0, 0, 1, 0, 0)
-  g.drawImage(sc, 0, 0)
-  // and the ring's near half in front of it
-  g.setTransform(k, 0, 0, k, 0, 0)
-  g.save()
-  clipNear(g)
-  g.fill(ring, 'evenodd')
-  g.restore()
-  return cv
-}
 
 function signature(g, cx, cy) {
   const mark = Math.round(WORD * 1.13)
@@ -667,7 +680,9 @@ export function letterFace(l, { name, handle }) {
     look: l.look, seed: l.id, text, sealed: !open,
     name, handle,
     icon: open ? 'pen' : 'lock', dear: true,
-    date: dateOf(l.at), counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`, bat: chargeOf(l.at),
+    // the day it went up, between the aerial and the battery, and no
+    // second date
+    stamp: stampOf(l.at), bat: chargeOf(l.at),
     hearts: l.hearts || 0, hearted: !!l.hearted,
     left: 'options', right: 'share',
   }

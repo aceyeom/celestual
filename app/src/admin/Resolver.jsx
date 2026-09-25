@@ -13,9 +13,14 @@
 // Apify and a handle nobody has looked up before draws no card; cache hits
 // still answer, because they cost nothing. It is the one control on the desk
 // that stops a bill on its own.
+//
+// Under it, the daily check (0060): whether Apify answered the last time it
+// was asked about an account that always exists, and the checks before that.
+// The switch says whether Apify is asked; the check says whether it answers.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskProfiles, deskProfileForget, deskSettingSet } from '../api/admin.js'
 import { Search, useDebounced, Paging, Empty, Fault, When, State, None, Arm, Toggle, Ledger, Figure, Note, clampOffset, failWord } from './parts.jsx'
+import { CanaryPanel } from './Canary.jsx'
 
 const LIMIT = 50
 
@@ -115,6 +120,11 @@ export default function Resolver({ password, overview, onChanged, onLock }) {
           caps are on the settings screen.
         </Note>
       </div>
+
+      {/* ── the daily check ──
+          Whether apify is answering at all, beside the switch that decides
+          whether it is asked (0060, Canary.jsx). */}
+      <CanaryPanel canary={overview?.canary} password={password} onLock={onLock} onRan={onChanged} />
 
       {said ? <p className="ad-head-note" style={{ margin: '0 0 12px', color: 'var(--ad-stop)' }}>{said}</p> : null}
 

@@ -61,6 +61,9 @@ import Join from './screens/Join.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
+import Ping from './screens/Ping.jsx'
+import You from './screens/You.jsx'
+import Reveal from './screens/Reveal.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -75,6 +78,9 @@ const FIELD = {
   gate:   'slow',
   remove: 'still',   // the room stops moving where the act cannot be undone
   report: 'still',   // and where something is coming down
+  ping:   'slow',
+  you:    'slow',
+  reveal: 'still',   // and where two people have just found out
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -84,7 +90,7 @@ const FIELD = {
 let BOOTED = false
 
 // The longest the intro is held for the index and the first faces, measured
-// from the shell mounting. The intro's own lift is at 1560ms, so on any
+// from the shell mounting. The intro's own lift is at 2870ms, so on any
 // ordinary connection this never applies; on a bad one the wall arrives with
 // its monograms, which is a designed state, and the pictures fill in.
 const READY_CEILING_MS = 4200
@@ -102,7 +108,10 @@ export default function WallApp() {
   })
   // 0 the intro has the screen · 1 the wall is mounted and cascading under
   // a black that is on its way out · 2 the intro is gone
-  const [boot, setBoot] = useState(() => (BOOTED ? 2 : 0))
+  // A tab that opens on a mutual does not play the intro: the mutual tells
+  // the same story on its own screen, and the second telling would be the
+  // one that was waited through.
+  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)
@@ -276,8 +285,24 @@ export default function WallApp() {
     // step inside one sheet, is not a navigation.
     const sheetMove = SHEETS.has(target.name) || (SHEETS.has(from.name) && target.name === 'wall')
     const depth = Number(window.history.state?.wallDepth) || 0
+    // Whether the sheets stacked here stand on a sheet the browser opened on
+    // directly (a mail's /sky, a shared reveal) rather than on the wall. The
+    // bottom of such a stack is that sheet, depth zero, and it is carried up
+    // the stack as `wallCold` on every entry pushed over it.
+    const onCold = SHEETS.has(from.name) && (depth === 0 || !!window.history.state?.wallCold)
 
     if (SHEETS.has(from.name) && target.name === 'wall' && depth > 0) {
+      // Stepping back all the way would land on that first sheet and not
+      // on the wall: "back to the wall" on a ping placed from the account a
+      // mail opened came back to the account. So the wall is pushed instead,
+      // as `pushWall` does for a letter reached from a link.
+      if (onCold) {
+        const home = href('wall')
+        window.history.pushState({ wall: 'wall', wallDepth: 0, wallPushed: true }, '', home)
+        setOverride(null)
+        setRoute(parse(home))
+        return
+      }
       leaving.current = true
       setOverride(null)
       stepBack(-depth)
@@ -301,7 +326,8 @@ export default function WallApp() {
       // browser opened on directly is depth zero AND has nothing behind it,
       // while a sheet at depth one that the shell pushed has the wall behind
       // it. Reading depth alone confuses the two in both directions.
-      window.history.pushState({ wall: name, wallDepth: nextDepth, wallPushed: true }, '', to)
+      const cold = SHEETS.has(target.name) && onCold ? { wallCold: true } : null
+      window.history.pushState({ wall: name, wallDepth: nextDepth, wallPushed: true, ...cold }, '', to)
       setOverride(null)
       setRoute(target)
       if (!sheetMove) window.scrollTo(0, 0)
@@ -366,8 +392,10 @@ export default function WallApp() {
   // sheet knows on its first frame where its way out actually goes. A mark
   // labelled "back to the wall" that lands on the composer is a mark that
   // lied, and a screen reader hears the lie.
+  // A sheet over a sheet a link opened is nested too: one step up is that
+  // sheet, not the wall.
   const st = window.history.state
-  const nested = !!(st?.wallPushed && Number(st.wallDepth) > 1)
+  const nested = !!(st?.wallPushed && (Number(st.wallDepth) > 1 || st.wallCold))
   const upLabel = nested ? 'back' : 'back to the wall'
   // ── the way to the wall, from a letter reached from a link ──
   // `toWall` is pressed while the letter is still on the glass: the wall
@@ -407,6 +435,9 @@ export default function WallApp() {
   if (route.name === 'gate') sheet = <Gate {...shared} />
   if (route.name === 'remove') sheet = <Remove handle={route.id} {...shared} />
   if (route.name === 'report') sheet = <Report id={route.id} {...shared} />
+  if (route.name === 'ping') sheet = <Ping to={route.id} {...shared} />
+  if (route.name === 'you') sheet = <You {...shared} />
+  if (route.name === 'reveal') sheet = <Reveal id={route.id} {...shared} />
 
   let base
   switch (route.name) {

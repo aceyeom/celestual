@@ -34,6 +34,8 @@ insert into celestual_settings (key, value) values ('handle_salt', 'test-salt')
 --             twenty-seven people on the product were this person.
 -- rr-neither  a session, and nothing proved on it.
 -- rr-other    at stanford. Proved, just not here, and no handle either.
+--             Since 0057 any proof reads any open wall, so this person reads
+--             here too, and only writing still turns on the campus.
 do $$
 declare w uuid; h uuid; n uuid; o uuid;
 begin
@@ -60,8 +62,10 @@ select rr_ok('a proved handle does NOT write',
 select rr_ok('nothing proved reads nothing',
   wall_read_gate((select id from celestual_users where edu_email is null and instagram_handle is null
                    and handle_verified_at is null limit 1), 'berkeley') = false);
-select rr_ok('a stanford address still reads nothing here',
-  wall_read_gate((select id from celestual_users where edu_email='rr-other@stanford.edu'), 'berkeley') = false);
+select rr_ok('a stanford address reads here too, since 0057',
+  wall_read_gate((select id from celestual_users where edu_email='rr-other@stanford.edu'), 'berkeley'));
+select rr_ok('and still does not write here',
+  wall_gate((select id from celestual_users where edu_email='rr-other@stanford.edu'), 'berkeley') = false);
 select rr_ok('nobody at all reads nothing', wall_read_gate(null, 'berkeley') = false);
 select rr_ok('a campus that is not open is shut to a proved handle', wall_read_gate(
   (select id from celestual_users where instagram_handle='rrhandle'), 'nowhere') = false);
@@ -107,8 +111,9 @@ select rr_ok('and the read says it is open',
   (wall_letters_for('rr-token-handle-000000', 'rrsubject')->>'open')::boolean);
 select rr_ok('a session with nothing proved on it is still redacted',
   (wall_letters_for('rr-token-neither-00000', 'rrsubject')->'letters'->0->>'body') is null);
-select rr_ok('and so is another campus',
-  (wall_letters_for('rr-token-other-0000000', 'rrsubject')->'letters'->0->>'body') is null);
+select rr_ok('another campus is handed the words, since 0057',
+  (wall_letters_for('rr-token-other-0000000', 'rrsubject')->'letters'->0->>'body')
+    = 'the letter itself, in words');
 select rr_ok('and so is nobody',
   (wall_letters_for('rr-token-nobody-000000', 'rrsubject')->'letters'->0->>'body') is null);
 -- The shape still travels to everybody: that is what a redaction is drawn from.

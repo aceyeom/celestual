@@ -182,9 +182,12 @@ export async function signedIn() {
 // The whole session, not the wall's half of it. It used to clear the identity
 // token and the wall's store and leave the DM proof in api/auth.js, so a
 // person who signed out here on a shared laptop was still signed in to their
-// sky on Main, one tap away. One session, one sign out.
+// sky on Main, one tap away. One session, one sign out. The slots this
+// person was last told they hold go with them (pings.js `slotCap`), so the
+// next person on the same laptop is not shown a count that was somebody
+// else's.
 export function signOut() {
-  patch({ member: null, reader: false, verified: [] })
+  patch({ member: null, reader: false, verified: [], pingCap: 0 })
   forgetSession()
   dropProof()
   clearPending()
@@ -210,12 +213,19 @@ export async function refresh() {
   if (me === null) return member()
   const verified = me.handleVerified && me.handle ? [me.handle] : (getState().verified || [])
 
-  // Either proof opens the letters (migration 0044). The cache is dropped when
-  // this ANSWER changes rather than when the address does: a person who proved
-  // their handle on Main and walked over here has a cache full of redactions
-  // and no address, and a cache keyed on the address would never drop it.
+  // Any of the four proofs opens the letters, and the heart and the report
+  // with them: the handle, the campus address, google, or a mailed code
+  // (migrations 0044, 0057). This used to count the first two only, so a
+  // person signed in by google or by a mailed code read the wall and could
+  // never heart it: every press was sent to a gate they had already been
+  // through, and the server that would have taken it was never asked.
+  //
+  // The cache is dropped when this ANSWER changes rather than when the
+  // address does: a person who proved their handle on Main and walked over
+  // here has a cache full of redactions and no address, and a cache keyed on
+  // the address would never drop it.
   const was = isReader()
-  const now = !!(me.signedIn && (me.eduVerified || me.handleVerified))
+  const now = isProved(me)
   if (was !== now) forgetLetters()
 
   // ── who may write here ──

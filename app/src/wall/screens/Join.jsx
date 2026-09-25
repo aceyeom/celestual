@@ -1,8 +1,8 @@
 // ── /berkeley/join — THE ONE DOOR ───────────────────────────────────────────
 //
-// The only route from the wall into the core service, reached from one place:
-// the tab at the bottom of the wall, which does not exist until somebody has
-// put a letter up.
+// What a ping is, drawn, reached from one place: the tab at the bottom of the
+// wall, which does not exist until somebody has put a letter up, the first
+// time this device presses it. After that the tab raises the ping itself.
 //
 // That gating is the whole point. The wall asks nothing of anybody until they
 // try to read or write, and the moment it starts offering an ACCOUNT it stops
@@ -11,234 +11,80 @@
 // This screen is that question and nothing else.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE FIGURE — it is not LIKE the mark. It IS the mark.                   ║
+// ║  THE FIGURE: the mechanic, on a phone                                    ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// It began as two circles and two quadratic curves with a star fading in
-// between them, which is the default drawing for any two things joining. That
-// was replaced by the two halves of the mark's own CENTRELINE, stroked at a
-// constant width, which was much better and still not the thing: a hairline
-// hoop with a star in it is a diagram of the logo, and the logo is a BAND whose
-// width varies two to one round its circuit, passing behind the star at the top
-// and in front of it at the bottom.
+// It was the mark taken apart into its own parts and assembled again, the
+// band leaving @you over the top and @them under it and the star igniting
+// when the circuit closed: a vector drawing of the logo, in chalk, with a
+// bloom behind it, on a wall where everything else had become the phone. It
+// is a letter's screen now, the night one, with the story from the intro on
+// it (pixmark.js `joinStory`), and the story is the mechanic, in the order
+// it happens:
 //
-// So the figure is now assembled out of the mark's own parts, in the mark's own
-// order (art.jsx `Ecliptic`), and the finished frame is the logo pixel for
-// pixel:
+//   1  you ping them             @you runs in from the left and stops, and
+//                                stands there. Nothing comes back. That is
+//                                what a ping is.
+//   2  they ping you             @them runs in from the right and stands
+//                                there too, the width of the screen away.
+//                                Neither can see the other has.
+//   3  you both find out.        and only then do both set off, on the same
+//      at once.                  frame, and meet in the middle. The panel
+//                                flashes as they touch, they hold on, and
+//                                what they stood on and what they are
+//                                becomes the mark.
 //
-//   the far half    `ringPath()` clipped to the half-plane ABOVE the ring's
-//                   long axis. It is the band, at its real varying width, not a
-//                   stroke pretending to be one.
-//   the near half   the same path clipped BELOW that axis.
-//   the star        `starPath(ECL)` at full size, masked by the dilated near
-//                   band (ECL.gutter) so the band cuts its void out of the star
-//                   exactly where it crosses.
-//   the near half   again, over the star it just crossed. That third layer is
-//                   the whole reason the mark reads as one object rather than
-//                   as a starburst sitting on a hoop.
-//
-// Each half is DRAWN rather than faded up: a 26-unit stroke runs along that
-// half's own arc inside a mask, with the dash offset driven to zero, so the
-// band arrives with its own varying width already on it. Same technique as the
-// overture, same constants, same route.
-//
-// ── the two people are named ────────────────────────────────────────────────
-// The vertices used to carry two small four-point stars, which were pretty and
-// said nothing: a diagram of two anonymous nodes on the one screen whose entire
-// claim is that the two nodes are YOU and SOMEBODY IN PARTICULAR. They are
-// handles now, set in the identifier face, and THE BAND IS CUT WHERE THEY SIT
-// (`plate` below, cut out of every ring layer's mask). A label floating over a
-// ring is a caption; a label standing in a gap in the ring is part of the
-// figure, and the gap is what says these two are where the circuit is open
-// until the other one answers.
-//
-// So the sequence is the product, literally:
-//
-//   1  you put their name down     → the band leaves @you and draws over the
-//                                    top. A point of light travels ahead of it:
-//                                    a line that DRAWS has been sent; a line
-//                                    that appears was switched on. Half a ring.
-//                                    It is not anything.
-//   2  they put yours down         → the other half leaves @them and travels
-//                                    under. The two meet.
-//   3  the circuit closes          → and the instant it does, the star ignites
-//                                    inside it and the bloom opens behind it.
-//                                    What is standing on the screen at the end
-//                                    is the logo, assembled by two people, and
-//                                    neither half of it was a mark on its own.
+// The two people are named in the status row, @you over the one on the left
+// and @them over the one on the right, the way a letter's screen names who it
+// is for. @them is dim until they have come in.
 //
 // ── on buying this instead ──────────────────────────────────────────────────
 // A Lottie file or a stock illustration was the obvious way to make this screen
 // look expensive, and it is the one thing that would have made it look cheaper.
-// Every ornament in this build is derived from something true — the field's
+// Every ornament in this build is derived from something true: the field's
 // density is the letter count, a constellation is a handle's hash, the mark is
-// six constants — and a bought animation is the only object that could sit here
-// knowing nothing about what it is next to.
+// nine constants, and the two who run into it are drawn a pixel at a time on
+// the screen every letter is written on. A bought animation is the only object
+// that could sit here knowing nothing about what it is next to.
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Display, Pill, Close } from '../parts.jsx'
-import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
-import { PixIcon } from '../screen.jsx'
+import { PixIcon, Screen } from '../screen.jsx'
+import PixelStory, { SQUARE } from '../PixelStory.jsx'
+import { joinStory } from '../pixmark.js'
 import { cardStep } from '../seed.js'
-import { getState } from '../store.js'
-import { isNameKey, validHandle } from '../data.js'
-
-// Every part of the mark, straight off the mark. Move a constant in art.jsx and
-// this figure moves with it, because it is not a drawing of the logo: it is the
-// logo, taken apart into the order it assembles in.
-const { left, right, high, low } = eclipticHalves()
-const RING = ringPath()
-const GUTTER = ringPath(ECL.gutter)
-const STAR = starPath(ECL)
-
-// The two half-planes, split along the ring's own long axis. `art.jsx` keeps the
-// near one for the mark itself; the far one is its complement and is what makes
-// each half of this figure an exact half rather than an arc that looks like one.
-const PLANE = { x: -110, width: 320, height: 160, transform: `rotate(${ECL.tilt} 50 50)` }
-const NEAR_Y = 50
-const FAR_Y = -110
-
-// ── the two people, and the gap each one stands in ──────────────────────────
-// The type size is in the mark's own units, and the plate under it is worked
-// out from the string rather than measured: the face is a monospace, so one
-// advance is 0.6em and the width of "@them" is arithmetic. The plate is cut out
-// of every ring layer, which is what puts the handle IN the band rather than on
-// top of it.
-const YOU = '@you'
-const THEM = '@them'
-const TAG = 7.2          // the type size
-const ADVANCE = 0.6      // one monospace advance, as a fraction of the size
-const PAD_X = 3.2
-const PAD_Y = 2.4
-
-function plate(text, at) {
-  const w = text.length * TAG * ADVANCE + PAD_X * 2
-  const h = TAG + PAD_Y * 2
-  return { x: at[0] - w / 2, y: at[1] - h / 2, width: w, height: h, rx: h / 2 }
-}
-const PLATES = [plate(YOU, left), plate(THEM, right)]
-
-function Cuts() {
-  return PLATES.map((p, i) => <rect key={i} {...p} fill="#000" />)
-}
-
-function Circuit({ at }) {
-  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
-  const box = { x: -30, y: -30, width: 160, height: 160 }
-  return (
-    /* The box holds the whole mark at full size — the star's arms reach 47
-       units off centre, well past the ring — plus the two handles standing off
-       either end of the long axis. Cropping any of that to keep the figure
-       short is how the last version ended up scaling the star down to a
-       fifty-four percent copy of itself, which is the one thing that stopped it
-       being the logo. */
-    <svg className={`wl-circuit is-at${at}`} viewBox="-10 -4 120 108"
-      aria-hidden="true" focusable="false">
-      <defs>
-        <clipPath id={`${uid}near`}>
-          <rect {...PLANE} y={NEAR_Y} />
-        </clipPath>
-        <clipPath id={`${uid}far`}>
-          <rect {...PLANE} y={FAR_Y} />
-        </clipPath>
-
-        {/* the band, minus the two gaps the handles stand in */}
-        <mask id={`${uid}plate`} maskUnits="userSpaceOnUse" {...box}>
-          <rect {...box} fill="#fff" />
-          <Cuts />
-        </mask>
-
-        {/* ── the two sweeps ──
-            A 26-unit stroke along each half's own arc, with the dash offset
-            driven to zero, so the band is DRAWN round its route rather than
-            faded up — and it arrives carrying its own varying width, because
-            what is travelling is a mask over the real band and not a stroke
-            standing in for one. Butt caps, because the arc ends exactly on the
-            long axis where the clip plane cuts, and a round cap there would
-            bleed the far half into the near one. */}
-        <mask id={`${uid}sweepa`} maskUnits="userSpaceOnUse" {...box}>
-          <path className="wl-circuit-sweep is-a" d={high} pathLength="100"
-            fill="none" stroke="#fff" strokeWidth="26" strokeLinecap="butt"
-            strokeDasharray="100" strokeDashoffset="100" />
-          <Cuts />
-        </mask>
-        <mask id={`${uid}sweepb`} maskUnits="userSpaceOnUse" {...box}>
-          <path className="wl-circuit-sweep is-b" d={low} pathLength="100"
-            fill="none" stroke="#fff" strokeWidth="26" strokeLinecap="butt"
-            strokeDasharray="100" strokeDashoffset="100" />
-          <Cuts />
-        </mask>
-
-        {/* the gutter: the void the near band cuts out of the star where it
-            crosses in front of it (art.jsx, ECL.gutter) */}
-        <mask id={`${uid}gutter`} maskUnits="userSpaceOnUse" {...box}>
-          <rect {...box} fill="#fff" />
-          <path d={GUTTER} fill="#000" fillRule="evenodd" clipPath={`url(#${uid}near)`} />
-        </mask>
-      </defs>
-
-      {/* the circuit as it will be, held at almost nothing — so each half is
-          drawn ONTO a route rather than into empty space, which is the
-          difference between a line being sent and a line being invented */}
-      <g className="wl-circuit-ghost" mask={`url(#${uid}plate)`}>
-        <path d={RING} fillRule="evenodd" />
-      </g>
-
-      {/* one leaves @you and travels over the top */}
-      <g className="wl-circuit-half is-a" clipPath={`url(#${uid}far)`} mask={`url(#${uid}sweepa)`}>
-        <path d={RING} fillRule="evenodd" />
-      </g>
-      {/* the other leaves @them and travels under */}
-      <g className="wl-circuit-half is-b" clipPath={`url(#${uid}near)`} mask={`url(#${uid}sweepb)`}>
-        <path d={RING} fillRule="evenodd" />
-      </g>
-
-      {/* the point of light that runs ahead of each half as it draws */}
-      <circle className="wl-circuit-lead is-a" r="1.7" style={{ offsetPath: `path('${high}')` }} />
-      <circle className="wl-circuit-lead is-b" r="1.7" style={{ offsetPath: `path('${low}')` }} />
-
-      {/* nothing at the centre until BOTH halves exist. The product, in one
-          ornament, with no caption under it.
-
-          There is ONE light on this screen and it is the Bloom behind the SVG,
-          which is the build's rationed accent object. The star carries its own
-          and nothing else does: two soft warm circles stacked on a near-black
-          ground do not read as twice the light, they read as grey with a
-          visible edge. */}
-      <g className="wl-circuit-star" mask={`url(#${uid}gutter)`}>
-        <path d={STAR} transform="translate(50 50)" />
-      </g>
-
-      {/* and the near half again, over the star it just crossed. This is the
-          layer that makes the finished frame the mark rather than a star and a
-          hoop that happen to overlap. */}
-      <g className="wl-circuit-half is-over" clipPath={`url(#${uid}near)`} mask={`url(#${uid}plate)`}>
-        <path d={RING} fillRule="evenodd" />
-      </g>
-
-      {/* the two people, standing in the gaps the band left for them */}
-      <text className="wl-circuit-tag is-a" x={left[0]} y={left[1]}
-        fontSize={TAG} textAnchor="middle" dominantBaseline="central">{YOU}</text>
-      <text className="wl-circuit-tag is-b" x={right[0]} y={right[1]}
-        fontSize={TAG} textAnchor="middle" dominantBaseline="central">{THEM}</text>
-    </svg>
-  )
-}
+import { patch } from '../store.js'
+import { href } from '../router.js'
 
 const LINES = [
-  'you put their name up.',
-  'they put yours up.',
+  'you ping them.',
+  'they ping you.',
   'you both find out. at once.',
 ]
 
+// The story's beats are the lines': each line is said as its part of the
+// story starts, and the key arrives as they touch. The first is after the
+// screen has come on (wall.css `.wl-join-scr`, 180ms and 900 of flicker),
+// so @you is seen to arrive and not found already standing there.
+const STORY = joinStory({ you: 800, them: 1700, both: 2600 })
 //              1     2     3     4
-const BEATS = [650, 1750, 2900, 3400]
+const BEATS = [800, 1700, 2600, STORY.times.touch + 240]
 const LAST = 4
+
+// the night screen, and the two of them named on it
+const LOOK = { tint: 'night' }
+const NO_KEYS = {}
+const TOP = { name: '@you', handle: '@them' }
 
 export default function Join({ go, up, upLabel = 'back to the wall', setField, reduce }) {
   const [at, setAt] = useState(reduce ? LAST : 0)
+  // a tap lands the whole thing, the glass on its last frame with it
+  const [landed, setLanded] = useState(false)
+  const t0 = useRef(performance.now()).current
   const timers = useRef([])
   useEffect(() => { setField('slow') }, [setField])
+  // Shown once: the tab goes straight to the ping from here on (Wall.jsx `Tab`).
+  useEffect(() => { patch({ joined: true }) }, [])
 
   useEffect(() => {
     if (reduce) return
@@ -246,30 +92,25 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
     return () => timers.current.forEach(clearTimeout)
   }, [reduce])
 
-  // Out of the wall and into the product. `assign` rather than a route change:
-  // see the note on the button below.
-  // The last step a card can be credited with, and the furthest one: out of the
-  // wall and into the product. Written down before the navigation, because
-  // after it this shell is gone (migration 0047).
+  // The last step a card can be credited with, and the furthest one: from the
+  // wall into the rest of the product (migration 0047). The ping sheet writes
+  // it down too, once per device, whichever door it was opened from.
   //
-  // ── and it lands on the person ──
-  // It used to land on the hero, and a person who had just named somebody
-  // met an empty field on the far side of the door. Main's /place/<handle>
-  // opens with the ping's target already in it and the resolver's card drawn
-  // against a face, so the handle this device wrote to last is handed over
-  // when the letter carried one. A letter to a first name (0053) carried no
-  // handle, so it lands on /place with the field open: "Who's on your mind."
-  // is where Main asks for the @, and that field IS the ask. The wall never
-  // asked for it and never held it; the writer types it themselves, as the
-  // ping's own object, on the surface where a ping lives.
+  // ── and it opens on the people ──
+  // It used to leave the wall for Main's /place, a page in another design
+  // with the last handle written to already in its field. The ping is a sheet
+  // on the wall now (screens/Ping.jsx), and it opens on everybody this person
+  // has written to, one press each, with the field under them for anybody
+  // else. This page is a door and not a place to come back to, so it gives
+  // its entry in the history to the wall first: the sheet closes onto the
+  // names, and the back button does not walk through the drawing again.
   const place = () => {
     cardStep('handoff')
-    const k = (getState().wroteTo || [])[0] || ''
-    const h = k && !isNameKey(k) && validHandle(k) ? k : ''
-    window.location.assign(h ? `/place/${encodeURIComponent(h)}` : '/place')
+    window.history.replaceState({ ...window.history.state, wall: 'wall', wallDepth: 0 }, '', href('wall'))
+    go('ping')
   }
 
-  // The same escape the overture has, for the same reason: this runs three and
+  // The same escape the intro has, for the same reason: this runs three and
   // a half seconds and the second person at a demo table has already seen it.
   // A tap anywhere lands the whole thing.
   useEffect(() => {
@@ -278,6 +119,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
       timers.current.forEach(clearTimeout)
       timers.current = []
       setAt(LAST)
+      setLanded(true)
     }
     window.addEventListener('pointerdown', skip)
     window.addEventListener('keydown', skip)
@@ -309,15 +151,19 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           that says what pressing the button GETS them, and it is the same
           sentence, word for word, as the tab they pressed to get here. */}
       <Display size="l" className="wl-join-h">
-        get notified if they<br />put you up too.
+        get notified if they<br />ping you too.
       </Display>
 
-      <div className="wl-join-fig">
-        {/* One bloom, at the size the mark actually is rather than at the size
-            of the box around it. At 310 it was a grey panel behind a ring; the
-            light has to come off the star, not sit behind the whole figure. */}
-        <Bloom size={215} opacity={at >= 3 ? 0.28 : 0} className="wl-join-bloom" />
-        <Circuit at={at} />
+      {/* The figure is a picture of the three lines under it, and the lines
+          are what a screen reader hears. The screen is the one lit thing on
+          this page until the key comes up under it. */}
+      <div className="wl-join-fig" aria-hidden="true">
+        <Screen
+          look={LOOK} seed="join" top={TOP} keys={NO_KEYS} live={false} state="waking"
+          className={`wl-join-scr is-pair is-at${at}`} style={SQUARE}
+        >
+          <PixelStory story={STORY} at={reduce || landed ? STORY.end : null} from={t0} />
+        </Screen>
       </div>
 
       <ol className="wl-rule-list">
@@ -335,14 +181,9 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
       <div className={`wl-join-foot${at >= LAST ? ' is-in' : ''}`}>
         {/* ── the hand-off ──
             This used to open /berkeley/orbit, a drawn stand-in for the core
-            service that lived inside the wall's own bundle. It does not any
-            more: registering means registering, so the button leaves this tree
-            entirely and lands on the product at the root of the site.
-
-            A real navigation rather than a route change, because the wall and
-            production are two different apps behind one document (main.jsx) and
-            pushing a production path into this history stack would leave the
-            wall trying to render a screen it does not have. */}
+            service, and then Main's /place by a real navigation out of this
+            tree. The ping is the wall's own sheet now, so the button raises
+            it over the wall in place (`place` above). */}
         <Pill tone="light" wide onClick={place}>
           place a ping
         </Pill>

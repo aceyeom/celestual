@@ -23,6 +23,8 @@ import { chromium } from 'playwright'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.env.PREVIEW_OUT || join(root, 'design/shots')
+// the dev server to shoot, as the other scripts read it
+const BASE = process.env.DEV_URL || 'http://localhost:5173'
 mkdirSync(out, { recursive: true })
 
 const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
@@ -77,13 +79,14 @@ const INDEX = HANDLES.map(([h, name, verified], i) => ({
 
 // ── the colours (0055, 0058), and the names (0053) ──
 // Every letter is a screen now and all it chooses is the colour it is lit
-// in (app/src/wall/looks.js). The fixture spreads the kinds across the
-// field: lit screens, the negative, posters, a riso and the xerox, so a shot
-// of the wall shows each treatment somewhere and a turn of the deck walks
-// from one to another. A letter with no colour draws the one its id picks.
+// in (app/src/wall/looks.js). The fixture has every one of the thirteen
+// somewhere on the field: the lit screens, the negative, each print in its
+// own light and the xerox, so a shot of the wall shows each treatment and a
+// turn of the deck walks from one to another. A letter with no colour draws
+// the one its id picks.
 const LOOKS = {
   'pilar.echevarria': { tint: 'night' },
-  'jules.k': { tint: 'blush' },
+  'jules.k': { tint: 'lilac' },
   'ren.tanaka': { tint: 'amber' },
   'm.okonkwo': { tint: 'xerox' },
   'aya.nakamura': { tint: 'ice' },
@@ -93,12 +96,12 @@ const LOOKS = {
   'nour.haddad': { tint: 'green' },
   'elias.brandt': { tint: 'teal' },
   'sofiaaa.reyes': { tint: 'rose' },
-  'ace03d': { tint: 'cobalt' },
+  'ace03d': { tint: 'white' },
 }
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
 const NAMES = [
   ['~sofia', 'Sofia', 2, { tint: 'green' }],
-  ['~j', 'J', 1, { tint: 'orange-teal' }],
+  ['~j', 'J', 1, { tint: 'ember' }],
   ['~51b', '51B', 1, { tint: 'ember' }],
 ]
 NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
@@ -148,8 +151,10 @@ function lettersFor(handle, open) {
       campus: 'berkeley',
       at: new Date(now - (i * 3 + 1) * DAY).toISOString(),
       expires: new Date(now + (27 - i) * DAY).toISOString(),
-      // 0042: how many hearted it, and whether this browser did
-      hearts: i === 0 ? 3 : i === 1 ? 1 : 0,
+      // 0042: how many hearted it, and whether this browser did. Two
+      // figures on the first, as the hearts a letter began with (0059) left
+      // most letters that were up
+      hearts: i === 0 ? 12 : i === 1 ? 3 : 0,
       hearted: false,
     }
   })
@@ -190,6 +195,22 @@ let MANY = false
 // Whether the fixture browser is nobody at all: signed in to nothing, so the
 // gates draw their doors rather than the account.
 let ANON = false
+// Whether the handle typed at the ping's door is on the desk's pass list
+// (0043): proved on the spot, with no code drawn, which is the one way to
+// walk the whole of a ping to "it's out." without an Instagram behind it.
+let PASS = false
+// Whether every slot this person holds is already standing, so the placing
+// is refused and the sheet says so (0023 `no_slots`).
+let FULL = false
+// Whether the fixture browser signed in with google, and nothing else: a
+// reader on any wall since 0057, and not a writer on the campus wall. It is
+// the person whose heart never counted, because this browser drew them as
+// outside the read gate; the store is seeded with that stale answer, so the
+// shot shows the wall asking the server and drawing what it says.
+let GOOGLE = false
+// What the daily check on apify last said (0060): 'ok', 'failing', 'stale'
+// or 'never'. The desk draws its line at the top of every screen from it.
+let CANARY = 'ok'
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -220,6 +241,13 @@ const faceUrl = (h) => (REAL.has(h) ? `https://fixture.supabase.co/storage/v1/ob
 
 function whoami() {
   if (ANON) return { ok: true, signed_in: false }
+  if (GOOGLE) {
+    return { ok: true, signed_in: true, user: {
+      id: '99999999-8888-4777-8666-555544443334', handle: null, handle_verified: false, email: null,
+      edu_verified: false, campus: null, google_verified: true, email_verified: false,
+      login_email: 'someone@gmail.com',
+    } }
+  }
   return {
     ok: true,
     signed_in: true,
@@ -513,8 +541,67 @@ const DESK_LEGACY = {
 
 const page = (rows) => ({ ok: true, total: rows.length, limit: 50, offset: 0, rows })
 
+// ── the daily check on apify (0060) ──
+// A run a day while it passes and one every three hours while it does not,
+// so a failing morning reads as a short stack of refusals over a week of
+// passes. The refusal is the one Apify sends for a token it does not know.
+const HOUR = 3600000
+const canaryRun = (id, hoursAgo, ok, extra = {}) => ({
+  id, ran_at: new Date(now - hoursAgo * HOUR).toISOString(),
+  finished_at: new Date(now - hoursAgo * HOUR + (ok ? 8400 : 600)).toISOString(),
+  source: 'cron', handle: 'instagram', ok, status: ok ? 'ok' : 'refused',
+  http_status: ok ? 201 : 401, latency_ms: ok ? 8400 : 612, attempts: 1, face_ok: ok ? true : null,
+  detail: ok
+    ? { display_name: 'Instagram', verified: true, actor: 'shu8hvrXbJbY3Eb9W' }
+    : { said: 'User was not found or authentication token is not valid', type: 'user-or-token-not-found', actor: 'shu8hvrXbJbY3Eb9W' },
+  ...extra,
+})
+function canaryFixture(state) {
+  const at = new Date(now).toISOString()
+  const timeout = { status: 'timeout', http_status: null, latency_ms: 33000, attempts: 2,
+    detail: { said: 'no answer inside 33 seconds', actor: 'shu8hvrXbJbY3Eb9W' } }
+  if (state === 'never') {
+    return { state: 'never', enabled: true, now: at, running: false,
+      last: null, last_ok_at: null, fails: 0, failing_since: null, runs: [] }
+  }
+  if (state === 'stale') {
+    const runs = [49, 73, 97, 121, 145, 169, 193].map((h, i) => canaryRun(40 - i, h, true))
+    return { state: 'stale', enabled: true, now: at, running: false,
+      last: runs[0], last_ok_at: runs[0].ran_at, fails: 0, failing_since: null, runs }
+  }
+  if (state === 'failing') {
+    const runs = [
+      canaryRun(47, 1.2, false),
+      canaryRun(46, 4.2, false),
+      canaryRun(45, 7.2, false, { source: 'desk' }),
+      canaryRun(44, 9.2, false),
+      canaryRun(43, 33.2, true),
+      canaryRun(42, 57.2, true, { latency_ms: 21700 }),
+      canaryRun(41, 81.2, true),
+    ]
+    return { state: 'failing', enabled: true, now: at, running: false,
+      last: runs[0], last_ok_at: runs[4].ran_at, fails: 4, failing_since: runs[3].ran_at, runs }
+  }
+  const runs = [
+    canaryRun(47, 5.3, true),
+    canaryRun(46, 29.3, true, { latency_ms: 9100 }),
+    canaryRun(45, 53.3, true, { latency_ms: 21700 }),
+    canaryRun(44, 56.3, false, timeout),
+    canaryRun(43, 80.3, true),
+    canaryRun(42, 104.3, true, { face_ok: false }),
+    canaryRun(41, 128.3, true),
+  ]
+  return { state: 'ok', enabled: true, now: at, running: false,
+    last: runs[0], last_ok_at: runs[0].ran_at, fails: 0, failing_since: null, runs }
+}
+
 const DESK = {
-  desk_overview: () => DESK_OVERVIEW,
+  desk_overview: () => ({ ...DESK_OVERVIEW, canary: canaryFixture(CANARY) }),
+  // the desk's "check it now": apify answers, and the line goes
+  desk_canary_run: () => {
+    CANARY = 'ok'
+    return { ok: true, canary: canaryFixture('ok').last }
+  },
   desk_users: (b) => page(b.query
     ? DESK_USERS.filter((u) => (u.handle || '').includes(b.query) || (u.edu_email || '').includes(b.query))
     : DESK_USERS),
@@ -606,9 +693,20 @@ const RPC = {
   // poll answers pending for as long as the screenshot takes, carrying
   // whatever note the route asked for.
   celestual_start_ig_verification: () => ({
-    ok: true, token: '1283', expires_at: new Date(now + 30 * 60000).toISOString(),
+    ok: true, token: '1283', expires_at: new Date(now + 30 * 60000).toISOString(), passed: PASS,
   }),
-  celestual_poll_ig_verification: () => ({ status: 'pending', handle: null, note: NOTE || null }),
+  celestual_poll_ig_verification: () => (PASS
+    ? { status: 'verified', handle: 'ace03d', note: null }
+    : { status: 'pending', handle: null, note: NOTE || null }),
+  // 0023: the ping, placed. Standing, never announced as mutual here, and the
+  // slots the server holds this person to, which the account sheet counts
+  // against. Or refused, with every slot already standing.
+  celestual_submit: () => (FULL
+    ? { recorded: false, error: 'no_slots', slots: { standing: 2, cap: 2 } }
+    : {
+      recorded: true, mutual: false, match: null, match_card: null, reachable: false,
+      expires_at: new Date(now + 60 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
+    }),
   // The front door's notice reads this.
   wall_pulse: () => ({
     ok: true, campus: 'berkeley', name: 'UC Berkeley', open: true,
@@ -631,7 +729,7 @@ const RPC = {
     ...faceOf('pilar.echevarria'),
   }),
   // 0042: a heart on, or off, and the count back
-  wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 4 : 3, hearted: !!b.p_on }),
+  wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 13 : 12, hearted: !!b.p_on }),
   // 0050: this browser's own letters and where each stands. One of them has
   // been taken down by the reading, after it went up, when the route asks
   // for it: the notice at the foot of the wall.
@@ -664,11 +762,11 @@ const RPC = {
         ...faceOf('jules.k'),
       },
       {
-        handle: 'sofiaaa.reyes',
+        handle: 'ren.tanaka',
         time: now - 6 * DAY,
         expires_at: new Date(now + 54 * DAY).toISOString(),
         mutual: false,
-        card: { words: 'you sat two rows ahead all semester.' },
+        card: { words: 'you were the one singing on the 51B that night.' },
       },
     ],
   }),
@@ -800,41 +898,99 @@ async function fulfil(route) {
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
 const ROUTES = [
-  // The intro, held on its assembled beat: the liquid mark and the name.
+  // The intro, held on its last beat: the phone, and the mark in its pixels.
+  // Then held on the run and on the hug by the clock (Intro.jsx `?t=`), and
+  // the same last beat typed, for setting beside it (`?intro=ascii`).
   { label: 'intro',         path: '/?beat=3' },
-  // The hero scrolls: it is a page with three sections rather than one
-  // composition, so it is shot whole as well as at the fold. Without the intro
-  // in front of it, which has its own frame above.
-  { label: 'hero',          path: '/?nointro=1' },
-  // The front door with a handle in it: the card that pops up under the field,
-  // once with the answer and once while the resolver is still out, which is
-  // the state the light was drawn for.
-  { label: 'hero-card',     path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' } },
-  { label: 'hero-looking',  path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' }, slow: true, press: '.hm-ask-row .wl-pill' },
-  { label: 'place',         path: '/place' },
-  { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
-  { label: 'place-named',   path: '/@pilar.echevarria' },
-  // the third step, the envelope: asked of a browser that knows nobody, and
-  // shown to one that has already proved
-  { label: 'place-you',       path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill', verified: false },
-  { label: 'place-you-known', path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill' },
-  // The code, out: the FROM row says proving and the foot is the code. And
-  // the same screen once a DM with the wrong digits has arrived (0041).
-  { label: 'place-code',      path: '/@pilar.echevarria', verified: false,
-    acts: [['fill', 'textarea', 'i have wanted to say this since the second week of term.'], ['click', '.mn-foot .wl-pill'],
-           ['fill', '.mn-mail-field input', 'ace03d'], ['click', '.mn-foot .wl-pill']] },
-  { label: 'place-code-note', path: '/@pilar.echevarria', verified: false, note: 'wrong_code',
-    acts: [['fill', 'textarea', 'i have wanted to say this since the second week of term.'], ['click', '.mn-foot .wl-pill'],
-           ['fill', '.mn-mail-field input', 'ace03d'], ['click', '.mn-foot .wl-pill'], ['wait', 3200]] },
-  { label: 'sky',           path: '/sky' },
-  // A standing ping, opened: the card, and the two things you can do to it.
-  { label: 'sky-card',      path: '/sky', press: '.mn-list .wl-row' },
-  // The sky before a handle is proved on this device: where the front door's
-  // "sign in" lands, and the screen that asks the question.
-  { label: 'sky-prove',     path: '/sky', verified: false },
-  { label: 'sky-prove-code', path: '/sky', verified: false,
-    acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
-  { label: 'reveal',        path: '/reveal/jules.k' },
+  { label: 'intro-run',     path: '/?t=900' },
+  { label: 'intro-hug',     path: '/?t=1500' },
+  { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
+  // ── the ping, on the wall ──
+  // Raised over the Berkeley wall, from the tab, the bar and the foot, and
+  // from every address Main used to draw it at. The people written to, with
+  // what each one's ping is doing; a new @ typed, with the wall's names under
+  // it, and the resolver's answer in the field's place; the ping's own
+  // screen; the door, when the proof is not on this device; and "it's out."
+  { label: 'ping',          path: '/berkeley/ping' },
+  { label: 'ping-typed',    path: '/berkeley/ping', type: { into: '.wl-ping .wl-field input', text: 'a' } },
+  { label: 'ping-found',    path: '/berkeley/ping',
+    acts: [['fill', '.wl-ping .wl-field input', 'pilar.echevarria'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1400 },
+  { label: 'ping-line',     path: '/berkeley/ping',
+    acts: [['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'i kept nearly saying something after class and then not saying it.']] },
+  { label: 'ping-long',     path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class and then not saying it and then the term ended and i still had not said it']] },
+  { label: 'ping-full',     path: '/berkeley/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-proof',    path: '/berkeley/ping/pilar.echevarria', verified: false,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']] },
+  { label: 'ping-code',     path: '/berkeley/ping/pilar.echevarria', verified: false,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'],
+           ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light']] },
+  { label: 'ping-done',     path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // the whole story from the wall: the tab, a name written to, a line, the
+  // door passed on the spot, "it's out.", and back on the names
+  { label: 'ping-story-tab',  path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main']], settle: 1400 },
+  { label: 'ping-story-line', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.']] },
+  { label: 'ping-story-door', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['fill', '.wl-door .wl-field input', 'ace03d']] },
+  { label: 'ping-story-done', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light'], ['wait', 1600]], settle: 600 },
+  { label: 'ping-story-home', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light'], ['wait', 1600],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1400]], settle: 1200 },
+  // and from a link, cold: an old /@handle lands on the ping over Berkeley,
+  // and "back to the wall" leaves the names with no poster over them
+  { label: 'ping-cold',      path: '/@pilar.echevarria' },
+  { label: 'ping-cold-home', path: '/@pilar.echevarria',
+    acts: [['wait', 3200], ['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1400],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1600]], settle: 1200 },
+  // ── the person ──
+  // The bar's face opens it: the pings, the drafts, the letters. A standing
+  // ping opened onto its own screen, its options, and letting it go asked.
+  // The three ways the list can not be there: no @ here, a proof gone, and
+  // nobody at all, which is the door.
+  { label: 'you',           path: '/berkeley/you' },
+  { label: 'you-bar',       path: '/berkeley', acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-memberbtn']], settle: 1400 },
+  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing']], settle: 1200 },
+  { label: 'you-options',   path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+  { label: 'you-let-go',    path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:last-child']], settle: 900 },
+  { label: 'you-unproved',  path: '/berkeley/you', verified: false },
+  { label: 'you-door',      path: '/berkeley/you', anon: true },
+  { label: 'you-home',      path: '/you' },
+  // and both under prefers-reduced-motion: the screen does not dip, and
+  // every state is still whole as a still frame
+  { label: 'ping-done-still', path: '/berkeley/ping/pilar.echevarria', still: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'you-still',     path: '/berkeley/you', still: true, settle: 900 },
+  // the addresses Main used to draw, landing on the wall
+  { label: 'legacy-sky',    path: '/sky' },
+  { label: 'legacy-place',  path: '/place' },
+  { label: 'legacy-ping',   path: '/ping' },
+  // It's mutual, a sheet on the wall now: the fixture's mutual with jules.k,
+  // once the story on its screen has landed, and a handle that is not one.
+  // `?beat=4` lifts the intro at once, so the sheet is what is shot.
+  { label: 'reveal',        path: '/reveal/jules.k?beat=4', settle: 4200 },
+  { label: 'reveal-berkeley', path: '/berkeley/reveal/jules.k?beat=4', settle: 4200 },
+  { label: 'reveal-none',   path: '/berkeley/reveal/sofiaaa.reyes?beat=4' },
+  // the three stories and the deck under prefers-reduced-motion, where each
+  // is drawn on its last frame and has to be whole as a still
+  { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
+  { label: 'join-still',    path: '/berkeley/join', still: true, settle: 1600 },
+  { label: 'intro-still',   path: '/?beat=3', still: true, settle: 900 },
+  { label: 'letter-still',  path: '/berkeley/letter/ren.tanaka', still: true, settle: 1200 },
   // the veil over the field, with the flaps rolled into place (art.jsx
   // Flap), so the wall is shot once they have landed; then the field with
   // the veil lifted, once the lens has bloomed and the walk has taken its
@@ -852,12 +1008,12 @@ const ROUTES = [
   { label: 'home-gate-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
   { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
     ['fill', '.wl-codebox-in', '481920'],
   ] },
   // the DM code, on the door: the one screen whose success depends on what
@@ -865,17 +1021,16 @@ const ROUTES = [
   { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="instagram"]'],
     ['fill', '.wl-field input', 'ace03d'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
   { label: 'berkeley-gate-code', path: '/berkeley/gate', anon: true, acts: [
     ['fill', '.wl-addr-in', 'you'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
     ['fill', '.wl-codebox-in', '481920'],
   ] },
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
   { label: 'home-letter',     path: '/letter/pilar.echevarria' },
   { label: 'berkeley-gate-google', path: '/berkeley/gate', anon: true },
-  { label: 'ping',            path: '/ping?nointro=1' },
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
   // the veil opening from the tap, held at four tenths of its reach
   // (Wall.jsx `heldRipple`): the circle, the crest of the pulse running
@@ -925,8 +1080,33 @@ const ROUTES = [
   // and let go past the threshold: the strip ran on to the next letter
   { label: 'letter-swiped', path: '/berkeley/letter/pilar.echevarria',
     acts: [['swipe', '.wl-letter-card', -220]], settle: 900 },
+  // the deck at rest from the middle of it, a neighbour asleep either side;
+  // the same card under a mouse held mid drag; the first letter pulled the
+  // way there is nothing, giving; and the lean a first visit is shown, caught
+  // at its furthest
+  { label: 'letter-deck',   path: '/berkeley/letter/ren.tanaka' },
+  { label: 'letter-drag',   path: '/berkeley/letter/ren.tanaka',
+    acts: [['mouse', '.wl-letter-card', -170, 'hold']], settle: 300 },
+  { label: 'letter-end',    path: '/berkeley/letter/pilar.echevarria',
+    acts: [['swipe', '.wl-letter-card', 180, 'hold']], settle: 300 },
+  { label: 'letter-lean',   path: '/berkeley/letter/ren.tanaka', lean: true,
+    acts: [['until', "(document.querySelector('.wl-letter-card') || {}).style?.transform?.includes('-')", 8000]], settle: 200 },
+  // a mouse resting on the letter after this one: it wakes a little and
+  // leans in, and a press there turns to it
+  { label: 'letter-hover',  path: '/berkeley/letter/ren.tanaka',
+    acts: [['mouse', '.wl-turn.is-next', 0, 'hover']], settle: 600 },
+  // the keyboard's rings on the deck: the letter after this one, which the
+  // turn's own button covers, and a soft key on the card
+  { label: 'letter-focus',  path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-turn.is-next']], settle: 500 },
+  { label: 'letter-focus-key', path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-letter-card .wl-sk.is-r']], settle: 500 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
+  // the heart, pressed: by a campus reader, and by somebody signed in with
+  // google and nothing else, whose press used to go to the gate and count
+  // nothing (auth.js `refresh`)
+  { label: 'letter-heart',  path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-c', settle: 900 },
+  { label: 'letter-heart-google', path: '/berkeley/letter/pilar.echevarria', google: true,
+    press: '.wl-letter-card .wl-sk.is-c', settle: 900 },
   { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
   { label: 'letter-shared',  path: '/berkeley/letter/pilar.echevarria',
     acts: [['click', '.wl-letter-card .wl-sk.is-r'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
@@ -1001,6 +1181,15 @@ const ROUTES = [
     acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="teal"]']], settle: 1200 },
   { label: 'write-look-xerox', path: '/berkeley/write/sofiaaa.reyes',
     acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="xerox"]']], settle: 1200 },
+  // the phone's caret (caret.jsx): after the last word, in the middle of a
+  // word, where it is the letter after it struck out of a cell of its own,
+  // and in an empty field, just before the hint, on the ping and on both
+  // of the door's fields
+  { label: 'caret-end',     path: '/berkeley/write/sofiaaa.reyes', acts: [['caret', '.wl-write-card textarea', -1]], settle: 150 },
+  { label: 'caret-mid',     path: '/berkeley/write/sofiaaa.reyes', acts: [['caret', '.wl-write-card textarea', 9]], settle: 150 },
+  { label: 'caret-empty',   path: '/berkeley/ping', acts: [['caret', '.wl-ping .wl-field input', 0]], settle: 150 },
+  { label: 'caret-door',    path: '/gate', anon: true, acts: [['click', '[data-way="email"]'], ['caret', '.wl-addr-in', 0]], settle: 150 },
+  { label: 'caret-door-ig', path: '/gate', anon: true, acts: [['click', '[data-way="instagram"]'], ['caret', '.wl-door .wl-field input', 0]], settle: 150 },
   // a letter to a name, read; and the same deck turned to the older letter
   // under the name, in the colour its own id picks
   { label: 'letter-name',   path: '/berkeley/letter/~sofia' },
@@ -1020,9 +1209,12 @@ const ROUTES = [
   { label: 'gate-in',       path: '/berkeley/gate' },
   { label: 'gate-in-more',  path: '/berkeley/gate', many: true },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
+  // and taken down: the box for why, with the caret before its example
+  { label: 'report-why',    path: '/berkeley/report/11110111-2222-4333-8444-555566660000',
+    acts: [['click', '.wl-foot .wl-pill.is-light'], ['caret', '.wl-reason textarea', 0]], settle: 150 },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
-  { label: 'join',          path: '/berkeley/join' },
+  { label: 'join',          path: '/berkeley/join?beat=4', settle: 5200 },
   // the letter caught at the keyboard: a street address in it, the button
   // pressed anyway, and the card shaking under the press with the line under
   // it saying what was caught (Write.jsx `shake`)
@@ -1055,6 +1247,20 @@ const ROUTES = [
   // reprint, and the address that goes in each QR
   { label: 'admin-cards',    path: '/admin', desk: true, click: 'cards' },
   { label: 'admin-gate',    path: '/admin' },
+  // 0060: the daily check on apify. Red on every screen while the last check
+  // failed, amber while none has run for a day and a half or ever, and its
+  // record on the resolver screen; `-armed` is the button between its two
+  // presses, and `-ran` is the line gone once a check has passed.
+  { label: 'admin-canary-failing', path: '/admin', desk: true, canary: 'failing' },
+  { label: 'admin-canary-reports', path: '/admin', desk: true, canary: 'failing', click: 'reports' },
+  { label: 'admin-canary-stale',   path: '/admin', desk: true, canary: 'stale' },
+  { label: 'admin-canary-never',   path: '/admin', desk: true, canary: 'never' },
+  { label: 'admin-canary-cache',   path: '/admin', desk: true, canary: 'failing', click: 'cache', full: true },
+  { label: 'admin-canary-cache-ok', path: '/admin', desk: true, canary: 'ok', click: 'cache', full: true },
+  { label: 'admin-canary-armed',   path: '/admin', desk: true, canary: 'failing',
+    acts: [['click', '.ad-alarm .ad-btn']], settle: 400 },
+  { label: 'admin-canary-ran',     path: '/admin', desk: true, canary: 'failing',
+    acts: [['click', '.ad-alarm .ad-btn'], ['click', '.ad-alarm .ad-btn']], settle: 1600 },
 
   // Phase 8. The three addresses that arrive from outside the product, and the
   // one that arrives from a typo.
@@ -1086,7 +1292,12 @@ for (const r of list) {
   DOWN = r.down === true
   MANY = r.many === true
   ANON = r.anon === true
+  PASS = r.pass === true
+  FULL = r.full === true
+  GOOGLE = r.google === true
   for (const v of VIEWPORTS) {
+    // a check run on the last pass cleared the line; it is put back
+    CANARY = r.canary || 'ok'
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
     const page = await browser.newPage({
@@ -1105,7 +1316,7 @@ for (const r of list) {
       // means it has to be matched before the dev server's own assets are let
       // through, or it goes to a proxy with nothing behind it.
       if (u.includes('/api/resolve')) return fulfil(route)
-      if (u.startsWith('http://localhost:5173')) return route.continue()
+      if (u.startsWith(BASE)) return route.continue()
       return fulfil(route)
     })
 
@@ -1127,12 +1338,12 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
-          member: ANON ? null : 'someone@berkeley.edu',
-          reader: !ANON,
-          verified: VERIFIED && !ANON ? ['ace03d'] : [],
+          member: ANON || GOOGLE ? null : 'someone@berkeley.edu',
+          reader: !ANON && !GOOGLE,
+          verified: VERIFIED && !ANON && !GOOGLE ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: WRITTEN,
           proof: 'a'.repeat(64),
@@ -1152,10 +1363,30 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN, ANON })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE })
+    // The letter's deck leans toward the next letter the first times a
+    // device opens it (screens/Letter.jsx `nudge`), which would catch a shot
+    // part way through. Every device here has turned it, but the one the
+    // lean is shot on (`lean`).
+    if (!r.lean) {
+      await page.addInitScript(() => {
+        try {
+          const s = JSON.parse(localStorage.getItem('celestual.wall.v5') || '{}')
+          localStorage.setItem('celestual.wall.v5', JSON.stringify({ ...s, turned: true }))
+        } catch { /* private mode */ }
+      })
+    }
 
-    await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
+    await page.goto(BASE + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
+    // The intro plays on every cold address but the reveal, and it is three
+    // and a half seconds to a bare page now, longer than a route's settle.
+    // So the shot waits for it to have gone, unless the route holds it on a
+    // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes,
+    // or on the last beat, which lifts it at once (`?beat=4`).
+    if (!/[?&](beat|t)=/.test(r.path)) {
+      await page.waitForFunction(() => !document.querySelector('.hi'), null, { timeout: 8000 }).catch(() => {})
+    }
 
     // Some states only exist once somebody has typed: the result card is the
     // one spec section 5 calls the main affordance, and it does not draw until
@@ -1189,6 +1420,39 @@ for (const r of list) {
     // whatever the last one drew.
     for (const [act, sel, arg, more] of r.acts || []) {
       if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      // until the page says so, for a frame inside a movement nothing
+      // pressed started: `sel` is the expression, `arg` how long to wait
+      if (act === 'until') { await page.waitForFunction(sel, null, { timeout: Number(arg) || 6000 }).catch(() => {}); continue }
+      // a control reached by the keyboard: focused, then a step back and
+      // forward again with Tab, so the ring is the keyboard's and it shows,
+      // which nothing else here reaches
+      if (act === 'focus') {
+        await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+        await page.focus(sel).catch(() => {})
+        await page.keyboard.press('Shift+Tab').catch(() => {})
+        await page.keyboard.press('Tab').catch(() => {})
+        await page.waitForTimeout(Number(more) || 400)
+        continue
+      }
+      // the caret put in a field, `arg` characters in, or counted back from
+      // the end when it is negative (-1 is after the last one). It blinks on
+      // the phone's beat, so once it has been drawn its beat is held on the
+      // lit half, and the shot is of the caret and not of the half it is out
+      if (act === 'caret') {
+        await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+        await page.$eval(sel, (el, at) => {
+          el.focus()
+          const n = at < 0 ? el.value.length + at + 1 : at
+          el.setSelectionRange(n, n)
+        }, Number(arg) || 0).catch(() => {})
+        await page.waitForTimeout(Number(more) || 160)
+        await page.evaluate(() => {
+          for (const a of document.getAnimations()) {
+            if (String(a.animationName || '').startsWith('wl-caret')) { a.pause(); a.currentTime = 0 }
+          }
+        }).catch(() => {})
+        continue
+      }
       await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
       if (act === 'fill') await page.fill(sel, arg).catch(() => {})
       // a click's fourth field, when it is a number, is how long to wait
@@ -1200,10 +1464,9 @@ for (const r of list) {
         await page.click(sel, { timeout: 4000, force: true }).catch(() => {})
         if (typeof more === 'number') { await page.waitForTimeout(more); continue }
       }
-      // A finger across an element, as the pointer events a touch sends,
-      // since a mouse is not a swipe anywhere in the product. `arg` is how
-      // far, in pixels, and `more` of 'hold' leaves the finger down so the
-      // frame in the middle of the gesture can be shot.
+      // A finger across an element, as the pointer events a touch sends.
+      // `arg` is how far, in pixels, and `more` of 'hold' leaves the finger
+      // down so the frame in the middle of the gesture can be shot.
       if (act === 'swipe') {
         await page.evaluate(async ({ sel, dx, hold }) => {
           const el = document.querySelector(sel)
@@ -1224,6 +1487,22 @@ for (const r of list) {
           }
           if (!hold) { await frame(); ev('pointerup', x0 + dx, y0) }
         }, { sel, dx: Number(arg) || 0, hold: more === 'hold' }).catch(() => {})
+      }
+      // The same with the browser's own mouse, which the letter's deck takes
+      // too: to the middle of the element, then pressed and drawn `arg`
+      // pixels across. `more` of 'hold' keeps the button down, and 'hover'
+      // only goes there.
+      if (act === 'mouse') {
+        const b = await page.$eval(sel, (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }).catch(() => null)
+        if (b) {
+          await page.mouse.move(b.x, b.y, { steps: 4 })
+          if (more !== 'hover') {
+            const dx = Number(arg) || 0
+            await page.mouse.down()
+            await page.mouse.move(b.x + dx, b.y, { steps: 12 })
+            if (more !== 'hold') await page.mouse.up()
+          }
+        }
       }
       await page.waitForTimeout(700)
     }

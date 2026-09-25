@@ -4,11 +4,11 @@
 //
 // Every letter on the wall is drawn by this file, at three sizes:
 //
-//   Screen   the letter, read. The status across the top (the aerial and
-//            the date, the characters left by the battery, then the pen,
-//            "dear" and the name, and the handle), the words, and the three
-//            soft keys at the foot. Opened, it is the only lit thing in the
-//            room
+//   Screen   the letter, read. The status across the top (the aerial, the
+//            day it went up by the battery, or on a draft the characters
+//            left, then the pen, "dear" and the name, and the handle), the
+//            words, and the three soft keys at the foot. Opened, it is the
+//            only lit thing in the room
 //   Tile     the same screen, small, standing for a name on the wall: the
 //            status row, the name's monogram or their picture, and the
 //            keys' two dashes
@@ -27,6 +27,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS } from './looks.js'
+import { Caret } from './caret.jsx'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -476,9 +477,12 @@ function Press({ id, colour, q }) {
 }
 
 // ── the screen ──────────────────────────────────────────────────────────────
-// `top` is what the status rows say: the aerial and the letter's `date`
-// across the first, and its `counter` by its `bat`; under them the `name`
-// and the `handle`, with
+// `top` is what the status rows say: the aerial across the first, a `date`
+// beside it where one is given, and by the `bat` either a draft's `counter`,
+// the characters it has left, or a letter's `stamp`, the day it went up. The
+// counter is the phone's own arithmetic and a screen reader is spared it; the
+// stamp is a fact about the letter, and is read. Under them the `name` and
+// the `handle`, with
 // the pen before the name (`icon: 'pen'`), or the lock on a sealed letter
 // (`icon: 'lock'`). `dear` opens the name as a letter opens, "dear Sofia",
 // for the screens that are a letter to somebody and not a menu. `pos`
@@ -504,7 +508,7 @@ export function Screen({
   const vars = { ...skinVars(colour), ...q.vars }
   // this phone's own pixels, up close (looks.js `rgbTile`); a print has none
   const rgb = useMemo(() => (s.print ? '' : rgbTile(seed)), [s.print, seed])
-  const { name = '', dear = false, date = '', counter = '', icon = '', handle = '', pos = '', bat = 4 } = top
+  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4 } = top
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -538,7 +542,7 @@ export function Screen({
       >
         <div
           className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
-          data-lid={s.kind === 'xerox' ? q.lid : undefined}
+          data-lid={s.kind === 'xerox' ? q.lid : undefined} data-light={s.light || undefined}
           role="group" aria-labelledby={nameId}
         >
           <div className="wl-scr-bg" aria-hidden="true" />
@@ -548,7 +552,9 @@ export function Screen({
                 <Pix name="ant" h={9} />
               </span>
               {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
-              {counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
+              {stamp
+                ? <span className="wl-scr-cnt wl-scr-stamp wl-lit">{stamp}</span>
+                : counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
               <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
                 <Pix name={`bata${bat}`} h={8} />
               </span>
@@ -697,9 +703,10 @@ export function ScreenText({ text, cursor = false, sealed = false, className = '
 }
 
 // The draft, being written: the same words in the same place, in a
-// textarea, with the phone's own caret. It autofocuses only where there is a
-// fine pointer, because on a phone the keyboard coming up unasked covers the
-// screen the person has not looked at yet. `inputRef` is handed the
+// textarea, with the phone's own caret, drawn by caret.jsx in the words'
+// ink and two of the face's pixels wide. It autofocuses only where there is
+// a fine pointer, because on a phone the keyboard coming up unasked covers
+// the screen the person has not looked at yet. `inputRef` is handed the
 // textarea too, for a key that edits at the caret.
 export function ScreenDraft({ value, onChange, max = 280, placeholder = '', autoFocus = false, label = 'your letter', inputRef = null }) {
   const ref = useRef(null)
@@ -721,6 +728,7 @@ export function ScreenDraft({ value, onChange, max = 280, placeholder = '', auto
         maxLength={max} rows={1} spellCheck="true" aria-label={label}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
       />
+      <Caret of={ref} screen />
       <Bar of={ref} over={over} />
     </>
   )
@@ -793,10 +801,12 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
   const hrs = at ? (Date.now() - at) / 3600000 : 99
   const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
   const fresh = hrs < 24
+  // a print's light is its colour's (`--t-spot`, looks.js), laid where this
+  // phone's backlight is brightest, as it is on the letter
   const vars = {
     ...skinVars(colour),
     '--q-rz': q.vars['--q-rz'], '--q-hx': q.vars['--q-hx'], '--q-hy': q.vars['--q-hy'],
-    '--q-blink': q.vars['--q-blink'], '--q-ar': q.vars['--q-ar'], '--q-spot': q.vars['--q-spot'],
+    '--q-blink': q.vars['--q-blink'], '--q-ar': q.vars['--q-ar'],
     '--q-pitch': q.vars['--q-pitch'],
   }
   const len = [...String(mono || '')].length
@@ -805,7 +815,7 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
   // dimming are written on, so a screen going out of focus restyles those
   // two and nothing inside the screen
   return (
-    <span className={`wl-tile ${className}`} data-kind={s.kind} style={vars} aria-hidden="true">
+    <span className={`wl-tile ${className}`} data-kind={s.kind} data-light={s.light || undefined} style={vars} aria-hidden="true">
       <i className="wl-tile-glow" />
       <span className="wl-tile-f">
         <span className="wl-tile-in">
@@ -840,13 +850,14 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
 }
 
 // ── the thumbnail ───────────────────────────────────────────────────────────
-// A colour in the panel: the small screen with three lines of words on it.
+// A colour in the panel: the small screen with three lines of words on it,
+// and a print's own light where the letter's would be.
 export function Mini({ colour, seed = 'mini' }) {
   const s = skinOf(colour)
-  const vars = { ...skinVars(colour), '--q-hx': '78%', '--q-hy': '64%', '--q-spot': 'none' }
+  const vars = { ...skinVars(colour), '--q-hx': '78%', '--q-hy': '64%' }
   void seed
   return (
-    <span className="wl-mini" data-kind={s.kind} style={vars} aria-hidden="true">
+    <span className="wl-mini" data-kind={s.kind} data-light={s.light || undefined} style={vars} aria-hidden="true">
       <span className="wl-mini-top" />
       <span className="wl-mini-body"><i /><i /><i /></span>
       <span className="wl-mini-bot" />

@@ -51,17 +51,22 @@ const EMPTY = {
                       // this device, it is cleared with everything else, and
                       // nothing on a letter points back at it.
   seen: false,        // the opening cascade has played once
+  joined: false,      // this device has been shown what a ping is (screens/Join.jsx),
+                      // so the tab goes straight to placing one from now on
+  turned: false,      // this device has turned the letter's deck once, so the
+                      // lean toward the next letter is not shown again
+  hinted: 0,          // how many times it has been shown the lean, which is
+                      // twice at most (screens/Letter.jsx `nudge`)
   tabHid: 0,          // when the tab at the foot of the wall was last put away,
                       // and how many letters this device had put up by then.
                       // The tab comes back after a while, and at once after
                       // another letter goes up, because that is the moment the
                       // question it asks is fresh again (screens/Wall.jsx)
   tabHidFor: 0,
-  earlyHid: 0,        // when the note on Main's front door was last put away
-                      // (main/Early.jsx). The same shape as the tab above and
-                      // for the same reason: a thing that cannot be closed is
-                      // a banner, and a thing that never comes back is a
-                      // thing somebody dismissed once by accident
+  earlyHid: 0,        // when the note on Main's front door was last put away.
+                      // The note went with the front door when the ping came
+                      // onto the wall, and the key stays so a device that
+                      // already holds it reads the same blob
   noticed: {},        // letterId -> true: a letter of this device's that came
                       // down, and whose notice has been read. The notice stands
                       // at the foot of the wall until it is answered, once
@@ -70,15 +75,21 @@ const EMPTY = {
                       // from the posted screen. Taken once
   member: null,       // a berkeley.edu address, if one has been given. It gates
                       // writing, and nothing else.
-  reader: false,      // whether either proof has landed. It gates reading, the
-                      // heart and the report. The server decides; this is the
-                      // copy of its answer the interface draws from.
+  reader: false,      // whether any proof has landed: the campus address, the
+                      // handle, google or a mailed code (0057). It gates
+                      // reading, the heart and the report. The server decides;
+                      // this is the copy of its answer the interface draws from.
   removed: [],        // handles that have asked to come off the wall. Held
                       // beside everything else so the reset clears them too.
   reported: [],       // letters a report took down. HELD, never deleted — the
                       // wall cannot see them and a desk still can, which is the
                       // whole difference between a takedown and a delete.
   verified: [],       // handles proven through the Instagram handoff
+  pingCap: 0,         // how many pings this person may have standing, as the
+                      // server last said it on a placement (pings.js
+                      // `slotCap`). Nought until it has said, and the free
+                      // two stand in. Never where a ping went: those are the
+                      // server's, read with the proof, and never in `wroteTo`
   // The core service's ledger, held as a delta against the seeded one
   // (orbit.js) rather than as a copy of it: what this session placed, what it
   // renewed and what it let go. It lives under the same key as everything

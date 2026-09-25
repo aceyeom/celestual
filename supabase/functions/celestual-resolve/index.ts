@@ -20,6 +20,9 @@
 //     { ok:false, error:'provider' }                    Apify timed out or
 //                                                       failed. NOT a miss.
 //     { ok:false, error:'bad_input' | 'off' }           say so, never guess
+//   POST { canary: true, source? }                      the daily check, below
+//     { ok:true, canary: <the run, as the desk reads it> }
+//     { ok:false, error:'not_due' | 'running' | 'too_soon' | 'server' }
 //
 // `cached` says where the ANSWER came from. `provider` says whether this
 // request reached Apify at all, which is the only thing that costs money, and
@@ -47,8 +50,12 @@
 // ── THE PROVIDER ─────────────────────────────────────────────────────────────
 // Apify, actor shu8hvrXbJbY3Eb9W, and nothing else. Spec section 5. One
 // synchronous run per cache miss, asking for profile details with the post
-// limit at zero: no posts, no comments, no reels, nothing that would turn a
-// name lookup into a scrape of somebody's account.
+// limit as low as the actor allows: no comments, no reels, nothing that would
+// turn a name lookup into a scrape of somebody's account. Spec section 5 said
+// zero, and zero was what shipped, until 6 September 2026 when the actor's
+// input schema began refusing it ("Field input.resultsLimit must be >= 1")
+// and every lookup, public or private, was refused before it ran. The floor
+// is one now, and `maxItems=1` on the run keeps the bill at one item.
 //
 // ── THE PRIVATE ACCOUNT ──────────────────────────────────────────────────────
 // That actor reads a profile the way a page does, and a private account's
@@ -139,6 +146,27 @@
 // path that would reach Apify: a cache hit answers whether the switch is on
 // or off, because a cache hit is free.
 //
+// ── THE DAILY CHECK ──────────────────────────────────────────────────────────
+// A provider failure draws nothing, on purpose (above), which makes an outage
+// silent: a dead token, an account out of credit and an actor whose answer
+// changed all look like a quiet day. So once a day this function asks Apify
+// about one account that always exists, RESOLVER_CANARY_HANDLE (@instagram),
+// straight past the cache: no remembered miss, no caps, nothing cached and no
+// face stored, only the first look and a download of the face that is thrown
+// away. What came back is written to resolver_canary_runs (migration 0060) and
+// the desk reads it there. The call is counted in the ledger on the `global`
+// key alone, so the day's count is still the bill; the caps are not asked,
+// because a spent ceiling must not hide a broken provider.
+//
+// Two callers. pg_cron posts `{ canary: true }` every hour and the database
+// opens a check only when one is owed (`resolver_canary_due`: a day after a
+// pass, three hours after a failure, never with the switch off), so anybody
+// else who posts it gets the check that was owed anyway, or `not_due`. The
+// desk's "check it now" comes through celestual-admin with the service role
+// key in the Authorization header, and runs whenever it is asked, one at a
+// time. A run that times out is tried once more before it counts as a
+// failure, because one run in ten goes past twenty seconds on a good day.
+//
 // Secrets (Supabase, Edge Functions, Secrets):
 //   APIFY_TOKEN             Apify API token, scoped to the actors below
 //   APIFY_ACTOR_ID          optional, defaults to the actor in spec section 5
@@ -146,13 +174,16 @@
 //                           Defaults to apify's profile scraper, by name
 //   RESOLVE_PROXY_SECRET    the same value as the Vercel env var of that name.
 //                           Without it the backstop counts Vercel, not visitors.
+//   RESOLVER_CANARY_HANDLE  optional, the account the daily check asks about.
+//                           Defaults to instagram
 // Provided by the platform: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
 // Deploy:  supabase functions deploy celestual-resolve --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
 const APIFY_TOKEN = Deno.env.get('APIFY_TOKEN') ?? '';
 const APIFY_ACTOR = Deno.env.get('APIFY_ACTOR_ID') ?? 'shu8hvrXbJbY3Eb9W';
@@ -162,6 +193,9 @@ const APIFY_ACTOR = Deno.env.get('APIFY_ACTOR_ID') ?? 'shu8hvrXbJbY3Eb9W';
 const APIFY_PROFILE_ACTOR = Deno.env.get('APIFY_PROFILE_ACTOR_ID') ?? 'apify~instagram-profile-scraper';
 const PROXY_SECRET = Deno.env.get('RESOLVE_PROXY_SECRET') ?? '';
 const PROXY_HEADER = 'x-resolve-proxy';
+// Read through `norm` below, when the check runs, so a secret typed with its
+// @ or as a link is the same handle the cache would key it on.
+const CANARY_HANDLE_RAW = Deno.env.get('RESOLVER_CANARY_HANDLE') ?? 'instagram';
 
 const AVATAR_BUCKET = 'avatars';
 
@@ -339,9 +373,11 @@ function pick(u: Record<string, unknown>, keys: string[]): unknown {
 // ── the provider ─────────────────────────────────────────────────────────────
 // One synchronous actor run, returning the dataset items directly.
 //
-// `resultsLimit: 0` is spec section 5's "set the post limit to zero". With
-// `resultsType: 'details'` the actor returns the profile and no media at all,
-// which is both what the product needs and the cheapest thing to ask for.
+// `resultsLimit: 1` is spec section 5's "set the post limit to zero", at the
+// lowest value the actor's input schema now accepts (THE PROVIDER, above).
+// With `resultsType: 'details'` the actor returns the profile item, which is
+// what the product needs and the cheapest thing to ask for; a post riding
+// inside that item is not a second billed result.
 //
 // On the URL, two guards that live on Apify's side rather than ours:
 //   timeout   the run is killed at thirty seconds. A run we stopped waiting for
@@ -374,10 +410,14 @@ type Lookup =
 
 // One synchronous run of one actor, and its dataset back. What the run says
 // about the account is read by `readItem`, below, the same way for both.
+//
+// A refusal and a timeout carry Apify's HTTP status and the first of its
+// words when there were any. The lookup has no use for them past the log;
+// the daily check writes them down, because they are the whole diagnosis.
 type Run =
-  | { kind: 'items'; items: unknown[] }
-  | { kind: 'timeout' }
-  | { kind: 'refused' };
+  | { kind: 'items'; items: unknown[]; status?: number }
+  | { kind: 'timeout'; status?: number; said?: string }
+  | { kind: 'refused'; status?: number; said?: string };
 
 async function runActor(actor: string, input: Record<string, unknown>): Promise<Run> {
   const { signal, done } = withTimeout(APIFY_TIMEOUT_MS);
@@ -405,14 +445,16 @@ async function runActor(actor: string, input: Record<string, unknown>): Promise<
       const text = (await res.text().catch(() => '')).slice(0, 300);
       console.error('apify run failed', actor, res.status, text);
       const timedOut = res.status === 408 || /TIMED.?OUT/i.test(text);
-      return timedOut ? { kind: 'timeout' } : { kind: 'refused' };
+      return { kind: timedOut ? 'timeout' : 'refused', status: res.status, said: text };
     }
     const items = await res.json();
-    return { kind: 'items', items: Array.isArray(items) ? items : [items] };
+    return { kind: 'items', items: Array.isArray(items) ? items : [items], status: res.status };
   } catch (e) {
     const aborted = e instanceof DOMException && e.name === 'AbortError';
     console.error(aborted ? 'apify call timed out' : 'apify call threw', actor, String(e));
-    return aborted ? { kind: 'timeout' } : { kind: 'refused' };
+    return aborted
+      ? { kind: 'timeout', said: `no answer inside ${APIFY_TIMEOUT_MS / 1000} seconds` }
+      : { kind: 'refused', said: String(e).slice(0, 300) };
   } finally {
     done();
   }
@@ -435,10 +477,17 @@ function readItem(u: unknown): Lookup {
     .map(String).join(' ').slice(0, 160);
 
   // An actor that could not reach the account returns an item with an error
-  // on it and no username. It used to be read as a miss whatever the error
-  // said, and for a private account that was "no account by that name".
-  if (rec.error && !username) {
-    return NOT_FOUND.test(said) ? { kind: 'missing' } : { kind: 'unclear', acct: null, why: said };
+  // on it. It used to be read as a miss whatever the error said, and for a
+  // private account that was "no account by that name". Now the wording
+  // decides: an error that says NOT FOUND is a miss whether or not the item
+  // echoes the username it was asked for (v0.99 of the actor does, as
+  // `not_found` / "Post does not exist", and read as unclear that echo went
+  // to the second look, fell back to itself, and was cached as a found
+  // account with no name and no face). Any other error with no username is
+  // unclear; one with a username falls through to the shape check below.
+  if (rec.error) {
+    if (NOT_FOUND.test(said)) return { kind: 'missing' };
+    if (!username) return { kind: 'unclear', acct: null, why: said };
   }
   if (!username) return { kind: 'missing' };
 
@@ -475,16 +524,22 @@ function fromRun(run: Run): Lookup {
   return readItem(run.items[0]);
 }
 
-// The first look: the page, with the post limit at zero.
-async function fromApify(handle: string): Promise<Lookup> {
-  if (!APIFY_TOKEN) return { kind: 'error', ran: false };
-  return fromRun(await runActor(APIFY_ACTOR, {
+// The first look: the page, with the post limit at the actor's floor of one.
+// The input is its own function because the daily check asks exactly this,
+// and a check that asked something else would be checking something else.
+function firstLookInput(handle: string): Record<string, unknown> {
+  return {
     directUrls: [`https://www.instagram.com/${handle}/`],
     resultsType: 'details',
-    resultsLimit: 0,
+    resultsLimit: 1,
     addParentData: false,
     searchLimit: 1,
-  }));
+  };
+}
+
+async function fromApify(handle: string): Promise<Lookup> {
+  if (!APIFY_TOKEN) return { kind: 'error', ran: false };
+  return fromRun(await runActor(APIFY_ACTOR, firstLookInput(handle)));
 }
 
 // The second look: the profile header alone, by username, from the actor
@@ -505,8 +560,11 @@ function reached(got: Lookup): boolean {
 // picture, and upsert them into the bucket. Returns whether it worked, and
 // nothing else: spec section 5 says a failure stores nothing and lets the card
 // fall back to a monogram, so there is no error for the caller to handle.
-async function storeAvatar(handle: string, url: string): Promise<boolean> {
-  if (!url) return false;
+//
+// The download and its checks are `readAvatar`, on their own, so the daily
+// check can ask whether a face would have been stored without storing one.
+async function readAvatar(handle: string, url: string): Promise<{ buf: ArrayBuffer; type: string } | null> {
+  if (!url) return null;
   const { signal, done } = withTimeout(IMAGE_TIMEOUT_MS);
   try {
     const res = await fetch(url, { signal, headers: { Accept: 'image/*' } });
@@ -514,18 +572,18 @@ async function storeAvatar(handle: string, url: string): Promise<boolean> {
     // rows and not one line saying why, because every branch here was silent.
     if (!res.ok) {
       console.warn('avatar fetch refused', handle, res.status);
-      return false;
+      return null;
     }
 
     const type = res.headers.get('content-type') || '';
     if (!type.startsWith('image/')) {
       console.warn('avatar not an image', handle, type);
-      return false;
+      return null;
     }
     const declared = Number(res.headers.get('content-length') || 0);
     if (declared > MAX_IMAGE_BYTES) {
       console.warn('avatar too large', handle, declared);
-      return false;
+      return null;
     }
 
     // Read rather than stream, so the size guard is real even when the upstream
@@ -533,22 +591,32 @@ async function storeAvatar(handle: string, url: string): Promise<boolean> {
     const buf = await res.arrayBuffer();
     if (buf.byteLength === 0 || buf.byteLength > MAX_IMAGE_BYTES) {
       console.warn('avatar wrong size', handle, buf.byteLength);
-      return false;
+      return null;
     }
+    return { buf, type };
+  } catch (e) {
+    console.warn('avatar fetch threw', handle, String(e));
+    return null;
+  } finally {
+    done();
+  }
+}
 
+async function storeAvatar(handle: string, url: string): Promise<boolean> {
+  const got = await readAvatar(handle, url);
+  if (!got) return false;
+  try {
     const { error } = await supabase.storage
       .from(AVATAR_BUCKET)
-      .upload(`ig/${handle}.jpg`, buf, { contentType: type, upsert: true, cacheControl: '2592000' });
+      .upload(`ig/${handle}.jpg`, got.buf, { contentType: got.type, upsert: true, cacheControl: '2592000' });
     if (error) {
       console.error('avatar upload failed', error.message);
       return false;
     }
     return true;
   } catch (e) {
-    console.warn('avatar fetch threw', handle, String(e));
+    console.warn('avatar upload threw', handle, String(e));
     return false;
-  } finally {
-    done();
   }
 }
 
@@ -585,6 +653,127 @@ function shapeOut(p: Profile, cached: boolean, provider: boolean) {
   };
 }
 
+// ── the daily check ──────────────────────────────────────────────────────────
+// THE DAILY CHECK, above. One row opened before Apify is asked and closed with
+// what it said, whatever it said: a throw anywhere in between is written down
+// as `error` rather than leaving the row open for the next check to sweep.
+//
+//   ok        the account came back with its username, a name and a picture
+//   shape     it came back without one of those, or as another account, or
+//             as an empty dataset: the actor's answer has changed
+//   missing   the actor said there is no such account
+//   unclear   the actor could not see in
+//   timeout   no answer inside the run's thirty seconds, twice
+//   refused   Apify turned the call away: its status and its words are kept
+//   off       this function has no APIFY_TOKEN
+//   error     anything else, with what was thrown
+//
+// Whether the face downloads is kept beside it and never decides it: the face
+// comes from Instagram's own servers, and this is a check on Apify.
+const CANARY_TRIES = 2;
+
+// Apify's refusals are a JSON body with an error in it. The message is what a
+// person can read, and the type is what the docs are searched by.
+function apifyWords(said = ''): { said: string; type?: string } {
+  try {
+    const e = (JSON.parse(said) as { error?: { message?: string; type?: string } })?.error;
+    if (e?.message) return { said: String(e.message).slice(0, 300), type: e.type ? String(e.type).slice(0, 80) : undefined };
+  } catch {
+    // not JSON: the words as they came
+  }
+  return { said: said.slice(0, 300) };
+}
+
+async function canary(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const handle = norm(CANARY_HANDLE_RAW) || 'instagram';
+  const trusted = sameSecret(req.headers.get('authorization') ?? '', `Bearer ${SERVICE_KEY}`);
+  const { data: begun, error: beginError } = await supabase.rpc('resolver_canary_begin', {
+    p_trusted: trusted,
+    p_source: trusted && body.source === 'desk' ? 'desk' : 'cron',
+    p_handle: handle,
+  });
+  if (beginError) console.error('canary could not open a row', beginError.message);
+  if (beginError || !begun?.ok) return json(req, { ok: false, error: begun?.error ?? 'server' });
+
+  let status = 'error';
+  let http: number | null = null;
+  let latency: number | null = null;
+  let attempts = 0;
+  let face: boolean | null = null;
+  const detail: Record<string, unknown> = { actor: APIFY_ACTOR };
+  try {
+    if (!APIFY_TOKEN) {
+      status = 'off';
+    } else {
+      let run: Run = { kind: 'timeout' };
+      while (attempts < CANARY_TRIES) {
+        attempts++;
+        const t0 = Date.now();
+        run = await runActor(APIFY_ACTOR, firstLookInput(handle));
+        latency = Date.now() - t0;
+        // counted like every call that reached an actor, on the global key
+        // alone: the ledger is the bill, and this is on the bill
+        if (run.kind !== 'refused') {
+          await supabase.rpc('handle_search_record', { p_user: null, p_device: null, p_ip: null, p_handle: handle });
+        }
+        if (run.kind !== 'timeout') break;
+      }
+      if (run.kind === 'items') {
+        http = run.status ?? null;
+        if (!run.items.length) {
+          status = 'shape';
+          detail.said = 'the dataset came back empty';
+        } else {
+          const got = readItem(run.items[0]);
+          if (got.kind === 'found') {
+            const a = got.acct;
+            const missing = [!a.display_name && 'a name', !a.pic_url && 'a picture'].filter(Boolean);
+            detail.display_name = a.display_name;
+            detail.verified = a.is_verified;
+            if (a.handle !== handle) detail.answered_as = a.handle;
+            if (missing.length) detail.missing = missing;
+            status = missing.length || a.handle !== handle ? 'shape' : 'ok';
+            if (a.pic_url) face = !!(await readAvatar(handle, a.pic_url));
+          } else if (got.kind === 'missing') {
+            status = 'missing';
+          } else if (got.kind === 'unclear') {
+            status = 'unclear';
+            detail.said = got.why;
+          } else {
+            status = 'shape';
+            detail.said = 'an item with nothing in it';
+          }
+        }
+      } else {
+        status = run.kind;
+        http = run.status ?? null;
+        Object.assign(detail, apifyWords(run.said));
+      }
+    }
+  } catch (e) {
+    console.error('canary threw', String(e));
+    status = 'error';
+    detail.said = String(e).slice(0, 300);
+  }
+  if (status !== 'ok') console.error('canary failed', handle, status, http, detail.said ?? '');
+
+  const { data: done, error: finishError } = await supabase.rpc('resolver_canary_finish', {
+    p_id: Number(begun.id),
+    p_ok: status === 'ok',
+    p_status: status,
+    p_http: http,
+    p_latency_ms: latency,
+    p_attempts: attempts,
+    p_face_ok: face,
+    p_detail: detail,
+  });
+  if (finishError || !done?.ok) {
+    console.error('canary could not close its row', finishError?.message ?? done?.error);
+    return json(req, { ok: false, error: 'server' });
+  }
+  return json(req, { ok: true, canary: done.run });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(req) });
   if (req.method !== 'POST') return json(req, { ok: false, error: 'method' }, 405);
@@ -595,6 +784,10 @@ Deno.serve(async (req) => {
   } catch {
     return json(req, { ok: false, error: 'bad_input' }, 400);
   }
+
+  // Before anything below reads a handle or the token: the check has neither
+  // in its body, and a function with no token is exactly what it reports.
+  if (body && body.canary === true) return canary(req, body);
 
   const handle = norm(body.handle);
   // A list of handles is a peek and only a peek: what the cache holds for

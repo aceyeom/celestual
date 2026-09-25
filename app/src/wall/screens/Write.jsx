@@ -102,16 +102,15 @@
 // (screens/Join.jsx).
 //
 // ── the look (0055) ────────────────────────────────────────────────────────
-// The pen at the end of the card's letterhead opens the look panel under it
-// (Look.jsx): a rail with the three things a paper can be changed about —
-// texture, color, type — one grid under it for the one being changed, and a
-// line naming the choice. The card is the preview, because the card is the
-// real card and a look is its tokens moved, and what goes up is what was
-// seen. The look rides with the letter and is kept in the draft with the
-// words, so it survives the sheet being closed over it. The name on the
-// card is the way back to the first question, and so are the dots in the
-// head; the capsule that used to stand beside the act for it, "a different
-// name", is gone, and the act stands alone in the middle of the foot.
+// The screen's left key, `colour`, opens the colours under it (Look.jsx):
+// one pool of thirteen, each drawn as the small screen it makes, and a line
+// naming the one chosen. The screen is the preview, because the screen is
+// the real screen, and what goes up is what was seen. The look rides with
+// the letter and is kept in the draft with the words, so it survives the
+// sheet being closed over it. The name on the screen is the way back to
+// the first question, and so are the dots in the head; the capsule that
+// used to stand beside the act for it, "a different name", is gone, and
+// the act stands alone in the middle of the foot.
 //
 // ── the screen, at the keyboard ────────────────────────────────────────────
 // Layer 1 of the moderation runs against every keystroke of the letter
@@ -148,7 +147,7 @@ import {
   normHandle, validHandle, hash, allowance, loadQuota, write,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
 } from '../data.js'
-import { normaliseLook, freshLook, colourOf, dateOf } from '../looks.js'
+import { normaliseLook, freshLook, colourOf } from '../looks.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { campus, needsCampus } from '../campus.js'
@@ -617,7 +616,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 look={look} seed={seed} live
                 top={{
                   name: toFirst, handle: toHandle, dear: true, icon: 'pen',
-                  date: dateOf(Date.now()), counter: `${MAX_BODY - body.length}/1`,
+                  counter: `${MAX_BODY - body.length}/1`,
                 }}
                 keys={{
                   l: colourKey,

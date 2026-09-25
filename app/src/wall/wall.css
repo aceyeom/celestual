@@ -1406,8 +1406,7 @@ a.wl-lq { text-decoration: none; }
    and came back, and on the hard-start curve that was a blink on the logo
    (LiquidMark.jsx, the swap). `--ease-out` rather than `--ease` on the metal,
    so the material is seen to set over the whole fade rather than to land in
-   its first hundred milliseconds. `is-cut` is the swap made instant, for a
-   mark that is still under the intro's cover. */
+   its first hundred milliseconds. */
 .wl-liquid { position: relative; display: block; flex: 0 0 auto; }
 .wl-liquid-flat {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -1421,8 +1420,6 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-liquid.is-ready .wl-liquid-metal { opacity: 1; }
 .wl-liquid.is-ready .wl-liquid-flat { opacity: 0; }
-.wl-liquid.is-cut .wl-liquid-metal,
-.wl-liquid.is-cut .wl-liquid-flat { transition: none; }
 
 /* the bloom — the whole accent system, spent once per screen */
 .wl-bloom {
@@ -2007,9 +2004,9 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-mast-title { margin: 0; }
 /* ── the mark over the title, on the wall at the root ──
-   The front door's seal, the metal with the current under it, with the bloom
-   behind it: the one place on a wall the light is spent, and only on the
-   poster, once. The campus wall's poster has no mark (campus.js). */
+   The intro's last frame at the size of a seal (PixelStory.jsx `PixelMark`),
+   with the bloom behind it: the one place on a wall the light is spent, and
+   only on the poster, once. The campus wall's poster has no mark (campus.js). */
 .wl-mast-mark {
   position: relative; display: grid; place-items: center;
   width: 120px; height: 100px; margin: 0 auto 14px;
@@ -2391,15 +2388,16 @@ a.wl-lq { text-decoration: none; }
    A bottom sheet took the card's own height, so a short letter stood low and
    a long one high, and turning the deck from one to the other moved the
    card under the eye. Centred, a card of any height is read from the same
-   place, and the chrome round it is one mark in the corner of the glass and
-   the two chevrons in the gutters.
+   place, and the chrome round it is one mark in the corner of the glass;
+   the letters either side of it, asleep, are the rest of the deck (THE
+   LETTER, below).
 
    The card used to open OUT of the disc that was pressed, its corner warped
    from a circle to the paper's radius while it flew, and close back into
    it. That was a border radius and a transform animating on the real card
    over a blurred sheet, and it dropped frames on every phone it was tried
    on. It rises a little and fades now, and goes the same way. */
-.wl-sheet-wrap.is-letter { justify-content: center; align-items: center; padding: 0 18px; }
+.wl-sheet-wrap.is-letter { justify-content: center; align-items: center; padding: 0 var(--gutter); }
 /* ── the room ──
    An opened letter is one lit screen in a dark room, so the room is black:
    the wall goes out behind it, every screen on it, and the only light left
@@ -2417,16 +2415,18 @@ a.wl-lq { text-decoration: none; }
    The screen is as wide as the glass allows, up to 520 in a big room, and
    never taller than the room: on a short window it is sized off the
    height, so the keys are never below the fold. `--scene-w` is the one
-   number the sheet, the stage and the seal's foot are all sized from. */
-.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 190px) / 1.22)); }
+   number the sheet, the stage, the deck and the seal's foot are all sized
+   from, and on a phone it leaves `--gutter` of glass either side for the
+   letters beside it (THE LETTER, below). */
+.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 190px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
   /* an open letter has no seal foot to leave room for */
-  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 120px) / 1.22)); }
+  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 120px) / 1.22)); }
 }
 /* a letter reached from a link gives the line to the wall its row */
-.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 236px) / 1.22)); }
+.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 236px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 166px) / 1.22)); }
+  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 166px) / 1.22)); }
 }
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
@@ -2498,11 +2498,12 @@ a.wl-lq { text-decoration: none; }
    one pixel of bezel round it and its own pixel grid under the words. It
    was black glass with the room blurred through it, which is the room's
    material; a phone's screen does not show what is behind it. The composer
-   and the letter are the room itself (above), and stay out of this. */
-.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-scrim {
+   and the letter are the room itself (above), and so is the mutual (IT'S
+   MUTUAL, below), and they stay out of this. */
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write):not(.is-reveal) .wl-scrim {
   background: radial-gradient(120% 80% at 50% 100%, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.80) 60%, rgba(0, 0, 0, 0.90) 100%);
 }
-.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write):not(.is-reveal) .wl-sheet {
   isolation: isolate;
   background-color: var(--lcd);
   background-image: var(--lcd-grid);
@@ -2511,7 +2512,7 @@ a.wl-lq { text-decoration: none; }
 }
 /* the room's grain, faint, behind the words: the panel is lying in the same
    dark the letters are photographed in */
-.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet::before {
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write):not(.is-reveal) .wl-sheet::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   opacity: 0.05;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
@@ -2633,84 +2634,140 @@ a.wl-lq { text-decoration: none; }
 .wl-foot > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
-.wl-letter { --gutter: 22px; padding: 0; position: relative; }
+.wl-letter { padding: 0; position: relative; }
 /* the count that stood in the header, `3 / 19`, is gone: a person reading a
    letter is not asking where in the deck they are, and a number over the
    card was the busiest thing on the sheet */
 
-/* ── the strip, and turning it ──
+/* ── the deck ──
    Letter.jsx. Every letter on the wall is a card in one deck, and the deck
-   is turned like a carousel: the card follows the finger, its neighbours
-   stand beside it on the same strip while it moves, and a turn runs the
-   strip on so the next card comes in from the side the finger is going. A
-   chevron in each gutter, bare, in ash, says the same on a desktop, and the
-   arrow keys do the same. `pan-y` hands a vertical drag to the sheet, so a
-   long letter can still be scrolled past.
+   shows itself rather than being pointed at: the letter before and the
+   letter after stand either side of the card, asleep, the way the phones
+   round the lit one on a table are there in the dark. Dimmer than the card
+   and a little smaller, each drawn in toward its near edge so the room
+   between two screens stays the room. On a phone the glass leaves a sliver
+   of each at its edges (`--peek`, inside `--gutter`); in a wide room they
+   are the two screens themselves (the dialog, below). Two chevrons in the
+   gutters said the same thing once, and a chevron is a control somebody has
+   to find and read.
 
-   The GLASS is the only clip (`.wl-sheet-wrap.is-letter`, below). The
-   track clipped the strip to the old sheet's width, and from a tablet up
-   that was a window in the middle of the black room: every swipe sliced
-   both screens and the light between them on two hard vertical lines. A
-   neighbour rests just past the window's edge instead (Letter.jsx `span`)
-   and slides in from there, so nothing is cut in the room. The chevrons go
-   quiet while the strip moves, and still take a press.
+   The deck is turned like a carousel: the card follows the hand, the
+   neighbours travel with it, and each screen is lit and sized by how near
+   the middle it stands, all written by the gesture over these rests
+   (Letter.jsx `place`). The gap, the dim and the size are read back by that
+   gesture, so they stay plain numbers here and never a calc. `pan-y` hands
+   a vertical drag to the sheet, so a long letter can still be scrolled.
 
-   The gutter on a phone is the sheet's own 22px, so the chevron is a bare
-   stroke and not a ring: a ring in a 22px gutter is a ring on the paper's
-   edge. In the dialog the gutters are wide and the chevrons stand in rings,
-   the way the close mark does. */
+   The GLASS is the only clip (`.wl-sheet-wrap.is-letter`): a neighbour is
+   cut by the window's edge and by nothing in the room. */
+.wl-sheet-wrap.is-letter {
+  --peek: 14px;
+  --peek-gap: 10px;
+  --peek-dim: 0.4;
+  --peek-scale: 0.94;
+  --gutter: calc(var(--peek) + var(--peek-gap));
+  --span: calc(var(--scene-w) + var(--peek-gap));
+  overflow: clip;
+}
+/* a phone on its side has the room a desk has, and the neighbours stand in
+   it whole */
+@media (max-height: 560px) and (orientation: landscape) {
+  .wl-sheet-wrap.is-letter { --peek-gap: 36px; --peek-dim: 0.3; --peek-scale: 0.9; }
+}
 .wl-letter-stage { position: relative; isolation: isolate; touch-action: pan-y; }
-.wl-letter-track {
-  position: relative;
-  margin: 0 calc(-1 * var(--gutter));
-  padding: 0 var(--gutter);
-}
-.wl-sheet-wrap.is-letter { overflow: clip; }
-.wl-sheet-wrap.is-letter .wl-letter-track { overflow: visible; }
-/* quiet, but it still takes the click: a second press lands on a turn that
-   is already running, and not on the scrim behind */
-.wl-letter-stage.is-moving .wl-turn { opacity: 0; transition-duration: 120ms; }
-.wl-letter-card {
-  position: relative; z-index: 1;
-  will-change: transform;
-}
-/* a neighbour: the card beside the card, in the same measure, off the glass
-   until the strip brings it on. Placed by the gesture, never by this file. */
+/* every screen on the strip stands on the track's middle, so a turn from a
+   short letter to a long one grows the glass about the card's own middle */
+.wl-letter-track { position: relative; display: flex; flex-direction: column; justify-content: center; }
+.wl-letter-card { position: relative; z-index: 1; will-change: transform, opacity; }
 .wl-letter-slot {
-  position: absolute; top: 0; left: var(--gutter); right: var(--gutter); z-index: 0;
-  pointer-events: none;
-  will-change: transform;
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  pointer-events: none; will-change: transform, opacity;
+  opacity: var(--peek-dim);
+  transform: translate3d(var(--span), 0, 0) scale(var(--peek-scale));
+  transform-origin: 0% 50%;
 }
+.wl-letter-slot[data-side='prev'] {
+  transform: translate3d(calc(-1 * var(--span)), 0, 0) scale(var(--peek-scale));
+  transform-origin: 100% 50%;
+}
+/* ── what a print asleep costs ──
+   A print is pulled through its press (screen.jsx `Press`, an SVG filter)
+   over a screen turned in depth, and a press over a screen in depth is drawn
+   again on every frame the page draws: three of them standing in a wide room
+   were most of every frame. So a print asleep beside the card is turned in
+   its own plane only, and takes its depth back the moment the strip moves
+   its way (`data-moving`, Letter.jsx), while it is still dim at the side;
+   the difference is a pixel at a corner of a screen at a quarter light */
+.wl-letter-stage:not([data-moving='next']) .wl-letter-slot[data-side='next'] .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']),
+.wl-letter-stage:not([data-moving='prev']) .wl-letter-slot[data-side='prev'] .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+  transform: rotate(var(--q-rz, -0.7deg));
+}
+/* they come up out of the dark once the card has woken, the way the eye
+   finds the rest of a dark room after the one light in it. One that comes
+   to stand there later is brought up by Letter.jsx `Cell` */
+.wl-letter-stage.is-waking .wl-letter-slot.is-early { animation: wl-peek-in 480ms var(--ease) 420ms both; }
+@keyframes wl-peek-in { from { opacity: 0; } }
 .wl-letter-leaf { position: relative; }
-/* an arrival that is not the strip landing: a back button, a link */
+/* an arrival that is not the strip landing: a link, the history */
 .wl-letter-leaf.is-arrived { animation: wl-fade 260ms var(--ease) both; }
+/* the light in the room, handed from one screen to the next on a turn
+   (Letter.jsx `Lights`): the one going out fades as the new one comes up */
+.wl-letter-light { position: absolute; inset: 0; pointer-events: none; }
+.wl-letter-light.is-out { animation: wl-unfade 520ms var(--ease-in) both; }
 /* the foot, while the words are on their way: the pill's own height and
    nothing on it, so the card does not move when they land */
 .wl-foot-hold { min-height: 0; }
 .wl-letter .wl-foot { padding-top: 16px; }
 .wl-letter .wl-foot:empty { display: none; }
-/* the turn keys: the phone's own chevrons, drawn on its grid
-   (parts.jsx `Icon` on the wall), in the gutters on a phone and as square
-   keys in the room on a spread (below). The press moves the chevron a pixel
-   the way the deck is about to go, and moves it at once: a key is down or
-   up. */
+/* ── the turn keys ──
+   A key over each neighbour with nothing drawn on it, so a press on the
+   letter beside the card turns to it and never reaches the room behind,
+   which is the way out. They are the turn a keyboard and a screen reader
+   find too (Letter.jsx `aria-label`). On a phone the key is all of the glass
+   beside the card, gap and sliver, since a thumb at the edge of the glass is
+   aiming at the sliver; in a wide room it is the neighbour itself, and the
+   dark round it is still the room. */
 .wl-turn {
-  position: absolute; top: 50%; z-index: 2;
-  width: var(--gutter); height: 72px; margin-top: -36px; padding: 0;
-  display: grid; place-items: center;
-  border: 0; background: none; color: var(--ash);
-  transition: color 160ms var(--ease), opacity 200ms var(--ease);
+  position: absolute; top: 0; bottom: 0; z-index: 2;
+  width: calc(var(--peek-gap) + var(--scene-w) * var(--peek-scale));
+  margin: 0; padding: 0; border: 0; border-radius: var(--r-lcd);
+  background: none; -webkit-tap-highlight-color: transparent;
 }
-.wl-turn.is-prev { left: calc(-1 * var(--gutter)); }
-.wl-turn.is-next { right: calc(-1 * var(--gutter)); }
-.wl-turn.is-next .wl-icon { transform: scaleX(-1); }
+.wl-turn.is-next { left: calc(50% + var(--scene-w) / 2); }
+.wl-turn.is-prev { right: calc(50% + var(--scene-w) / 2); }
+.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; }
+/* a neighbour that is about to be turned to wakes a little and leans in:
+   under a mouse, or under the focus of a key */
+.wl-letter-stage:not([data-moving]):has(> .wl-turn.is-next:focus-visible) .wl-letter-slot[data-side='next'],
+.wl-letter-stage:not([data-moving]):has(> .wl-turn.is-prev:focus-visible) .wl-letter-slot[data-side='prev'] {
+  opacity: calc(var(--peek-dim) + 0.16);
+}
 @media (hover: hover) and (pointer: fine) {
-  .wl-turn:hover:not(:disabled) { color: var(--chalk); }
+  .wl-letter-slot { transition: opacity 240ms var(--ease), translate 360ms var(--ease); }
+  .wl-letter-stage:not([data-moving]):has(> .wl-turn.is-next:hover) .wl-letter-slot[data-side='next'] {
+    opacity: calc(var(--peek-dim) + 0.16); translate: -8px 0;
+  }
+  .wl-letter-stage:not([data-moving]):has(> .wl-turn.is-prev:hover) .wl-letter-slot[data-side='prev'] {
+    opacity: calc(var(--peek-dim) + 0.16); translate: 8px 0;
+  }
+  /* ── and under a mouse the card is a thing picked up ──
+     A hand on it, open, where the deck turns, and closed while it holds it,
+     as the wall's own field is (THE HIVE). No words are selected under it:
+     a drag across the card is a turn, and a letter half highlighted after
+     one reads as broken. The soft keys and a menu's rows keep their own
+     hand. */
+  .wl-letter-stage.can-turn { -webkit-user-select: none; user-select: none; }
+  .wl-letter-stage.can-turn .wl-letter-card,
+  .wl-letter-stage.can-turn .wl-letter-card * { cursor: grab; }
+  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li) { cursor: pointer; }
+  .wl-letter-stage[data-grab], .wl-letter-stage[data-grab] * { cursor: grabbing !important; }
 }
-.wl-turn.is-prev:active:not(:disabled) .wl-icon { transform: translateX(-2px); }
-.wl-turn.is-next:active:not(:disabled) .wl-icon { transform: translateX(2px) scaleX(-1); }
-.wl-turn:disabled { opacity: 0.22; cursor: default; }
-.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 2px; }
+/* asked for less movement: the neighbours are simply there, and one about
+   to be turned to wakes where it stands without leaning in */
+@media (prefers-reduced-motion: reduce) {
+  .wl-letter-slot { animation: none !important; translate: none !important; }
+}
 
 /* ── the line that says what the seal is ──
    screens/Letter.jsx `sealSay`. It stands in the SHEET's foot, on the glass
@@ -2920,71 +2977,68 @@ a.wl-lq { text-decoration: none; }
 
 /* ═══ THE COLOUR PANEL ═════════════════════════════════════════════════════
    Look.jsx, under the composer's screen while its `colour` key is on: the
-   one thing a writer chooses about how the letter looks. Three short groups,
-   each colour drawn as the small screen it makes, the chosen one ringed, and
-   its name under the lot. The screen above is the preview. */
+   one thing a writer chooses about how the letter looks. One pool of
+   thirteen, in the order of a spectrum and under no heading, each colour
+   drawn as the small screen it makes, the chosen one ringed, and its name
+   under the lot. The screen above is the preview.
+
+   Seven to a row, two rows, on every width: the swatches take what the row
+   has, up to their own size, so a phone of 320 has the whole pool in view
+   and nothing scrolls sideways. The second row stands under the first from
+   the left, the way the rows of a phone's menu grid do. */
 .wl-look {
   display: flex; flex-direction: column; gap: 12px;
-  margin-top: 18px; padding: 14px 16px 12px; border-radius: 16px;
+  margin-top: 18px; padding: 16px 16px 12px; border-radius: 16px;
   background: rgba(12, 12, 12, 0.86); box-shadow: inset 0 0 0 1px var(--hair);
   animation: wl-act-in 300ms var(--ease) both;
 }
-.wl-look-groups { display: flex; flex-direction: column; gap: 12px; }
-.wl-look-group { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 10px; }
-.wl-look-h {
-  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
-  color: var(--ash);
+.wl-look-opts {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 40px)); justify-content: center;
+  gap: 12px 8px;
 }
-.wl-look-opts { display: flex; flex-wrap: wrap; gap: 9px; }
 /* while the colours are open the preview gives them room, and the line
-   under the card closes up: 470 is the head, the question, the line, the
-   strip and the foot */
+   under the card closes up: 500 is the head, the question, the line, the
+   two rows and the name under them, and the foot */
 .wl-write-step:has(> .wl-look) .wl-write-floor { margin-top: 12px; }
-.wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 470px - var(--notch)) / 1.22))); }
+.wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 500px - var(--notch)) / 1.22))); }
+/* on the shortest phones (320 by 568) a screen of 180 left the act under
+   the fold while the colours were open; there the preview gives way down
+   to 128, which is still the colour lit on a screen, and the act stays in
+   reach. 420 is the rest of the column at that width */
+@media (max-height: 600px) and (max-width: 560px) {
+  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(128px, calc((100svh - 420px - var(--notch)) / 1.22))); }
+}
 .wl-root .wl-look-opt {
-  display: block; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
-  transition: transform 200ms var(--ease);
+  display: block; min-width: 0; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
 }
-.wl-look-opt .wl-mini { transition: box-shadow 200ms var(--ease); }
+.wl-look-opt .wl-mini { width: 100%; height: auto; aspect-ratio: 40 / 46; transition: box-shadow 200ms var(--ease); }
+/* the chosen one keeps its own rule, or its keyline, inside the ring
+   (screen.css `--mini-in`) */
 .wl-look-opt.is-on .wl-mini {
-  box-shadow: inset 0 0 0 2px var(--t-border), 0 0 0 2px #0C0C0C, 0 0 0 3.5px var(--chalk), 0 0 14px -2px var(--s-glow);
+  box-shadow: var(--mini-in), 0 0 0 2px #0C0C0C, 0 0 0 3.5px var(--chalk), 0 0 14px -2px var(--s-glow);
 }
+/* a step brighter under a pointer, and a pixel down under a finger: a
+   swatch is a key on the wall, and nothing on the wall shrinks when it is
+   pressed (DESIGN.md 9) */
 @media (hover: hover) and (pointer: fine) {
-  .wl-look-opt:hover { transform: scale(1.06); }
+  .wl-look-opt:not(.is-on):hover .wl-mini { box-shadow: var(--mini-in), 0 0 0 2px #0C0C0C, 0 0 0 3px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
 }
-.wl-look-opt:active { transform: scale(0.94); transition-duration: 90ms; }
-.wl-look-opt:focus-visible { outline: 1.5px solid rgba(244, 241, 234, 0.8); outline-offset: 3px; }
+.wl-look-opt:active { transform: translateY(1px); }
+.wl-look-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 5px; border-radius: 2px; }
 .wl-look-now {
   margin: 0; padding-top: 10px; border-top: 1px solid var(--hair); text-align: center;
   font-family: var(--f-s40); font-size: 20px; line-height: 1; letter-spacing: 0.02em;
   color: var(--chalk);
 }
-/* a row for each kind, so no row is an orphan: lit 7, posters 6, risos 4,
-   copied 1 */
-@media (min-width: 561px) {
-  .wl-look-group { grid-template-columns: 52px 1fr; }
-  .wl-look-opts { display: grid; grid-template-columns: repeat(7, 40px); gap: 8px; }
-  .wl-look-opt[data-value='pink-blue'] { grid-column-start: 1; }
-  /* four rows stand taller than the phone's strip */
-  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 600px - var(--notch)) / 1.22))); }
-}
-/* on a phone the three groups are one strip, scrolled sideways, with the
-   chosen colour kept in the middle of it (Look.jsx), and on a phone on its
-   side, which has no height for three rows. The padding holds the chosen
-   ring and the focus outline inside the strip's clip */
+/* on a phone the panel stands closer under the screen, and the row gives
+   the swatches all of its width it can */
 @media (max-width: 560px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
-  .wl-look { margin-top: 12px; padding: 10px 0; gap: 8px; }
-  .wl-look-groups {
-    flex-direction: row; gap: 18px;
-    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
-    padding: 5px 28px 6px 18px; scroll-padding-inline: 18px 28px;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 28px), transparent);
-  }
-  .wl-look-groups::-webkit-scrollbar { display: none; }
-  .wl-look-group { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; flex: 0 0 auto; }
-  .wl-look-opts { display: flex; flex-wrap: nowrap; gap: 8px; }
-  .wl-look-now { margin: 0 18px; }
+  .wl-look { margin-top: 12px; padding: 14px 12px 10px; gap: 10px; }
+  .wl-look-opts { gap: 10px 7px; }
+}
+@media (max-width: 359px) {
+  .wl-look { padding-left: 8px; padding-right: 8px; }
+  .wl-look-opts { gap: 9px 5px; }
 }
 @media (max-width: 560px) {
   .wl-write-step:has(> .wl-look) ~ .wl-write-foot { padding-top: 14px; }
@@ -3016,11 +3070,6 @@ a.wl-lq { text-decoration: none; }
   .wl-write:has(.wl-write-card) .wl-write-card .wl-scene { width: var(--wscr); }
   .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
   .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
-}
-/* the kind over its row where the window is tall; on a short one it stays
-   beside the row, so the act is not pushed under the fold */
-@media (min-width: 900px) and (min-height: 641px) {
-  .wl-write .wl-look-group { grid-template-columns: 1fr; gap: 6px; }
 }
 /* on its side the screen is sized off the height alone: 134 is the
    column's padding, the head and the line under the card at two lines. The
@@ -3099,101 +3148,23 @@ a.wl-lq { text-decoration: none; }
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
 .wl-join-h { animation: wl-rise 900ms var(--ease) both; }
-.wl-join-fig { position: relative; margin: 18px 0 20px; display: grid; place-items: center; min-height: 150px; }
-.wl-join-bloom { top: 50%; }
+.wl-join-fig { position: relative; margin: 18px 0 20px; display: grid; place-items: center; }
 
-/* ── the circuit ──
-   Not a diagram of the mark any more. It IS the mark, taken apart into the
-   order it assembles in: the band itself (`ringPath()`, at its real varying
-   width) clipped into a far half and a near half, the star at full size cut by
-   the near band's gutter, and the near half drawn again over the top. The
-   finished frame is `Ecliptic` pixel for pixel, and it cannot drift from it
-   because both are built out of the same six constants in art.jsx.
-
-   Each half is drawn by a mask sweeping its own arc, which is the same
-   technique the overture uses on the whole ring. The two handles stand in gaps
-   cut out of the band rather than floating over it. */
-.wl-circuit { position: relative; width: 100%; max-width: 300px; overflow: visible; }
-
-/* the route, held at almost nothing, so each half is drawn ONTO something
-   rather than into empty space */
-.wl-circuit-ghost { fill: rgba(244, 241, 234, 0.055); }
-
-/* the band. One fill, one soft source of light, and no stroke anywhere in it:
-   a stroked outline round a shape whose whole character is a width that varies
-   round its circuit is a shape with its character painted over. */
-.wl-circuit-half {
-  fill: var(--glow);
-  filter: drop-shadow(0 0 4px rgba(255, 244, 228, 0.34));
-}
-/* the third layer only exists once there is a star to cross, which is the same
-   beat the star arrives on */
-.wl-circuit-half.is-over { opacity: 0; transition: opacity 460ms var(--ease); }
-.wl-circuit:is(.is-at3,.is-at4) .wl-circuit-half.is-over { opacity: 1; }
-
-/* the sweeps. `pathLength=100` normalises the dash to a percentage, so the
-   number here is a share of the arc rather than a length that would have to be
-   recomputed if the mark's radius ever moved. */
-.wl-circuit-sweep { transition: stroke-dashoffset 1200ms cubic-bezier(0.33, 0.02, 0.15, 1); }
-.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-sweep.is-a,
-.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-sweep.is-b { stroke-dashoffset: 0; }
-
-/* ── the two people ──
-   Set in the identifier face, the size given in the mark's own units so the
-   handle scales with the figure rather than against it. Each one lights on the
-   beat its half of the circuit leaves it, which is what makes the gap in the
-   band read as a door rather than as a break. */
-.wl-circuit-tag {
-  font-family: var(--f-id); font-weight: 500;
-  letter-spacing: var(--tr-tight);
-  fill: var(--ash);
-  opacity: 0.55;
-  transition: fill 700ms var(--ease), opacity 700ms var(--ease);
-}
-.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-tag.is-a,
-.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-tag.is-b {
-  fill: var(--glow); opacity: 1;
-}
-
-/* the point of light that runs ahead of each half as it draws. A line that
-   DRAWS has been sent; a line that appears was switched on — and a light that
-   leads it is what makes the difference legible at a glance. It rides the same
-   arc the mask sweeps along, on the same duration and the same curve, so it
-   cannot drift off its own route. */
-.wl-circuit-lead {
-  fill: var(--glow); opacity: 0;
-  offset-rotate: 0deg; offset-distance: 0%;
-  filter: drop-shadow(0 0 5px rgba(255,244,228,0.9));
-}
-.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-lead.is-a,
-.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-lead.is-b {
-  animation: wl-lead 1200ms cubic-bezier(0.33, 0.02, 0.15, 1) both;
-}
-@keyframes wl-lead {
-  0%   { opacity: 0; offset-distance: 0%; }
-  14%  { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { opacity: 0; offset-distance: 100%; }
-}
-
-/* nothing at the centre until BOTH halves exist. The product, in one ornament,
-   with no caption under it. The star carries its own light rather than sitting
-   in a second radial: the Bloom behind this SVG is the one accent this screen
-   spends, and a glow drawn round the shape it belongs to is a source, where a
-   soft circle behind the whole figure is a grey cloud with an edge on it. */
-.wl-circuit-star {
-  opacity: 0;
-  transform-origin: 50px 50px;
-  transform: scale(0.28) rotate(-26deg);
-  filter: drop-shadow(0 0 7px rgba(255, 244, 228, 0.55));
-  transition: opacity 420ms var(--ease), transform 780ms var(--ease);
-}
-.wl-circuit-star path { fill: var(--glow); }
-.wl-circuit:is(.is-at3,.is-at4) .wl-circuit-star {
-  opacity: 1; transform: none;
-  animation: wl-breathe 5400ms var(--ease) 1100ms infinite;
-}
-@keyframes wl-breathe { 0%, 100% { opacity: 0.92; } 50% { opacity: 1; } }
+/* ── the figure ──
+   A letter's screen with the story on it (screens/Join.jsx, pixmark.js
+   `joinStory`): @you comes in and waits, @them comes in and waits, and both
+   run at once and become the mark. As wide as the column allows up to 300,
+   and narrower on a short window so the key under it is in view without a
+   scroll: 470 is the bar, the question, the three lines and the key. */
+.wl-join-fig .wl-join-scr { width: clamp(200px, calc((100svh - 470px) / 1.2), 300px); }
+/* it comes on as the page does, a beat after the question */
+.wl-join-scr .wl-scr.is-waking { animation-delay: 180ms; }
+.wl-join-scr .wl-scene-halo,
+.wl-join-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 180ms both; }
+/* each of them is dim in the status row until they have come in, and lit
+   the frame they do: on or off, the way a phone's row changed */
+.wl-join-scr.is-pair.is-at0 .wl-scr-nm,
+.wl-join-scr.is-pair:is(.is-at0, .is-at1) .wl-scr-hd { opacity: 0.34; }
 
 /* the rule, in the poster's nav voice */
 .wl-rule-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -3234,6 +3205,107 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-say.is-lead { font-size: var(--t-name); line-height: 1.62; color: var(--ash); max-width: 38ch; }
 .wl-say .wl-h { font-family: var(--f-id); font-size: 0.95em; color: var(--ash); }
+
+/* ═══ IT'S MUTUAL ══════════════════════════════════════════════════════════
+   screens/Reveal.jsx. A sheet in the black room a letter is read in, like the
+   composer's: no pane and no grip, the story's screen lit on the black with
+   its own light round it, the sentence typed under it, the two lines on
+   unlit panels, and the key. The sheet is the whole window and the column is
+   centred in it when it fits and scrolls from the top when it does not. */
+.wl-sheet-wrap.is-reveal { padding: 0; }
+.wl-sheet-wrap.is-reveal .wl-scrim { background: #000; }
+.wl-sheet-wrap.is-reveal .wl-scrim::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
+}
+.wl-sheet-wrap.is-reveal .wl-sheet {
+  display: flex; flex-direction: column;
+  width: 100%; max-width: none; height: 100%; min-height: 0; max-height: none; margin: 0;
+  background: none; box-shadow: none; border-radius: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  pointer-events: none;
+  /* the room goes dark and the phone comes on in it: nothing slides */
+  animation: wl-fade 380ms var(--ease) both;
+}
+.wl-sheet-wrap.is-reveal .wl-grip { display: none; }
+/* and it goes the way a letter goes: the screen to sleep, the column out,
+   the room lifting off the wall, on the Sheet's 580ms floor */
+.wl-sheet-wrap.is-reveal.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
+.wl-sheet-wrap.is-reveal.is-closing .wl-reveal-scr .wl-scr { animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both; }
+.wl-sheet-wrap.is-reveal .wl-sheet-in {
+  pointer-events: auto;
+  flex: 0 0 auto; width: 100%; max-width: 440px; min-height: 100%; margin: 0 auto;
+  overflow: visible;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+.wl-reveal-in { flex: 1 1 auto; display: flex; flex-direction: column; isolation: isolate; }
+
+/* ── the screen ──
+   As wide as the column up to 300, and narrower on a short window, so the
+   sentence, both lines and the key are in view with it: 580 is the head,
+   the sentence, two lines at two rows each, the key and the way out. */
+.wl-reveal-card { display: grid; place-items: center; }
+.wl-reveal-card .wl-reveal-scr { width: min(100%, 300px, max(200px, calc((100svh - 580px) / 1.2))); }
+.wl-reveal-scr .wl-scene-halo,
+.wl-reveal-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* ── the sentence ──
+   Set whole from the first frame and typed over itself: the characters not
+   yet in are there and invisible, so the line never moves as it fills, and
+   the caret stands after the last one in. The caret is the letter's own
+   (screen.css `.wl-scr-cur`), one pixel of the face wide, in chalk, on the
+   phone's beat. */
+.wl-reveal-say { margin: 18px 0 14px; text-align: center; }
+.wl-reveal-rest { visibility: hidden; }
+.wl-reveal-cur {
+  display: inline-block; width: 0.107em; height: 0.64em; margin: 0 -0.107em 0 0; vertical-align: -0.02em;
+  background: var(--chalk);
+  animation: wl-blink 1.06s steps(1) infinite;
+}
+
+/* ── the two lines ──
+   The phone's glass with its light off, one for each of them, and they rise
+   on the same frame. */
+.wl-reveal-pair { display: grid; gap: 10px; }
+.wl-reveal-side {
+  min-width: 0; padding: 12px 14px 14px;
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+  border-radius: var(--r-lcd);
+}
+.wl-reveal-line {
+  margin: 10px 0 0;
+  font-family: var(--f-letter); font-size: var(--t-read); line-height: 1.12;
+  color: var(--chalk); overflow-wrap: break-word;
+}
+.wl-reveal-pair, .wl-reveal-foot { visibility: hidden; opacity: 0; }
+.wl-reveal-in:is(.is-at1, .is-at2) .wl-reveal-pair { visibility: visible; opacity: 1; animation: wl-rise 620ms var(--ease) both; }
+.wl-reveal-in.is-at2 .wl-reveal-foot { visibility: visible; opacity: 1; animation: wl-fade 420ms var(--ease) both; }
+/* landed by a tap: everything where it was going, at once */
+.wl-reveal-in.is-landed :is(.wl-reveal-pair, .wl-reveal-foot) { animation: none; }
+
+.wl-reveal-foot { padding-top: 14px; }
+.wl-reveal-mech { margin: 0 0 10px; text-align: center; font-size: var(--t-small); color: var(--ash); }
+/* the key is a link out, to their account, and a key is not underlined */
+.wl-reveal-foot a.wl-pill { text-decoration: none; }
+
+/* waiting on the server, and nothing here */
+.wl-reveal-wait { flex: 1 1 auto; display: grid; place-items: center; min-height: 60svh; color: var(--ash); }
+.wl-reveal-none { flex: 1 1 auto; display: flex; flex-direction: column; padding-top: 18svh; text-align: center; }
+
+/* on a spread the two lines stand side by side under the sentence, and the
+   column widens to hold them */
+@media (min-width: 900px) {
+  /* and the whole of it stands in the middle of the room, the screen as
+     large as the height leaves it: 440 is the head, the sentence, one row
+     of lines at three rows each, the key and the way out */
+  .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: 620px; min-height: 0; margin: auto; }
+  .wl-reveal .wl-push { display: none; }
+  .wl-reveal-card .wl-reveal-scr { width: min(340px, max(220px, calc((100svh - 440px) / 1.2))); }
+  .wl-reveal-pair { grid-template-columns: 1fr 1fr; }
+  .wl-reveal-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+}
 
 /* ═══ THE CORE SERVICE ═════════════════════════════════════════════════════
    One letter at a time, laid sideways, with everything about it that is NOT
@@ -3601,6 +3673,13 @@ a.wl-lq { text-decoration: none; }
   border: 1px solid var(--lcd-edge); color: var(--chalk); background: var(--lcd);
 }
 .wl-tab-hide { padding: 9px 10px 5px; }
+/* on the narrowest phones three faces left the sentence a column too narrow
+   for its first line, and "they" stood on a line of its own. The first face
+   stands for the rest there, and the sentence keeps its two lines */
+@media (max-width: 359px) {
+  .wl-tab-main { gap: 10px; }
+  .wl-tab-face + .wl-tab-face { display: none; }
+}
 @keyframes wl-tab-rise {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
   to   { opacity: 1; transform: none; }
@@ -3765,32 +3844,24 @@ a.wl-lq { text-decoration: none; }
   .wl-sheet-in { --sheet-pad: 30px; padding: 26px var(--sheet-pad) 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
   /* ── the letter's dialog is wider than the card in it ──
-     The card keeps its measure and the dialog grows round it, so the two
-     chevrons stand in the room either side of the paper rather than on its
-     edge: a ring each, the close mark's own size, centred in the band. */
-  .wl-sheet-wrap.is-letter { padding: 32px 80px; }
+     The card keeps its measure and the room grows round it, so the letters
+     either side stand in the room whole, dim, a hand's width off the card:
+     three phones on a table with one of them on. Each key is the neighbour
+     it stands over, and its focus is drawn round that screen. */
+  .wl-sheet-wrap.is-letter { padding: 32px 80px; --peek-gap: 64px; --peek-dim: 0.24; --peek-scale: 0.9; }
   .wl-sheet-wrap.is-letter .wl-sheet { max-width: calc(var(--scene-w) + 20px); animation: wl-letter-in 380ms var(--ease) both; }
   .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
   .wl-sheet-wrap.is-letter .wl-sheet-in { padding: 0; }
-  .wl-letter { --gutter: 30px; }
   .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }
   .wl-letter-x { top: 26px; right: 30px; }
   .wl-letter-brand { top: 26px; left: 30px; }
   .wl-turn {
-    width: 40px; height: 40px; margin-top: -20px; border-radius: var(--r-lcd);
-    /* the navi key under a phone's screen: the unlit panel and its bezel,
-       brighter than a hairline, since on the black room a hairline is not
-       there */
-    border: 1px solid var(--lcd-edge); background: var(--lcd); color: var(--chalk);
-    transition: border-color 160ms var(--ease), opacity 200ms var(--ease);
+    top: calc(50% * (1 - var(--peek-scale))); bottom: calc(50% * (1 - var(--peek-scale)));
+    width: calc(var(--scene-w) * var(--peek-scale));
   }
-  .wl-turn.is-prev { left: -64px; }
-  .wl-turn.is-next { right: -64px; }
-  @media (hover: hover) and (pointer: fine) {
-    .wl-turn:hover:not(:disabled) { border-color: var(--lcd-edge-hi); }
-  }
-  .wl-turn:active:not(:disabled) { background: var(--chalk); color: #000; border-color: var(--chalk); }
-  .wl-turn:focus-visible { outline-offset: 3px; border-radius: 2px; }
+  .wl-turn.is-next { left: calc(50% + var(--scene-w) / 2 + var(--peek-gap)); }
+  .wl-turn.is-prev { right: calc(50% + var(--scene-w) / 2 + var(--peek-gap)); }
+  .wl-turn:focus-visible { outline-offset: 6px; }
   /* the composer's act stands under the card, at the card's measure: a pill
      the width of the dialog under a paper narrower than it is a pill about
      the dialog */
@@ -3879,8 +3950,8 @@ a.wl-lq { text-decoration: none; }
   .wl-sheet-in { --sheet-pad: 22px; padding: 18px var(--sheet-pad) 22px; }
 
   .wl-join-air { height: 8px; min-height: 0; }
-  .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
-  .wl-join-fig .wl-circuit { max-width: 190px; }
+  .wl-join-fig { margin: 12px 0 12px; }
+  .wl-join-fig .wl-join-scr { width: 170px; }
   /* ── the core service, lying down ──
      Three hundred and fifty pixels of height: the leaf gives back the floor it
      cannot have, and the writing steps down one size with it. The composition
@@ -4328,6 +4399,105 @@ a.wl-lq { text-decoration: none; }
   font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label-2); text-transform: uppercase;
   color: var(--ember);
 }
+/* ═══ THE PING, AND THE PERSON ═════════════════════════════════════════════
+   screens/Ping.jsx and screens/You.jsx. Almost nothing here is new: the ping
+   is the composer's room (`.is-write`, THE COMPOSER above), its field body,
+   its names and its lit screen, and the person is the account card with its
+   rows. What is below is the few places the two differ from what they are
+   built of. */
+
+/* the field stands alone, with no bookmark on its top edge, so it keeps all
+   four of its corners */
+.wl-ping .wl-write-body { border-radius: var(--r-field); }
+/* the people written to stand where the wall's own names stand as a name is
+   typed, at the same scale, so one list gives way to the other in place */
+.wl-ping-wrote { margin-top: 10px; }
+.wl-ping-more { align-self: flex-start; padding: 8px 4px 0; }
+/* a mutual among them is the one row that is news: its words in chalk */
+.wl-ping-wrote .wl-suggest-row.is-mutual:not(.is-active) .wl-who-at { color: var(--chalk); }
+/* the question the DM put, when it came from another account than the one
+   typed: a question, not a refusal, so it is said in ash */
+.wl-ping-ask { color: var(--ash); text-align: center; text-wrap: balance; }
+/* the proof is the gate's door, standing in the room: the same axis, the
+   handle and its @ centred as one string, the fault under it */
+.wl-ping-prove { display: flex; flex-direction: column; justify-content: center; }
+.wl-ping-prove .wl-field.is-centred { justify-content: center; }
+.wl-ping-prove .wl-gate-fault { text-align: center; }
+.wl-ping.is-proof .wl-write-foot { padding-top: 14px; }
+.wl-ping.is-proof .wl-door { padding-top: 8px; }
+/* ── on a spread, one column ──
+   The composer stands its screen beside the question on a spread, because
+   the colours need the column beside it. The ping has no colours to choose,
+   and a screen with an empty column beside it is a page that lost its right
+   half, so the ping keeps the phone's one column, centred, the heading over
+   the screen and the key under it. On a phone on its side the composer's two
+   columns stay, since there is no height for one. */
+@media (min-width: 900px) and (min-height: 561px) {
+  .wl-sheet-wrap.is-write.is-ping .wl-sheet-in:has(.wl-write-card) { max-width: 560px; }
+  .wl-write.wl-ping:has(.wl-write-card) { display: flex; }
+  .wl-write.wl-ping:has(.wl-write-card) > .wl-write-h { text-align: center; }
+  .wl-write.wl-ping:has(.wl-write-card) > .wl-write-step { display: block; }
+  .wl-write.wl-ping:has(.wl-write-card) .wl-write-card .wl-scene {
+    width: min(100%, 440px, max(250px, calc((100svh - 330px - var(--notch)) / 1.22)));
+  }
+}
+
+/* ── the person ── */
+/* the second proof under the first, when there are two: the address, and the
+   @ under it in the identifier's own face */
+.wl-you-also {
+  margin: 4px 0 0;
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-snug);
+  color: var(--ash); overflow-wrap: anywhere;
+}
+/* the section's label and what is left of the slots, on one line */
+.wl-you-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wl-you-slots { text-align: right; }
+/* the list that is not there, said, with the one way on under it */
+.wl-you-ask { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 10px; }
+.wl-you-say {
+  margin: 0; max-width: 34ch;
+  font-family: var(--f-util); font-size: var(--t-wide); line-height: 1.24;
+  color: var(--ash);
+}
+.wl-you-ask .wl-pill { min-height: var(--c-md); gap: 9px; padding: 0 16px 0 13px; }
+.wl-you-ask .wl-quiet { padding: 2px 0; }
+.wl-you-wait { min-height: 30px; display: flex; align-items: center; color: var(--ash); }
+/* a mutual is news, and its line is set in chalk to say so */
+.wl-wrote-row.is-mutual .wl-wrote-meta { color: var(--chalk); }
+/* ── the key stays in reach ──
+   With pings, drafts and letters on it the card is longer than a phone, and
+   the one key under it would be a scroll away. So the foot stands at the
+   bottom of the panel over whatever is scrolled under it, on the panel's
+   own glass, with the phone's dashed seam along its top: the way a phone
+   kept its soft keys under a message too long for the screen. */
+.wl-you.is-card { padding-bottom: 0; }
+.wl-you.is-card > .wl-foot {
+  position: sticky; bottom: 0; z-index: 3;
+  margin: 0 calc(-1 * var(--sheet-pad)); padding: 18px var(--sheet-pad) calc(22px + env(safe-area-inset-bottom, 0px));
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+}
+@media (min-width: 900px) {
+  .wl-you.is-card > .wl-foot { padding-bottom: 26px; }
+}
+.wl-you.is-card > .wl-foot::before {
+  content: ''; position: absolute; top: 0; left: var(--sheet-pad); right: var(--sheet-pad); height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+.wl-you.is-card > .wl-push { min-height: 18px; }
+/* a standing ping, opened: its own screen, in the middle of the panel, and
+   the days it has left said once under it */
+.wl-you.is-screen { padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
+.wl-you-ping { display: flex; flex-direction: column; align-items: center; padding: 6px 0 4px; animation: wl-fade 260ms var(--ease) both; }
+.wl-you-ping .wl-scene { width: min(100%, 360px, calc((100svh - 260px) / 1.22)); margin: 0 auto; }
+.wl-you-floor {
+  margin: 18px 0 0; min-height: 20px; text-align: center;
+  font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-you-ping { animation: none; }
+}
+
 .wl-gate-beta {
   margin: 22px 0 0; padding: 13px 15px;
   border: 1px dashed var(--hair); border-radius: var(--r-field);
@@ -4868,8 +5038,8 @@ a.wl-lq { text-decoration: none; }
   .wl-write-card, .wl-acts-pane, .wl-act, .wl-seal-say { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
-  .wl-look, .wl-look-grid { animation: none !important; }
-  .wl-seg-thumb, .wl-look-tile, .wl-look-dot, .wl-look-chip { transition: none; }
+  .wl-look { animation: none !important; }
+  .wl-seg-thumb, .wl-look-opt .wl-mini { transition: none; }
   /* the answer arrives where the field was without travelling to get there,
      and the rule under a lookup holds still: the words under it are the
      account of the wait under this preference */

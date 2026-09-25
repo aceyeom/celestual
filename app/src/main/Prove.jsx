@@ -1,25 +1,26 @@
 // ── proving a handle, on its own ────────────────────────────────────────────
 //
 // The DM code flow, as one block that any screen can stand where it needs a
-// person to prove their @. It is the same question the third step of /place
-// asks, lifted out so the sky and the opt out can ask it too.
+// person to prove their @. It was lifted out of the third step of /place so
+// the sky and the opt out could ask it too; the opt out is the one of those
+// left on Main, and the wall asks the same question in its own door
+// (wall/screens/Ping.jsx `useProve`).
 //
 // Two stages, and the block owns the heading of both, so the three screens
 // that ask cannot word the code stage three ways:
 //
 //   the ask    the caller's own heading (`title`), the field, the pill
-//   the code   "Verify the account belongs to you." over the DM block, and
+//   the code   "verify the account belongs to you." over the DM block, and
 //              one way out of it
 //
 // Nothing here is new mechanics. `startHandoff` mints the code (or, for a
 // handle on the desk's pass list, answers proved on the spot), `pollHandoff`
 // watches for Instagram's answer and binds the handle, and the pending record
-// is the same one /place stashes, filed under its own `use` so the two screens
-// never resume each other's code.
+// is the same one the wall's ping stashes, filed under its own `use` so the
+// two never resume each other's code.
 //
 // What it does NOT do is decide what happens next. It reports the handle that
-// was proved and the caller draws its own next screen, because the sky and the
-// opt out want different things once the proof lands.
+// was proved and the caller draws its own next screen.
 import { useEffect, useRef, useState } from 'react'
 import { Display, Prose, Pill, HandleField, DmCode, VerifyHead } from '../wall/parts.jsx'
 import { Provider } from '../wall/art.jsx'

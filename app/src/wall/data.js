@@ -230,6 +230,7 @@ export function mine() { return MINE }
 export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
+  PRESSED.clear()
   GATED = null
   FREE = null
   QUOTA = null
@@ -409,14 +410,16 @@ export function loadHandle(raw, force = false) {
   if (!h) return Promise.resolve()
   if (!force && BY_HANDLE.has(h)) return Promise.resolve()
   return once(`h:${h}`, async () => {
+    const asked = Date.now()
     const out = await api.lettersFor(h)
     if (!out.ok) return
     GATED = out.gated
     if (out.free) FREE = out.free
     if (out.kind === 'name') learnName(h, out.name)
     if (out.letters.length) learnLook(h, out.letters[0].look)
-    BY_HANDLE.set(h, out.letters)
-    for (const l of out.letters) BY_ID.set(l.id, l)
+    const letters = out.letters.map((l) => held(l, asked))
+    BY_HANDLE.set(h, letters)
+    for (const l of letters) BY_ID.set(l.id, l)
     bump()
   })
 }
@@ -425,6 +428,7 @@ export function loadLetter(id, force = false) {
   if (!id) return Promise.resolve()
   if (!force && BY_ID.has(id)) return Promise.resolve()
   return once(`l:${id}`, async () => {
+    const asked = Date.now()
     const out = await api.letter(id)
     if (!out.ok) {
       // A letter that is gone is a fact worth caching, so a screen that keeps
@@ -437,7 +441,7 @@ export function loadLetter(id, force = false) {
     GATED = out.gated
     if (out.free) FREE = out.free
     if (out.letter?.kind === 'name') learnName(out.letter.to, out.letter.name)
-    BY_ID.set(id, out.letter)
+    BY_ID.set(id, held(out.letter, asked))
     bump()
   })
 }
@@ -636,7 +640,38 @@ export async function write({ to, body, sealedLine, source, kind = 'handle', nam
 // Drawn at once and corrected by the answer: the card's count moves under
 // the finger, and the server's number replaces it when it lands. A refusal
 // puts back what was there. Every copy of the letter in the cache moves
-// together, so the pager and the wall behind it agree.
+// together, so the pager and the wall behind it agree, and so does the
+// writer's own list, when it is their letter (the account sheet's count).
+//
+// ── and nothing read before it lands can take it back ──
+// Opening a letter asks for it and then for the rest of its name's letters,
+// and a heart pressed while the second read is still out used to be undone
+// by it: the answer to a question asked before the press came back after
+// it, wrote the letter over as it was, and the key went dark again under a
+// heart the server had counted. The heart the gate presses on the way back
+// in (Gate.jsx `finish`) is in the same race from the start: it goes out
+// over a cache the sign in has just emptied, beside the letter's own read.
+// So a press is held here, by the letter's id, until a read that was ASKED
+// after the server answered it: while it is out, a read carries the press on
+// top of whatever it says, and once it has landed, a read that set out before
+// then carries the server's own number.
+const PRESSED = new Map()   // id -> { on, hearts, at }; `at` is 0 while the press is out
+
+function toward(l, on) {
+  return {
+    ...l,
+    hearted: !!on,
+    hearts: Math.max(0, (l.hearts || 0) + (on ? (l.hearted ? 0 : 1) : (l.hearted ? -1 : 0))),
+  }
+}
+
+function held(l, asked) {
+  const p = l && PRESSED.get(l.id)
+  if (!p) return l
+  if (!p.at) return toward(l, p.on)
+  return p.at >= asked ? { ...l, hearts: p.hearts, hearted: p.on } : l
+}
+
 export async function heart(id, on) {
   const was = BY_ID.get(id) || null
   const set = (fn) => {
@@ -645,14 +680,22 @@ export async function heart(id, on) {
     for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.map((l) => (l.id === id ? fn(l) : l)))
     bump()
   }
-  set((l) => ({
-    ...l,
-    hearted: !!on,
-    hearts: Math.max(0, (l.hearts || 0) + (on ? (l.hearted ? 0 : 1) : (l.hearted ? -1 : 0))),
-  }))
+  PRESSED.set(id, { on: !!on, at: 0 })
+  set((l) => toward(l, on))
   const out = await api.heart(id, on)
-  if (out?.ok) set((l) => ({ ...l, hearts: Number(out.hearts) || 0, hearted: !!out.hearted }))
-  else if (was) set((l) => ({ ...l, hearts: was.hearts, hearted: was.hearted }))
+  if (out?.ok) {
+    const n = Number(out.hearts) || 0
+    PRESSED.set(id, { on: !!out.hearted, hearts: n, at: Date.now() })
+    if (MINE) MINE = MINE.map((l) => (l.id === id ? { ...l, hearts: n } : l))
+    set((l) => ({ ...l, hearts: n, hearted: !!out.hearted }))
+  } else {
+    PRESSED.delete(id)
+    // put back what was there; and where nothing was, as on the press the
+    // gate makes on the way back in, the read that landed while the press
+    // was out carried it (`held`), so it is taken back off that read
+    if (was) set((l) => ({ ...l, hearts: was.hearts, hearted: was.hearted }))
+    else set((l) => toward(l, !on))
+  }
   return out || { ok: false, error: 'network' }
 }
 
