@@ -3001,6 +3001,13 @@ a.wl-lq { text-decoration: none; }
    two rows and the name under them, and the foot */
 .wl-write-step:has(> .wl-look) .wl-write-floor { margin-top: 12px; }
 .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(180px, calc((100svh - 500px - var(--notch)) / 1.22))); }
+/* on the shortest phones (320 by 568) a screen of 180 left the act under
+   the fold while the colours were open; there the preview gives way down
+   to 128, which is still the colour lit on a screen, and the act stays in
+   reach. 420 is the rest of the column at that width */
+@media (max-height: 600px) and (max-width: 560px) {
+  .wl-write-step:has(> .wl-look) .wl-write-card .wl-scene { width: min(100%, 440px, max(128px, calc((100svh - 420px - var(--notch)) / 1.22))); }
+}
 .wl-root .wl-look-opt {
   display: block; min-width: 0; padding: 0; border: 0; background: none; border-radius: 6px; line-height: 0;
 }
