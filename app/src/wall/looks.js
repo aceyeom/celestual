@@ -20,20 +20,51 @@
 //   negative  the same screen with the panel dark and the words the bright
 //             thing
 //   poster    that photograph screen printed in four flat inks, the paper
-//             the colour. teal, acid, lilac
+//             the colour. teal, lilac
 //   riso      two drum inks laid a hair out of register on warm paper.
 //             violet / yellow
 //   xerox     photocopied, and blown out: the toner exposure is the effect
+//   brat      a square of acid lime, black words, and nothing else: the
+//             album cover everybody knows, photographed on cheap film.
+//             acid (below, `brat`)
 //
 // A print carries its own LIGHT with it as well, and the light is the
 // colour's and never a second choice (`light`, and screen.css, the prints'
 // lights). The backlight's hot corner, printed in the palest ink, was on
-// every print, and read as the same white stain on each. It stays on acid
-// alone. Each of the others has a light of its own out of the same press:
-// teal a keyline inside its rule, lilac its light carried as a halftone
-// screen, and violet /
-// yellow the phone's two bands of glass laid in the violet drum, with its
-// status and its keys struck out of them in paper.
+// every print, and read as the same white stain on each. Each print has a
+// light of its own out of the same press: teal a keyline inside its rule,
+// lilac its light carried as a halftone screen, and violet / yellow the
+// phone's two bands of glass laid in the violet drum, with its status and
+// its keys struck out of them in paper.
+//
+// ── acid ──
+// Acid was a poster, its four inks a lime pulled out of the night screen by
+// the press, with the hot corner caught in a pale yellow. Beside the others
+// it read as one more tint of the same machine, and the owner's word for it
+// was generic. The lime everybody has in their head is not a printed LCD at
+// all. It is a flat square of #8ACE00 with a word on it in black, the type
+// a little soft, as if it had been made small once and blown up again: an
+// album cover, and one that is recognised from across a room. So acid is
+// that square (`brat`), painted by the stylesheet and not by the press, so
+// it is the same square on WebKit, where the press does not run, as on
+// Chromium, where it does:
+//
+//   the lime    edge to edge, with no glass above or below it and no rule
+//               round it. A touch lighter and warmer where this phone's
+//               backlight is brightest (`--q-hx`, `--q-hy`), which on a
+//               square of paper is where the lamp caught it, and a touch
+//               deeper towards the edges. Slight: from across the room it
+//               is one flat colour
+//   the grain   heavy and monochrome, a cheap photograph of a printed
+//               square: an SVG noise laid over it as an image (screen.css
+//               `--wl-grain`), since feTurbulence inside an image is drawn
+//               by every engine where a filter on the page is not
+//   the words   black, the status and the keys in the same ink as the
+//               message, and all of it softened a hair, never so far that a
+//               word has to be guessed
+//
+// Its slug and its name stay `acid`, so a letter that went up in it is
+// still acid, and now looks like this.
 //
 // The prints keep their own ground: a poster is teal, whatever room it is
 // in. The room is not theirs. Every screen, lit or printed, stands in the
@@ -65,7 +96,9 @@
 // `hue` is the one colour a lit screen is made from; the bands, the ink, the
 // glow and the bloom are arithmetic on it (`skinOf`). A print carries its
 // four inks, darkest first, because a print IS its inks, and its `light`,
-// which is where the press lays the palest of them (`skinOf`).
+// which is where the press lays the palest of them (`skinOf`). The square
+// carries its lime (`hue`) and its black (`ink`), and the rest of it is
+// arithmetic on the lime.
 //
 // One pool, in the order the panel draws it and the arrows walk it: the
 // greys, then round the wheel from the cold blue through the greens and the
@@ -77,7 +110,7 @@ export const COLOURS = [
   { slug: 'ice', name: 'ice', kind: 'lit', hue: '#8FB8DC' },
   { slug: 'teal', name: 'teal', kind: 'poster', light: 'keyline', stops: ['#101412', '#3D6257', '#7EA494', '#E3A58C'] },
   { slug: 'green', name: 'green', kind: 'lit', hue: '#A3BB6B' },
-  { slug: 'acid', name: 'acid', kind: 'poster', light: 'corner', stops: ['#0F1104', '#4A580C', '#C2E13A', '#FFF5A6'] },
+  { slug: 'acid', name: 'acid', kind: 'brat', hue: '#8ACE00', ink: '#050505' },
   { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', light: 'bands', paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
   { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
   { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
@@ -220,6 +253,11 @@ export function hexRgb(hex) { return rgb(hex) }
 //                    thumbnails, which are too small for a filter, and on
 //                    a print the inks a tile's picture is struck in
 //   light            on a print, which of the prints' lights it is (below)
+//   paper            a thing that is lit and does not light: a print or the
+//                    square. It throws almost nothing on the room, has no
+//                    LCD's pixels up close and no backlight's clouds, and is
+//                    uncovered rather than woken. `print` is narrower: only
+//                    what is pulled through the press
 const cache = new Map()
 
 // ── the prints' lights ──
@@ -232,7 +270,9 @@ const cache = new Map()
 //
 //   corner    the backlight's hot corner: hi crosses into the palest ink
 //             round the point the panel is brightest at. It was every
-//             print's, and is acid's alone
+//             print's, then acid's alone, and acid is the square now; it
+//             stays as the press's own default, for a print that names
+//             none and for `/looks.html?light=corner`
 //   keyline   no light on the panel, which is flat in the main ink, and a
 //             line of the palest ink inside the rule instead
 //   dots      the hot corner held under the palest ink and carried by a
@@ -276,6 +316,22 @@ export function skinOf(colour) {
       ink: '#F1F1F1', lit: '#EDEDED', cur: '#F2F2F2',
       bloom: 'rgba(255, 255, 255, 0.3)', soft: 'rgba(255, 255, 255, 0.55)',
       glow: c.hue, k: 0.5,
+    }
+  } else if (c.kind === 'brat') {
+    // The square (acid, at the head of this file). No glass: the bands are
+    // the lime they stand on, and what stands on them is in the words' black.
+    // The panel is the lime a touch warmer and lighter at the hot corner and
+    // a touch deeper at the edge, and `soft` is the ink's own blur, the halo
+    // a word printed small and blown up again has round it
+    const b = c.hue
+    const ink = c.ink
+    s = {
+      kind: 'brat',
+      top: 'transparent', top2: 'transparent', bot: 'transparent',
+      hi: mix(b, '#F4F07A', 0.4), mid: b, lo: mix(b, '#1C3300', 0.26),
+      ink, lit: ink, cur: ink,
+      bloom: 'transparent', soft: alpha(ink, 0.55),
+      glow: b, k: 0.8,
     }
   } else {
     // A print is the lit night screen, photographed, then pulled through the
@@ -339,6 +395,18 @@ export function skinOf(colour) {
     // and where a print keeps the bands, they are in the second ink, and
     // what stands on them is in the palest
     if (s.light === 'bands') { s.flat.top = second; s.flat.bot = second; s.flat.lit = accent; s.flat.cur = accent }
+  } else if (s.kind === 'brat') {
+    // the square, small: the same lime with the same warm corner, no bands
+    // and no rule, and the grain laid over it by the stylesheet. A tile's
+    // picture is struck in four steps from the lime to the black, the way
+    // a photograph on that cover would have been printed
+    s.flat = {
+      top: 'transparent', bot: 'transparent', ink: s.ink, lit: s.ink, cur: s.ink,
+      body: `radial-gradient(120% 95% at var(--q-hx, 80%) var(--q-hy, 66%), ${s.hi}, ${s.mid} 52%, ${s.lo})`,
+      accent: '', border: '', spot: 'none',
+      ts: `0 0 1px ${alpha(s.ink, 0.6)}`,
+      pic: [s.mid, mix(s.mid, s.ink, 0.36), mix(s.mid, s.ink, 0.7), s.ink],
+    }
   } else {
     s.flat = {
       top: s.top, bot: s.bot, ink: s.ink, lit: s.lit, cur: s.cur,
@@ -352,6 +420,7 @@ export function skinOf(colour) {
   s.slug = c.slug
   s.name = c.name
   s.light = s.light || ''
+  s.paper = !!s.print || s.kind === 'brat'
   cache.set(c.slug, s)
   return s
 }
@@ -396,7 +465,7 @@ export function skinVars(colour, inked = false) {
     '--s-bloom': inked && s.print ? 'transparent' : s.bloom,
     '--s-soft': inked && s.print ? alpha(s.print.stops[0], 0.3) : s.soft,
     '--s-glow': g(0.42), '--s-glow-2': g(0.16), '--s-edge': g(0.28),
-    '--s-halo': s.print ? alpha(s.glow, s.kind === 'xerox' ? 0.07 : 0.11) : g(0.3), '--s-halo-2': s.print ? alpha(s.glow, 0.08) : g(0.16),
+    '--s-halo': s.paper ? alpha(s.glow, s.kind === 'xerox' ? 0.07 : 0.11) : g(0.3), '--s-halo-2': s.paper ? alpha(s.glow, 0.08) : g(0.16),
     '--t-top': s.flat.top, '--t-bot': s.flat.bot, '--t-body': s.flat.body,
     '--t-ink': s.flat.ink, '--t-lit': s.flat.lit, '--t-cur': s.flat.cur,
     '--t-ts': s.flat.ts, '--t-border': s.flat.border || 'transparent', '--t-accent': s.flat.accent || 'transparent',
@@ -567,6 +636,11 @@ export function quirks(seed) {
     '--q-pad': `${pad.toFixed(2)}cqw`, '--q-lift': `${lift.toFixed(2)}cqw`, '--q-top-pad': `${topPad.toFixed(2)}cqw`,
     '--q-blink': `-${blink}ms`, '--q-halo': halo.toFixed(3),
     '--q-rollers': rollers, '--q-mura': mura,
+    // where the square's grain starts, off the grain's own seed, so two acid
+    // letters side by side are two photographs and not one noise laid twice
+    // (screen.css, acid). Read from a value already drawn, so every quirk
+    // after it lands where it always did
+    '--q-grain': `${(grainSeed * 53) % 256}px ${(grainSeed * 97) % 256}px`,
   }
   memo.set(key, out)
   return out

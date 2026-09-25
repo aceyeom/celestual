@@ -12,7 +12,9 @@
 //   /looks.html?light=dots      every print in one light, to compare lights
 //   /looks.html?seed=2          five other phones (the quirks off the ids)
 //   /looks.html?only=teal       one colour
-//   /looks.html?prints=1        the prints alone, with `light` the way to compare
+//   /looks.html?prints=1        the prints alone, with `light` the way to compare,
+//                               and acid's square beside them, which is paper
+//                               too but never pulled through the press
 //   /looks.html?pictures=0      without the shared pictures, which are slow
 //
 // `light` is drawn by giving every print that light before anything is
@@ -85,7 +87,7 @@ function Card({ c, i, go }) {
       </div>
       <p className="lk-name">
         <b>{c.name}</b>
-        <span>{s.kind === 'neg' ? 'negative' : s.kind}{s.light ? `, ${s.light}` : ''}</span>
+        <span>{s.kind === 'neg' ? 'negative' : s.kind === 'brat' ? 'the square' : s.kind}{s.light ? `, ${s.light}` : ''}</span>
       </p>
     </article>
   )
@@ -105,7 +107,7 @@ function Looks() {
     const t = setTimeout(() => setUpTo((n) => n + 1), 450)
     return () => clearTimeout(t)
   }, [upTo])
-  const shown = COLOURS.filter((c) => (!ONLY || c.slug === ONLY) && (!PRINTS || c.kind === 'poster' || c.kind === 'riso'))
+  const shown = COLOURS.filter((c) => (!ONLY || c.slug === ONLY) && (!PRINTS || c.kind === 'poster' || c.kind === 'riso' || c.kind === 'brat'))
   const link = (q) => {
     const p = new URLSearchParams(ask)
     for (const [k, v] of Object.entries(q)) { if (v === '') p.delete(k); else p.set(k, v) }
@@ -124,7 +126,7 @@ function Looks() {
             ))}
           </nav>
           <nav aria-label="which">
-            <a href={link({ prints: '' })} aria-current={PRINTS ? undefined : 'page'}>all thirteen</a>
+            <a href={link({ prints: '' })} aria-current={PRINTS ? undefined : 'page'}>all twelve</a>
             <a href={link({ prints: '1' })} aria-current={PRINTS ? 'page' : undefined}>the prints</a>
           </nav>
           <nav aria-label="phones">

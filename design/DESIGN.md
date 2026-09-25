@@ -191,9 +191,10 @@ lit in, and each colour carries its own treatment with it:
 | --- | --- | --- |
 | lit | night, white, ice, green, amber, rose | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
 | negative | negative | the same screen with the panel dark and the words the bright thing |
-| poster | teal, acid, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
+| poster | teal, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
 | riso | violet / yellow | two drum inks on warm paper, the second a hair out of register |
 | xerox | xerox | photocopied and blown out: one threshold between toner and paper, walked by the copier's heat |
+| brat | acid | the album cover's square: acid lime edge to edge, black words a hair soft, photographed on cheap film. Painted, never pressed (below) |
 
 These twelve are the only other hues in the product. They live in that one
 file and are drawn only on a screen, its thumbnail in the composer and the
@@ -212,6 +213,27 @@ on 25 September, and a letter in one of them draws the colour nearest its hue
 rows. Ember left on 25 September as well, so the panel is two even rows of
 six, and its letters are amber (migration 0063).
 
+**Acid is the square.** It was a poster, a lime pulled out of the night
+screen by the press with its hot corner caught in pale yellow, and beside the
+others it read as one more tint of the same machine. The lime everybody
+carries in their head is a flat square of `#8ACE00` with a word on it in
+black, the type a little soft, as if made small once and blown up again. So
+acid is that square (`kind: 'brat'`, the slug and the name still `acid`, so
+no letter's row changes):
+
+| part | what it is |
+| --- | --- |
+| the lime | `#8ACE00` edge to edge: no bands of glass, no rule. Mixed 40 percent towards `#F4F07A` at this phone's hot corner (`--q-hx`, `--q-hy`), which on paper is where the lamp caught it, and 26 percent towards `#1C3300` at the edge. From across the room it is one flat colour |
+| the grain | heavy and monochrome, in the lime itself: the film's dark specks laid over it (up to 36 percent black) and its light ones dodged into it (up to 26 percent grey in `color-dodge`), so a speck makes the lime deeper or brighter and never greyer or yellower, and black stays black. An SVG `feTurbulence` inside a data URL image (`--wl-grain`, `--wl-grain-hi`), since an image's filter is drawn by every engine where a filter laid on the page is not drawn by WebKit; started where the letter's own grain starts (`--q-grain`) |
+| the words | `#050505`, the status and the keys in the same ink as the message, softened by `blur(0.18cqw)` on the three rows and a halo of the ink at 55 percent. Never so soft a word has to be guessed |
+| what it is not | an LCD: no pixel grid, moiré, ghost column, pixels up close, dead pixel, dust or backlight's clouds. It is paper (`skinOf().paper`), so it throws almost no light on the room and is uncovered rather than woken, as a print is |
+
+It is painted by the stylesheet on the letter, the composer, the tile and the
+swatch alike, so it is the same square in WebKit, where the press does not
+run, as in Chromium. `share.js` draws it by hand: the square made small and
+blown up again for the soft words, then the same dark and light specks off
+the letter's grain seed.
+
 **A print's light is its colour's.** The press lays a print's palest ink
 wherever the greys under it cross three quarters, so where the light falls is
 decided by the panel's greys, and each print has its own (`LIGHTS` in
@@ -221,7 +243,7 @@ the tile, the thumbnail and the shared picture draw the same one:
 
 | print | light | what it is |
 | --- | --- | --- |
-| acid | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print, and read as the same white stain on each |
+| (none) | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print and read as the same white stain on each, then acid's alone; acid is the square now, and the corner stays as the press's default and `?light=corner` |
 | teal | keyline | no light on the panel, and a line of the palest ink inside the black rule, a hair clear of it |
 | lilac | dots | the light as a halftone: white cones on a forty five degree lattice, faded out from the hot corner, cut by the press into dots that are large where the light is strong and gone where it is not |
 | violet / yellow | bands | the phone's two bands of glass laid in the violet drum, and the status and the keys on them struck out in paper |

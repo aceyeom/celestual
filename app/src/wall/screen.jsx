@@ -541,7 +541,7 @@ export function Screen({
           `.wl-scr-press`), and a print is uncovered here. Always drawn, so a
           screen turned from lit to print keeps the field in it */}
       <div
-        className={`wl-scr-press${s.print && state ? ` is-${state}` : ''}`}
+        className={`wl-scr-press${s.paper && state ? ` is-${state}` : ''}`}
         style={press ? { filter: `url(#${fid})` } : undefined}
       >
         <div
@@ -578,7 +578,8 @@ export function Screen({
           </div>
           <span className="wl-scr-fx is-light" aria-hidden="true" />
           <span className="wl-scr-fx is-grid" aria-hidden="true" />
-          {rgb ? (
+          {/* and the square (looks.js, acid) is paper too, and has none */}
+          {rgb && !s.paper ? (
             <span
               className="wl-scr-fx is-rgb" aria-hidden="true"
               style={{ backgroundImage: `url(${rgb})`, backgroundSize: `calc(var(--q-pitch, 3px) * ${RGB_CELLS})` }}
