@@ -4,13 +4,10 @@
 // one: `celestual_submit`, `celestual_my_pings`, `celestual_ping_status`,
 // `celestual_renew` and `celestual_withdraw` are deployed and have been for
 // months. So this module is thin on purpose, and thinner since the ping moved
-// onto the wall: it says who this browser is, and hands the pings on.
+// onto the wall: it says who this browser is.
 //
-import { PING_DAYS } from '../api/celestual.js'
 import { whoami, ANON } from '../api/identity.js'
 import { getSession } from '../api/auth.js'
-
-export { PING_DAYS }
 
 // ── who this browser is ─────────────────────────────────────────────────────
 // One row across both surfaces. Somebody who verified their campus address on
@@ -41,13 +38,7 @@ export async function me() {
   }
 }
 
-// ── the pings ───────────────────────────────────────────────────────────────
-// Placing a ping, reading the list, keeping one and letting one go all moved
-// to the wall with the sheets that do them (wall/pings.js, screens/Ping.jsx
-// and screens/You.jsx). They are handed on from here unchanged, so a screen
-// that still reads them off Main reads the same functions and the same held
-// answer, and there is one copy of each.
-export {
-  myPings, heldPings, forgetPings, place, renew, release,
-  daysLeft, daysLeftWords, since, sinceAgo, apart,
-} from '../wall/pings.js'
+// The pings themselves (placing one, reading the list, keeping one and
+// letting one go) moved to the wall with the sheets that do them
+// (wall/pings.js, screens/Ping.jsx, You.jsx and Reveal.jsx), and are read
+// there. Nothing on Main reads them any more.

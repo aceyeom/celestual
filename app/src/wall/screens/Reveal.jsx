@@ -36,22 +36,33 @@
 // facts in order, from a line nobody sees.
 //
 // ── where the facts come from ───────────────────────────────────────────────
-// Main's own data (main/data.js): who this is, the pings this person has
-// standing and which of them came back (`celestual_my_pings`, checked on the
-// server against the proof this browser holds), and a copy of that answer
-// held for a couple of minutes, so a tap on a mutual lands on a drawn screen
-// and not a bare one while the server is asked again. A read that fails does
-// not unsay a mutual already in hand.
+// Who this is, off the server's row (main/data.js `me`), and the handle the
+// ping sheet and the account sheet place and read under (pings.js
+// `myHandle`) where the row has none, so the three sheets agree about whose
+// mutual this is. Then the pings this person has standing and which of them
+// came back (`celestual_my_pings`, checked on the server against the proof
+// this browser holds), and a copy of that answer held for a couple of
+// minutes, so a tap on a mutual lands on a drawn screen and not a bare one
+// while the server is asked again. A read that fails does not unsay a mutual
+// already in hand.
+//
+// ── and when there is nothing to show ───────────────────────────────────────
+// "nothing here." is said the same way whatever the reason, and its one key
+// is the account sheet (screens/You.jsx), which is where each reason has its
+// own words and its own way on: a proof this browser does not hold, one the
+// server no longer takes, or no @ at all.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Pill, ClosePill, CloseQuiet, Who, useProfile } from '../parts.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Who, useProfile } from '../parts.jsx'
 import { Screen, Wait } from '../screen.jsx'
 import PixelStory, { SQUARE } from '../PixelStory.jsx'
 import { revealStory } from '../pixmark.js'
 import { normHandle, atHandle } from '../data.js'
 import { heldProof } from '../auth.js'
+import { href } from '../router.js'
 import { getSession } from '../../api/auth.js'
-import { me, myPings, heldPings, sinceAgo } from '../../main/data.js'
+import { me } from '../../main/data.js'
+import { myHandle, myPings, heldPings, sinceAgo } from '../pings.js'
 
 // The mutual this address names, out of an answer already in hand. Null when
 // there is none to read, which is not the same as "not a mutual".
@@ -184,7 +195,7 @@ function Mutual({ mine, them, mutual, reduce }) {
   )
 }
 
-export default function Reveal({ id, up, back, upLabel = 'back to the wall', reduce }) {
+export default function Reveal({ id, go, up, back, upLabel = 'back to the wall', reduce, toWall = null }) {
   const them = normHandle(id)
   // who this is: null until the server has said, then the row (main/data.js)
   const [who, setWho] = useState(null)
@@ -196,7 +207,9 @@ export default function Reveal({ id, up, back, upLabel = 'back to the wall', red
     return () => { alive = false }
   }, [])
 
-  const handle = who?.handleVerified ? normHandle(who.handle) : ''
+  const handle = !who ? ''
+    : who.handleVerified && who.handle ? normHandle(who.handle)
+    : myHandle()
   // The mutual itself, off the same RPC the list of pings reads. Asked here
   // as well so a shared or reloaded address lands on the screen, and so a
   // copy held from a moment ago is checked against the row. Nothing is said
@@ -216,11 +229,27 @@ export default function Reveal({ id, up, back, upLabel = 'back to the wall', red
   }, [who, handle, them])
 
   // The quiet way out closes onto the wall, whatever the sheet was opened
-  // from; the close mark, the scrim and Escape go back one step, as every
-  // sheet's do.
+  // from, and onto its names: a link that brought somebody here before the
+  // wall was ever opened has its poster still up under the sheet, and it is
+  // dropped as the sheet starts to go (index.jsx `toWall`), as the ping's
+  // own way back does. The close mark, the scrim and Escape go back one
+  // step, as every sheet's do.
   const way = useRef('')
-  const onClosing = useCallback((by) => { way.current = by }, [])
+  const onClosing = useCallback((by) => {
+    way.current = by
+    if (by === 'quiet' && toWall) toWall()
+  }, [toWall])
   const onClose = useCallback(() => (way.current === 'quiet' ? back() : up()), [back, up])
+  // Nothing to show, and the account sheet is where the reason is. A reveal
+  // the browser opened on directly has nothing behind it, so its entry is
+  // given to the wall first, as the door gives its own (Join.jsx `place`),
+  // and the account sheet closes onto the names and not back onto this.
+  const toYou = useCallback(() => {
+    if (!window.history.state?.wallPushed) {
+      window.history.replaceState({ ...window.history.state, wall: 'wall', wallDepth: 0 }, '', href('wall'))
+    }
+    go('you')
+  }, [go])
   const mine = handle || guessHandle()
 
   return (
@@ -237,12 +266,13 @@ export default function Reveal({ id, up, back, upLabel = 'back to the wall', red
         ) : mutual === null ? (
           // Not a mutual, or not this person's to see. Said flatly and
           // without a reason, because every reason this screen could give is
-          // a fact about somebody else.
+          // a fact about somebody else. The one key is this person's own
+          // pings, where whatever is theirs to know is said.
           <div className="wl-reveal-none">
             <Display size="l" as="h2" id="wl-reveal-h">nothing here.</Display>
             <div className="wl-push" />
             <SheetFoot>
-              <ClosePill tone="light" wide>back to the wall</ClosePill>
+              <Pill tone="light" wide onClick={toYou}>your pings</Pill>
             </SheetFoot>
           </div>
         ) : (
