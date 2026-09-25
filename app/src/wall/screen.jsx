@@ -28,6 +28,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS, PRESS } from './looks.js'
 import { Caret } from './caret.jsx'
+import { Sticker } from './Sticker.jsx'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -492,13 +493,24 @@ function Press({ id, colour, q }) {
 // `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
 // it was when the key is pressed with a pointer. The body is the children.
 //
+// `salutation` is the whole of that line when the writer set one of their
+// own ("to the girl on the 51B"), and with none it is "dear" and the name
+// as before. `greet` is the same line on the composer, where it is the
+// writer's to edit: `{ value, onChange, max, label, inputRef, onFocus }`,
+// set in the line's own face, size and colour. `tag` stands where the
+// handle does, for a name note carrying a school.
+//
+// `sticker` is a school (schools.js `schoolOf`), for a letter posted from a
+// verified school address: its sticker is stuck on the phone's corner
+// (Sticker.jsx), and nothing is drawn there without one.
+//
 // `live` off draws the keys without letting them be pressed or tabbed to:
 // the neighbours on the letter's strip are pictures of the next letter, not
 // a second set of controls. `nameId` lands on the name in the top row, so a
 // sheet can be labelled by who the letter is for.
 export function Screen({
   look, seed = '', top = {}, keys = {}, live = true, state = '', className = '', style, children,
-  nameId,
+  nameId, sticker = null,
 }) {
   const colour = colourOf(look, seed)
   const q = quirks(seed)
@@ -512,7 +524,11 @@ export function Screen({
   const vars = { ...skinVars(colour, inked), ...q.vars }
   // this phone's own pixels, up close (looks.js `rgbTile`); a print has none
   const rgb = useMemo(() => (s.print ? '' : rgbTile(seed)), [s.print, seed])
-  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4 } = top
+  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4, salutation = '', greet = null, tag = '' } = top
+  const said = salutation || (dear && name ? `dear ${name}` : name)
+  // a line the writer set is set smaller when it is long (`lineSize`); the
+  // name the screen makes itself keeps its size and its cut, as it always did
+  const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '') : salutation ? lineSize(salutation) : undefined
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -566,8 +582,8 @@ export function Screen({
             </div>
             <div className="wl-scr-r2">
               {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
-              <span className="wl-scr-nm wl-lit" id={nameId}>{dear && name ? `dear ${name}` : name}</span>
-              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle}</span>
+              {greet ? <Greet {...greet} id={nameId} style={nmStyle} /> : <span className="wl-scr-nm wl-lit" id={nameId} style={nmStyle}>{said}</span>}
+              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
             </div>
           </div>
           <div className="wl-scr-body">{children}</div>
@@ -591,7 +607,45 @@ export function Screen({
           <span className="wl-scr-fx is-shine" aria-hidden="true" />
         </div>
       </div>
+      {sticker ? <Sticker school={sticker} seed={seed} className="wl-scr-sticker" /> : null}
     </div>
+  )
+}
+
+// ── a long line, set smaller ────────────────────────────────────────────────
+// A greeting the writer set can run to forty characters, and the line holds
+// seventy per cent of the row (screen.css), about seventeen characters of the
+// face at its own size, a third of an em and a little more each. So a longer
+// line is set smaller, down to half the row's size, before anything is cut;
+// the shared picture does the same with the canvas's own measure (share.js).
+function lineSize(text) {
+  const n = [...String(text || '')].length
+  const fits = 64 / (0.36 * Math.max(1, n))
+  return fits < 11 ? { fontSize: `${Math.max(5.6, fits).toFixed(2)}cqw` } : undefined
+}
+
+// ── the greeting, being written ─────────────────────────────────────────────
+// The composer's "dear Sofia", as a field in the line's own place: the same
+// face, size, colour and bloom, sized to what is in it (the value is mirrored
+// into the box it stands in, post.css `.wl-scr-greet`), so the handle beside
+// it stays where it was. The screen's own caret, in the line's colour, while
+// it is being typed in.
+function Greet({ value, onChange, max = 40, label = 'the greeting', placeholder = '', inputRef = null, onFocus = null, onBlur = null, id, style }) {
+  const ref = useRef(null)
+  return (
+    <span className="wl-scr-nm wl-scr-greet wl-lit" data-value={value || placeholder || ' '} style={style}>
+      <input
+        ref={(n) => { ref.current = n; if (inputRef) inputRef.current = n }}
+        id={id} type="text" value={value} maxLength={max} aria-label={label} placeholder={placeholder}
+        /* its own width is the mirror's, so it asks for none of its own */
+        size={1}
+        onChange={(e) => onChange(e.target.value.slice(0, max))}
+        onFocus={onFocus || undefined} onBlur={onBlur || undefined}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+        autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="done"
+      />
+      <Caret of={ref} screen />
+    </span>
   )
 }
 

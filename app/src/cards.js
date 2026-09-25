@@ -21,8 +21,8 @@
 // either way. Nothing about this file has to change for it.
 //
 // ── WHY A ROUTE OF OUR OWN AND NOT `?s=` ON THE WALL ─────────────────────────
-// Paper cannot be redeployed. A card printed with `/berkeley?s=a` on it is
-// pointed at the wall for as long as the card exists, and every question that
+// Paper cannot be redeployed. A card printed with `/?s=a` on it is pointed
+// at the wall for as long as the card exists, and every question that
 // comes after printing (should card d go to the wall or to the front door,
 // should the run of cards left in a drawer be pointed at the next campus, does
 // this one still work now the wall is closed) is answered by reprinting.
@@ -72,12 +72,16 @@ export const BASE = '/c'
 // `label` is what the desk shows instead of the letter, and it and the card's
 // place are editable there (celestual_desk_card_set), so what is written here
 // is only the state they start in.
+//
+// Every one lands on the wall at the root. They pointed at /berkeley until
+// the one wall (docs/ONE-WALL.md), and /berkeley redirects to the root now
+// anyway, so a card whose `to` is changed back later still lands.
 export const CARDS = [
-  { code: 'a', label: 'card a', to: '/berkeley' },
-  { code: 'b', label: 'card b', to: '/berkeley' },
-  { code: 'c', label: 'card c', to: '/berkeley' },
-  { code: 'd', label: 'card d', to: '/berkeley' },
-  { code: 'e', label: 'card e', to: '/berkeley' },
+  { code: 'a', label: 'card a', to: '/' },
+  { code: 'b', label: 'card b', to: '/' },
+  { code: 'c', label: 'card c', to: '/' },
+  { code: 'd', label: 'card d', to: '/' },
+  { code: 'e', label: 'card e', to: '/' },
 ]
 
 export const CODES = CARDS.map((c) => c.code)
@@ -112,7 +116,7 @@ export function parse(pathname) {
   if (p !== BASE && !p.startsWith(BASE + '/')) return null
   const code = p.slice(BASE.length + 1)
   const known = card(code)
-  return { code: known ? known.code : '', to: known ? known.to : '/berkeley' }
+  return { code: known ? known.code : '', to: known ? known.to : '/' }
 }
 
 // Where a scan of this path should end up, with the code riding along. Used by

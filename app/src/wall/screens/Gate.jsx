@@ -1,4 +1,4 @@
-// ── /berkeley/gate, and /gate — THE DOOR ON THE LETTERS ─────────────────────
+// ── /gate: THE DOOR ON THE LETTERS ──────────────────────────────────────────
 //
 // The index is public and the letters are not, and this is the whole of the
 // difference between those two facts.
@@ -12,38 +12,32 @@
 // the three things that touch what is on the wall — reading a letter, writing
 // one, taking one down. By then the wall has already made its case.
 //
-// ── two walls, two doors (migration 0057) ───────────────────────────────────
-// THE CAMPUS WALL asks for the campus: an address at berkeley.edu and the six
-// digits mailed to it, which is the only thing that opens the composer there.
-// A person can also sign in with the google account the campus gave them,
-// which is the same proof by a shorter road: the address Google vouches for
-// is at the campus domain, so it opens writing; one at any other domain
-// opens reading and says so.
-//
-// THE WALL AT THE ROOT has no campus, so it asks for a person, by any of the
-// three proofs the product takes: an instagram handle through the DM code,
-// a google account, or an address a code is mailed to. Instagram is put
-// first and recommended, and the reason is said on the row: it is the only
-// one of the three that lets the product tell somebody when a ping of theirs
-// is mutual, because that is where the ping lives.
+// ── one wall, one door (docs/ONE-WALL.md) ───────────────────────────────────
+// There was a campus wall at /berkeley that asked for a berkeley.edu address
+// and a code at this door, since that was what wrote there. There is one wall
+// now, and writing is not behind this door at all: a letter is written first,
+// and a post to an @ asks for a Berkeley address when it is sent, by a link
+// (screens/Write.jsx). So this door asks for a person, by any of the three
+// proofs the product takes: an instagram handle through the DM code, a google
+// account, or an address a code is mailed to. Instagram is put first and
+// recommended, and the reason is said on the row: it is the only one of the
+// three that lets the product tell somebody when a ping of theirs is mutual,
+// because that is where the ping lives.
 //
 // ── the door names the act that knocked on it ───────────────────────────────
 // Three acts come here and only one of them is writing, so a door that asks
 // the writer's question every time is wrong for two of the three. The
 // commonest arrival is the one it fitted worst: somebody who has read the
 // free letters (migration 0045, 0049), pressed "read it" under a shut one,
-// and met "verify you're at Berkeley" — a sentence about a room, in answer
+// and met "verify you're at Berkeley", a sentence about a room, in answer
 // to a question about a letter. The screen that sent them already leaves a
 // return address behind (store.js `setAfterGate`), so the heading reads it
-// and says what they are here to get back to: the whole wall, on the campus
-// wall named with the campus that opens it, and at the root named with
-// nothing, because three proofs open it there and the door lists them
-// underneath. A person who pressed a sign in chip on the bar left no return
-// address and gets the heading the door always had.
+// and says what they are here to get back to: the whole wall. A person who
+// pressed a sign in chip on the bar left no return address and gets the
+// heading the door always had.
 //
 // ── what a signed-in person buys, and what they do not ──────────────────────
-// Reading, the heart and the report, on every wall, by any proof; writing,
-// by the proof the wall in question asks for. It is never attached to
+// Reading, the heart and the report, by any proof. It is never attached to
 // anything anybody writes. The composer never reads it, no letter gains an
 // author because somebody is signed in, and there is no field in a letter
 // for this to leak into — the wall is anonymous by SHAPE, not by policy.
@@ -59,14 +53,12 @@ import { Ecliptic, Envelope, Google, Provider } from '../art.jsx'
 import { normHandle, validHandle, heart } from '../data.js'
 import { takeAfterGate, peekAfterGate, setAfterGate } from '../store.js'
 import {
-  DOMAIN, anyEmail, isReader, isMember, member, normEmail, signedIn,
-  validCode, validEmail,
+  anyEmail, isReader, isMember, member, normEmail, signedIn,
 } from '../auth.js'
 import {
-  sendCampusCode, checkCampusCode, startHandoff, pollHandoff,
+  startHandoff, pollHandoff,
   savePending, loadPending, clearPending, igVerifyEnabled,
 } from '../handoff.js'
-import { campus, needsCampus } from '../campus.js'
 import { loginEnabled, startGoogle, sendEmailCode, checkEmailCode, finishLogin } from '../../api/login.js'
 import { href } from '../router.js'
 import { cardStep } from '../seed.js'
@@ -79,14 +71,20 @@ import You from './You.jsx'
 // is not in the value, cannot be backspaced away, and cannot be got wrong.
 //
 // Typed with its own @, the address stands whole and the painted half comes
-// off. That is how an address the desk put on the pass list (migration 0043)
-// gets in: it is not at the campus, the server knows whether it passes, and
-// the field does not argue. On the wall at the root there is no painted
-// half: any address is whole.
-function AddressField({ value, onChange, onSubmit, domain = '' }) {
+// off. That is how a department's address (`eecs.berkeley.edu`) and an
+// address the desk put on the pass list (migration 0043) get in: the server
+// knows whether it passes, and the field does not argue. Here, on the door,
+// there is no painted half: any address is whole. The composer paints
+// Berkeley's (screens/Write.jsx).
+export function AddressField({ value, onChange, onSubmit, domain = '', autoFocus = false, label = '' }) {
   const whole = !domain || value.includes('@')
   const ref = useRef(null)
   const phone = usePhone()
+  useEffect(() => {
+    if (!autoFocus || !ref.current) return
+    const fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (fine) ref.current.focus()
+  }, [autoFocus])
   return (
     <div className={`wl-addr${whole ? ' is-whole' : ''}`}>
       <input
@@ -98,7 +96,7 @@ function AddressField({ value, onChange, onSubmit, domain = '' }) {
            screen. */
         style={whole ? undefined : { width: `${Math.min(22, Math.max(3, value.length)) + 0.4}ch` }}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit() } }}
-        aria-label={domain && !whole ? `your ${domain.split('.')[0]} address` : 'your address'}
+        aria-label={label || (domain && !whole ? `your ${domain.split('.')[0]} address` : 'your address')}
         placeholder={domain ? 'you' : 'you@anywhere.com'}
         type="text" inputMode="email" autoComplete="username"
         autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="next"
@@ -152,16 +150,11 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // Held in state rather than read on every render: signing out has to repaint
   // this sheet, and the store is not something React is watching.
   const [who, setWho] = useState(() => member())
-  const c = campus()
-  const campusWall = needsCampus()
-  // Which door is open on the sheet. The campus wall opens on its address;
-  // the wall at the root opens on the three ways and one is chosen.
-  const [way, setWay] = useState(() => (campusWall ? 'campus' : (resumeIg() ? 'instagram' : '')))
-  const [mode, setMode] = useState('register')   // register · signin (the campus door's two words)
+  // Which door is open on the sheet: the three ways, and one is chosen.
+  const [way, setWay] = useState(() => (resumeIg() ? 'instagram' : ''))
   const [step, setStep] = useState(0)            // 0 the address · 1 the code
   const [local, setLocal] = useState('')
   const [code, setCode] = useState('')
-  const [token, setToken] = useState(null)   // the correlation id for the campus code out
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')       // what went wrong, in words
   const alive = useRef(true)
@@ -170,17 +163,10 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     return () => { alive.current = false }
   }, [])
 
-  // Somebody may already be able to READ without holding what writes here: a
-  // handle proved on Main opens the letters (migration 0044). This sheet then
-  // asks for the one thing they still do not have, and says so, rather than
-  // telling a person who is reading the wall that the wall is not for them.
-  const reads = isReader()
-
   // Whether the act that knocked was READING: the return address left by the
   // screen that sent somebody here is a letter or a report (the head of this
-  // file says why the heading turns on it). The composer's arrival needs no
-  // flag of its own, since asking for the campus is what the door already
-  // says to a writer, and a sign in chip on the bar leaves no address at all.
+  // file says why the heading turns on it). A sign in chip on the bar leaves
+  // no address at all.
   //
   // Taken once, on mount, rather than read on every render: `finish` spends
   // the address on the way out (`takeAfterGate`), and a heading that changes
@@ -207,9 +193,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // ── a login that has just come back ──
   // A google account, or the code checked a moment ago: the Supabase session
   // is spent against this browser's row (api/login.js), the row is read
-  // again, and the sheet lands where it was going. On the campus wall a
-  // google address away from the campus opens reading and not writing, and
-  // the sheet says so over the address it still needs.
+  // again, and the sheet lands where it was going.
   const landedLogin = async (out) => {
     if (!out) return
     if (!out.ok) {
@@ -221,14 +205,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     await signedIn()
     if (!alive.current) return
     unstashAfter()
-    if (isMember()) { setWho(member()); finish(); return }
-    // signed in, and reading, and not at this campus. Somebody who came for
-    // a letter, to read it or to heart it, has what they came for and goes
-    // back to it, with the heart pressed; only a writer is asked for the
-    // campus address next
-    if (forReading && isReader()) { finish(); return }
-    setWay('campus')
-    setSaid(out.email ? `signed in as ${out.email}. a ${c.domain} address is what writes here` : `a ${c.domain} address is what writes here`)
+    if (isMember()) setWho(member())
+    finish()
   }
   useEffect(() => {
     if (!loginEnabled()) return undefined
@@ -248,70 +226,6 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     const out = await startGoogle(href('gate'))
     if (!alive.current) return
     if (!out.ok) { setBusy(false); setSaid(out.error === 'offline' ? 'not connected here' : 'google did not answer. try again') }
-  }
-
-  // ── the campus address, and the code ──
-  // A local part at the campus, or a whole address typed with its @. The
-  // server is the gate either way (the campus, or the desk's pass list).
-  const whole = local.includes('@')
-  const email = whole ? normEmail(local) : normEmail(`${local}@${c.domain || DOMAIN}`)
-  const ok = whole ? anyEmail(email) : validEmail(email)
-
-  // celestual-edu-verify checks the address is at this campus's domain, mints a
-  // six digit code, stores only its hash, and mails it. The code rides the
-  // subject line too, so the notification alone is enough to read it.
-  const sendCampus = async () => {
-    if (!ok || busy) return false
-    const again = step === 1
-    setBusy(true)
-    setSaid('')
-    const out = await sendCampusCode(email)
-    if (!alive.current) return false
-    setBusy(false)
-    if (!out.ok) {
-      setSaid(
-        out.error === 'rate' ? 'too many codes for that address. try again in an hour'
-          : out.error === 'domain' || out.error === 'email' ? `that is not a ${c.domain} address`
-          : 'the mail did not go out. try again',
-      )
-      return false
-    }
-    // The correlation id the new code was minted against, and an empty field:
-    // whatever was typed was for the code this one just replaced.
-    setToken(out.token)
-    setCode('')
-    setStep(1)
-    // The step before the proof: somebody gave an address and asked for a code.
-    // Logged here rather than when this sheet opens, because the sheet is also
-    // the account screen and a person reading their own address on it has not
-    // done anything. It says which card produced intent, and the 'joined' step
-    // in auth.js says which produced a proof. Once per address: a resend
-    // because the first one went to spam is not a second intent.
-    if (!again) cardStep('gate')
-    return true
-  }
-
-  // On a match the address is bound to this browser's identity row, which is
-  // what makes the campus outlast the tab and carry across to Main. The address
-  // signed in with is the one the SERVER verified.
-  const finishCampus = async () => {
-    if (!validCode(code) || busy || !token) return
-    setBusy(true)
-    setSaid('')
-    const out = await checkCampusCode(token, code)
-    if (!alive.current) return
-    setBusy(false)
-    if (!out.ok) {
-      setSaid(
-        out.error === 'expired' ? 'that code has lapsed. ask for another'
-          : out.error === 'other_campus' ? 'this device is already at another campus'
-          : out.error === 'identity' ? 'the address checked out, but this device could not be signed in. try once more'
-          : 'that code is not right',
-      )
-      return
-    }
-    setWho(out.email)
-    finish()
   }
 
   // ── any address, and the code (the wall at the root) ──
@@ -438,11 +352,10 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // to be drawn here as its own card, and it is the same card now wherever
   // the person is opened from. Signing out on it brings the door back.
   if (who) {
-    const out = () => { setWho(null); setMode('signin'); setStep(0); setWay(campusWall ? 'campus' : '') }
+    const out = () => { setWho(null); setStep(0); setWay('') }
     return <You go={go} up={up} upLabel={upLabel} onOut={out} />
   }
 
-  const registering = mode === 'register'
   const canLogin = loginEnabled()
 
   // ── THE DOOR ────────────────────────────────────────────────────────────
@@ -483,8 +396,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // mailed code stand under the rule as what they are: two ways in that cost
   // less and buy less.
 
-  // ── the wall at the root: the ways in ──
-  if (!campusWall && !way) {
+  // ── the ways in ──
+  if (!way) {
     return (
       <Sheet onClose={up} tall labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate is-door">
@@ -495,10 +408,10 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
               id="wl-gate-h"
               /* What this person came for, said back to them. A reader who
                  has run out of the free letters is here for the wall and
-                 not for an account, so the heading is the wall. */
-              title={reads ? <>sign in to write.</>
-                : forReading ? <>sign in to read<br />the whole wall.</>
-                : <>sign in to read<br />and write.</>}
+                 not for an account, so the heading is the wall. Writing is
+                 not behind this door (the head of this file says why). */
+              title={forReading ? <>sign in to read<br />the whole wall.</>
+                : <>sign in to read<br />and ping.</>}
               say="your information will stay anonymous."
             />
             <div className="wl-door-ways" role="group" aria-label="how to sign in">
@@ -650,88 +563,5 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     )
   }
 
-  // ── the campus wall: the address, the code, or the campus google ──
-  return (
-    <Sheet onClose={up} tall labelledBy="wl-gate-h">
-      <div className="wl-sheet-in wl-gate is-door">
-        <SheetHead onClose={up} label={upLabel} />
-        <div className="wl-push" />
-
-        <div className="wl-door">
-          {/* ── the heading names the act, not the wall ──
-              It used to open on "The wall is for Berkeley", which is a statement
-              about the room and leaves the person in front of it to work out what
-              is being asked of them. What is being asked of them is one thing, so
-              it says that thing. */}
-          <DoorHead
-            id="wl-gate-h"
-            title={step === 0
-              ? (!registering ? <>come back in.</>
-                : reads ? <>{c.place} only.</>
-                /* the free letters are behind them: the campus is what
-                   opens the rest, and that is what the door is for */
-                : forReading ? <>sign in with {c.place}<br />to read the whole wall.</>
-                : <>verify you&rsquo;re<br />at {c.place}.</>)
-              : <>the code from<br />the mail.</>}
-            /* The rule, in one line, said where somebody is deciding whether
-               to answer for it. */
-            say={step === 0 ? 'your information will stay anonymous.' : null}
-          />
-
-          {step === 0 ? (
-            <div className="wl-door-ways">
-              <AddressField value={local} onChange={setLocal} onSubmit={sendCampus} domain={c.domain || DOMAIN} />
-              <Pill tone="light" wide disabled={!ok || busy} onClick={sendCampus}>
-                {busy ? 'sending' : registering ? 'register' : 'send me a code'}
-              </Pill>
-              {/* ── or the campus's own google ──
-                  The same proof by a shorter road: the address Google
-                  vouches for is at the campus, so it opens writing the way
-                  the mailed code does, with no code to type. */}
-              {canLogin ? (
-                <>
-                  <Or />
-                  <Pill tone="ghost" wide icon={<Google size={16} />} onClick={google} disabled={busy}>
-                    sign in with google
-                  </Pill>
-                </>
-              ) : null}
-            </div>
-          ) : (
-            <div className="wl-door-ways">
-              <Label tone="dim" className="wl-door-sentto">
-                sent to <span className="wl-h">{email}</span>
-              </Label>
-              <CodeBox value={code} onChange={setCode} onSubmit={finishCampus} autoFocus />
-              <Pill tone="light" wide disabled={!validCode(code) || busy} onClick={finishCampus}>
-                {busy ? 'checking' : registering ? 'finish' : 'sign in'}
-              </Pill>
-              <Resend onSend={sendCampus} />
-            </div>
-          )}
-
-          <div className="wl-gate-fault" aria-live="polite">{said}</div>
-        </div>
-
-        <div className="wl-push" />
-
-        <SheetFoot>
-          {step === 0 ? (
-            <button
-              type="button" className="wl-quiet"
-              onClick={() => setMode(registering ? 'signin' : 'register')}
-            >
-              {registering ? 'already registered? sign in' : 'new here? register'}
-            </button>
-          ) : (
-            <button type="button" className="wl-quiet"
-              onClick={() => { setCode(''); setToken(null); setSaid(''); setStep(0) }}>
-              use a different address
-            </button>
-          )}
-        </SheetFoot>
-        <DoorFoot />
-      </div>
-    </Sheet>
-  )
+  return null
 }

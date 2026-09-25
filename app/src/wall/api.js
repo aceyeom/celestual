@@ -21,8 +21,9 @@
 //                  because a redaction the client performs is not a redaction,
 //                  and so does the counting, because a count the client keeps
 //                  is a count the reader owns.
-//   writing        behind the campus gate, which is a different and narrower
-//                  door, and three letters in any seven days.
+//   writing        a letter to an @ from a verified Berkeley address, and a
+//                  letter to a name from anybody, read before it goes up
+//                  (the one wall, docs/ONE-WALL.md).
 //   the seal       one function returns it, and only when the caller holds the
 //                  verified handle it is addressed to, asked, and the author
 //                  said yes.
@@ -40,9 +41,9 @@ import { avatarUrl, learnHandle } from '../api/handles.js'
 import { cleanLook } from './looks.js'
 import { campus } from './campus.js'
 
-// Which wall this is: the campus wall, or the one at the root (campus.js).
-// The schema files every letter under a campus row, and the one at the root
-// is a row like any other, with no domain on it (migration 0057).
+// The wall's own row, for what is logged against it: the scans, the cards'
+// steps and the waitlist. There is one wall (docs/ONE-WALL.md), and a
+// letter's campus is the school it carries, which the letter says itself.
 const CAMPUS = () => campus().slug
 
 const OFFLINE = { ok: false, error: 'offline' }
@@ -91,6 +92,30 @@ const INDEX_LOOKED = `${INDEX_NAMED}, look`
 const INDEX_TIERS = [INDEX_LOOKED, INDEX_NAMED, INDEX_FACES, INDEX_COLS]
 let indexTier = 0
 
+// ── one wall ──
+// Since the one wall the index is `wall_index_all`: the same columns grouped
+// by the key alone, every campus in one row, with the newest letter's campus
+// and whether it was `verified` (docs/ONE-WALL.md). A database from before it
+// has only `wall_index`, a row per campus and key, so the read falls back to
+// that view, unfiltered, and folds the rows under each key together here:
+// the counts summed, the newest row's face and paper. Either way the wall is
+// every letter, and never a blank one.
+const ALL_TIERS = [`${INDEX_LOOKED}, campus, verified`, INDEX_LOOKED]
+let allTier = 0
+let allGone = false
+
+function foldRows(rows) {
+  const by = new Map()
+  for (const r of rows) {
+    const k = r.target_handle ?? r.handle
+    const was = by.get(k)
+    if (!was) { by.set(k, { ...r }); continue }
+    const newer = new Date(r.last_at).getTime() > new Date(was.last_at).getTime()
+    by.set(k, { ...(newer ? r : was), letters: (Number(was.letters) || 0) + (Number(r.letters) || 0) })
+  }
+  return [...by.values()].sort((a, b) => new Date(b.last_at).getTime() - new Date(a.last_at).getTime())
+}
+
 // ── one shape for a name on the wall ─────────────────────────────────────────
 // Every row the index and the search answer with becomes this. `handle` is
 // the KEY: a handle, or a tilde and the folded name for a letter to a first
@@ -110,16 +135,35 @@ function shapeRow(r) {
     verified: kind === 'handle' && !!r.is_verified,
     avatar: kind === 'handle' ? avatarUrl(r.avatar_path) : '',
     look: cleanLook(r.look),
+    // the school the newest letter carries (the one wall), and whether it
+    // went up from a verified school address, which is what puts the
+    // school's sticker on it. Not `verified` above: that is the account's
+    // badge on Instagram.
+    campus: r.campus && r.campus !== 'global' ? String(r.campus) : null,
+    edu: !!r.verified && kind === 'handle',
   }
 }
 
 export async function wallIndex() {
   if (!hasSupabase) return { ok: false, error: 'offline', tiles: [] }
   try {
+    if (!allGone) {
+      const readAll = () => supabase
+        .from('wall_index_all')
+        .select(ALL_TIERS[allTier])
+        .order('last_at', { ascending: false })
+        .limit(500)
+      let { data, error } = await readAll()
+      while (error && allTier < ALL_TIERS.length - 1) {
+        allTier += 1
+        ;({ data, error } = await readAll())
+      }
+      if (!error) return { ok: true, tiles: (data ?? []).map(shapeRow) }
+      allGone = true
+    }
     const read = () => supabase
       .from('wall_index')
       .select(INDEX_TIERS[indexTier])
-      .eq('campus', CAMPUS())
       .order('last_at', { ascending: false })
       .limit(500)
     let { data, error } = await read()
@@ -132,7 +176,7 @@ export async function wallIndex() {
       ;({ data, error } = await read())
     }
     if (error) return { ok: false, error: 'network', tiles: [] }
-    return { ok: true, tiles: (data ?? []).map(shapeRow) }
+    return { ok: true, tiles: foldRows(data ?? []).map(shapeRow) }
   } catch {
     return { ok: false, error: 'network', tiles: [] }
   }
@@ -158,7 +202,8 @@ export async function wallSearch(query) {
 }
 
 // ── the wall, moving ─────────────────────────────────────────────────────────
-// A letter going up on another phone is a broadcast on this campus's channel,
+// A letter going up on another phone is a broadcast on the wall's one
+// channel, `wall:global`, whatever school the letter carries (the one wall),
 // sent by celestual-wall-moderate after the write and after a takedown by the
 // reading. The message says the index moved and nothing else; what the
 // browser does with it is read the public index again, the same read it made
@@ -177,7 +222,7 @@ export function subscribeWall(onMoved) {
   const drop = () => { if (ch) { const c = ch; ch = null; try { supabase.removeChannel(c) } catch { /* already gone */ } } }
   try {
     ch = supabase
-      .channel(`wall:${CAMPUS()}`, { config: { broadcast: { self: false } } })
+      .channel('wall:global', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'moved' }, () => onMoved())
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') refused = 0
@@ -190,11 +235,12 @@ export function subscribeWall(onMoved) {
 }
 
 // ── the pulse ────────────────────────────────────────────────────────────────
-// Whether this campus's wall is open and how much is on it, in one row. The
-// front door pins the wall's poster up off this and takes it down when the
-// campus closes. Anything short of an answer reads as closed.
+// Whether the wall is open and how much is on it, in one row, every campus
+// together (`wall_pulse_all`, the one wall). A database from before it is
+// asked for the wall's own row. Anything short of an answer reads as closed.
 export async function wallPulse() {
-  const out = await call('wall_pulse', { p_campus: CAMPUS() })
+  let out = await call('wall_pulse_all', {})
+  if (!out || out.ok !== true) out = await call('wall_pulse', { p_campus: CAMPUS() })
   if (!out || out.ok !== true) return { ok: false, error: out?.error || 'network', open: false, names: 0, letters: 0 }
   return {
     ok: true,
@@ -337,6 +383,15 @@ function shapeLetter(l) {
     // A count, never a list: nothing anywhere says who.
     hearts: Number(l.hearts) || 0,
     hearted: !!l.hearted,
+    // The one wall (docs/ONE-WALL.md). Whether it went up from a verified
+    // school address, which puts that school's sticker on it; the line the
+    // writer set in place of "dear" and the name, or null; and the school's
+    // name, null for a letter that carries none. A letter from a database
+    // before these reads false, null and null, and draws as it always did
+    // (schools.js `letterMarks`).
+    verified: !!l.verified,
+    salutation: l.salutation ? String(l.salutation) : null,
+    school: l.school ? String(l.school) : null,
   }
 }
 
@@ -369,26 +424,77 @@ function shapeLetter(l) {
 // `name`, so the wall can light the right disc without deriving the key.
 // And a look, since 0055: three slugs or nothing, cleaned here, on the
 // server and in the schema, the same way each time.
-export async function write({ to, body, sealedLine, source, kind = 'handle', name = '', look = null }) {
+//
+// ── version 2, the one wall (docs/ONE-WALL.md) ──
+// Every write carries `v: 2`, and the function answers under the rules of
+// 25 September: an @-note goes up from a verified school address or is
+// answered `edu` (not verified) or `campus` (verified at a school that does
+// not post to an @); a name note needs no proof, is read before it goes up,
+// and can answer `pending` (up once a person at the desk has read it). The
+// answer carries the letter's `campus`, `school`, `verified` and
+// `salutation` as they went up.
+//
+//   salutation  the writer's own "dear" line, or null for "dear" and the name
+//   campus      for a name note only: the school the writer tagged it with,
+//               or null for none. An @-note's school is its address's.
+//   nonce       one per draft (data.js `newNonce`). The same draft sent twice,
+//               from two tabs or after a lost answer, is one letter: the
+//               function answers the first send again and writes nothing.
+//   throttle    too many name notes from this device or this address today
+//   salutation  (as an error) the line did not pass the same list the body
+//               goes through
+//
+// A function from before version 2 reads none of the new fields and writes
+// the letter the old way, so a deploy that lands before the function does
+// still posts.
+export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus: school = null, nonce = '' }) {
   if (!hasSupabase) return OFFLINE
+  const named = kind === 'name'
   try {
     const { data, error } = await supabase.functions.invoke('celestual-wall-moderate', {
       body: {
+        v: 2,
         token: sessionToken(),
-        target: String(to || ''),
-        body: String(body || ''),
-        sealedLine: sealedLine ? String(sealedLine) : null,
-        source: source ? String(source) : null,
-        campus: CAMPUS(),
-        kind: kind === 'name' ? 'name' : 'handle',
-        name: kind === 'name' ? String(name || '') : null,
+        kind: named ? 'name' : 'handle',
+        target: named ? null : String(to || ''),
+        name: named ? String(name || '') : null,
+        salutation: salutation ? String(salutation).slice(0, 40) : null,
         look: cleanLook(look),
+        ...(named ? { campus: school ? String(school) : null } : {}),
+        nonce: String(nonce || ''),
+        source: source ? String(source) : null,
+        body: String(body || ''),
       },
     })
-    if (error) return { ok: false, error: 'network' }
+    if (error) {
+      // a refusal the function answered with a status of its own still
+      // carries its reason
+      try {
+        const said = error.context && typeof error.context.json === 'function' ? await error.context.json() : null
+        if (said && said.ok === false && said.error) return said
+      } catch { /* no body to read */ }
+      return { ok: false, error: 'network' }
+    }
     return data ?? { ok: false, error: 'network' }
   } catch {
     return { ok: false, error: 'network' }
+  }
+}
+
+// ── the schools a name note can carry ────────────────────────────────────────
+// The open campuses, the wall at the root excepted (`wall_campuses_open`):
+// what the composer offers a name note to be tagged with, beside "no
+// school". A database from before the one wall has no such function, and
+// Berkeley, the one campus that was open, stands in.
+export async function campuses() {
+  const out = await call('wall_campuses_open', {})
+  const rows = Array.isArray(out) ? out : Array.isArray(out?.campuses) ? out.campuses : null
+  if (!rows) return { ok: false, campuses: [{ slug: 'berkeley', name: 'UC Berkeley', short: 'CAL', domain: 'berkeley.edu' }] }
+  return {
+    ok: true,
+    campuses: rows
+      .filter((c) => c && c.slug && c.slug !== 'global')
+      .map((c) => ({ slug: String(c.slug), name: String(c.name || c.slug), short: String(c.short || ''), domain: String(c.domain || '') })),
   }
 }
 
@@ -424,6 +530,12 @@ export async function mine() {
       reasons: Array.isArray(l.reasons) ? l.reasons.map(String) : [],
       flagged: !!l.flagged,
       at: new Date(l.at).getTime(),
+      // the one wall: as a letter read anywhere else carries them (above);
+      // `status` gains 'pending' there, a name note waiting on the desk
+      campus: l.campus || null,
+      verified: !!l.verified,
+      salutation: l.salutation ? String(l.salutation) : null,
+      school: l.school ? String(l.school) : null,
     })),
   }
 }

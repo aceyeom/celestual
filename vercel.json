@@ -5,6 +5,12 @@
   "functions": {
     "api/resolve.js": { "maxDuration": 60 }
   },
+  "redirects": [
+    { "source": "/berkeley", "destination": "/", "permanent": true },
+    { "source": "/berkeley/:path*", "destination": "/:path*", "permanent": true },
+    { "source": "/beta", "destination": "/", "permanent": true },
+    { "source": "/beta/:path*", "destination": "/:path*", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },

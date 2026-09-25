@@ -8,9 +8,9 @@
 // still local is what should be, and only that: the draft in the composer, the
 // names this browser has written to, and which letters it has opened.
 //
-// It is loaded only when the path starts with /berkeley. Production never
-// imports anything under src/wall, and nothing under src/wall is in the bundle
-// somebody on the hero page downloads.
+// It is loaded for the wall's own addresses (router.js `ownsAt`, the one wall
+// at the root since docs/ONE-WALL.md). Main never imports anything under
+// src/wall, and nothing under src/wall is in the bundle Main's pages download.
 //
 // This file owns the four things that are true on every screen:
 //
@@ -29,8 +29,8 @@
 //                    out of the URL
 //
 // ── the surface, and the sheets on it ───────────────────────────────────────
-// Six routes are not screens: /berkeley/letter, /berkeley/find, /berkeley/write,
-// /berkeley/gate, /berkeley/report and /berkeley/remove are sheets that rise over a wall
+// Most routes are not screens: /letter, /find, /write, /gate, /report,
+// /remove and /verify are sheets that rise over a wall
 // which stays mounted, scrolled where it was, and visible behind them. That is the whole reason the composer reads as part of
 // the wall rather than as a form the wall sent you away to fill in, and it is
 // the reason those three take no cut — a surface that blacks out to raise a
@@ -64,6 +64,7 @@ import Report from './screens/Report.jsx'
 import Ping from './screens/Ping.jsx'
 import You from './screens/You.jsx'
 import Reveal from './screens/Reveal.jsx'
+import Verify from './screens/Verify.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -81,6 +82,7 @@ const FIELD = {
   ping:   'slow',
   you:    'slow',
   reveal: 'still',   // and where two people have just found out
+  verify: 'still',   // and where a link from the mail is being checked
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -111,7 +113,9 @@ export default function WallApp() {
   // A tab that opens on a mutual does not play the intro: the mutual tells
   // the same story on its own screen, and the second telling would be the
   // one that was waited through.
-  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' ? 2 : 0))
+  // Nor does a tab opened by the link in a mail (screens/Verify.jsx), which
+  // is somebody finishing something, not arriving.
+  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' || route.name === 'verify' ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)
@@ -214,7 +218,7 @@ export default function WallApp() {
   }, [])
 
   // ── the scan ──
-  // /berkeley?s=flyer-a is how the flyer, the card, the chalk and the table become
+  // /?s=flyer-a is how the flyer, the card, the chalk and the table become
   // measurable against each other. Read once, attached to anything this
   // session creates, then scrubbed out of the URL — a source code riding along
   // into a link somebody pastes to a friend would attribute their scan to a
@@ -438,6 +442,7 @@ export default function WallApp() {
   if (route.name === 'ping') sheet = <Ping to={route.id} {...shared} />
   if (route.name === 'you') sheet = <You {...shared} />
   if (route.name === 'reveal') sheet = <Reveal id={route.id} {...shared} />
+  if (route.name === 'verify') sheet = <Verify {...shared} />
 
   let base
   switch (route.name) {

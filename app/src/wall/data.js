@@ -40,7 +40,7 @@
 import * as api from './api.js'
 import { learnHandle, warmFaces, isNameKey } from '../api/handles.js'
 import { learnLook, lookKey } from './looks.js'
-import { getState } from './store.js'
+import { getState, patch } from './store.js'
 
 const DAY = 86400000
 
@@ -529,6 +529,7 @@ export async function removeLetter(id) {
 function shapeTile(t, was) {
   if (was && was.count === t.count && was.at === t.at && was.known === t.known
     && was.name === t.name && was.verified === t.verified && was.avatar === t.avatar
+    && was.campus === t.campus && was.edu === t.edu
     && lookKey(was.look) === lookKey(t.look)) return { ...was, look: was.look }
   return {
     ...t,
@@ -618,8 +619,14 @@ export async function search(query) {
 // comes back on the answer; it is derived here only when an older function
 // did not say. `look` is the paper (0055), and the key learns it at once so
 // the disc the wall lights is already on that paper.
-export async function write({ to, body, sealedLine, source, kind = 'handle', name = '', look = null }) {
-  const out = await api.write({ to, body, sealedLine, source, kind, name, look })
+//
+// Version 2 (the one wall, docs/ONE-WALL.md) adds the salutation, a name
+// note's school, and the draft's nonce, and a third answer: `pending`, a name
+// note read by the classifier and waiting on the desk. It is not on the wall
+// yet, so nothing on the wall moves for it; this device's own letters are
+// read again, where it is listed as waiting.
+export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus = null, nonce = '' }) {
+  const out = await api.write({ to, body, source, kind, name, look, salutation, campus, nonce })
   if (out?.ok && out.status === 'live') {
     const h = out.handle || (kind === 'name' ? nameKey(name) : normHandle(to))
     if (kind === 'name') learnName(h, out.name || cleanName(name))
@@ -629,11 +636,108 @@ export async function write({ to, body, sealedLine, source, kind = 'handle', nam
     await Promise.all([loadWall(true), loadHandle(h, true), loadQuota(true), loadMine(true)])
     bump()
   }
+  if (out?.ok && out.status === 'pending') {
+    if (kind === 'name') learnName(out.handle || nameKey(name), out.name || cleanName(name))
+    await loadMine(true)
+  }
   // A refusal moves the count too. 'cap' means the server disagreed with the
   // number this browser was drawing, and the meter has to end up saying what
   // the server just said rather than what it thought a second ago.
   if (out && !out.ok && out.error === 'cap') await loadQuota(true)
   return out || { ok: false, error: 'network' }
+}
+
+// ── the draft, and what it posts as ─────────────────────────────────────────
+// The composer keeps its draft in the store (store.js `draft`), so a reload,
+// a second tab, or a walk to the inbox and back never costs anybody what they
+// wrote. What the draft holds is what the writer chose:
+//
+//   kind    'handle' (an @) or 'name' (anything else)
+//   to      the @, in @ mode
+//   name    the name, in name mode, and `at`, the @ the name nudge asks for
+//           under it: with one, the letter goes to the @ and the name is its
+//           greeting ("dear sofia"), and it is an @-note like any other
+//   body, look
+//   greet   the "dear" line as the writer edited it, or null while it
+//           follows the name
+//   school  a name note's school, a campus slug, or '' for none
+//   nonce   made once per draft (`newNonce`), so the same draft posted twice
+//           is one letter (docs/ONE-WALL.md)
+//   held    the Berkeley link it is waiting on, once one is out:
+//           { email, request, match, at }
+//
+// `draftPost` turns that into what goes up, and `postDraft` sends it and, if
+// it went, lands it: the composer calls it on the press, and the verify page
+// (screens/Verify.jsx) calls it for a draft that was waiting on the link.
+export function newNonce() {
+  const b = new Uint8Array(16)
+  try { crypto.getRandomValues(b) } catch { for (let i = 0; i < b.length; i++) b[i] = Math.floor(Math.random() * 256) }
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export function draftPost(d) {
+  if (!d) return null
+  const body = String(d.body || '').trim()
+  const nm = cleanName(d.name)
+  const at = normHandle(d.at)
+  const viaAt = d.kind === 'name' && validHandle(at)
+  const kind = d.kind === 'handle' || viaAt ? 'handle' : 'name'
+  const handle = d.kind === 'handle' ? normHandle(d.to) : viaAt ? at : ''
+  if (!body || (kind === 'handle' ? !validHandle(handle) : !nm)) return null
+  const greet = d.greet == null ? '' : String(d.greet).replace(/\s+/g, ' ').trim().slice(0, 40)
+  return {
+    kind,
+    handle,
+    name: kind === 'name' ? nm : '',
+    key: kind === 'name' ? nameKey(nm) : handle,
+    body,
+    look: d.look || null,
+    // the writer's own line; or, for a name with its @, "dear" and the name,
+    // which is not the line the letter would say by itself
+    salutation: greet || (viaAt && nm ? `dear ${nm}` : null),
+    campus: kind === 'name' && d.school ? String(d.school) : null,
+  }
+}
+
+// What went up, written down on this device: the letter, the key it is
+// filed under, the name for a name key, and the pulse the wall sends out
+// from the name once the sheet has gone. A letter waiting on the desk is
+// written down too, and sends no pulse, since it is not on the wall.
+export function landLetter(out, p) {
+  const was = getState()
+  const filed = out.handle || p.key
+  patch({
+    draft: null,
+    written: [out.id, ...(was.written || [])].slice(0, 12),
+    wroteTo: [filed, ...(was.wroteTo || []).filter((x) => x !== filed)].slice(0, 12),
+    names: p.kind === 'name' ? { ...(was.names || {}), [filed]: out.name || p.name } : (was.names || {}),
+    justPosted: out.status === 'live' ? filed : '',
+  })
+}
+
+export async function postDraft(d) {
+  const p = draftPost(d)
+  if (!p) return { ok: false, error: 'empty' }
+  if (p.kind === 'name') learnName(p.key, p.name)
+  const out = await write({
+    to: p.handle, body: p.body, source: getState().source || null, kind: p.kind, name: p.name,
+    look: p.look, salutation: p.salutation, campus: p.campus, nonce: d.nonce || '',
+  })
+  if (out?.ok && (out.status === 'live' || out.status === 'pending')) landLetter(out, p)
+  return out || { ok: false, error: 'network' }
+}
+
+// ── the schools a name note can carry ───────────────────────────────────────
+// Asked once, when the composer first needs them (api.js `campuses`).
+let CAMPUS_LIST = null
+export function openCampuses() { return CAMPUS_LIST }
+export function loadCampuses() {
+  if (CAMPUS_LIST) return Promise.resolve()
+  return once('campuses', async () => {
+    const out = await api.campuses()
+    CAMPUS_LIST = out.campuses || []
+    bump()
+  })
 }
 
 // ── the heart ───────────────────────────────────────────────────────────────

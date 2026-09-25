@@ -173,7 +173,7 @@ export default function Access({ password, go, onLock }) {
       <div className="ad-panel">
         <div className="ad-form">
           <Field label="instagram handle" value={form.handle} onChange={f('handle')} placeholder="theirhandle" prefix="@" id="si-handle" hint="signs the browser in on main, as this @" />
-          <Field label="campus address" value={form.eduEmail} onChange={f('eduEmail')} placeholder="somebody@berkeley.edu" id="si-edu" hint="opens the wall on that browser. a .edu, or an address on the pass list" />
+          <Field label="campus address" value={form.eduEmail} onChange={f('eduEmail')} placeholder="somebody@berkeley.edu" id="si-edu" hint="lets that browser post to an @ on the wall. a berkeley.edu, or an address on the pass list" />
           <Field label="plain email" value={form.email} onChange={f('email')} placeholder="optional" id="si-email" hint="a note on the row. nothing is sent to it" />
           <Field label="why" value={form.note} onChange={f('note')} placeholder="testing the flow on my phone" id="si-note" mono={false} hint="kept in the log" />
         </div>

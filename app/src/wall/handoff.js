@@ -3,10 +3,11 @@
 // Two different questions, and the wall is careful about which is which,
 // because conflating them is the mistake spec section 4 exists to prevent.
 //
-//   THE CAMPUS   a berkeley.edu address, proved by a code in the inbox. It says
-//                you are from the campus this wall is about. It opens the
-//                letters. It says nothing whatever about whether any particular
-//                handle is yours.
+//   THE SCHOOL   a berkeley.edu address, proved by a link in the inbox (the
+//                one wall, docs/ONE-WALL.md; the code below is the flow it
+//                replaced). It says you are at Berkeley, which is what posts
+//                a letter to an @ on the wall. It says nothing whatever about
+//                whether any particular handle is yours.
 //   THE HANDLE   an Instagram DM code, proved by the account that sends it. It
 //                says @sofiaaa.reyes is you. It is the only thing in this
 //                product that says so, and it is the only thing that may take a
@@ -29,11 +30,11 @@ import {
 import { sendEduCode, verifyEduCode, eduVerifyEnabled } from '../api/eduverify.js'
 import { sessionToken } from '../api/identity.js'
 import { verifyHandle, signIn, DOMAIN } from './auth.js'
-import { campus } from './campus.js'
 
-// The school this wall is about, as celestual-edu-verify knows it. The wall
-// at the root has no school and never sends a code (campus.js).
-const CAMPUS_SLUG = () => campus().eduSlug
+// Berkeley, as celestual-edu-verify's code flow knows it. The code is the
+// fallback for a function that does not yet mail the link
+// (screens/Write.jsx), and Berkeley is the one school it is asked for.
+const CAMPUS_SLUG = 'uc-berkeley'
 
 export { igDeepLink, igWebLink, igUsername, dmCode, igVerifyEnabled, eduVerifyEnabled, DOMAIN }
 export { savePending, loadPending, clearPending }
@@ -42,9 +43,9 @@ export { savePending, loadPending, clearPending }
 // Mint a code and mail it. Returns { ok, token } or { ok:false, error }, where
 // error is one of 'domain' | 'email' | 'rate' | 'send' and the screen puts
 // words to it.
-export async function sendCampusCode(email) {
+export async function sendCampusCode(email, slug = CAMPUS_SLUG) {
   try {
-    const out = await sendEduCode({ email, slug: CAMPUS_SLUG() })
+    const out = await sendEduCode({ email, slug })
     return { ok: true, token: out.token, expiresAt: out.expiresAt }
   } catch (e) {
     return { ok: false, error: e?.code || 'send' }

@@ -1,176 +1,124 @@
-// ── /berkeley/write — THE COMPOSER ──────────────────────────────────────────
+// ── /write — THE COMPOSER ───────────────────────────────────────────────────
 //
 // Two steps, and they are one sentence broken across them:
 //
-//     step 1   Someone at Berkeley you can't forget.      ← who
-//     step 2   And what makes them so.                    ← the letter
+//     step 1   Someone you can't forget.      ← who
+//     step 2   And what makes them so.        ← the letter
 //
-// That is the entire brief, and it is the reason the wall fills up. An earlier
-// build asked "what did you never say?", which is a question about the writer:
-// it asks somebody to find a regret, decide it is worth publishing, and phrase
-// it — three jobs, at a table, on a phone. This asks them to think of ONE
-// PERSON, which everybody can do instantly, and then say why, which is the
-// part that actually makes a letter worth finding.
+// and then one decision, at the send, about how public it is (the rulings of
+// 25 September, docs/ONE-WALL.md):
 //
-// The card is live from the first keystroke of step 2. That is the single most
-// important decision on this screen: a person typing into a plain box is
-// filling in a form, and a person watching their own words settle onto the
-// same kind of screen they were reading a minute ago is writing a letter. It
-// is the component the wall renders (screen.jsx `Screen`), not a lookalike,
-// in the colour and with the words that go up. It is not yet the same phone:
-// the draft's quirks are seeded off the draft and not the letter, and the
-// picture the letter will carry is not on it.
+//     post on the Berkeley wall   public. anyone can read it, and nobody sees
+//                                 who wrote it. It asks "confirm you're at
+//                                 Berkeley", by a link to a berkeley.edu
+//                                 address, once per device.
+//     send privately              only they'll ever know, and only if it's
+//                                 mutual. It asks "confirm this is your
+//                                 Instagram", the one DM, and goes to them as a
+//                                 ping with the note as its line.
 //
-// ── the door, and what it does not change ──────────────────────────────────
-// The composer is behind the berkeley.edu address, and it is the only thing on
-// the wall that still is: reading opened to either proof in migration 0044, and
-// writing did not. An anonymous letter about a named student, publishable by
-// anybody on earth with a browser, is not anonymity. It is an open relay
-// pointed at a person who never agreed to any of it.
+// A person choosing between those two is choosing how public their note is,
+// which everybody understands, and they never have to learn which proof goes
+// with which act: the option says what it asks, and asks it after the
+// choice. A letter to a NAME (anything that is not an @) posts on the wall
+// with no proof at all, read by the classifier and, where it is unsure, by a
+// person at the desk before it goes up; it can carry a school, or none. It
+// cannot be sent privately, since a ping needs an @, and the option says so
+// and takes the writer to the one field that fixes it.
 //
-// ── and three of them in any five days ─────────────────────────────────────
-// A wall whose contents are decided by whoever writes the most is a wall about
-// its most prolific writer, and the cheapest way to stop that is a number
-// everybody can hold in their head. The number itself is never drawn, here or
-// anywhere: while any letter is left the foot says nothing about it, and when
-// none is, one line stands over the act saying when the next letter can go
-// up, and the act goes dark (parts.jsx `Allowance`). Drafting goes on. The
-// count and the date are the server's, from `wall_quota` (migrations 0044
-// and 0051), so the letter somebody is refused on is the one the server
-// refuses.
+// The brief is still the reason the wall fills up. An earlier build asked
+// "what did you never say?", which is a question about the writer: it asks
+// somebody to find a regret, decide it is worth publishing, and phrase it,
+// three jobs, at a table, on a phone. This asks them to think of ONE PERSON,
+// which everybody can do instantly, and then say why.
 //
-// The desk can switch the whole ration off (0052), and while it is off the
-// server answers with an infinite allowance: `spent` is never true, the foot
-// says nothing, and this screen needs no case of its own for it. Nothing else
-// about writing moves — the campus gate, the screen at the keyboard and the
-// classifier are all where they were.
+// The card is live from the first keystroke of step 2. It is the component
+// the wall renders (screen.jsx `Screen`), not a lookalike, in the colour and
+// with the words that go up, and with the line across its top that goes up
+// too: "dear Sofia", which is the writer's to change (`Greet`), up to forty
+// characters, and follows the name until they do.
 //
-// The address does not follow the letter anywhere. It is not read on this
-// screen, it is not passed to `write`, and there is no author field in the
-// corpus for it to land in (data.js) — so being let in and being known are
-// still two different things, and only the first one happens here. What a
-// person is asked for is a domain, once, on the way in; what the wall records
-// is a handle, a body and a time.
+// ── nothing is asked before the letter is written ───────────────────────────
+// This screen used to be behind the campus address: the composer did not
+// open for anybody who had not given one. Now everybody writes first, and the
+// draft is kept whatever happens next (store.js `draft`, with a nonce made
+// once per draft, data.js `newNonce`), so a walk to the inbox, a reload, a
+// second tab or Instagram and back never costs anybody what they wrote, and a
+// draft that posts from two tabs at once is one letter.
+//
+// The address does not follow the letter anywhere. It is not passed to
+// `write`, and there is no author field in the corpus for it to land in
+// (data.js): what the wall records is a key, a body, a school and a time.
 //
 // ── who: an @, or anything else (0053, 0055) ───────────────────────────────
-// The first question has two answers and both stand on the rail over the
-// field (parts.jsx `Segmented`): "instagram", which is open when the composer
-// opens, because on this campus everybody knows everybody's @ and a letter
-// to a handle is a letter one person can find; and "anything else", which
-// is whatever the writer calls the person. A first name, a nickname, one
-// letter, a number, the girl on the 51B. The field is the same field in
-// either case: with the @ painted beside it and the identifier's face, or
-// with the @ gone and the display face, because a name is something a
-// person means and a handle is an identifier. No second field and no
-// hidden one, and the wall never asks for the @ beside a name, here or
-// anywhere: a writer who chose a name over the @ made a choice.
+// The first question has two answers on the rail over the field (parts.jsx
+// `Segmented`): "instagram", open when the composer opens, and "custom
+// name", whatever the writer calls the person. Under a name, one quiet field
+// more: their @, optional, with an (i) that says why somebody might add it
+// (it reaches them) and what it costs (one check at the send). With it the
+// letter goes to the @ with the name as its greeting ("dear sofia"), and
+// follows everything an @-note follows.
 //
-// ── and the whole question is ONE object ───────────────────────────────────
-// It was three of them, stacked: a filled capsule with a ring round both
-// answers and a glyph beside each, a bare baseline field under that, and —
-// the moment a handle was committed — the resolver's answer as a THIRD
-// framed card under THAT, with an arrow at its end. Three boxes down a sheet
-// to ask one question, and an arrow pointing at a way on that is actually
-// the capsule at the foot.
-//
-// Now the bookmark is attached to a BODY (wall.css `.wl-write-body`) and the
-// field lives inside it: one ground, one hairline, one radius, with the tab
-// joined to its top edge, so the tab and the thing it changes are one sheet
-// of paper rather than a control floating over a control. And the answer does
-// not arrive under the field, it REPLACES it inside that body (parts.jsx
-// `Addressed`) — the same measure, the same ground, the same height.
-//
-// The wait is the light and nothing else: the point of light runs the body's
-// own edge and two bars breathe where the answer will land, which is the
-// animation the result card has always waited with. There is no line of words
-// beside it saying that a lookup is happening; the light already says it, and
-// the handle it is looking for is the handle the person just typed.
-//
-// The mark at the end of the answer is the close mark, not an arrow: what
-// somebody wants from that row is out of it, back to the field with the
-// handle still in it, and the way ON is where it is on every other screen
-// here, at the foot, saying which person the press agrees to
-// (`confirmWord`).
-//
-// It used to be one quiet line under the field, "a first name instead",
-// which named one of the two choices, hid the other behind a sentence, and
-// said "first name" about a choice that was never only that. The letter is
-// keyed by a tilde and the folded name (`~sofia`, `~j`, `~51b`), which
-// everybody written to under that spelling shares, and the name as typed is
-// kept to print. The name goes through the same list as the body, here and
-// on the server. Where the @ matters is the ping, and Main asks for it there
-// (screens/Join.jsx).
-//
-// ── the look (0055) ────────────────────────────────────────────────────────
-// The screen's left key, `colour`, opens the colours under it (Look.jsx):
-// one pool of twelve, each drawn as the small screen it makes, and a line
-// naming the one chosen. The screen is the preview, because the screen is
-// the real screen, and what goes up is what was seen. The look rides with
-// the letter and is kept in the draft with the words, so it survives the
-// sheet being closed over it. The name on the screen is the way back to
-// the first question, and so are the dots in the head; the capsule that
-// used to stand beside the act for it, "a different name", is gone, and
-// the act stands alone in the middle of the foot.
+// ── and three of them in any five days ─────────────────────────────────────
+// The allowance is the server's (`wall_quota`, 0044 and 0051) and is drawn as
+// nothing until it is spent; then the wall's option says when the next one
+// can go up, and the private one stays open.
 //
 // ── the screen, at the keyboard ────────────────────────────────────────────
 // Layer 1 of the moderation runs against every keystroke of the letter
-// (moderate.js) — slurs, links, phone numbers, addresses, room numbers. It is
-// the ONE thing that stops a letter going up, and it says so here, naming the
-// thing: the line under the card says what was caught while it is typed, and
-// a press on the button with that line still there shakes the card and sends
-// nothing. Everything else goes up the moment it is sent. The classifier
-// reads the letter AFTER it is on the wall (celestual-wall-moderate), and
-// only a letter it reads as severely malicious comes down, which the wall
-// says in a card at its foot, with the words handed back to change
-// (screens/Wall.jsx `Down`).
+// (moderate.js): slurs, links, phone numbers, addresses, room numbers, and it
+// says so under the card, naming the thing, and a press with that line still
+// there shakes the card and sends nothing. The classifier reads the letter in
+// celestual-wall-moderate, the same list runs there, and the greeting goes
+// through the same list as the body.
 //
-// ── and there is no screen after this one ──────────────────────────────────
-// The press sends, the answer is the id, and the sheet goes: the wall under
-// it receives the name, one pulse out from its disc and the disc rising among
-// the others (screens/Wall.jsx, the arrival; Hive.jsx `pulse`). There used
-// to be a page between the sending and the seeing, where the card was read
-// under the mark, sealed into a disc and dropped onto a little wall of five
-// faces. It was a room the letter had to be walked through to reach the wall
-// it was already on, and the one thing in it worth keeping, the letter being
-// seen to land, is on the wall now, which is where the landing actually is.
+// ── and after ───────────────────────────────────────────────────────────────
+// A letter that is up closes the sheet, and the wall under it receives the
+// name, one pulse out from its disc (screens/Wall.jsx, Hive.jsx `pulse`). A
+// name note waiting on the desk and a note sent privately say so on the
+// screen, once, and the sheet goes back to the wall on the next press.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, Display, Label, Pill, Locked, Allowance,
-  HandleField, Addressed, Light, useResolver, confirmWord,
-  useSuggest, Suggest, Segmented, useProfile,
+  Sheet, SheetHead, Display, Label, Pill, HandleField, Addressed, Light, useResolver, confirmWord,
+  useSuggest, Suggest, Segmented, useProfile, DoorFoot, CodeBox, waitLine,
 } from '../parts.jsx'
 import { LookPanel, useColourSwipe } from '../Look.jsx'
-import { Screen, ScreenDraft, RoomLight } from '../screen.jsx'
+import { Screen, ScreenDraft, ScreenNote, RoomLight, PixIcon, Wait } from '../screen.jsx'
 import { Dots } from '../art.jsx'
 import {
-  normHandle, validHandle, hash, allowance, loadQuota, write,
+  normHandle, validHandle, hash, allowance, loadQuota,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
+  newNonce, postDraft, openCampuses, loadCampuses,
 } from '../data.js'
-import { normaliseLook, freshLook, colourOf } from '../looks.js'
-import { isMember } from '../auth.js'
+import { normaliseLook, freshLook, colourOf, stampOf } from '../looks.js'
 import { fault } from '../moderate.js'
-import { campus, needsCampus } from '../campus.js'
+import { campus } from '../campus.js'
 import { getState, patch, setAfterGate } from '../store.js'
+import { DOMAIN, eduBerkeley, eduDomain, refresh, validEmail, normEmail, heldProof } from '../auth.js'
+import { sendCampusCode, checkCampusCode, loadPending } from '../handoff.js'
+import { sendLink, linkStatus } from '../../api/eduverify.js'
+import { sessionToken } from '../../api/identity.js'
+import { signOut as dropProof } from '../../api/auth.js'
+import { myHandle, canPlace, place, forgetPings } from '../pings.js'
+import { schoolOf, slugOfDomain } from '../schools.js'
+import { Sticker } from '../Sticker.jsx'
+import { useProve, ProveDoor } from './Ping.jsx'
+import { AddressField } from './Gate.jsx'
+import '../post.css'
 
-// There is no floor. It was sixty characters, then thirty, and both were
-// wrong in the same way: the true thing somebody wanted to say ("you gave me
-// your umbrella and walked home in it") was being turned away for being
-// short, and what got typed to clear the bar was padding. A letter is short
-// because it is true. The one thing the wall asks is that something was
-// written, and the screen (moderate.js) and the reader do the rest.
-//
-// The server's ceiling (wall_letters_body_ck, and wall_write's left(…, 280)).
-// This said 320, so the last forty characters of a full letter were cut off
-// the wall without a word to the writer.
+// There is no floor: a letter is short because it is true. The ceiling is
+// the server's (wall_letters_body_ck, and wall_write's left(…, 280)), and the
+// same 280 goes as a ping's line when the note is sent privately.
 const MAX_BODY = 280
 // and the name's (wall_name_clean, 0055): thirty characters, five words
 const MAX_NAME = 30
+// and the greeting's: forty characters (docs/ONE-WALL.md)
+const MAX_GREET = 40
+// how long a mailed link lives (celestual-edu-verify): the composer stops
+// waiting on one after this
+const LINK_MS = 30 * 60000
 
-// The example under the empty card, and it is set on that campus: a place a
-// person there has actually stood (campus.js `examples`). One line per handle
-// rather than a rotation on a clock, so the same name gets the same example
-// twice.
 const EXAMPLES = () => campus().examples
 
 // What the card says when the server's copy of the list caught what this
@@ -179,19 +127,40 @@ const EXAMPLES = () => campus().examples
 // same fact.
 const INAPPROPRIATE = 'that’s inappropriate for the wall.'
 
-// The two answers to the first question, as two words and nothing else. Each
-// of them used to carry a glyph — an `@` beside "instagram", a sparkle beside
-// "anything else" — and neither said anything its word had not. The field
-// under the rail paints the @ where an @ is actually being typed, which is
-// the one place it means something.
 const KINDS = [
   { value: 'handle', label: 'instagram' },
   { value: 'name', label: 'custom name' },
 ]
 
+// Berkeley, the one school posting to an @ (docs/ONE-WALL.md), for its
+// sticker on the option that posts there
+const BERKELEY = schoolOf('berkeley')
+
+// What the send says when the ping path says no (pings.js `place`), in the
+// world and with the one next step.
+const PING_SAY = {
+  self: 'that is your own @.',
+  slots: 'every ping you hold is standing. letting one go frees it.',
+  suppressed: 'that @ has asked to be left alone.',
+  rate: 'that is a lot of pings for one month. give it time.',
+  invalid: 'that handle does not look right.',
+  night: 'it did not go through. try again.',
+}
+
+// What the send says when the wall says no (celestual-wall-moderate, v2).
+const WALL_SAY = {
+  throttle: 'too many from this device today. try again tomorrow.',
+  removed: 'that name has come off the wall. nobody can write to it now.',
+  name: 'that is not something the wall can carry. a name, a nickname, a letter, a number.',
+  handle: 'that handle does not look right.',
+  salutation: 'the greeting can’t go up as it is. change the line at the top of the screen.',
+  rate: 'too many links to that address. try again in an hour.',
+  send: 'the mail did not go out. try again.',
+  network: 'it did not go through. try again.',
+}
+
 // Whether the composer is on a spread, where the colours stand beside the
-// screen and not under it (wall.css, the composer's two columns). The same
-// width as the stylesheet's.
+// screen and not under it (wall.css, the composer's two columns).
 const WIDE = '(min-width: 900px)'
 function useWide() {
   const [wide, setWide] = useState(() => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(WIDE).matches)
@@ -206,125 +175,136 @@ function useWide() {
   return wide
 }
 
+// A link that was mailed, while it can still be tapped.
+function live(held) {
+  return held && held.at && Date.now() - held.at < LINK_MS ? held : null
+}
+
+// The Instagram proof's pending record, when it was minted here: a reload on
+// the way back from the DM resumes the door (screens/Ping.jsx `useProve`).
+function resumeIg() {
+  const p = loadPending()
+  return p && p.use === 'write' ? p : null
+}
+
+// ── asking for the link again ───────────────────────────────────────────────
+// It waits before it offers, as the code's does (parts.jsx `Resend`): a
+// button pressed three times in eight seconds mails three links and walks
+// somebody into the limit on the address.
+function ResendLink({ onSend, wait = 30 }) {
+  const [left, setLeft] = useState(wait)
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+  useEffect(() => {
+    if (left <= 0) return undefined
+    const t = setTimeout(() => setLeft((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [left])
+  if (busy) return <p className="wl-resend">sending</p>
+  if (left > 0) {
+    return (
+      <p className="wl-resend" role="status" aria-live="polite">
+        {sent ? 'a new link is on its way' : 'no email yet?'} <span className="wl-resend-clock">{left}s</span>
+      </p>
+    )
+  }
+  return (
+    <button
+      type="button" className="wl-quiet wl-resend-go"
+      onClick={async () => { setBusy(true); const ok = await onSend(); setBusy(false); if (ok !== false) { setSent(true); setLeft(wait) } }}
+    >
+      send it again
+    </button>
+  )
+}
+
 export default function Write({ to: prefill, go, back, up = back, upLabel = 'back to the wall', reduce = false }) {
-  const draft = getState().draft || {}
+  const d0 = getState().draft || {}
   // A prefill that is a name key (`~sofia`, from "write to Sofia" on a
   // letter) opens the composer on the name, in name mode.
   const named = !!prefill && isNameKey(prefill)
-  const [kind, setKind] = useState(() => (named ? 'name' : prefill ? 'handle' : (draft.kind === 'name' ? 'name' : 'handle')))
-  const [to, setTo] = useState(() => (named ? '' : prefill || draft.to || ''))
-  const [name, setName] = useState(() => (named ? nameFor(prefill) : draft.name || ''))
-  const [body, setBody] = useState(() => draft.body || '')
-  // the paper the letter is on, kept with the draft (0055)
-  // a draft nobody has chosen a colour for yet is lit in one of its own, so
-  // the wall is not a field of the same grey; it is kept with the draft
-  const [look, setLook] = useState(() => normaliseLook(draft.look) || freshLook())
-  // and the first colour a person sees is the one that stays: kept at once,
-  // since the draft is otherwise only written once something changes
-  useEffect(() => {
-    const d = getState().draft
-    if (!normaliseLook(d && d.look)) patch({ draft: { ...(d || {}), look } })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  // whether the look panel is open under the card; on a spread it is always
-  // there, beside it (`wide`)
+  const [kind, setKind] = useState(() => (named ? 'name' : prefill ? 'handle' : (d0.kind === 'name' ? 'name' : 'handle')))
+  const [to, setTo] = useState(() => (named ? '' : prefill || d0.to || ''))
+  const [name, setName] = useState(() => (named ? nameFor(prefill) : d0.name || ''))
+  // the @ the name nudge asks for, under a name
+  const [at, setAt] = useState(() => (prefill ? '' : d0.at || ''))
+  const [body, setBody] = useState(() => d0.body || '')
+  const [look, setLook] = useState(() => normaliseLook(d0.look) || freshLook())
+  // the greeting as the writer set it, or null while it follows the name
+  const [greet, setGreet] = useState(() => (typeof d0.greet === 'string' ? d0.greet : null))
+  // a name note's school: a slug, '' for none, or null before one is chosen
+  const [school, setSchool] = useState(() => (typeof d0.school === 'string' ? d0.school : null))
+  // one per draft, kept with it
+  const [nonce, setNonce] = useState(() => d0.nonce || newNonce())
+  const renonce = useCallback(() => setNonce(newNonce()), [])
+  // the Berkeley link this draft is waiting on
+  const [held, setHeld] = useState(() => live(d0.held))
+  const [igHeld] = useState(() => resumeIg())
+  // who · 1 (the letter) · how · edu · ig · done
+  const [step, setStep] = useState(() => (live(d0.held) ? 'edu' : resumeIg() ? 'ig' : prefill ? 1 : 0))
+  const [done, setDone] = useState('')
   const [styling, setStyling] = useState(false)
   const wide = useWide()
-  // the letter's own field, for the key that takes a character back
   const letterRef = useRef(null)
-  // Somebody who tapped "write to @them" on a letter already answered the
-  // first question.
-  const [step, setStep] = useState(() => (prefill ? 1 : 0))
-  // Whether the resolver's answer is standing WHERE THE FIELD WAS (parts.jsx
-  // `Addressed`). Set by the press that commits a handle, taken back by the X
-  // on that row, and dropped the moment the handle or the kind changes,
-  // because a person shown under a handle they have since edited is the
-  // wrong person.
+  const greetRef = useRef(null)
+  const atRef = useRef(null)
   const [settled, setSettled] = useState(false)
   const field = useRef(null)
-  const first = useRef(true)
-  // the sheet's own way out, taken by this screen once the letter is up
   const sheet = useRef(null)
-  // ── and where the way out lands ──
-  // Closed by the mark, the scrim or the key, the composer goes back to
-  // whatever it was raised over: the wall, or the letter whose pen opened
-  // it (index.jsx `up`). Once the letter is up it goes to the wall, which
-  // receives the name. `by` is how the sheet said it was leaving.
   const by = useRef('')
   const leave = () => (by.current === 'sent' ? back() : up())
 
   const h = normHandle(to)
-  // the name as it will stand on the wall, or '' while it is not one yet
   const nm = cleanName(name)
+  const nudge = normHandle(at)
+  // whether this letter goes to an @: the instagram kind, or a name with its @
+  const toAt = kind === 'handle' || (kind === 'name' && validHandle(nudge))
+  const target = kind === 'handle' ? h : nudge
   // what the letter is filed under: the handle, or the tilde key of the name
-  const key = kind === 'name' ? nameKey(nm) : h
-  // The first thing layer 1 objects to, said in words. One at a time: a list of
-  // five complaints under a text box is a wall, and the writer only has to fix
-  // one of them to find out whether the next one is real.
-  //
-  // This is the courtesy to the writer, not the control on the writer. The same
-  // list runs again in celestual-wall-moderate, where it cannot be edited out
-  // with a devtools console.
+  const key = kind === 'name' && !toAt ? nameKey(nm) : target
   const caught = body.trim() ? fault(body) : ''
-  // The button is live from the first word, caught or not. A press with the
-  // line still under the card is answered by the card (it shakes, below)
-  // rather than by a button that will not press, which is a refusal with no
-  // moment in it.
   const ok = [kind === 'name' ? !!nm : validHandle(h), body.trim().length > 0]
   const [asking, setAsking] = useState(false)
-  // Whether the BODY holds the resolver rather than the field: while the
-  // lookup is out, and once it has answered. One element across the two, so
-  // the light going out and the answer arriving are one transition.
   const resolving = kind === 'handle' && (asking || settled)
 
-  // ── the sending ──
-  // `sending` while the request is out, which since the reading moved to
-  // after the write is the write itself and nothing else. `said` is what the
-  // server answered when it answered no, on the line under the card where the
-  // screen's own word stands; a keystroke ends it, because it was about the
-  // letter as it was. `shaking` is the card refusing a press.
   const [sending, setSending] = useState(false)
   const [said, setSaid] = useState('')
   const [shaking, setShaking] = useState(false)
-  // Set on the way in as well as cleared on the way out, and a ref rather
-  // than a closure variable: StrictMode mounts, unmounts and remounts every
-  // component in development, and a flag captured in an effect's closure is
-  // set false by the first cleanup and never true again.
   const alive = useRef(true)
   useEffect(() => {
     alive.current = true
     return () => { alive.current = false }
   }, [])
 
-  // The allowance. Asked once on mount and drawn out of the cache during
-  // render like everything else on this surface; `null` until it lands, and
-  // nothing is said about it until it is spent.
-  useEffect(() => { loadQuota() }, [])
+  useEffect(() => { loadQuota(); loadCampuses() }, [])
   const left = allowance()
   const spent = !!left && left.left <= 0
 
-  // One draft under one key, so backing out of the sheet and coming back does
-  // not cost somebody the forty words they just wrote. The look rides with
-  // the words.
+  // ── the draft, kept ──
+  // Every change is written through, the nonce and the link it waits on with
+  // it, so a reload or a second tab picks up exactly this (data.js `postDraft`).
+  // What the server or the screen said was about the words as they were, so
+  // a keystroke in the letter or its greeting takes it off.
+  const words = useRef(`${body}\u0000${greet}`)
   useEffect(() => {
-    if (first.current) { first.current = false; return }
-    patch({ draft: { to: h, body, kind, name, look } })
-    setSaid('')
-  }, [h, body, kind, name, look])
+    patch({ draft: { to: h, body, kind, name, at, look, greet, school, nonce, held } })
+    const now = `${body}\u0000${greet}`
+    if (now !== words.current) { words.current = now; setSaid('') }
+  }, [h, body, kind, name, at, look, greet, school, nonce, held])
 
-  // The resolver under the handle field: peeks while typing, asks on the
-  // press. Never for a name: looking a person up by first name is an
-  // inference.
   const them = useResolver(kind === 'name' ? '' : to)
-  // the name across the top of the screen, after "dear": the first name the
-  // resolver has for a handle, with the handle beside it; the handle alone
-  // when it has none; and a first name as written
   const prof = useProfile(kind === 'name' ? '' : h)
   const profFirst = prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : ''
+  // the name the greeting is made of, and the @ beside it on the screen
   const toFirst = kind === 'name' ? nm : (profFirst || atHandle(h))
-  const toHandle = kind === 'name' || !profFirst ? '' : atHandle(h)
-  // And under that, the names already on the wall that match what is typed,
-  // until the card has the person: a list under a settled card would list
-  // them twice. Pressing a row takes that name, in whichever kind it is.
+  const toHandle = kind === 'name' ? (toAt ? atHandle(nudge) : '') : (profFirst ? atHandle(h) : '')
+  const defaultGreet = toFirst ? `dear ${toFirst}` : 'dear'
+  const greeting = greet === null ? defaultGreet : greet
+  // the hint over the greeting, the first time: shown until it is tapped once
+  const [hint, setHint] = useState(() => !getState().greetSeen)
+  const seenHint = useCallback(() => { setHint(false); patch({ greetSeen: true }) }, [])
+  const onGreet = useCallback((v) => setGreet(v === defaultGreet ? null : v), [defaultGreet])
+
   const sug = useSuggest(kind === 'name' ? name : to, {
     skip: step !== 0 || asking || settled || (kind === 'handle' && them.at.state === 'found' && them.at.handle === h),
     exclude: key,
@@ -334,16 +314,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
     },
   })
   const pickKind = useCallback((k) => { setKind(k); setSaid(''); setSettled(false) }, [])
-
-  // The handle, edited. Whoever was standing in the field's place was standing
-  // there for the old spelling.
   const retype = useCallback((v) => { setTo(v); setSettled(false) }, [])
-
-  // The X on that row: the field comes back with the handle still in it, and
-  // the cursor in it, because the one thing a person pressing it wants is to
-  // type. Spatially it is the same object returning to the same place, which
-  // is the whole reason the answer replaced the field rather than stacking
-  // under it.
   const retry = useCallback(() => {
     setSettled(false)
     requestAnimationFrame(() => {
@@ -354,87 +325,265 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
       try { el.setSelectionRange(n, n) } catch { /* not a text input */ }
     })
   }, [])
+  const [info, setInfo] = useState(false)
 
-  // The card refusing the press: it shakes, once, and the line under it is
-  // the reason. Under reduced motion the line is the whole answer.
   const shake = useCallback(() => {
     if (reduce) return
     setShaking(true)
     try { if (navigator.vibrate) navigator.vibrate(24) } catch { /* not a phone */ }
   }, [reduce])
 
-  // ── the press that sends ──
-  // The letter goes to celestual-wall-moderate, which runs the list again,
-  // writes it live and answers with the id; the classifier reads it after
-  // this request has returned. So the answer is quick, and it is one of: up;
-  // caught by the list, when the server's copy of it saw something this one
-  // did not, which is the shake again; or not written, with a reason. The
-  // store is written whether or not this sheet is still up, since a letter
-  // that went up while somebody closed the sheet over it is still up.
-  async function send() {
-    if (sending) return
-    setSending(true)
-    setSaid('')
-    // The flyer code this session arrived with rides along, so the desk can
-    // say which piece of paper a letter came off. And the kind: a handle, or
-    // a name with its spelling, and never both. And the look.
-    if (kind === 'name') learnName(key, nm)
-    const out = await write({ to: h, body: body.trim(), source: getState().source || null, kind, name: nm, look })
-    if (alive.current) setSending(false)
-    if (!out?.ok) {
-      if (!alive.current) return
-      const e = out?.error || 'network'
-      if (e === 'gate' || e === 'no_session') { setAfterGate({ name: 'write', id: key }); go('gate'); return }
-      // a cap is said by the foot (Allowance), which the write refreshed
-      setSaid(e === 'removed' ? 'that name has come off the wall. nobody can write to it now.'
-        : e === 'cap' ? ''
-        : e === 'name' ? 'that is not something the wall can carry. a name, a nickname, a letter, a number.'
-        : 'it did not go through. try again.')
+  // the draft as it stands, for the post
+  const draftNow = () => ({ to: h, body, kind, name, at, look, greet, school: schoolPicked(), nonce, held })
+
+  // ── a name note's school ──
+  // The open campuses (api.js `campuses`), and none. It starts on the
+  // school this device is verified at, when it is one of them.
+  const list = openCampuses() || []
+  const mySchool = eduDomain() ? slugOfDomain(eduDomain()) : ''
+  const schoolPicked = () => (school !== null ? school : list.some((c) => c.slug === mySchool) ? mySchool : '')
+
+  // ── what the wall answered ──
+  const landedWall = (out, p) => {
+    if (out.ok && out.status === 'live') {
+      if (sheet.current) sheet.current.dismiss('sent')
+      else back()
       return
     }
-    if (out.status === 'rejected') {
-      // remembered as answered here, so the wall raises no notice about a
-      // letter that never went up
+    if (out.ok && out.status === 'pending') { setDone('pending'); setStep('done'); return }
+    if (out.ok && out.status === 'rejected') {
       if (out.id) patch({ noticed: { ...(getState().noticed || {}), [out.id]: true } })
-      if (!alive.current) return
+      renonce()
+      setStep(1)
       setSaid(INAPPROPRIATE)
       shake()
       return
     }
-    const was = getState()
-    // the key the server filed it under, which for a name is the tilde key
-    const filed = out.handle || key
-    patch({
-      draft: null,
-      written: [out.id, ...was.written].slice(0, 12),
-      // and the key, so the account sheet can still list it after a reload
-      // has taken the letter itself out of memory; and for a name, its
-      // spelling, since a key alone cannot be printed as a name
-      wroteTo: [filed, ...(was.wroteTo || []).filter((x) => x !== filed)].slice(0, 12),
-      names: kind === 'name' ? { ...(was.names || {}), [filed]: out.name || nm } : (was.names || {}),
-      // and the wall sends one pulse out from this name once the glass has
-      // gone (screens/Wall.jsx)
-      justPosted: filed,
-    })
+    const e = out.error || 'network'
+    if (e !== 'network' && e !== 'offline') renonce()
+    if (e === 'edu') { setHeld(null); setWrongSchool(false); setStep('edu'); return }
+    if (e === 'campus') { setHeld(null); setWrongSchool(true); setStep('edu'); return }
+    if (e === 'gate' || e === 'no_session') {
+      // a function from before the one wall: an @ still needs the campus
+      // address there, and a name needs a sign in
+      if (p && p.kind === 'handle') { setHeld(null); setStep('edu'); return }
+      setAfterGate({ name: 'write', id: key })
+      go('gate')
+      return
+    }
+    if (e === 'salutation') {
+      setStep(1)
+      setSaid(WALL_SAY.salutation)
+      requestAnimationFrame(() => greetRef.current && greetRef.current.focus())
+      return
+    }
+    if (e === 'name' || e === 'handle') { setStep(0); setSaid(WALL_SAY[e]); return }
+    if (e === 'cap') { setStep('how'); setSaid(''); return }
+    setSaid(WALL_SAY[e] || WALL_SAY.network)
+  }
+
+  // ── posting on the wall ──
+  async function postWall(over = null) {
+    if (sending) return
+    setSending(true)
+    setSaid('')
+    const d = { ...draftNow(), ...(over || {}) }
+    const out = await postDraft(d)
     if (!alive.current) return
-    if (sheet.current) sheet.current.dismiss('sent')
-    else back()
+    setSending(false)
+    landedWall(out || { ok: false, error: 'network' }, { kind: over && over.kind === 'name' ? 'name' : toAt ? 'handle' : 'name' })
+  }
+
+  // ── the Berkeley address, and the link ──
+  const [email, setEmail] = useState(() => (live(d0.held) ? d0.held.email.replace(/@berkeley\.edu$/, '') : ''))
+  const [busy, setBusy] = useState(false)
+  const [wrongSchool, setWrongSchool] = useState(false)
+  const [code, setCode] = useState('')
+  const whole = email.includes('@')
+  const address = whole ? normEmail(email) : normEmail(`${email}@${DOMAIN}`)
+  const emailOk = validEmail(address, DOMAIN)
+
+  const sendIt = async () => {
+    if (!emailOk || busy) return false
+    setBusy(true)
+    setSaid('')
+    const out = await sendLink({ email: address, session: sessionToken(), purpose: 'edu', campus: 'berkeley' })
+    if (!alive.current) return false
+    if (!out.ok && out.error === 'unsupported') {
+      // a function that does not mail the link yet: the code it always mailed
+      const got = await sendCampusCode(address)
+      if (!alive.current) return false
+      setBusy(false)
+      if (!got.ok) { setSaid(got.error === 'rate' ? WALL_SAY.rate : got.error === 'domain' || got.error === 'email' ? 'that is not a berkeley.edu address.' : WALL_SAY.send); return false }
+      setCode('')
+      setHeld({ email: address, request: '', match: null, legacy: got.token, at: Date.now() })
+      return true
+    }
+    setBusy(false)
+    if (!out.ok) {
+      setSaid(
+        out.error === 'domain' || out.error === 'email' ? 'that is not a berkeley.edu address.'
+          : out.error === 'rate' ? WALL_SAY.rate
+          : out.error === 'taken' ? 'that address is already confirmed on another account.'
+          : WALL_SAY.send,
+      )
+      return false
+    }
+    setHeld({ email: address, request: out.request, match: out.match, at: Date.now() })
+    return true
+  }
+
+  // the link was tapped, here or on any device: this session is verified,
+  // and the letter goes up
+  const post = useRef(postWall)
+  post.current = postWall
+  const confirmed = useCallback(async () => {
+    await refresh()
+    if (!alive.current) return
+    setHeld(null)
+    post.current()
+  }, [])
+
+  // ── waiting on the link ──
+  // Asked every two and a half seconds, and at once when the tab comes back
+  // to the screen, which is when somebody who tapped the link in their mail
+  // app has come back to it.
+  const request = step === 'edu' && held && held.request ? held.request : ''
+  useEffect(() => {
+    if (!request) return undefined
+    let stop = false
+    let polling = false
+    let timer = 0
+    const tick = async () => {
+      if (stop || polling) return
+      polling = true
+      const out = await linkStatus({ request, session: sessionToken() })
+      polling = false
+      if (stop || !alive.current) return
+      if (out.ok && out.verified) { stop = true; clearTimeout(timer); confirmed(); return }
+      timer = setTimeout(tick, 2500)
+    }
+    timer = setTimeout(tick, 2500)
+    const onBack = () => { if (document.visibilityState === 'visible') tick() }
+    document.addEventListener('visibilitychange', onBack)
+    window.addEventListener('focus', onBack)
+    return () => {
+      stop = true
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onBack)
+      window.removeEventListener('focus', onBack)
+    }
+  }, [request, confirmed])
+
+  // the code, for a function that mailed one
+  const checkCode = async () => {
+    if (!held || !held.legacy || busy || code.length < 4) return
+    setBusy(true)
+    setSaid('')
+    const out = await checkCampusCode(held.legacy, code)
+    if (!alive.current) return
+    setBusy(false)
+    if (!out.ok) { setSaid(out.error === 'expired' ? 'that code has lapsed. ask for another.' : 'that code is not right.'); return }
+    confirmed()
+  }
+
+  // ── not at Berkeley: the same letter, to their name ──
+  // The note goes up the name way: to the name the writer gave, or the
+  // first name the resolver has for the @, or, with neither, the name field
+  // asks for one. The @ comes off it, since an @ is what asked for Berkeley.
+  const toName = () => {
+    const n = kind === 'name' ? nm : cleanName(profFirst)
+    setHeld(null)
+    setWrongSchool(false)
+    setSaid('')
+    setAt('')
+    setKind('name')
+    if (n) { setName(n); setStep('how'); return }
+    setStep(0)
+    setSaid('a name for them, and it posts to that.')
+  }
+
+  // ── sending it privately ──
+  const [adopted, setAdopted] = useState(null)
+  const proof = useProve({
+    use: 'write', held: igHeld,
+    stash: { to: target },
+    onLanded: async (got, asked, spent) => {
+      await refresh()
+      if (!alive.current) return
+      if (got && got !== asked) { setAdopted({ handle: got, proof: spent }); return }
+      sendPrivately(got || asked, spent)
+    },
+  })
+
+  async function sendPrivately(from = '', spent = null) {
+    const me = normHandle(from || myHandle())
+    if (sending) return
+    if (me && me === target) { setSaid(PING_SAY.self); setStep('how'); return }
+    setSending(true)
+    setSaid('')
+    const out = await place({ me, them: target, proof: spent || heldProof(me), words: body.trim() })
+    if (!alive.current) return
+    setSending(false)
+    if (!out.ok) {
+      if (out.error === 'unverified') {
+        dropProof()
+        setAdopted(null)
+        setStep('ig')
+        proof.setSaid('that proof has lapsed. one more DM proves it again')
+        return
+      }
+      setStep('how')
+      setSaid(PING_SAY[
+        out.error === 'no_slots' || out.error === 'cap' ? 'slots'
+          : out.error === 'self' ? 'self'
+          : out.error === 'suppressed' ? 'suppressed'
+          : out.error === 'rate_limited' ? 'rate'
+          : out.error === 'invalid' ? 'invalid'
+          : 'night'])
+      return
+    }
+    forgetPings()
+    setAdopted(null)
+    patch({ draft: null })
+    setDone('private')
+    setStep('done')
+  }
+
+  // ── the two choices ──
+  const chooseWall = () => {
+    if (sending || spent) return
+    setSaid('')
+    if (!toAt) { postWall(); return }
+    if (eduBerkeley()) { postWall(); return }
+    setWrongSchool(false)
+    setStep('edu')
+  }
+  const choosePrivate = () => {
+    if (sending) return
+    setSaid('')
+    if (!toAt) {
+      // a ping needs an @: the field that takes one
+      setStep(0)
+      setKind('name')
+      requestAnimationFrame(() => atRef.current && atRef.current.focus())
+      return
+    }
+    if (canPlace()) { sendPrivately(); return }
+    setStep('ig')
   }
 
   async function next() {
-    if (!ok[step] || asking || spent || sending) return
     if (step === 0) {
-      // a name has nothing to look up: nothing stands in the field's place and
-      // the letter is the next thing. Its spelling is remembered first.
-      if (kind === 'name') { learnName(key, nm); setStep(1); return }
+      if (!ok[0] || asking) return
+      if (kind === 'name') {
+        if (at.trim() && !validHandle(nudge)) { setSaid('that @ does not look right.'); return }
+        learnName(nameKey(nm), nm)
+        setSaid('')
+        setStep(1)
+        return
+      }
       if (!settled) {
-        // The first press commits the handle. An answer takes the field's
-        // place and waits for the second press, which is the press that
-        // agrees to a PERSON and says so on the capsule (`confirmWord`). An
-        // answer we could not get — offline, capped, the provider down —
-        // replaces nothing and the same press goes on, because telling
-        // somebody we could not check is not worth a step and is never worth
-        // reading as "no such person".
         setAsking(true)
         const r = await them.ask()
         setAsking(false)
@@ -443,20 +592,18 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
       setStep(1)
       return
     }
-    if (caught) { shake(); return }
-    send()
+    if (step === 1) {
+      if (!ok[1] || sending) return
+      if (caught) { shake(); return }
+      setSaid('')
+      setStyling(false)
+      setStep('how')
+    }
   }
 
-  // back to the first question: from the dots, or from the name on the card
   const toWho = useCallback(() => { setStyling(false); setStep(0) }, [])
 
   // ── the key that takes a character back ──
-  // At the caret, the way a field does, and without taking the focus off the
-  // field (the key keeps it, screen.jsx `keepFocus`), so a phone's keyboard
-  // stays up and a desk's next keystroke lands in the letter. A draft that is
-  // not being edited, a phone that never tapped in or a key pressed from the
-  // keyboard, loses its last character, which is what the phone's key did.
-  // A pair of surrogates is one character.
   const clearOne = () => {
     const el = letterRef.current
     if (!el || document.activeElement !== el) {
@@ -471,13 +618,9 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
       if (a && /[\uDC00-\uDFFF]/.test(el.value[a])) a -= 1
     }
     el.setRangeText('', a, b, 'end')
-    // through the field's own change: the body, the counter and the draft
     el.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
-  // Escape takes the colours down before it takes the sheet (parts.jsx
-  // Sheet `onEscape`), and a focus that was in them goes back to their key.
-  // On a spread they stay, and only the focus leaves them.
   const onEscape = () => {
     const inPanel = document.activeElement && document.activeElement.closest('.wl-look')
     if (wide ? !inPanel : !styling) return false
@@ -485,8 +628,6 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
     if (inPanel) document.querySelector('.wl-write-card .wl-sk.is-l')?.focus()
     return true
   }
-  // the colours' key: on a spread the colours are already beside the
-  // screen, so it takes the focus to the chosen one
   const colourKey = wide
     ? {
       label: 'colour', aria: 'choose the colour it is lit in',
@@ -496,29 +637,352 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
       label: styling ? 'done' : 'colour', onClick: () => setStyling((v) => !v), on: styling, pressed: styling,
       aria: styling ? 'done with the colour' : 'choose the colour it is lit in',
     }
-  // the draft's own phone, until the draft carries the letter's seed
   const seed = `draft:${key || 'wall'}`
-  // a finger swiped across the screen walks the colours (Look.jsx)
   const colourSwipe = useColourSwipe(look, seed, setLook)
 
-  // ── the door ──
-  // Instead of the composer, not in front of a disabled one. A greyed-out form
-  // with an explanation beside it makes somebody read a sentence to find out
-  // they cannot use the thing they are looking at.
-  if (!isMember()) {
-    return (
-      <Sheet onClose={up} labelledBy="wl-write-h" className="is-write">
-        <div className="wl-sheet-in wl-write">
-          <SheetHead onClose={up} label={upLabel} />
-          <Locked
-            id="wl-write-h"
-            title={needsCampus() ? `${campus().place} only.` : 'sign in to write.'}
-            onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}
-          >
-            your information will stay anonymous.
-          </Locked>
+  const home = () => { if (sheet.current) sheet.current.dismiss('sent'); else back() }
+
+  // ── the steps ──
+  const dot = step === 0 ? 0 : step === 1 ? 1 : 2
+  const goDot = (i) => {
+    if (sending) return
+    if (step === 'ig') proof.drop()
+    setSaid('')
+    if (i === 0) toWho()
+    if (i === 1) setStep(1)
+  }
+
+  let body_ = null
+  let foot = null
+
+  if (step === 0) {
+    body_ = (
+      <>
+        <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">
+          {campus().someone[0]}<br />{campus().someone[1]}
+        </Display>
+        <div className="wl-write-step wl-write-who" style={{ '--i': kind === 'name' ? 1 : 0 }}>
+          <Segmented
+            className="wl-write-tabs" value={kind} onChange={pickKind} options={KINDS}
+            label="who the letter is for, by their instagram or by anything else"
+          />
+          <div className={`wl-write-body${resolving ? ' is-answering' : ''}`}>
+            {resolving ? <Light on={asking} plate="none" /> : null}
+            {resolving ? (
+              <Addressed at={them.at} looking={asking} onClear={retry} label="not them. type it again" />
+            ) : (
+              <HandleField
+                kind={kind}
+                value={kind === 'name' ? name : to}
+                onChange={kind === 'name' ? (v) => setName(v.slice(0, MAX_NAME)) : retype}
+                onSubmit={next}
+                autoFocus size="lg" inputRef={field}
+                placeholder={kind === 'name' ? 'whatever you call them' : 'theirhandle'}
+                label={kind === 'name' ? 'a name, a nickname, anything' : 'Instagram handle'}
+                onKeyDown={sug.keyDown}
+              />
+            )}
+          </div>
+          <Suggest sug={sug} />
+          {/* ── the name nudge ──
+              Under a name, their @, if the writer knows it. Optional, and it
+              says why with the (i): it reaches them, and it asks for one
+              check at the send. */}
+          {kind === 'name' ? (
+            <div className="wl-nudge">
+              <div className="wl-nudge-head">
+                <Label as="span" tone="dim" className="wl-nudge-lab">their instagram @ (optional)</Label>
+                <button
+                  type="button" className={`wl-nudge-i${info ? ' is-on' : ''}`} onClick={() => setInfo((v) => !v)}
+                  aria-expanded={info} aria-controls="wl-nudge-pop" aria-label="why add their @"
+                >
+                  i
+                </button>
+              </div>
+              {info ? (
+                <p id="wl-nudge-pop" className="wl-nudge-pop" role="note">
+                  add their @ so it reaches them. without it, there&rsquo;s a lower chance they end up
+                  reading it. with it, sending asks for one quick check: your Berkeley email, or your
+                  Instagram.
+                </p>
+              ) : null}
+              <HandleField
+                value={at} onChange={(v) => { setAt(v); setSaid('') }} onSubmit={next}
+                inputRef={atRef} placeholder="theirhandle" label="their instagram handle, optional"
+              />
+            </div>
+          ) : null}
+          <div className="wl-write-floor" aria-live="polite">
+            {said ? <Label className="wl-write-caught">{said}</Label> : null}
+          </div>
         </div>
-      </Sheet>
+      </>
+    )
+    foot = (
+      <Pill tone="light" onClick={next} disabled={!ok[0]} aria-busy={asking || undefined}>
+        {asking ? 'looking' : settled && kind === 'handle' ? confirmWord(them.at, 'next') : 'next'}
+      </Pill>
+    )
+  } else if (step === 1 || step === 'done') {
+    const fin = step === 'done'
+    const floor = caught || said
+    body_ = (
+      <>
+        <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">
+          {!fin ? <>and what<br />makes them so.</>
+            : done === 'private' ? <>sent.</>
+            : <>it&rsquo;s being<br />checked.</>}
+        </Display>
+        <div className="wl-write-step">
+          <div
+            {...(fin ? {} : colourSwipe)}
+            className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
+            onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
+          >
+            <span className="wl-write-light" aria-hidden="true">
+              <RoomLight key={colourOf(look, seed).slug} look={look} seed={seed} />
+            </span>
+            {/* The same screen the wall shows, with the line across its top
+                that goes up with it: "dear" and the name, the writer's to
+                change, in the line's own face (screen.jsx `Greet`). */}
+            <Screen
+              look={look} seed={seed} live
+              top={fin ? {
+                salutation: greeting, handle: toHandle, icon: 'pen', stamp: stampOf(Date.now()),
+              } : {
+                greet: {
+                  value: greeting, onChange: onGreet, max: MAX_GREET, placeholder: defaultGreet,
+                  label: 'the greeting. tap to change it', inputRef: greetRef, onFocus: seenHint,
+                },
+                handle: toHandle, icon: 'pen',
+                counter: `${MAX_BODY - body.length}/1`,
+              }}
+              keys={fin ? {} : {
+                l: colourKey,
+                r: body
+                  ? { label: 'clear', onClick: clearOne, keepFocus: true, aria: 'take a character back' }
+                  : { label: 'back', onClick: toWho, aria: `for ${labelFor(key)}. change who it is for` },
+              }}
+            >
+              {fin ? (
+                done === 'private' ? (
+                  <ScreenNote glyph="check" title="sent">they&rsquo;re never told unless they send you one too.</ScreenNote>
+                ) : (
+                  <ScreenNote glyph="wait" title="checking">it goes up once it&rsquo;s reviewed.</ScreenNote>
+                )
+              ) : (
+                <ScreenDraft
+                  value={body} onChange={setBody} max={MAX_BODY} autoFocus inputRef={letterRef}
+                  placeholder={EXAMPLES()[hash(key || 'wheeler') % EXAMPLES().length]}
+                />
+              )}
+            </Screen>
+            <div className="wl-write-floor" aria-live="polite">
+              {floor ? <Label className="wl-write-caught">{floor}</Label>
+                : !fin && hint ? <Label tone="dim" className="wl-write-hint">tap the greeting to change it</Label>
+                : null}
+            </div>
+          </div>
+          {!fin && (styling || wide) ? <LookPanel look={look} onChange={setLook} seed={seed} reveal={styling && !wide} /> : null}
+        </div>
+      </>
+    )
+    foot = fin ? (
+      <Pill tone="light" onClick={home}>back to the wall</Pill>
+    ) : (
+      <Pill tone="light" onClick={next} disabled={!ok[1]}>send anonymously</Pill>
+    )
+  } else if (step === 'how') {
+    // ── ONE DECISION ──
+    // Two options, each a title, why, and what it asks. The wall's asks for
+    // a Berkeley address to an @ (none for a name), and the private one for
+    // the writer's own Instagram; each says so on its face, and what it
+    // asks is skipped where this device has already answered it.
+    const wallAsks = spent ? { tone: 'is-warn', glyph: 'wait', text: waitLine(left && left.resets) }
+      : !toAt ? null
+      : eduBerkeley() ? { tone: 'is-done', glyph: 'check', text: 'you’re confirmed at Berkeley' }
+      : { tone: '', glyph: 'key', text: 'asks you to confirm you’re at Berkeley' }
+    const mine = myHandle()
+    const privAsks = !toAt ? { tone: 'is-off', glyph: 'arrow', text: 'add their @ to send privately' }
+      : canPlace() && mine ? { tone: 'is-done', glyph: 'check', text: `sent as ${atHandle(mine)}` }
+      : { tone: '', glyph: 'key', text: 'asks you to confirm this is your Instagram' }
+    const picked = schoolPicked()
+    body_ = (
+      <>
+        <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">how public<br />is it?</Display>
+        <div className="wl-write-step wl-how">
+          <Label as="p" tone="dim" className="wl-how-for">
+            your letter to <span className="wl-h">{toAt ? atHandle(target) : nm}</span>
+          </Label>
+          <div className="wl-how-list" role="group" aria-labelledby="wl-write-h">
+            <div className={`wl-how-opt is-wall${spent ? ' is-off' : ''}`}>
+              <button
+                type="button" className="wl-how-go" onClick={chooseWall} disabled={spent}
+                aria-busy={(sending && step === 'how') || undefined}
+              >
+                <span className="wl-how-mark" aria-hidden="true">
+                  {toAt ? <Sticker school={BERKELEY} tilt={-7} label="" /> : <PixIcon name="env" scale={3} />}
+                </span>
+                <span className="wl-how-text">
+                  <span className="wl-how-title">{toAt ? <>post on the Berkeley wall</> : <>post on the wall</>}</span>
+                  <span className="wl-how-why">
+                    {toAt ? 'public. anyone can read it, and nobody sees who wrote it.' : 'public. it’s checked before it goes up.'}
+                  </span>
+                  {wallAsks ? (
+                    <span className={`wl-how-asks ${wallAsks.tone}`}>
+                      <PixIcon name={wallAsks.glyph} scale={2} />{sending ? 'posting' : wallAsks.text}
+                    </span>
+                  ) : sending ? <span className="wl-how-asks"><Wait />posting</span> : null}
+                </span>
+                <span className="wl-how-arrow" aria-hidden="true"><PixIcon name="arrow" scale={2} /></span>
+              </button>
+              {!toAt ? (
+                <div className="wl-how-pick" role="radiogroup" aria-label="tag a school">
+                  <span className="wl-how-pick-lab" aria-hidden="true">tag a school</span>
+                  {[{ slug: '', name: 'no school' }, ...list].map((c) => (
+                    <button
+                      type="button" key={c.slug || 'none'} role="radio" aria-checked={picked === c.slug}
+                      className={`wl-how-chip${picked === c.slug ? ' is-on' : ''}`}
+                      onClick={() => setSchool(c.slug)}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className={`wl-how-opt is-private${toAt ? '' : ' is-off'}`}>
+              <button type="button" className="wl-how-go" onClick={choosePrivate} aria-describedby="wl-how-priv">
+                <span className="wl-how-mark" aria-hidden="true"><PixIcon name="lock" scale={3} /></span>
+                <span className="wl-how-text">
+                  <span className="wl-how-title">send privately</span>
+                  <span className="wl-how-why">only they&rsquo;ll ever know, and only if it&rsquo;s mutual.</span>
+                  <span className={`wl-how-asks ${privAsks.tone}`} id="wl-how-priv">
+                    <PixIcon name={privAsks.glyph} scale={2} />{privAsks.text}
+                  </span>
+                </span>
+                <span className="wl-how-arrow" aria-hidden="true"><PixIcon name="arrow" scale={2} /></span>
+              </button>
+            </div>
+          </div>
+          <div className="wl-write-floor" aria-live="polite">
+            {said ? <Label className="wl-write-caught">{said}</Label> : null}
+          </div>
+        </div>
+      </>
+    )
+    foot = (
+      <button type="button" className="wl-quiet" onClick={() => { setSaid(''); setStep(1) }}>back to the letter</button>
+    )
+  } else if (step === 'edu') {
+    // ── confirm you're at Berkeley ──
+    // The address, then the wait for the link, with the two digits the mail
+    // prints so a person can tell their own mail from anybody else's. The way
+    // out of it is said plainly: not at Berkeley, the same letter goes to
+    // their name instead.
+    const waiting = !!held
+    body_ = (
+      <div className="wl-write-step wl-edu">
+        <div className="wl-door">
+          <div className="wl-door-head wl-edu-head">
+            <Sticker school={BERKELEY} tilt={-6} className="wl-edu-sticker" label="" />
+            <Display size="s" as="h2" id="wl-write-h" className="wl-door-title">
+              {wrongSchool ? <>you&rsquo;re confirmed<br />at another school.</>
+                : waiting ? <>check your inbox.</>
+                : <>confirm you&rsquo;re<br />at Berkeley.</>}
+            </Display>
+            <p className="wl-door-say">
+              {wrongSchool ? 'only a Berkeley address posts to an @ on this wall. it can go up to their name instead.'
+                : waiting ? (held.legacy
+                  ? <>we mailed a code to <span className="wl-h">{held.email}</span>. type it here and your letter goes up.</>
+                  : <>at <span className="wl-h">{held.email}</span>. tap the link and your letter goes up.</>)
+                : 'the Berkeley wall is for Berkeley students. we email you one link, and your address never goes on the letter.'}
+            </p>
+          </div>
+          <div className="wl-door-ways">
+            {wrongSchool ? (
+              <Pill tone="light" wide onClick={toName}>post it to their name</Pill>
+            ) : waiting && held.legacy ? (
+              <>
+                <CodeBox value={code} onChange={setCode} onSubmit={checkCode} autoFocus />
+                <Pill tone="light" wide disabled={code.length < 4 || busy} onClick={checkCode}>{busy ? 'checking' : 'confirm'}</Pill>
+              </>
+            ) : waiting ? (
+              <>
+                {held.match != null ? (
+                  <div className="wl-edu-match" role="group" aria-label={`your email says ${held.match}`}>
+                    <span className="wl-edu-match-lab" aria-hidden="true">your email says</span>
+                    <span className="wl-edu-match-n" aria-hidden="true">{held.match}</span>
+                  </div>
+                ) : null}
+                <p className="wl-edu-wait" role="status">
+                  {sending ? <><Wait />posting your letter</> : <><Wait />waiting for the link</>}
+                </p>
+                <ResendLink onSend={sendIt} />
+              </>
+            ) : (
+              <>
+                <AddressField
+                  value={email} onChange={(v) => { setEmail(v); setSaid('') }} onSubmit={sendIt}
+                  domain={DOMAIN} autoFocus label="your berkeley email"
+                />
+                <Pill tone="light" wide disabled={!emailOk || busy} onClick={sendIt} aria-busy={busy || undefined}>
+                  {busy ? 'sending' : 'send me the link'}
+                </Pill>
+              </>
+            )}
+          </div>
+          <div className="wl-gate-fault" aria-live="polite">{said}</div>
+          {wrongSchool ? null : (
+            <button type="button" className="wl-quiet wl-edu-out" onClick={toName}>
+              not at Berkeley? post it to their name instead.
+            </button>
+          )}
+        </div>
+      </div>
+    )
+    foot = waiting && !wrongSchool ? (
+      <button type="button" className="wl-quiet" onClick={() => { setHeld(null); setCode(''); setSaid('') }}>use a different address</button>
+    ) : (
+      <button type="button" className="wl-quiet" onClick={() => { setSaid(''); setWrongSchool(false); setStep('how') }}>back</button>
+    )
+  } else if (step === 'ig') {
+    // ── confirm this is your Instagram ──
+    // The ping's own door (screens/Ping.jsx `ProveDoor`): the @, one DM,
+    // and the note goes to them the moment the DM lands. A DM from another
+    // account than the one typed asks before it sends as that one.
+    body_ = (
+      <div className="wl-write-step wl-ping-prove">
+        {adopted ? (
+          <div className="wl-door">
+            <div className="wl-door-head">
+              <Display size="s" as="h2" id="wl-write-h" className="wl-door-title">
+                the DM came from<br />{atHandle(adopted.handle)}.
+              </Display>
+              <p className="wl-door-say">send it privately as {atHandle(adopted.handle)}?</p>
+            </div>
+            <div className="wl-door-ways">
+              <Pill tone="light" wide onClick={() => sendPrivately(adopted.handle, adopted.proof)} aria-busy={sending || undefined}>
+                {sending ? 'sending' : `send it as ${atHandle(adopted.handle)}`}
+              </Pill>
+            </div>
+            <div className="wl-gate-fault" aria-live="polite">{said}</div>
+          </div>
+        ) : (
+          <ProveDoor
+            p={proof} headId="wl-write-h" onAsk={() => proof.ask(target)}
+            title={<>confirm this is<br />your Instagram.</>}
+            say="only they’ll ever know, and only if it’s mutual. one DM proves the @ is yours."
+          />
+        )}
+      </div>
+    )
+    foot = adopted ? (
+      <button type="button" className="wl-quiet" onClick={() => { setAdopted(null); proof.drop() }}>not that account</button>
+    ) : proof.dm ? (
+      <button type="button" className="wl-quiet" onClick={proof.drop}>start over</button>
+    ) : (
+      <button type="button" className="wl-quiet" onClick={() => { setSaid(''); setStep('how') }}>back</button>
     )
   }
 
@@ -527,146 +991,16 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
       ref={sheet} onClose={leave} onClosing={(b) => { by.current = b }} onEscape={onEscape}
       tall labelledBy="wl-write-h" className="is-write"
     >
-      <div className="wl-sheet-in wl-write">
-        <SheetHead onClose={leave} label="back"
-          lead={<Dots n={2} at={step} onGo={(i) => (i === 0 ? toWho() : setStep(i))} />} />
-
-        <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">
-          {step === 0 ? <>{campus().someone[0]}<br />{campus().someone[1]}</> : <>and what<br />makes them so.</>}
-        </Display>
-
-        {step === 0 ? (
-          /* ── ONE OBJECT, AND ONE QUESTION ──
-             The bookmark on its rail, and under the rail either the field or
-             the person the field turned out to be. Never both, and never a
-             third thing beside them: the rail is the top edge of the field,
-             the answer arrives IN the field rather than under it, and what is
-             left on the screen is the question, the thing being answered, and
-             the act at the foot. */
-          /* `--i` is which tab is open, and the body reads it for one thing:
-             the corner the tab is standing on stays square and the other
-             three round. A page with a tab on its top left corner does not
-             round that corner, and the same page with the tab moved off it
-             does. */
-          <div className="wl-write-step wl-write-who" style={{ '--i': kind === 'name' ? 1 : 0 }}>
-            {/* The two answers, as two words on the rail. The field under it
-                is the same field in either kind: the painted @ and the
-                identifier's face for a handle; the @ gone and the display
-                face for anything else (parts.jsx HandleField `kind`). */}
-            <Segmented
-              className="wl-write-tabs" value={kind} onChange={pickKind} options={KINDS}
-              label="who the letter is for, by their instagram or by anything else"
-            />
-            {/* A letter addressed to a mistyped handle is a letter about
-                somebody nobody can ever find, and this is the only step where
-                that is still fixable — so the handle is committed here, and
-                the person it resolved to stands in the field's own place
-                until the X hands the field back (parts.jsx `Addressed`).
-                A name is never looked up: looking a person up by first name
-                is an inference. And a name that has come off the wall is
-                refused by the schema rather than by this screen — wall_write
-                answers 'removed' and the line under the card says so. */}
-            {/* the body the bookmark is attached to: one ground, one hairline
-                and one radius, carrying the field or, once the handle has been
-                committed, the resolver in its place */}
-            <div className={`wl-write-body${resolving ? ' is-answering' : ''}`}>
-              {/* the wait, and the only thing said about it: the point of
-                  light running the body's own edge, with two bars breathing
-                  where the answer will land. The body already has a ground,
-                  so the light brings no plate of its own. */}
-              {resolving ? <Light on={asking} plate="none" /> : null}
-              {resolving ? (
-                <Addressed at={them.at} looking={asking} onClear={retry} label="not them. type it again" />
-              ) : (
-                <HandleField
-                  kind={kind}
-                  value={kind === 'name' ? name : to}
-                  onChange={kind === 'name' ? (v) => setName(v.slice(0, MAX_NAME)) : retype}
-                  onSubmit={next}
-                  autoFocus size="lg" inputRef={field}
-                  placeholder={kind === 'name' ? 'whatever you call them' : 'theirhandle'}
-                  label={kind === 'name' ? 'a name, a nickname, anything' : 'Instagram handle'}
-                  onKeyDown={sug.keyDown}
-                />
-              )}
-            </div>
-            <Suggest sug={sug} />
-          </div>
-        ) : (
-          <div className="wl-write-step">
-            {/* The card and the line under it, in one frame, because the
-                frame is what shakes: a press the screen refuses is refused by
-                the letter, not by the sheet round it. */}
-            <div
-              {...colourSwipe}
-              className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
-              onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
-            >
-              {/* the light the draft throws on the room, as the letter's
-                  does, behind everything in the column (wall.css
-                  `.wl-write-light`) */}
-              <span className="wl-write-light" aria-hidden="true">
-                <RoomLight key={colourOf(look, seed).slug} look={look} seed={seed} />
-              </span>
-              {/* The same screen the wall shows, in the colour the letter
-                  goes up in and with the same words. The phone is the
-                  draft's own for now (its quirks are seeded off the draft,
-                  and the picture is not on it). The name across the top is
-                  the person it is for; the left key opens the colours under
-                  it, and the right one takes a character back, or, on an
-                  empty draft, goes back to the first question. */}
-              <Screen
-                look={look} seed={seed} live
-                top={{
-                  name: toFirst, handle: toHandle, dear: true, icon: 'pen',
-                  counter: `${MAX_BODY - body.length}/1`,
-                }}
-                keys={{
-                  l: colourKey,
-                  r: body
-                    ? { label: 'clear', onClick: clearOne, keepFocus: true, aria: 'take a character back' }
-                    : { label: 'back', onClick: toWho, aria: `for ${labelFor(key)}. change who it is for` },
-                }}
-              >
-                <ScreenDraft
-                  value={body} onChange={setBody} max={MAX_BODY} autoFocus inputRef={letterRef}
-                  placeholder={EXAMPLES()[hash(key || 'wheeler') % EXAMPLES().length]}
-                />
-              </Screen>
-              {/* One line under the card, and only when there is something to
-                  say: the one thing the screen caught, named, or what the
-                  server answered. There is no count under the card and no
-                  "more characters" line, because the box is not a form field
-                  with a floor. It is a letter, and a letter goes up the moment
-                  there is one. */}
-              <div className="wl-write-floor" aria-live="polite">
-                {caught || said ? <Label className="wl-write-caught">{caught || said}</Label> : null}
-              </div>
-            </div>
-            {/* the colours, under the screen while its left key is on, and
-                beside it on a spread; the screen is the preview. Opened by
-                the key, the panel is brought into view (Look.jsx `reveal`) */}
-            {styling || wide ? <LookPanel look={look} onChange={setLook} seed={seed} reveal={styling && !wide} /> : null}
-          </div>
-        )}
-
+      <div className={`wl-sheet-in wl-write is-${typeof step === 'number' ? `step${step}` : step}`}>
+        <SheetHead
+          onClose={leave} label={step === 'done' ? upLabel : 'back'}
+          lead={step === 'done' ? null : <Dots n={3} at={dot} onGo={goDot} />}
+        />
+        {body_}
         <div className="wl-write-foot">
-          {/* Nothing over the act while any letter is left. When none is,
-              the one line stands over it, saying when the next letter can
-              go up, and the act is dark. */}
-          {left ? <Allowance left={left.left} limit={left.limit} resets={left.resets} /> : null}
-          {/* "send anonymously", not "put it up": the word on the button is
-              the one fact a person hesitating over it wants, said at the
-              moment they are deciding. The wall is anonymous by shape and
-              the button says so in the writer's own frame. While the request
-              is out it says so, and stays lit: the light running round it is
-              the wait. Alone, in the middle of the foot. */}
-          <Pill tone="light" onClick={next} disabled={!ok[step] || spent} aria-busy={sending || asking || undefined}>
-            {step === 0
-              ? (asking ? 'looking' : settled && kind === 'handle' ? confirmWord(them.at, 'next') : 'next')
-              : sending ? 'sending' : 'send anonymously'}
-          </Pill>
+          {foot}
         </div>
+        {step === 'ig' ? <DoorFoot /> : null}
       </div>
     </Sheet>
   )
