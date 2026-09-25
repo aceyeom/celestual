@@ -105,7 +105,7 @@ typed in full.
     │    over  ──▶ 429 { retry_after }                              │
     │                                                               │
     ├─ Apify actor shu8hvrXbJbY3Eb9W                                │
-    │    resultsType: details, resultsLimit: 0                      │
+    │    resultsType: details, resultsLimit: 1 (the actor's floor)  │
     │    ?timeout=30&maxItems=1   killed on Apify's side, 1 result  │
     │                                                               │
     ├─ handle_search_record(user, device, ip, handle)  found or not │
@@ -167,7 +167,8 @@ mid-run and is how those nameless rows got written in the first place.
 ## 4b. The private account
 
 The actor in section 3 reads a profile the way a browser reads the page, with
-the post limit at zero. A private account's page is shut, and the actor says
+the post limit as low as it goes (one, since the actor stopped taking zero on
+6 September). A private account's page is shut, and the actor says
 so in one of two shapes: an item with an error on it and no username
 (`no_items`, "Empty or private data for provided input", which is the wording
 in Apify's own issue tracker), or a username with nothing beside it and the
