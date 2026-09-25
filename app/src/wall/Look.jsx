@@ -13,9 +13,9 @@
 // (looks.js): a person choosing one is choosing a colour, and a heading
 // that sorted them by how they are made was a word about the machinery
 // between a person and the thing they came to pick. So this is one pool of
-// thirteen, in the order of a spectrum (looks.js `COLOURS`), each drawn as
+// twelve, in the order of a spectrum (looks.js `COLOURS`), each drawn as
 // the small screen it makes, its own light on it where it is a print, and
-// the chosen one named under the lot. Two rows on every width, and nothing
+// the chosen one named under the lot. Two even rows of six on every width, and nothing
 // scrolls sideways.
 //
 // Nothing here takes a colour a person typed, a picture or a word

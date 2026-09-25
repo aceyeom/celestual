@@ -101,8 +101,8 @@ const LOOKS = {
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
 const NAMES = [
   ['~sofia', 'Sofia', 2, { tint: 'green' }],
-  ['~j', 'J', 1, { tint: 'ember' }],
-  ['~51b', '51B', 1, { tint: 'ember' }],
+  ['~j', 'J', 1, { tint: 'amber' }],
+  ['~51b', '51B', 1, { tint: 'lilac' }],
 ]
 NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
   target_handle: key, campus: 'berkeley', letters,

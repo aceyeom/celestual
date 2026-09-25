@@ -191,25 +191,26 @@ lit in, and each colour carries its own treatment with it:
 | --- | --- | --- |
 | lit | night, white, ice, green, amber, rose | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
 | negative | negative | the same screen with the panel dark and the words the bright thing |
-| poster | teal, acid, ember, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
+| poster | teal, acid, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
 | riso | violet / yellow | two drum inks on warm paper, the second a hair out of register |
 | xerox | xerox | photocopied and blown out: one threshold between toner and paper, walked by the copier's heat |
 
-These thirteen are the only other hues in the product. They live in that one
+These twelve are the only other hues in the product. They live in that one
 file and are drawn only on a screen, its thumbnail in the composer and the
 small screen of the name it was written to; no bar, sheet, control or line of
 the system's own type is ever set in one.
 
 **One pool.** The composer offers them as one pool (`Look.jsx`), in the order
 of a spectrum and under no heading: the greys, then round the wheel from ice
-through the greens and yellows to ember, rose and lilac, and the negative and
-the xerox last. Seven to a row, two rows, at every width down to 320, and
+through the greens and yellows to amber, rose and lilac, and the negative and
+the xerox last. Six to a row, two even rows, at every width down to 320, and
 nothing scrolls sideways. How a colour is drawn is the colour's own business;
 the words lit, printed and copied were the machinery's, and they came off the
 panel. Blush, cobalt, pink / blue, orange / teal and red / green left the pool
 on 25 September, and a letter in one of them draws the colour nearest its hue
-(`RETIRED`: rose, ice, rose, ember, ember), which migration 0061 wrote into the
-rows.
+(`RETIRED`: rose, ice, rose, amber, amber), which migration 0061 wrote into the
+rows. Ember left on 25 September as well, so the panel is two even rows of
+six, and its letters are amber (migration 0063).
 
 **A print's light is its colour's.** The press lays a print's palest ink
 wherever the greys under it cross three quarters, so where the light falls is
@@ -222,7 +223,6 @@ the tile, the thumbnail and the shared picture draw the same one:
 | --- | --- | --- |
 | acid | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print, and read as the same white stain on each |
 | teal | keyline | no light on the panel, and a line of the palest ink inside the black rule, a hair clear of it |
-| ember | sky | the light falling from the top of the sheet: the status rows stand in the palest ink, which breaks up into the main one in the press's grain a third of the way down |
 | lilac | dots | the light as a halftone: white cones on a forty five degree lattice, faded out from the hot corner, cut by the press into dots that are large where the light is strong and gone where it is not |
 | violet / yellow | bands | the phone's two bands of glass laid in the violet drum, and the status and the keys on them struck out in paper |
 
@@ -909,7 +909,7 @@ had already said it. The role went with the caller.
 | Component | Class | Notes |
 | --- | --- | --- |
 | Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot. Every ink on it is one of its look tokens (`--lk-ground`, `--lk-ink`, `--lk-ink-2`, `--lk-rule`, the strengths of the ink, `--lk-face`, `--lk-radius`), declared at the plain paper's values on the card itself; a look (`has-look`, `wl-looked`, `data-look`) sets the same tokens inline and the card is the same card. See the looks, below |
-| Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. One pool of thirteen under no heading, in the order of a spectrum, each colour drawn as the small screen it makes (`Mini`) with a print's own light on it, the chosen one ringed and named under the lot. Seven to a row and two rows at every width, the swatches taking what the row has up to 40px, and nothing scrolls sideways, centred under the name it stands over, beside the screen as under it. A swatch is a key: a step brighter under a pointer, a pixel down under a finger, never scaled. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
+| Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. One pool of twelve under no heading, in the order of a spectrum, each colour drawn as the small screen it makes (`Mini`) with a print's own light on it, the chosen one ringed and named under the lot. Six to a row and two even rows at every width, the swatches taking what the row has up to 40px, and nothing scrolls sideways, centred under the name it stands over, beside the screen as under it. A swatch is a key: a step brighter under a pointer, a pixel down under a finger, never scaled. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
 | Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px. It is GLASS, and it has to look like it. Written as glass and drawn as a panel (a tint at 66 to 80 percent over a fourteen pixel blur, which on a near-black wall is opaque), nothing came through it while the search plate twelve pixels above it read as the glass it is, which is two surfaces on one ground in two materials. A sheet is also the biggest surface here, and a big translucent surface reads as a THICKER one, so it takes the heavier blur and the deeper shadow rather than the lighter. On the wall it is not glass: an opaque unlit panel under the pixel grid, a one pixel bezel, 4px corners and a grip of three pixel dashes (2.6) |
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters. A letter to a first name draws the name as written in the name's face, a monogram, and no handle line |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |

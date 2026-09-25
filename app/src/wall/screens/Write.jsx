@@ -103,7 +103,7 @@
 //
 // ── the look (0055) ────────────────────────────────────────────────────────
 // The screen's left key, `colour`, opens the colours under it (Look.jsx):
-// one pool of thirteen, each drawn as the small screen it makes, and a line
+// one pool of twelve, each drawn as the small screen it makes, and a line
 // naming the one chosen. The screen is the preview, because the screen is
 // the real screen, and what goes up is what was seen. The look rides with
 // the letter and is kept in the draft with the words, so it survives the

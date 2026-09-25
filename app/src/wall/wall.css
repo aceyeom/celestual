@@ -1614,10 +1614,9 @@ a.wl-lq { text-decoration: none; }
    2.6), the campus and the figure in chalk and the word after it in ash. It
    stands over the search as the fact about the wall, at a size that reads
    as a caption under the bar rather than as a third row of chrome. */
-.wl-ear-name {
-  font-size: var(--t-wide); color: rgba(244, 241, 234, 0.84); white-space: nowrap;
-}
-.wl-ear-dot { color: var(--ash-dim); font-size: var(--t-ctrl); line-height: 1; }
+/* with nothing to say the row takes no room, and the search stands
+   straight under the bar */
+.wl-ear:empty { display: none; }
 .wl-ear-meta {
   display: inline-flex; align-items: baseline; gap: 6px;
   font-size: var(--t-label); letter-spacing: var(--tr-label);
@@ -1642,7 +1641,6 @@ a.wl-lq { text-decoration: none; }
    the shade had thinned to half, and "letters" was cut by whatever disc
    happened to be there. */
 .wl-masthead .wl-ear { padding: 0 0 10px; }
-.wl-masthead .wl-ear-name { font-size: var(--t-ctrl); }
 .wl-masthead .wl-ear-n { font-size: var(--t-ctrl); }
 .wl-ear-again { padding: 0 0 0 2px; font-size: var(--t-meta); letter-spacing: var(--tr-label); align-self: baseline; }
 
@@ -2978,14 +2976,13 @@ a.wl-lq { text-decoration: none; }
 /* ═══ THE COLOUR PANEL ═════════════════════════════════════════════════════
    Look.jsx, under the composer's screen while its `colour` key is on: the
    one thing a writer chooses about how the letter looks. One pool of
-   thirteen, in the order of a spectrum and under no heading, each colour
+   twelve, in the order of a spectrum and under no heading, each colour
    drawn as the small screen it makes, the chosen one ringed, and its name
    under the lot. The screen above is the preview.
 
-   Seven to a row, two rows, on every width: the swatches take what the row
+   Six to a row, two even rows, on every width: the swatches take what the row
    has, up to their own size, so a phone of 320 has the whole pool in view
-   and nothing scrolls sideways. The second row stands under the first from
-   the left, the way the rows of a phone's menu grid do. */
+   and nothing scrolls sideways. */
 .wl-look {
   display: flex; flex-direction: column; gap: 12px;
   margin-top: 18px; padding: 16px 16px 12px; border-radius: 16px;
@@ -2993,7 +2990,7 @@ a.wl-lq { text-decoration: none; }
   animation: wl-act-in 300ms var(--ease) both;
 }
 .wl-look-opts {
-  display: grid; grid-template-columns: repeat(7, minmax(0, 40px)); justify-content: center;
+  display: grid; grid-template-columns: repeat(6, minmax(0, 40px)); justify-content: center;
   gap: 12px 8px;
 }
 /* while the colours are open the preview gives them room, and the line

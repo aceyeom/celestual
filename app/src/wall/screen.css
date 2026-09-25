@@ -332,12 +332,6 @@
 /* teal: a keyline of the palest ink inside the rule, a hair clear of it,
    and a hair clear of the first letter of every row */
 .wl-scr[data-light='keyline'] .wl-scr-fx.is-glass { outline: 0.7cqw solid #FFF; outline-offset: -2.4cqw; }
-/* ember: the light falls from the top of the sheet. The status rows stand
-   in the palest ink, and it breaks up into the main one in the grain a
-   third of the way down, deeper where this phone's backlight sits low */
-.wl-scr[data-light='sky'] .wl-scr-bg {
-  background: linear-gradient(180deg, var(--s-hi) calc(var(--q-hy, 66%) * 0.4 + 5%), var(--s-mid) calc(var(--q-hy, 66%) * 0.4 + 19%), var(--s-lo) 100%);
-}
 /* lilac: the light as a halftone. The panel is flat in the main ink, and
    over it a screen of white cones on the forty five degree lattice a
    single ink is screened at, faded out from where this phone's backlight is

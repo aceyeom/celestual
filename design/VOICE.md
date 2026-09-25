@@ -44,6 +44,16 @@ equivalent.
 
 A ping is a ping. Never a "lil ping".
 
+**Say what it does, not what it is called.** Since 25 September a new person
+reads the mechanism, not the product's noun for it. "ping" is never the word
+that explains itself: where a line tells somebody what will happen, it says
+it in plain words ("secretly pick them. if they pick you too, you both get
+told."), and the noun is kept for the places a person has already learned it
+(the list of their own, a button beside that explanation). A line that asks
+for a proof says which proof and what it is for, in one sentence: "verify
+your instagram handle to remove yourself from the wall", "verify your school
+email to put it up".
+
 `share` is never the word for putting a letter up, and `send` is never the word
 for passing one on. The composer's act is `send anonymously`; the key on a
 letter that hands its picture to somebody, saves it or copies its link is

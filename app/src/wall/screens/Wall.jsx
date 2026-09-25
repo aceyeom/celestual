@@ -258,9 +258,10 @@ function tabDue(state) {
 // printed its number over the question as the one fact about it, and a small
 // number reads as an empty room rather than an open one. The figure, its roll
 // and the line an empty wall says are all still here and come back with the
-// switch; until then the line is what an idle phone kept in that row, the
-// network's name and nothing after it. A wall that did not load still says
-// so, since that is not a count.
+// switch; until then the row is empty and takes no room: the name over the
+// search came off on 25 September, since the wall is one wall and the brand
+// already stands in the top bar. A wall that did not load still says so,
+// since that is not a count.
 const COUNTED = false
 function Ear({ letters }) {
   const err = wallError()
@@ -288,8 +289,6 @@ function Ear({ letters }) {
   }
   return (
     <div className="wl-ear" aria-live="polite">
-      <span className="wl-ear-name">{campus().name}</span>
-      {meta ? <span className="wl-ear-dot" aria-hidden="true">&middot;</span> : null}
       {meta}
     </div>
   )

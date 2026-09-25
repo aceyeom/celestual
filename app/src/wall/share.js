@@ -264,24 +264,13 @@ function drawScreen(o, tile = null) {
   g.save()
   g.clip()
 
-  // the panel, brightest where this phone's backlight is; or, on a print
-  // whose light falls from the top, in that light (screen.css, the prints'
-  // lights, in the same stops)
+  // the panel, brightest where this phone's backlight is
   const hx = (q.hx / 100) * sw
   const hy = (q.hy / 100) * sh
-  let pg
-  if (s.light === 'sky') {
-    const e = q.hy * 0.4
-    pg = g.createLinearGradient(0, 0, 0, sh)
-    pg.addColorStop((e + 5) / 100, s.hi)
-    pg.addColorStop((e + 19) / 100, s.mid)
-    pg.addColorStop(1, s.lo)
-  } else {
-    pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
-    pg.addColorStop(0, s.hi)
-    pg.addColorStop(0.52, s.mid)
-    pg.addColorStop(1, s.lo)
-  }
+  const pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
+  pg.addColorStop(0, s.hi)
+  pg.addColorStop(0.52, s.mid)
+  pg.addColorStop(1, s.lo)
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
   // and a light carried by a halftone screen, as the page draws it: white

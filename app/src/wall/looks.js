@@ -10,7 +10,7 @@
 //
 // It was forty-two papers in seven families, twenty-nine tints and
 // twenty-four faces, and then eighteen colours in three groups. Now it is
-// one pool of thirteen, in the order of a spectrum, and each colour carries
+// one pool of twelve, in the order of a spectrum, and each colour carries
 // its own treatment with it, because on a real screen the two are the same
 // fact:
 //
@@ -20,7 +20,7 @@
 //   negative  the same screen with the panel dark and the words the bright
 //             thing
 //   poster    that photograph screen printed in four flat inks, the paper
-//             the colour. teal, acid, ember, lilac
+//             the colour. teal, acid, lilac
 //   riso      two drum inks laid a hair out of register on warm paper.
 //             violet / yellow
 //   xerox     photocopied, and blown out: the toner exposure is the effect
@@ -30,8 +30,8 @@
 // lights). The backlight's hot corner, printed in the palest ink, was on
 // every print, and read as the same white stain on each. It stays on acid
 // alone. Each of the others has a light of its own out of the same press:
-// teal a keyline inside its rule, ember the light falling from the top of
-// the sheet, lilac its light carried as a halftone screen, and violet /
+// teal a keyline inside its rule, lilac its light carried as a halftone
+// screen, and violet /
 // yellow the phone's two bands of glass laid in the violet drum, with its
 // status and its keys struck out of them in paper.
 //
@@ -80,7 +80,6 @@ export const COLOURS = [
   { slug: 'acid', name: 'acid', kind: 'poster', light: 'corner', stops: ['#0F1104', '#4A580C', '#C2E13A', '#FFF5A6'] },
   { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', light: 'bands', paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
   { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
-  { slug: 'ember', name: 'ember', kind: 'poster', light: 'sky', stops: ['#130905', '#782912', '#DF663A', '#FFD59E'] },
   { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
   { slug: 'lilac', name: 'lilac', kind: 'poster', light: 'dots', stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
   { slug: 'negative', name: 'negative', kind: 'neg', hue: '#BDBDBD' },
@@ -89,14 +88,15 @@ export const COLOURS = [
 
 // The colours that have left the pool, and the one each is drawn as now:
 // the nearest by the hue of its main ink, so a letter that went up in blush
-// is still a pink letter. Read wherever a row's colour is read (`colourOf`,
-// `normaliseLook`); migration 0061 moved the rows themselves, and this is
+// is still a pink letter, and one that went up in ember an amber one, so
+// the panel is two even rows of six. Read wherever a row's colour is read (`colourOf`,
+// `normaliseLook`); migrations 0061 and 0063 moved the rows themselves, and this is
 // what a row the migration has not reached, or a draft kept in a browser,
 // is drawn as. A Map, so a slug is never read as one of an object's own
 // names.
 export const RETIRED = new Map([
   ['blush', 'rose'], ['pink-blue', 'rose'], ['cobalt', 'ice'],
-  ['orange-teal', 'ember'], ['red-green', 'ember'],
+  ['orange-teal', 'amber'], ['red-green', 'amber'], ['ember', 'amber'],
 ])
 const current = (slug) => RETIRED.get(slug) || slug
 
@@ -235,9 +235,6 @@ const cache = new Map()
 //             print's, and is acid's alone
 //   keyline   no light on the panel, which is flat in the main ink, and a
 //             line of the palest ink inside the rule instead
-//   sky       the light falling from the top of the sheet: the status rows
-//             stand in the palest ink, and it breaks up into the main one
-//             in the press's grain a third of the way down
 //   dots      the hot corner held under the palest ink and carried by a
 //             halftone screen, so it prints as dots that grow towards the
 //             point it is brightest at
@@ -247,7 +244,6 @@ const cache = new Map()
 const LIGHTS = {
   corner: ['#D4D4D4', '#A9A9A9', '#8C8C8C'],
   keyline: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
-  sky: ['#D4D4D4', '#A3A3A3', '#9F9F9F'],
   dots: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
   bands: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
 }
@@ -255,7 +251,6 @@ const LIGHTS = {
 // a layer of the palest ink over the main one, in the same place
 const SPOTS = {
   corner: 'radial-gradient(31% 25% at var(--q-hx, 78%) var(--q-hy, 64%), var(--t-accent) 62%, transparent 100%)',
-  sky: 'linear-gradient(180deg, var(--t-accent) calc(var(--q-hy, 64%) * 0.4 + 8%), transparent calc(var(--q-hy, 64%) * 0.4 + 14%))',
   dots: 'radial-gradient(80% 64% at var(--q-hx, 78%) var(--q-hy, 64%), transparent, var(--t-body) 66%), radial-gradient(var(--t-accent) 34%, transparent 44%) 0 0 / 4px 4px, radial-gradient(var(--t-accent) 34%, transparent 44%) 2px 2px / 4px 4px',
 }
 export function skinOf(colour) {

@@ -378,12 +378,12 @@ still after the last word. Every letter is the same screen, set in one face
 | **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; a press from outside the gate is carried through it and pressed on the way back in, and a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
 The only thing a writer chooses is the COLOUR it is lit in, from one pool of
-thirteen under no heading, in the order of a spectrum (`Look.jsx`, under the
+twelve under no heading, in the order of a spectrum (`Look.jsx`, under the
 composer's screen while its `colour` key is on): six lit screens, the
-negative, four posters and a riso, which keep their own ground, and the
+negative, three posters and a riso, which keep their own ground, and the
 xerox. Each colour brings its treatment with it, and a print its own light
 (`LIGHTS`): acid keeps the backlight's hot corner, teal has a keyline inside
-its rule, ember the light falling from the top, lilac its light as a
+its rule, lilac its light as a
 halftone, and violet / yellow the phone's two bands in the violet drum. The
 light is drawn the same on the letter, the tile, the thumbnail and the
 shared picture, and `/looks.html` on the dev server draws all four side by
