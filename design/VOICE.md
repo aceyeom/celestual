@@ -28,12 +28,13 @@ equivalent.
 
 | Say | Never |
 | --- | --- |
-| place a ping, place it | submit, send, post, enter |
+| send it privately, a private note | submit, post, enter, place a ping (to somebody new) |
 | write a letter, put it up | post, publish, share |
 | share it (a letter passed on: its picture, its link) | send, export, forward |
 | standing, waiting | active, pending, in progress |
 | it's mutual | match found, congratulations, you matched |
-| let it go | delete, remove, withdraw |
+| let it go (a private note of your own) | delete, withdraw |
+| remove it (a letter about you, by the owner of its @) | delete, take it down |
 | keep it standing, renew | extend, refresh, resubscribe |
 | lapses | expires |
 | the wall | the feed, the board, the community |
@@ -42,17 +43,24 @@ equivalent.
 | count me in | sign up, join the waitlist, register |
 | slot | credit, token, quota |
 
-A ping is a ping. Never a "lil ping".
+A ping is a ping in the code, on the desk and in the docs, and never a "lil
+ping". On the wall it is what it now literally is: a note sent privately
+(docs/ONE-WALL.md). The composer asks one question at the end, post it on the
+wall or send it privately, and the private one is placed as a ping carrying
+the note, so "your private notes" and "sent privately" are the words a person
+reads.
 
 **Say what it does, not what it is called.** Since 25 September a new person
-reads the mechanism, not the product's noun for it. "ping" is never the word
-that explains itself: where a line tells somebody what will happen, it says
-it in plain words ("secretly pick them. if they pick you too, you both get
-told."), and the noun is kept for the places a person has already learned it
-(the list of their own, a button beside that explanation). A line that asks
-for a proof says which proof and what it is for, in one sentence: "verify
-your instagram handle to remove yourself from the wall", "verify your school
-email to put it up".
+reads the mechanism, not the product's noun for it. Where a line tells
+somebody what will happen, it says it in plain words: "send them a note
+privately too. they only read it if they send you one." Never write that a
+letter on the wall makes a mutual: only a note sent privately does. A line
+that asks for a proof says which proof and what it is for, in one sentence:
+"confirm this is your Instagram, so we can tell you if it's mutual", "confirm
+you're at Berkeley" (to post to an @ on the wall), "verify your Instagram
+handle to remove yourself from the wall". Instagram, Google and Berkeley are
+proper nouns and keep their capital (section 1), on a button as in a
+sentence.
 
 `share` is never the word for putting a letter up, and `send` is never the word
 for passing one on. The composer's act is `send anonymously`; the key on a
@@ -109,7 +117,7 @@ chasing a person. Silence is the product working, not a failure of it.
 
 Stay in world, name what happened, give the one next step, keep composure.
 
-Write: "the night didn't answer. give it a moment, then place it again."
+Write: "it did not go through. give it a moment, then send it again."
 
 Never: "Something went wrong. Try again."
 
@@ -162,7 +170,7 @@ to rather than guessing at one.
 | no profiles. no browsing. nothing happens unless it's mutual. | Your privacy is our top priority. |
 | it's waiting. | We couldn't find them. Invite them to join. |
 | lapses in 4 days. still feel it? | Your entry expires soon. Renew now. |
-| this frees the slot. nothing was ever revealed. | Are you sure you want to delete? |
+| this frees the slot. they never find out you sent it. | Are you sure you want to delete? |
 | the rest is yours. celestual's part is done. | Start chatting now. |
 | celestual opens at reed when 300 are in. current count: 214. | Join the hottest new app on campus. |
 

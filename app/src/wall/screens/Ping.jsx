@@ -73,11 +73,11 @@ const SHOWN = 4
 // rest and offer the way to them.
 const SAY = {
   self: 'that is your own @',
-  slots: 'every slot you hold is standing. letting one go frees it.',
-  suppressed: 'that name has asked to be left alone.',
-  rate: 'that is a lot of pings for one month. give it time.',
+  slots: 'every slot is in use. let one of your private notes go to free one.',
+  suppressed: 'that person has opted out of private notes.',
+  rate: 'that is a lot of private notes for one month. try again later.',
   invalid: 'that handle does not look right.',
-  night: 'the night didn’t answer. give it a moment, then place it again.',
+  night: 'it did not go through. give it a moment, then send it again.',
 }
 
 function words(s) {
@@ -155,17 +155,17 @@ export function useProve({ use, held = null, stash = null, onLanded }) {
     setSaid('')
     setNote('')
     if (!validHandle(me)) { setSaid('that handle does not look right'); return }
-    if (clash && me === normHandle(clash)) { setSaid('that is the name you are placing it on'); return }
+    if (clash && me === normHandle(clash)) { setSaid('that is the person you are sending it to'); return }
     setBusy(true)
     const out = await startHandoff(me)
     if (!alive.current) return
     setBusy(false)
     if (!out.ok) {
       setSaid(
-        out.error === 'off' ? 'that door is not open yet'
-          : out.error === 'banned' ? 'that name has asked to be left alone'
-          : out.error === 'rate_limited' ? 'too many tries on that @. give it an hour'
-          : 'it did not go through',
+        out.error === 'off' ? 'Instagram checks are off right now. try again later.'
+          : out.error === 'banned' ? 'that @ has opted out of celestual.'
+          : out.error === 'rate_limited' ? 'too many tries on that @. try again in an hour.'
+          : 'it did not go through. try again.',
       )
       return
     }
@@ -201,8 +201,8 @@ export function useProve({ use, held = null, stash = null, onLanded }) {
         landed.current(normHandle(out.handle), normHandle(dm.mine), dm.proof)
         return
       }
-      if (out.error === 'expired') { drop(); setSaid('that code has lapsed'); return }
-      if (out.error) { drop(); setSaid('that did not go through'); return }
+      if (out.error === 'expired') { drop(); setSaid('that code has lapsed. ask for a new one.'); return }
+      if (out.error) { drop(); setSaid('that did not go through. try again.'); return }
       if (out.note) setNote(out.note)
       timer = setTimeout(tick, 2500)
     }
@@ -257,7 +257,7 @@ export function ProveDoor({ p, headId, title, say, onAsk }) {
               tone="light" wide onClick={onAsk} disabled={p.busy || !validHandle(p.me)}
               icon={<Provider size={17} />} aria-busy={p.busy || undefined}
             >
-              {p.busy ? 'one moment' : 'prove it with one DM'}
+              {p.busy ? 'one moment' : 'confirm with one DM'}
             </Pill>
           </>
         )}
@@ -448,7 +448,7 @@ export default function Ping({
         dropProof()
         setAdopted(null)
         setStep('proof')
-        proof.setSaid('that proof has lapsed. one more DM proves it again')
+        proof.setSaid('your Instagram check has lapsed. one more DM confirms it again.')
         return
       }
       setSaid(
@@ -558,7 +558,7 @@ export default function Ping({
   if (step === 'who') {
     body = (
       <>
-        <Display size="s" as="h2" id="wl-ping-h" className="wl-write-h">who&rsquo;s on<br />your mind.</Display>
+        <Display size="s" as="h2" id="wl-ping-h" className="wl-write-h">who is<br />it for?</Display>
         <div className="wl-write-step wl-write-who wl-ping-who">
           <div className={`wl-write-body${resolving ? ' is-answering' : ''}`}>
             {resolving ? <Light on={asking} plate="none" /> : null}
@@ -586,8 +586,8 @@ export default function Ping({
       <div className="wl-write-step wl-ping-prove">
         <ProveDoor
           p={proof} headId="wl-ping-h" onAsk={next}
-          title={<>your instagram,<br />proved by one DM.</>}
-          say={'nothing happens unless it’s mutual.'}
+          title={<>confirm this is<br />your Instagram.</>}
+          say="so we can tell you if it’s mutual. they never learn it was you unless it is."
         />
       </div>
     )
@@ -596,7 +596,7 @@ export default function Ping({
     body = (
       <>
         <Display size="s" as="h2" id="wl-ping-h" className="wl-write-h">
-          {done ? <>it&rsquo;s out.</> : <>and what they read<br />if it&rsquo;s mutual.</>}
+          {done ? <>sent privately.</> : <>write them a note.<br />they only read it<br />if it&rsquo;s mutual.</>}
         </Display>
         <div className="wl-write-step">
           <div
@@ -629,18 +629,18 @@ export default function Ping({
             >
               {done ? (
                 <ScreenNote glyph="check" title="sixty days">
-                  if they place one back, you both find out.
+                  if they send you one in that time, you both find out.
                 </ScreenNote>
               ) : (
                 <ScreenDraft
                   value={line} onChange={(v) => { setLine(v); setSaid('') }} max={MAX_LINE}
-                  autoFocus inputRef={lineRef} placeholder={EXAMPLE} label={`your line to ${atHandle(h)}`}
+                  autoFocus inputRef={lineRef} placeholder={EXAMPLE} label={`your note to ${atHandle(h)}`}
                 />
               )}
             </Screen>
             <div className="wl-write-floor" aria-live="polite">
               {floor || said ? <Label className="wl-write-caught">{floor || SAY[said]}</Label>
-                : adopted ? <Label className="wl-ping-ask">the code came from {atHandle(adopted.handle)}. place it under that name?</Label>
+                : adopted ? <Label className="wl-ping-ask">the code came from {atHandle(adopted.handle)}. send it from that account?</Label>
                 : null}
             </div>
           </div>
@@ -667,23 +667,23 @@ export default function Ping({
         tone="light" onClick={next} disabled={!validHandle(h)} aria-busy={placing || undefined}
         icon={!ready && !adopted && !placing ? <Provider size={17} /> : null}
       >
-        {placing ? 'placing' : adopted ? `place it as ${atHandle(adopted.handle)}` : ready ? 'place it' : 'next'}
+        {placing ? 'sending' : adopted ? `send it as ${atHandle(adopted.handle)}` : ready ? 'send it privately' : 'next'}
       </Pill>
     )
     quiet = adopted ? (
       <button type="button" className="wl-quiet" onClick={() => { setAdopted(null); setStep('proof') }}>not that account</button>
     ) : said === 'slots' ? (
-      <button type="button" className="wl-quiet" onClick={() => go('you')}>your pings</button>
+      <button type="button" className="wl-quiet" onClick={() => go('you')}>your private notes</button>
     ) : null
   } else if (step === 'proof') {
     quiet = proof.dm ? (
       <button type="button" className="wl-quiet" onClick={proof.drop}>start over</button>
     ) : (
-      <button type="button" className="wl-quiet" onClick={() => goDot(1)}>back to the line</button>
+      <button type="button" className="wl-quiet" onClick={() => goDot(1)}>back to the note</button>
     )
   } else {
     act = <Pill tone="light" onClick={home}>back to the wall</Pill>
-    quiet = <button type="button" className="wl-quiet" onClick={again}>place another</button>
+    quiet = <button type="button" className="wl-quiet" onClick={again}>send another</button>
   }
 
   return (
