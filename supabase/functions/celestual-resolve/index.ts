@@ -47,8 +47,12 @@
 // ── THE PROVIDER ─────────────────────────────────────────────────────────────
 // Apify, actor shu8hvrXbJbY3Eb9W, and nothing else. Spec section 5. One
 // synchronous run per cache miss, asking for profile details with the post
-// limit at zero: no posts, no comments, no reels, nothing that would turn a
-// name lookup into a scrape of somebody's account.
+// limit as low as the actor allows: no comments, no reels, nothing that would
+// turn a name lookup into a scrape of somebody's account. Spec section 5 said
+// zero, and zero was what shipped, until 6 September 2026 when the actor's
+// input schema began refusing it ("Field input.resultsLimit must be >= 1")
+// and every lookup, public or private, was refused before it ran. The floor
+// is one now, and `maxItems=1` on the run keeps the bill at one item.
 //
 // ── THE PRIVATE ACCOUNT ──────────────────────────────────────────────────────
 // That actor reads a profile the way a page does, and a private account's
@@ -339,9 +343,11 @@ function pick(u: Record<string, unknown>, keys: string[]): unknown {
 // ── the provider ─────────────────────────────────────────────────────────────
 // One synchronous actor run, returning the dataset items directly.
 //
-// `resultsLimit: 0` is spec section 5's "set the post limit to zero". With
-// `resultsType: 'details'` the actor returns the profile and no media at all,
-// which is both what the product needs and the cheapest thing to ask for.
+// `resultsLimit: 1` is spec section 5's "set the post limit to zero", at the
+// lowest value the actor's input schema now accepts (THE PROVIDER, above).
+// With `resultsType: 'details'` the actor returns the profile item, which is
+// what the product needs and the cheapest thing to ask for; a post riding
+// inside that item is not a second billed result.
 //
 // On the URL, two guards that live on Apify's side rather than ours:
 //   timeout   the run is killed at thirty seconds. A run we stopped waiting for
@@ -435,10 +441,17 @@ function readItem(u: unknown): Lookup {
     .map(String).join(' ').slice(0, 160);
 
   // An actor that could not reach the account returns an item with an error
-  // on it and no username. It used to be read as a miss whatever the error
-  // said, and for a private account that was "no account by that name".
-  if (rec.error && !username) {
-    return NOT_FOUND.test(said) ? { kind: 'missing' } : { kind: 'unclear', acct: null, why: said };
+  // on it. It used to be read as a miss whatever the error said, and for a
+  // private account that was "no account by that name". Now the wording
+  // decides: an error that says NOT FOUND is a miss whether or not the item
+  // echoes the username it was asked for (v0.99 of the actor does, as
+  // `not_found` / "Post does not exist", and read as unclear that echo went
+  // to the second look, fell back to itself, and was cached as a found
+  // account with no name and no face). Any other error with no username is
+  // unclear; one with a username falls through to the shape check below.
+  if (rec.error) {
+    if (NOT_FOUND.test(said)) return { kind: 'missing' };
+    if (!username) return { kind: 'unclear', acct: null, why: said };
   }
   if (!username) return { kind: 'missing' };
 
@@ -475,13 +488,13 @@ function fromRun(run: Run): Lookup {
   return readItem(run.items[0]);
 }
 
-// The first look: the page, with the post limit at zero.
+// The first look: the page, with the post limit at the actor's floor of one.
 async function fromApify(handle: string): Promise<Lookup> {
   if (!APIFY_TOKEN) return { kind: 'error', ran: false };
   return fromRun(await runActor(APIFY_ACTOR, {
     directUrls: [`https://www.instagram.com/${handle}/`],
     resultsType: 'details',
-    resultsLimit: 0,
+    resultsLimit: 1,
     addParentData: false,
     searchLimit: 1,
   }));
