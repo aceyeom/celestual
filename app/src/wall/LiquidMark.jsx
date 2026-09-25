@@ -30,20 +30,22 @@
 // and both are written by a script from the geometry rather than by hand.
 //
 // ── where it is spent ───────────────────────────────────────────────────────
-// Rationed like the bloom. It is the mark on the root wall's poster, it stands
-// in the hero's scene where the mark lights when the two cards open, and it is
-// the seal on a mutual row on the sky. It does not replace the mark in the
-// bar, in the steps, or anywhere the mark is a glyph rather than an event.
+// Rationed like the bloom. It is the mark on the root wall's poster, and
+// that is the one place left. It does not replace the mark in the bar, in
+// the steps, or anywhere the mark is a glyph rather than an event.
 //
-// It stood in the intro, large, and on the reveal, until both became the
-// phone's (DESIGN.md 2.6): the intro and the mutual are told in the phone's
-// own pixels now (pixmark.js), and the metal is the room's.
+// It stood in the intro, large, on the reveal, in the front door's scene
+// where the two cards opened and as the seal on a mutual row of the sky,
+// until the intro and the mutual became the phone's (DESIGN.md 2.6) and the
+// front door and the sky went with Main's ping pages: the intro and the
+// mutual are told in the phone's own pixels now (pixmark.js), and the metal
+// is the room's.
 //
 // ── what a mount costs, and where the cost is put ───────────────────────────
 // A mount is not free: the mask is decoded, the fragment shader is compiled
 // and linked on the GPU driver's own time, the texture is uploaded with its
 // mipmaps, and then every frame runs a heavy shader over every pixel of the
-// canvas. On the reveal that used to land in the middle of the screen's
+// canvas. On the old reveal that landed in the middle of the screen's
 // entrance, on a canvas rendered at twice the device's pixels, beside a sky
 // that is already a shader: the tap on the mutual row answered with a hitch
 // and a few dropped frames, which on a phone read as the screen lagging.
@@ -152,15 +154,6 @@ function mask() {
   img.src = LIQUID_MASK
   MASK = img
   return img
-}
-
-// Fetch and decode the mask now, ahead of a mount that is about to happen: the
-// sky calls it when there is a mutual on it, so the seal on that row has its
-// texture before it is drawn.
-export function warmLiquidMark() {
-  if (typeof window === 'undefined' || !hasWebGL2()) return
-  const img = mask()
-  if (img.decode) img.decode().catch(() => {})
 }
 
 export default function LiquidMark({

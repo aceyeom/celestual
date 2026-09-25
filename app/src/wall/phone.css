@@ -129,7 +129,7 @@
 .wl-root.is-room .wl-door-foot { line-height: 1.5; }
 /* the labels were small caps in mono; the phone wrote its labels as it
    wrote everything else, and a label here says so in the same case */
-.wl-root.is-room :is(.wl-label, .wl-look-h, .wl-or-word, .wl-gate-fault, .wl-ear-meta, .wl-ear-again) {
+.wl-root.is-room :is(.wl-label, .wl-or-word, .wl-gate-fault, .wl-ear-meta, .wl-ear-again) {
   text-transform: none;
 }
 .wl-root.is-room .wl-label { line-height: 1.2; }
