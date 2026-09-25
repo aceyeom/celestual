@@ -1209,6 +1209,9 @@ const ROUTES = [
   { label: 'gate-in',       path: '/berkeley/gate' },
   { label: 'gate-in-more',  path: '/berkeley/gate', many: true },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
+  // and taken down: the box for why, with the caret before its example
+  { label: 'report-why',    path: '/berkeley/report/11110111-2222-4333-8444-555566660000',
+    acts: [['click', '.wl-foot .wl-pill.is-light'], ['caret', '.wl-reason textarea', 0]], settle: 150 },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
   { label: 'join',          path: '/berkeley/join?beat=4', settle: 5200 },
