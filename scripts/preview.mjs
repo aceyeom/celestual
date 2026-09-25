@@ -148,8 +148,10 @@ function lettersFor(handle, open) {
       campus: 'berkeley',
       at: new Date(now - (i * 3 + 1) * DAY).toISOString(),
       expires: new Date(now + (27 - i) * DAY).toISOString(),
-      // 0042: how many hearted it, and whether this browser did
-      hearts: i === 0 ? 3 : i === 1 ? 1 : 0,
+      // 0042: how many hearted it, and whether this browser did. Two
+      // figures on the first, as the hearts a letter began with (0059) left
+      // most letters that were up
+      hearts: i === 0 ? 12 : i === 1 ? 3 : 0,
       hearted: false,
     }
   })
@@ -190,6 +192,15 @@ let MANY = false
 // Whether the fixture browser is nobody at all: signed in to nothing, so the
 // gates draw their doors rather than the account.
 let ANON = false
+// Whether the fixture browser signed in with google, and nothing else: a
+// reader on any wall since 0057, and not a writer on the campus wall. It is
+// the person whose heart never counted, because this browser drew them as
+// outside the read gate; the store is seeded with that stale answer, so the
+// shot shows the wall asking the server and drawing what it says.
+let GOOGLE = false
+// What the daily check on apify last said (0060): 'ok', 'failing', 'stale'
+// or 'never'. The desk draws its line at the top of every screen from it.
+let CANARY = 'ok'
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -220,6 +231,13 @@ const faceUrl = (h) => (REAL.has(h) ? `https://fixture.supabase.co/storage/v1/ob
 
 function whoami() {
   if (ANON) return { ok: true, signed_in: false }
+  if (GOOGLE) {
+    return { ok: true, signed_in: true, user: {
+      id: '99999999-8888-4777-8666-555544443334', handle: null, handle_verified: false, email: null,
+      edu_verified: false, campus: null, google_verified: true, email_verified: false,
+      login_email: 'someone@gmail.com',
+    } }
+  }
   return {
     ok: true,
     signed_in: true,
@@ -513,8 +531,67 @@ const DESK_LEGACY = {
 
 const page = (rows) => ({ ok: true, total: rows.length, limit: 50, offset: 0, rows })
 
+// ── the daily check on apify (0060) ──
+// A run a day while it passes and one every three hours while it does not,
+// so a failing morning reads as a short stack of refusals over a week of
+// passes. The refusal is the one Apify sends for a token it does not know.
+const HOUR = 3600000
+const canaryRun = (id, hoursAgo, ok, extra = {}) => ({
+  id, ran_at: new Date(now - hoursAgo * HOUR).toISOString(),
+  finished_at: new Date(now - hoursAgo * HOUR + (ok ? 8400 : 600)).toISOString(),
+  source: 'cron', handle: 'instagram', ok, status: ok ? 'ok' : 'refused',
+  http_status: ok ? 201 : 401, latency_ms: ok ? 8400 : 612, attempts: 1, face_ok: ok ? true : null,
+  detail: ok
+    ? { display_name: 'Instagram', verified: true, actor: 'shu8hvrXbJbY3Eb9W' }
+    : { said: 'User was not found or authentication token is not valid', type: 'user-or-token-not-found', actor: 'shu8hvrXbJbY3Eb9W' },
+  ...extra,
+})
+function canaryFixture(state) {
+  const at = new Date(now).toISOString()
+  const timeout = { status: 'timeout', http_status: null, latency_ms: 33000, attempts: 2,
+    detail: { said: 'no answer inside 33 seconds', actor: 'shu8hvrXbJbY3Eb9W' } }
+  if (state === 'never') {
+    return { state: 'never', enabled: true, now: at, running: false,
+      last: null, last_ok_at: null, fails: 0, failing_since: null, runs: [] }
+  }
+  if (state === 'stale') {
+    const runs = [49, 73, 97, 121, 145, 169, 193].map((h, i) => canaryRun(40 - i, h, true))
+    return { state: 'stale', enabled: true, now: at, running: false,
+      last: runs[0], last_ok_at: runs[0].ran_at, fails: 0, failing_since: null, runs }
+  }
+  if (state === 'failing') {
+    const runs = [
+      canaryRun(47, 1.2, false),
+      canaryRun(46, 4.2, false),
+      canaryRun(45, 7.2, false, { source: 'desk' }),
+      canaryRun(44, 9.2, false),
+      canaryRun(43, 33.2, true),
+      canaryRun(42, 57.2, true, { latency_ms: 21700 }),
+      canaryRun(41, 81.2, true),
+    ]
+    return { state: 'failing', enabled: true, now: at, running: false,
+      last: runs[0], last_ok_at: runs[4].ran_at, fails: 4, failing_since: runs[3].ran_at, runs }
+  }
+  const runs = [
+    canaryRun(47, 5.3, true),
+    canaryRun(46, 29.3, true, { latency_ms: 9100 }),
+    canaryRun(45, 53.3, true, { latency_ms: 21700 }),
+    canaryRun(44, 56.3, false, timeout),
+    canaryRun(43, 80.3, true),
+    canaryRun(42, 104.3, true, { face_ok: false }),
+    canaryRun(41, 128.3, true),
+  ]
+  return { state: 'ok', enabled: true, now: at, running: false,
+    last: runs[0], last_ok_at: runs[0].ran_at, fails: 0, failing_since: null, runs }
+}
+
 const DESK = {
-  desk_overview: () => DESK_OVERVIEW,
+  desk_overview: () => ({ ...DESK_OVERVIEW, canary: canaryFixture(CANARY) }),
+  // the desk's "check it now": apify answers, and the line goes
+  desk_canary_run: () => {
+    CANARY = 'ok'
+    return { ok: true, canary: canaryFixture('ok').last }
+  },
   desk_users: (b) => page(b.query
     ? DESK_USERS.filter((u) => (u.handle || '').includes(b.query) || (u.edu_email || '').includes(b.query))
     : DESK_USERS),
@@ -631,7 +708,7 @@ const RPC = {
     ...faceOf('pilar.echevarria'),
   }),
   // 0042: a heart on, or off, and the count back
-  wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 4 : 3, hearted: !!b.p_on }),
+  wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 13 : 12, hearted: !!b.p_on }),
   // 0050: this browser's own letters and where each stands. One of them has
   // been taken down by the reading, after it went up, when the route asks
   // for it: the notice at the foot of the wall.
@@ -927,6 +1004,12 @@ const ROUTES = [
     acts: [['swipe', '.wl-letter-card', -220]], settle: 900 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
+  // the heart, pressed: by a campus reader, and by somebody signed in with
+  // google and nothing else, whose press used to go to the gate and count
+  // nothing (auth.js `refresh`)
+  { label: 'letter-heart',  path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-c', settle: 900 },
+  { label: 'letter-heart-google', path: '/berkeley/letter/pilar.echevarria', google: true,
+    press: '.wl-letter-card .wl-sk.is-c', settle: 900 },
   { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
   { label: 'letter-shared',  path: '/berkeley/letter/pilar.echevarria',
     acts: [['click', '.wl-letter-card .wl-sk.is-r'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
@@ -1055,6 +1138,20 @@ const ROUTES = [
   // reprint, and the address that goes in each QR
   { label: 'admin-cards',    path: '/admin', desk: true, click: 'cards' },
   { label: 'admin-gate',    path: '/admin' },
+  // 0060: the daily check on apify. Red on every screen while the last check
+  // failed, amber while none has run for a day and a half or ever, and its
+  // record on the resolver screen; `-armed` is the button between its two
+  // presses, and `-ran` is the line gone once a check has passed.
+  { label: 'admin-canary-failing', path: '/admin', desk: true, canary: 'failing' },
+  { label: 'admin-canary-reports', path: '/admin', desk: true, canary: 'failing', click: 'reports' },
+  { label: 'admin-canary-stale',   path: '/admin', desk: true, canary: 'stale' },
+  { label: 'admin-canary-never',   path: '/admin', desk: true, canary: 'never' },
+  { label: 'admin-canary-cache',   path: '/admin', desk: true, canary: 'failing', click: 'cache', full: true },
+  { label: 'admin-canary-cache-ok', path: '/admin', desk: true, canary: 'ok', click: 'cache', full: true },
+  { label: 'admin-canary-armed',   path: '/admin', desk: true, canary: 'failing',
+    acts: [['click', '.ad-alarm .ad-btn']], settle: 400 },
+  { label: 'admin-canary-ran',     path: '/admin', desk: true, canary: 'failing',
+    acts: [['click', '.ad-alarm .ad-btn'], ['click', '.ad-alarm .ad-btn']], settle: 1600 },
 
   // Phase 8. The three addresses that arrive from outside the product, and the
   // one that arrives from a typo.
@@ -1086,7 +1183,10 @@ for (const r of list) {
   DOWN = r.down === true
   MANY = r.many === true
   ANON = r.anon === true
+  GOOGLE = r.google === true
   for (const v of VIEWPORTS) {
+    // a check run on the last pass cleared the line; it is put back
+    CANARY = r.canary || 'ok'
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
     const page = await browser.newPage({
@@ -1127,12 +1227,12 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
-          member: ANON ? null : 'someone@berkeley.edu',
-          reader: !ANON,
-          verified: VERIFIED && !ANON ? ['ace03d'] : [],
+          member: ANON || GOOGLE ? null : 'someone@berkeley.edu',
+          reader: !ANON && !GOOGLE,
+          verified: VERIFIED && !ANON && !GOOGLE ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: WRITTEN,
           proof: 'a'.repeat(64),
@@ -1152,7 +1252,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN, ANON })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE })
 
     await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
