@@ -1,7 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- test-hearts.sql: exercises 0042_the_hearts_and_the_faces.sql.
 --
--- A heart is a count and never a name, it is behind the campus gate like
+-- A heart is a count and never a name, it is behind the read gate like
 -- reading, and it survives a merge. The faces ride on the reads that already
 -- run. Run through scripts/verify-migrations.sh --test. Self contained: its
 -- cast is its own, so it does not depend on the order the tests run in.
@@ -37,15 +37,18 @@ insert into celestual_settings (key, value) values ('handle_salt', 'test-salt')
   on conflict (key) do nothing;
 
 -- ── the cast ────────────────────────────────────────────────────────────────
--- author, reader one and reader two are at berkeley. other is at stanford.
--- A stranger has no session at all.
+-- author, reader one and reader two are at berkeley. other has a session
+-- and an address on the row and has proved nothing, which since 0057 is the
+-- one person with a session the read gate still turns away: any proof reads
+-- any open wall, so a campus address at stanford would be let in. A stranger
+-- has no session at all.
 do $$
 declare a uuid; r1 uuid; r2 uuid; o uuid;
 begin
   insert into celestual_users (edu_email, edu_verified_at) values ('h-author@berkeley.edu', now()) returning id into a;
   insert into celestual_users (edu_email, edu_verified_at) values ('h-reader1@berkeley.edu', now()) returning id into r1;
   insert into celestual_users (edu_email, edu_verified_at) values ('h-reader2@berkeley.edu', now()) returning id into r2;
-  insert into celestual_users (edu_email, edu_verified_at) values ('h-other@stanford.edu', now()) returning id into o;
+  insert into celestual_users (email) values ('h-other@stanford.edu') returning id into o;
   perform h_session(a,  'token-h-author-000000000');
   perform h_session(r1, 'token-h-reader1-00000000');
   perform h_session(r2, 'token-h-reader2-00000000');
@@ -175,11 +178,12 @@ select h_ok('and not to the browser',
 -- it: the four people go, and their sessions, letters, hearts and report go
 -- with them by cascade. The rest is deleted by name.
 delete from celestual_users where edu_email in
-  ('h-author@berkeley.edu', 'h-reader1@berkeley.edu', 'h-reader2@berkeley.edu', 'h-other@stanford.edu');
+  ('h-author@berkeley.edu', 'h-reader1@berkeley.edu', 'h-reader2@berkeley.edu')
+  or email = 'h-other@stanford.edu';
 delete from celestual_entries where from_handle = 'hearty';
 delete from celestual_ig_verifications where handle = 'hearty';
 delete from ig_profiles where handle = 'hearted.one';
 select h_ok('and it leaves nothing behind',
-  not exists (select 1 from celestual_users where edu_email like 'h-%')
+  not exists (select 1 from celestual_users where edu_email like 'h-%' or email like 'h-%')
   and not exists (select 1 from wall_letters where target_handle = 'hearted.one')
   and not exists (select 1 from wall_hearts));
