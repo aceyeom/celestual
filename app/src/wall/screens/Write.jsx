@@ -140,7 +140,7 @@ import {
   HandleField, Addressed, Light, useResolver, confirmWord,
   useSuggest, Suggest, Segmented, useProfile,
 } from '../parts.jsx'
-import { LookPanel } from '../Look.jsx'
+import { LookPanel, useColourSwipe } from '../Look.jsx'
 import { Screen, ScreenDraft, RoomLight } from '../screen.jsx'
 import { Dots } from '../art.jsx'
 import {
@@ -498,6 +498,8 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
     }
   // the draft's own phone, until the draft carries the letter's seed
   const seed = `draft:${key || 'wall'}`
+  // a finger swiped across the screen walks the colours (Look.jsx)
+  const colourSwipe = useColourSwipe(look, seed, setLook)
 
   // ── the door ──
   // Instead of the composer, not in front of a disabled one. A greyed-out form
@@ -596,6 +598,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 frame is what shakes: a press the screen refuses is refused by
                 the letter, not by the sheet round it. */}
             <div
+              {...colourSwipe}
               className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
               onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
             >

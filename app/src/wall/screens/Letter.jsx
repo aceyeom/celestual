@@ -1021,6 +1021,11 @@ export default function Letter({
     if (stage.current) delete stage.current.dataset.grab
     if (d.axis === 'x' || d.ox) spring()
   }
+  // Safari tells the element the finger landed on that it lost the pointer
+  // when the stage takes it, and that bubbles here, where it read as the
+  // drag being cancelled on its first move: no letter on an iPhone could be
+  // swiped. Only the stage's own counts
+  const onLost = (e) => { if (e.target === e.currentTarget) onCancel(e) }
   const onClick = (e) => {
     if (!flung.current) return
     flung.current = false
@@ -1035,10 +1040,21 @@ export default function Letter({
     hush()
     if (landing.current) { landing.current(); landing.current = null }
   }
+  // and iOS takes a sideways drag it has not been told is ours as the start
+  // of a scroll, and cancels the pointer under it: once the drag is
+  // sideways, the touch is the card's
+  const gone = one === null
+  useEffect(() => {
+    const st = stage.current
+    if (!st || !canTurn) return undefined
+    const onTouch = (e) => { if (drag.current && drag.current.axis === 'x' && e.cancelable) e.preventDefault() }
+    st.addEventListener('touchmove', onTouch, { passive: false })
+    return () => st.removeEventListener('touchmove', onTouch)
+  }, [canTurn, gone])
   const swipe = canTurn
     ? {
       onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp,
-      onPointerCancel: onCancel, onLostPointerCapture: onCancel, onClickCapture: onClick,
+      onPointerCancel: onCancel, onLostPointerCapture: onLost, onClickCapture: onClick,
     }
     : null
 
