@@ -70,9 +70,10 @@ const EMPTY = {
                       // from the posted screen. Taken once
   member: null,       // a berkeley.edu address, if one has been given. It gates
                       // writing, and nothing else.
-  reader: false,      // whether either proof has landed. It gates reading, the
-                      // heart and the report. The server decides; this is the
-                      // copy of its answer the interface draws from.
+  reader: false,      // whether any proof has landed: the campus address, the
+                      // handle, google or a mailed code (0057). It gates
+                      // reading, the heart and the report. The server decides;
+                      // this is the copy of its answer the interface draws from.
   removed: [],        // handles that have asked to come off the wall. Held
                       // beside everything else so the reset clears them too.
   reported: [],       // letters a report took down. HELD, never deleted — the

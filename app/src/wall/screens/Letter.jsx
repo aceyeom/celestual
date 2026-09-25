@@ -263,8 +263,12 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   const text = open ? l.body : starred(l.words, l.chars, l.id)
   const hearts = l.hearts || 0
 
+  // Outside the gate the press is kept rather than dropped: the gate opens
+  // back onto this letter and presses the heart on the way in (Gate.jsx
+  // `finish`), so somebody who signed in to heart it is not sent to find the
+  // key and press it a second time
   const pressHeart = async () => {
-    if (!isReader()) { toGate(); return }
+    if (!isReader()) { setAfterGate({ name: 'letter', id: l.id, heart: true }); go('gate'); return }
     if (busy) return
     setBusy(true)
     await heart(l.id, !l.hearted)
@@ -354,9 +358,12 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     body = <ScreenText text={text} sealed={!open} />
     keys = {
       l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: open ? 'options: write to them, report' : 'options: read it, report' },
+      /* never disabled while a press is out: the heart is drawn at once
+         (data.js `heart`), and a key that dimmed until the server answered
+         read as a press that had not taken, and let go of the focus */
       c: {
         glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? String(hearts) : '',
-        onClick: pressHeart, disabled: busy, on: l.hearted,
+        onClick: pressHeart, on: l.hearted,
         pressed: isReader() ? !!l.hearted : undefined,
         aria: !isReader() ? 'sign in to heart this letter'
           : `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
