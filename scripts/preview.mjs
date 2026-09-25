@@ -1008,12 +1008,12 @@ const ROUTES = [
   { label: 'home-gate-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
   { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
     ['fill', '.wl-codebox-in', '481920'],
   ] },
   // the DM code, on the door: the one screen whose success depends on what
@@ -1021,11 +1021,11 @@ const ROUTES = [
   { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="instagram"]'],
     ['fill', '.wl-field input', 'ace03d'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
   { label: 'berkeley-gate-code', path: '/berkeley/gate', anon: true, acts: [
     ['fill', '.wl-addr-in', 'you'],
-    ['click', '.wl-door-ways .wl-lq'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
     ['fill', '.wl-codebox-in', '481920'],
   ] },
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
