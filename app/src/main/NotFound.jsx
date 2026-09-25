@@ -18,7 +18,7 @@ export default function NotFound({ go, who }) {
         <Display size="m" as="h1">nothing<br />at this address.</Display>
       </div>
       <div className="mn-foot">
-        <Pill tone="light" wide onClick={() => go('hero')}>the front page</Pill>
+        <Pill tone="light" wide onClick={() => go('hero')}>the wall</Pill>
       </div>
     </main>
   )

@@ -145,8 +145,11 @@ export default function Signin({ go, who, refreshWho }) {
       </div>
       {phase !== 'working' && phase !== 'offline' ? (
         <div className="mn-foot">
-          <Pill tone="light" wide onClick={() => go(phase === 'done' ? (handle ? 'sky' : 'hero') : 'place')}>
-            {phase === 'done' ? (handle ? 'see your sky' : 'the front') : 'prove it again'}
+          {/* Out to the wall, which is where the pings are now: the account
+              sheet for somebody whose handle came back, and the one that asks
+              for it again when the link had lapsed; the wall itself otherwise. */}
+          <Pill tone="light" wide onClick={() => go(phase === 'done' && !handle ? 'hero' : 'sky')}>
+            {phase === 'done' ? (handle ? 'see your pings' : 'the wall') : 'prove it again'}
           </Pill>
         </div>
       ) : null}

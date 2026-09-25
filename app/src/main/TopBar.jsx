@@ -12,7 +12,7 @@ import { Brand, Me } from '../wall/parts.jsx'
 export default function TopBar({ go, who = null, right = null }) {
   return (
     <header className="sg-top mn-top">
-      <Brand onClick={() => go('hero')} className="mn-top-mark" label="celestual, back to the front" />
+      <Brand onClick={() => go('hero')} className="mn-top-mark" label="celestual, back to the wall" />
       {right !== null ? right : who ? <Me who={who} onClick={() => go('sky')} /> : null}
     </header>
   )

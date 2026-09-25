@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
-import { BERKELEY_BASE, ownsAt, legacyRewrite } from './wall/router.js'
+import { BERKELEY_BASE, ownsAt, legacyRewrite, movedRewrite } from './wall/router.js'
 import { configure as configureWall } from './wall/campus.js'
 import { landing as cardLanding } from './cards.js'
 
@@ -61,7 +61,17 @@ if (scanned) {
 }
 
 const at = scanned ? scanned.split('?')[0] : here
-const moved = legacyRewrite(at)
+const legacy = legacyRewrite(at)
+
+// ── the ping came home ───────────────────────────────────────────────────────
+// Placing a ping was Main's flow, on pages of its own: a front door at /ping,
+// the flow at /place and /@handle, the list at /sky, the mutual at /reveal.
+// It is a sheet on the wall now (wall/screens/Ping.jsx, You.jsx), and every
+// one of those addresses is already printed somewhere, in a mail, a DM, a
+// bio, so each is rewritten onto the wall that is home (wall/router.js
+// `HOME_BASE`) the same way the old prefix is: in the history, before
+// anything mounts, with nothing anybody watches happen.
+const moved = legacy || movedRewrite(at)
 if (moved) {
   window.history.replaceState(window.history.state, '', moved + window.location.search + window.location.hash)
 }
@@ -70,8 +80,8 @@ const path = moved || at
 // ── the two walls ────────────────────────────────────────────────────────────
 // The campus wall owns everything under /berkeley. The wall for everybody
 // owns the root and its own sheets under it (/letter, /find, /write, /gate,
-// /report, /remove, /join); Main keeps its flow (/place, /sky, /reveal, and
-// the three addresses that arrive from outside). Which wall is decided here,
+// /report, /remove, /join, /ping, /you); Main keeps the three addresses that
+// arrive from outside (/optout, /copy, /signin). Which wall is decided here,
 // once, before anything mounts, and the wall's tree is told which one it is
 // drawing (wall/campus.js) before it builds a single address.
 const wallPath = ownsAt(BERKELEY_BASE, path)
@@ -101,8 +111,10 @@ if (PROJECT) {
 // Phase 6b. The Phase 3 signature surfaces were built at `/signature` and
 // `/signature/reveal`, which was always a preview address: the hero becomes `/`
 // and the reveal becomes a state of the core service once there is something
-// behind them. Both are true now, so Main claims `/`, `/place`, `/sky`,
-// `/reveal` and the open door at `/@handle`.
+// behind them. Both came true, and then both moved again: the root is the
+// wall for everybody, and the ping, its list and its reveal are sheets on the
+// wall (the rewrite above). What Main still draws is the three addresses that
+// arrive from outside the product.
 //
 // The fork happens BEFORE App.jsx sees the path, for the same reason the wall's
 // does: whichever shell mounts owns the address, and two shells reading the

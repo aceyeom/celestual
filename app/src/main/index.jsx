@@ -5,10 +5,19 @@
 // Phase 6b. The Phase 3 signature surfaces were built at `/signature` and
 // `/signature/reveal`, which was always a preview address: docs/launchsteps.md
 // section 0c records that the hero becomes `/` and the reveal folds into the
-// core service once there is something behind them. There is now.
+// core service once there is something behind them. There was, and this
+// shell drew all of it: the front door, the flow, the list and the mutual.
 //
-// So this shell is the Phase 3 shell, promoted. It owns the same three things
-// that file owned, for the same reasons:
+// ── and then the ping came home ─────────────────────────────────────────────
+// The wall is where people are when a ping occurs to them, so placing one is
+// a sheet on the wall now, and so is the list of what they have out and the
+// mutual itself (wall/screens/Ping.jsx, You.jsx). Their old addresses are
+// rewritten onto the wall before a shell is chosen (main.jsx). What is left
+// here is the three addresses that arrive from outside the product: the opt
+// out, and the two links out of a mail. They keep the design they were drawn
+// in, and every way out of them leads back to the wall.
+//
+// It owns two things, as it always did:
 //
 //   the faces     injected here from this origin, four files, and removed on
 //                 unmount so they are never fetched on a route that has no use
@@ -17,79 +26,58 @@
 //                 grain, mounted once and living across every route change
 //                 rather than restarting on each. The same component the wall
 //                 mounts, so the two surfaces are one room
-//   the intro     wall/Intro.jsx, once per tab, over the front door only. The
-//                 same two seconds the wall opens on
+//
+// The intro is not one of them any more. It opened the front door, and the
+// front door is the wall's.
 //
 // The system is app/src/wall/wall.css. Nothing here invents a token, a radius,
 // a face or a duration.
-//
-// ── what is different from the preview ──────────────────────────────────────
-// The hero's numbers come off wall_index, the reveal is driven by a mutual that
-// actually happened, and there is a flow between them. The field, the mark's
-// two orbits and the type are unchanged: they were approved as they stand.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import '../wall/wall.css'
 import '../signature/signature.css'
 import './main.css'
 import Ground from '../wall/ground.jsx'
-import Intro from '../wall/Intro.jsx'
+import { HOME_BASE } from '../wall/router.js'
 import { parse, href } from './router.js'
-import Hero from './Hero.jsx'
-import Place from './Place.jsx'
-import Sky from './Sky.jsx'
-import Reveal from './Reveal.jsx'
 import Optout from './Optout.jsx'
 import Copy from './Copy.jsx'
 import Signin from './Signin.jsx'
 import NotFound from './NotFound.jsx'
 import { me as whoAmI } from './data.js'
 import { ANON } from '../api/identity.js'
-import { ensureFaces, warmType } from '../wall/type.js'
+import { ensureFaces } from '../wall/type.js'
 
 export function prefersReducedMotion() {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 }
 
-// The intro plays once per tab and never again, and only over the front door.
-// Held here rather than in storage because it is about THIS load: a refresh
-// starts over and gets the whole thing, and a person walking back to `/` from
-// their sky should not sit through a logo to do it.
-let BOOTED = false
-
-// `/?nointro=1`, in development only, for the screenshot loop: the page without
-// the two seconds in front of it. Nothing in production reads the query string.
-function skipIntro() {
-  return import.meta.env.DEV && new URLSearchParams(window.location.search).has('nointro')
+// ── the names that moved ────────────────────────────────────────────────────
+// Every screen here still says where it is going by name: the brand goes to
+// 'hero', the chip to 'sky', a mailed sign in to 'place'. Those are the
+// wall's now, and a push inside this shell never passes the fork in main.jsx
+// that would have sent them there. So they leave by a real navigation, to the
+// wall that is home, and the shell's own history is not asked to draw a
+// screen it no longer has.
+const MOVED = {
+  hero:   () => HOME_BASE,
+  place:  (id) => `${HOME_BASE}/ping${id ? `/${encodeURIComponent(id)}` : ''}`,
+  sky:    () => `${HOME_BASE}/you`,
+  reveal: (id) => `${HOME_BASE}/reveal/${encodeURIComponent(id || '')}`,
 }
 
 export default function MainApp() {
   const [route, setRoute] = useState(() => parse(window.location.pathname) || { name: 'missing' })
-  // 0 the intro has the screen · 1 the page is mounted and rising under a black
-  // that is on its way out · 2 the intro is gone
-  const [boot, setBoot] = useState(() => (BOOTED || route.name !== 'hero' || skipIntro() ? 2 : 0))
-  const handOff = useCallback(() => setBoot(1), [])
-  const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
   const [who, setWho] = useState(ANON)
   // Whether whoami has answered at all. Until it has, `who` is the null
-  // identity by construction and not by fact, and the sky and the reveal wait
-  // rather than drawing the signed out state over somebody who is signed in.
+  // identity by construction and not by fact, and a screen waits rather than
+  // drawing the signed out state over somebody who is signed in.
   const [known, setKnown] = useState(false)
   const still = useRef(prefersReducedMotion()).current
 
   // ── the faces ──
   // Local, fetched by main.jsx beside this chunk, and linked here through the
-  // one module both shells share (type.js). The intro holds its lift until
-  // they have landed: a serif arriving two hundred milliseconds after the
-  // layout is a page that visibly changes its mind, and this is the first
-  // thing a person sees of the product.
+  // one module both shells share (type.js).
   useEffect(() => { ensureFaces() }, [])
-  const [ready, setReady] = useState(() => BOOTED || route.name !== 'hero')
-  useEffect(() => {
-    if (ready) return undefined
-    let alive = true
-    warmType().then(() => { if (alive) setReady(true) })
-    return () => { alive = false }
-  }, [ready])
 
   // ── who this is ──
   // Asked once. Somebody who proved their handle on the wall, or their campus
@@ -110,6 +98,7 @@ export default function MainApp() {
 
   // ── the address ──
   const go = useCallback((name, id) => {
+    if (MOVED[name]) { window.location.assign(MOVED[name](id)); return }
     const to = href(name, id)
     if (to === window.location.pathname) return
     window.history.pushState({ main: name }, '', to)
@@ -128,22 +117,10 @@ export default function MainApp() {
   return (
     <div className="wl-root sg-root mn-root">
       <Ground still={still} />
-
-      {/* Nothing is mounted under the intro until it starts to lift, and then
-          the hero is: its own entrance runs while the black is still leaving,
-          so the two read as one movement rather than a logo then a page. */}
-      {boot > 0 && (
-        route.name === 'place' ? <Place {...shared} to={route.to} />
-          : route.name === 'sky' ? <Sky {...shared} />
-          : route.name === 'reveal' ? <Reveal {...shared} id={route.id} />
-          : route.name === 'optout' ? <Optout {...shared} />
-          : route.name === 'copy' ? <Copy {...shared} />
-          : route.name === 'signin' ? <Signin {...shared} />
-          : route.name === 'missing' ? <NotFound {...shared} />
-          : <Hero {...shared} />
-      )}
-
-      {boot < 2 && <Intro reduce={still} ready={ready} onReveal={handOff} onDone={settle} />}
+      {route.name === 'optout' ? <Optout {...shared} />
+        : route.name === 'copy' ? <Copy {...shared} />
+        : route.name === 'signin' ? <Signin {...shared} />
+        : <NotFound {...shared} />}
     </div>
   )
 }
