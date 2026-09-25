@@ -687,8 +687,11 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, focu
   // the pair. Floored at the placeholder's width so an empty field is not a
   // caret alone, and capped so a long handle scrolls inside the field rather
   // than pushing the @ off the axis.
+  // On the wall an empty field's hint stands clear of the caret (phone.css),
+  // and the field is that much wider so the hint is not cut.
+  const chars = Math.min(20, Math.max((placeholder || '').length || 11, value.length + 1))
   const fit = centred
-    ? { width: `${Math.min(20, Math.max((placeholder || '').length || 11, value.length + 1))}ch`, flex: '0 1 auto' }
+    ? { width: phone && !value ? `calc(${chars}ch + 0.3em)` : `${chars}ch`, flex: '0 1 auto' }
     : undefined
 
   return (

@@ -123,9 +123,16 @@ function measure(el, pos) {
   st.width = `${Math.max(0, el.clientWidth - padL - padR)}px`
   st.whiteSpace = area ? 'pre-wrap' : 'pre'
   if (!area) st.overflowWrap = 'normal'
-  // an empty draft's example is indented a little behind the painted
-  // cursor (screen.css); the typed caret stands where that cursor blinks
-  if (!el.value) st.textIndent = '0px'
+  // An empty field's hint is indented a little behind the caret (the
+  // draft's example in screen.css, the chrome's hints in phone.css), and the
+  // caret stands in that indent, just clear of the hint's first letter,
+  // wherever the field aligns it: the hint is set in the mirror after the
+  // caret's place with the field's own indent, and the caret is drawn that
+  // indent back. A field with no indent (the code box) keeps its caret
+  // where its first figure will stand
+  const indent = el.value ? 0 : parseFloat(cs.textIndent) || 0
+  const hint = indent ? el.placeholder || '' : ''
+  if (!el.value && !hint) st.textIndent = '0px'
   // the first line's top and its baseline (an empty inline, and a box of no
   // size, which stands on the baseline), then the words up to the caret,
   // the character after it in a span of its own, and the rest. The span
@@ -138,7 +145,7 @@ function measure(el, pos) {
   base.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline'
   const here = document.createElement('span')
   here.textContent = next || '\u200b'
-  m.replaceChildren(top, base, document.createTextNode(el.value.slice(0, pos)), here, document.createTextNode(el.value.slice(pos + next.length)))
+  m.replaceChildren(top, base, document.createTextNode(el.value.slice(0, pos)), here, document.createTextNode(hint || el.value.slice(pos + next.length)))
   const fs = parseFloat(cs.fontSize) || 16
   let y = here.offsetTop + (base.offsetTop - top.offsetTop)
   // a single line is set in the middle of the field's height
@@ -148,7 +155,7 @@ function measure(el, pos) {
   const mr = m.getBoundingClientRect()
   const ar = here.getClientRects()[0] || here.getBoundingClientRect()
   return {
-    x: el.clientLeft + (ar.left - mr.left) - el.scrollLeft,
+    x: el.clientLeft + (ar.left - mr.left) - el.scrollLeft - indent,
     y: el.clientTop + y - el.scrollTop,
     // how far a line's baseline stands under the top of its line box
     drop: base.offsetTop - padT,
