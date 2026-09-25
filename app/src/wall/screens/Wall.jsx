@@ -133,7 +133,7 @@ import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
 import { campus } from '../campus.js'
 import Hive from '../Hive.jsx'
-import LiquidMark from '../LiquidMark.jsx'
+import { PixelMark } from '../PixelStory.jsx'
 import { Bloom } from '../art.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -823,16 +823,16 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
               <div className="wl-veil-in">
                 <div className="wl-mast">
                   {/* ── the mark, on the wall at the root ──
-                      The front door used to open on the mark as a material,
-                      the metal with a current under it, over its own title.
-                      The wall is the front door now, so the poster carries
-                      it: the same object the intro poured, at the size of a
-                      seal, with the bloom behind it, over the title. The
-                      campus wall keeps its poster as it was (campus.js). */}
+                      It was the liquid metal, a material, straight after an
+                      intro that ends on the mark in pixels. It is those same
+                      pixels now, at the size of a seal, with the bloom
+                      behind it, over the title, so the first screen after
+                      the intro is the mark the intro ended on. The campus
+                      wall keeps its poster as it was (campus.js). */}
                   {campus().mark ? (
                     <div className="wl-mast-mark" aria-hidden="true">
                       <Bloom size={210} opacity={0.34} className="wl-mast-bloom" />
-                      <LiquidMark size={78} speed={0.55} still={reduce} quality="row" />
+                      <PixelMark cell={2} />
                     </div>
                   ) : null}
                   <Display size="xl" as="h1" className="wl-mast-title">

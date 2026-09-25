@@ -2004,9 +2004,9 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-mast-title { margin: 0; }
 /* ── the mark over the title, on the wall at the root ──
-   The front door's seal, the metal with the current under it, with the bloom
-   behind it: the one place on a wall the light is spent, and only on the
-   poster, once. The campus wall's poster has no mark (campus.js). */
+   The intro's last frame at the size of a seal (PixelStory.jsx `PixelMark`),
+   with the bloom behind it: the one place on a wall the light is spent, and
+   only on the poster, once. The campus wall's poster has no mark (campus.js). */
 .wl-mast-mark {
   position: relative; display: grid; place-items: center;
   width: 120px; height: 100px; margin: 0 auto 14px;

@@ -356,6 +356,9 @@ function drawScreen(o, tile = null) {
     g.font = `400 ${11 * u}px ${FACE}`
     if (o.date) { g.textAlign = 'left'; g.fillText(o.date, ex + aw + 1.4 * u, mid1 + 0.4 * u) }
     if (o.counter) { g.textAlign = 'right'; g.fillText(o.counter, sw - ex - bw - 2.6 * u, mid1 + 0.4 * u) }
+    // a letter's day stands in the middle of the space between the two
+    // glyphs, as it does on the page (screen.css `.wl-scr-stamp`)
+    if (o.stamp) { g.textAlign = 'center'; g.fillText(o.stamp, (ex + aw + sw - ex - bw) / 2, mid1 + 0.4 * u) }
     // row two: the pen, or a lock on a sealed letter, "dear" and the name,
     // and the handle in what is left of it
     const mid2 = r1 + rowH + 0.6 * u + rowH / 2
@@ -677,9 +680,9 @@ export function letterFace(l, { name, handle }) {
     look: l.look, seed: l.id, text, sealed: !open,
     name, handle,
     icon: open ? 'pen' : 'lock', dear: true,
-    // the day it went up, by the battery, in the place a draft keeps its
-    // count (`counter` is what the row draws there), and no second date
-    counter: stampOf(l.at), bat: chargeOf(l.at),
+    // the day it went up, between the aerial and the battery, and no
+    // second date
+    stamp: stampOf(l.at), bat: chargeOf(l.at),
     hearts: l.hearts || 0, hearted: !!l.hearted,
     left: 'options', right: 'share',
   }

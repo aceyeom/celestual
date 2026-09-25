@@ -141,7 +141,7 @@ const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
 const ADMIN = '/admin'
 const adminPath = path === ADMIN
 
-// ── the faces, and the metal, fetched now ────────────────────────────────────
+// ── the faces, fetched now ───────────────────────────────────────────────────
 // Both surfaces set their type in the same four faces, and until now none
 // was asked for until the shell's chunk had loaded, mounted and injected a
 // stylesheet. The faces then arrived a moment after the page did, and every
@@ -151,11 +151,8 @@ const adminPath = path === ADMIN
 // (wall/type.js), so the first frame of either surface is set in its own
 // faces.
 //
-// The mask is the liquid mark's texture, and one screen is left that draws
-// the mark in metal: the poster over the wall at the root (screens/Wall.jsx).
-// The intro and the mutual are the phone's own pixels now (pixmark.js) and
-// fetch nothing, so the mask is asked for there alone, where it was once
-// seen to change material partway through its own arrival on a slow line.
+// The mark is the phone's own pixels everywhere now, the poster's seal
+// included (PixelStory.jsx `PixelMark`), so there is no metal to fetch.
 if (!adminPath && !sigPath) {
   const pre = (href, as, type) => {
     const link = document.createElement('link')
@@ -172,7 +169,6 @@ if (!adminPath && !sigPath) {
   // the one face every screen on the wall is set in, so a letter never
   // lights up in a stand-in and then jumps to its own pixels
   pre('/fonts/jersey-10-normal-400-latin.woff2', 'font', 'font/woff2')
-  if (homePath) pre('/liquid-mark.png', 'image')
 }
 
 

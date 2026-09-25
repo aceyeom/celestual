@@ -553,7 +553,7 @@ export function Screen({
               </span>
               {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
               {stamp
-                ? <span className="wl-scr-cnt wl-lit">{stamp}</span>
+                ? <span className="wl-scr-cnt wl-scr-stamp wl-lit">{stamp}</span>
                 : counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
               <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
                 <Pix name={`bata${bat}`} h={8} />

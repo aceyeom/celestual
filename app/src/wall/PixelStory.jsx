@@ -29,7 +29,41 @@
 // story can be started by whoever owns the beats around it.
 
 import { useEffect, useRef } from 'react'
+import { markCells, MARK_CUT } from './pixmark.js'
+import { CHALK } from './mark.js'
 import './story.css'
+
+// ── the mark, standing still ────────────────────────────────────────────────
+// The last frame of every story with no screen round it: the same cells the
+// intro assembles (pixmark.js `markCells`), each a square of chalk with the
+// gap an LCD has between its dots, drawn once. It is the seal on the root
+// wall's poster, where the liquid metal stood, so the first screen after the
+// intro is the mark the intro ended on. `cell` is CSS pixels per cell; the
+// canvas is the grid's size to the device pixel.
+export function PixelMark({ cell = 2, ink = CHALK, className = '' }) {
+  const ref = useRef(null)
+  const n = markCells(47, MARK_CUT).n
+  useEffect(() => {
+    const cv = ref.current
+    if (!cv) return
+    const { list } = markCells(47, MARK_CUT)
+    const dpr = Math.min(3, Math.max(1, Math.round(window.devicePixelRatio || 1)))
+    const px = cell * dpr
+    const gap = Math.max(1, Math.round(px * 0.18))
+    cv.width = n * px
+    cv.height = n * px
+    const g = cv.getContext('2d')
+    g.clearRect(0, 0, cv.width, cv.height)
+    g.fillStyle = ink
+    for (const c of list) g.fillRect(c.x * px, c.y * px, px - gap, px - gap)
+  }, [cell, ink, n])
+  return (
+    <canvas
+      ref={ref} className={`wl-pixmark ${className}`} aria-hidden="true"
+      style={{ width: n * cell, height: n * cell, imageRendering: 'pixelated' }}
+    />
+  )
+}
 
 // ── and the phone is held square ──
 // Every letter's screen is photographed a degree or two off true (looks.js

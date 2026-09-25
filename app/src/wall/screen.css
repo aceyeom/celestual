@@ -103,6 +103,9 @@
 .wl-scr-cnt, .wl-scr-bat { margin-left: auto; }
 .wl-scr-cnt { margin-right: 1.2cqw; }
 .wl-scr-cnt + .wl-scr-bat { margin-left: 0; }
+/* a letter's day is not a count: it stands in the middle of the row, the
+   free space shared on either side between the aerial and the battery */
+.wl-scr-stamp { margin-left: auto; margin-right: auto; }
 .wl-scr-nm {
   flex: 0 1 auto; min-width: 0;
   font-size: 11cqw; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
