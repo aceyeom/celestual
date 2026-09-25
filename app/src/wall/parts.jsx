@@ -15,6 +15,7 @@ import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 import { PixelPic, PixIcon, Wait } from './screen.jsx'
+import { Caret } from './caret.jsx'
 import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
 
@@ -644,6 +645,8 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, focu
   onKeyDown = null, kind = 'handle', onFocus = null, onBlur = null, centred = false }) {
   const ref = useRef(null)
   const id = useId()
+  // on the wall the caret is the phone's (caret.jsx); Main keeps the native one
+  const phone = usePhone()
   const named = kind === 'name'
   // `kind="search"` is the wall's own question: a glass in the place of the
   // @, because a name is as good an answer as a handle since 0054, and a
@@ -699,6 +702,7 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, focu
           if (e.key === 'Enter' && onSubmit) { e.preventDefault(); onSubmit() }
         }}
       />
+      {phone ? <Caret of={ref} /> : null}
       <span className="wl-field-line" aria-hidden="true" />
     </div>
   )
@@ -1075,6 +1079,7 @@ export function waitLine(resets) {
 // and a box the size of the composer would say the opposite.
 export function ReasonField({ value, onChange, placeholder = '', max = 240, autoFocus = false }) {
   const ref = useRef(null)
+  const phone = usePhone()
   useEffect(() => {
     if (!autoFocus || !ref.current) return
     const fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches
@@ -1087,6 +1092,7 @@ export function ReasonField({ value, onChange, placeholder = '', max = 240, auto
         aria-label="why" spellCheck="true"
         onChange={(e) => onChange(e.target.value)}
       />
+      {phone ? <Caret of={ref} /> : null}
       <span className="wl-field-line" aria-hidden="true" />
     </div>
   )
@@ -1237,6 +1243,8 @@ export function CodeBox({
   autoFocus = false, label = 'the code from the mail', className = '',
 }) {
   const dots = '·'.repeat(length)
+  const ref = useRef(null)
+  const phone = usePhone()
   if (!onChange) {
     return (
       <div className={`wl-codebox is-shown ${className}`}>
@@ -1249,7 +1257,7 @@ export function CodeBox({
   return (
     <div className={`wl-codebox ${className}`}>
       <input
-        className="wl-codebox-in"
+        ref={ref} className="wl-codebox-in"
         value={value}
         // Digits only, and never more than the code is long: a paste that
         // brought a space, a newline or the sentence around it off a mail
@@ -1261,6 +1269,7 @@ export function CodeBox({
         autoFocus={autoFocus} autoCorrect="off" spellCheck="false" enterKeyHint="go"
         maxLength={length}
       />
+      {phone ? <Caret of={ref} /> : null}
     </div>
   )
 }

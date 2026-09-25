@@ -27,6 +27,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS } from './looks.js'
+import { Caret } from './caret.jsx'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -697,9 +698,10 @@ export function ScreenText({ text, cursor = false, sealed = false, className = '
 }
 
 // The draft, being written: the same words in the same place, in a
-// textarea, with the phone's own caret. It autofocuses only where there is a
-// fine pointer, because on a phone the keyboard coming up unasked covers the
-// screen the person has not looked at yet. `inputRef` is handed the
+// textarea, with the phone's own caret, drawn by caret.jsx in the words'
+// ink and two of the face's pixels wide. It autofocuses only where there is
+// a fine pointer, because on a phone the keyboard coming up unasked covers
+// the screen the person has not looked at yet. `inputRef` is handed the
 // textarea too, for a key that edits at the caret.
 export function ScreenDraft({ value, onChange, max = 280, placeholder = '', autoFocus = false, label = 'your letter', inputRef = null }) {
   const ref = useRef(null)
@@ -721,6 +723,7 @@ export function ScreenDraft({ value, onChange, max = 280, placeholder = '', auto
         maxLength={max} rows={1} spellCheck="true" aria-label={label}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
       />
+      <Caret of={ref} screen />
       <Bar of={ref} over={over} />
     </>
   )

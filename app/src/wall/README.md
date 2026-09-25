@@ -413,6 +413,14 @@ intro are the only things on the wall that are not the phone. The shared
 parts learn which surface they are on from `PhoneChrome` (`parts.jsx`), which
 only the wall's root turns on, so Main draws them as it always has.
 
+The caret is the phone's too (`caret.jsx`, design/DESIGN.md 8.3): where a
+person types on the wall (the draft's screen, and the handle, search,
+address, code and reason fields) it is drawn, measured in one mirror kept off
+the glass, as a bar two strokes of the face wide between words and at the
+end, and as the letter after it inverted in the middle of a word. In the
+words' ink on the screen, chalk in the chrome, blinking on the phone's beat
+and solid while somebody types. Main keeps the browser's caret.
+
 A letter reached from a link, before the tab has been to the wall, carries
 the brand at its top left and `view the wall` under it (`Letter.jsx`
 `LetterBrand`, `ViewWall`). Either one drops the wall's poster and closes

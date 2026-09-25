@@ -143,10 +143,12 @@
 }
 .wl-scr-draft::placeholder { color: var(--s-ink); opacity: 0.38; }
 /* an empty draft that is not being typed in keeps the phone's cursor, a
-   blinking bar before the example, the size of the letter's (`.wl-scr-cur`) */
-.wl-root .wl-scr-draft:placeholder-shown { text-indent: 0.25em; }
+   blinking bar before the example: the same bar the caret is once the
+   draft is typed in (caret.jsx), two strokes of the face wide and cap top
+   to a stroke under the line, so a tap does not change its width */
+.wl-root .wl-scr-draft:placeholder-shown { text-indent: 0.3em; }
 .wl-root .wl-scr-draft:placeholder-shown:not(:focus) {
-  background: linear-gradient(currentColor, currentColor) 0 0.24em / 0.107em 0.64em no-repeat;
+  background: linear-gradient(currentColor, currentColor) 0 0.24em / 0.214em 0.64em no-repeat;
   animation: wl-draft-cur 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms);
 }
 @keyframes wl-draft-cur { 50% { background-size: 0 0; } }
@@ -158,6 +160,35 @@
   animation: wl-blink 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms);
 }
 @keyframes wl-blink { 50% { opacity: 0; } }
+/* the caret, where a person is typing (caret.jsx): the same bar as the
+   cursor above, drawn by the component in the field's own box and sized in
+   its face's pixels. Lit for the first half of the phone's beat and out for
+   the second; the two names are one beat, swapped by the component so each
+   keystroke starts it again from the lit half. In the chrome it is chalk
+   (phone.css); on the screen it is the words' own ink with their bloom, and
+   under the press it prints in the darkest ink, as the words do. While it
+   is drawn the native caret is put out (`data-caret`), and nowhere else */
+.wl-caret {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; overflow: hidden;
+  background: var(--chalk, #F4F1EA);
+  animation: wl-caret-a 1060ms steps(1, end) infinite;
+}
+.wl-caret.is-b { animation-name: wl-caret-b; }
+.wl-caret[hidden] { display: none; }
+@keyframes wl-caret-a { 50% { opacity: 0; } }
+@keyframes wl-caret-b { 50% { opacity: 0; } }
+/* in the middle of a word the caret is the letter after it, inverted: the
+   letter set again inside a cell of its own width and struck out of it */
+.wl-caret > i {
+  position: absolute; left: 0; margin: 0; padding: 0; white-space: pre;
+  font-style: normal; font-synthesis: none; text-shadow: none; color: #000;
+}
+.wl-caret.is-screen { background: var(--s-ink); box-shadow: 0 0 0.35cqw var(--s-soft); }
+.wl-caret.is-screen > i { color: var(--s-mid); }
+.wl-root .wl-scr-draft[data-caret] { caret-color: transparent; }
+/* a selection on the screen is the phone's inversion, the words struck out
+   of a bar of their own ink, so it is plain while the caret is away */
+.wl-root .wl-scr-draft::selection { background: var(--s-ink); color: var(--s-hi); text-shadow: none; }
 /* a sealed letter's stars: the face's '*' is a small raised mark, so each
    run is set at 4/3, where one star is exactly as wide as an 'x', its ink
    centred on the x-height and nothing hanging below the line, so the letter
@@ -272,7 +303,7 @@
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit { text-shadow: none; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit-g .wl-px,
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-px.wl-lit-g { filter: none; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-scr-cur { box-shadow: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) :is(.wl-scr-cur, .wl-caret) { box-shadow: none; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass {
   box-shadow: inset 0 0 0 1.4cqw rgba(0, 0, 0, 0.85);
 }
@@ -509,8 +540,14 @@
 .wl-mini-body i:nth-child(2) { top: 48%; width: 52%; }
 .wl-mini-body i:nth-child(3) { top: 62%; width: 62%; }
 
+/* in a forced colour scheme the browser's own caret, in the scheme's colour */
+@media (forced-colors: active) {
+  .wl-caret { display: none; }
+  .wl-root [data-caret] { caret-color: auto !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
   .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
   /* the words are fitted by measuring them at each size (`useFit`), and a
      transition, even the 1ms one this preference gives everything

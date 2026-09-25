@@ -874,6 +874,28 @@ That is Main's field. On the wall every field is an LCD box (2.6): the unlit
 panel, the value in Jersey, no line drawn across it, and the bezel lit while it
 has the focus, since the input itself carries no outline.
 
+**The caret is the phone's** (`caret.jsx`), on the wall only: the draft's
+screen and the fields of the chrome (the handle, the search, the address, the
+code and the reason). Main keeps the browser's. It is drawn on the face's own
+grid, where a stroke is two pixels, the gap between two letters one and a
+space four: between words and at the end of them it is a bar four pixels
+wide (0.214em, two strokes), from the top of the capitals to a stroke under
+the line, standing in the cell the next character will take; in the middle
+of a word, where a bar that wide swallowed a narrow letter, it is the letter
+after it inverted, a cell of that letter's width with the letter struck out
+in the ground's colour. On the screen it is the words' ink with their bloom
+and sits under the screen's tilt, blur and press, so a print prints it in
+its darkest ink; in the chrome it is chalk, on the device's pixels, with no
+glow. It blinks on the phone's beat (1060ms, two steps), lit at once and
+again from the lit half on every keystroke, so it is solid while somebody
+types; still under reduced motion; gone while a range is selected, which is
+drawn inverted in its place; kept at the end of what an input method is
+composing; and the browser's own caret in a forced colour scheme and in any
+state it does not draw. An empty draft's painted cursor (`wl-draft-cur`) is
+the same bar, so a tap does not change it. The draft's native caret is the
+words' ink: the chrome's chalk rule reached it once and drew a chalk hairline
+on a pale panel.
+
 | Component | Class |
 | --- | --- |
 | Handle field | `.wl-field`, `.wl-field.is-lg`. Three kinds, one baseline: `handle`, the painted `@`; `name` (`.is-name`), the `@` gone and the input set in the display face, because a name is something a person means and a handle is an identifier, for a letter to a first name; `search` (`.is-search`), the lens in the `@`'s place (the pixel `find` glyph on the wall), since a name is as good an answer as a handle |

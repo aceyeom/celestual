@@ -70,6 +70,8 @@ import { campus, needsCampus } from '../campus.js'
 import { loginEnabled, startGoogle, sendEmailCode, checkEmailCode, finishLogin } from '../../api/login.js'
 import { href } from '../router.js'
 import { cardStep } from '../seed.js'
+import { Caret } from '../caret.jsx'
+import { usePhone } from '../parts.jsx'
 
 // The composer's own field, reused: a bare baseline with the constant part of
 // the string painted beside it rather than typed into it. The '@berkeley.edu'
@@ -82,10 +84,12 @@ import { cardStep } from '../seed.js'
 // half: any address is whole.
 function AddressField({ value, onChange, onSubmit, domain = '' }) {
   const whole = !domain || value.includes('@')
+  const ref = useRef(null)
+  const phone = usePhone()
   return (
     <div className={`wl-addr${whole ? ' is-whole' : ''}`}>
       <input
-        className="wl-addr-in" value={value} onChange={(e) => onChange(e.target.value)}
+        ref={ref} className="wl-addr-in" value={value} onChange={(e) => onChange(e.target.value)}
         /* Sized to what is in it, so the painted half sits flush against the
            typed half and the two read as one address rather than as a box with
            a domain parked to the right of it. Capped, so a long local part
@@ -98,6 +102,8 @@ function AddressField({ value, onChange, onSubmit, domain = '' }) {
         type="text" inputMode="email" autoComplete="username"
         autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="next"
       />
+      {/* the phone's caret, on the wall (caret.jsx) */}
+      {phone ? <Caret of={ref} /> : null}
       {whole ? null : <span className="wl-addr-fix" aria-hidden="true">@{domain}</span>}
       <span className="wl-field-line" aria-hidden="true" />
     </div>
