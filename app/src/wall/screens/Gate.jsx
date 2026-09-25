@@ -419,17 +419,17 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
                 tone="light" wide icon={<Provider size={17} />} data-way="instagram"
                 onClick={() => setWay('instagram')} disabled={!igVerifyEnabled()}
               >
-                continue with instagram
+                continue with Instagram
               </Pill>
               {/* the one line that says why this one is the default, under the
                   control it is about rather than inside it */}
-              <p className="wl-door-why">it is how we can tell you when a ping is mutual.</p>
+              <p className="wl-door-why">so we can tell you if it&rsquo;s mutual, and you can remove letters about you.</p>
               <Or />
               <Pill
                 tone="ghost" wide icon={<Google size={16} />} data-way="google"
                 onClick={google} disabled={!canLogin || busy}
               >
-                {busy ? 'one moment' : 'continue with google'}
+                {busy ? 'one moment' : 'continue with Google'}
               </Pill>
               <Pill
                 tone="ghost" wide icon={<Envelope size={16} />} data-way="email"
@@ -486,8 +486,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
               <div className="wl-door">
                 <DoorHead
                   id="wl-gate-h"
-                  title={<>your instagram,<br />proved by one DM.</>}
-                  say="your information will stay anonymous."
+                  title={<>confirm this is<br />your Instagram.</>}
+                  say="so we can tell you if it’s mutual, and you can remove letters about you."
                 />
                 <div className="wl-door-ways">
                   <HandleField
@@ -495,7 +495,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
                     autoFocus centred size="lg" placeholder="yourhandle" label="your instagram handle" busy={busy}
                   />
                   <Pill tone="light" wide onClick={askIg} disabled={busy || !validHandle(me)} icon={<Provider size={17} />}>
-                    {busy ? 'one moment' : 'prove it with one DM'}
+                    {busy ? 'one moment' : 'confirm with one DM'}
                   </Pill>
                 </div>
                 <div className="wl-gate-fault" aria-live="polite">{said}</div>

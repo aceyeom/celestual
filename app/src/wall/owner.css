@@ -1,0 +1,139 @@
+/* ═══ THE OWNER OF AN @ ════════════════════════════════════════════════════
+   docs/ONE-WALL.md: Instagram verification is ownership. What a person who
+   has claimed their @ gets, drawn in the phone's language like the rest of
+   the wall (DESIGN.md 2.6): the toast that offers an undo, the switch an
+   alert is turned on with, the address field and the link's wait, the "your
+   @" section of the person's page, and the two sheets the alert emails open.
+
+   The phone's tokens (`--lcd`, `--lcd-edge`, `--r-lcd`) are the wall's own
+   (phone.css), so each is read with its value beside it: Main imports these
+   parts too, and nothing here should draw as nothing there. */
+
+/* ── the toast ──────────────────────────────────────────────────────────────
+   A line on an unlit panel at the foot of the glass, over the sheet it was
+   raised from, and the one key that takes the act back, lit the way the
+   phone lit the chosen row: a chalk plate with the word in black. */
+.wl-toast {
+  position: fixed; z-index: 3;
+  left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--r-lcd, 3px);
+  background-color: var(--lcd, #0B0B0B);
+  background-image: var(--lcd-grid, none);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)), 0 20px 44px -18px #000;
+  color: var(--chalk);
+  animation: wl-toast-in 260ms var(--ease, ease-out) both;
+}
+.wl-toast-say { font-family: var(--f-util); font-size: var(--t-wide); line-height: 1.2; white-space: nowrap; }
+.wl-toast-act {
+  flex: 0 0 auto; min-height: 34px; padding: 0 14px;
+  border: 0; border-radius: var(--r-lcd, 3px);
+  background: var(--chalk); color: #000;
+  font-family: var(--f-util); font-size: var(--t-wide); line-height: 1;
+  cursor: pointer;
+}
+.wl-toast-act:focus-visible { outline: 1px solid var(--chalk); outline-offset: 2px; }
+@keyframes wl-toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-toast { animation: none; }
+}
+
+/* ── the switch ─────────────────────────────────────────────────────────────
+   The whole row is the control: the sentence, and at its end a square
+   track with a square knob, the way a phone drew an option that was on or
+   off. On, the knob crosses and lights. */
+.wl-switch {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; padding: 9px 0;
+  border: 0; background: none; text-align: left;
+  color: var(--chalk); cursor: pointer;
+}
+.wl-switch:disabled { cursor: default; opacity: 0.5; }
+.wl-switch-say { flex: 1 1 auto; min-width: 0; font-family: var(--f-util); font-size: var(--t-wide); line-height: 1.2; text-wrap: balance; }
+.wl-switch-track {
+  position: relative; flex: 0 0 auto;
+  width: 38px; height: 20px;
+  border-radius: var(--r-lcd, 3px);
+  background: var(--lcd, #0B0B0B);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
+  transition: box-shadow 160ms var(--ease, ease);
+}
+.wl-switch-knob {
+  position: absolute; top: 4px; left: 4px;
+  width: 12px; height: 12px;
+  background: var(--ash-dim);
+  transition: transform 180ms var(--ease, ease), background 180ms var(--ease, ease);
+}
+.wl-switch.is-on .wl-switch-track { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
+.wl-switch.is-on .wl-switch-knob { transform: translateX(18px); background: var(--chalk); }
+.wl-switch.is-busy .wl-switch-knob { animation: wl-owner-blink 1060ms steps(1, end) infinite; }
+.wl-switch:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.45); outline-offset: 2px; }
+@keyframes wl-owner-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.32; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-switch-knob { transition: none; }
+  .wl-switch.is-busy .wl-switch-knob { animation: none; }
+}
+
+/* ── the address, and the wait for its link ─────────────────────────────── */
+.wl-owner-mail { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; }
+.wl-owner-mail .wl-gate-fault { padding-top: 0; min-height: 0; }
+.wl-owner-mail .wl-gate-fault:empty { display: none; }
+.wl-owner-mail.is-compact { gap: 12px; }
+.wl-owner-mail.is-compact > .wl-pill { align-self: flex-start; }
+.wl-owner-addr { width: 100%; }
+.wl-owner-sent { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.wl-owner-sent.is-compact { align-items: flex-start; }
+.wl-owner-say {
+  margin: 0; max-width: 34ch;
+  font-family: var(--f-util); font-size: var(--t-wide); line-height: 1.3;
+  color: var(--ash); text-wrap: pretty;
+}
+.wl-owner-say .wl-h { color: var(--chalk); overflow-wrap: anywhere; }
+.wl-owner-wait {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
+}
+
+/* ── your @, on the person's page ─────────────────────────────────────────── */
+.wl-owner-at { display: flex; flex-direction: column; }
+.wl-owner-me { display: flex; align-items: center; gap: 12px; padding-top: 10px; }
+.wl-owner-alerts { display: flex; flex-direction: column; gap: 0; padding-top: 10px; }
+.wl-owner-to {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  margin: 8px 0 0;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.3; color: var(--ash);
+}
+.wl-owner-to .wl-h { color: var(--chalk); overflow-wrap: anywhere; }
+.wl-owner-to .wl-quiet { padding: 0; }
+.wl-owner-change { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding-top: 12px; }
+.wl-owner-change > .wl-quiet { align-self: flex-start; margin: 0; padding: 2px 0; }
+.wl-owner-said { margin: 10px 0 0; font-family: var(--f-util); font-size: var(--t-small); line-height: 1.3; color: var(--ash); }
+.wl-owner-off { align-self: flex-start; margin-top: 16px; padding: 2px 0; }
+
+/* ── the sheets the emails open ───────────────────────────────────────────
+   Report's shape (`.wl-report`): a small label saying what this is about,
+   since the person arrived from an inbox, the line, and the act docked. */
+.wl-owner-kicker { padding-top: 6px; margin-bottom: 10px; }
+.wl-owner .wl-foot .wl-gate-fault { padding-top: 0; min-height: 0; text-align: center; }
+.wl-owner .wl-foot .wl-gate-fault:empty { display: none; }
+
+/* ── the claim: the door, with the alert's question on it ──────────────── */
+.wl-claim .wl-door-say { max-width: 32ch; }
+.wl-claim .wl-owner-mail { padding-top: 0; }
+
+/* ── the tab: what it is, and what happens, on two lines ─────────────────── */
+.wl-tab-h { display: block; }
+.wl-tab-sub {
+  display: block; margin-top: 5px;
+  font-size: var(--t-small); line-height: 1.2; color: var(--ash);
+  text-wrap: pretty;
+}

@@ -110,9 +110,9 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
     setMinting(false)
     if (!out.ok) {
       setFault(
-        out.error === 'off' ? 'that door is not open yet'
-          : out.error === 'rate_limited' ? 'too many tries on that @. give it an hour'
-          : 'that did not go through',
+        out.error === 'off' ? 'Instagram checks are off right now. try again later.'
+          : out.error === 'rate_limited' ? 'too many tries on that @. try again in an hour.'
+          : 'that did not go through. try again.',
       )
       return
     }
@@ -142,8 +142,8 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
       polling = false
       if (stop || !alive.current) return
       if (out.ok) { clearPending(); setDm(null); setValue(out.handle); return }
-      if (out.error === 'expired') { clearPending(); setDm(null); setFault('that code has lapsed'); return }
-      if (out.error) { clearPending(); setDm(null); setFault('that did not go through'); return }
+      if (out.error === 'expired') { clearPending(); setDm(null); setFault('that code has lapsed. ask for a new one.'); return }
+      if (out.error) { clearPending(); setDm(null); setFault('that did not go through. try again.'); return }
       timer = setTimeout(tick, 2500)
     }
     let timer = setTimeout(tick, 2500)
@@ -183,10 +183,10 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
       if (err === 'unverified' || err === 'no_session') {
         // This device believed the handle was proven; the server does not.
         forgetVerified(h)
-        setFault('that @ is not proven on this device any more. prove it again')
+        setFault('this device is no longer confirmed for that @. confirm it again.')
       } else {
-        setFault(n ? `${n} of ${mine.length} came down. the rest did not go through: try again`
-          : 'it did not go through. try once more')
+        setFault(n ? `${n} of ${mine.length} came down. try again for the rest.`
+          : 'nothing came down. try again.')
       }
       return
     }
@@ -209,8 +209,8 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
             <Label tone="dim"><span className="wl-h">{atHandle(gone.handle)}</span></Label>
             <Prose className="wl-gate-copy">
               {gone.n === 0
-                ? 'there was nothing under it. a name with no letters is not on the wall.'
-                : `${gone.n === 1 ? 'the one letter' : `all ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
+                ? 'there were no letters to it, so nothing came down.'
+                : `${gone.n === 1 ? 'the one letter' : `all ${gone.n} letters`} to it came down, and nobody can write to it again.`}
             </Prose>
             {/* The wall is one of two surfaces, and this control is only the
                 wall's. Somebody who wants the handle out of the product
@@ -219,9 +219,9 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
                 the pings both ways, and takes the name off the wall as part
                 of the same act (migration 0046). */}
             <Prose className="wl-gate-copy">
-              the rest of celestual is its own door.{' '}
-              <a className="wl-quiet" href="/optout">take the handle off there</a> and it
-              goes from both, for good.
+              private notes are separate.{' '}
+              <a className="wl-quiet" href="/optout">opt out of celestual</a> to stop
+              those too.
             </Prose>
           </div>
           <div className="wl-push" />
@@ -246,15 +246,17 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
         ) : (
           <>
             <Display size="s" as="h2" id="wl-rm-h">
-              {proven ? <>it&rsquo;s yours.<br />take it down.</> : <>take your name<br />off the wall.</>}
+              {proven
+                ? <>it&rsquo;s your @.<br />remove yourself<br />from the wall.</>
+                : <>verify your Instagram handle to remove yourself from the wall.</>}
             </Display>
 
             {/* Two lines, not a paragraph. What it costs, and the cheaper door
                 beside it. */}
             <Prose className="wl-gate-copy">
               {proven
-                ? 'every letter under it goes too.'
-                : 'permanent. to take down one letter, report that one instead.'}
+                ? 'every letter to your @ comes down, and nobody can write to it again. this cannot be undone.'
+                : 'this takes down every letter to your @ and stops new ones, for good. for just one letter, report that letter instead.'}
             </Prose>
 
             <div className="wl-remove-field">
@@ -274,9 +276,9 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
                 <div className="wl-remove-row">
                   <Face handle={h} size={28} lit={proven} />
                   <Label tone="dim">
-                    {count === 0 ? 'no letters under it'
-                      : count === 1 ? 'one letter goes with it'
-                      : `${count} letters go with it`}
+                    {count === 0 ? 'no letters to it yet'
+                      : count === 1 ? 'one letter to it now'
+                      : `${count} letters to it now`}
                   </Label>
                 </div>
               ) : null}
@@ -289,7 +291,7 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
         <SheetFoot>
           {proven ? (
             <Pill tone="light" wide disabled={taking} onClick={take}>
-              {taking ? 'taking it down…' : 'take it down'}
+              {taking ? 'removing…' : 'remove me for good'}
             </Pill>
           ) : dm ? (
             /* Drawn by parts.DmCode, which is the same block Main's proof step
@@ -300,7 +302,7 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
               <DmCode code={dm.code} />
               <button type="button" className="wl-quiet wl-dm-drop"
                 onClick={() => { clearPending(); setDm(null) }}>
-                start this again
+                start over
               </button>
             </>
           ) : (
@@ -309,7 +311,7 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
                 button, the provider's shape on the same 24-unit grid as every
                 other glyph here. */
             <Pill tone="light" wide disabled={!named || minting} onClick={ask}>
-              {minting ? 'one moment' : 'prove it is yours'}
+              {minting ? 'one moment' : 'confirm with one DM'}
             </Pill>
           )}
         </SheetFoot>

@@ -43,13 +43,13 @@ export function setBase(b) { BASE = String(b || '') }
 // and it closes back onto the wall it was raised over; the account is a look
 // at what this person has out, taken without leaving the names. The mutual
 // is the end of that same story, so it is raised over the wall too.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal', 'verify'])
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal', 'verify', 'claim', 'r', 'alerts'])
 
 // Every address under a wall's base, by its first segment. At the root this
 // is also what decides which addresses are the wall's at all: `/optout` is
 // Main's, `/letter/x` is the wall's, and nothing under `/` is claimed by
 // the wall on the strength of not being anybody else's.
-const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal', 'verify'])
+const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal', 'verify', 'claim', 'r', 'alerts'])
 
 const norm = (pathname) => String(pathname || '/').replace(/\/+$/, '') || '/'
 const rootOf = (base) => base || '/'
@@ -77,6 +77,11 @@ export function parse(pathname) {
     // the school email's magic link lands here, with its token in the hash
     // (screens/Verify.jsx), raised over the wall like the gate
     case 'verify': return { name: 'verify' }
+    // The owner of an @ (docs/ONE-WALL.md): claiming it from a letter, and the
+    // two links in the alert emails, the removal and the stop.
+    case 'claim':  return id ? { name: 'claim', id } : { name: 'wall' }
+    case 'r':      return { name: 'r' }
+    case 'alerts': return { name: 'alerts' }
     // /orbit was a drawn stand-in for the core service with a seeded ledger
     // in it, reachable by anybody who typed the address. The ping is a sheet
     // on the wall now, and the stand-in is gone.

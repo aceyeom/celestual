@@ -65,6 +65,9 @@ import Ping from './screens/Ping.jsx'
 import You from './screens/You.jsx'
 import Reveal from './screens/Reveal.jsx'
 import Verify from './screens/Verify.jsx'
+import Claim from './screens/Claim.jsx'
+import Unwrite from './screens/Unwrite.jsx'
+import Alerts from './screens/Alerts.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -83,6 +86,9 @@ const FIELD = {
   you:    'slow',
   reveal: 'still',   // and where two people have just found out
   verify: 'still',   // and where a link from the mail is being checked
+  claim:  'slow',
+  r:      'still',
+  alerts: 'slow',
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -113,9 +119,11 @@ export default function WallApp() {
   // A tab that opens on a mutual does not play the intro: the mutual tells
   // the same story on its own screen, and the second telling would be the
   // one that was waited through.
-  // Nor does a tab opened by the link in a mail (screens/Verify.jsx), which
-  // is somebody finishing something, not arriving.
-  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' || route.name === 'verify' ? 2 : 0))
+  // Nor does a tab opened by the link in a mail: the school email's link
+  // (screens/Verify.jsx), which is somebody finishing something, or an
+  // alert's, which is somebody taking a letter about them down or stopping
+  // the emails. Neither is kept behind a logo while it happens.
+  const [boot, setBoot] = useState(() => (BOOTED || ['reveal', 'verify', 'r', 'alerts'].includes(route.name) ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)
@@ -443,6 +451,9 @@ export default function WallApp() {
   if (route.name === 'you') sheet = <You {...shared} />
   if (route.name === 'reveal') sheet = <Reveal id={route.id} {...shared} />
   if (route.name === 'verify') sheet = <Verify {...shared} />
+  if (route.name === 'claim') sheet = <Claim handle={route.id} {...shared} />
+  if (route.name === 'r') sheet = <Unwrite {...shared} />
+  if (route.name === 'alerts') sheet = <Alerts {...shared} />
 
   let base
   switch (route.name) {

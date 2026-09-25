@@ -20,6 +20,9 @@ import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
 import { setAfterGate } from './store.js'
 import { href } from './router.js'
+// the owner's parts at the foot of this file (the toast, the switch, the
+// address field), and the sheets built from them
+import './owner.css'
 
 // ── the wall is the phone ───────────────────────────────────────────────────
 // Every control on the wall is drawn in the phone's own language (DESIGN.md
@@ -1219,7 +1222,7 @@ export function Or({ children = 'or', className = '' }) {
 export function DoorFoot({ className = '' }) {
   return (
     <div className={`wl-door-foot ${className}`}>
-      by signing in you agree to the <a href="/terms">terms</a> and
+      by continuing you agree to the <a href="/terms">terms</a> and
       the <a href="/privacy">privacy policy</a>.
     </div>
   )
@@ -1395,7 +1398,7 @@ export function DmCode({ code, status = '' }) {
 
   return (
     <div className="wl-dm">
-      <p className="wl-dm-to">DM the code to <span className="wl-h">{atHandle(ig)}</span></p>
+      <p className="wl-dm-to">send this code to <span className="wl-h">{atHandle(ig)}</span> in a DM</p>
 
       <div className="wl-dm-code">
         <button
@@ -1407,7 +1410,7 @@ export function DmCode({ code, status = '' }) {
       </div>
 
       <Pill tone="light" wide onClick={openIt}>
-        {copied ? 'copied. open instagram' : 'copy and open instagram'}
+        {copied ? 'copied. open Instagram' : 'copy and open Instagram'}
       </Pill>
 
       {status ? (
@@ -1418,12 +1421,13 @@ export function DmCode({ code, status = '' }) {
 }
 
 // The one heading over the code, wherever it is drawn: Main's proof step, the
-// sky's sign in, the opt out, the wall's takedown. It says what the step is
-// for and nothing about how; the block under it is the how.
+// sky's sign in, the opt out, the wall's takedown and its claim. It says what
+// the step is, in the words the gate asks it in (VOICE.md 2); the block under
+// it is the how.
 export function VerifyHead({ size = 'm', as = 'h1', id, className = '', ref }) {
   return (
     <Display size={size} as={as} id={id} className={className} ref={ref}>
-      verify the account<br />belongs to you.
+      confirm this is<br />your Instagram.
     </Display>
   )
 }
@@ -2267,13 +2271,13 @@ export function SiteFoot({ go = null, className = '' }) {
     <footer className={`wl-colophon ${className}`}>
       <div className="wl-colophon-brand">
         <Brand href="/" />
-        <p className="wl-colophon-line">you both find out, or neither of you does.</p>
+        <p className="wl-colophon-line">if it&rsquo;s mutual, you both find out. if not, nobody ever knows.</p>
       </div>
 
       <nav className="wl-colophon-cols" aria-label="the rest of it">
         <div className="wl-colophon-col">
           <Label tone="dim">celestual</Label>
-          {link(href('ping'), 'place a ping', 'ping')}
+          {link(href('ping'), 'send a private note', 'ping')}
           {link(href('write'), 'write a letter', 'write')}
         </div>
         <div className="wl-colophon-col">
@@ -2296,6 +2300,73 @@ export function SiteFoot({ go = null, className = '' }) {
         <span>independent. not affiliated with instagram or meta.</span>
       </div>
     </footer>
+  )
+}
+
+// ── THE OWNER'S PARTS ───────────────────────────────────────────────────────
+// Three small objects for the person who has claimed their @ (docs/ONE-WALL.md,
+// api/alerts.js): the toast that carries an undo, the switch an alert is
+// turned on with, and the field an alert's address is typed into. Styled in
+// owner.css, in the phone's language, like everything else on the wall.
+
+// A line at the foot of the glass that says what just happened, with the one
+// act that takes it back, and goes on its own after `ms`. The clock restarts
+// when `stamp` changes, so a second removal gets its own five seconds.
+export function Toast({ children, act = '', onAct = null, ms = 5000, onDone, stamp = 0 }) {
+  const done = useRef(onDone)
+  done.current = onDone
+  useEffect(() => {
+    if (!ms) return undefined
+    const t = setTimeout(() => { if (done.current) done.current() }, ms)
+    return () => clearTimeout(t)
+  }, [ms, stamp])
+  return (
+    <div className="wl-toast" role="status" aria-live="polite">
+      <span className="wl-toast-say">{children}</span>
+      {act && onAct ? (
+        <button type="button" className="wl-toast-act" onClick={onAct}>{act}</button>
+      ) : null}
+    </div>
+  )
+}
+
+// One setting, on or off: the sentence it is about, and a switch at its end.
+// The whole row is the control, so the sentence is what is pressed.
+export function Switch({ on = false, onChange, children, disabled = false, busy = false, className = '' }) {
+  return (
+    <button
+      type="button" role="switch" aria-checked={!!on} aria-busy={busy || undefined}
+      className={`wl-switch${on ? ' is-on' : ''}${busy ? ' is-busy' : ''} ${className}`}
+      onClick={() => { if (!disabled && !busy && onChange) onChange(!on) }} disabled={disabled}
+    >
+      <span className="wl-switch-say">{children}</span>
+      <span className="wl-switch-track" aria-hidden="true"><span className="wl-switch-knob" /></span>
+    </button>
+  )
+}
+
+// An address, whole: the gate's own field (`wl-addr`, screens/Gate.jsx) with
+// nothing painted beside it, since an alert can go to any inbox.
+export function EmailField({ value, onChange, onSubmit, autoFocus = false, label = 'your email address', placeholder = 'you@anywhere.com' }) {
+  const ref = useRef(null)
+  const phone = usePhone()
+  useEffect(() => {
+    if (!autoFocus || !ref.current) return
+    const fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (fine) ref.current.focus()
+  }, [autoFocus])
+  return (
+    <div className="wl-addr is-whole wl-owner-addr">
+      <input
+        ref={ref} className="wl-addr-in" value={value} onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && onSubmit) { e.preventDefault(); onSubmit() } }}
+        aria-label={label} placeholder={placeholder}
+        type="email" inputMode="email" autoComplete="email"
+        autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="send"
+      />
+      {phone ? <Caret of={ref} /> : null}
+      <span className="wl-field-line" aria-hidden="true" />
+    </div>
   )
 }
 

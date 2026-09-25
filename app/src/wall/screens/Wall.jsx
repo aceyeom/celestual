@@ -458,7 +458,8 @@ function Tab({ faces, onGo, onHide, going }) {
             : <Sparkle size={12} />}
         </span>
         <span className="wl-tab-text">
-          get notified if they<br />ping you too.
+          <span className="wl-tab-h">find out if it&rsquo;s mutual.</span>
+          <span className="wl-tab-sub">send them a note privately too. they only read it if they send you one.</span>
         </span>
         <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
       </button>
