@@ -61,6 +61,8 @@ import Join from './screens/Join.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
+import Ping from './screens/Ping.jsx'
+import You from './screens/You.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -75,6 +77,8 @@ const FIELD = {
   gate:   'slow',
   remove: 'still',   // the room stops moving where the act cannot be undone
   report: 'still',   // and where something is coming down
+  ping:   'slow',
+  you:    'slow',
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -407,6 +411,8 @@ export default function WallApp() {
   if (route.name === 'gate') sheet = <Gate {...shared} />
   if (route.name === 'remove') sheet = <Remove handle={route.id} {...shared} />
   if (route.name === 'report') sheet = <Report id={route.id} {...shared} />
+  if (route.name === 'ping') sheet = <Ping to={route.id} {...shared} />
+  if (route.name === 'you') sheet = <You {...shared} />
 
   let base
   switch (route.name) {

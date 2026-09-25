@@ -4328,6 +4328,109 @@ a.wl-lq { text-decoration: none; }
   font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label-2); text-transform: uppercase;
   color: var(--ember);
 }
+/* ═══ THE PING, AND THE PERSON ═════════════════════════════════════════════
+   screens/Ping.jsx and screens/You.jsx. Almost nothing here is new: the ping
+   is the composer's room (`.is-write`, THE COMPOSER above), its field body,
+   its names and its lit screen, and the person is the account card with its
+   rows. What is below is the few places the two differ from what they are
+   built of. */
+
+/* the field stands alone, with no bookmark on its top edge, so it keeps all
+   four of its corners */
+.wl-ping .wl-write-body { border-radius: var(--r-field); }
+/* the ping's screen is addressed to a person, and when the name and the @
+   will not both fit it is the @ that gives way: "dear Pilar" and a cut
+   handle, not "dear Pil" and most of one */
+:is(.wl-ping, .wl-you-ping) .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
+/* the people written to stand where the wall's own names stand as a name is
+   typed, at the same scale, so one list gives way to the other in place */
+.wl-ping-wrote { margin-top: 10px; }
+.wl-ping-more { align-self: flex-start; padding: 8px 4px 0; }
+/* a mutual among them is the one row that is news: its words in chalk */
+.wl-ping-wrote .wl-suggest-row.is-mutual:not(.is-active) .wl-who-at { color: var(--chalk); }
+/* the question the DM put, when it came from another account than the one
+   typed: a question, not a refusal, so it is said in ash */
+.wl-ping-ask { color: var(--ash); text-align: center; text-wrap: balance; }
+/* the proof is the gate's door, standing in the room: the same axis, the
+   handle and its @ centred as one string, the fault under it */
+.wl-ping-prove { display: flex; flex-direction: column; justify-content: center; }
+.wl-ping-prove .wl-field.is-centred { justify-content: center; }
+.wl-ping-prove .wl-gate-fault { text-align: center; }
+.wl-ping.is-proof .wl-write-foot { padding-top: 14px; }
+.wl-ping.is-proof .wl-door { padding-top: 8px; }
+/* ── on a spread, one column ──
+   The composer stands its screen beside the question on a spread, because
+   the colours need the column beside it. The ping has no colours to choose,
+   and a screen with an empty column beside it is a page that lost its right
+   half, so the ping keeps the phone's one column, centred, the heading over
+   the screen and the key under it. On a phone on its side the composer's two
+   columns stay, since there is no height for one. */
+@media (min-width: 900px) and (min-height: 561px) {
+  .wl-sheet-wrap.is-write.is-ping .wl-sheet-in:has(.wl-write-card) { max-width: 560px; }
+  .wl-write.wl-ping:has(.wl-write-card) { display: flex; }
+  .wl-write.wl-ping:has(.wl-write-card) > .wl-write-h { text-align: center; }
+  .wl-write.wl-ping:has(.wl-write-card) > .wl-write-step { display: block; }
+  .wl-write.wl-ping:has(.wl-write-card) .wl-write-card .wl-scene {
+    width: min(100%, 440px, max(250px, calc((100svh - 330px - var(--notch)) / 1.22)));
+  }
+}
+
+/* ── the person ── */
+/* the second proof under the first, when there are two: the address, and the
+   @ under it in the identifier's own face */
+.wl-you-also {
+  margin: 4px 0 0;
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-snug);
+  color: var(--ash); overflow-wrap: anywhere;
+}
+/* the section's label and what is left of the slots, on one line */
+.wl-you-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wl-you-slots { text-align: right; }
+/* the list that is not there, said, with the one way on under it */
+.wl-you-ask { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-top: 10px; }
+.wl-you-say {
+  margin: 0; max-width: 34ch;
+  font-family: var(--f-util); font-size: var(--t-wide); line-height: 1.24;
+  color: var(--ash);
+}
+.wl-you-ask .wl-pill { min-height: var(--c-md); gap: 9px; padding: 0 16px 0 13px; }
+.wl-you-ask .wl-quiet { padding: 2px 0; }
+.wl-you-wait { min-height: 30px; display: flex; align-items: center; color: var(--ash); }
+/* a mutual is news, and its line is set in chalk to say so */
+.wl-wrote-row.is-mutual .wl-wrote-meta { color: var(--chalk); }
+/* ── the key stays in reach ──
+   With pings, drafts and letters on it the card is longer than a phone, and
+   the one key under it would be a scroll away. So the foot stands at the
+   bottom of the panel over whatever is scrolled under it, on the panel's
+   own glass, with the phone's dashed seam along its top: the way a phone
+   kept its soft keys under a message too long for the screen. */
+.wl-you.is-card { padding-bottom: 0; }
+.wl-you.is-card > .wl-foot {
+  position: sticky; bottom: 0; z-index: 3;
+  margin: 0 calc(-1 * var(--sheet-pad)); padding: 18px var(--sheet-pad) calc(22px + env(safe-area-inset-bottom, 0px));
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+}
+@media (min-width: 900px) {
+  .wl-you.is-card > .wl-foot { padding-bottom: 26px; }
+}
+.wl-you.is-card > .wl-foot::before {
+  content: ''; position: absolute; top: 0; left: var(--sheet-pad); right: var(--sheet-pad); height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+.wl-you.is-card > .wl-push { min-height: 18px; }
+/* a standing ping, opened: its own screen, in the middle of the panel, and
+   the days it has left said once under it */
+.wl-you.is-screen { padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
+.wl-you-ping { display: flex; flex-direction: column; align-items: center; padding: 6px 0 4px; animation: wl-fade 260ms var(--ease) both; }
+.wl-you-ping .wl-scene { width: min(100%, 360px, calc((100svh - 260px) / 1.22)); margin: 0 auto; }
+.wl-you-floor {
+  margin: 18px 0 0; min-height: 20px; text-align: center;
+  font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-you-ping { animation: none; }
+}
+
 .wl-gate-beta {
   margin: 22px 0 0; padding: 13px 15px;
   border: 1px dashed var(--hair); border-radius: var(--r-field);

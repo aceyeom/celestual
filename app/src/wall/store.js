@@ -57,11 +57,10 @@ const EMPTY = {
                       // another letter goes up, because that is the moment the
                       // question it asks is fresh again (screens/Wall.jsx)
   tabHidFor: 0,
-  earlyHid: 0,        // when the note on Main's front door was last put away
-                      // (main/Early.jsx). The same shape as the tab above and
-                      // for the same reason: a thing that cannot be closed is
-                      // a banner, and a thing that never comes back is a
-                      // thing somebody dismissed once by accident
+  earlyHid: 0,        // when the note on Main's front door was last put away.
+                      // The note went with the front door when the ping came
+                      // onto the wall, and the key stays so a device that
+                      // already holds it reads the same blob
   noticed: {},        // letterId -> true: a letter of this device's that came
                       // down, and whose notice has been read. The notice stands
                       // at the foot of the wall until it is answered, once
@@ -79,6 +78,11 @@ const EMPTY = {
                       // wall cannot see them and a desk still can, which is the
                       // whole difference between a takedown and a delete.
   verified: [],       // handles proven through the Instagram handoff
+  pingCap: 0,         // how many pings this person may have standing, as the
+                      // server last said it on a placement (pings.js
+                      // `slotCap`). Nought until it has said, and the free
+                      // two stand in. Never where a ping went: those are the
+                      // server's, read with the proof, and never in `wroteTo`
   // The core service's ledger, held as a delta against the seeded one
   // (orbit.js) rather than as a copy of it: what this session placed, what it
   // renewed and what it let go. It lives under the same key as everything
