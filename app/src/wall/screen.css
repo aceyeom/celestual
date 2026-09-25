@@ -83,17 +83,17 @@
   background: radial-gradient(120% 95% at var(--q-hx, 80%) var(--q-hy, 66%), var(--s-hi), var(--s-mid) 52%, var(--s-lo) 100%);
 }
 
-/* the status rows: the aerial and the date, and the characters left by the
-   battery; then the pen, "dear" and the name, and the handle on the right of
-   it */
+/* the status rows: the aerial, and by the battery the day the letter went up
+   (or on a draft the characters left); then the pen, "dear" and the name,
+   and the handle on the right of it */
 .wl-scr-top {
   position: relative; z-index: 1; flex: 0 0 auto;
   padding: var(--q-top-pad, 2.6cqw) 2.2cqw 1.8cqw;
   background: linear-gradient(180deg, var(--s-top), var(--s-top-2));
   color: var(--s-lit); display: grid; gap: 0.6cqw;
 }
-/* close set: the date against the aerial, the pen against the name, the
-   count against the battery */
+/* close set: the pen against the name, the day or the count against the
+   battery */
 .wl-scr-r1, .wl-scr-r2 { display: flex; align-items: center; gap: 1.4cqw; min-width: 0; height: 10.4cqw; }
 .wl-scr-ant { display: flex; align-items: flex-end; gap: 1cqw; }
 /* the status in the phone's own size: as tall as the aerial beside it */

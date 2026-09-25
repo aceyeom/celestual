@@ -4,11 +4,11 @@
 //
 // Every letter on the wall is drawn by this file, at three sizes:
 //
-//   Screen   the letter, read. The status across the top (the aerial and
-//            the date, the characters left by the battery, then the pen,
-//            "dear" and the name, and the handle), the words, and the three
-//            soft keys at the foot. Opened, it is the only lit thing in the
-//            room
+//   Screen   the letter, read. The status across the top (the aerial, the
+//            day it went up by the battery, or on a draft the characters
+//            left, then the pen, "dear" and the name, and the handle), the
+//            words, and the three soft keys at the foot. Opened, it is the
+//            only lit thing in the room
 //   Tile     the same screen, small, standing for a name on the wall: the
 //            status row, the name's monogram or their picture, and the
 //            keys' two dashes
@@ -476,9 +476,12 @@ function Press({ id, colour, q }) {
 }
 
 // ── the screen ──────────────────────────────────────────────────────────────
-// `top` is what the status rows say: the aerial and the letter's `date`
-// across the first, and its `counter` by its `bat`; under them the `name`
-// and the `handle`, with
+// `top` is what the status rows say: the aerial across the first, a `date`
+// beside it where one is given, and by the `bat` either a draft's `counter`,
+// the characters it has left, or a letter's `stamp`, the day it went up. The
+// counter is the phone's own arithmetic and a screen reader is spared it; the
+// stamp is a fact about the letter, and is read. Under them the `name` and
+// the `handle`, with
 // the pen before the name (`icon: 'pen'`), or the lock on a sealed letter
 // (`icon: 'lock'`). `dear` opens the name as a letter opens, "dear Sofia",
 // for the screens that are a letter to somebody and not a menu. `pos`
@@ -504,7 +507,7 @@ export function Screen({
   const vars = { ...skinVars(colour), ...q.vars }
   // this phone's own pixels, up close (looks.js `rgbTile`); a print has none
   const rgb = useMemo(() => (s.print ? '' : rgbTile(seed)), [s.print, seed])
-  const { name = '', dear = false, date = '', counter = '', icon = '', handle = '', pos = '', bat = 4 } = top
+  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4 } = top
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -548,7 +551,9 @@ export function Screen({
                 <Pix name="ant" h={9} />
               </span>
               {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
-              {counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
+              {stamp
+                ? <span className="wl-scr-cnt wl-lit">{stamp}</span>
+                : counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
               <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
                 <Pix name={`bata${bat}`} h={8} />
               </span>

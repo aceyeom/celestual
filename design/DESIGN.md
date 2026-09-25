@@ -168,8 +168,9 @@ One exception to the sentence above, and it is fenced. A letter on the wall
 is a phone screen left on in a dark room (`app/src/wall/looks.js`,
 `screen.jsx`, `screen.css`): an unsent draft, the cursor still after the last
 word. Every letter is the same screen: the status rows across the top (the
-aerial, the signal bars, the name, the characters left, the battery; the pen,
-the mode, the handle), the words, and the three soft keys at the foot
+aerial, the signal bars, the name, by the battery the day it went up as
+`09/24/26`, or on a draft the characters it has left; the pen, the mode, the
+handle), the words, and the three soft keys at the foot
 (`options`, the heart and its count, `share`), set in one face, Jersey 10, the
 Series 40 grid (`--f-s40`). The only thing a writer chooses is the COLOUR it is
 lit in, and each colour carries its own treatment with it:

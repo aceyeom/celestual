@@ -84,7 +84,7 @@ import {
   Sheet, SheetFoot, Pill, Close, Icon, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
-import { colourOf, chargeOf, dateOf } from '../looks.js'
+import { colourOf, chargeOf, stampOf } from '../looks.js'
 import { shareLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
@@ -313,11 +313,13 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   }
 
   // the letter's own status rows, kept under a note, so the band is never
-  // an empty strip and the sheet keeps its name
+  // an empty strip and the sheet keeps its name. By the battery, the day it
+  // went up, where the draft counted what was left: a letter that is up has
+  // nothing left to count, and one date on the row, not two
   const letterTop = {
     name: toName, handle: toHandle, dear: true,
     icon: open ? 'pen' : 'lock',
-    date: dateOf(l.at), counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`, bat: chargeOf(l.at),
+    stamp: stampOf(l.at), bat: chargeOf(l.at),
   }
   let top
   let body
@@ -331,9 +333,10 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
       else { onView(null); it.run() }
     }
     // the menu's name, and where in it the chosen row is, on the right of
-    // the second row, the way the phone counted them
+    // the second row, the way the phone counted them. The first row stays
+    // the letter's, so nothing on it moves when a menu opens
     const sel = Math.min(at.at || 0, items.length - 1)
-    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', date: dateOf(l.at), bat: chargeOf(l.at) }
+    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', stamp: stampOf(l.at), bat: chargeOf(l.at) }
     body = (
       <ScreenMenu
         items={items.map((x) => x.t)} at={sel}
