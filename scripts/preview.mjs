@@ -1379,8 +1379,9 @@ for (const r of list) {
     // The intro plays on every cold address but the reveal, and it is three
     // and a half seconds to a bare page now, longer than a route's settle.
     // So the shot waits for it to have gone, unless the route holds it on a
-    // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes.
-    if (!/[?&](beat=[0-3]|t=)/.test(r.path)) {
+    // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes,
+    // or on the last beat, which lifts it at once (`?beat=4`).
+    if (!/[?&](beat|t)=/.test(r.path)) {
       await page.waitForFunction(() => !document.querySelector('.hi'), null, { timeout: 8000 }).catch(() => {})
     }
 
