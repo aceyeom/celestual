@@ -323,7 +323,7 @@
    (`.wl-scr-bg`) and needs nothing more. */
 /* teal: a keyline of the palest ink inside the rule, a hair clear of it,
    and a hair clear of the first letter of every row */
-.wl-scr[data-light='keyline'] .wl-scr-fx.is-glass { outline: 0.7cqw solid #FFF; outline-offset: -2.7cqw; }
+.wl-scr[data-light='keyline'] .wl-scr-fx.is-glass { outline: 0.7cqw solid #FFF; outline-offset: -2.4cqw; }
 /* ember: the light falls from the top of the sheet. The status rows stand
    in the palest ink, and it breaks up into the main one in the grain a
    third of the way down, deeper where this phone's backlight sits low */
@@ -342,8 +342,8 @@
   background:
     radial-gradient(circle closest-side, #FFF, rgba(255, 255, 255, 0)) 0 0 / 3.2cqw 3.2cqw,
     radial-gradient(circle closest-side, #FFF, rgba(255, 255, 255, 0)) 1.6cqw 1.6cqw / 3.2cqw 3.2cqw;
-  -webkit-mask-image: radial-gradient(90% 72% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
-  mask-image: radial-gradient(90% 72% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
+  -webkit-mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
+  mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
 }
 /* violet / yellow: the phone's two bands of glass, laid in the violet drum,
    and the status and the keys on them struck out in paper */
@@ -471,7 +471,7 @@
 }
 /* a print's own light, small: its fill is looks.js `SPOTS` (`--t-spot`),
    and the keyline is a line inside the rule, clear of it as on the letter */
-.wl-tile[data-light='keyline'] .wl-tile-in::after { outline: 1.6cqw solid var(--t-accent); outline-offset: -6cqw; }
+.wl-tile[data-light='keyline'] .wl-tile-in::after { outline: 1.4cqw solid var(--t-accent); outline-offset: -5.4cqw; }
 .wl-tile-top {
   position: relative; flex: 0 0 18%; display: flex; align-items: center; gap: 3cqw; padding: 0 6cqw;
   background: var(--t-top); color: var(--t-lit);

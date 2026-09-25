@@ -12,6 +12,7 @@
 //   /looks.html?light=dots      every print in one light, to compare lights
 //   /looks.html?seed=2          five other phones (the quirks off the ids)
 //   /looks.html?only=teal       one colour
+//   /looks.html?prints=1        the prints alone, with `light` the way to compare
 //   /looks.html?pictures=0      without the shared pictures, which are slow
 //
 // `light` is drawn by giving every print that light before anything is
@@ -35,6 +36,7 @@ const ask = new URLSearchParams(typeof window !== 'undefined' ? window.location.
 const FORCE = LIGHTS.includes(ask.get('light')) ? ask.get('light') : ''
 const SEED = Math.max(0, Number(ask.get('seed')) || 0)
 const ONLY = ask.get('only') || ''
+const PRINTS = ask.get('prints') === '1'
 const PICTURES = ask.get('pictures') !== '0'
 if (FORCE) for (const c of COLOURS) if (c.kind === 'poster' || c.kind === 'riso') c.light = FORCE
 
@@ -103,7 +105,7 @@ function Looks() {
     const t = setTimeout(() => setUpTo((n) => n + 1), 450)
     return () => clearTimeout(t)
   }, [upTo])
-  const shown = COLOURS.filter((c) => !ONLY || c.slug === ONLY)
+  const shown = COLOURS.filter((c) => (!ONLY || c.slug === ONLY) && (!PRINTS || c.kind === 'poster' || c.kind === 'riso'))
   const link = (q) => {
     const p = new URLSearchParams(ask)
     for (const [k, v] of Object.entries(q)) { if (v === '') p.delete(k); else p.set(k, v) }
@@ -120,6 +122,10 @@ function Looks() {
             {LIGHTS.map((x) => (
               <a key={x} href={link({ light: x })} aria-current={FORCE === x ? 'page' : undefined}>{x}</a>
             ))}
+          </nav>
+          <nav aria-label="which">
+            <a href={link({ prints: '' })} aria-current={PRINTS ? undefined : 'page'}>all thirteen</a>
+            <a href={link({ prints: '1' })} aria-current={PRINTS ? 'page' : undefined}>the prints</a>
           </nav>
           <nav aria-label="phones">
             {[0, 1, 2, 3].map((n) => (

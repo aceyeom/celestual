@@ -256,7 +256,7 @@ const LIGHTS = {
 const SPOTS = {
   corner: 'radial-gradient(31% 25% at var(--q-hx, 78%) var(--q-hy, 64%), var(--t-accent) 62%, transparent 100%)',
   sky: 'linear-gradient(180deg, var(--t-accent) calc(var(--q-hy, 64%) * 0.4 + 8%), transparent calc(var(--q-hy, 64%) * 0.4 + 14%))',
-  dots: 'radial-gradient(90% 72% at var(--q-hx, 78%) var(--q-hy, 64%), transparent, var(--t-body) 66%), radial-gradient(var(--t-accent) 34%, transparent 44%) 0 0 / 4px 4px, radial-gradient(var(--t-accent) 34%, transparent 44%) 2px 2px / 4px 4px',
+  dots: 'radial-gradient(80% 64% at var(--q-hx, 78%) var(--q-hy, 64%), transparent, var(--t-body) 66%), radial-gradient(var(--t-accent) 34%, transparent 44%) 0 0 / 4px 4px, radial-gradient(var(--t-accent) 34%, transparent 44%) 2px 2px / 4px 4px',
 }
 export function skinOf(colour) {
   const c = typeof colour === 'string' ? colourBySlug(colour) : colour || colourBySlug(DEFAULT_COLOUR)

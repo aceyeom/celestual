@@ -310,8 +310,8 @@ function drawScreen(o, tile = null) {
       sg.fillRect(0, 0, sw, sh)
       sg.globalCompositeOperation = 'destination-in'
       sg.translate(hx, hy)
-      sg.scale(1, (0.72 * sh) / (0.9 * sw))
-      const mg = sg.createRadialGradient(0, 0, 0, 0, 0, 0.9 * sw)
+      sg.scale(1, (0.64 * sh) / (0.8 * sw))
+      const mg = sg.createRadialGradient(0, 0, 0, 0, 0, 0.8 * sw)
       mg.addColorStop(0, 'rgba(0, 0, 0, 1)')
       mg.addColorStop(1, 'rgba(0, 0, 0, 0)')
       sg.fillStyle = mg
@@ -539,7 +539,7 @@ function drawScreen(o, tile = null) {
   }
   // a keyline of the palest ink inside the rule, clear of it
   if (s.light === 'keyline') {
-    const k = 2.35 * u
+    const k = 2.05 * u
     g.strokeStyle = '#FFF'
     g.lineWidth = 0.7 * u
     g.strokeRect(k, k, sw - 2 * k, sh - 2 * k)

@@ -3007,11 +3007,6 @@ a.wl-lq { text-decoration: none; }
   .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
   .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
 }
-/* beside the screen the pool stands at the column's left, under the
-   question it answers */
-@media (min-width: 900px), (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
-  .wl-write .wl-look-opts { justify-content: start; }
-}
 /* on its side the screen is sized off the height alone: 134 is the
    column's padding, the head and the line under the card at two lines. The
    heading and the act close up round the colours' strip */
