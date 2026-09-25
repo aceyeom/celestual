@@ -23,6 +23,8 @@ import { chromium } from 'playwright'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.env.PREVIEW_OUT || join(root, 'design/shots')
+// the dev server to shoot, as the other scripts read it
+const BASE = process.env.DEV_URL || 'http://localhost:5173'
 mkdirSync(out, { recursive: true })
 
 const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
@@ -1105,7 +1107,7 @@ for (const r of list) {
       // means it has to be matched before the dev server's own assets are let
       // through, or it goes to a proxy with nothing behind it.
       if (u.includes('/api/resolve')) return fulfil(route)
-      if (u.startsWith('http://localhost:5173')) return route.continue()
+      if (u.startsWith(BASE)) return route.continue()
       return fulfil(route)
     })
 
@@ -1154,7 +1156,7 @@ for (const r of list) {
       } catch { /* private mode */ }
     }, { DRAFT, VERIFIED, WRITTEN, ANON })
 
-    await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
+    await page.goto(BASE + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
 
     // Some states only exist once somebody has typed: the result card is the
