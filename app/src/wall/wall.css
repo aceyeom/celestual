@@ -4395,10 +4395,6 @@ a.wl-lq { text-decoration: none; }
 /* the field stands alone, with no bookmark on its top edge, so it keeps all
    four of its corners */
 .wl-ping .wl-write-body { border-radius: var(--r-field); }
-/* the ping's screen is addressed to a person, and when the name and the @
-   will not both fit it is the @ that gives way: "dear Pilar" and a cut
-   handle, not "dear Pil" and most of one */
-:is(.wl-ping, .wl-you-ping) .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
 /* the people written to stand where the wall's own names stand as a name is
    typed, at the same scale, so one list gives way to the other in place */
 .wl-ping-wrote { margin-top: 10px; }
