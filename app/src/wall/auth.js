@@ -182,9 +182,12 @@ export async function signedIn() {
 // The whole session, not the wall's half of it. It used to clear the identity
 // token and the wall's store and leave the DM proof in api/auth.js, so a
 // person who signed out here on a shared laptop was still signed in to their
-// sky on Main, one tap away. One session, one sign out.
+// sky on Main, one tap away. One session, one sign out. The slots this
+// person was last told they hold go with them (pings.js `slotCap`), so the
+// next person on the same laptop is not shown a count that was somebody
+// else's.
 export function signOut() {
-  patch({ member: null, reader: false, verified: [] })
+  patch({ member: null, reader: false, verified: [], pingCap: 0 })
   forgetSession()
   dropProof()
   clearPending()
