@@ -18,10 +18,10 @@
 // The package's <LiquidMetal> component takes any image and runs that
 // pre-processing on mount, every mount: an SVG is upsampled to 4096px and a
 // Poisson problem is solved over it, which took a second on a good machine and
-// ten on a slow one, and the intro has the mark on screen at 180ms. So the
-// solve is done once by the export script and the fragment shader is mounted
-// here with the finished texture, through the same ShaderMount the component
-// itself uses. The uniforms below are the component's, written out.
+// ten on a slow one. So the solve is done once by the export script and the
+// fragment shader is mounted here with the finished texture, through the same
+// ShaderMount the component itself uses. The uniforms below are the
+// component's, written out.
 //
 // ── what the shader is, and why it is allowed ───────────────────────────────
 // design/DESIGN.md rule 3 says everything is drawn and nothing is downloaded.
@@ -30,11 +30,14 @@
 // and both are written by a script from the geometry rather than by hand.
 //
 // ── where it is spent ───────────────────────────────────────────────────────
-// Rationed like the bloom. It stands in the intro, large, for the two seconds
-// before either surface exists, it stands in the hero's scene where the mark
-// lights when the two cards open, and it is the seal on a mutual. It does not
-// replace the mark in the bar, in the steps, or anywhere the mark is a glyph
-// rather than an event.
+// Rationed like the bloom. It is the mark on the root wall's poster, it stands
+// in the hero's scene where the mark lights when the two cards open, and it is
+// the seal on a mutual row on the sky. It does not replace the mark in the
+// bar, in the steps, or anywhere the mark is a glyph rather than an event.
+//
+// It stood in the intro, large, and on the reveal, until both became the
+// phone's (DESIGN.md 2.6): the intro and the mutual are told in the phone's
+// own pixels now (pixmark.js), and the metal is the room's.
 //
 // ── what a mount costs, and where the cost is put ───────────────────────────
 // A mount is not free: the mask is decoded, the fragment shader is compiled
@@ -53,21 +56,18 @@
 //   the fade reads as the mark lighting, not as a swap, and a slow driver or
 //   a missing texture leaves a mark on the screen rather than a hole.
 //
-//   THE PIXELS ARE COUNTED. `quality` says what a mount is for: the intro
-//   at full size renders at the package's own two pixels per CSS pixel; a
-//   seal and a row are capped at a pixel count, and one per CSS pixel, since
+//   THE PIXELS ARE COUNTED. `quality` says what a mount is for: a mark at
+//   full size renders at the package's own two pixels per CSS pixel; a seal
+//   and a row are capped at a pixel count, and one per CSS pixel, since
 //   there is nothing sharp in a soft metal and nobody can tell at 44px.
 //
 //   THE MOUNT CAN WAIT. `defer` holds the shader back by that many
 //   milliseconds, so a screen can run its entrance on a flat mark and pay
 //   for the compile once nothing else is moving.
 //
-//   AND IT SAYS WHEN IT HAS ARRIVED. `onReady` fires once the metal has drawn
-//   a frame, so a caller with a sequence that should be run on the metal (the
-//   intro) can hold that sequence for it. "Arrived" is a frame after the
-//   canvas is in the tree, not the moment it is: the package inserts the
-//   canvas before its first frame is drawn, and a mark handed over on that
-//   frame is a mark handed over to a blank canvas.
+// "Arrived" is a frame after the canvas is in the tree, not the moment it
+// is: the package inserts the canvas before its first frame is drawn, and a
+// mark swapped in on that frame is a mark swapped for a blank canvas.
 //
 // ── the swap, and why it is not a crossfade ─────────────────────────────────
 // The metal fades in OVER the flat mark, and the flat mark leaves only once
@@ -83,11 +83,6 @@
 // flat held underneath until the metal is opaque, the luminance can only move
 // one way, over the whole fade, and where the metal's soft edge does not
 // quite cover the flat the last thing to go is a hairline of chalk.
-//
-// `cut` makes the swap instant instead. The intro asks for that while its
-// cover is still over the mark: nothing under the cover can be seen changing,
-// and a nine hundred millisecond fade that is still running when the cover
-// opens is a fade seen on the ring.
 //
 // The mask is fetched and decoded once per page and handed to every mount as
 // the same image element, rather than each mount loading the URL again.
@@ -160,8 +155,8 @@ function mask() {
 }
 
 // Fetch and decode the mask now, ahead of a mount that is about to happen: the
-// sky calls it when there is a mutual on it, so the reveal's seal has its
-// texture before the row is even pressed.
+// sky calls it when there is a mutual on it, so the seal on that row has its
+// texture before it is drawn.
 export function warmLiquidMark() {
   if (typeof window === 'undefined' || !hasWebGL2()) return
   const img = mask()
@@ -169,7 +164,7 @@ export function warmLiquidMark() {
 }
 
 export default function LiquidMark({
-  size = 64, speed = 0.7, still = false, quality = 'full', defer = 0, cut = false, onReady = null,
+  size = 64, speed = 0.7, still = false, quality = 'full', defer = 0,
   className = '', style,
 }) {
   const ok = useMemo(hasWebGL2, [])
@@ -179,8 +174,6 @@ export default function LiquidMark({
   // whole drawing.
   const [ready, setReady] = useState(false)
   const [mounted, setMounted] = useState(defer <= 0)
-  const arrived = useRef(onReady)
-  arrived.current = onReady
 
   useEffect(() => {
     if (!ok || mounted) return undefined
@@ -201,10 +194,7 @@ export default function LiquidMark({
     let mo = null
     const drawn = () => {
       raf = requestAnimationFrame(() => {
-        raf = requestAnimationFrame(() => {
-          setReady(true)
-          if (arrived.current) arrived.current()
-        })
+        raf = requestAnimationFrame(() => setReady(true))
       })
     }
     if (el.querySelector('canvas')) drawn()
@@ -226,7 +216,7 @@ export default function LiquidMark({
   const box = { width: size, height: size, ...style }
   if (!ok) return <Ecliptic size={size} className={className} style={style} />
   return (
-    <span className={`wl-liquid${ready ? ' is-ready' : ''}${cut ? ' is-cut' : ''} ${className}`} style={box} aria-hidden="true">
+    <span className={`wl-liquid${ready ? ' is-ready' : ''} ${className}`} style={box} aria-hidden="true">
       <Ecliptic size="100%" className="wl-liquid-flat" />
       {mounted && (
         <ShaderMount

@@ -1,0 +1,24 @@
+/* ── THE PIXEL STORY ─────────────────────────────────────────────────────────
+   PixelStory.jsx: a canvas the size of the body of a screen, drawing the
+   story's cells at a whole number of device pixels each, centred in it. */
+.wl-story { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; }
+/* out of the flow, so the body's size is never the canvas's to decide */
+.wl-story-cv { position: absolute; left: 0; top: 0; display: block; image-rendering: pixelated; }
+/* the body's padding is where a letter's first line starts (looks.js
+   `quirks`); a story's cells run to the edges of the panel instead, the way
+   the phone's own pixels did */
+.wl-scr-body:has(> .wl-story) { padding: 0; }
+
+/* A screen with a story on it draws its own cells, a gap between each, and
+   the camera's grid of the panel over them was a second grid at another
+   pitch: the two beat against each other into a moire across the runners.
+   So those two layers, and the pixels up close, are off on these screens.
+   The glare, the dust and the backlight's clouds stay: it is the same
+   phone, photographed the same way. */
+.wl-scr:has(.wl-story) .wl-scr-fx:is(.is-grid, .is-moire, .is-rgb) { display: none; }
+
+/* Two people named in the status row, one over each of them (Join.jsx,
+   Reveal.jsx): a letter's row sets the name large and the handle small,
+   because the letter is to the one and the handle is a detail of them. A
+   pair is two names of the same weight. */
+.wl-scene.is-pair .wl-scr-hd { font-size: 11cqw; opacity: 1; }
