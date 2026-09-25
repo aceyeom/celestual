@@ -1,8 +1,10 @@
 /* ── THE INTRO ───────────────────────────────────────────────────────────────
    A phone's screen on black, and the story on it (Intro.jsx). Over the wall
    and over Main's front door, the same. What animates is the screen's own
-   wake and sleep (screen.css), transform and opacity; nothing touches layout
-   after the first frame. Every value is a token from wall.css or a length. */
+   wake and sleep (screen.css), the light the story sends into the room, and
+   the lift, all of it transform and opacity; nothing touches layout after
+   the first frame. Every value is a token from wall.css or story.css, or a
+   length. */
 
 .hi {
   /* The large viewport, not `inset: 0`: a fixed layer that tracks the layout
@@ -14,6 +16,7 @@
   display: grid; place-items: center;
   pointer-events: none;
   padding: 24px;
+  overflow: hidden;
 }
 /* pure black, and the only pure black in the build that is not the room's:
    nothing is lit yet but the one screen.
@@ -26,7 +29,7 @@
   position: absolute; inset: 0;
   background: #000;
   opacity: 1;
-  transition: opacity 720ms var(--ease-out);
+  transition: opacity 660ms var(--ease-out);
   will-change: opacity;
 }
 .hi.is-at4 .hi-veil { opacity: 0; }
@@ -58,21 +61,89 @@
 .hi .wl-scene-halo,
 .hi .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both; }
 
+/* ── the light, in the room ──
+   On the glass the pink leaves the place the two of them meet as a soft
+   ring and goes out across the panel (pixmark.js `glowAt`). These are the
+   same pink on the dark round the phone, so the light is seen to leave it.
+
+   `.hi-halo` is the screen's own light on the black, the rim a lit phone
+   throws round itself, turned pink as the ring on the glass reaches the
+   glass's edge, 330ms in, and cooling back to nothing. `.hi-bloom` is the
+   ring gone on past the phone: a pink as wide as the window, starting the
+   size of the phone and opening out to the edges of the room as it fades,
+   on the travel curve, so it leaves quickly and settles as it goes. Both are
+   radial gradients, not blurs, so what moves is a transform and an opacity
+   on a surface already painted. The bloom is over the black and under the
+   stage, and outside it, so it goes on over the page for a moment after the
+   black has lifted: the last of the pink is the first thing on the wall. */
+.hi-bloom {
+  position: absolute; left: 50%; top: 50%;
+  width: min(175vmax, 2000px); aspect-ratio: 1;
+  pointer-events: none; opacity: 0;
+  /* the same ring as on the glass, brightest at its edge with a glow inside
+     it, in the room's pink (story.css `--story-glow-rgb`) */
+  background: radial-gradient(closest-side,
+    rgba(var(--story-glow-rgb), 0.24) 0%,
+    rgba(var(--story-glow-rgb), 0.34) 40%,
+    rgba(var(--story-glow-rgb), 0.46) 60%,
+    rgba(var(--story-glow-rgb), 0.18) 76%,
+    rgba(var(--story-glow-rgb), 0.05) 90%,
+    rgba(var(--story-glow-rgb), 0) 100%);
+  transform: translate3d(-50%, -50%, 0) scale(0.3);
+  will-change: transform, opacity;
+}
+.hi-halo {
+  position: absolute; inset: -18% -26%;
+  pointer-events: none; opacity: 0;
+  background: radial-gradient(closest-side,
+    rgba(var(--story-glow-rgb), 0.62) 0%,
+    rgba(var(--story-glow-rgb), 0.5) 56%,
+    rgba(var(--story-glow-rgb), 0.16) 80%,
+    rgba(var(--story-glow-rgb), 0) 100%);
+  will-change: transform, opacity;
+}
+.hi.is-glow .hi-bloom { animation: hi-bloom 1600ms var(--ease-out) both; }
+.hi.is-glow .hi-halo { animation: hi-halo 1500ms var(--ease-out) both; }
+@keyframes hi-bloom {
+  0%   { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.3); }
+  14%  { opacity: 1; }
+  48%  { opacity: 0.42; }
+  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1); }
+}
+@keyframes hi-halo {
+  0%   { opacity: 0; transform: scale(0.86); }
+  22%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
 /* and it goes out, the way a letter's does when it is closed, while the
    black lifts off the page (screen.css `wl-sleep`) */
 .hi.is-at4 .wl-scr { animation: wl-sleep 560ms cubic-bezier(0.4, 0, 1, 1) both; }
 .hi.is-at4 .wl-scene-halo,
 .hi.is-at4 .wl-scene-halo-2 { animation: none; opacity: 0; transition: opacity 560ms var(--ease-out); }
 
-/* held for the screenshot loop: lit from the first frame */
+/* held for the screenshot loop: lit from the first frame, and the room's
+   light held on the same moment as the glass (Intro.jsx `--hi-since`) */
 .hi.is-held .wl-scr.is-waking,
 .hi.is-held .wl-scene-halo,
 .hi.is-held .wl-scene-halo-2 { animation: none; }
+.hi.is-held.is-glow :is(.hi-bloom, .hi-halo) { animation-delay: var(--hi-since, 0ms); animation-play-state: paused; }
+/* and held on the lift (`?beat=4`, which the loop uses to have the intro out
+   of the way at once), the light is gone with the black */
+.hi.is-held.is-at4 :is(.hi-bloom, .hi-halo) { animation: none; opacity: 0; }
 
+/* ── reduced motion ──
+   The last frame, and the pink standing still round the phone, softly: the
+   story still ARRIVES at the light, it simply does not travel to get there.
+   The veil is the only thing that moves. */
+.hi.is-still .hi-halo { animation: none; opacity: 0.55; transform: none; }
+.hi.is-still .hi-bloom {
+  animation: none; opacity: 1; transform: translate3d(-50%, -50%, 0) scale(0.42);
+  background: radial-gradient(closest-side, rgba(var(--story-glow-rgb), 0.3), rgba(var(--story-glow-rgb), 0.1) 55%, rgba(var(--story-glow-rgb), 0));
+  transition: opacity 300ms var(--ease-out);
+}
+.hi.is-still.is-at4 .hi-bloom { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-  /* the story still ARRIVES, it simply does not travel to get there: the
-     glass is drawn on its last frame and the veil is the only thing that
-     moves */
   .hi .hi-stage { transform: none; }
   .hi .wl-scene-halo,
   .hi .wl-scene-halo-2,
