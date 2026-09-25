@@ -361,17 +361,45 @@ export function skinOf(colour) {
   return s
 }
 
+// ── where the press does not run ──
+// The press is an SVG filter laid on an HTML element (`printFilter`), and
+// WebKit, which is every browser on an iPhone, draws the element without it:
+// the greys the filter was to turn into inks came out as they are, and every
+// print read as a black and white screen. There the screen is painted in its
+// inks to begin with (`inkOf`), each grey put in the ink the press would have
+// put it in, so a print is its colour on every phone. `?press=0` draws that
+// in development on any browser.
+export const PRESS = (() => {
+  if (typeof navigator === 'undefined') return true
+  if (import.meta.env && import.meta.env.DEV && typeof location !== 'undefined' && /[?&]press=0\b/.test(location.search)) return false
+  const ua = navigator.userAgent || ''
+  return !(/AppleWebKit/.test(ua) && !/(Chrome|Chromium|Edg|OPR)\//.test(ua))
+})()
+
+// The ink the press lays a grey in: its luminance, in the same bins as the
+// filter's table, and a copy's one threshold at the middle
+function inkOf(s, hex) {
+  const { stops } = s.print
+  const [r, g, b] = rgb(hex)
+  const l = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+  if (s.kind === 'xerox') return l < 0.5 ? stops[0] : stops[2]
+  return stops[Math.min(stops.length - 1, Math.floor(l * stops.length))]
+}
+
 // The custom properties a screen of this colour is painted with, for the
 // stylesheet (screen.css) to read. The same names on the letter, the tile
-// and the thumbnail.
-export function skinVars(colour) {
+// and the thumbnail. `inked` paints a print in its inks, for a screen the
+// press does not run on (`PRESS`).
+export function skinVars(colour, inked = false) {
   const s = skinOf(colour)
   const g = (a) => alpha(s.glow, a * s.k)
+  const p = inked && s.print ? (hex) => inkOf(s, hex) : (hex) => hex
   return {
-    '--s-top': s.top, '--s-top-2': s.top2, '--s-bot': s.bot,
-    '--s-hi': s.hi, '--s-mid': s.mid, '--s-lo': s.lo,
-    '--s-ink': s.ink, '--s-lit': s.lit, '--s-cur': s.cur,
-    '--s-bloom': s.bloom, '--s-soft': s.soft,
+    '--s-top': p(s.top), '--s-top-2': p(s.top2), '--s-bot': p(s.bot),
+    '--s-hi': p(s.hi), '--s-mid': p(s.mid), '--s-lo': p(s.lo),
+    '--s-ink': p(s.ink), '--s-lit': p(s.lit), '--s-cur': p(s.cur),
+    '--s-bloom': inked && s.print ? 'transparent' : s.bloom,
+    '--s-soft': inked && s.print ? alpha(s.print.stops[0], 0.3) : s.soft,
     '--s-glow': g(0.42), '--s-glow-2': g(0.16), '--s-edge': g(0.28),
     '--s-halo': s.print ? alpha(s.glow, s.kind === 'xerox' ? 0.07 : 0.11) : g(0.3), '--s-halo-2': s.print ? alpha(s.glow, 0.08) : g(0.16),
     '--t-top': s.flat.top, '--t-bot': s.flat.bot, '--t-body': s.flat.body,
