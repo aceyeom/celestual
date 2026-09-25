@@ -435,8 +435,8 @@ function Seek({ go }) {
 }
 
 // ── the tab ─────────────────────────────────────────────────────────────────
-// THE ONLY DOOR OUT OF THE WALL, and it is not here until somebody has put a
-// letter up. Offering an account to a person who has not written anything is
+// THE WALL'S DOOR TO THE PING, and it is not here until somebody has put a
+// letter up. Offering a ping to a person who has not written anything is
 // asking them to register for a result they have not earned and cannot
 // receive; offering it thirty seconds after they have named somebody is
 // asking the one question they are now actually carrying. So it waits, and
@@ -444,10 +444,11 @@ function Seek({ go }) {
 //
 // It is a card now, and it says who "they" are: the faces of the names this
 // device wrote to stand at the head of the sentence, so the offer is about
-// the people this person actually named and not about a pronoun. It says the
-// same sentence the screen it opens says, word for word. A door and the room
-// behind it that describe themselves differently is a door somebody has to
-// decide about twice. Under it, one quiet line puts it away.
+// the people this person actually named and not about a pronoun. It raises
+// the ping over the wall (screens/Ping.jsx), and the same people are the
+// first thing on it, one press each. Taken, it is put away, as a door that
+// has been used is: the sheet closes onto the names, not onto the same
+// offer again. Under it, one quiet line puts it away without taking it.
 function Tab({ faces, onGo, onHide, going }) {
   return (
     <div className={`wl-tab${going ? ' is-going' : ''}`}>
@@ -875,7 +876,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
         {down ? (
           <Down letter={down} onLeave={() => answer(down)} />
         ) : tab ? (
-          <Tab faces={wroteTo.slice(0, 3)} onGo={() => go('join')} onHide={hideTab} going={going} />
+          <Tab faces={wroteTo.slice(0, 3)} onGo={() => { hideTab(); go('ping') }} onHide={hideTab} going={going} />
         ) : null}
         <div className="wl-dock-act">
           <WriteAct go={go} />
@@ -892,7 +893,7 @@ export default function Wall({ go, reduce, rev, under = false, open: opened = 0 
         gone. */}
     {lifted && (
     <div className="wl-page is-foot" inert={under || undefined}>
-      <SiteFoot />
+      <SiteFoot go={go} />
     </div>
     )}
     </>

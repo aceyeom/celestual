@@ -240,8 +240,9 @@ campus address or a handle proved after that code was scanned (migration 0047).
 
 Two things called *register* live on this surface and they are not the same
 thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
-control — and buys nothing else. `/berkeley/join` is the door into the product — accounts, pings, mutuals — and it
-is still gated on having put a letter up.
+control, and buys nothing else. `/berkeley/ping` is the door into the rest of
+the product: the ping, and through it the mutual. It is a sheet on the wall,
+and its tab at the foot of the wall still waits until a letter has gone up.
 
 The search ends on its results. Two capsules stood under them, `write instead`
 and `take a name off`, and both were doors to other rooms on a sheet whose one
@@ -358,11 +359,10 @@ to empty; only the desk shuts a name, and `wall_name_shut` applies only its
 desk branch to a tilde key, so one Sofia's takedown does not shut every Sofia
 and an opted out @sofia does not shut the first name either.
 
-Where the @ matters is the ping, and Main asks for it there. The tab after a
-letter is unchanged; `/berkeley/join` leaves for `/place/<handle>` when the
-letter carried a handle and for `/place` when it carried a name, and `Who's
-on your mind.` is the ask, made by the writer, on the surface where a ping
-lives.
+Where the @ matters is the ping, and the ping sheet asks for it. It lists the
+people this person has written to by handle, one press each; a letter to a
+name carried no @, so the name is not listed, and `who's on your mind.` over
+the field is the ask, made by the writer, as the ping's own object.
 
 ## The look of a letter
 
@@ -483,18 +483,27 @@ foot, at a width a thumb finds.
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `place a ping` leaves for Main: at `/place/<handle>` when the letter this device wrote last carried a handle, so the ping's target is already in the field, and at `/place` when it carried a first name, so Main asks `Who's on your mind.` with its own painted @. That field is where the @ is asked, and the only place |
+| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its ping is doing, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, twenty words at most, read by them only if it is ever mutual. The proof, only when this browser does not hold one: the gate's Instagram door, in place. Then `it's out.` and the sixty days, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen |
+| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their pings (mutuals first, each opening the reveal; standing ones with their days, each opening its own screen, whose options are `sixty more days` and `let it go`), what is left of the slots, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `place a ping` and `sign out`. With no @ proved here it says so and proves it; with nobody known it is the door |
+| `/berkeley/join` | what a ping is, drawn: three lines and the mark assembling, and `place a ping` raises the ping sheet over the wall, giving this page's place in the history to the wall first |
+
+The wall at the root reads the same table: `/ping`, `/you` and the rest,
+raised over the wall for everybody. Main's old addresses for all of this,
+`/ping`, `/place`, `/place/:handle`, `/@handle`, `/sky` and `/reveal/:handle`,
+are rewritten onto the Berkeley wall before a shell is chosen (`router.js`
+`movedRewrite`, `HOME_BASE`), so a link already out there opens the sheet it
+meant over the wall that is home.
 
 `/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
 (the audit of 4 September). They were a drawn stand-in for the core service
 with a seeded ledger in it, still reachable by typing the address after the
-wall went live; the core service is Main, and `/berkeley/join` sends people
-there. Anything below that describes the orbit, `orbit.js`, `Core.jsx`, the
+wall went live. The ping is a sheet on the wall now. Anything below that
+describes the orbit, `orbit.js`, `Core.jsx`, the
 seeded ledger or the printed date is a record of what was built, not of what
 runs.
 
-Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
-`report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
+Eight of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
+`report`, `remove`, `ping` and `you` rise off the bottom edge over a wall that stays mounted, scrolled
 where it was, dimmed and slightly out of focus behind them — and on a wide
 screen they become centred dialogs instead, because a sheet dragged up from the
 bottom of a 1400px display is a phone gesture on furniture that is not a phone.
@@ -523,7 +532,7 @@ ear (below):
 | --- | --- |
 | ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
 | write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: the metal capsule carrying the nib and the word (`wall/LiquidButton.jsx`), at the foot where a thumb is. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about; it was chalk with the running light inside it until the primary became a material |
-| ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
+| ⚷ | **the person**: a keyhole while nobody is known here, and the face of the address or the @ that is, once somebody is. It opens `/you`, their pings, drafts and letters, for anybody known by any proof, and the gate for anybody else, with `/you` as where the gate lands |
 
 There used to be a fourth, a `wall` glyph at the head of the row, lit whenever
 you were on the wall. On the wall itself, which is where almost everybody met

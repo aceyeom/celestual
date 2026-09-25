@@ -193,6 +193,13 @@ let MANY = false
 // Whether the fixture browser is nobody at all: signed in to nothing, so the
 // gates draw their doors rather than the account.
 let ANON = false
+// Whether the handle typed at the ping's door is on the desk's pass list
+// (0043): proved on the spot, with no code drawn, which is the one way to
+// walk the whole of a ping to "it's out." without an Instagram behind it.
+let PASS = false
+// Whether every slot this person holds is already standing, so the placing
+// is refused and the sheet says so (0023 `no_slots`).
+let FULL = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -609,9 +616,20 @@ const RPC = {
   // poll answers pending for as long as the screenshot takes, carrying
   // whatever note the route asked for.
   celestual_start_ig_verification: () => ({
-    ok: true, token: '1283', expires_at: new Date(now + 30 * 60000).toISOString(),
+    ok: true, token: '1283', expires_at: new Date(now + 30 * 60000).toISOString(), passed: PASS,
   }),
-  celestual_poll_ig_verification: () => ({ status: 'pending', handle: null, note: NOTE || null }),
+  celestual_poll_ig_verification: () => (PASS
+    ? { status: 'verified', handle: 'ace03d', note: null }
+    : { status: 'pending', handle: null, note: NOTE || null }),
+  // 0023: the ping, placed. Standing, never announced as mutual here, and the
+  // slots the server holds this person to, which the account sheet counts
+  // against. Or refused, with every slot already standing.
+  celestual_submit: () => (FULL
+    ? { recorded: false, error: 'no_slots', slots: { standing: 2, cap: 2 } }
+    : {
+      recorded: true, mutual: false, match: null, match_card: null, reachable: false,
+      expires_at: new Date(now + 60 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
+    }),
   // The front door's notice reads this.
   wall_pulse: () => ({
     ok: true, campus: 'berkeley', name: 'UC Berkeley', open: true,
@@ -667,11 +685,11 @@ const RPC = {
         ...faceOf('jules.k'),
       },
       {
-        handle: 'sofiaaa.reyes',
+        handle: 'ren.tanaka',
         time: now - 6 * DAY,
         expires_at: new Date(now + 54 * DAY).toISOString(),
         mutual: false,
-        card: { words: 'you sat two rows ahead all semester.' },
+        card: { words: 'you were the one singing on the 51B that night.' },
       },
     ],
   }),
@@ -805,38 +823,80 @@ async function fulfil(route) {
 const ROUTES = [
   // The intro, held on its assembled beat: the liquid mark and the name.
   { label: 'intro',         path: '/?beat=3' },
-  // The hero scrolls: it is a page with three sections rather than one
-  // composition, so it is shot whole as well as at the fold. Without the intro
-  // in front of it, which has its own frame above.
-  { label: 'hero',          path: '/?nointro=1' },
-  // The front door with a handle in it: the card that pops up under the field,
-  // once with the answer and once while the resolver is still out, which is
-  // the state the light was drawn for.
-  { label: 'hero-card',     path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' } },
-  { label: 'hero-looking',  path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' }, slow: true, press: '.hm-ask-row .wl-pill' },
-  { label: 'place',         path: '/place' },
-  { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
-  { label: 'place-named',   path: '/@pilar.echevarria' },
-  // the third step, the envelope: asked of a browser that knows nobody, and
-  // shown to one that has already proved
-  { label: 'place-you',       path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill', verified: false },
-  { label: 'place-you-known', path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill' },
-  // The code, out: the FROM row says proving and the foot is the code. And
-  // the same screen once a DM with the wrong digits has arrived (0041).
-  { label: 'place-code',      path: '/@pilar.echevarria', verified: false,
-    acts: [['fill', 'textarea', 'i have wanted to say this since the second week of term.'], ['click', '.mn-foot .wl-pill'],
-           ['fill', '.mn-mail-field input', 'ace03d'], ['click', '.mn-foot .wl-pill']] },
-  { label: 'place-code-note', path: '/@pilar.echevarria', verified: false, note: 'wrong_code',
-    acts: [['fill', 'textarea', 'i have wanted to say this since the second week of term.'], ['click', '.mn-foot .wl-pill'],
-           ['fill', '.mn-mail-field input', 'ace03d'], ['click', '.mn-foot .wl-pill'], ['wait', 3200]] },
-  { label: 'sky',           path: '/sky' },
-  // A standing ping, opened: the card, and the two things you can do to it.
-  { label: 'sky-card',      path: '/sky', press: '.mn-list .wl-row' },
-  // The sky before a handle is proved on this device: where the front door's
-  // "sign in" lands, and the screen that asks the question.
-  { label: 'sky-prove',     path: '/sky', verified: false },
-  { label: 'sky-prove-code', path: '/sky', verified: false,
-    acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
+  // ── the ping, on the wall ──
+  // Raised over the Berkeley wall, from the tab, the bar and the foot, and
+  // from every address Main used to draw it at. The people written to, with
+  // what each one's ping is doing; a new @ typed, with the wall's names under
+  // it, and the resolver's answer in the field's place; the ping's own
+  // screen; the door, when the proof is not on this device; and "it's out."
+  { label: 'ping',          path: '/berkeley/ping' },
+  { label: 'ping-typed',    path: '/berkeley/ping', type: { into: '.wl-ping .wl-field input', text: 'a' } },
+  { label: 'ping-found',    path: '/berkeley/ping',
+    acts: [['fill', '.wl-ping .wl-field input', 'pilar.echevarria'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1400 },
+  { label: 'ping-line',     path: '/berkeley/ping',
+    acts: [['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'i kept nearly saying something after class and then not saying it.']] },
+  { label: 'ping-long',     path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class and then not saying it and then the term ended and i still had not said it']] },
+  { label: 'ping-full',     path: '/berkeley/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-proof',    path: '/berkeley/ping/pilar.echevarria', verified: false,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']] },
+  { label: 'ping-code',     path: '/berkeley/ping/pilar.echevarria', verified: false,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'],
+           ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light']] },
+  { label: 'ping-done',     path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // the whole story from the wall: the tab, a name written to, a line, the
+  // door passed on the spot, "it's out.", and back on the names
+  { label: 'ping-story-tab',  path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main']], settle: 1400 },
+  { label: 'ping-story-line', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.']] },
+  { label: 'ping-story-door', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['fill', '.wl-door .wl-field input', 'ace03d']] },
+  { label: 'ping-story-done', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light'], ['wait', 1600]], settle: 600 },
+  { label: 'ping-story-home', path: '/berkeley', tab: true, verified: false, pass: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-tab-main'], ['wait', 900],
+           ['click', '.wl-ping-wrote .wl-suggest-row'], ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light'], ['wait', 1600],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1400]], settle: 1200 },
+  // and from a link, cold: an old /@handle lands on the ping over Berkeley,
+  // and "back to the wall" leaves the names with no poster over them
+  { label: 'ping-cold',      path: '/@pilar.echevarria' },
+  { label: 'ping-cold-home', path: '/@pilar.echevarria',
+    acts: [['wait', 3200], ['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1400],
+           ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1600]], settle: 1200 },
+  // ── the person ──
+  // The bar's face opens it: the pings, the drafts, the letters. A standing
+  // ping opened onto its own screen, its options, and letting it go asked.
+  // The three ways the list can not be there: no @ here, a proof gone, and
+  // nobody at all, which is the door.
+  { label: 'you',           path: '/berkeley/you' },
+  { label: 'you-bar',       path: '/berkeley', acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-memberbtn']], settle: 1400 },
+  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing']], settle: 1200 },
+  { label: 'you-options',   path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+  { label: 'you-let-go',    path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:last-child']], settle: 900 },
+  { label: 'you-unproved',  path: '/berkeley/you', verified: false },
+  { label: 'you-door',      path: '/berkeley/you', anon: true },
+  { label: 'you-home',      path: '/you' },
+  // and both under prefers-reduced-motion: the screen does not dip, and
+  // every state is still whole as a still frame
+  { label: 'ping-done-still', path: '/berkeley/ping/pilar.echevarria', still: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'you-still',     path: '/berkeley/you', still: true, settle: 900 },
+  // the addresses Main used to draw, landing on the wall
+  { label: 'legacy-sky',    path: '/sky' },
+  { label: 'legacy-place',  path: '/place' },
+  { label: 'legacy-ping',   path: '/ping' },
   { label: 'reveal',        path: '/reveal/jules.k' },
   // the veil over the field, with the flaps rolled into place (art.jsx
   // Flap), so the wall is shot once they have landed; then the field with
@@ -878,7 +938,6 @@ const ROUTES = [
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
   { label: 'home-letter',     path: '/letter/pilar.echevarria' },
   { label: 'berkeley-gate-google', path: '/berkeley/gate', anon: true },
-  { label: 'ping',            path: '/ping?nointro=1' },
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
   // the veil opening from the tap, held at four tenths of its reach
   // (Wall.jsx `heldRipple`): the circle, the crest of the pulse running
@@ -1104,6 +1163,8 @@ for (const r of list) {
   DOWN = r.down === true
   MANY = r.many === true
   ANON = r.anon === true
+  PASS = r.pass === true
+  FULL = r.full === true
   for (const v of VIEWPORTS) {
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })

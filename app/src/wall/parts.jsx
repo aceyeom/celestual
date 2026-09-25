@@ -18,6 +18,8 @@ import { PixelPic, PixIcon, Wait } from './screen.jsx'
 import { Caret } from './caret.jsx'
 import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
+import { setAfterGate } from './store.js'
+import { href } from './router.js'
 
 // ── the wall is the phone ───────────────────────────────────────────────────
 // Every control on the wall is drawn in the phone's own language (DESIGN.md
@@ -436,19 +438,26 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
             home and the person. */}
         {/* The one target here, and the only one that changes what it draws. A
             keyhole while the letters are shut, and once they are open, the
-            constellation of the address that opened them — the same figure the
-            wall draws beside a handle, so a person's own mark is the same
-            object here as it is there. */}
+            face of the address that opened them, so a person's own mark is
+            the same object here as it is on the wall.
+            It opens the person: their pings, what they have not finished and
+            what they have written (screens/You.jsx), for anybody the product
+            knows by any proof. Anybody else is asked in first, and lands on
+            the same sheet once they are. */}
         <button
           type="button"
-          className={`wl-iconbtn wl-memberbtn${at === 'gate' ? ' is-on' : ''}`}
-          onClick={() => go('gate')}
+          className={`wl-iconbtn wl-memberbtn${at === 'gate' || at === 'you' ? ' is-on' : ''}`}
+          onClick={() => {
+            if (who || reads || mine) { go('you'); return }
+            setAfterGate({ name: 'you' })
+            go('gate')
+          }}
           aria-label={who ? `signed in as ${who}`
             : mine ? `signed in as ${atHandle(mine)}`
             : reads ? 'your account'
             : 'sign in to read the letters'}
           title={who || (mine ? atHandle(mine) : reads ? 'your account' : 'sign in to read')}
-          aria-current={at === 'gate' ? 'page' : undefined}
+          aria-current={at === 'gate' || at === 'you' ? 'page' : undefined}
         >
           {who || reads
             ? <Face handle={mine} size={30} resolve={!who && !!mine} />
@@ -1411,7 +1420,7 @@ export function DmCode({ code, status = '' }) {
 export function VerifyHead({ size = 'm', as = 'h1', id, className = '', ref }) {
   return (
     <Display size={size} as={as} id={id} className={className} ref={ref}>
-      Verify the account<br />belongs to you.
+      verify the account<br />belongs to you.
     </Display>
   )
 }
@@ -1561,7 +1570,9 @@ export function confirmWord(at, idle) {
 //   useSuggest   the rows, the lit one, and the keys. `onPick` takes a row;
 //                `skip` hides the list (the field is settled, or on another
 //                step); `exclude` drops the handle already in the field, so
-//                the person in the card is not listed again under it.
+//                the person in the card is not listed again under it;
+//                `handles` keeps only the names that are an @, for the
+//                ping's field, where a first name is nobody a ping can find.
 //   Suggest      draws them. Pointer and keyboard both move the light, and
 //                pressing a row is the same act as typing that handle.
 //
@@ -1572,7 +1583,7 @@ const SUGGEST_MS = 120
 const SUGGEST_MAX = 4
 const suggested = new Map()
 
-export function useSuggest(query, { onPick = null, skip = false, exclude = '', max = SUGGEST_MAX } = {}) {
+export function useSuggest(query, { onPick = null, skip = false, exclude = '', max = SUGGEST_MAX, handles = false } = {}) {
   // as typed (0054): a space or an accent is the server's to hear, and a
   // first name is not a handle to normalise
   const q = String(query || '').trim().replace(/\s+/g, ' ').slice(0, 60)
@@ -1605,7 +1616,7 @@ export function useSuggest(query, { onPick = null, skip = false, exclude = '', m
     return () => clearTimeout(t)
   }, [q, skip])
 
-  const rows = (ex ? got.filter((t) => t.handle !== ex) : got).slice(0, max)
+  const rows = got.filter((t) => (!ex || t.handle !== ex) && (!handles || !isNameKey(t.handle))).slice(0, max)
   const open = !skip && !shut && rows.length > 0
   const pick = useCallback((t) => {
     setShut(true)
@@ -1921,7 +1932,7 @@ export function Me({ who, onClick, className = '' }) {
   return (
     <button
       type="button" className={`wl-pill is-ghost wl-me${on ? ' is-on' : ''} ${className}`}
-      onClick={onClick} aria-label={on ? `your sky, ${atHandle(who.handle)}` : 'sign in'}
+      onClick={onClick} aria-label={on ? `your pings, ${atHandle(who.handle)}` : 'sign in'}
     >
       {on ? <Face handle={who.handle} size={22} /> : null}
       <span className={on ? 'wl-me-h' : undefined}>{on ? atHandle(who.handle) : 'sign in'}</span>
@@ -2208,9 +2219,9 @@ export function Addressed({ at, onClear, looking = false, label = 'change who it
 }
 
 // ── the foot of the site ────────────────────────────────────────────────────
-// The same block under the front door, under the wall, and (restated in
-// legal.css, because a static page cannot import this) under the three legal
-// pages: the lockup and the one sentence, the legal pages, and how to reach
+// The same block under both walls, and (restated in legal.css, because a
+// static page cannot import this) under the three legal pages: the lockup
+// and the one sentence, the legal pages, and how to reach
 // the company. It replaced a row of five links with nothing behind them, which
 // is what a footer looks like when nobody has decided what a footer is for.
 //
@@ -2233,12 +2244,12 @@ export const COMPANY = {
   year: 2026,
 }
 
-// The addresses on Main. Given the shell's `go`, a plain click on one of these
-// stays inside the shell rather than reloading the app; a modified click, a
-// middle click and a copy still get a real anchor.
-const IN_SHELL = { '/ping': 'hero', '/place': 'place', '/sky': 'sky', '/optout': 'optout' }
-function inShell(go, href) {
-  const name = IN_SHELL[href]
+// The one address on the foot that the wall draws itself: placing a ping,
+// which is a sheet raised over the wall the foot is under. Given the shell's
+// `go`, a plain click raises it in place rather than reloading the app; a
+// modified click, a middle click and a copy still get a real anchor, to the
+// same sheet on the same wall. Everything else here is a page of its own.
+function inShell(go, name) {
   if (!go || !name) return undefined
   return (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return
@@ -2248,7 +2259,7 @@ function inShell(go, href) {
 }
 
 export function SiteFoot({ go = null, className = '' }) {
-  const link = (href, text) => <a href={href} onClick={inShell(go, href)}>{text}</a>
+  const link = (to, text, name = '') => <a href={to} onClick={inShell(go, name)}>{text}</a>
   return (
     <footer className={`wl-colophon ${className}`}>
       <div className="wl-colophon-brand">
@@ -2259,7 +2270,7 @@ export function SiteFoot({ go = null, className = '' }) {
       <nav className="wl-colophon-cols" aria-label="the rest of it">
         <div className="wl-colophon-col">
           <Label tone="dim">celestual</Label>
-          {link('/ping', 'place a ping')}
+          {link(href('ping'), 'place a ping', 'ping')}
           {link('/berkeley', 'the wall at berkeley')}
         </div>
         <div className="wl-colophon-col">

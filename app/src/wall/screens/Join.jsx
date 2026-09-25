@@ -80,8 +80,7 @@ import { Display, Pill, Close } from '../parts.jsx'
 import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
 import { PixIcon } from '../screen.jsx'
 import { cardStep } from '../seed.js'
-import { getState } from '../store.js'
-import { isNameKey, validHandle } from '../data.js'
+import { href } from '../router.js'
 
 // Every part of the mark, straight off the mark. Move a constant in art.jsx and
 // this figure moves with it, because it is not a drawing of the logo: it is the
@@ -246,27 +245,22 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
     return () => timers.current.forEach(clearTimeout)
   }, [reduce])
 
-  // Out of the wall and into the product. `assign` rather than a route change:
-  // see the note on the button below.
-  // The last step a card can be credited with, and the furthest one: out of the
-  // wall and into the product. Written down before the navigation, because
-  // after it this shell is gone (migration 0047).
+  // The last step a card can be credited with, and the furthest one: from the
+  // wall into the rest of the product (migration 0047). The ping sheet writes
+  // it down too, once per device, whichever door it was opened from.
   //
-  // ── and it lands on the person ──
-  // It used to land on the hero, and a person who had just named somebody
-  // met an empty field on the far side of the door. Main's /place/<handle>
-  // opens with the ping's target already in it and the resolver's card drawn
-  // against a face, so the handle this device wrote to last is handed over
-  // when the letter carried one. A letter to a first name (0053) carried no
-  // handle, so it lands on /place with the field open: "Who's on your mind."
-  // is where Main asks for the @, and that field IS the ask. The wall never
-  // asked for it and never held it; the writer types it themselves, as the
-  // ping's own object, on the surface where a ping lives.
+  // ── and it opens on the people ──
+  // It used to leave the wall for Main's /place, a page in another design
+  // with the last handle written to already in its field. The ping is a sheet
+  // on the wall now (screens/Ping.jsx), and it opens on everybody this person
+  // has written to, one press each, with the field under them for anybody
+  // else. This page is a door and not a place to come back to, so it gives
+  // its entry in the history to the wall first: the sheet closes onto the
+  // names, and the back button does not walk through the drawing again.
   const place = () => {
     cardStep('handoff')
-    const k = (getState().wroteTo || [])[0] || ''
-    const h = k && !isNameKey(k) && validHandle(k) ? k : ''
-    window.location.assign(h ? `/place/${encodeURIComponent(h)}` : '/place')
+    window.history.replaceState({ ...window.history.state, wall: 'wall', wallDepth: 0 }, '', href('wall'))
+    go('ping')
   }
 
   // The same escape the overture has, for the same reason: this runs three and
@@ -335,14 +329,9 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
       <div className={`wl-join-foot${at >= LAST ? ' is-in' : ''}`}>
         {/* ── the hand-off ──
             This used to open /berkeley/orbit, a drawn stand-in for the core
-            service that lived inside the wall's own bundle. It does not any
-            more: registering means registering, so the button leaves this tree
-            entirely and lands on the product at the root of the site.
-
-            A real navigation rather than a route change, because the wall and
-            production are two different apps behind one document (main.jsx) and
-            pushing a production path into this history stack would leave the
-            wall trying to render a screen it does not have. */}
+            service, and then Main's /place by a real navigation out of this
+            tree. The ping is the wall's own sheet now, so the button raises
+            it over the wall in place (`place` above). */}
         <Pill tone="light" wide onClick={place}>
           place a ping
         </Pill>
