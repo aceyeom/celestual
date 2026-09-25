@@ -63,10 +63,12 @@ const LINES = [
 ]
 
 // The story's beats are the lines': each line is said as its part of the
-// story starts, and the key arrives as they touch.
-const STORY = joinStory({ you: 500, them: 1400, both: 2300 })
+// story starts, and the key arrives as they touch. The first is after the
+// screen has come on (wall.css `.wl-join-scr`, 180ms and 900 of flicker),
+// so @you is seen to arrive and not found already standing there.
+const STORY = joinStory({ you: 800, them: 1700, both: 2600 })
 //              1     2     3     4
-const BEATS = [500, 1400, 2300, STORY.times.touch + 240]
+const BEATS = [800, 1700, 2600, STORY.times.touch + 240]
 const LAST = 4
 
 // the night screen, and the two of them named on it

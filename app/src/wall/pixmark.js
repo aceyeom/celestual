@@ -569,7 +569,7 @@ export function introStory(start = 300) {
 // because neither of them knows until both have. They wait a screen apart,
 // and the last four frames of the run close it.
 const WAIT_AT = 3
-export function joinStory({ you = 500, them = 1400, both = 2300 } = {}) {
+export function joinStory({ you = 800, them = 1700, both = 2600 } = {}) {
   const meet = both + Math.ceil((MEET - WAIT_AT) / PACE) * STEP
   return makeStory({
     a: { start: you, from: RUN_FROM, stop: WAIT_AT, again: both, phase: 2, reach: 'a' },
