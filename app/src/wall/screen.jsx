@@ -27,6 +27,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS } from './looks.js'
+import { Caret } from './caret.jsx'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -541,7 +542,7 @@ export function Screen({
       >
         <div
           className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
-          data-lid={s.kind === 'xerox' ? q.lid : undefined}
+          data-lid={s.kind === 'xerox' ? q.lid : undefined} data-light={s.light || undefined}
           role="group" aria-labelledby={nameId}
         >
           <div className="wl-scr-bg" aria-hidden="true" />
@@ -702,9 +703,10 @@ export function ScreenText({ text, cursor = false, sealed = false, className = '
 }
 
 // The draft, being written: the same words in the same place, in a
-// textarea, with the phone's own caret. It autofocuses only where there is a
-// fine pointer, because on a phone the keyboard coming up unasked covers the
-// screen the person has not looked at yet. `inputRef` is handed the
+// textarea, with the phone's own caret, drawn by caret.jsx in the words'
+// ink and two of the face's pixels wide. It autofocuses only where there is
+// a fine pointer, because on a phone the keyboard coming up unasked covers
+// the screen the person has not looked at yet. `inputRef` is handed the
 // textarea too, for a key that edits at the caret.
 export function ScreenDraft({ value, onChange, max = 280, placeholder = '', autoFocus = false, label = 'your letter', inputRef = null }) {
   const ref = useRef(null)
@@ -726,6 +728,7 @@ export function ScreenDraft({ value, onChange, max = 280, placeholder = '', auto
         maxLength={max} rows={1} spellCheck="true" aria-label={label}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
       />
+      <Caret of={ref} screen />
       <Bar of={ref} over={over} />
     </>
   )
@@ -798,10 +801,12 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
   const hrs = at ? (Date.now() - at) / 3600000 : 99
   const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
   const fresh = hrs < 24
+  // a print's light is its colour's (`--t-spot`, looks.js), laid where this
+  // phone's backlight is brightest, as it is on the letter
   const vars = {
     ...skinVars(colour),
     '--q-rz': q.vars['--q-rz'], '--q-hx': q.vars['--q-hx'], '--q-hy': q.vars['--q-hy'],
-    '--q-blink': q.vars['--q-blink'], '--q-ar': q.vars['--q-ar'], '--q-spot': q.vars['--q-spot'],
+    '--q-blink': q.vars['--q-blink'], '--q-ar': q.vars['--q-ar'],
     '--q-pitch': q.vars['--q-pitch'],
   }
   const len = [...String(mono || '')].length
@@ -810,7 +815,7 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
   // dimming are written on, so a screen going out of focus restyles those
   // two and nothing inside the screen
   return (
-    <span className={`wl-tile ${className}`} data-kind={s.kind} style={vars} aria-hidden="true">
+    <span className={`wl-tile ${className}`} data-kind={s.kind} data-light={s.light || undefined} style={vars} aria-hidden="true">
       <i className="wl-tile-glow" />
       <span className="wl-tile-f">
         <span className="wl-tile-in">
@@ -845,13 +850,14 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
 }
 
 // ── the thumbnail ───────────────────────────────────────────────────────────
-// A colour in the panel: the small screen with three lines of words on it.
+// A colour in the panel: the small screen with three lines of words on it,
+// and a print's own light where the letter's would be.
 export function Mini({ colour, seed = 'mini' }) {
   const s = skinOf(colour)
-  const vars = { ...skinVars(colour), '--q-hx': '78%', '--q-hy': '64%', '--q-spot': 'none' }
+  const vars = { ...skinVars(colour), '--q-hx': '78%', '--q-hy': '64%' }
   void seed
   return (
-    <span className="wl-mini" data-kind={s.kind} style={vars} aria-hidden="true">
+    <span className="wl-mini" data-kind={s.kind} data-light={s.light || undefined} style={vars} aria-hidden="true">
       <span className="wl-mini-top" />
       <span className="wl-mini-body"><i /><i /><i /></span>
       <span className="wl-mini-bot" />

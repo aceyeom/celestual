@@ -220,21 +220,26 @@ ruling stands, on the row above, and it always will.
 
 What is built (migrations 0055 and 0058, `app/src/wall/looks.js`) is a
 LOOK, and as of 23 September it is one axis: the COLOUR a letter's screen is
-lit in, one of eighteen, from a menu every writer on the wall shares, stored
+lit in, one of thirteen, from a menu every writer on the wall shares, stored
 as one slug and drawn by the browser. Every letter is the same phone screen
 in the same face; a colour brings its own treatment with it (a lit LCD, the
-negative, a poster's four inks, a riso's two drums, a xerox), and what makes
+negative, a poster's four inks, a riso's two drums, a xerox, and on a print
+its own light), and what makes
 one screen differ from the next is not the writer's at all: it is the
 letter's own id (`quirks`), a tilt and a speck of dust nobody chose.
 
 It was forty-two papers, twenty-nine colours and twenty-four faces, and
 before that eight, twenty-three and twelve; nine and twelve when it shipped.
-The count has moved five times and the reasoning below has not: what the
+The count has moved six times and the reasoning below has not: what the
 gates care about is that the menu is SHARED and CLOSED, not how long it is.
-This time it got SHORTER, which is the direction the ruling already said the
-answer lies in: eighteen colours on one design means every colour is on a
-great many letters, and the combinations a regular writer could be noticed
-by went from thirty thousand to eighteen.
+It got SHORTER on 23 September, which is the direction the ruling already
+said the answer lies in: eighteen colours on one design meant every colour
+was on a great many letters, and the combinations a regular writer could be
+noticed by went from thirty thousand to eighteen. On 25 September five
+prints left and it got shorter again, to thirteen in one pool (migration
+0061 moved their letters to the colours nearest their hues). A print's
+light came with that, and it is the colour's, not a second axis: a light
+chosen apart from its colour would have multiplied the menu again.
 
 Through the gates:
 
@@ -251,7 +256,7 @@ Through the gates:
   thirty colour cells by twenty-four faces, about thirty thousand
   combinations, and the ruling said then that the next change to the menu
   had to argue how many letters each look would still carry. The screens
-  answer it the easy way: one design, eighteen colours, so every colour is
+  answer it the easy way: one design, thirteen colours, so every colour is
   on a great many letters and none is a fingerprint. What makes two letters
   of one colour look different is the letter's own id, which is nobody's
   choice and so nobody's signature. **The next proposal to lengthen this
@@ -272,7 +277,7 @@ Through the gates:
   face is a file served from this origin. Nothing is downloaded from anywhere.
   The one picture is the resolver's own picture of the ADDRESSEE, which the
   wall already drew beside every letter, now dithered into the screen's ink;
-  a writer still cannot put a picture on a letter. The eighteen colours live
+  a writer still cannot put a picture on a letter. The thirteen colours live
   in `looks.js` and design/DESIGN.md 2.5 fences them, and none of them is
   `--accent`.
 - **G8.** The look is a column on the letter's row. A takedown takes it down

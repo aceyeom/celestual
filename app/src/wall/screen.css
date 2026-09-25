@@ -143,10 +143,12 @@
 }
 .wl-scr-draft::placeholder { color: var(--s-ink); opacity: 0.38; }
 /* an empty draft that is not being typed in keeps the phone's cursor, a
-   blinking bar before the example, the size of the letter's (`.wl-scr-cur`) */
-.wl-root .wl-scr-draft:placeholder-shown { text-indent: 0.25em; }
+   blinking bar before the example: the same bar the caret is once the
+   draft is typed in (caret.jsx), two strokes of the face wide and cap top
+   to a stroke under the line, so a tap does not change its width */
+.wl-root .wl-scr-draft:placeholder-shown { text-indent: 0.3em; }
 .wl-root .wl-scr-draft:placeholder-shown:not(:focus) {
-  background: linear-gradient(currentColor, currentColor) 0 0.24em / 0.107em 0.64em no-repeat;
+  background: linear-gradient(currentColor, currentColor) 0 0.24em / 0.214em 0.64em no-repeat;
   animation: wl-draft-cur 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms);
 }
 @keyframes wl-draft-cur { 50% { background-size: 0 0; } }
@@ -158,6 +160,35 @@
   animation: wl-blink 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms);
 }
 @keyframes wl-blink { 50% { opacity: 0; } }
+/* the caret, where a person is typing (caret.jsx): the same bar as the
+   cursor above, drawn by the component in the field's own box and sized in
+   its face's pixels. Lit for the first half of the phone's beat and out for
+   the second; the two names are one beat, swapped by the component so each
+   keystroke starts it again from the lit half. In the chrome it is chalk
+   (phone.css); on the screen it is the words' own ink with their bloom, and
+   under the press it prints in the darkest ink, as the words do. While it
+   is drawn the native caret is put out (`data-caret`), and nowhere else */
+.wl-caret {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; overflow: hidden;
+  background: var(--chalk, #F4F1EA);
+  animation: wl-caret-a 1060ms steps(1, end) infinite;
+}
+.wl-caret.is-b { animation-name: wl-caret-b; }
+.wl-caret[hidden] { display: none; }
+@keyframes wl-caret-a { 50% { opacity: 0; } }
+@keyframes wl-caret-b { 50% { opacity: 0; } }
+/* in the middle of a word the caret is the letter after it, inverted: the
+   letter set again inside a cell of its own width and struck out of it */
+.wl-caret > i {
+  position: absolute; left: 0; margin: 0; padding: 0; white-space: pre;
+  font-style: normal; font-synthesis: none; text-shadow: none; color: #000;
+}
+.wl-caret.is-screen { background: var(--s-ink); box-shadow: 0 0 0.35cqw var(--s-soft); }
+.wl-caret.is-screen > i { color: var(--s-mid); }
+.wl-root .wl-scr-draft[data-caret] { caret-color: transparent; }
+/* a selection on the screen is the phone's inversion, the words struck out
+   of a bar of their own ink, so it is plain while the caret is away */
+.wl-root .wl-scr-draft::selection { background: var(--s-ink); color: var(--s-hi); text-shadow: none; }
 /* a sealed letter's stars: the face's '*' is a small raised mark, so each
    run is set at 4/3, where one star is exactly as wide as an 'x', its ink
    centred on the x-height and nothing hanging below the line, so the letter
@@ -272,7 +303,7 @@
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit { text-shadow: none; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit-g .wl-px,
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-px.wl-lit-g { filter: none; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-scr-cur { box-shadow: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) :is(.wl-scr-cur, .wl-caret) { box-shadow: none; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass {
   box-shadow: inset 0 0 0 1.4cqw rgba(0, 0, 0, 0.85);
 }
@@ -283,6 +314,42 @@
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top { padding-left: 3.2cqw; padding-right: 3.2cqw; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-bot { padding-left: 2.4cqw; padding-right: 2.4cqw; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-sb { right: 2.6cqw; }
+
+/* ── the prints' lights ──
+   Where a print's palest ink falls is its colour's own (looks.js `LIGHTS`):
+   drawn here in greys inside the press, so every one of them comes out in
+   the print's own inks and none is a new hue, and drawn the same way by
+   share.js before its press. `corner`, acid's, is the panel's own radial
+   (`.wl-scr-bg`) and needs nothing more. */
+/* teal: a keyline of the palest ink inside the rule, a hair clear of it,
+   and a hair clear of the first letter of every row */
+.wl-scr[data-light='keyline'] .wl-scr-fx.is-glass { outline: 0.7cqw solid #FFF; outline-offset: -2.4cqw; }
+/* ember: the light falls from the top of the sheet. The status rows stand
+   in the palest ink, and it breaks up into the main one in the grain a
+   third of the way down, deeper where this phone's backlight sits low */
+.wl-scr[data-light='sky'] .wl-scr-bg {
+  background: linear-gradient(180deg, var(--s-hi) calc(var(--q-hy, 66%) * 0.4 + 5%), var(--s-mid) calc(var(--q-hy, 66%) * 0.4 + 19%), var(--s-lo) 100%);
+}
+/* lilac: the light as a halftone. The panel is flat in the main ink, and
+   over it a screen of white cones on the forty five degree lattice a
+   single ink is screened at, faded out from where this phone's backlight is
+   brightest. The press cuts each cone where it crosses into the palest ink,
+   so a dot is large where the light is strong, small further out, and gone
+   where it is not: the light's own shape, in dots. Two layers half a cell
+   apart are the lattice, so nothing is turned */
+.wl-scr[data-light='dots'] .wl-scr-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle closest-side, #FFF, rgba(255, 255, 255, 0)) 0 0 / 3.2cqw 3.2cqw,
+    radial-gradient(circle closest-side, #FFF, rgba(255, 255, 255, 0)) 1.6cqw 1.6cqw / 3.2cqw 3.2cqw;
+  -webkit-mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
+  mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
+}
+/* violet / yellow: the phone's two bands of glass, laid in the violet drum,
+   and the status and the keys on them struck out in paper */
+.wl-scr[data-light='bands'] .wl-scr-top { background: var(--s-top); color: var(--s-lit); }
+.wl-scr[data-light='bands'] .wl-scr-bot { background: var(--s-bot); color: var(--s-lit); }
+
 .wl-scr[data-kind='xerox'] .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 4.4cqw; }
 /* ── the copy: the roller's streaks down the sheet, and the grey the lid
    let in along one edge, which the copier's threshold speckles into toner */
@@ -378,7 +445,7 @@
      against the container above it, which on the wall is the window */
   border-radius: 4.5% / 3.9%; overflow: hidden;
   display: flex; flex-direction: column;
-  background: var(--q-spot, none), var(--t-body);
+  background: var(--t-spot, none), var(--t-body);
   color: var(--t-ink);
   box-shadow: 0 0 0 1px var(--s-edge), 0 0 10px 1px var(--s-glow), 0 0 26px 3px var(--s-glow-2);
   transform: rotate(var(--q-rz, 0deg));
@@ -402,6 +469,9 @@
 .wl-tile[data-kind='xerox'] .wl-tile-in::before {
   background: var(--wl-noise) 0 0 / 90px 90px; mix-blend-mode: multiply; opacity: 0.5;
 }
+/* a print's own light, small: its fill is looks.js `SPOTS` (`--t-spot`),
+   and the keyline is a line inside the rule, clear of it as on the letter */
+.wl-tile[data-light='keyline'] .wl-tile-in::after { outline: 1.4cqw solid var(--t-accent); outline-offset: -5.4cqw; }
 .wl-tile-top {
   position: relative; flex: 0 0 18%; display: flex; align-items: center; gap: 3cqw; padding: 0 6cqw;
   background: var(--t-top); color: var(--t-lit);
@@ -437,6 +507,8 @@
 .wl-tile-bot i { display: block; width: 23cqw; height: 3cqw; background: var(--t-lit); opacity: 0.9; }
 .wl-tile-bot i + i { width: 13cqw; }
 .wl-tile:is([data-kind='poster'], [data-kind='riso']) .wl-tile-bot i { background: var(--t-ink); }
+/* and on a print that keeps the phone's bands, the keys stand out of them */
+.wl-tile[data-light='bands'] .wl-tile-bot i { background: var(--t-lit); }
 
 /* ── the picture, anywhere ── */
 .wl-pic { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
@@ -446,11 +518,16 @@
 .wl-tile[data-kind='neg'] .wl-pic.is-plain { mix-blend-mode: screen; }
 
 /* ═══ THE THUMBNAIL ════════════════════════════════════════════════════════ */
+/* the bands, a print's own light (`--t-spot`) and the panel; `--mini-in` is
+   the rule round a print, which the chosen ring in the panel keeps
+   (wall.css, THE COLOUR PANEL) */
 .wl-mini {
+  --mini-in: inset 0 0 0 2px var(--t-border);
   position: relative; display: block; width: 40px; height: 46px; border-radius: 4px; overflow: hidden;
-  background: linear-gradient(var(--t-top) 0 22%, transparent 22% 84%, var(--t-bot) 84%), var(--t-body);
-  box-shadow: inset 0 0 0 2px var(--t-border), 0 0 12px -2px var(--s-glow);
+  background: linear-gradient(var(--t-top) 0 22%, transparent 22% 84%, var(--t-bot) 84%), var(--t-spot, none), var(--t-body);
+  box-shadow: var(--mini-in), 0 0 12px -2px var(--s-glow);
 }
+.wl-mini[data-light='keyline'] { --mini-in: inset 0 0 0 2px var(--t-border), inset 0 0 0 3px var(--t-body), inset 0 0 0 4px var(--t-accent); }
 .wl-mini::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background:
@@ -458,18 +535,19 @@
     repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0 1px, transparent 1px 2.5px);
 }
 .wl-mini:is([data-kind='poster'], [data-kind='riso'])::after { background: radial-gradient(rgba(0,0,0,0.18) 28%, transparent 34%) 0 0 / 2.4px 2.4px; }
-/* a print's thumbnail carries the accent its letter is lit with, in the
-   corner the backlight was */
-.wl-mini:is([data-kind='poster'], [data-kind='riso']) {
-  background: radial-gradient(70% 55% at 80% 72%, var(--t-accent) 0 26%, transparent 70%), var(--t-body);
-}
 .wl-mini-body i { position: absolute; left: 12%; height: 7%; border-radius: 1px; background: var(--t-ink); }
 .wl-mini-body i:nth-child(1) { top: 34%; width: 70%; }
 .wl-mini-body i:nth-child(2) { top: 48%; width: 52%; }
 .wl-mini-body i:nth-child(3) { top: 62%; width: 62%; }
 
+/* in a forced colour scheme the browser's own caret, in the scheme's colour */
+@media (forced-colors: active) {
+  .wl-caret { display: none; }
+  .wl-root [data-caret] { caret-color: auto !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
   .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
   /* the words are fitted by measuring them at each size (`useFit`), and a
      transition, even the 1ms one this preference gives everything

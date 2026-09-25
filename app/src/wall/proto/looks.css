@@ -1,0 +1,29 @@
+/* the colours, side by side (looks.jsx). Development only: the black room,
+   the phone's face, and each colour in the four places it is drawn */
+body { margin: 0; background: #000; }
+.lk-root {
+  min-height: 100vh; padding: 28px clamp(16px, 4vw, 48px) 48px;
+  color: var(--chalk); font-family: var(--f-s40); font-size: 20px;
+}
+.lk-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 28px; margin-bottom: 32px; }
+.lk-head h1 { margin: 0; font-size: 30px; font-weight: 400; line-height: 1; }
+.lk-head nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.lk-head a {
+  padding: 4px 8px 5px; color: var(--ash); text-decoration: none; line-height: 1;
+  box-shadow: inset 0 0 0 1px var(--lcd-edge); border-radius: var(--r-lcd);
+}
+.lk-head a[aria-current='page'] { background: var(--chalk); color: #000; box-shadow: none; }
+.lk-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 48px 36px;
+}
+.lk-card { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.lk-small { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+.lk-mini { display: block; line-height: 0; }
+.lk-mini.is-2 .wl-mini { width: 80px; height: 92px; border-radius: 6px; }
+.lk-tile { position: relative; display: block; width: 92px; height: 92px; }
+.lk-pic { display: block; width: 92px; aspect-ratio: 1080 / 1350; background: #0B0B0B; box-shadow: inset 0 0 0 1px var(--lcd-edge); }
+.lk-pic img { display: block; width: 100%; height: 100%; }
+.lk-name { display: flex; justify-content: space-between; gap: 12px; margin: 0; line-height: 1; }
+.lk-name b { font-weight: 400; }
+.lk-name span { color: var(--ash); }
+.lk-foot { margin: 48px 0 0; color: var(--ash); font-size: 16px; }

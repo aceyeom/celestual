@@ -258,9 +258,17 @@
 .wl-root.is-room .wl-field input,
 .wl-root.is-room .wl-addr-in,
 .wl-root.is-room .wl-addr-fix { line-height: 1.1; }
+/* the native caret, where the phone's is not drawn. Not on the draft: the
+   draft is the screen's, and its caret is the words' ink (screen.css). This
+   rule reached it once and drew a chalk hairline on a pale panel */
 .wl-root.is-room .wl-field input,
 .wl-root.is-room .wl-addr-in,
-.wl-root.is-room textarea { caret-color: var(--chalk); }
+.wl-root.is-room textarea:not(.wl-scr-draft) { caret-color: var(--chalk); }
+/* the phone's caret (caret.jsx), a chalk bar of two of the face's pixels:
+   while it is drawn the hairline is put out, and a selection is the
+   phone's inversion, since the bar is away while there is one */
+.wl-root.is-room :is(input, textarea)[data-caret] { caret-color: transparent; }
+.wl-root.is-room :is(.wl-field input, .wl-addr-in, .wl-codebox-in, .wl-reason textarea)::selection { background: var(--chalk); color: #000; }
 .wl-root.is-room .wl-field input::placeholder,
 .wl-root.is-room .wl-addr-in::placeholder { color: rgba(244, 241, 234, 0.3); }
 .wl-root.is-room .wl-addr-fix { color: var(--ash); }
@@ -274,6 +282,7 @@
    size and the tracking are held; the face was never the mail's to hold,
    and on the wall it is the phone's. */
 .wl-root.is-room .wl-codebox {
+  position: relative; /* the box the caret stands in */
   background: var(--lcd); border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
 }
 .wl-root.is-room .wl-codebox:focus-within { border-color: var(--lcd-edge-hi); }

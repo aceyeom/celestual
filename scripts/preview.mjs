@@ -79,13 +79,14 @@ const INDEX = HANDLES.map(([h, name, verified], i) => ({
 
 // ── the colours (0055, 0058), and the names (0053) ──
 // Every letter is a screen now and all it chooses is the colour it is lit
-// in (app/src/wall/looks.js). The fixture spreads the kinds across the
-// field: lit screens, the negative, posters, a riso and the xerox, so a shot
-// of the wall shows each treatment somewhere and a turn of the deck walks
-// from one to another. A letter with no colour draws the one its id picks.
+// in (app/src/wall/looks.js). The fixture has every one of the thirteen
+// somewhere on the field: the lit screens, the negative, each print in its
+// own light and the xerox, so a shot of the wall shows each treatment and a
+// turn of the deck walks from one to another. A letter with no colour draws
+// the one its id picks.
 const LOOKS = {
   'pilar.echevarria': { tint: 'night' },
-  'jules.k': { tint: 'blush' },
+  'jules.k': { tint: 'lilac' },
   'ren.tanaka': { tint: 'amber' },
   'm.okonkwo': { tint: 'xerox' },
   'aya.nakamura': { tint: 'ice' },
@@ -95,12 +96,12 @@ const LOOKS = {
   'nour.haddad': { tint: 'green' },
   'elias.brandt': { tint: 'teal' },
   'sofiaaa.reyes': { tint: 'rose' },
-  'ace03d': { tint: 'cobalt' },
+  'ace03d': { tint: 'white' },
 }
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
 const NAMES = [
   ['~sofia', 'Sofia', 2, { tint: 'green' }],
-  ['~j', 'J', 1, { tint: 'orange-teal' }],
+  ['~j', 'J', 1, { tint: 'ember' }],
   ['~51b', '51B', 1, { tint: 'ember' }],
 ]
 NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {

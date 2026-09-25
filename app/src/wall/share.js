@@ -254,6 +254,8 @@ function drawScreen(o, tile = null) {
   cv.height = sh
   const g = cv.getContext('2d', { willReadFrequently: !!s.print })
   const flat = s.kind === 'poster' || s.kind === 'riso'
+  // a print that keeps the phone's two bands of glass (looks.js `LIGHTS`)
+  const banded = s.light === 'bands'
   // how far in the status rows stand: on a print, clear of its rule
   const ex = flat ? 3.2 * u : 2.2 * u
 
@@ -261,20 +263,67 @@ function drawScreen(o, tile = null) {
   g.save()
   g.clip()
 
-  // the panel, brightest where this phone's backlight is
+  // the panel, brightest where this phone's backlight is; or, on a print
+  // whose light falls from the top, in that light (screen.css, the prints'
+  // lights, in the same stops)
   const hx = (q.hx / 100) * sw
   const hy = (q.hy / 100) * sh
-  const pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
-  pg.addColorStop(0, s.hi)
-  pg.addColorStop(0.52, s.mid)
-  pg.addColorStop(1, s.lo)
+  let pg
+  if (s.light === 'sky') {
+    const e = q.hy * 0.4
+    pg = g.createLinearGradient(0, 0, 0, sh)
+    pg.addColorStop((e + 5) / 100, s.hi)
+    pg.addColorStop((e + 19) / 100, s.mid)
+    pg.addColorStop(1, s.lo)
+  } else {
+    pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
+    pg.addColorStop(0, s.hi)
+    pg.addColorStop(0.52, s.mid)
+    pg.addColorStop(1, s.lo)
+  }
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
+  // and a light carried by a halftone screen, as the page draws it: white
+  // cones on the forty five degree lattice, a cone in the middle of each
+  // cell and a quarter of one in each corner, faded out from where this
+  // phone's backlight is brightest, for the press to cut into dots
+  if (s.light === 'dots') {
+    const c = Math.max(4, Math.round(3.2 * u))
+    const cell = document.createElement('canvas')
+    cell.width = c
+    cell.height = c
+    const cg = cell.getContext('2d')
+    for (const [x, y] of [[c / 2, c / 2], [0, 0], [c, 0], [0, c], [c, c]]) {
+      const dg = cg.createRadialGradient(x, y, 0, x, y, c / 2)
+      dg.addColorStop(0, 'rgba(255, 255, 255, 1)')
+      dg.addColorStop(1, 'rgba(255, 255, 255, 0)')
+      cg.fillStyle = dg
+      cg.fillRect(0, 0, c, c)
+    }
+    const screen = document.createElement('canvas')
+    screen.width = sw
+    screen.height = sh
+    const sg = screen.getContext('2d')
+    const pat = sg.createPattern(cell, 'repeat')
+    if (pat) {
+      sg.fillStyle = pat
+      sg.fillRect(0, 0, sw, sh)
+      sg.globalCompositeOperation = 'destination-in'
+      sg.translate(hx, hy)
+      sg.scale(1, (0.64 * sh) / (0.8 * sw))
+      const mg = sg.createRadialGradient(0, 0, 0, 0, 0, 0.8 * sw)
+      mg.addColorStop(0, 'rgba(0, 0, 0, 1)')
+      mg.addColorStop(1, 'rgba(0, 0, 0, 0)')
+      sg.fillStyle = mg
+      sg.fillRect(-4 * sw, -8 * sw, 8 * sw, 16 * sw)
+      g.drawImage(screen, 0, 0)
+    }
+  }
 
   // the bands
   const topH = (q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
   const botH = 14 * u
-  if (!flat) {
+  if (!flat || banded) {
     const tg = g.createLinearGradient(0, 0, 0, topH)
     tg.addColorStop(0, s.top)
     tg.addColorStop(1, s.top2)
@@ -283,7 +332,7 @@ function drawScreen(o, tile = null) {
     g.fillStyle = s.bot
     g.fillRect(0, sh - botH, sw, botH)
   }
-  const lit = flat ? s.ink : s.lit
+  const lit = flat && !banded ? s.ink : s.lit
   const bloom = flat ? 'transparent' : s.bloom
   const withBloom = (fn) => {
     g.save()
@@ -487,6 +536,13 @@ function drawScreen(o, tile = null) {
     g.strokeStyle = 'rgba(0, 0, 0, 0.85)'
     g.lineWidth = 2.8 * u
     g.strokeRect(0, 0, sw, sh)
+  }
+  // a keyline of the palest ink inside the rule, clear of it
+  if (s.light === 'keyline') {
+    const k = 2.05 * u
+    g.strokeStyle = '#FFF'
+    g.lineWidth = 0.7 * u
+    g.strokeRect(k, k, sw - 2 * k, sh - 2 * k)
   }
   g.restore()
   if (s.print) press(g, sw, sh, s, q)
