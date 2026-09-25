@@ -162,6 +162,14 @@ one blue is a chart nobody can read.
 It is written down here because the sentence above used to say "nothing else in
 the build names a hue", and eight tokens in the build named one.
 
+Two of them are also laid as a surface, in one place: the alarm at the top of
+every screen of the desk (`app/src/admin/Canary.jsx`, migration 0060). While
+the daily check on apify is failing it is a wash of `--ad-stop` under a
+hairline of the same, and while the check has not run for a day and a half, or
+ever, the same in `--ad-hold`; the words on it stay chalk and ash. It is the
+stop button's language at the size of a sentence, and it is nothing at all
+while the check passes.
+
 ### 2.5 The screens
 
 One exception to the sentence above, and it is fenced. A letter on the wall

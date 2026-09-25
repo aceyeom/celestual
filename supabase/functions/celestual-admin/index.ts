@@ -41,6 +41,10 @@
 //                                the pass list (0043): who is let through
 //                                without the code's domain rule or the DM
 //     desk_log                   what the desk did, and when
+//     desk_canary_run            the daily check on Apify, run now (0060).
+//                                Not an RPC: celestual-resolve is asked, with
+//                                the service role key, and the answer is
+//                                logged like a write
 //
 //   Every write that goes through is written to celestual_desk_log by this
 //   function, so the log is the function's and not the browser's.
@@ -72,16 +76,15 @@ const ADMIN_PASSWORD = Deno.env.get('CELESTUAL_ADMIN_PASSWORD') || '';
 if (!ADMIN_PASSWORD) console.error('CELESTUAL_ADMIN_PASSWORD is not set: the desk is closed to everybody until it is');
 const FAILS_PER_IP_HOUR = 20;
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-);
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
 // Where a stored avatar is read from. The desk builds the same URL the browser
 // builds, from the same bucket and the same path, so a face that is broken on
 // the wall is broken here too rather than being papered over by a second code
 // path that happens to work.
-const AVATAR_BASE = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/avatars/`;
+const AVATAR_BASE = `${SUPABASE_URL}/storage/v1/object/public/avatars/`;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -240,6 +243,47 @@ async function logWrite(action: string, args: Args, data: unknown) {
   if (error) console.error('desk log failed', error.message);
 }
 
+// ── the daily check, run now ────────────────────────────────────────────────
+// celestual-resolve does the check (its DAILY CHECK), because the check is of
+// the code that is deployed there and not of a copy of it here. This asks it
+// with the service role key, which is what makes the check run now rather
+// than when one is owed, and waits for it: a first look can take thirty
+// seconds and a timeout is tried twice, so the wait is two minutes less the
+// margin the platform needs to answer. The answer is logged like a write,
+// since it spent a call.
+const CANARY_WAIT_MS = 110_000;
+
+async function canaryNow(): Promise<Record<string, unknown>> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), CANARY_WAIT_MS);
+  let data: Record<string, unknown> | null = null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/celestual-resolve`, {
+      method: 'POST',
+      signal: ac.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` },
+      body: JSON.stringify({ canary: true, source: 'desk' }),
+    });
+    data = await res.json().catch(() => null);
+  } catch (e) {
+    console.error('the daily check did not answer', String(e));
+    return { ok: false, error: 'server' };
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!data || typeof data !== 'object') return { ok: false, error: 'server' };
+  if (data.ok) {
+    const run = (data.canary ?? {}) as Record<string, unknown>;
+    const { error } = await supabase.rpc('celestual_desk_log_add', {
+      p_action: 'desk_canary_run',
+      p_target: run.handle ? `handle:${run.handle}` : null,
+      p_detail: { status: run.status ?? null, ok: run.ok ?? null, latency_ms: run.latency_ms ?? null },
+    });
+    if (error) console.error('desk log failed', error.message);
+  }
+  return data;
+}
+
 // The legacy layer, unchanged apart from delete_competitor coming off with the
 // campaign it belonged to.
 const HANDLE_ACTIONS: Record<string, string> = {
@@ -289,6 +333,9 @@ Deno.serve(async (req) => {
   }
 
   const action = String(body.action || '');
+
+  // ── the daily check ──
+  if (action === 'desk_canary_run') return json(await canaryNow());
 
   // ── the desk ──
   const desk = DESK[action] || DESK_WRITE[action];
