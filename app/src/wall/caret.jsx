@@ -128,8 +128,8 @@ function measure(el, pos) {
   // caret stands in that indent, just clear of the hint's first letter,
   // wherever the field aligns it: the hint is set in the mirror after the
   // caret's place with the field's own indent, and the caret is drawn that
-  // indent back. A field with no indent (the code box) keeps its caret
-  // where its first figure will stand
+  // indent back. A field with no indent (the campus address, against its
+  // painted domain) keeps its caret where its first letter will stand
   const indent = el.value ? 0 : parseFloat(cs.textIndent) || 0
   const hint = indent ? el.placeholder || '' : ''
   if (!el.value && !hint) st.textIndent = '0px'

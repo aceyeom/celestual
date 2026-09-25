@@ -269,9 +269,10 @@
    phone's inversion, since the bar is away while there is one */
 .wl-root.is-room :is(input, textarea)[data-caret] { caret-color: transparent; }
 /* an empty field's hint stands a little in from the caret, as the draft's
-   example does (screen.css), so the bar never covers its first letter.
-   Not the campus address, whose hint stands against the painted domain */
-.wl-root.is-room :is(.wl-field input, .wl-addr.is-whole .wl-addr-in):placeholder-shown { text-indent: 0.3em; }
+   example does (screen.css), so the bar never covers its first letter, or
+   the code box's first dot. Not the campus address, whose hint stands
+   against the painted domain */
+.wl-root.is-room :is(.wl-field input, .wl-addr.is-whole .wl-addr-in, .wl-codebox-in):placeholder-shown { text-indent: 0.3em; }
 .wl-root.is-room :is(.wl-field input, .wl-addr-in, .wl-codebox-in, .wl-reason textarea)::selection { background: var(--chalk); color: #000; }
 .wl-root.is-room .wl-field input::placeholder,
 .wl-root.is-room .wl-addr-in::placeholder { color: rgba(244, 241, 234, 0.3); }
