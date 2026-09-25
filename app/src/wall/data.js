@@ -690,7 +690,11 @@ export async function heart(id, on) {
     set((l) => ({ ...l, hearts: n, hearted: !!out.hearted }))
   } else {
     PRESSED.delete(id)
+    // put back what was there; and where nothing was, as on the press the
+    // gate makes on the way back in, the read that landed while the press
+    // was out carried it (`held`), so it is taken back off that read
     if (was) set((l) => ({ ...l, hearts: was.hearts, hearted: was.hearted }))
+    else set((l) => toward(l, !on))
   }
   return out || { ok: false, error: 'network' }
 }

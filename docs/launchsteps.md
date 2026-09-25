@@ -444,9 +444,11 @@ between.
       `{ ok:false, error:'off' }` without it, which the UI draws as nothing,
       so a missing token is safe rather than broken.
       Optionally `APIFY_ACTOR_ID` if you ever move off the actor above.
-- [x] The actor input sets the post limit to zero. Built in:
-      `resultsType: 'details'`, `resultsLimit: 0`, `addParentData: false`. Profile
-      metadata only, no posts, comments, or reels. Verify it in the pilot below.
+- [x] The actor input sets the post limit as low as the actor takes. Built in:
+      `resultsType: 'details'`, `resultsLimit: 1`, `addParentData: false`. It
+      was zero until 6 September 2026, when the actor's input schema began
+      refusing anything under one; `maxItems=1` keeps the bill at one item.
+      Profile metadata only, no comments or reels. Verify it in the pilot below.
 - [ ] Deploy the function:
       `supabase functions deploy celestual-resolve --no-verify-jwt`
       The `--no-verify-jwt` is not optional. The browser now reaches this
@@ -1044,6 +1046,33 @@ select value from celestual_settings where key = 'wall_hearts_seeded_0059';
 
 Berkeley's `most` is 12 or under and the root's 30 or under, and the record
 holds one row for every letter there was when it ran.
+
+## The prints thin out (migration 0061)
+
+The colours are one pool of thirteen, and five prints are gone from it: the
+blush and cobalt posters and the pink / blue, orange / teal and red / green
+risos. The browser already draws a letter in one of the five as the colour
+nearest its hue (looks.js `RETIRED`), so the order is the app first and the
+rows after.
+
+1. **Deploy the app.** Vercel, as usual.
+2. **Apply `0061_the_prints_thin_out.sql`.** It copies the look of every
+   letter in one of the five into `wall_look_backup_0061` (service role only,
+   first copy kept) and moves each to rose, ice or ember. No schema changes:
+   `wall_look_clean` and `wall_letters_look_ck` stay as 0055 left them.
+   Re-runnable, and a second run also sweeps up a retired colour written by a
+   tab still on the old bundle.
+3. **Check it:**
+
+```sql
+select look->>'tint' as tint, count(*) from wall_letters group by 1 order by 2 desc;
+select count(*) from wall_look_backup_0061;
+```
+
+No row carries `blush`, `pink-blue`, `cobalt`, `orange-teal` or `red-green`,
+and the backup holds as many rows as were moved (13 on 25 September). To undo:
+`update wall_letters l set look = b.look from wall_look_backup_0061 b where
+b.id = l.id;`, with the five rows put back in looks.js `COLOURS`.
 
 ## The audit of 4 September (migration 0038)
 

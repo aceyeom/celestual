@@ -285,8 +285,24 @@ export default function WallApp() {
     // step inside one sheet, is not a navigation.
     const sheetMove = SHEETS.has(target.name) || (SHEETS.has(from.name) && target.name === 'wall')
     const depth = Number(window.history.state?.wallDepth) || 0
+    // Whether the sheets stacked here stand on a sheet the browser opened on
+    // directly (a mail's /sky, a shared reveal) rather than on the wall. The
+    // bottom of such a stack is that sheet, depth zero, and it is carried up
+    // the stack as `wallCold` on every entry pushed over it.
+    const onCold = SHEETS.has(from.name) && (depth === 0 || !!window.history.state?.wallCold)
 
     if (SHEETS.has(from.name) && target.name === 'wall' && depth > 0) {
+      // Stepping back all the way would land on that first sheet and not
+      // on the wall: "back to the wall" on a ping placed from the account a
+      // mail opened came back to the account. So the wall is pushed instead,
+      // as `pushWall` does for a letter reached from a link.
+      if (onCold) {
+        const home = href('wall')
+        window.history.pushState({ wall: 'wall', wallDepth: 0, wallPushed: true }, '', home)
+        setOverride(null)
+        setRoute(parse(home))
+        return
+      }
       leaving.current = true
       setOverride(null)
       stepBack(-depth)
@@ -310,7 +326,8 @@ export default function WallApp() {
       // browser opened on directly is depth zero AND has nothing behind it,
       // while a sheet at depth one that the shell pushed has the wall behind
       // it. Reading depth alone confuses the two in both directions.
-      window.history.pushState({ wall: name, wallDepth: nextDepth, wallPushed: true }, '', to)
+      const cold = SHEETS.has(target.name) && onCold ? { wallCold: true } : null
+      window.history.pushState({ wall: name, wallDepth: nextDepth, wallPushed: true, ...cold }, '', to)
       setOverride(null)
       setRoute(target)
       if (!sheetMove) window.scrollTo(0, 0)
@@ -375,8 +392,10 @@ export default function WallApp() {
   // sheet knows on its first frame where its way out actually goes. A mark
   // labelled "back to the wall" that lands on the composer is a mark that
   // lied, and a screen reader hears the lie.
+  // A sheet over a sheet a link opened is nested too: one step up is that
+  // sheet, not the wall.
   const st = window.history.state
-  const nested = !!(st?.wallPushed && Number(st.wallDepth) > 1)
+  const nested = !!(st?.wallPushed && (Number(st.wallDepth) > 1 || st.wallCold))
   const upLabel = nested ? 'back' : 'back to the wall'
   // ── the way to the wall, from a letter reached from a link ──
   // `toWall` is pressed while the letter is still on the glass: the wall

@@ -64,8 +64,6 @@
   padding: clamp(18px, 11vh, 96px) 0 12px;
 }
 
-.mn-h { margin: 0; }
-
 /* The reading face, in ash. This used to be the UI face, on the argument that
    the serif was reserved for what people wrote to each other. The front door
    sets every explanation in the reading face now (hero.css `.hm-read`), because

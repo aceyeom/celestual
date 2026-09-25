@@ -99,9 +99,12 @@ easiest way to make this system look careless.
 
 ### 2.3 The paper
 
-Main's bright surface: the card a ping is set on (`.wl-paper`, `main/Reveal.jsx`).
-It is not the wall's. On the wall a person's words are set on a screen (2.5),
-and the paper that stood under a letter there went with the looks.
+Main's bright surface: the card a ping was set on (`.wl-paper`, `Paper` in
+`parts.jsx`), on the flow, the sky and the reveal. Those went with Main's ping
+pages (2.6), and the card stands now only in the Phase 3 preview at
+`/signature`. It is not the wall's. On the wall a person's words are set on a
+screen (2.5), and the paper that stood under a letter there went with the
+looks; a ping's line is set on a screen too (screens/Ping.jsx).
 
 | Token | Value | Where |
 | --- | --- | --- |
@@ -177,8 +180,9 @@ is a phone screen left on in a dark room (`app/src/wall/looks.js`,
 `screen.jsx`, `screen.css`): an unsent draft, the cursor still after the last
 word. Every letter is the same screen: the status rows across the top (the
 aerial, the signal bars, the name, by the battery the day it went up as
-`09/24/26`, or on a draft the characters it has left; the pen, the mode, the
-handle), the words, and the three soft keys at the foot
+`09/24/26`, or on a draft the characters it has left, and never a second date
+beside the aerial; the pen, the mode, the handle), the words, and the three
+soft keys at the foot
 (`options`, the heart and its count, `share`), set in one face, Jersey 10, the
 Series 40 grid (`--f-s40`). The only thing a writer chooses is the COLOUR it is
 lit in, and each colour carries its own treatment with it:
@@ -796,7 +800,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
-| the intro (`.hi`) | the same three seconds at `/`, at `/berkeley` and over Main's front door, once per tab: a letter's night screen on black, and the story on it. Black for 120ms, then the screen wakes (`wl-wake`) and throws its light on the black; the two run in at 300, meet at 1180, and the mark stands whole at 2470. The lift at 2870, which waits on the page being ready: the screen goes to sleep (`wl-sleep`, 560ms), the phone rises 18px and dissolves, and the black goes over 720ms, gone at 3590. The status row carries the aerial and the battery and nothing that would say a message had come in. Skippable on any tap or key, which lands the mark and lifts at once. Under reduced motion it draws the mark and lifts after 560ms. `?beat=` and `?t=` hold it for the screenshot loop in development, and `?intro=ascii` and `?tint=green` draw it typed or on the classic green, for comparison |
+| the intro (`.hi`) | the same three seconds at `/` and at `/berkeley`, once per tab: a letter's night screen on black, and the story on it. Black for 120ms, then the screen wakes (`wl-wake`) and throws its light on the black; the two run in at 300, meet at 1180, and the mark stands whole at 2470. The lift at 2870, which waits on the page being ready: the screen goes to sleep (`wl-sleep`, 560ms), the phone rises 18px and dissolves, and the black goes over 720ms, gone at 3590. The status row carries the aerial and the battery and nothing that would say a message had come in. Skippable on any tap or key, which lands the mark and lifts at once. Under reduced motion it draws the mark and lifts after 560ms. `?beat=` and `?t=` hold it for the screenshot loop in development, and `?intro=ascii` and `?tint=green` draw it typed or on the classic green, for comparison |
 | the door (`.wl-join-scr`) | the mechanic, on the same screen: @you runs in at 800, once the screen is on, and stands; @them at 1700 and stands, each lit in the status row as they arrive; at 2600 both set off on the same frame and meet, and the mark forms. The three lines arrive on those beats and the key as they touch |
 | the mutual (`.is-reveal`) | a sheet in the black room: the story with both handles in the status row, `it's mutual.` typed from the frame they touch at 70ms a character with the caret after it, the two lines on unlit panels rising together once the mark is whole, and the key 360ms after. A tap that is not on a control lands all of it. A tab opened on it does not play the intro first: it is the same story, and the second telling would be the one waited through |
 
