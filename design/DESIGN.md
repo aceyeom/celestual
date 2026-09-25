@@ -260,9 +260,10 @@ is the check on the quirks: five phones, and none of them a different design.
 A letter is a Series 40 screen (2.5), and the wall is where those screens are
 kept, so everything on the wall round them is the same phone: one pixel face,
 square keys, unlit panels and pixel glyphs. Only the brand (the mark and
-`celestual.`) and the intro stay the room's own objects. Main (`/ping`, `/sky`,
-`/place`) and the desk are not the phone, and sections 4 and 8 describe them
-as written.
+`celestual.`) stays the room's own object. The product's own events, the intro
+and the mutual, are told on the phone too, in its pixels (the stories, below).
+Main (`/ping`, `/sky`, `/place`) and the desk are not the phone, and sections 4
+and 8 describe them as written.
 
 It was an Apple interface with Nokia screens in it: a blurred grey search
 capsule, frosted sheets with 26px corners and a grip, liquid metal capsules,
@@ -315,6 +316,28 @@ multiple of its grid with `crispEdges`, in `currentColor`. `Wait` is the
 hourglass, blinking at the screen's own 1060ms, and it is how the wall waits:
 Main runs a light round an edge.
 
+**The stories.** Three screens tell one small story on a letter's night
+screen, in the phone's own pixels: the intro, the door (`/join`, the mechanic)
+and the mutual (`/reveal/:handle`). Two shadows run in from either side of
+the panel, reach, touch (the whole panel inverts for one frame), hold on, and
+what they stood on lifts into the ring while the two of them gather into the
+star. Nothing in it is a picture. The runners are drawn by hand, a pixel at a
+time, 16 by 22, in two inks: the far arm and leg are the same ink, thinner,
+so one drawing gives both steps and a silhouette never reads as a shuffle.
+They are the same drawing turned round, not two people with a hair colour
+each: two shadows, nobody in particular. The mark is `mark.js` rasterised on
+an odd grid, 47 cells, the ring cut at a third of a cell and the star at a
+half (`pixmark.js`). `PixelStory` draws it on a canvas in the screen's body,
+a whole number of device pixels to a cell with the gap an LCD has, the unlit
+cells faintly there. A screen with a story on it is held square to the
+camera and loses the photograph's pixel grid and moire, because a canvas of
+square cells under a tilt and a second grid beats into a moire of its own;
+its dust, glare and backlight stay. The status row names the two of them on
+the door and the mutual (`is-pair`: two names of one weight) and nobody on
+the intro. The run steps at 80ms a frame and the mark at 33, the canvas is
+drawn only when the frame changes, and the loop stops at the last frame.
+Under reduced motion every story is drawn on its last frame.
+
 **The context.** `PhoneChrome` (`parts.jsx`) is turned on at the wall's root
 (`index.jsx`) and read by the shared parts that draw rather than lay out:
 `Pill tone="light"` is the lit key and not `LiquidButton`; `Icon`, `Close`,
@@ -323,10 +346,12 @@ turns it on, so every one of them draws there as section 8 says.
 
 **What stays the room's.** `Brand` (the bar, the site's foot, a letter
 reached from a link), pinned to Newsreader at 22px, 500 and `-0.022em`
-whatever the tokens say; `Ecliptic` at the head of a door; `LiquidMark` in the
-intro and on the root wall's poster; Instagram's and Google's own marks on
-their keys; and the lockup on the shared picture. They are the product's name
-and the product's own events, and a name is not set in a phone's font.
+whatever the tokens say; `Ecliptic` at the head of a door; `LiquidMark` on the
+root wall's poster; Instagram's and Google's own marks on their keys; and the
+lockup on the shared picture. They are the product's name, and a name is not
+set in a phone's font. The intro was on this list until 25 September, in
+liquid metal, and it was the one thing a person saw before either surface
+that belonged to neither of them.
 
 `design/components.html` draws the phone under its own heading, beside the
 system it remaps.
@@ -417,9 +442,11 @@ products.
 ### 3.5 The mark as a material
 
 `LiquidMark` is the mark poured: a liquid metal shader cut to the mark's own
-silhouette. It is spent on exactly the moments that are the product's, and on
-nothing else: the intro (on both surfaces), the seal on the hero's scene, the
-seal on a mutual row on the sky, and the reveal. Wherever the mark is a glyph
+silhouette. It is spent on the room's few moments and on nothing else: the
+root wall's poster, the seal on the hero's scene and the seal on a mutual row
+on the sky. The intro and the reveal were its until they became the phone's
+(2.6), where the mark is drawn in the phone's pixels from the same nine
+constants (`pixmark.js`). Wherever the mark is a glyph
 rather than an event (the bar, a sheet's head, the favicon) it is `Ecliptic`,
 flat. Nothing glows behind the metal. The metal is the light.
 
@@ -707,11 +734,13 @@ Chosen per element, never a default applied everywhere.
 | `wl-acts-in`, `wl-act-in` | the pane the flag opens on a letter, and its two rows arriving a beat apart |
 | `wl-mast-ring` | the ring leaving the veil's capsule every 1600ms, the shape of the pulse a tap sends through the crowd |
 | `wl-glass-out`, `wl-tab-drop` | a sheet's glass fading in place while a card flies home to its disc; the tab at the foot of the wall being put away |
-| `wl-lead`, `wl-breathe` | the circuit, the pulse |
+| the story (`PixelStory`) | two shadows running in on a letter's night screen, meeting, and becoming the mark (2.6). The run is stepped, 80ms a frame and three cells a frame, so no foot slides; the frame they touch inverts the whole panel for 70ms; they hold on for 480ms; then the ground lifts into the ring over 380ms and the hug gathers into the star from its middle out, 220 to 660ms, every pixel on a hard start and a long settle and rounded to a whole cell each frame, so the pixels hop. Tap to land |
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
-| the intro (`.hi`) | the same two seconds on both surfaces, at `/` and at `/berkeley`, once per tab. 2280ms: the liquid mark, uncovered in the order the mark assembles in, through a black cover whose cuts are FEATHERED — a hard edge over a material is an edge the material did not ask for, and the sweep's used to close the orbit as a notch with two square corners. The sweep's blur is taken on the stroke and the band clips it afterwards, so the ring's silhouette stays sharp and only the front of the reveal is soft. The band round its circuit at 180, the star at 520, assembled at 1180 (and the black cover fades here, under the veil, so nothing but the metal lifts), the lift at 1560. The held frame before the band stretches, up to 760ms, until the metal has drawn a frame behind the cover, so the sequence uncovers metal from its first pixel on a phone as well as on a laptop; past that ceiling it runs on the flat mark and the metal fades in over it. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
+| the intro (`.hi`) | the same three seconds at `/`, at `/berkeley` and over Main's front door, once per tab: a letter's night screen on black, and the story on it. Black for 120ms, then the screen wakes (`wl-wake`) and throws its light on the black; the two run in at 300, meet at 1180, and the mark stands whole at 2470. The lift at 2870, which waits on the page being ready: the screen goes to sleep (`wl-sleep`, 560ms), the phone rises 18px and dissolves, and the black goes over 720ms, gone at 3590. The status row carries the aerial and the battery and nothing that would say a message had come in. Skippable on any tap or key, which lands the mark and lifts at once. Under reduced motion it draws the mark and lifts after 560ms. `?beat=`, `?t=` and `?intro=ascii` hold it for the screenshot loop in development |
+| the door (`.wl-join-scr`) | the mechanic, on the same screen: @you runs in at 500 and stands, @them at 1400 and stands, each lit in the status row as they arrive; at 2300 both set off on the same frame and meet, and the mark forms. The three lines arrive on those beats and the key as they touch |
+| the mutual (`.is-reveal`) | a sheet in the black room: the story with both handles in the status row, `it's mutual.` typed from the frame they touch at 70ms a character with the caret after it, the two lines on unlit panels rising together once the mark is whole, and the key 360ms after. A tap that is not on a control lands all of it |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
 
@@ -870,7 +899,8 @@ has the focus, since the input itself carries no outline.
 | `Flap` | a count on split flaps: one per digit, the digit in `--gold` on a flat plate a step up from the void, a hairline round it and a seam across it, the word beside it. The one count in the build set in the util face rather than the mono, because on a board a figure is a thing on a plate and not an identifier in a line of type. The top half of the old digit folds down over the new one when the number changes, and on mount it can roll into place. It was the wall's count on the masthead; that is a line in the ear now, and the flaps are kept, drawn on the components sheet and by nothing in the product. Nothing moves under reduced motion (`.wl-flap`) |
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands on the account screen beside each of a person's letters (`Gate.jsx`), and on the wall it is the screen's own pixel heart, outlined and filled (`PIX.heartO`, `PIX.heart`, 2.6). A letter's heart is not this component: it is the centre soft key on the letter's screen (2.5). It stood in a letter's foot while letters were paper |
 | `Roll` | a count whose figures turn: each digit a window one figure tall over a column of the ten, slid to the figure it shows, 640ms on `--ease` when the number changes and still on mount. Keyed from the right so a hundredth letter mounts a column at the head and keeps the two it had. The wall's count in the ear. Under reduced motion the columns do not slide (`.wl-roll`) |
-| `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. The flat mark stands under it until the metal is opaque and leaves after, 900ms on `--ease-out` then 320ms: a fade in over the flat, never a crossfade, because two opaque shapes of one silhouette crossfading on black dip to three quarters halfway and blink. `onReady` says when the metal has drawn a frame; `cut` makes the swap instant for a mark under a cover. See 3.5 |
+| `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the root wall's poster, the seal on the hero's scene and a mutual on the sky. The flat mark stands under it until the metal is opaque and leaves after, 900ms on `--ease-out` then 320ms: a fade in over the flat, never a crossfade, because two opaque shapes of one silhouette crossfading on black dip to three quarters halfway and blink. See 3.5 |
+| `PixelStory` | the story on a screen's body: a canvas of the phone's cells, drawn from `pixmark.js` (the runners, the hug, the mark on its grid, and the three stories as functions of the clock). `at` holds the clock on a frame, `mode="ascii"` sets each lit cell as a character instead, for comparison only. `SQUARE` holds the screen square to the camera. See 2.6 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
 
 ### 8.5 The door
@@ -1053,6 +1083,7 @@ every route shoots an empty wall reading `not connected here`.
 | `app/src/wall/wall.css` | the tokens and the components, in code |
 | `app/src/wall/phone.css` | the wall's phone: the tokens remapped for `.wl-root.is-room`, and the parts both surfaces share, drawn as the phone (2.6) |
 | `app/src/wall/mark.js` | the mark's geometry |
+| `app/src/wall/pixmark.js` | the mark on a grid of the phone's cells, the two runners, and the stories they are in (2.6) |
 | `app/src/wall/art.jsx` | every drawn ornament |
 | `app/public/fonts/` | the three faces, and the `faces.css` that declares them |
 | `scripts/export-mark.mjs` | writes `design/logo/` |

@@ -60,7 +60,10 @@ All four are handled. Kept here because each one records a decision rather than
 a task:
 
 - **The two signature surfaces are promoted.** The hero is `/` and the reveal is
-  `/reveal/<handle>`, reached from the sky and from nowhere else.
+  `/reveal/<handle>`, reached from the sky and from nowhere else. Since 25
+  September the reveal at that address is a sheet on the wall, drawn as the
+  phone (`app/src/wall/screens/Reveal.jsx`), and `/berkeley/reveal/<handle>`
+  is the same sheet on the campus wall.
   `/signature` still resolves, unchanged, because it is where Phase 3 was
   approved and it costs one dynamic import nobody loads by accident.
 - **The hero's primary capsule has a destination.** Main's own flow, at

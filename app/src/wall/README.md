@@ -399,8 +399,10 @@ Everything round the screens is the same phone (design/DESIGN.md 2.6,
 `phone.css`): one face for every word but the brand's, square keys, unlit
 panels with a one pixel bezel, the phone's pixel glyphs (`screen.jsx`
 `PixIcon`), a lit key for the one act on a screen, and the chosen row
-inverted. The brand, the mark at a door's head and the poured mark of the
-intro are the only things on the wall that are not the phone. The shared
+inverted. The brand and the mark at a door's head are the only things on
+the wall that are not the phone; the intro, the door's figure and the mutual
+are told on a letter's screen in the phone's own pixels (`pixmark.js`,
+`PixelStory.jsx`, and The intro below). The shared
 parts learn which surface they are on from `PhoneChrome` (`parts.jsx`), which
 only the wall's root turns on, so Main draws them as it always has.
 
@@ -462,7 +464,8 @@ foot, at a width a thumb finds.
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `place a ping` leaves for Main: at `/place/<handle>` when the letter this device wrote last carried a handle, so the ping's target is already in the field, and at `/place` when it carried a first name, so Main asks `Who's on your mind.` with its own painted @. That field is where the @ is asked, and the only place |
+| `/berkeley/reveal/:handle` | **it's mutual.** A sheet in the black room: the two of them run into each other on a letter's screen and become the mark, the sentence is typed under it, the two lines rise together on unlit panels, and `open @them` is the key. Its facts are Main's (`main/data.js`: who this is, `celestual_my_pings`, the held copy). At the root it is `/reveal/:handle`, which the wall took from Main |
+| `/berkeley/join` | **the one door to the product**: three lines and the mechanic told on a phone's screen, and `place a ping` leaves for Main: at `/place/<handle>` when the letter this device wrote last carried a handle, so the ping's target is already in the field, and at `/place` when it carried a first name, so Main asks `Who's on your mind.` with its own painted @. That field is where the @ is asked, and the only place |
 
 `/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
 (the audit of 4 September). They were a drawn stand-in for the core service
@@ -472,8 +475,8 @@ there. Anything below that describes the orbit, `orbit.js`, `Core.jsx`, the
 seeded ledger or the printed date is a record of what was built, not of what
 runs.
 
-Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
-`report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
+Seven of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
+`report`, `remove` and `reveal` rise off the bottom edge over a wall that stays mounted, scrolled
 where it was, dimmed and slightly out of focus behind them — and on a wide
 screen they become centred dialogs instead, because a sheet dragged up from the
 bottom of a 1400px display is a phone gesture on furniture that is not a phone.
@@ -528,8 +531,13 @@ on each of them.
 ```
 index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
              and the intro
-Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
-             skippable on any key, and the same intro Main plays at `/`
+Intro.jsx    the first three seconds, on black: a phone's screen, and two
+             shadows on it who run into each other and become the mark. Once
+             per tab, skippable on any key, and the same intro Main plays
+pixmark.js   the mark on a grid of the phone's cells, the two runners drawn
+             by hand, and the stories they are in, as functions of the clock
+PixelStory.jsx  a story on a screen's body, on a canvas, drawn only when its
+             frame changes
 Hive.jsx     the field: the lattice and its tile, the lens, the drift, the
              pull, the pointer, and the pool of slots that draws it
 morph.js     the hand-off: the circle the wall leaves behind when a disc is
@@ -1200,30 +1208,43 @@ The rule under the date separates the masthead from the ledger, so on a spread
 
 ## The intro
 
-The mark, poured, on an empty black screen, once per tab, before anything else
-exists. Not a spinner and not a splash: nothing is loading behind it and it
-never claims to be. It is `Intro.jsx`, and it is the same two seconds Main
-plays at `/`: the wall used to open on an overture of its own, a flat mark
-assembling beside the name with a bloom behind it, and the two surfaces of one
-product opened on two different logos.
+A phone, on black, once per tab, before anything else exists. Not a spinner
+and not a splash: nothing is loading behind it and it never claims to be. It
+is `Intro.jsx`, and it is the same three seconds Main plays over its front
+door. It was the mark poured in liquid metal, which was the room's material on
+a surface that had become the phone; now it is one of the letters' own
+screens, the night one, with the product's story on it in the phone's pixels
+(`pixmark.js`, drawn by `PixelStory.jsx`).
 
 | | |
 | --- | --- |
-| `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`): the index carries every face since migration 0048, so the pictures are the next request and not the one after a peek |
-| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants, and its head is FEATHERED, so the metal lights along the orbit rather than being wiped by a rectangle: the cut used to be a straight chord across the band, and wherever the metal was bright under it the mark was drawn in with a blunt white wedge on the end of it. The blur is taken on the stroke and the band clips it afterwards, so the ring's own silhouette stays as sharp as it is drawn and only the front of the reveal is soft. 900ms to close. Not before the metal is there: the held frame stretches, up to 760ms from mount, until the shader has drawn a frame behind the cover (`LiquidMark onReady`), and the swap from the flat mark to the metal is instant while the cover is over it (`cut`). It used to run on the clock alone, and on a phone, where the compile takes longer than the held frame, the circuit was cut open over the chalk mark and the metal arrived a moment later on a ring already on the screen, which was a blink. Past the ceiling the sequence runs on the chalk mark and the metal fades in over it, gently, the designed state for a driver that is slow or never answers |
-| `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out. Its hole in the cover is feathered too, and dilated by what the feather reaches: a crisp silhouette held at a third of its opacity is a crisp outline of the star, drawn in grey |
-| `1180ms` | **assembled.** Nothing moves but the metal. The cover, black on black and doing nothing now, fades out here, while the veil is still opaque, so what lifts is the metal alone |
-| `1560ms` | **the lift**, after a hold, and not before the wall is ready. The lift waits on the index and the first screen's faces having landed, with a ceiling at 4200ms from mount so a dead network is a wall of monograms and not a logo forever; on an ordinary connection they are there long before the clock is. The mark is the one thing in the product built to be looked at while something else finishes, and a wall drawn with sixty grey discs that fill in a second later is a wall that arrived too early. Then the mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone, every face on it a picture from its first frame. One movement, not two screens |
-| `2280ms` | the black is gone |
+| `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`) |
+| `120ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in |
+| `300ms` | **the run.** Two shadows come in off either edge of the panel, three cells a frame and a frame every 80ms, which is the stride the drawings take, so no foot slides. The runners are drawn by hand in two inks, the far arm and leg thinner, so one drawing gives both steps; the one from the right is the same drawing turned round |
+| `1180ms` | **the meeting.** Arms out; on the frame they touch the whole panel inverts for 70ms, the way a phone's screen flashed when something came in; the catch, and the hold, one foot off the ground |
+| `1810ms` | **the mark.** The dashed ground they ran on lifts into the ring, left to right along both halves, and the two of them gather into the star from its middle out. Every pixel is rounded to a whole cell each frame, so they hop across the glass. The mark is `mark.js` rasterised at 47 cells, whole at `2470ms` |
+| `2870ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
+| `3590ms` | the black is gone |
 
-No name, because the name is in the bar of the page underneath; no bloom,
-because a material with a current in it is already the light.
+No name, because the name is in the bar of the page underneath. A canvas has
+nothing to compile, so the held frame no longer waits on a shader, and the
+cover, the feathered cuts and the fallback for a slow driver went with the
+metal.
 
-Everything that animates is a transform, an opacity or a dash offset; nothing
-touches layout after the first frame. It is skippable on any tap or key, it
-never plays twice in a tab, and under `prefers-reduced-motion` it renders
-assembled and lifts almost at once. A brand animation that cannot be got out of
-is a toll gate.
+The canvas is drawn only when the frame changes, twelve times a second while
+they run and thirty while the mark forms, and the loop stops at the last
+frame. The screen is held square to the camera, because a tilted canvas of
+square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
+any tap or key, which lands the mark and lifts at once; it never plays twice in
+a tab; under `prefers-reduced-motion` it draws the mark and lifts almost at
+once. In development `?beat=3` holds the mark, `?t=900` holds the clock on any
+frame, and `?intro=ascii` draws the same story in characters for comparison.
+
+The door (`screens/Join.jsx`) and the mutual (`screens/Reveal.jsx`) tell the
+same story on the same screen: on the door @you runs in and waits, @them runs
+in and waits, and both set off on the same frame, which is the mechanic; on the
+mutual it is the two handles in the status row, and `it's mutual.` is typed
+under the screen from the frame they touch.
 
 ## The design, and where it comes from
 
