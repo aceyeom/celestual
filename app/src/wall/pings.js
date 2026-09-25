@@ -238,10 +238,11 @@ export function daysLeftWords(expires) {
   return n === 0 ? 'lapses today' : n === 1 ? 'one day left' : `${n} days left`
 }
 
-// What a ping is doing, in the words a row carries under the name.
+// What a ping is doing, in the words a row carries under the name: that it
+// is mutual, or how long it has left, which says it is standing.
 export function stateWords(p) {
   if (!p) return ''
-  return p.state === 'mutual' ? 'it’s mutual' : `standing · ${daysLeftWords(p.expires)}`
+  return p.state === 'mutual' ? 'it’s mutual' : daysLeftWords(p.expires)
 }
 
 export function since(ts) {

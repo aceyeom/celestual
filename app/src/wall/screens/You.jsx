@@ -49,7 +49,7 @@ import { getState } from '../store.js'
 import { member, memberLabel, isReader, signOut, refresh, toWrite, heldProof } from '../auth.js'
 import { loadPending } from '../handoff.js'
 import {
-  myHandle, myPings, heldPings, forgetPings, renew, release, daysLeft, daysLeftWords, slotCap, PING_DAYS,
+  myHandle, myPings, heldPings, forgetPings, renew, release, daysLeft, daysLeftWords, stateWords, slotCap, PING_DAYS,
 } from '../pings.js'
 import { useProve, ProveDoor } from './Ping.jsx'
 
@@ -387,7 +387,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
                       <Face handle={p.to} size={30} />
                       <span className="wl-wrote-who">
                         <span className="wl-wrote-name">{atHandle(p.to)}</span>
-                        <span className="wl-wrote-meta">it&rsquo;s mutual</span>
+                        <span className="wl-wrote-meta">{stateWords(p)}</span>
                       </span>
                     </button>
                   ))}
@@ -399,7 +399,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
                       <Face handle={p.to} size={30} />
                       <span className="wl-wrote-who">
                         <span className="wl-wrote-name">{atHandle(p.to)}</span>
-                        <span className="wl-wrote-meta">{daysLeftWords(p.expires)}</span>
+                        <span className="wl-wrote-meta">{stateWords(p)}</span>
                       </span>
                     </button>
                   ))}

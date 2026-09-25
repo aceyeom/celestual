@@ -52,7 +52,7 @@ import { startHandoff, pollHandoff, savePending, loadPending, clearPending } fro
 import { signOut as dropProof } from '../../api/auth.js'
 import { cardStep } from '../seed.js'
 import {
-  myHandle, canPlace, myPings, heldPings, forgetPings, place, writtenTo, daysLeftWords,
+  myHandle, canPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords,
 } from '../pings.js'
 
 // The card's own ceilings: twenty words, which is what the server keeps
@@ -284,7 +284,7 @@ function Written({ people, pingOf, onPick }) {
       <Label as="span" tone="dim" className="wl-suggest-lab" id="wl-ping-wrote-lab">written to</Label>
       {shown.map((h, i) => {
         const p = pingOf(h)
-        const meta = !p ? null : p.state === 'mutual' ? 'it’s mutual' : daysLeftWords(p.expires)
+        const meta = stateWords(p) || null
         return (
           <button
             type="button" key={h}
