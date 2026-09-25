@@ -927,6 +927,21 @@ const ROUTES = [
   // and let go past the threshold: the strip ran on to the next letter
   { label: 'letter-swiped', path: '/berkeley/letter/pilar.echevarria',
     acts: [['swipe', '.wl-letter-card', -220]], settle: 900 },
+  // the deck at rest from the middle of it, a neighbour asleep either side;
+  // the same card under a mouse held mid drag; the first letter pulled the
+  // way there is nothing, giving; and the lean a first visit is shown, caught
+  // at its furthest
+  { label: 'letter-deck',   path: '/berkeley/letter/ren.tanaka' },
+  { label: 'letter-drag',   path: '/berkeley/letter/ren.tanaka',
+    acts: [['mouse', '.wl-letter-card', -170, 'hold']], settle: 300 },
+  { label: 'letter-end',    path: '/berkeley/letter/pilar.echevarria',
+    acts: [['swipe', '.wl-letter-card', 180, 'hold']], settle: 300 },
+  { label: 'letter-lean',   path: '/berkeley/letter/ren.tanaka', lean: true,
+    acts: [['until', "(document.querySelector('.wl-letter-card') || {}).style?.transform?.includes('-')", 8000]], settle: 200 },
+  // a mouse resting on the letter after this one: it wakes a little and
+  // leans in, and a press there turns to it
+  { label: 'letter-hover',  path: '/berkeley/letter/ren.tanaka',
+    acts: [['mouse', '.wl-turn.is-next', 0, 'hover']], settle: 600 },
   // the screen's two menus, and the screen in each of its treatments
   { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
   { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
@@ -1155,6 +1170,18 @@ for (const r of list) {
         }
       } catch { /* private mode */ }
     }, { DRAFT, VERIFIED, WRITTEN, ANON })
+    // The letter's deck leans toward the next letter the first times a
+    // device opens it (screens/Letter.jsx `nudge`), which would catch a shot
+    // part way through. Every device here has turned it, but the one the
+    // lean is shot on (`lean`).
+    if (!r.lean) {
+      await page.addInitScript(() => {
+        try {
+          const s = JSON.parse(localStorage.getItem('celestual.wall.v5') || '{}')
+          localStorage.setItem('celestual.wall.v5', JSON.stringify({ ...s, turned: true }))
+        } catch { /* private mode */ }
+      })
+    }
 
     await page.goto(BASE + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
@@ -1191,6 +1218,9 @@ for (const r of list) {
     // whatever the last one drew.
     for (const [act, sel, arg, more] of r.acts || []) {
       if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      // until the page says so, for a frame inside a movement nothing
+      // pressed started: `sel` is the expression, `arg` how long to wait
+      if (act === 'until') { await page.waitForFunction(sel, null, { timeout: Number(arg) || 6000 }).catch(() => {}); continue }
       await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
       if (act === 'fill') await page.fill(sel, arg).catch(() => {})
       // a click's fourth field, when it is a number, is how long to wait
@@ -1202,10 +1232,9 @@ for (const r of list) {
         await page.click(sel, { timeout: 4000, force: true }).catch(() => {})
         if (typeof more === 'number') { await page.waitForTimeout(more); continue }
       }
-      // A finger across an element, as the pointer events a touch sends,
-      // since a mouse is not a swipe anywhere in the product. `arg` is how
-      // far, in pixels, and `more` of 'hold' leaves the finger down so the
-      // frame in the middle of the gesture can be shot.
+      // A finger across an element, as the pointer events a touch sends.
+      // `arg` is how far, in pixels, and `more` of 'hold' leaves the finger
+      // down so the frame in the middle of the gesture can be shot.
       if (act === 'swipe') {
         await page.evaluate(async ({ sel, dx, hold }) => {
           const el = document.querySelector(sel)
@@ -1226,6 +1255,22 @@ for (const r of list) {
           }
           if (!hold) { await frame(); ev('pointerup', x0 + dx, y0) }
         }, { sel, dx: Number(arg) || 0, hold: more === 'hold' }).catch(() => {})
+      }
+      // The same with the browser's own mouse, which the letter's deck takes
+      // too: to the middle of the element, then pressed and drawn `arg`
+      // pixels across. `more` of 'hold' keeps the button down, and 'hover'
+      // only goes there.
+      if (act === 'mouse') {
+        const b = await page.$eval(sel, (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }).catch(() => null)
+        if (b) {
+          await page.mouse.move(b.x, b.y, { steps: 4 })
+          if (more !== 'hover') {
+            const dx = Number(arg) || 0
+            await page.mouse.down()
+            await page.mouse.move(b.x + dx, b.y, { steps: 12 })
+            if (more !== 'hold') await page.mouse.up()
+          }
+        }
       }
       await page.waitForTimeout(700)
     }

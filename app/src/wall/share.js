@@ -23,7 +23,7 @@
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, dateOf, rgbTile } from './looks.js'
+import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } from './looks.js'
 import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
 import { copyText } from './handoff.js'
 
@@ -293,7 +293,7 @@ function drawScreen(o, tile = null) {
     g.restore()
   }
 
-  // row one: the aerial and the date, and the characters left by the battery
+  // row one: the aerial, and by the battery the day the letter went up
   const r1 = (q.topPad + (flat ? 1 : 0)) * u
   const rowH = 10.4 * u
   const mid1 = r1 + rowH / 2
@@ -667,7 +667,9 @@ export function letterFace(l, { name, handle }) {
     look: l.look, seed: l.id, text, sealed: !open,
     name, handle,
     icon: open ? 'pen' : 'lock', dear: true,
-    date: dateOf(l.at), counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`, bat: chargeOf(l.at),
+    // the day it went up, by the battery, in the place a draft keeps its
+    // count (`counter` is what the row draws there), and no second date
+    counter: stampOf(l.at), bat: chargeOf(l.at),
     hearts: l.hearts || 0, hearted: !!l.hearted,
     left: 'options', right: 'share',
   }

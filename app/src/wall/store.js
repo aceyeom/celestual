@@ -51,6 +51,10 @@ const EMPTY = {
                       // this device, it is cleared with everything else, and
                       // nothing on a letter points back at it.
   seen: false,        // the opening cascade has played once
+  turned: false,      // this device has turned the letter's deck once, so the
+                      // lean toward the next letter is not shown again
+  hinted: 0,          // how many times it has been shown the lean, which is
+                      // twice at most (screens/Letter.jsx `nudge`)
   tabHid: 0,          // when the tab at the foot of the wall was last put away,
                       // and how many letters this device had put up by then.
                       // The tab comes back after a while, and at once after

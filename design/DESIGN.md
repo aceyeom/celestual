@@ -168,8 +168,9 @@ One exception to the sentence above, and it is fenced. A letter on the wall
 is a phone screen left on in a dark room (`app/src/wall/looks.js`,
 `screen.jsx`, `screen.css`): an unsent draft, the cursor still after the last
 word. Every letter is the same screen: the status rows across the top (the
-aerial, the signal bars, the name, the characters left, the battery; the pen,
-the mode, the handle), the words, and the three soft keys at the foot
+aerial, the signal bars, the name, by the battery the day it went up as
+`09/24/26`, or on a draft the characters it has left; the pen, the mode, the
+handle), the words, and the three soft keys at the foot
 (`options`, the heart and its count, `share`), set in one face, Jersey 10, the
 Series 40 grid (`--f-s40`). The only thing a writer chooses is the COLOUR it is
 lit in, and each colour carries its own treatment with it:
@@ -705,6 +706,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-shake`, `wl-cell-pop` | the composer's card refusing a press, a short travel side to side losing amplitude; and a name that has just arrived on the wall rising past its size and settling, under the pulse the wall sends out from its disc. No ring leaves the disc |
 | `wl-cell-turn` | the wall turning over. Every couple of seconds one disc on the hive, out of the light and in off the rim, recedes and fades over 320ms and somebody else on the same wall comes up in its place over 510ms, both on `--ease-out`, with the face changed in the 150ms between where the orb is at nought opacity. No overshoot, no ring, no light and no pulse: an arrival is a claim that a letter went up and is drawn as one, and a turn claims nothing (`wall/Hive.jsx`, the cycle). Nothing turns over under the veil, under a sheet, during the opening, under a pulse or a pull, or under reduced motion |
 | `wl-acts-in`, `wl-act-in` | the pane the flag opens on a letter, and its two rows arriving a beat apart |
+| the deck (`screens/Letter.jsx`) | the letter before and the letter after stand either side of an opened letter, asleep: dimmer and a little smaller, a sliver at the edges of a phone and whole in a wide room, coming up over 480ms from 420ms into the card's wake. A hand has the card one to one and each screen is lit by how near the middle it stands. Let go, the strip runs on in 240 to 420ms at the speed it was let go at, on the travel curve bent to leave at the hand's speed, or springs home in 220 to 380ms; a press on a neighbour turns it in 340ms and an arrow key in 260ms. The first two times a device opens it the card leans 26px toward the next letter and back, 380ms out and 680ms home. Under reduced motion a turn is a cut and nothing leans |
 | `wl-mast-ring` | the ring leaving the veil's capsule every 1600ms, the shape of the pulse a tap sends through the crowd |
 | `wl-glass-out`, `wl-tab-drop` | a sheet's glass fading in place while a card flies home to its disc; the tab at the foot of the wall being put away |
 | `wl-lead`, `wl-breathe` | the circuit, the pulse |

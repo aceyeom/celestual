@@ -148,7 +148,7 @@ import {
   normHandle, validHandle, hash, allowance, loadQuota, write,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
 } from '../data.js'
-import { normaliseLook, freshLook, colourOf, dateOf } from '../looks.js'
+import { normaliseLook, freshLook, colourOf } from '../looks.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { campus, needsCampus } from '../campus.js'
@@ -617,7 +617,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 look={look} seed={seed} live
                 top={{
                   name: toFirst, handle: toHandle, dear: true, icon: 'pen',
-                  date: dateOf(Date.now()), counter: `${MAX_BODY - body.length}/1`,
+                  counter: `${MAX_BODY - body.length}/1`,
                 }}
                 keys={{
                   l: colourKey,
