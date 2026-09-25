@@ -3666,6 +3666,13 @@ a.wl-lq { text-decoration: none; }
   border: 1px solid var(--lcd-edge); color: var(--chalk); background: var(--lcd);
 }
 .wl-tab-hide { padding: 9px 10px 5px; }
+/* on the narrowest phones three faces left the sentence a column too narrow
+   for its first line, and "they" stood on a line of its own. The first face
+   stands for the rest there, and the sentence keeps its two lines */
+@media (max-width: 359px) {
+  .wl-tab-main { gap: 10px; }
+  .wl-tab-face + .wl-tab-face { display: none; }
+}
 @keyframes wl-tab-rise {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
   to   { opacity: 1; transform: none; }
