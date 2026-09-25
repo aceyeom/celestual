@@ -260,9 +260,24 @@ is the check on the quirks: five phones, and none of them a different design.
 A letter is a Series 40 screen (2.5), and the wall is where those screens are
 kept, so everything on the wall round them is the same phone: one pixel face,
 square keys, unlit panels and pixel glyphs. Only the brand (the mark and
-`celestual.`) and the intro stay the room's own objects. Main (`/ping`, `/sky`,
-`/place`) and the desk are not the phone, and sections 4 and 8 describe them
-as written.
+`celestual.`) and the intro stay the room's own objects. Main (`/optout`,
+`/copy`, `/signin`) and the desk are not the phone, and sections 4 and 8
+describe them as written.
+
+The ping is the phone too. Placing one, the list of what a person has out and
+the mutual used to be Main's pages at `/ping`, `/place`, `/sky` and `/reveal`,
+in the room's paper and metal, and a person who had just written a letter left
+the phone to ask the one question the letter left them with. They are sheets
+on the wall now, built of the wall's own parts and nothing new:
+
+| Sheet | What it is made of |
+| --- | --- |
+| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `it's out.` as a note on that screen (`ScreenNote`). One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
+| the person (`screens/You.jsx`) | the account card on an unlit panel, its rows the letters' rows, with the key held at the foot of the panel over a dashed seam while the card scrolls under it. A standing ping opens onto its own lit screen, whose options key is the phone's menu (`ScreenMenu`) and whose `let it go?` is a note with two soft keys |
+
+Nothing about a ping is ever drawn anywhere a second person can look. The
+sheets show a person their own pings and nobody else's, which is the whole
+of what the double blind allows.
 
 It was an Apple interface with Nokia screens in it: a blurred grey search
 capsule, frosted sheets with 26px corners and a grip, liquid metal capsules,
@@ -745,8 +760,8 @@ room. The sheets the wall raises (find, the gate, a report, a removal) are
 black glass with the same grain, and the browser's bar and the page behind
 the wall are black too.
 
-**Main keeps its sky** (`/ping`, `/sky`, the hero): four fixed layers under
-everything, in this order, never reordered.
+**Main keeps its sky** (`/optout`, `/copy`, `/signin`): four fixed layers
+under everything, in this order, never reordered.
 
 | Layer | What it is |
 | --- | --- |

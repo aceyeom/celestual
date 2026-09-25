@@ -902,10 +902,13 @@ are real redeploys, not formalities.
 Every one of these should render, and none should show the retired design.
 
 ```
-/                 the hero
-/place            placing one, and the result card under the field
-/sky              signed out, and signed in
+/                 the wall for everybody, and its /ping and /you
 /berkeley         the wall, and /find, /write, /gate, /join
+/berkeley/ping    placing one: a name written to, the line, the DM door, it's out,
+                  and back on the names
+/berkeley/you     signed out, signed in, and with a ping standing and a mutual
+/ping  /place  /@handle  /sky
+                  each lands on the Berkeley wall with its sheet up
 /optout           type a handle you do not mind losing, on a staging project
 /terms  /privacy  /data-deletion
 /admin            the door, then the seven sections

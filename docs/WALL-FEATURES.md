@@ -109,7 +109,7 @@ proposal can be checked against each one by name.
 | share the wall from a search miss | | | | | | | | | | **no**, not there. It reads as "write to me". The card keeps its place after a letter |
 | an incentive for being written about, or for sharing | | | | | no | no | no | | | **no** |
 | a letter to a first name or nickname | | | | | | | | | | **yes**. Keyed so no handle can claim or empty it. Migration 0053 |
-| a private @ stored beside a letter to a first name | no | no | | | | | | no | | **no**, plain or hashed. The @ is asked on Main, as the ping's target |
+| a private @ stored beside a letter to a first name | no | no | | | | | | no | | **no**, plain or hashed. The @ is asked on the ping sheet, as the ping's target |
 | the search hears names, accents and misspellings | | | | | | | | | | **yes**, over the public index only. Migration 0054 |
 | a nickname table (Alex finds Alexandra) | no | | | | | | | | | **no**. An inference about a person, not a fact about a string |
 
@@ -368,10 +368,12 @@ sends (G2), and a fact the report tap cannot reach (G8). The name passes the
 same list as the body, at the keyboard and on the server, and the classifier
 is told the addressee (G4). The paper is the same paper (G3). The resolver
 is never asked about a name key, or a letter to Sofia would carry @sofia's
-face (G1). Where the @ matters is the ping, and Main asks for it there:
-`/berkeley/join` leaves for `/place/<handle>` when the letter carried a
-handle and for `/place` when it carried a name, and `Who's on your mind.` is
-the ask. A first name shared by forty people can gather forty letters in a
+face (G1). Where the @ matters is the ping, and the ping sheet asks for it
+there (`/berkeley/ping`): it lists the people this person wrote to by handle
+and leaves a name out, and `who's on your mind.` over its field is the ask.
+The ping is a sheet on the wall now and never a thing on the wall itself: a
+person sees their own pings on their own account sheet (`/berkeley/you`) and
+nobody else ever sees one (G2). A first name shared by forty people can gather forty letters in a
 night, which is one more reason item 1 below counts name keys when it is
 built.
 
