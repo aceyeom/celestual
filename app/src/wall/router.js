@@ -40,14 +40,15 @@ export function setBase(b) { BASE = String(b || '') }
 // The ping and the account are on it for the same reason. A ping is placed
 // FROM the wall, on a name the person has just been reading or writing to,
 // and it closes back onto the wall it was raised over; the account is a look
-// at what this person has out, taken without leaving the names.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you'])
+// at what this person has out, taken without leaving the names. The mutual
+// is the end of that same story, so it is raised over the wall too.
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal'])
 
 // Every address under a wall's base, by its first segment. At the root this
 // is also what decides which addresses are the wall's at all: `/optout` is
 // Main's, `/letter/x` is the wall's, and nothing under `/` is claimed by
 // the wall on the strength of not being anybody else's.
-const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you'])
+const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal'])
 
 const norm = (pathname) => String(pathname || '/').replace(/\/+$/, '') || '/'
 const rootOf = (base) => base || '/'
@@ -69,6 +70,9 @@ export function parse(pathname) {
     case 'join':   return { name: 'join' }         // what a ping is, drawn, before placing one
     case 'ping':   return { name: 'ping', id }     // placing a ping, raised over the wall
     case 'you':    return { name: 'you' }          // this person: their pings, drafts and letters
+    // It's mutual: the other one's handle, raised over the wall. Main drew
+    // it at /reveal until it was the phone's, and the address came with it.
+    case 'reveal': return id ? { name: 'reveal', id } : { name: 'wall' }
     // /berkeley/orbit was a drawn stand-in for the core service with a seeded
     // ledger in it, reachable by anybody who typed the address. The ping is
     // a sheet on the wall now, and the stand-in is gone.

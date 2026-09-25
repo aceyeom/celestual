@@ -24,7 +24,8 @@
 // phone that asked for it.
 
 import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } from './looks.js'
-import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
+import { CHALK } from './mark.js'
+import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
 
 const W = 1080
@@ -575,58 +576,11 @@ function imageOf(url) {
 // overlap and the glow belongs to the whole mark rather than to each piece.
 // Paths and not an SVG image: a picture drawn from an image can taint the
 // canvas in the browser most letters are shared from, and a tainted canvas
-// cannot be made into a file.
+// cannot be made into a file. The drawing itself is pixmark.js `markCanvas`,
+// the same one the pixel mark on the intro's screen is rasterised from.
 const WORD = 46
 const SIGN_Y = H - 86
 const SIGN_ALPHA = 0.9
-
-// the half plane the ring is in front of the star in (mark.js `NEAR`)
-function clipNear(g) {
-  g.save()
-  g.translate(50, 50)
-  g.rotate(rad(ECL.tilt))
-  g.translate(-50, -50)
-  g.beginPath()
-  g.rect(NEAR.x, NEAR.y, NEAR.width, NEAR.height)
-  g.restore()
-  g.clip()
-}
-
-function markCanvas(size) {
-  const k = size / 100
-  const ring = new Path2D(ringPath())
-  const cv = document.createElement('canvas')
-  cv.width = size
-  cv.height = size
-  const g = cv.getContext('2d')
-  // the ring, whole
-  g.fillStyle = CHALK
-  g.setTransform(k, 0, 0, k, 0, 0)
-  g.fill(ring, 'evenodd')
-  // the star, with the gutter cut out of it on the near side
-  const sc = document.createElement('canvas')
-  sc.width = size
-  sc.height = size
-  const s = sc.getContext('2d')
-  s.fillStyle = CHALK
-  s.setTransform(k, 0, 0, k, 50 * k, 50 * k)
-  s.fill(new Path2D(starPath(ECL)))
-  s.setTransform(k, 0, 0, k, 0, 0)
-  s.save()
-  clipNear(s)
-  s.globalCompositeOperation = 'destination-out'
-  s.fill(new Path2D(ringPath(ECL.gutter)), 'evenodd')
-  s.restore()
-  g.setTransform(1, 0, 0, 1, 0, 0)
-  g.drawImage(sc, 0, 0)
-  // and the ring's near half in front of it
-  g.setTransform(k, 0, 0, k, 0, 0)
-  g.save()
-  clipNear(g)
-  g.fill(ring, 'evenodd')
-  g.restore()
-  return cv
-}
 
 function signature(g, cx, cy) {
   const mark = Math.round(WORD * 1.13)

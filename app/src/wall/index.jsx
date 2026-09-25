@@ -63,6 +63,7 @@ import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
 import Ping from './screens/Ping.jsx'
 import You from './screens/You.jsx'
+import Reveal from './screens/Reveal.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -79,6 +80,7 @@ const FIELD = {
   report: 'still',   // and where something is coming down
   ping:   'slow',
   you:    'slow',
+  reveal: 'still',   // and where two people have just found out
 }
 
 // The intro plays once per tab and never again. It is held here rather than
@@ -88,7 +90,7 @@ const FIELD = {
 let BOOTED = false
 
 // The longest the intro is held for the index and the first faces, measured
-// from the shell mounting. The intro's own lift is at 1560ms, so on any
+// from the shell mounting. The intro's own lift is at 2870ms, so on any
 // ordinary connection this never applies; on a bad one the wall arrives with
 // its monograms, which is a designed state, and the pictures fill in.
 const READY_CEILING_MS = 4200
@@ -106,7 +108,10 @@ export default function WallApp() {
   })
   // 0 the intro has the screen · 1 the wall is mounted and cascading under
   // a black that is on its way out · 2 the intro is gone
-  const [boot, setBoot] = useState(() => (BOOTED ? 2 : 0))
+  // A tab that opens on a mutual does not play the intro: the mutual tells
+  // the same story on its own screen, and the second telling would be the
+  // one that was waited through.
+  const [boot, setBoot] = useState(() => (BOOTED || route.name === 'reveal' ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)
@@ -413,6 +418,7 @@ export default function WallApp() {
   if (route.name === 'report') sheet = <Report id={route.id} {...shared} />
   if (route.name === 'ping') sheet = <Ping to={route.id} {...shared} />
   if (route.name === 'you') sheet = <You {...shared} />
+  if (route.name === 'reveal') sheet = <Reveal id={route.id} {...shared} />
 
   let base
   switch (route.name) {
