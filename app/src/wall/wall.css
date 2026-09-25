@@ -5062,3 +5062,15 @@ a.wl-lq { text-decoration: none; }
 .wl-letter-to,
 .wl-find-echo,
 .wl-report-quote { overflow-wrap: anywhere; }
+
+/* the composer's screen follows a finger swiped across it a little, and
+   comes home as the next colour lights (Look.jsx `useColourSwipe`) */
+.wl-write-card { touch-action: pan-y; }
+.wl-write-card .wl-scene {
+  transform: translate3d(var(--swipe, 0px), 0, 0);
+  transition: transform 260ms var(--ease, ease);
+}
+.wl-write-card[data-swiping] .wl-scene { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .wl-write-card .wl-scene { transform: none; transition: none; }
+}

@@ -358,6 +358,22 @@
 .wl-scr[data-light='bands'] .wl-scr-top { background: var(--s-top); color: var(--s-lit); }
 .wl-scr[data-light='bands'] .wl-scr-bot { background: var(--s-bot); color: var(--s-lit); }
 
+/* ── a print where the press does not run ──
+   (looks.js `PRESS`) The screen is painted in its inks already, so what the
+   press would have cut into them is drawn in them here: the rule in the
+   darkest, the keyline and the halftone in the palest, and the LCD's grid,
+   its moiré, its ghost column and its glare, which the press printed out of
+   a print, not drawn at all. The sensor's grain stays, as the paper's */
+.wl-scr[data-inked]:is([data-kind='poster'], [data-kind='riso']) :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire, .wl-scr-fx.is-streak, .wl-scr-fx.is-glare),
+.wl-scr[data-inked][data-kind='xerox'] :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire) { display: none; }
+.wl-scr[data-inked]:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass { box-shadow: inset 0 0 0 1.4cqw var(--s-ink); }
+.wl-scr[data-inked][data-light='keyline'] .wl-scr-fx.is-glass { outline-color: var(--s-lit); }
+.wl-scr[data-inked][data-light='dots'] .wl-scr-bg::after {
+  background:
+    radial-gradient(circle closest-side, var(--s-lit) 62%, transparent 70%) 0 0 / 3.2cqw 3.2cqw,
+    radial-gradient(circle closest-side, var(--s-lit) 62%, transparent 70%) 1.6cqw 1.6cqw / 3.2cqw 3.2cqw;
+}
+
 .wl-scr[data-kind='xerox'] .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 4.4cqw; }
 /* ── the copy: the roller's streaks down the sheet, and the grey the lid
    let in along one edge, which the copier's threshold speckles into toner */

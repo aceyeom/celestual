@@ -26,7 +26,7 @@
 // looks.js `quirks`, off the letter's id.
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS, PRESS } from './looks.js'
 import { Caret } from './caret.jsx'
 import './screen.css'
 
@@ -505,7 +505,11 @@ export function Screen({
   const s = skinOf(colour)
   const raw = useId()
   const fid = `wl-press-${raw.replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const vars = { ...skinVars(colour), ...q.vars }
+  // a print is pulled through the press where it runs, and painted in its
+  // inks where it does not (looks.js `PRESS`)
+  const press = !!s.print && PRESS
+  const inked = !!s.print && !PRESS
+  const vars = { ...skinVars(colour, inked), ...q.vars }
   // this phone's own pixels, up close (looks.js `rgbTile`); a print has none
   const rgb = useMemo(() => (s.print ? '' : rgbTile(seed)), [s.print, seed])
   const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4 } = top
@@ -532,17 +536,18 @@ export function Screen({
     >
       <span className="wl-scene-halo" aria-hidden="true" />
       <span className="wl-scene-halo-2" aria-hidden="true" />
-      {s.print ? <Press id={fid} colour={colour} q={q} /> : null}
+      {press ? <Press id={fid} colour={colour} q={q} /> : null}
       {/* the press is on this wrapper, which has no transform (screen.css
           `.wl-scr-press`), and a print is uncovered here. Always drawn, so a
           screen turned from lit to print keeps the field in it */}
       <div
         className={`wl-scr-press${s.print && state ? ` is-${state}` : ''}`}
-        style={s.print ? { filter: `url(#${fid})` } : undefined}
+        style={press ? { filter: `url(#${fid})` } : undefined}
       >
         <div
           className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
           data-lid={s.kind === 'xerox' ? q.lid : undefined} data-light={s.light || undefined}
+          data-inked={inked ? '' : undefined}
           role="group" aria-labelledby={nameId}
         >
           <div className="wl-scr-bg" aria-hidden="true" />
