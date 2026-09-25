@@ -331,7 +331,7 @@ export default function Reveal({ id, go, up, back, upLabel = 'back to the wall',
             <Display size="l" as="h2" id="wl-reveal-h">nothing here.</Display>
             <div className="wl-push" />
             <SheetFoot>
-              <Pill tone="light" wide onClick={toYou}>your pings</Pill>
+              <Pill tone="light" wide onClick={toYou}>your private notes</Pill>
             </SheetFoot>
           </div>
         ) : (
