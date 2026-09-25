@@ -26,7 +26,7 @@
 // wall.css (`.wl-root.is-room .wl-stage::after`).
 //
 // ── Main: the sky (the default) ─────────────────────────────────────────────
-// The front door (/ping, /sky, the hero) keeps its night:
+// What is left of Main (/optout, /copy, /signin) keeps its night:
 //
 //   the sky         the clouds, drawn by the field itself (field.js, THE SKY
 //                   BEHIND THE STARS): the void with the galaxy's violet and
