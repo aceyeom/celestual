@@ -27,6 +27,7 @@ import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } fro
 import { CHALK } from './mark.js'
 import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
+import { stickerGrid, stickerInks, stickerRuns, stickerTilt, letterMarks } from './schools.js'
 
 const W = 1080
 const H = 1350
@@ -358,20 +359,29 @@ function drawScreen(o, tile = null) {
     g.textAlign = 'left'
     // the name first; the handle gives way to it, down to two fifths of the row
     const room = sw - 2 * ex - lw
-    const said = o.dear && o.name ? `dear ${o.name}` : o.name || ''
+    // the writer's own greeting where they set one, and "dear" and the name
+    // where they did not (screen.jsx `Screen`)
+    const said = o.salutation || (o.dear && o.name ? `dear ${o.name}` : o.name || '')
+    // a name note's school stands where a handle would (schools.js
+    // `letterMarks`)
+    const aside = o.handle || o.tag || ''
     g.font = `400 ${11 * u}px ${FACE}`
     const nw = g.measureText(said).width
     g.font = `400 ${7.4 * u}px ${FACE}`
-    const hw = o.handle ? Math.min(g.measureText(o.handle).width, Math.max(room - nw - 2.4 * u, room * 0.4)) : 0
-    g.font = `400 ${11 * u}px ${FACE}`
-    const name = fit(g, said, room - (hw ? hw + 2.4 * u : 0))
+    const hw = aside ? Math.min(g.measureText(aside).width, Math.max(room - nw - 2.4 * u, room * 0.4)) : 0
+    // a long line the writer set is set smaller, down to half the row's
+    // size, before it is cut, as on the page (screen.jsx `lineSize`)
+    const avail = room - (hw ? hw + 2.4 * u : 0)
+    const nsz = o.salutation && nw > avail ? Math.max(5.6, (11 * avail) / nw) : 11
+    g.font = `400 ${nsz * u}px ${FACE}`
+    const name = fit(g, said, avail)
     g.fillText(name, ex + lw, mid2 + 0.4 * u)
-    if (o.handle) {
+    if (aside) {
       const nameEnd = ex + lw + g.measureText(name).width + 2.4 * u
       g.globalAlpha = 0.82
       g.textAlign = 'right'
       g.font = `400 ${7.4 * u}px ${FACE}`
-      g.fillText(fit(g, o.handle, sw - ex - nameEnd), sw - ex, mid2 + 0.4 * u)
+      g.fillText(fit(g, aside, sw - ex - nameEnd), sw - ex, mid2 + 0.4 * u)
       g.globalAlpha = 1
     }
   })
@@ -603,11 +613,58 @@ function signature(g, cx, cy) {
   g.restore()
 }
 
+// ── the sticker ─────────────────────────────────────────────────────────────
+// The school's sticker, for a letter posted from a verified school address:
+// the same pixels as the page's (schools.js `stickerGrid`), struck here one
+// rectangle a run, on a canvas of its own so its shadow is the whole
+// sticker's and not each pixel's. `width` is how wide it is drawn.
+function stickerCanvas(school, width) {
+  const grid = stickerGrid(school.short)
+  const cell = Math.max(1, Math.round(width / grid.w))
+  const cv = document.createElement('canvas')
+  cv.width = grid.w * cell
+  cv.height = grid.h * cell
+  const g = cv.getContext('2d')
+  const ink = stickerInks(school)
+  for (const [v, x, y, w] of stickerRuns(grid)) {
+    g.fillStyle = ink[v]
+    g.fillRect(x * cell, y * cell, w * cell, cell)
+  }
+  // the vinyl's sheen, over the sticker and not the glass round it
+  g.globalCompositeOperation = 'source-atop'
+  const sheen = g.createLinearGradient(0, 0, cv.width, cv.height)
+  sheen.addColorStop(0, 'rgba(255, 255, 255, 0.22)')
+  sheen.addColorStop(0.38, 'rgba(255, 255, 255, 0.05)')
+  sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)')
+  sheen.addColorStop(1, 'rgba(0, 0, 0, 0.1)')
+  g.fillStyle = sheen
+  g.fillRect(0, 0, cv.width, cv.height)
+  return cv
+}
+
+// Stuck on the phone's top right corner, hanging a little off it, at the
+// letter's own angle, as the page sticks it (post.css `.wl-scr-sticker`).
+// Drawn in the screen's own turned frame, so it turns with the phone.
+function stick(g, school, seed, sw, sh) {
+  const st = stickerCanvas(school, sw * 0.26)
+  const w = sw * 0.26
+  const h = (w * st.height) / st.width
+  g.save()
+  g.translate(sw / 2 - w * 0.34, -sh / 2 + h * 0.08)
+  g.rotate((stickerTilt(seed) * Math.PI) / 180)
+  g.shadowColor = 'rgba(0, 0, 0, 0.55)'
+  g.shadowBlur = 18
+  g.shadowOffsetY = 8
+  g.imageSmoothingEnabled = false
+  g.drawImage(st, -w / 2, -h / 2, w, h)
+  g.restore()
+}
+
 // ── the room ────────────────────────────────────────────────────────────────
 export async function renderLetter(o) {
   if (document.fonts && document.fonts.load) {
     // with the words, so the faces for any letters past plain latin come too
-    try { await document.fonts.load(`400 40px ${FACE}`, `${o.text}${o.name || ''}${o.handle || ''}`) } catch { /* the fallback, then */ }
+    try { await document.fonts.load(`400 40px ${FACE}`, `${o.text}${o.name || ''}${o.handle || ''}${o.salutation || ''}`) } catch { /* the fallback, then */ }
     try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
   // the letter's own pixels, up close, as an image the canvas can lay down;
@@ -637,6 +694,9 @@ export async function renderLetter(o) {
   g.shadowColor = s.print ? 'rgba(0, 0, 0, 0.9)' : rgba(s.glow, 0.5 * s.k)
   g.shadowBlur = s.print ? 40 : 30
   g.drawImage(scr, -sw / 2, -sh / 2)
+  g.shadowColor = 'transparent'
+  g.shadowBlur = 0
+  if (o.sticker) stick(g, o.sticker, o.seed, sw, sh)
   g.restore()
   // the signature, in the dark under it
   signature(g, cx, SIGN_Y)
@@ -665,10 +725,14 @@ export async function renderLetter(o) {
 export function letterFace(l, { name, handle }) {
   const open = l.body !== null && l.body !== undefined
   const text = open ? l.body : starred(l.words, l.chars, l.id)
+  // the greeting the writer set, the school's sticker on a verified
+  // letter, and a name note's school (schools.js `letterMarks`)
+  const marks = letterMarks(l)
   return {
     look: l.look, seed: l.id, text, sealed: !open,
     name, handle,
     icon: open ? 'pen' : 'lock', dear: true,
+    salutation: marks.salutation, sticker: marks.sticker, tag: marks.tag,
     // the day it went up, between the aerial and the battery, and no
     // second date
     stamp: stampOf(l.at), bat: chargeOf(l.at),
@@ -705,7 +769,7 @@ export const canShare = () => typeof navigator !== 'undefined' && typeof navigat
 // first. The last few are kept; one that failed is dropped, so the next ask
 // draws it again.
 const READY = new Map()
-const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}`
+const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}|${o.salutation || ''}|${o.sticker ? o.sticker.slug : ''}`
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }
   requestAnimationFrame(() => setTimeout(done, 0))

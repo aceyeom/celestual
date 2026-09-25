@@ -1,0 +1,218 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  POSTING ON THE ONE WALL                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+   docs/ONE-WALL.md. What the composer draws at the send (the one decision,
+   the two confirmations, the name nudge and the greeting on the screen),
+   the page the mailed link lands on, and the school's sticker. All of it in
+   the phone's language (phone.css): the unlit panel with its one pixel
+   bezel, the one face, square corners, and a choice pressed the way the
+   phone lit a chosen row, inverted. */
+
+/* ═══ THE STICKER ══════════════════════════════════════════════════════════
+   Sticker.jsx. Pixels, never smoothed; a slight turn of its own; and the
+   shadow of a thing stuck on glass: a hard pixel of dark right under its
+   edge, and a soft one further out where the lifted corner stands off it. */
+.wl-sticker {
+  display: inline-block; position: relative; line-height: 0; flex: 0 0 auto;
+  transform: rotate(var(--st-tilt, -6deg));
+  filter:
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.38))
+    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.42));
+}
+.wl-sticker svg {
+  display: block; width: 100%; height: auto; aspect-ratio: var(--st-ar, 3 / 2);
+  image-rendering: pixelated; overflow: visible;
+}
+
+/* on a letter: stuck on the phone's top right corner, hanging a little off
+   it, over the battery, sized in the screen's own width so it is the same
+   sticker on the letter, the deck and the composer */
+.wl-scr-sticker {
+  position: absolute; z-index: 4; pointer-events: none;
+  top: -4.2cqw; right: -3.2cqw; width: 23cqw;
+  transform: rotate(calc(var(--st-tilt, -6deg) + var(--q-rz, 0deg)));
+  filter:
+    drop-shadow(0 0.25cqw 0 rgba(0, 0, 0, 0.4))
+    drop-shadow(0 1.4cqw 1.6cqw rgba(0, 0, 0, 0.5));
+}
+
+/* ═══ THE GREETING ═════════════════════════════════════════════════════════
+   screen.jsx `Greet`: "dear Sofia", as a field in the status row's own
+   place, set exactly as the line is (the row's face, size, colour and
+   bloom). It is sized to what is in it by a mirror of its own value laid in
+   the same grid cell, so the @ beside it keeps its place. A dotted pixel
+   line under it says it can be changed, and gives way to the caret. */
+.wl-scr-greet {
+  position: relative; display: inline-grid; align-items: baseline;
+  min-width: 3ch;
+}
+/* the line clips its words to the row; the field scrolls its own, and the
+   dotted line under it stands just outside the box */
+.wl-scr-r2 > .wl-scr-nm.wl-scr-greet { overflow: visible; }
+.wl-scr-greet::after {
+  content: attr(data-value); grid-area: 1 / 1;
+  visibility: hidden; white-space: pre; padding-right: 0.3em;
+  font: inherit; letter-spacing: inherit;
+}
+.wl-root .wl-scr-greet > input {
+  grid-area: 1 / 1; width: 100%; min-width: 0;
+  margin: 0; padding: 0; border: 0; border-radius: 0; outline: 0; background: none;
+  font: inherit; letter-spacing: inherit; line-height: inherit; color: inherit;
+  text-shadow: inherit; caret-color: var(--s-lit);
+}
+.wl-root .wl-scr-greet > input::placeholder { color: inherit; opacity: 0.5; }
+.wl-root .wl-scr-greet > input[data-caret] { caret-color: transparent; }
+.wl-root .wl-scr-greet > input::selection { background: var(--s-lit); color: var(--s-top); text-shadow: none; }
+.wl-scr-greet::before {
+  content: ''; position: absolute; left: 0; right: 0.3em; bottom: -0.9cqw; height: 0.55cqw;
+  background: repeating-linear-gradient(90deg, currentColor 0 1.1cqw, transparent 1.1cqw 2.2cqw);
+  opacity: 0.5; pointer-events: none;
+  transition: opacity 160ms var(--ease, ease);
+}
+.wl-scr-greet:focus-within::before { opacity: 0; }
+/* the caret, in the line's lit colour rather than the words' ink */
+.wl-scr-greet .wl-caret.is-screen { background: var(--s-lit); box-shadow: 0 0 1cqw var(--s-bloom); }
+.wl-scr-greet .wl-caret.is-screen > i { color: var(--s-top); }
+/* the hint under the card, the first time: dim, since it is a hint and not
+   something that went wrong */
+.wl-write-hint { color: var(--ash); text-align: center; }
+
+/* ═══ THE NAME NUDGE ═══════════════════════════════════════════════════════
+   Under a name: their @, optional, and the (i) that says why. */
+.wl-nudge { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.wl-nudge-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.wl-nudge-lab { color: var(--ash); }
+.wl-nudge-i {
+  flex: 0 0 auto; width: 28px; height: 28px; display: grid; place-items: center;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd);
+  font-family: var(--f-s40); font-size: 20px; line-height: 1; color: var(--ash);
+  transition: border-color 160ms var(--ease, ease), color 160ms var(--ease, ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-nudge-i:hover { border-color: var(--lcd-edge-hi); color: var(--chalk); }
+}
+.wl-nudge-i.is-on, .wl-nudge-i:active { background: var(--chalk); border-color: var(--chalk); color: #000; transition-duration: 0ms; }
+.wl-nudge-pop {
+  position: relative; margin: 2px 0 2px; padding: 12px 14px;
+  background: var(--lcd-2); border: 1px solid var(--lcd-edge-hi); border-radius: var(--r-lcd);
+  font-size: var(--t-small); line-height: 1.24; color: var(--chalk);
+  animation: wl-fade 200ms var(--ease, ease) both;
+}
+/* the popover's tail, pointing up at the (i) */
+.wl-nudge-pop::before {
+  content: ''; position: absolute; top: -6px; right: 10px; width: 10px; height: 10px;
+  background: var(--lcd-2); border-left: 1px solid var(--lcd-edge-hi); border-top: 1px solid var(--lcd-edge-hi);
+  transform: rotate(45deg);
+}
+.wl-nudge .wl-field { min-height: 50px; }
+
+/* ═══ THE ONE DECISION ═════════════════════════════════════════════════════
+   Two options, each an unlit panel: the mark, the title, the one line of
+   why, and what it asks, in a bezel of its own, so the cost of each is read
+   before it is pressed. Pressed, the whole panel inverts. */
+.wl-how { display: flex; flex-direction: column; }
+.wl-how-for { margin: -8px 0 16px; color: var(--ash); }
+.wl-how-for .wl-h { color: var(--chalk); }
+.wl-how-list { display: flex; flex-direction: column; gap: 12px; }
+.wl-how-opt {
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+  background: var(--lcd); background-image: var(--lcd-grid);
+  transition: border-color 160ms var(--ease, ease);
+}
+.wl-how-go {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) 16px; align-items: center; gap: 14px;
+  width: 100%; padding: 18px 16px 18px 12px; text-align: left; color: var(--chalk);
+  border-radius: var(--r-lcd);
+}
+.wl-how-mark { display: grid; place-items: center; width: 64px; height: 60px; color: var(--chalk); }
+.wl-how-mark .wl-sticker { width: 64px; }
+.wl-how-mark .wl-pxi { display: block; }
+.wl-how-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.wl-how-title { font-size: var(--t-subject); line-height: 1.02; color: var(--chalk); text-wrap: balance; }
+.wl-how-why { margin-top: 6px; font-size: var(--t-small); line-height: 1.22; color: var(--ash); text-wrap: pretty; }
+.wl-how-asks {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 100%;
+  margin-top: 12px; padding: 5px 9px 5px 7px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd-2);
+  font-size: var(--t-small); line-height: 1.1; color: var(--chalk);
+}
+.wl-how-asks .wl-pxi { flex: 0 0 auto; color: var(--ash); }
+.wl-how-asks.is-done .wl-pxi { color: var(--chalk); }
+.wl-how-asks.is-warn { color: var(--ember); border-color: rgba(232, 104, 80, 0.4); }
+.wl-how-asks.is-warn .wl-pxi { color: var(--ember); }
+.wl-how-arrow { color: var(--ash); display: grid; place-items: center; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-how-opt:has(> .wl-how-go:not(:disabled):hover) { border-color: var(--lcd-edge-hi); }
+  .wl-how-go:not(:disabled):hover .wl-how-arrow { color: var(--chalk); }
+}
+/* pressed, the phone's chosen row: the panel inverted, the words cut out */
+.wl-how-go:not(:disabled):active { background: var(--chalk); transition-duration: 0ms; }
+.wl-how-go:not(:disabled):active :is(.wl-how-title, .wl-how-why, .wl-how-asks, .wl-how-arrow, .wl-how-mark, .wl-how-asks .wl-pxi) { color: #000; }
+.wl-how-go:not(:disabled):active .wl-how-asks { background: transparent; border-color: rgba(0, 0, 0, 0.35); }
+.wl-how-go:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; }
+.wl-how-go[aria-busy='true'] { cursor: progress; }
+/* an option that cannot be taken as the letter stands: its words dim, and
+   what would open it said in chalk */
+.wl-how-opt.is-off .wl-how-title, .wl-how-opt.is-off .wl-how-why, .wl-how-opt.is-off .wl-how-mark { opacity: 0.5; }
+.wl-how-opt.is-off .wl-how-asks { border-style: dashed; }
+.wl-how-go:disabled { cursor: default; }
+/* on the narrowest phones the mark gives the words its room */
+@media (max-width: 360px) {
+  .wl-how-go { grid-template-columns: 44px minmax(0, 1fr) 12px; gap: 10px; padding: 16px 12px 16px 10px; }
+  .wl-how-mark { width: 44px; height: 44px; }
+  .wl-how-mark .wl-sticker { width: 46px; }
+}
+
+/* a name note's school: a row of keys under the option it belongs to */
+.wl-how-pick {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 12px 14px 14px; border-top: 1px solid var(--lcd-edge);
+}
+.wl-how-pick-lab { flex: 0 0 100%; font-size: var(--t-small); color: var(--ash); padding-bottom: 2px; }
+.wl-how-chip {
+  min-height: 34px; padding: 0 12px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd);
+  font-size: var(--t-small); line-height: 1; color: var(--chalk);
+  transition: border-color 160ms var(--ease, ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-how-chip:hover { border-color: var(--lcd-edge-hi); }
+}
+.wl-how-chip.is-on { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-how-chip:active { background: #CFCBC3; color: #000; transition-duration: 0ms; }
+.wl-write.is-how .wl-write-foot { padding-top: 18px; }
+
+/* ═══ CONFIRM YOU'RE AT BERKELEY ═══════════════════════════════════════════
+   The door's shape (wall.css THE DOOR), with the sticker the letter will
+   carry standing where the mark stands, and, once the link is out, the two
+   digits the mail prints, large, in a panel of their own. */
+.wl-edu { display: flex; flex-direction: column; justify-content: center; }
+.wl-edu .wl-door, .wl-verify .wl-door { padding-top: 6px; }
+.wl-edu .wl-gate-fault { text-align: center; }
+.wl-edu .wl-addr { justify-content: center; }
+.wl-edu .wl-addr-in { text-align: right; }
+.wl-edu .wl-addr.is-whole .wl-addr-in { text-align: center; }
+.wl-edu-sticker { width: 104px; margin: 4px 0 22px; animation: wl-rise 520ms var(--ease, ease) both; }
+.wl-edu-head .wl-door-say .wl-h { color: var(--chalk); overflow-wrap: anywhere; }
+.wl-edu-match {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 16px 20px 18px;
+  background: var(--lcd); background-image: var(--lcd-grid);
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+}
+.wl-edu-match-lab { font-size: var(--t-small); color: var(--ash); }
+.wl-edu-match-n {
+  font-family: var(--f-s40); font-size: 96px; line-height: 0.9; color: var(--chalk);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
+  text-shadow: 0 0 18px rgba(244, 241, 234, 0.28);
+}
+.wl-edu-wait {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin: 6px 0 0; font-size: var(--t-small); color: var(--ash);
+}
+.wl-edu-out { align-self: center; margin-top: 4px; padding: 8px 4px; text-wrap: balance; }
+
+/* ═══ THE LINK, LANDED ═════════════════════════════════════════════════════
+   screens/Verify.jsx: the gate's door, with the sticker once it is done. */
+.wl-verify-wait { display: inline-flex; align-items: center; gap: 10px; }
+.wl-verify-note { margin-top: 18px; color: var(--ash); }
