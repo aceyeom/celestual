@@ -6,8 +6,9 @@
 // from what this browser already holds.
 //
 // The markup ships as the signed out chip. If there is a proved handle on this
-// device, this turns it into the handle, pointing at the sky, which is exactly
-// what parts.jsx `Me` renders on Main. If there is not, or if storage throws,
+// device, this turns it into the handle, pointing at the person's own sheet
+// on the wall (their pings, wall/screens/You.jsx), which is where parts.jsx
+// `Me` leads on Main. If there is not, or if storage throws,
 // or if this file never loads, the page keeps the chip it was served with.
 //
 // It reads one key and nothing else. The proof beside the handle in that
@@ -29,8 +30,8 @@
   if (!/^[a-z0-9._]{1,30}$/i.test(handle)) return
 
   el.textContent = '@' + handle
-  el.setAttribute('href', '/sky')
-  el.setAttribute('aria-label', 'your sky, @' + handle)
-  el.setAttribute('title', 'your sky')
+  el.setAttribute('href', '/berkeley/you')
+  el.setAttribute('aria-label', 'your pings, @' + handle)
+  el.setAttribute('title', 'your pings')
   el.className = 'me is-on'
 })()

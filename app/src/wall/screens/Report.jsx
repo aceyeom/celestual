@@ -208,7 +208,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
 
           <ReasonField
             value={why} onChange={setWhy} autoFocus
-            placeholder="it is about me, and I did not want it up"
+            placeholder="it is about me, and i did not want it up"
           />
 
           <div className="wl-push" />
