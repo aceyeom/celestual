@@ -111,6 +111,7 @@ import { mark, setAfterGate, getState, patch } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
 import { campus, needsCampus } from '../campus.js'
+import { letterMarks } from '../schools.js'
 
 // ── the name on the screen ──────────────────────────────────────────────────
 // The top row carries who the letter is for the way a phone carried the
@@ -446,8 +447,13 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   // an empty strip and the sheet keeps its name. By the battery, the day it
   // went up, where the draft counted what was left: a letter that is up has
   // nothing left to count, and one date on the row, not two
+  // the greeting its writer chose, and the school it was posted from: a
+  // sticker on the phone's corner for a letter from a proved address, a
+  // plain tag for a name note's picked campus (schools.js `letterMarks`)
+  const marks = letterMarks(l)
   const letterTop = {
     name: toName, handle: toHandle, dear: true,
+    salutation: marks.salutation, tag: marks.tag,
     icon: open ? 'pen' : 'lock',
     stamp: stampOf(l.at), bat: chargeOf(l.at),
   }
@@ -512,7 +518,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   return (
     <Screen
       look={l.look} seed={l.id} top={top} keys={keys} live={live}
-      state={woke} nameId={id}
+      state={woke} nameId={id} sticker={marks.sticker}
       className={open ? '' : 'is-shut'}
     >
       {body}
