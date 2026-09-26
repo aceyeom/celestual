@@ -32,10 +32,19 @@
 // colour's and never a second choice (`light`, and screen.css, the prints'
 // lights). The backlight's hot corner, printed in the palest ink, was on
 // every print, and read as the same white stain on each. Each print has a
-// light of its own out of the same press: teal a keyline inside its rule,
-// lilac its light carried as a halftone screen, and violet / yellow the
-// phone's two bands of glass laid in the violet drum, with its status and
-// its keys struck out of them in paper.
+// light of its own out of the same press: teal a keyline round its panel,
+// lilac its light carried as a halftone screen, and violet / yellow none,
+// its panel the yellow drum flat.
+//
+// ── and every one keeps the phone's two bands ──
+// The status across the top and the keys at the foot stand on two bands of
+// the phone's glass, above and below the panel, on every screen: a lit one's
+// dark glass, a copy's toner, and a print's bands laid in one of its own
+// inks (`bands`: the second, or on lilac the darkest) with the status and the
+// keys struck out of them in the palest. Acid's are near black, the lime's
+// own shadow, with its status and keys in the lime. Teal, lilac and acid were
+// one poster edge to edge, and beside nine screens with bands they read as
+// three other objects; the bands make the twelve one phone in twelve colours.
 //
 // ── acid ──
 // Acid was a poster, its four inks a lime pulled out of the night screen by
@@ -49,19 +58,21 @@
 // it is the same square on WebKit, where the press does not run, as on
 // Chromium, where it does:
 //
-//   the lime    edge to edge, with no glass above or below it and no rule
-//               round it. A touch lighter and warmer where this phone's
-//               backlight is brightest (`--q-hx`, `--q-hy`), which on a
-//               square of paper is where the lamp caught it, and a touch
-//               deeper towards the edges. Slight: from across the room it
-//               is one flat colour
+//   the lime    the panel, with no rule round it. A touch lighter and
+//               warmer where this phone's backlight is brightest (`--q-hx`,
+//               `--q-hy`), which on a square of paper is where the lamp
+//               caught it, and a touch deeper towards the edges. Slight:
+//               from across the room it is one flat colour
+//   the bands   the phone's two, above and below it, as every screen has
+//               them: near black, the lime's own shadow, with the status
+//               and the keys struck in the lime
 //   the grain   heavy and monochrome, a cheap photograph of a printed
-//               square: an SVG noise laid over it as an image (screen.css
-//               `--wl-grain`), since feTurbulence inside an image is drawn
-//               by every engine where a filter on the page is not
-//   the words   black, the status and the keys in the same ink as the
-//               message, and all of it softened a hair, never so far that a
-//               word has to be guessed
+//               square, across the lime and the bands alike: an SVG noise
+//               laid over it as an image (screen.css `--wl-grain`), since
+//               feTurbulence inside an image is drawn by every engine where
+//               a filter on the page is not
+//   the words   black on the lime, and all of it softened a hair, never so
+//               far that a word has to be guessed
 //
 // Its slug and its name stay `acid`, so a letter that went up in it is
 // still acid, and now looks like this.
@@ -95,10 +106,11 @@
 // ── the colours ─────────────────────────────────────────────────────────────
 // `hue` is the one colour a lit screen is made from; the bands, the ink, the
 // glow and the bloom are arithmetic on it (`skinOf`). A print carries its
-// four inks, darkest first, because a print IS its inks, and its `light`,
-// which is where the press lays the palest of them (`skinOf`). The square
-// carries its lime (`hue`) and its black (`ink`), and the rest of it is
-// arithmetic on the lime.
+// four inks, darkest first, because a print IS its inks, its `light`, which
+// is where the press lays the palest of them, and `bands`, which of its inks
+// the two bands of glass are laid in, 1 the second and 0 the darkest
+// (`skinOf`). The square carries its lime (`hue`) and its black (`ink`), and
+// the rest of it is arithmetic on the lime.
 //
 // One pool, in the order the panel draws it and the arrows walk it: the
 // greys, then round the wheel from the cold blue through the greens and the
@@ -108,13 +120,13 @@ export const COLOURS = [
   { slug: 'night', name: 'night', kind: 'lit', hue: '#9D9D9D' },
   { slug: 'white', name: 'white', kind: 'lit', hue: '#D7DDE3' },
   { slug: 'ice', name: 'ice', kind: 'lit', hue: '#8FB8DC' },
-  { slug: 'teal', name: 'teal', kind: 'poster', light: 'keyline', stops: ['#101412', '#3D6257', '#7EA494', '#E3A58C'] },
+  { slug: 'teal', name: 'teal', kind: 'poster', light: 'keyline', bands: 1, stops: ['#101412', '#3D6257', '#7EA494', '#E3A58C'] },
   { slug: 'green', name: 'green', kind: 'lit', hue: '#A3BB6B' },
   { slug: 'acid', name: 'acid', kind: 'brat', hue: '#8ACE00', ink: '#050505' },
-  { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', light: 'bands', paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
+  { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', light: 'plain', bands: 1, paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
   { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
   { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
-  { slug: 'lilac', name: 'lilac', kind: 'poster', light: 'dots', stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
+  { slug: 'lilac', name: 'lilac', kind: 'poster', light: 'dots', bands: 0, stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
   { slug: 'negative', name: 'negative', kind: 'neg', hue: '#BDBDBD' },
   { slug: 'xerox', name: 'xerox', kind: 'xerox', stops: ['#0D0D0C', '#0D0D0C', '#ECEAE4', '#ECEAE4'] },
 ]
@@ -274,19 +286,24 @@ const cache = new Map()
 //             stays as the press's own default, for a print that names
 //             none and for `/looks.html?light=corner`
 //   keyline   no light on the panel, which is flat in the main ink, and a
-//             line of the palest ink inside the rule instead
+//             line of the palest ink round the panel instead, a hair inside
+//             the rule and the bands
 //   dots      the hot corner held under the palest ink and carried by a
 //             halftone screen, so it prints as dots that grow towards the
 //             point it is brightest at
-//   bands     no light on the panel, and the phone's own two bands of glass
-//             laid in the second ink, with the status and the keys on them
-//             struck out of it in the palest
+//   plain     no light at all: the panel flat in the main ink. It was
+//             called `bands`, when violet / yellow was the one print with
+//             the phone's bands; every screen has them now (above)
 const LIGHTS = {
   corner: ['#D4D4D4', '#A9A9A9', '#8C8C8C'],
   keyline: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
   dots: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
-  bands: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
+  plain: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
 }
+// the bands' grey under the press, by the ink they are laid in: one flat
+// grey in the middle of that ink's bin, so neither the grain nor the grid
+// breaks a band into the ink next to it
+const BAND_GREY = ['#202020', '#606060']
 // and each light on the small screens, which are too small for the press:
 // a layer of the palest ink over the main one, in the same place
 const SPOTS = {
@@ -318,18 +335,22 @@ export function skinOf(colour) {
       glow: c.hue, k: 0.5,
     }
   } else if (c.kind === 'brat') {
-    // The square (acid, at the head of this file). No glass: the bands are
-    // the lime they stand on, and what stands on them is in the words' black.
-    // The panel is the lime a touch warmer and lighter at the hot corner and
-    // a touch deeper at the edge, and `soft` is the ink's own blur, the halo
-    // a word printed small and blown up again has round it
+    // The square (acid, at the head of this file). Its two bands are the
+    // lime's own shadow, near black with the green still in it, and what
+    // stands on them, the status and the keys, is in the lime, a touch paler
+    // so it holds at the size of a key: the cover's two colours, the other
+    // way round. The panel between them is the lime a touch warmer and
+    // lighter at the hot corner and a touch deeper at the edge, and `soft`
+    // is the ink's own blur, the halo a word printed small and blown up
+    // again has round it
     const b = c.hue
     const ink = c.ink
+    const glass = mix(b, '#000000', 0.88)
     s = {
       kind: 'brat',
-      top: 'transparent', top2: 'transparent', bot: 'transparent',
+      top: glass, top2: glass, bot: glass,
       hi: mix(b, '#F4F07A', 0.4), mid: b, lo: mix(b, '#1C3300', 0.26),
-      ink, lit: ink, cur: ink,
+      ink, lit: mix(b, '#F4F07A', 0.2), cur: ink,
       bloom: 'transparent', soft: alpha(ink, 0.55),
       glow: b, k: 0.8,
     }
@@ -348,15 +369,13 @@ export function skinOf(colour) {
     const xer = c.kind === 'xerox'
     const light = xer ? '' : LIGHTS[c.light] ? c.light : 'corner'
     const [hi, mid, lo] = xer ? ['#DCDCDC', '#BEBEBE', '#A0A0A0'] : LIGHTS[light]
-    // the bands, where a print keeps them, are one flat grey well inside
-    // the second ink's bin, so neither the grain nor the grid breaks them
-    // into the first or the third
-    const banded = light === 'bands'
+    // the bands, in the ink the colour names for them (`BAND_GREY`)
+    const band = BAND_GREY[c.bands === 0 ? 0 : 1]
     s = {
       kind: c.kind, light,
-      top: xer ? '#1F1F1F' : banded ? '#606060' : '#5A5A5A',
-      top2: xer ? '#191919' : banded ? '#606060' : '#4B4B4B',
-      bot: xer ? '#0E0E0E' : banded ? '#606060' : '#121212',
+      top: xer ? '#1F1F1F' : band,
+      top2: xer ? '#191919' : band,
+      bot: xer ? '#0E0E0E' : band,
       hi, mid, lo,
       ink: '#131313', lit: '#F4F4F4', cur: '#131313',
       bloom: xer ? 'transparent' : 'rgba(255, 255, 255, 0.4)', soft: 'rgba(0, 0, 0, 0.3)',
@@ -375,8 +394,8 @@ export function skinOf(colour) {
     }
   }
   // the small screen's own fill: a lit one is its panel and its bands; a
-  // print is its paper colour edge to edge with the words in its darkest
-  // ink and a rule of it round the edge, and its light over that
+  // print is its paper colour with the words in its darkest ink and a rule
+  // of it round the edge, its light over that, and its bands in their ink
   if (s.print) {
     const [dark, second, main, accent] = s.print.stops
     s.flat = {
@@ -392,16 +411,20 @@ export function skinOf(colour) {
     // poster's accent, main, mid and dark, a riso's paper, b, a and their
     // overprint. A copy's tile keeps the toner's four greys
     else s.flat.pic = [...s.print.stops].reverse()
-    // and where a print keeps the bands, they are in the second ink, and
-    // what stands on them is in the palest
-    if (s.light === 'bands') { s.flat.top = second; s.flat.bot = second; s.flat.lit = accent; s.flat.cur = accent }
+    // and its bands, in the ink they are laid in, with what stands on them
+    // in the palest
+    if (c.kind !== 'xerox') {
+      const band = c.bands === 0 ? dark : second
+      s.flat.top = band; s.flat.bot = band; s.flat.lit = accent; s.flat.cur = accent
+    }
   } else if (s.kind === 'brat') {
-    // the square, small: the same lime with the same warm corner, no bands
-    // and no rule, and the grain laid over it by the stylesheet. A tile's
-    // picture is struck in four steps from the lime to the black, the way
-    // a photograph on that cover would have been printed
+    // the square, small: the same lime with the same warm corner between
+    // the same two near black bands, no rule, and the grain laid over it by
+    // the stylesheet. A tile's picture is struck in four steps from the lime
+    // to the black, the way a photograph on that cover would have been
+    // printed
     s.flat = {
-      top: 'transparent', bot: 'transparent', ink: s.ink, lit: s.ink, cur: s.ink,
+      top: s.top, bot: s.bot, ink: s.ink, lit: s.lit, cur: s.ink,
       body: `radial-gradient(120% 95% at var(--q-hx, 80%) var(--q-hy, 66%), ${s.hi}, ${s.mid} 52%, ${s.lo})`,
       accent: '', border: '', spot: 'none',
       ts: `0 0 1px ${alpha(s.ink, 0.6)}`,
@@ -655,20 +678,65 @@ export function quirks(seed) {
 // push gathers in soft patches the way a sensor's colour noise does, so the
 // screen reads as photographed rather than drawn and each letter's is its
 // own. Struck once per seed, as a PNG the page and the Send picture share.
+//
+// ── and never in the way ──
+// It was struck the moment a screen asked, all at once: the pixels worked
+// out in script and the PNG encoded on the spot, most of a tenth of a second
+// on a slow phone for every lit screen that mounted, which is every screen a
+// quick run of swipes brings on. So it is a job now. `rgbTile` answers the
+// tile when it is made and '' until then, and starts the job; the job works
+// out a few rows of pixels at a time while the page is idle, hands the image
+// to the browser's own PNG encoder, which does not hold the page, and tells
+// whoever asked (`onRgbTile`), so the screen lays the texture on when it
+// comes, faded in under its grain (screen.jsx `useRgbTile`). The Send
+// picture, which cannot draw without it, waits for it (`rgbTileReady`), and
+// its job is pressed through without waiting for idle. The same seed makes
+// the same tile however the work is sliced: the rows are worked in order off
+// one generator.
 export const RGB_CELLS = 64
-const RGBS = new Map()
-export function rgbTile(seed) {
-  const key = String(seed || '')
-  if (RGBS.has(key)) return RGBS.get(key)
-  if (typeof document === 'undefined') return ''
-  const r = prng(`${key}#rgb`)
+const RGBS = new Map() // seed -> the job: { url, done, subs, promise, urgent, run }
+const RGB_KEEP = 64
+const idleOf = () => (typeof requestIdleCallback === 'function'
+  ? (fn) => requestIdleCallback(fn, { timeout: 2000 })
+  : (fn) => setTimeout(() => fn({ timeRemaining: () => 6, didTimeout: false }), 16))
+
+function rgbJob(key) {
+  if (RGBS.has(key)) {
+    // most recently asked last, so the oldest go first
+    const job = RGBS.get(key)
+    RGBS.delete(key)
+    RGBS.set(key, job)
+    return job
+  }
+  const job = { url: '', done: false, subs: new Set(), urgent: false, run: null }
+  job.promise = new Promise((done) => { job.resolve = done })
+  RGBS.set(key, job)
+  // a strip of letters is a few dozen seeds; past that the oldest finished
+  // tile goes, and its image with it
+  if (RGBS.size > RGB_KEEP) {
+    for (const [k, j] of RGBS) {
+      if (!j.done || k === key) continue
+      if (j.url) URL.revokeObjectURL(j.url)
+      RGBS.delete(k)
+      if (RGBS.size <= RGB_KEEP) break
+    }
+  }
+  const finish = (url) => {
+    job.url = url
+    job.done = true
+    job.resolve(url)
+    for (const fn of job.subs) fn(url)
+    job.subs.clear()
+  }
+  if (typeof document === 'undefined') { finish(''); return job }
+  const cv = document.createElement('canvas')
   const n = RGB_CELLS
   const side = n * 3
-  const cv = document.createElement('canvas')
   cv.width = side
   cv.height = side
   const g = cv.getContext('2d')
-  if (!g) return ''
+  if (!g) { finish(''); return job }
+  const r = prng(`${key}#rgb`)
   // a coarse field per channel, four by four and wrapping, read smoothly
   // across the tile: where the colour noise gathers
   const F = 4
@@ -689,7 +757,9 @@ export function rgbTile(seed) {
   const img = g.createImageData(side, side)
   const d = img.data
   const tint = [0, 0, 0]
-  for (let cy = 0; cy < n; cy++) {
+  // one row of pixels, in order
+  let cy = 0
+  const row = () => {
     for (let cx = 0; cx < n; cx++) {
       // the pixel a hair brighter or dimmer, and its colour pushed off
       const lum = (r() - 0.5) * 22
@@ -703,14 +773,67 @@ export function rgbTile(seed) {
         }
       }
     }
+    cy++
   }
-  g.putImageData(img, 0, 0)
-  let url
-  try { url = cv.toDataURL('image/png') } catch { url = '' }
-  // a strip of letters is a few dozen seeds; the oldest go first
-  if (RGBS.size >= 64) RGBS.delete(RGBS.keys().next().value)
-  RGBS.set(key, url)
-  return url
+  const encode = () => {
+    g.putImageData(img, 0, 0)
+    // the browser's own encoder, off the page's thread where it has one
+    if (cv.toBlob) {
+      cv.toBlob((b) => finish(b ? URL.createObjectURL(b) : ''), 'image/png')
+    } else {
+      let url
+      try { url = cv.toDataURL('image/png') } catch { url = '' }
+      finish(url)
+    }
+  }
+  // a few rows whenever the page is idle, and every row at once when the
+  // Send picture is waiting on it
+  const idle = idleOf()
+  // an urgent run can be asked for while an idle one is waiting: whichever
+  // comes second finds the rows done and the encoding under way, and goes
+  let encoding = false
+  job.run = (deadline) => {
+    if (encoding) return
+    const t0 = performance.now()
+    while (cy < n) {
+      row()
+      if (!job.urgent && (deadline.timeRemaining() < 3 || performance.now() - t0 > 6)) break
+    }
+    if (cy < n) {
+      if (job.urgent) setTimeout(() => job.run({ timeRemaining: () => 50 }), 0)
+      else idle(job.run)
+      return
+    }
+    encoding = true
+    encode()
+  }
+  idle(job.run)
+  return job
+}
+
+// The tile, or '' while it is being made; asking starts it.
+export function rgbTile(seed) {
+  return rgbJob(String(seed || '')).url
+}
+
+// Told once, with the tile's address, when it is made. Answers the way to
+// stop listening.
+export function onRgbTile(seed, fn) {
+  const job = rgbJob(String(seed || ''))
+  if (job.done) { fn(job.url); return () => {} }
+  job.subs.add(fn)
+  return () => job.subs.delete(fn)
+}
+
+// The tile, for a caller that cannot go on without it (share.js), made
+// without waiting for the page to be idle.
+export function rgbTileReady(seed) {
+  const job = rgbJob(String(seed || ''))
+  if (!job.done && !job.urgent) {
+    job.urgent = true
+    setTimeout(() => job.run({ timeRemaining: () => 50 }), 0)
+  }
+  return job.promise
 }
 
 // ── the wall's memo ─────────────────────────────────────────────────────────
