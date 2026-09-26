@@ -37,7 +37,7 @@ import { PhoneChrome } from '../parts.jsx'
 import { letterFace, renderLetter } from '../share.js'
 import { ensureFaces, warmType } from '../type.js'
 
-const LIGHTS = ['corner', 'keyline', 'sky', 'dots', 'bands']
+const LIGHTS = ['corner', 'keyline', 'dots', 'bands']
 const ask = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
 const FORCE = LIGHTS.includes(ask.get('light')) ? ask.get('light') : ''
 const SEED = Math.max(0, Number(ask.get('seed')) || 0)
