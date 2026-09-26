@@ -203,13 +203,30 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   }, [held])
 
   // The page is mounted the instant the lift starts and is already rising by
-  // the time the black is half gone: one movement, not two screens.
+  // the time the black is half gone: one movement, not two screens. The
+  // instant after its first frame is on the glass, that is: mounting the
+  // page is the heaviest work of the load, and done in the same frame the
+  // lift would wait for it, still, before it moved at all. Once the lift is
+  // moving it is the compositor's (opacity and transform) and goes on
+  // through the page being built under it.
   useEffect(() => {
     if (at < LIFT || done.current) return undefined
     done.current = true
-    onReveal()
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        onReveal()
+      })
+    })
     const t = setTimeout(onDone, OUT)
-    return () => clearTimeout(t)
+    return () => {
+      // put away before the page was mounted: whoever runs this next mounts it
+      if (raf) {
+        cancelAnimationFrame(raf)
+        done.current = false
+      }
+      clearTimeout(t)
+    }
   }, [at, onReveal, onDone])
 
   // The glass's clock: running from mount, or held on a frame. Under reduced
