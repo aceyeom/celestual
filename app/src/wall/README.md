@@ -851,23 +851,34 @@ it changes when the neighbour's own travel has ended, not on a clock beside
 it. Nothing is drawn again when it does: every screen on the strip is keyed
 by its letter (`Cell`), so the neighbour that landed is the card from then
 on, the same element in the same place, and the card that left is the
-neighbour on the other side. Only the screen past the new card is new. The
+neighbour on the other side. Only the screen past the new card is new, and
+it is drawn while the strip runs on toward it, off the glass, and travels in
+with the strip (`ahead`), so the frame a turn lands on draws nothing. The
 room's light is handed across in the same beat (`Lights`), the old colour
 going out while the new one comes up.
 
-The height goes with the strip. A short letter beside a long one is a card
-beside a taller card, and the glass used to take the new height on the frame
-the address changed: everything under the card jumped. The track's height
-follows the strip instead, from this card's height toward the neighbour's by
-how far the strip has gone, and every screen on it stands on its middle, so
-the sheet is seen to grow or shrink about the card's middle, and the next
-card takes over at exactly the height the strip arrived at
-(`Letter.jsx place`).
+A hand or a key that comes while a turn is still running on catches it: the
+turn lands at once, where it is seen, and the hand has the card it was
+bringing in from there (`landNow`), so a second throw a moment after the
+first is the letter after, and never lost. A hand is written to the strip
+once a frame, whatever it reports, and while the strip moves whatever the
+network brings is held and drawn once it is still (`strip.js`), so no
+screen is drawn again under the hand.
 
-A print asleep beside the card is turned in its own plane only, and takes
-its depth back the moment the strip moves its way: a print's press (an SVG
-filter) over a screen turned in depth is drawn again on every frame the
-page draws, and three of them in a wide room were most of every frame.
+The height settles as the card lands. A short letter beside a long one is a
+card beside a taller card. The track's height used to follow the strip, read
+off the neighbour on every report of the hand, which was a layout forced on
+every move and every screen drawn again inside its own layer. Every screen
+on the track stands on its middle, so the track keeps the card's height
+while the strip moves and takes the new card's on the frame it lands, and
+nothing on the strip is seen to change; the foot under it, which does move,
+by half the difference, is carried there (`Letter.jsx`, the landing).
+
+A print asleep beside the card is turned in its own plane only, and stays so
+all the way across while the strip moves, taking its depth back once it has
+landed as the card: a print's press (an SVG filter) over a screen turned in
+depth is drawn again on every frame the page draws, and three of them in a
+wide room were most of every frame.
 
 ### It has to work at five names and at five hundred
 

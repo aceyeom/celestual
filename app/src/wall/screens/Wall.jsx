@@ -123,7 +123,7 @@
 // moment its question is fresh again. A door that cannot be closed is a
 // banner, and a door that never reopens is a door somebody missed once.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { PixIcon, Wait } from '../screen.jsx'
@@ -510,7 +510,10 @@ function Down({ letter: l, onLeave }) {
   )
 }
 
-export default function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
+// the wall under a sheet is not drawn again when only the sheet changed: a
+// letter's deck turned is a new address, and nothing here reads it
+export default memo(Wall)
+function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   // The index, shaped (data.js `wall`). The same array until the index is
   // read again, whatever else the corpus does, so the hive under it, which
   // keys its layout off the array's identity, is laid out once per reading

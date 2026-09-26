@@ -49,6 +49,7 @@ import Ground from './ground.jsx'
 import { getState, patch, setCold, isCold } from './store.js'
 import { normSource } from './seed.js'
 import { revision, subscribe, warmWall, watchWall } from './data.js'
+import { afterStrip } from './strip.js'
 import { ensureFaces, warmType } from './type.js'
 import { logScan } from './api.js'
 import { refresh as refreshMember } from './auth.js'
@@ -135,8 +136,10 @@ export default function WallApp() {
   // answer instantly out of what has been fetched and this is what turns a
   // fetch landing into a re-render. Ten screens read the wall during render and
   // none of them has to know a network exists.
+  // Except while a letter's deck is being turned: a fetch that lands under a
+  // hand, or while the strip runs on, is drawn once it is still (strip.js).
   const [, setRev] = useState(0)
-  useEffect(() => subscribe(setRev), [])
+  useEffect(() => subscribe((r) => afterStrip(() => setRev(r))), [])
   // ── and the wall, live ──
   // The index is read again while the tab is on the screen, on a clock and
   // on a nudge from the campus's channel (data.js watchWall), so a letter

@@ -2674,13 +2674,23 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-letter-stage { position: relative; isolation: isolate; touch-action: pan-y; }
 /* every screen on the strip stands on the track's middle, so a turn from a
-   short letter to a long one grows the glass about the card's own middle */
+   short letter to a long one grows the glass about the card's own middle.
+   The track keeps the card's height while the strip moves and takes the
+   next one's when it has landed (Letter.jsx `place`), which nothing on the
+   strip is seen to do.
+
+   Each screen is its own layer, moved and lit by the compositor alone, and
+   what is laid out again inside one (its words set to fit as its letter
+   lands) stays inside it (`contain`). Not `paint`: that would clip each
+   screen's glow at the edge of its box, and a glow cut by a clip is a lit
+   rectangle. */
 .wl-letter-track { position: relative; display: flex; flex-direction: column; justify-content: center; }
-.wl-letter-card { position: relative; z-index: 1; will-change: transform, opacity; }
+.wl-letter-card { position: relative; z-index: 1; will-change: transform, opacity; backface-visibility: hidden; }
 .wl-letter-slot {
   position: absolute; inset: 0; z-index: 0;
   display: flex; flex-direction: column; justify-content: center;
   pointer-events: none; will-change: transform, opacity;
+  backface-visibility: hidden; contain: layout style;
   opacity: var(--peek-dim);
   transform: translate3d(var(--span), 0, 0) scale(var(--peek-scale));
   transform-origin: 0% 50%;
@@ -2689,16 +2699,21 @@ a.wl-lq { text-decoration: none; }
   transform: translate3d(calc(-1 * var(--span)), 0, 0) scale(var(--peek-scale));
   transform-origin: 100% 50%;
 }
+/* the letter past the neighbour, drawn while a turn runs on toward it, off
+   the glass, and carried in with the strip (Letter.jsx `ahead`); never seen
+   standing still where it is drawn */
+.wl-letter-slot[data-side='far'] { opacity: 0; }
 /* ── what a print asleep costs ──
    A print is pulled through its press (screen.jsx `Press`, an SVG filter)
    over a screen turned in depth, and a press over a screen in depth is drawn
    again on every frame the page draws: three of them standing in a wide room
    were most of every frame. So a print asleep beside the card is turned in
-   its own plane only, and takes its depth back the moment the strip moves
-   its way (`data-moving`, Letter.jsx), while it is still dim at the side;
-   the difference is a pixel at a corner of a screen at a quarter light */
-.wl-letter-stage:not([data-moving='next']) .wl-letter-slot[data-side='next'] .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']),
-.wl-letter-stage:not([data-moving='prev']) .wl-letter-slot[data-side='prev'] .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+   its own plane only, and stays so all the way across while the strip
+   moves: it takes its depth back once it has landed as the card, when the
+   strip is still. It used to take it back the moment the strip moved its
+   way, which was the screen drawn again in depth under the hand, and then
+   through the press on every frame of the drag */
+.wl-letter-slot .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
   transform: rotate(var(--q-rz, -0.7deg));
 }
 /* they come up out of the dark once the card has woken, the way the eye
