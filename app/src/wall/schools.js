@@ -91,10 +91,19 @@ export function stickerLabel(school) {
 // name; the school whose network it is on (`sticker`, the name it had when
 // the mark was a sticker, kept so every screen that hands it on is
 // unchanged), for a letter posted from a verified school address; and for a
-// name note the writer tagged with a school, the school's short name as a
-// plain tag, since a name note is never verified and never carries the
-// mark. A letter from before the one wall carries none of these fields,
-// and draws as it always did.
+// name note the writer tagged with a school, a plain tag, since a name note
+// is never verified and never carries the mark. A letter from before the one
+// wall carries none of these fields, and draws as it always did.
+//
+// ── and the tag is never the mark ──
+// The tag was the short name, lower case: "cal", at the end of the "dear"
+// line, a finger's width from where a verified letter says "CAL" in gold.
+// Anybody can tag a name note with a school and nothing checks it, and the
+// two read alike while meaning different things: a letter ABOUT somebody at
+// Cal, and one written BY somebody who proved they are there. So the tag
+// says the first in words, "at UC Berkeley", the school's own name as the
+// composer's chip showed it when it was picked, and it cannot be taken for
+// the network's name in the status row.
 export function letterMarks(l) {
   if (!l) return { salutation: '', sticker: null, tag: '' }
   const salutation = l.salutation ? String(l.salutation) : ''
@@ -103,5 +112,5 @@ export function letterMarks(l) {
     return { salutation, sticker: schoolOf(campus, { name: l.school || '' }), tag: '' }
   }
   const school = campus && l.kind === 'name' ? schoolOf(campus, { name: l.school || '' }) : null
-  return { salutation, sticker: null, tag: school ? school.short.toLowerCase() : '' }
+  return { salutation, sticker: null, tag: school ? `at ${school.name}` : '' }
 }

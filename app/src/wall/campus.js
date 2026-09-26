@@ -5,7 +5,7 @@
 // 25 September there is one (docs/ONE-WALL.md). Every letter is on the wall
 // at `/`, and a letter's campus is the school it CARRIES, not the wall it is
 // on: an @-note posted by a verified Berkeley address carries Berkeley and
-// its sticker (schools.js), and a name note carries whichever school the
+// its mark (schools.js), and a name note carries whichever school the
 // writer picked, or none.
 //
 // So what is left here is the wall's own lines, in one row: the masthead,
@@ -29,7 +29,7 @@ export const WALL = {
   // the veil: the title, the line under it, and whether the mark stands
   // over it
   title: ['a wall of', 'the ones you', 'never told.'],
-  sub: 'anonymous letters, to an instagram or to a name. read them, or write one.',
+  sub: 'anonymous letters, to an Instagram or to a name. read them, or write one.',
   mark: true,
   // the composer's first question, and the examples under its empty card.
   //
