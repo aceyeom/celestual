@@ -1022,8 +1022,8 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   const himLegs = walker('him', hSteps, himAt, RH.v * RH.T)
   // Open: a V to run into, the far arm high and the near one low, the
   // hands open, the chest up and back a little and the head up.
-  const OPEN = { lean: -1.5, neck: -4, nod: -3, sN: 58, eN: 24, sF: 104, eF: 12, handN: 'open', handF: 'open' }
-  const WAIT = { ...OPEN, lean: 1, neck: -3, nod: -2, sN: 62, eN: 22, sF: 108, eF: 10 }
+  const OPEN = { lean: -1.5, neck: -4, nod: -3, sN: 52, eN: 26, sF: 112, eF: 12, handN: 'open', handF: 'open' }
+  const WAIT = { ...OPEN, lean: 1, neck: -3, nod: -2, sN: 56, eN: 24, sF: 116, eF: 10 }
   // held: both his arms round her, the near one across her back and the far
   // one behind her, and of each only the hand is seen past her, on her back
   const HOLD_HIM = { ...WAIT, lean: -2, neck: 13, nod: 9, sN: 30, eN: 76, wN: -92, handN: 'flat', sF: 44, eF: 58, wF: -70, handF: 'flat' }
@@ -1139,8 +1139,10 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
     let her = bounce(t, { ...herPoseBase(t), ...tail(t) })
     if (t > T_HOLD) {
       const b = breath(t)
-      him = { ...him, lean: him.lean + 0.6 * b, neck: him.neck + 1.2 * b }
-      her = { ...her, lean: her.lean + 0.8 * b, nod: her.nod + 1 * b }
+      // breathing in: his chest comes up and his head goes down to hers,
+      // and she settles further into him
+      him = { ...him, lean: him.lean - 0.8 * b, neck: him.neck + 2.4 * b, nod: him.nod + 1 * b }
+      her = { ...her, lean: her.lean + 1.2 * b, nod: her.nod + 2 * b, neck: her.neck + 0.8 * b }
     }
     return { him, her }
   }
