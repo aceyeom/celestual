@@ -13,10 +13,13 @@ carries.
 
 **Posting.**
 - An **@-note** (a letter to an Instagram handle) needs a verified **.edu**
-  address, asked for at submit, after the note is written. Any `*.edu`
-  domain. The domain sets the campus (`berkeley.edu` → `berkeley`,
-  `cs.stanford.edu` → `stanford`). The letter carries `verified: true`, and the
-  wall draws the school's sticker on it (Berkeley's is a Cal sticker).
+  address, asked for at submit, after the note is written ("confirm you're at
+  Berkeley"). Any `*.edu` domain proves a person and opens its campus (`berkeley.edu`
+  → `berkeley`, `cs.stanford.edu` → `stanford`), but only a campus with
+  `handle_notes` takes @-notes, and on 25 September that is **Berkeley alone**
+  (owner, later the same day). A person proved at another school is answered
+  `campus`; they can still write to names. The letter carries `verified: true`,
+  and the wall draws the school's sticker on it (Berkeley's is a Cal sticker).
 - A **name-only note** needs no proof. It always goes through moderation
   before it is published: the classifier reads it first, and it publishes on a
   pass, waits for the desk on a review (or when no classifier is configured),
@@ -25,6 +28,17 @@ carries.
 - A name-only note can carry the person's Instagram @ as well. With the @ it
   is an @-note (keyed to the handle, the custom name in its salutation) and
   follows the @-note rule.
+- **Two ways to send, one choice at submit** (owner, later on 25 September):
+  "post on the Berkeley wall" (public; an @-note needs "confirm you're at
+  Berkeley") or "send privately" (only they'll know, only if mutual; needs
+  "confirm this is your Instagram"). **Sending privately is a ping**
+  (`celestual_submit`) carrying the note as its card: a card holds 280
+  characters and eighty words since 0063 (it was twenty words), and is read by
+  the same list as a letter's body (links, addresses, phone numbers, street
+  addresses, rooms, slurs); a caught card refuses the ping with
+  `{ recorded: false, error: 'card', reasons }` and places nothing. The other
+  side reads it whole on the mutual (`match_card.words`, and `their_card.words`
+  from `celestual_my_pings`).
 
 **The salutation.** The `dear {name}` line is the writer's to edit: up to 40
 characters, stored as `salutation`. With none stored, the line is
@@ -44,7 +58,9 @@ can:
 It no longer writes @-notes by itself. It still opens reading, as any proof does.
 
 **Notifications,** by Resend, from `celestual <hello@celestual.us>`:
-- a mutual-match alert
+- a mutual-match alert: "it's mutual. you and @x both sent one. open it to read
+  their note." (the last sentence only when a note waits). The note itself is
+  never in an email
 - "someone wrote you a letter", for a claimed @ that turned it on with a
   confirmed address, at most three a day
 - every alert carries a one-tap removal link (for a letter) or a one-tap stop
@@ -136,3 +152,74 @@ status   { action: 'status', request, session }
 | verify | `/verify#t=` |
 | wrote | read it `/letter/<id>`, remove it `/r#t=`, stop these `/alerts#off=` |
 | mutual | open it `/reveal/<handle>`, stop these `/alerts#off=` |
+
+## What the backend answers (builder B, migrations 0062 to 0064)
+
+The contract above, as built, and every place it says more than the contract
+did. Nothing here removes or renames anything above.
+
+### `celestual-wall-moderate`, version 2
+
+- Errors beyond the list: `campus` (a proved address at a school without
+  `handle_notes`), `nonce` (missing, or not `/^[A-Za-z0-9_-]{8,64}$/`), `empty`
+  (no body), `write` (the database refused; HTTP 500). `edu` is also the answer
+  for an @-note from a device with no session at all. `salutation` is a dear line
+  over forty characters, or one the list catches (with `reasons`). `cap` carries
+  `limit`, `used`, `left` and `resets_at`, as in version 1.
+- The answer to a repeated `(device, nonce)` is the first answer plus
+  `replay: true`.
+- `status: 'rejected'` carries `reasons`. `say` is set on `pending` ("it's being
+  read. it goes up once it passes.") and `rejected`.
+- `campus` on the request is only read for a name note; an @-note's campus is
+  the writer's school. A pass (0043) writes @-notes from the picked campus if it
+  takes them, and Berkeley otherwise.
+- A letter that goes up nudges Realtime on `wall:global` and on
+  `wall:<campus>` (event `moved`), so the one wall hears it.
+
+### `celestual-edu-verify`
+
+- `link` also takes `campus?` (a slug: the address must be at that campus's
+  domain or under it, or on the pass list, else `domain`) and `draft?` (default
+  true: false words the mail for a proof with no letter waiting). It errors
+  `session` when the session token is missing.
+- `link`'s `domain` is the school's registered domain (`stanford.edu` for
+  `cs.stanford.edu`), and `campus` / `school` are the campus the address will
+  open, named before it exists. For a passed address that is not a school's,
+  `domain` is null.
+- `confirm` can also error `taken` (the asking person already holds a
+  different campus address). A second `confirm` from the device that confirmed
+  is answered again rather than `used`.
+- `status` also answers `expired`.
+
+### Database
+
+- `wall_index_all` also has `school` (the newest letter's school, null on the
+  root).
+- `wall_campuses_open()` answers `short` as the name when no short word is set.
+- `wall_search` rows carry `verified`, `school` and `salutation` (the newest
+  standing letter's), and read `wall_index_all`, so a key is one row.
+- `wall_mine` letters also carry `campus`. A letter its owner took down reads
+  `down_by: 'report'`, as a claim always did, which tells the writer nothing
+  about who.
+- `wall_owner_remove` errors `no_session`, `gone` (not up) and `unverified` (not
+  the claimed owner, or a name note). Twice is ok. `wall_owner_restore` errors
+  `no_session`, `unverified`, `gone` and `expired`.
+- `wall_remove_by_token` can also error `gone` (the letter was already down, by
+  another hand). `used` carries `letter_id` and `undo_until`, so the page can still
+  offer the undo on a reload.
+- `celestual_alerts_off_by_token` answers `{ ok, scope }` (`wrote` or `mutual`:
+  a stop link stops the kind of mail it came in) and errors `invalid` and
+  `expired` (a year). Pressed twice, it answers ok twice.
+- `celestual_alerts_set` treats a null as "leave it", and answers
+  `{ ok, wrote, mutual }`. It errors `no_session` too.
+- `celestual_alerts_get` errors `no_session`.
+
+### Mail
+
+Every mail is `_shared/mails.ts` on `_shared/mail.ts`, from
+`celestual <hello@celestual.us>`, with a stop link and `List-Unsubscribe`
+(https and mailto, and one click). The mutual mail goes to the person's
+confirmed alert address when they have one, else to the address they left on
+the ping, as before. The letter alert waits for the screen's reading, so a
+letter the screen takes down is never mailed about; at most three a day, never
+to the person who wrote it.

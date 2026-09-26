@@ -524,7 +524,9 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
     const topics = [...new Set([String(data.campus || 'global'), 'global'])]
     const work: Promise<unknown>[] = topics.map((t) => nudge(t))
     if (kind === 'handle') {
-      work.push(readWhereItStands(supabase, String(data.id), body, null, String(data.campus), addressee))
+      // a reject takes it down and tells the one wall (`global`), which is
+      // where the build that sent `v: 2` is listening
+      work.push(readWhereItStands(supabase, String(data.id), reading, null, 'global', addressee))
     }
     const inline = after(Promise.all(work))
     if (inline) await inline

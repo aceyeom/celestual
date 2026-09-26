@@ -36,6 +36,136 @@ tier has no point in time recovery.
 
 ---
 
+## One wall: the deploy (migrations 0062 to 0064)
+
+The rulings of 25 September (docs/ONE-WALL.md). Three migrations, three
+functions, one Auth template and four secrets. Everything below is backward
+compatible: the old build keeps working against the new database, so the
+database goes first and the new front end ships last.
+
+### Before
+
+- [ ] **Secrets** (Supabase → Edge Functions → Secrets). Set them first: the
+      functions read them on every request, and nothing below sends a mail
+      until the functions are redeployed.
+
+      | secret | value | why |
+      | --- | --- | --- |
+      | `CELESTUAL_FROM_EMAIL` | `celestual <hello@celestual.us>` | unset today, so every mail goes out from Resend's sandbox. The code's default is now this address too |
+      | `CELESTUAL_SITE_URL` | `https://celestual.us` | every link, the header image and the pixel face in a mail point here |
+      | `RESEND_API_KEY` | the Resend key | confirm it is set |
+      | `MODERATION_API_KEY` | an Anthropic key | **without it every name note waits for the desk** (`pending`, reason `unconfigured`): a name note is read before it is written. @-notes go up either way |
+      | `CELESTUAL_UNSUB_MAILTO` | optional, default `hello@celestual.us` | where a mailto unsubscribe lands |
+
+- [ ] **Resend.** `celestual.us` is verified (section 6). Check SPF, DKIM and a
+      DMARC record are still green in the Resend dashboard, and that
+      `hello@celestual.us` receives mail: it is the From, the reply address and
+      the mailto unsubscribe.
+- [ ] **The header image.** Every mail draws `https://celestual.us/mail/head.png`
+      (builder E, `app/public/mail/head.png`, 600px wide at 2x). It must be live
+      before the first alert goes, or the head of every mail is a broken image
+      with the word `celestual.` as its alt text.
+
+### The order
+
+1. [ ] **Apply `0062_the_google_identity_moves.sql`.** On live it changes one
+       thing: `celestual_merge_conflicts` takes kind `google`. The merge function
+       it restates is the one already running (the two dashboard migrations of
+       25 September, word for word), and its repairs find nothing to move.
+2. [ ] **Apply `0063_one_wall.sql`.** Additive: new columns with defaults, a new
+       view, new functions, the reads widened, the cards landing on `/`, the
+       ember letters moved to amber (three rows live, kept in
+       `wall_look_backup_0063`), sessions sliding to a year.
+3. [ ] **`supabase functions deploy celestual-wall-moderate`.** Needs 0063 (the
+       v2 write). A request without `v: 2` is handled exactly as before. It is
+       deployed with JWT verification on, as it is today (`config.toml` now says
+       so).
+4. [ ] **`supabase functions deploy celestual-notify --no-verify-jwt`.** Before
+       0064, deliberately: 0064 starts calling this function (a trigger on the
+       outbox and a five minute sweep), and the version deployed today is the
+       old drain. Until 0064 lands the new one answers 500, and nothing calls it.
+       It closes any unsent `celestual_notifications` row older than fourteen
+       days as stale rather than mailing it: **there are four live, all from 7
+       August**, which the old drain would otherwise send the moment 0064's
+       sweep calls it.
+5. [ ] **Apply `0064_mail_links_and_alerts.sql`.** It creates the outbox and its
+       push trigger, schedules `celestual-mail-sweep` (pg_cron, `*/5 * * * *`,
+       posts only when something is owed), and backfills the alert address of
+       every person with a proved campus address (six live).
+6. [ ] **`supabase functions deploy celestual-edu-verify`.** Needs 0064 (the
+       link RPCs). `send` / `verify` are unchanged for the old build.
+7. [ ] **The Auth template** (below).
+8. [ ] **Ship the front end** that speaks `v: 2`, `/verify`, `/r` and `/alerts`.
+
+Apply each migration through the SQL editor or the MCP's `apply_migration` with
+the file's name (`0062_the_google_identity_moves`, `0063_one_wall`,
+`0064_mail_links_and_alerts`), so the history says what ran.
+
+### The Auth template
+
+"continue with email" (migration 0057) is Supabase Auth's own mail, a six digit
+code. Its template is `supabase/templates/magic-link.html`, written by
+`node scripts/mail-preview.mjs` from `_shared/mails.ts`, so it is the same room as
+every other mail.
+
+- [ ] Supabase → Authentication → Emails → Templates → **Magic Link**.
+      Subject: `your celestual code: {{ .Token }}`. Body: the whole of
+      `supabase/templates/magic-link.html`. The code is `{{ .Token }}`; the
+      template carries no link, because the product types the code back.
+- [ ] Supabase → Authentication → Emails → **SMTP Settings**: send Auth's mail
+      through Resend, or it goes from Supabase's shared sender at a few an hour.
+      Host `smtp.resend.com`, port `465`, username `resend`, password the Resend
+      key, sender `hello@celestual.us`, name `celestual`.
+
+### After: the checks
+
+```sql
+-- the three are in the history
+select version, name from supabase_migrations.schema_migrations
+ where name in ('0062_the_google_identity_moves', '0063_one_wall', '0064_mail_links_and_alerts');
+
+-- the campuses: berkeley takes @-notes and says Cal
+select slug, short, handle_notes, edu_domain from wall_campuses;
+
+-- the sweep is scheduled, and the trigger is on the outbox
+select jobname, schedule from cron.job where jobname = 'celestual-mail-sweep';
+select tgname from pg_trigger where tgrelid = 'celestual_mail_outbox'::regclass and not tgisinternal;
+
+-- nothing is lit in ember
+select count(*) from wall_letters where look->>'tint' = 'ember';   -- 0
+
+-- the queue, as it moves
+select kind, status, count(*), max(created_at) from celestual_mail_outbox group by 1, 2;
+select status_code, content::text from net._http_response order by created desc limit 5;
+```
+
+### If it has to come back
+
+- A kind of mail off, at once: `alter table wall_letters disable trigger wall_letters_wrote_alert;`
+  (the letter alerts) or `alter table celestual_matches disable trigger celestual_matches_mutual_alert;`
+  and `alter table celestual_notifications disable trigger celestual_notifications_to_outbox;` (the mutual).
+- The sweep off: `select cron.unschedule('celestual-mail-sweep');`
+- Ember back: `update wall_letters l set look = b.look from wall_look_backup_0063 b where b.id = l.id;`
+- The functions: redeploy the previous version from the dashboard. The old
+  wall-moderate and edu-verify paths are unchanged in the new code, so this is
+  only needed if the new actions misbehave.
+
+### Settings worth knowing
+
+- `celestual_settings` `wall_name_per_device` (5) and `wall_name_per_ip` (20):
+  the name note throttle, a day.
+- `celestual_settings` `mail_push_url`: where the outbox trigger posts, default
+  `https://vwbsjwaqnycyghvwlxhd.functions.supabase.co/celestual-notify`.
+- **`config.toml` and the live project disagree** on three functions, from
+  before this work: `celestual-admin`, `celestual-stripe` and
+  `celestual-stripe-webhook` are deployed with JWT verification ON and
+  `config.toml` says off. The Stripe webhook in particular cannot carry a
+  Supabase JWT, so if it is ever turned on it will refuse every event until it
+  is redeployed with `--no-verify-jwt`.
+
+
+---
+
 ## 0. Before anything
 
 - [x] Supply `design/source/eclipse.html`. Done. Committed from the "Ecliptic"
