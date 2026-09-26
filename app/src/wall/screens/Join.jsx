@@ -52,8 +52,9 @@
 //              beside it.
 //   3  3600ms  only now do the two notes wake, slide into each other and
 //              become one heart, on one frame: both of them find out at once.
-//              They run to each other under it, she falls into his arms, the
-//              pink leaves them, and they become the mark.
+//              They run to each other under it, she falls into his arms and
+//              he dips her, the phone's backlight turns pink, and they glide
+//              together into the mark.
 //
 // Nobody is named on the phone. It used to carry @you over the one on the
 // left and @them over the one on the right, and with a boy and a girl on the
