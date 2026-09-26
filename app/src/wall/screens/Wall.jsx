@@ -127,7 +127,8 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { PixIcon, Wait } from '../screen.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest, setWallFilter } from '../data.js'
+import { useSift, FilterKey, FilterMenu, FilterNone, useFilterMenu, useOutside } from '../Filter.jsx'
 import { getState, patch, setCold } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
@@ -351,7 +352,12 @@ function Ear({ letters }) {
 // yet, the third for taking the one slot the tab needs.
 const SEEK_ROWS = 6
 
-function Seek({ go }) {
+// ── and what the field shows ──
+// The filter's key stands at the end of the strip and its menu opens in the
+// strip's own panel, where the answers do (Filter.jsx). One panel, and one
+// of the two at a time: the key takes the caret out of the field, which
+// folds the answers, and the caret going back in puts the menu away.
+function Seek({ go, sift }) {
   // The question survives the veil and the sheet both: whatever was typed
   // here is what `/find` opens on, and what this reopens on if it is left and
   // come back to.
@@ -376,7 +382,12 @@ function Seek({ go }) {
     return () => clearTimeout(t)
   }, [v])
 
-  const change = (next) => { setShut(false); setV(next) }
+  const glass = useRef(null)
+  const key = useRef(null)
+  const menu = useFilterMenu()
+  useOutside(glass, menu.open, menu.close)
+  const toKey = () => { if (key.current) key.current.focus({ preventScroll: true }) }
+  const change = (next) => { setShut(false); menu.close(); setV(next) }
 
   // Down while the field is held and there is something in it.
   //
@@ -389,7 +400,7 @@ function Seek({ go }) {
   // below), so a press anywhere else is a press outside: the crowd takes it,
   // the field is left, the panel folds. Nothing invisible is ever laid over
   // the faces to catch it.
-  const down = held && typed && !shut
+  const down = held && typed && !shut && !menu.open
 
   const keys = (e) => {
     if (e.key === 'Escape' && down) { e.preventDefault(); setShut(true); return true }
@@ -401,12 +412,22 @@ function Seek({ go }) {
 
   return (
     <div className="wl-seek">
-      <div className={`wl-seek-glass${down ? ' is-open' : ''}`}>
-        <HandleField
-          kind="search" value={v} onChange={change} onSubmit={commit} onKeyDown={keys}
-          onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}
-          placeholder="look for a name" label="look for a name"
-        />
+      <div className={`wl-seek-glass${down || menu.open ? ' is-open' : ''}`} ref={glass}>
+        <div className="wl-seek-head">
+          <HandleField
+            kind="search" value={v} onChange={change} onSubmit={commit} onKeyDown={keys}
+            onFocus={() => { setHeld(true); menu.close() }} onBlur={() => setHeld(false)}
+            placeholder="look for a name" label="look for a name"
+          />
+          <FilterKey ref={key} want={sift.want} open={menu.open} onToggle={menu.toggle} menuId={menu.menuId} />
+        </div>
+        {menu.open && (
+          <FilterMenu
+            want={sift.want} menuId={menu.menuId}
+            onPick={(k) => { menu.close(); toKey(); sift.pick(k) }}
+            onClose={(back) => { menu.close(); if (back) toKey() }}
+          />
+        )}
         {down && (
           <div className="wl-seek-found" role="listbox" aria-label="names on the wall">
             {rows.map((t, i) => (
@@ -521,6 +542,11 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   const tiles = wall()
   const letters = liveCount()
   const state = getState()
+  // ── the filter ──
+  // What the field shows (data.js, the filter), and the move from one
+  // filter to the next: the field goes out, and the next is seated afresh
+  // and comes up, as a new field under a key of its own (Filter.jsx).
+  const sift = useSift(reduce)
   const written = state.written
   const wroteTo = state.wroteTo || []
 
@@ -725,6 +751,10 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
     if (!h) return undefined
     patch({ justPosted: '' })
     setSentAt(Date.now())
+    // a letter going up is received by the wall it went up on: a field
+    // filtered to names this one is not among goes back to every name, so
+    // the pulse has a disc to go out from
+    if (!wall().some((t) => t.handle === h)) setWallFilter('all')
     if (reduce) return undefined
     const t = setTimeout(() => { if (hive.current) hive.current.pulse(h) }, ARRIVE_AFTER_MS)
     return () => clearTimeout(t)
@@ -768,12 +798,19 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
           in. What keeps the type on top of it legible is not a box around the
           field but two gradients over it, below. */}
       <div className="wl-stage">
-        <Hive
-          ref={hive}
-          tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
-          opening={playing} mine={wroteTo} wave={wave} onOpen={open} onPeek={peek}
-          none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
-        />
+        {/* keyed by the filter, so a new filter is a new field, seated
+            afresh with its first name in the light (Filter.jsx) */}
+        <div className={`wl-sift${sift.out ? ' is-out' : ''}${sift.moved ? ' is-in' : ''}`} key={sift.shown}>
+          <Hive
+            ref={hive}
+            tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
+            opening={playing} mine={wroteTo} wave={wave} onOpen={open} onPeek={peek}
+            none={wallLoaded() && !wallError() && sift.shown === 'all' ? 'nobody has been written to yet' : ''}
+          />
+          {lifted && !tiles.length && sift.shown !== 'all' && wallLoaded() && !wallError() ? (
+            <FilterNone filter={sift.shown} onAll={() => sift.pick('all')} />
+          ) : null}
+        </div>
       </div>
 
       {/* ── the two shades ──
@@ -807,7 +844,7 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
         {lifted && (
           <div className="wl-masthead">
             <Ear letters={letters} />
-            <Seek go={go} />
+            <Seek go={go} sift={sift} />
           </div>
         )}
 

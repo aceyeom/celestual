@@ -14,11 +14,11 @@
 //            keys' two dashes
 //   Mini     the panel's thumbnail of a colour
 //
-// and `PixelPic`, the picture of a person the way those screens drew one:
-// cut to a few dozen pixels a side and dithered into the screen's own ink,
-// or, on the wall's small screens, drawn in the screen's two tones with some
-// of the photograph's own colour left in. There is no round face anywhere on
-// the wall; a person is a picture on a screen.
+// and `PixelPic`, the picture of a person the way the first colour screens
+// drew one: cut to a few dozen pixels a side in the photograph's own
+// colours, and on the wall's small screens with a little of that screen's
+// light over it. There is no round face anywhere on the wall; a person is a
+// picture on a screen.
 //
 // Every size inside a screen is in `cqw` of its own width, so one layout
 // draws at 470 pixels and at 60 without a second one. What the colour does

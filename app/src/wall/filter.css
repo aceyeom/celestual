@@ -1,0 +1,124 @@
+/* ═══ THE FILTER ═══════════════════════════════════════════════════════════
+   Filter.jsx, on the wall's search (screens/Wall.jsx `Seek`). The phone's
+   options key at the end of the find strip, the choices in the strip's own
+   panel as a phone's menu, and the field going out and coming back seated
+   afresh when one is taken. Everything here is under `.wl-root.is-room`'s
+   tokens (phone.css): the unlit panel, its bezel and grid, the phone's face
+   and its corner. Nothing is lit but the row under the finger. */
+
+/* ── the head: the field, a seam, the key ──
+   The strip's head is a row now. The field keeps everything it had and
+   gives the key the room at the end; the head's height is the field's, so
+   nothing about the strip moves when the key is there. */
+.wl-seek-head { display: flex; align-items: stretch; min-width: 0; }
+.wl-root.is-room .wl-seek .wl-seek-head .wl-field {
+  flex: 1 1 auto; width: auto; min-width: 0; padding-right: 8px;
+}
+
+.wl-filter-key {
+  position: relative; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 46px; margin: 0; padding: 0 14px 0 15px;
+  background: none; border: 0; border-radius: 0 var(--r-lcd) var(--r-lcd) 0;
+  font-family: var(--f-s40); font-size: var(--t-label); line-height: 1;
+  letter-spacing: 0.02em; white-space: nowrap;
+  color: var(--ash);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 200ms var(--ease);
+}
+/* the seam: the strip's own dashed pixels, standing, a seam between two
+   parts of one screen and not a border round either */
+.wl-filter-key::before {
+  content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px;
+  background: repeating-linear-gradient(180deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+  pointer-events: none;
+}
+/* the field is showing fewer than every name: the word says so in chalk */
+.wl-filter-key.is-on { color: var(--chalk); }
+.wl-filter-chev { flex: 0 0 auto; }
+/* open, the chevron points back up: the glyph turned, a whole pixel grid,
+   in one step as the phone redrew it */
+.wl-filter-key.is-open .wl-filter-chev { transform: scaleY(-1); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-filter-key:hover { color: var(--chalk); }
+}
+/* pressed, a key inverts (DESIGN.md 9, on the wall) */
+.wl-filter-key:active { background: var(--chalk); color: #000; transition: none; }
+.wl-filter-key:active::before { opacity: 0; }
+.wl-filter-key:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -5px; border-radius: var(--r-lcd); }
+
+/* ── the menu ──
+   `.wl-seek-found` brings the panel's seam, its entrance and its scroll;
+   the rows are the phone's menu, the one under the finger or the arrows
+   inverted, and the one that is on marked with the phone's check. */
+.wl-filter-menu { gap: 2px; }
+.wl-filter-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 44px; margin: 0; padding: 0 14px 0 12px;
+  background: none; border: 1px solid transparent; border-radius: var(--r-lcd);
+  font-family: var(--f-s40); font-size: var(--t-read); line-height: 1;
+  letter-spacing: 0.01em; text-align: left;
+  color: var(--chalk);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wl-filter-row.is-active,
+.wl-filter-row:active { background: var(--chalk); border-color: var(--chalk); color: #000; }
+/* the inverted row is the focus, as a phone's menu has no other */
+.wl-filter-row:focus-visible { outline: none; }
+.wl-filter-check { flex: 0 0 auto; }
+
+/* ── the field, moving ──
+   The whole crowd as one thing: out and a hair smaller, then the new field
+   up from a hair larger where it stands (Filter.jsx `useSift`). The box is
+   the stage's own, so the field inside it measures what it always did. */
+.wl-sift { position: absolute; inset: 0; }
+.wl-sift.is-out {
+  opacity: 0; transform: scale(0.985);
+  transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+}
+.wl-sift.is-in:not(.is-out) { animation: wl-sift-in 560ms var(--ease) both; }
+@keyframes wl-sift-in {
+  from { opacity: 0; transform: scale(1.02); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── nothing under this filter ──
+   A phone's note on an unlit panel over the middle of the glass: what would
+   be here, and a quiet key back to every name. */
+.wl-filter-none {
+  position: absolute; left: 50%; top: 50%; z-index: 3;
+  transform: translate(-50%, -50%);
+  width: min(300px, calc(100% - 64px));
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 22px 18px 18px;
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+  border-radius: var(--r-lcd);
+  text-align: center;
+  pointer-events: auto;
+}
+.wl-filter-none-h {
+  margin: 0;
+  font-family: var(--f-s40); font-size: var(--t-read); line-height: 1.2;
+  color: var(--chalk);
+}
+.wl-filter-none-all {
+  min-height: 40px; margin: 0; padding: 0 16px;
+  background: none; border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+  font-family: var(--f-s40); font-size: var(--t-ctrl); line-height: 1;
+  color: var(--chalk);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-filter-none-all:hover { border-color: var(--lcd-edge-hi); }
+}
+.wl-filter-none-all:active { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-filter-none-all:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-sift.is-out, .wl-sift.is-in:not(.is-out) { transition: none; animation: none; transform: none; }
+  .wl-filter-key { transition: none; }
+}
