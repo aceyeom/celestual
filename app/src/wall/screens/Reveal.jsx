@@ -14,8 +14,9 @@
 // ── the order is the meaning ────────────────────────────────────────────────
 //
 //   1  the phone         a boy and a girl run in from either edge of the
-//                        glass, she falls into his arms, the pink leaves them
-//                        and they become the mark (pixmark.js `revealStory`).
+//                        glass, she falls into his arms and he dips her, the
+//                        backlight turns pink, and they glide together into
+//                        the mark (pixmark.js `revealStory`).
 //                        The mark gathers up into the top of the glass, and
 //                        under it, IN the phone, in its own face and with its
 //                        own cursor, "it's mutual." is typed a character at a

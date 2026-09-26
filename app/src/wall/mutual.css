@@ -28,10 +28,11 @@
    the bar, the head, the steps and the key. */
 .wl-join-fig { position: relative; display: grid; place-items: center; margin: clamp(14px, 2.6svh, 26px) 0; }
 .wl-join-scr { width: clamp(160px, calc((100svh - 500px) / 1.16), 290px); }
-/* When the pink leaves the two of them on the glass it leaves the phone
-   too, as it does in the intro (intro.css `.hi-halo`): the light a lit
-   phone throws round itself, turned pink and cooling back to nothing. A
-   tap that lands the story before then does not send it. */
+/* When the backlight turns pink on the glass the phone's light on the room
+   turns pink with it, as it does in the intro (intro.css `.hi-halo`): out
+   past the phone as the wave reaches the glass's edge, and resting at a
+   softer pink for as long as the screen is pink. A tap that lands the story
+   before then does not send it. */
 .wl-join-light {
   position: absolute; left: 50%; top: 50%; z-index: -1;
   width: min(150vw, 760px); aspect-ratio: 1; pointer-events: none; opacity: 0;
@@ -45,8 +46,8 @@
 .wl-join-fig.is-lit .wl-join-light { animation: wl-join-light 1700ms var(--ease-out) both; }
 @keyframes wl-join-light {
   0%   { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.6); }
-  20%  { opacity: 1; }
-  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.1); }
+  26%  { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(0.9); }
+  100% { opacity: 0.5; transform: translate3d(-50%, -50%, 0) scale(0.84); }
 }
 .wl-join-fig { isolation: isolate; }
 
@@ -186,8 +187,8 @@
    The glass is alive on its own (pixmark.js `revealStory`); round it, the
    phone rises and settles a few pixels, slowly, and its light in the room
    breathes in the story's pink with it, once every 4.2 seconds. The light
-   comes up as the pink leaves the two of them on the glass, 1.6s in, and
-   the phone starts to move once the mark is whole. Transform and opacity,
+   comes up as the backlight turns pink on the glass, 1.7s in, and the
+   phone starts to move once the mark is whole, 2.7s in. Transform and opacity,
    on a radial gradient already painted, and paused with the tab. */
 .wl-mutual-halo {
   position: absolute; left: 50%; top: 50%; z-index: -1;
@@ -199,12 +200,12 @@
     rgba(var(--story-glow-rgb), 0) 100%);
   transform: translate3d(-50%, -50%, 0);
   opacity: 0;
-  animation: wl-mutual-light 1100ms var(--ease-out) 1500ms both, wl-mutual-breathe 4200ms ease-in-out 2600ms infinite;
+  animation: wl-mutual-light 1100ms var(--ease-out) 1700ms both, wl-mutual-breathe 4200ms ease-in-out 2800ms infinite;
   will-change: transform, opacity;
 }
 .wl-mutual-float {
   position: relative; width: 100%; display: grid; place-items: center;
-  animation: wl-mutual-float 4200ms ease-in-out 2600ms infinite;
+  animation: wl-mutual-float 4200ms ease-in-out 2700ms infinite;
   will-change: transform;
 }
 @keyframes wl-mutual-light { from { opacity: 0; } to { opacity: 0.75; } }

@@ -6,9 +6,10 @@
 // intro, the door to the core service (screens/Join.jsx) and the mutual
 // (screens/Reveal.jsx). A boy and a girl run in from either side of a lit
 // panel; he plants his feet and opens his arms, she leaves the ground and
-// falls into them, and they hold on, swaying, while a small heart rises off
-// them. Then a soft pink light leaves the two of them and fills the glass,
-// and what they were holding on to becomes the mark. This file is everything
+// falls into them, leans into him and then back, and he dips her, like a
+// tango, and holds her there while a small heart rises off them. The phone's
+// backlight turns pink, a wave from where they meet to the edges of the
+// glass, and what they were holding on to glides together as the mark. This file is everything
 // that story is made of, and none of it is a picture: the mark is rasterised
 // from mark.js, and the two people are rows of pixels drawn by hand, the way
 // looks.js draws the aerial and the pen. PixelStory.jsx puts it on the glass.
@@ -148,15 +149,19 @@ export function markCells(n = 47, { thr = 0.35, star = thr, tip = star, ss = 8, 
 }
 
 // ── the colours the story keeps for itself ──────────────────────────────────
-// Everything on the glass is the screen's own ink but these two, and they
-// are the story's and nobody else's. `BLUSH` is the light: a pastel pink
-// that leaves the two of them and washes the panel, and the room round the
-// phone after it (story.css, intro.css). `ROSE` is a lit cell carrying that
-// light, the same pink deep enough to stay a pixel on a panel already washed
-// in it; a warm cell cools from it back to the ink as it settles. PixelStory
-// reads both, and the stylesheets restate BLUSH as `--story-blush`.
+// Everything on the glass is the screen's own ink but these, and they are
+// the story's and nobody else's. `PANEL` is the pink the backlight turns:
+// the panel's own three stops, its hot spot, its body and its edge, in the
+// place the night screen has its greys, so the pink panel is the same
+// photograph of the same phone lit another colour (PixelStory reads the hot
+// spot off the screen, looks.js `quirks`). `BLUSH` is a pastel pink for the
+// light round a phone (story.css, intro.css). `ROSE` is a lit cell in the
+// pink, deep enough to stay a pixel on a panel that is already pink: the
+// heart, and the mutual's twinkle. The two of them, and the mark, are in the
+// screen's own ink throughout, and stay dark and crisp on the pink.
+export const PANEL = ['#FFE3EE', '#F5BCD1', '#D992AF']
 export const BLUSH = '#F7C6D9'
-export const ROSE = '#D9608A'
+export const ROSE = '#C93F76'
 
 // ── the two of them ─────────────────────────────────────────────────────────
 // Drawn by hand, a pixel at a time, facing right; the one who comes in from
@@ -533,90 +538,181 @@ const G_SEND = [
   '.........bb..aa.....',
 ]
 
-// ── the two of them, together ──
-// 26 by 22, him on the left facing right and her on the right facing left.
-// It was two runners leaning into each other from the feet up, one arch with
-// the heads at the top of it, and it read as two people who had collided.
-// This is somebody caught.
+// ── the two of them, together: the dance ──
+// 30 by 22, him on the left facing right and her on the right facing left.
+// It was two runners leaning into each other from the feet up, and it read
+// as two people who had collided; then a catch and a cuddle, and it read as
+// a hug. The owner asked for a tango: she runs into him, leans into him, and
+// then leans back in his arms, and he goes down over her. So the hold is a
+// dip, five drawings long, and each is a pose a hand would stop a flip-book
+// on:
 //
 // THE CATCH is the frame she lands. She is off the floor, laid against him
 // with her arms round his neck and her far heel kicked up behind her, and he
-// has taken her weight: from the hips up he has rocked back a cell, and his
-// back foot is braced further out than it stood.
+// has taken her weight: from the hips up he has rocked back a cell.
+//
+// THE LEAN is her leaning into him from her toes, her head on his shoulder
+// under his chin, her hair down her back and the heel come down.
+//
+// THE TILT is the first of the dip. She has leaned back from the waist, her
+// head thrown back and her hair falling from it, and he still stands.
+//
+// THE SWOOP is the dip on its way down: he has stepped in and bent over her,
+// and her head has gone below her shoulders.
+//
+// THE DIP is where it is held, a row deeper than the swoop. He is in a
+// lunge, the back leg long, bowed over her, his arm round her back; she is
+// arched back over it, her head thrown back below her shoulders and her hair
+// falling from it toward the floor, one foot on the floor under her skirt and
+// the other lifted behind. What makes it two people and not one shape is the
+// air: the light between his chest and her hips, and under the arch of her
+// back. It was drawn deeper, her head on the floor, and it read as somebody
+// who had fallen; this depth is the one a dancer holds. It breathes while it
+// is held (`BREATH`): his head goes down to hers by a cell and her hair
+// swings, and back.
 const CATCH = [
-  '..........................',
-  '........XX................',
-  '.......XXXX...............',
-  '.......XXXXX..XX..........',
-  '........XXX..XXXX.........',
-  '.......XX...XXXXXXX.......',
-  '.....XXXXX..XXXXX.XXX.....',
-  '....XXXXXXXXXXXXX....XX...',
-  '....XXXXXXXXXXXX..........',
-  '....xXXXXXXXXXXXX.........',
-  '.....XXXXX.XXXXXX.........',
-  '.....XXXXX..XXXXX.........',
-  '.....XXXXX..XXXXXX........',
-  '.....XX.XX..XXXXXXX..x....',
-  '....XX..XX..XXXXXXXXx.....',
-  '....XX..XX...X...x.x......',
-  '...XX...XX...X....x.......',
-  '...XX...XX....X...........',
-  '..XX....XX....X...........',
-  '..XX....XX................',
-  '.XX.....XX................',
-  '.XX.....XXX...............',
+  '..............................',
+  '........XX....................',
+  '.......XXXX...................',
+  '.......XXXXX..XX..............',
+  '........XXX..XXXX.............',
+  '.......XX...XXXXXXX...........',
+  '.....XXXXX..XXXXX.XXX.........',
+  '....XXXXXXXXXXXXX....XX.......',
+  '....XXXXXXXXXXXX..............',
+  '....xXXXXXXXXXXXX.............',
+  '.....XXXXX.XXXXXX.............',
+  '.....XXXXX..XXXXX.............',
+  '.....XXXXX..XXXXXX............',
+  '.....XX.XX..XXXXXXX..x........',
+  '....XX..XX..XXXXXXXXx.........',
+  '....XX..XX...X...x.x..........',
+  '...XX...XX...X....x...........',
+  '...XX...XX....X...............',
+  '..XX....XX....X...............',
+  '..XX....XX....................',
+  '.XX.....XX....................',
+  '.XX.....XXX...................',
 ]
-
-// THE CUDDLE is the hold that follows, and it is four frames of one drawing.
-// She has come down onto her toes and leans into him from them, her head on
-// his shoulder under his chin, and he has bowed his head over hers; her far
-// hand shows on his back. What makes it two people and not one shape is the
-// air: a notch between his chin and the top of her head, and a wedge of
-// light from their waists to the floor between his braced legs and her
-// skirt. Her hair and her far leg are laid on it separately (`HAIR`,
-// `HEEL`), because they are what moves: the hair comes down from where the
-// fall threw it and settles down her back, and the heel she kicked up comes
-// down to the floor. And the whole of them above the waist sways, a cell
-// toward her and a cell toward him (`SWAY`), which at this size is the
-// smallest movement there is and the gentlest one.
-const CUDDLE = [
-  '..........................',
-  '.........XX...............',
-  '........XXXX..............',
-  '........XXXXX.............',
-  '.........XXX.XX...........',
-  '........XX..XXXX..........',
-  '......XXXXX.XXXXX.........',
-  '.....XXXXXXXXXXXX.........',
-  '.....XXXXXXXXXXXX.........',
-  '.....xXXXXXXXXXXX.........',
-  '......XXXXX.XXXXX.........',
-  '......XXXXX..XXXX.........',
-  '......XXXXX...XXXX........',
-  '......XX.XX..XXXXXX.......',
-  '......XX.XX..XXXXXXX......',
-  '.....XX..XX..XXXXXXXX.....',
-  '.....XX..XX...X...........',
-  '.....XX..XX...X...........',
-  '....XX...XX....X..........',
-  '....XX...XX....X..........',
-  '...XX....XX....X..........',
-  '...XX....XX....XX.........',
+const LEAN = [
+  '..............................',
+  '.........XX...................',
+  '........XXXX..................',
+  '........XXXXX.................',
+  '.........XXX.XX...............',
+  '........XX..XXXX..............',
+  '......XXXXX.XXXXX.............',
+  '.....XXXXXXXXXXXXX............',
+  '.....XXXXXXXXXXXX.X...........',
+  '.....xXXXXXXXXXXXX.X..........',
+  '......XXXXX.XXXXX..X..........',
+  '......XXXXX..XXXX..X..........',
+  '......XXXXX...XXXX.X..........',
+  '......XX.XX..XXXXXX...........',
+  '......XX.XX..XXXXXXX..........',
+  '.....XX..XX..XXXXXXXX.........',
+  '.....XX..XX...X...x...........',
+  '.....XX..XX...X...x...........',
+  '....XX...XX....X..x...........',
+  '....XX...XX....X..x...........',
+  '...XX....XX....X..x...........',
+  '...XX....XX....XX.xx..........',
 ]
-// the rows that sway: everything above the waist
-const SWAY_ROWS = 11
-// her hair as the fall left it, coming down, and settled
-const HAIR = {
-  lift: [[17, 6], [18, 6], [17, 7], [18, 7], [19, 7], [19, 8], [20, 8], [20, 9], [21, 10]],
-  fall: [[17, 6], [17, 7], [18, 7], [18, 8], [18, 9], [19, 9], [19, 10], [19, 11]],
-  rest: [[17, 6], [17, 7], [17, 8], [18, 8], [18, 9], [18, 10], [18, 11], [18, 12]],
-}
-// her far leg: kicked up behind her, coming down, and on the floor
-const HEEL = [
-  [[16, 16], [16, 17], [16, 18], [16, 19], [16, 20], [16, 21], [17, 21]],
-  [[16, 16], [16, 17], [17, 18], [18, 19], [19, 19]],
-  [[16, 16], [16, 17], [17, 18], [18, 17], [19, 16], [20, 15]],
+const TILT = [
+  '..............................',
+  '..........XX..................',
+  '.........XXXX.................',
+  '.........XXXX.....XX..........',
+  '..........XX.....XXXX.........',
+  '..........XX.....XXXX.X.......',
+  '........XXXXX.....XX..X.......',
+  '.......XXXXXXX..XXXX...X......',
+  '......XXXXXXX.XXXXXX...X......',
+  '......xXXXXX..XXXXX....X......',
+  '.......XXXXX..XXXXX....X......',
+  '.......XXXX..XXXXX.....X......',
+  '.......XXXX..XXXXX............',
+  '.......XXXX.XXXXXXX...........',
+  '......xxXX..XXXXXXX...........',
+  '......xx.XX.XXXXXXXX..........',
+  '.....xx..XX..X..x.............',
+  '.....x...XX..X...x............',
+  '....xx...XX..X..x.............',
+  '....x....XX..X................',
+  '...xx....XX..X................',
+  '..xxx....XXX.XX...............',
+]
+const SWOOP = [
+  '..............................',
+  '..............................',
+  '...............XX.............',
+  '..............XXXX............',
+  '..............XXXX............',
+  '...............XX.............',
+  '.............XXXX.............',
+  '...........XXXXXX.............',
+  '..........XXXXXX.X...XX.......',
+  '..........XXXXX...XXXXXX......',
+  '.........XXXXX...XXXXXXXX.....',
+  '.........XXXX...XXXXXX.XXXX...',
+  '.........XXXX..XXXXX...XXXX...',
+  '........xXXXX.XXXXX....XXXX...',
+  '.......xx.XXX.XXXXXX....XX.X..',
+  '.......x..XXX.XXXXXXX......X..',
+  '......xx...XX.XXXXXXX......X..',
+  '......x....XX...X.x........X..',
+  '.....xx....XX...X..x.......X..',
+  '.....x.....XX...X.x...........',
+  '....xx.....XX...X.............',
+  '..xxx......XXX..XX............',
+]
+const DIP = [
+  '..............................',
+  '..............................',
+  '..............................',
+  '................XX............',
+  '...............XXXX...........',
+  '...............XXXX...........',
+  '.............XXXXX............',
+  '...........XXXXXX.............',
+  '..........XXXXXX.X...XX.......',
+  '..........XXXXX...XXXXXX......',
+  '.........XXXXX...XXXXXXXX.....',
+  '.........XXXX...XXXXXX.XXX....',
+  '.........XXXX..XXXXX....XXXX..',
+  '........xXXXX.XXXXX.....XXXX..',
+  '.......xx.XXX.XXXXXX....XXXX..',
+  '.......x..XXX.XXXXXXX....XX.X.',
+  '......xx...XX.XXXXXXX.......X.',
+  '......x....XX...X.x.........X.',
+  '.....xx....XX...X..x........X.',
+  '.....x.....XX...X.x.........X.',
+  '....xx.....XX...X.............',
+  '..xxx......XXX..XX............',
+]
+const BREATH = [
+  '..............................',
+  '..............................',
+  '..............................',
+  '.................XX...........',
+  '................XXXX..........',
+  '................XXXX..........',
+  '.............XXXXXX...........',
+  '...........XXXXXX.............',
+  '..........XXXXXX.X...XX.......',
+  '..........XXXXX...XXXXXX......',
+  '.........XXXXX...XXXXXXXX.....',
+  '.........XXXX...XXXXXX.XXX....',
+  '.........XXXX..XXXXX....XXXX..',
+  '........xXXXX.XXXXX.....XXXX..',
+  '.......xx.XXX.XXXXXX....XXXX..',
+  '.......x..XXX.XXXXXXX....XX.X.',
+  '......xx...XX.XXXXXXX.......X.',
+  '......x....XX...X.x..........X',
+  '.....xx....XX...X..x.........X',
+  '.....x.....XX...X.x..........X',
+  '....xx.....XX...X.............',
+  '..xxx......XXX..XX............',
 ]
 
 // ── the small things ──
@@ -695,13 +791,16 @@ const FIG_Y = GROUND - 22
 const MARK_N = 47
 // the pair stands in the middle, and each of them arrives where their half
 // of it is: he plants where his body in the catch is, and she leaves the
-// ground and comes down on hers
+// ground and comes down on hers. The dance is drawn from the same place, so
+// his back foot and her standing foot stay where they landed.
 const PAIR_X = (COLS - 26) >> 1
 const PLANT_X = PAIR_X + 1
 const LEAP_X = PAIR_X + 14
 const FALL_X = PAIR_X + 9
-// where their chests meet, which is where the light leaves from
-const HEART_OF = { x: PAIR_X + 12, y: FIG_Y + 8 }
+// where they meet in the dip, which is where the pink leaves from; and where
+// the heart is born, over her and clear of his bowed head
+const HEART_OF = { x: PAIR_X + 18, y: FIG_Y + 11 }
+const LOVE = { x: PAIR_X + 23, y: FIG_Y + 3 }
 
 // the run is stepped: a frame of the cycle every 80ms, three cells a frame,
 // which is the stride the drawings take, so no foot slides
@@ -712,18 +811,6 @@ const PACE = 3
 function ground() {
   const out = []
   for (let x = 0; x < COLS; x++) if (x % 3 !== 2) out.push([x, GROUND, 2])
-  return out
-}
-
-// the pair, `dx` a cell of sway above the waist, with her hair and her heel
-function cuddle({ dx = 0, heel = 0, hair = 'rest' }) {
-  const out = []
-  const put = (x, y, ink) => out.push([PAIR_X + x + (y < SWAY_ROWS ? dx : 0), FIG_Y + y, ink])
-  CUDDLE.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) if (row[x] !== '.') put(x, y, row[x] === 'x' ? 2 : 1)
-  })
-  for (const [x, y] of HAIR[hair]) put(x, y, 1)
-  for (const [x, y] of HEEL[heel]) put(x, y, 2)
   return out
 }
 
@@ -738,17 +825,27 @@ function cuddle({ dx = 0, heel = 0, hair = 'rest' }) {
 // are more pixels in the ring than dashes in the ground, and fewer in the
 // star than in the pair, so some split on the way and some meet.
 //
-// The ring closes first, the order the mark has always assembled in, and the
-// star opens from its middle out. Each pixel travels on a hard start and a
-// long settle, and is rounded to a whole cell on every frame, so the pixels
-// hop across the glass rather than glide. A pixel the light reached leaves
-// in the rose and cools to the ink as it lands (`heat` below).
-const ease = (t) => 1 - (1 - t) ** 4
-const RING_FLIGHT = 380
-const STAR_AT = 220
-const STAR_SPREAD = 140
-const STAR_FLIGHT = 300
-export const MORPH_MS = STAR_AT + STAR_SPREAD + STAR_FLIGHT
+// It used to hop: every pixel rounded to a whole cell on every frame, thirty
+// times a second, on a hard start. It glides now. A pixel waits in its cell,
+// leaves on its own moment, travels between the cells at the display's own
+// rate on an ease that is slow to start and slow to arrive, bending a little
+// off the straight line as it goes, all of them the same way round, so the
+// whole of it turns as it gathers, the way the ring turns; and it is put
+// back on the grid only when it lands. The ground leaves from the left to
+// the right, the ring's near half first; the star opens from its middle out,
+// each pixel a little early or late by its own number, so they do not
+// arrive as a wall. The ring closes first, the order the mark has always
+// assembled in.
+const glide = (t) => (t < 0.5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2)
+const RING_SPREAD = 200
+const RING_FLIGHT = 500
+const STAR_AT = 120
+const STAR_SPREAD = 120
+const STAR_JITTER = 50
+const STAR_FLIGHT = 500
+export const MORPH_MS = Math.max(RING_SPREAD + 40 + RING_FLIGHT, STAR_AT + STAR_SPREAD + STAR_JITTER + STAR_FLIGHT)
+// how far a pixel bends off its line, at most, in cells
+const BEND = 3.2
 
 function pairs(src, dst) {
   const n = Math.max(src.length, dst.length)
@@ -764,6 +861,12 @@ function byAngle(list, get) {
   cy /= list.length
   const a = (p) => { const [x, y] = get(p); return Math.atan2(y - cy, x - cx) }
   return [...list].sort((p, q) => a(p) - a(q))
+}
+// a number from two others, the same every time it is asked
+const hash = (a, b) => {
+  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35)
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d)
+  return ((h ^ (h >>> 13)) >>> 0) / 4294967296
 }
 
 // the mark on the grid at `n` cells, its ring and its star, placed at
@@ -785,6 +888,24 @@ function markOn(n, ox, oy) {
 }
 const BIG = { ox: (COLS - MARK_N) >> 1, oy: (ROWS - MARK_N) >> 1 }
 
+// one pixel's way from (sx, sy) to (dx, dy), leaving at `delay` and taking
+// `flight`: where it is at `t`, off the grid while it travels
+function bitOf(sx, sy, dx, dy, ink, delay, flight) {
+  const len = Math.hypot(dx - sx, dy - sy) || 1
+  const bend = Math.min(BEND, len * 0.16)
+  // the bend is to the left of the way it goes, for every pixel, so the
+  // whole of it turns one way
+  return { sx, sy, dx, dy, ink, delay, flight, nx: -(dy - sy) / len * bend, ny: (dx - sx) / len * bend }
+}
+function bitAt(b, t) {
+  const k = (t - b.delay) / b.flight
+  if (k <= 0) return [b.sx, b.sy, b.ink]
+  if (k >= 1) return [b.dx, b.dy, 1]
+  const e = glide(k)
+  const arc = Math.sin(Math.PI * e)
+  return [b.sx + (b.dx - b.sx) * e + b.nx * arc, b.sy + (b.dy - b.sy) * e + b.ny * arc, 1]
+}
+
 function morphOf(pair, dashes) {
   const m = markOn(MARK_N, BIG.ox, BIG.oy)
   const maxR = Math.max(...m.star.map((p) => p.r))
@@ -793,46 +914,48 @@ function morphOf(pair, dashes) {
   for (const near of [true, false]) {
     const arc = m.ring.filter((p) => p.near === near).sort((p, q) => p.u - q.u)
     for (const [s, d] of pairs(line, arc)) {
-      bits.push({ sx: s[0], sy: s[1], ink: s[2], dx: d.x, dy: d.y, delay: near ? 0 : 40, flight: RING_FLIGHT, star: false })
+      const delay = (s[0] / COLS) * RING_SPREAD + (near ? 0 : 40)
+      bits.push(bitOf(s[0], s[1], d.x, d.y, s[2], delay, RING_FLIGHT))
     }
   }
   const src = byAngle(pair, (p) => [p[0], p[1]])
   const dst = byAngle(m.star, (p) => [p.x, p.y])
-  for (const [s, d] of pairs(src, dst)) {
-    bits.push({ sx: s[0], sy: s[1], ink: s[2], dx: d.x, dy: d.y, delay: STAR_AT + (d.r / maxR) * STAR_SPREAD, flight: STAR_FLIGHT, star: true })
-  }
+  pairs(src, dst).forEach(([s, d], i) => {
+    const delay = STAR_AT + (d.r / maxR) * STAR_SPREAD + hash(i, 7) * STAR_JITTER
+    bits.push(bitOf(s[0], s[1], d.x, d.y, s[2], delay, STAR_FLIGHT))
+  })
   return { bits, done: m.all }
 }
 
-// `warm(bit)` is how much of the light has reached where the pixel left
-// from; it goes in the rose and cools on the way, all ink by the time it
-// lands.
-function morphAt(m, t, warm) {
+function morphAt(m, t) {
   if (t >= MORPH_MS) return m.done
-  return m.bits.map((b) => {
-    const k = Math.max(0, Math.min(1, (t - b.delay) / b.flight))
-    const e = ease(k)
-    const heat = k >= 1 ? 0 : warm(b) * (1 - k * k)
-    return [Math.round(b.sx + (b.dx - b.sx) * e), Math.round(b.sy + (b.dy - b.sy) * e), k >= 1 ? 1 : b.ink, heat]
-  })
+  return m.bits.map((b) => bitAt(b, t))
 }
 
-// ── the light ──
+// ── the pink ──
 // The moment is not their touching, which used to be one frame of the whole
 // panel inverted, the way a phone's screen flashed when something came in:
-// that was a collision, and this is somebody caught. The moment is a little
-// after, while they hold on: a pastel pink leaves the place their chests
-// meet and goes out across the glass as a soft ring, brightest at its edge
-// and a glow behind it, and the cells it passes carry it. It is drawn under
-// the cells, as the panel's own backlight would be (PixelStory `paint`), and
-// on its own clock, thirty times a second, where the run is twelve: a light
-// does not step. The room round the phone takes it up after (intro.css).
-const GLOW_MS = 1100
-// the radius the light has reached, in cells, `p` of the way through
-const glowR = (p) => 2 + 48 * (1 - (1 - p) ** 3)
-function glowAt(p) {
-  const a = Math.min(1, p / 0.08) * (1 - p) ** 1.3
-  return { x: HEART_OF.x, y: HEART_OF.y, r: glowR(p), a: 0.92 * a, inner: 0.25 + 0.5 * (1 - p) }
+// that was a collision, and this is somebody caught. The moment is the dip,
+// held: and while it is held the phone's own backlight turns pink. It leaves
+// the place where the two of them meet as a wave, its front a little
+// brighter than what is behind it, and goes out across the panel until the
+// whole screen is lit pink and not grey, with the two of them, and then the
+// mark, dark on it. It stays: the mark is whole on a pink screen. It is the
+// panel's colour and not a light laid over the cells, so it is drawn under
+// them (PixelStory `paint`, in the panel's own gradient), and on its own
+// clock, at the display's rate, where the run steps twelve times a second: a
+// light does not step. The room round the phone takes it up as the front
+// reaches the glass's edge (intro.css, mutual.css).
+const WASH_MS = 720
+// the radius the front has reached, in cells, `p` of the way through: out of
+// the two of them quickly and slowing as it goes, at the glass's sides by
+// about 260ms and past the far corner of any panel by the end
+const washR = (p) => 2 + 54 * (1 - (1 - p) ** 1.6)
+function washAt(u) {
+  if (u < WASH_AT) return null
+  const p = (u - WASH_AT) / WASH_MS
+  if (p >= 1) return { x: HEART_OF.x, y: HEART_OF.y, r: null, level: 1, rim: 0 }
+  return { x: HEART_OF.x, y: HEART_OF.y, r: washR(p), level: 1, rim: 1 - p }
 }
 
 // ── one story, from what comes before the catch ─────────────────────────────
@@ -840,34 +963,47 @@ function glowAt(p) {
 // comes before it is each story's own (`before`). From the catch, in ms:
 //
 //      0   THE CATCH. Her weight, his step back, her heel up.
-//    120   THE CUDDLE, and the sway: a new frame every 180ms, a cell toward
-//          her, back, a cell toward him, while her hair and her heel come
-//          down. It is the slowest thing in the story, on purpose.
-//    200   the heart leaves them: small, then a beat larger, then its own
+//    140   THE LEAN. She leans into him.
+//    360   THE TILT, and she leans back
+//    460   THE SWOOP: he steps in and goes down over her
+//    560   THE DIP, held, breathing every 180ms
+//    600   the heart leaves them: small, then a beat larger, then its own
 //          size, rising a row every 100ms, and fading
-//    600   THE LIGHT, for 1100ms
-//    780   THE MARK: the pair into the star and the ground into the ring,
-//          carrying the light and cooling as they land
-//   1440   the mark is whole, the light still going out behind it
-//   1700   and gone
+//    640   THE PINK: the backlight, as a wave from where they meet, over the
+//          whole panel by about 1120
+//    880   THE MARK: the dip into the star and the ground into the ring,
+//          gliding
+//   1670   the mark is whole, on a pink screen
 //
-// `frame(t)` answers { key, cells, glow }. The key changes only when the
-// drawing does, so the canvas is drawn a dozen times a second while the two
-// run, thirty while the light moves and the mark forms, and not at all while
-// nothing moves. `times` are the story's own beats, for whoever holds the
-// screen round it. A cell is [x, y, ink, heat, alpha]: `heat` is how much of
-// the rose it carries and `alpha` how much of it is lit, both 1 when left out.
-const SWAY = [
-  { at: 120, dx: 0, heel: 2, hair: 'lift' },
-  { at: 300, dx: 1, heel: 2, hair: 'fall' },
-  { at: 480, dx: 0, heel: 1, hair: 'fall' },
-  { at: 660, dx: -1, heel: 1, hair: 'rest' },
+// `frame(t)` answers { key, cells, wash, glow }. The key changes only when
+// the drawing does, so the canvas is drawn a dozen times a second while the
+// two run and dance, at the display's rate while the pink spreads and the
+// mark forms, and not at all while nothing moves. `times` are the story's
+// own beats, for whoever holds the screen round it. A cell is [x, y, ink,
+// heat, alpha]: `heat` is how much of the rose it carries and `alpha` how
+// much of it is lit, both 1 when left out; a cell off the grid (a fraction
+// in x or y) is one travelling, and is drawn where it is.
+const DANCE = [
+  { at: 0, rows: CATCH, key: 'catch' },
+  { at: 140, rows: LEAN, key: 'lean' },
+  { at: 360, rows: TILT, key: 'tilt' },
+  { at: 460, rows: SWOOP, key: 'swoop' },
+  { at: 560, rows: DIP, key: 'dip' },
 ]
-const HEART_AT = 200
+const HOLD = 180
+const HEART_AT = 600
 const HEART_RISE = 100
 const HEART_ROWS = 6
-const GLOW_AT = 600
-const MORPH_AT = 780
+const WASH_AT = 640
+const MORPH_AT = 880
+
+function danceAt(u) {
+  let d = DANCE[0]
+  for (const f of DANCE) if (u >= f.at) d = f
+  // held, it breathes
+  if (d.rows === DIP && Math.floor((u - d.at) / HOLD) % 2 === 1) return { cells: cellsOf(BREATH, { x: PAIR_X, y: FIG_Y }), key: 'breath' }
+  return { cells: cellsOf(d.rows, { x: PAIR_X, y: FIG_Y }), key: d.key }
+}
 
 // A glyph rising a row every `step` ms from `y`, lit in over its first step
 // (unless it is already lit, `lit`) and out over its last three.
@@ -881,62 +1017,44 @@ function rising(glyph, x, y, u, rows, step = HEART_RISE, lit = false) {
   }
 }
 
-// The heart off their heads is born before it rises: the small one, for a
-// step, then the large one for a step, the way a heart on a phone's screen
-// beat once when it came on, and then its own size, going up.
+// The heart off them is born before it rises: the small one, for a step,
+// then the large one for a step, the way a heart on a phone's screen beat
+// once when it came on, and then its own size, going up.
 function born(x, y, u) {
   const i = Math.floor(u / HEART_RISE)
+  if (i < 0) return { cells: [], key: '' }
   if (i === 0) return { cells: cellsOf(HEART_S, { x: x + 1, y: y + 2 }).map(([cx, cy, ink]) => [cx, cy, ink, 0, 0.7]), key: 'hs' }
-  if (i === 1) return { cells: cellsOf(HEART_BIG, { x: x - 1, y: y - 3 }), key: 'hb' }
-  return rising(HEART, x, y - 1, u - 2 * HEART_RISE, HEART_ROWS, HEART_RISE, true)
+  if (i === 1) return { cells: cellsOf(HEART_BIG, { x: x - 1, y: y - 1 }), key: 'hb' }
+  return rising(HEART, x, y, u - 2 * HEART_RISE, HEART_ROWS, HEART_RISE, true)
 }
 
 function makeStory({ before, catchAt, heart = null }) {
   const morphs = catchAt + MORPH_AT
   const done = morphs + MORPH_MS
-  const end = catchAt + GLOW_AT + GLOW_MS
+  const end = Math.max(done, catchAt + WASH_AT + WASH_MS)
   let morph = null
-  // the heart: resting where a story left one, or rising off their heads
-  const hx = heart ? heart.x : HEART_OF.x - 3
-  const hy = heart ? heart.y : FIG_Y - 5
-  const pairAt = (u) => {
-    if (u < SWAY[0].at) return { cells: cellsOf(CATCH, { x: PAIR_X, y: FIG_Y }), key: 'catch' }
-    let s = SWAY[0]
-    let i = 0
-    SWAY.forEach((w, j) => { if (u >= w.at) { s = w; i = j } })
-    return { cells: cuddle(s), key: `c${i}` }
-  }
+  // the heart: resting where a story left one, or born over the dip
+  const hx = heart ? heart.x : LOVE.x
+  const hy = heart ? heart.y : LOVE.y
   const frame = (t) => {
     if (t < catchAt) return before(t)
     const u = t - catchAt
-    const lit = u >= GLOW_AT && u < GLOW_AT + GLOW_MS
-    const p = lit ? (u - GLOW_AT) / GLOW_MS : 0
-    const glow = lit ? glowAt(p) : null
-    const r = lit ? glowR(p) : u >= GLOW_AT ? 99 : 0
-    const reach = (x, y) => Math.max(0, Math.min(1, (r - Math.hypot(x - HEART_OF.x, y - HEART_OF.y)) / 5))
-    const gk = lit ? `g${Math.floor(u / 33)}` : ''
-    // the heart, above them until the mark takes them
+    const wash = washAt(u)
+    const wk = !wash ? '' : wash.r == null ? 'W' : `w${Math.round(u)}`
     const h = !heart ? born(hx, hy, u - HEART_AT)
       : u < HEART_AT ? { cells: cellsOf(HEART, { x: hx, y: hy }), key: 'hr' }
       : rising(HEART, hx, hy, u - HEART_AT, HEART_ROWS, HEART_RISE, true)
     if (u >= MORPH_AT) {
-      const pair = cuddle(SWAY[SWAY.length - 1])
-      if (!morph) morph = morphOf(pair, ground())
+      if (!morph) morph = morphOf(cellsOf(DIP, { x: PAIR_X, y: FIG_Y }), ground())
       const mt = u - MORPH_AT
-      const warm = (b) => (b.star ? 1 : reach(b.sx, b.sy))
-      const cells = morphAt(morph, mt, warm)
-      return { key: `m${mt >= MORPH_MS ? 'done' : Math.floor(mt / 33)}|${h.key}|${gk}`, cells: [...cells, ...h.cells], glow }
+      return { key: `m${mt >= MORPH_MS ? 'done' : Math.round(mt)}|${h.key}|${wk}`, cells: [...morphAt(morph, mt), ...h.cells], wash }
     }
-    const pr = pairAt(u)
-    // the pair warms as the light leaves it, and the ground as it passes
-    const heat = u >= GLOW_AT ? Math.min(1, (u - GLOW_AT) / 140) : 0
-    const pc = heat ? pr.cells.map(([x, y, ink]) => [x, y, ink, heat]) : pr.cells
-    const gc = ground().map(([x, y, ink]) => [x, y, ink, reach(x, y)])
-    return { key: `${pr.key}|${h.key}|${gk}`, cells: [...pc, ...h.cells, ...gc], glow }
+    const d = danceAt(u)
+    return { key: `${d.key}|${h.key}|${wk}`, cells: [...d.cells, ...h.cells, ...ground()], wash }
   }
   return {
     cols: COLS, rows: ROWS, end,
-    times: { touch: catchAt, catch: catchAt, glow: catchAt + GLOW_AT, morphs, done, end },
+    times: { touch: catchAt, catch: catchAt, dip: catchAt + DANCE[DANCE.length - 1].at, glow: catchAt + WASH_AT, morphs, done, end },
     frame,
   }
 }
@@ -992,14 +1110,14 @@ function approach({ start, frames, him = 1, her = 4 }) {
 
 // The intro: both at once, from off either edge, and the mark.
 //
-//   300  they run in, twelve frames a second
-//  1100  he plants and opens his arms; she leaves the ground
-//  1210  she falls
-//  1360  and is in his arms. From here, the ending above: the cuddle to
-//        2140, the light at 1960, the mark whole at 2800, the light gone
-//        at 3060
-export function introStory(start = 300) {
-  const run = approach({ start, frames: 10, him: 1, her: 4 })
+//   260  they run in, twelve frames a second
+//   980  he plants and opens his arms; she leaves the ground
+//  1090  she falls
+//  1240  and is in his arms. From here, the ending above: the lean at
+//        1380, the dip from 1600 and held from 1800, the pink from 1880,
+//        the mark gliding in from 2120 and whole at 2910
+export function introStory(start = 260) {
+  const run = approach({ start, frames: 9, him: 2, her: 5 })
   const s = makeStory({
     before: (t) => (t < start ? { key: '-', cells: ground() } : run.at(t)),
     catchAt: run.catchAt,
@@ -1022,7 +1140,7 @@ const NOTE_Y = 4
 const NOTE_A = 17
 const NOTE_B = COLS - 7 - NOTE_A
 const SLIDE_MS = 200
-const HEART_X = HEART_OF.x - 3
+const HEART_X = PAIR_X + 9
 const HEART_Y = 3
 // a note from a hand to where it seals: across, and up on a curve that
 // rises fast and settles, a whole cell at a time
@@ -1092,13 +1210,13 @@ export function joinStory({ you = 900, them = 2300, both = 3600 } = {}) {
 // than the intro does; and then the screen does not stop.
 //
 // When the mark is whole it gathers up into the top of the glass at two
-// thirds of its size (`SMALL`), hopping cell by cell like everything else,
-// to leave the bottom of the panel to the words (screens/Reveal.jsx types
-// them there, in the phone's face). Then it is alive, ten times a second,
-// on a loop that is only ever a function of the clock:
+// thirds of its size (`SMALL`), gliding like everything else, to leave the
+// bottom of the panel to the words (screens/Reveal.jsx types them there, in
+// the phone's face). Then it is alive, ten times a second, on the pink the
+// dip left, on a loop that is only ever a function of the clock:
 //
-//   the beat     the backlight behind the mark in the blush, lub and dub,
-//                once every 1400ms, and the star warming a little with it
+//   the beat     the backlight behind the mark brighter, lub and dub, once
+//                every 1400ms, and the star warming a little with it
 //   the glint    a light going round the ring, once every 2400ms
 //   twinkle      a cell or two of the star lit in the rose each frame
 //   the heart    a small one floating up off the star every 4000ms
@@ -1108,18 +1226,13 @@ export function joinStory({ you = 900, them = 2300, both = 3600 } = {}) {
 // it at rest, for reduced motion.
 const SMALL_N = 31
 const SMALL = { ox: (COLS - SMALL_N) >> 1, oy: 1 }
-const GATHER_MS = 360
+const GATHER_MS = 560
 const LIVE_MS = 100
 const BEAT = [1, 0.5, 0.78, 0.36, 0.2, 0.1, 0.05, 0, 0, 0, 0, 0, 0, 0]
 const GLINT = 24
 const FLOAT_EVERY = 40
 const FLOAT_FROM = 14
-// a number from a frame and a cell, the same every time it is asked
-const hash = (a, b) => {
-  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35)
-  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d)
-  return ((h ^ (h >>> 13)) >>> 0) / 4294967296
-}
+const PINK = { r: null, level: 1, rim: 0 }
 
 export function revealStory(start = 200) {
   const run = approach({ start, frames: 7, him: 3, her: 0 })
@@ -1128,7 +1241,7 @@ export function revealStory(start = 200) {
     catchAt: run.catchAt,
   })
   const told = s.frame
-  const gatherAt = s.times.done + 160
+  const gatherAt = s.times.done + 200
   const liveAt = gatherAt + GATHER_MS
   let gather = null
   let small = null
@@ -1136,12 +1249,15 @@ export function revealStory(start = 200) {
     if (!small) small = markOn(SMALL_N, SMALL.ox, SMALL.oy)
     return small
   }
+  const wash = () => ({ ...PINK, x: smallMark().cx, y: smallMark().cy })
   const gatherOf = () => {
     const big = markOn(MARK_N, BIG.ox, BIG.oy)
     const to = smallMark()
     const bits = []
-    for (const [s1, d] of pairs(byAngle(big.ring, (p) => [p.x, p.y]), byAngle(to.ring, (p) => [p.x, p.y]))) bits.push([s1.x, s1.y, d.x, d.y])
-    for (const [s1, d] of pairs(byAngle(big.star, (p) => [p.x, p.y]), byAngle(to.star, (p) => [p.x, p.y]))) bits.push([s1.x, s1.y, d.x, d.y])
+    const ring = pairs(byAngle(big.ring, (p) => [p.x, p.y]), byAngle(to.ring, (p) => [p.x, p.y]))
+    const star = pairs(byAngle(big.star, (p) => [p.x, p.y]), byAngle(to.star, (p) => [p.x, p.y]))
+    ring.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, hash(i, 3) * 80, GATHER_MS - 100)))
+    star.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, 20 + hash(i, 5) * 80, GATHER_MS - 100)))
     return bits
   }
   const live = (t) => {
@@ -1156,7 +1272,7 @@ export function revealStory(start = 200) {
       if (d > Math.PI) d = Math.PI * 2 - d
       cells.push([p.x, p.y, 1, d < 0.55 ? 0.9 * (1 - d / 0.55) : 0])
     }
-    // the star, blushing on the beat, and a cell or two of it lit
+    // the star, warming on the beat, and a cell or two of it lit
     m.star.forEach((p, j) => {
       const tw = hash(i, j) < 2.2 / m.star.length ? 1 : 0
       cells.push([p.x, p.y, 1, Math.max(tw, 0.3 * beat)])
@@ -1172,20 +1288,17 @@ export function revealStory(start = 200) {
     return {
       key: `L${i}${fk}`,
       cells,
-      glow: { x: m.cx, y: m.cy, r: 15 + 4 * beat, a: 0.2 + 0.44 * beat, inner: 0.9 },
+      wash: wash(),
+      // the beat: the backlight behind the mark going brighter, and back
+      glow: { x: m.cx, y: m.cy, r: 13 + 5 * beat, a: 0.12 + 0.6 * beat, inner: 0.9, light: true },
     }
   }
   s.frame = (t) => {
     if (t < gatherAt) return told(t)
     if (t < liveAt) {
       if (!gather) gather = gatherOf()
-      const k = (t - gatherAt) / GATHER_MS
-      const e = 1 - (1 - k) ** 3
-      return {
-        key: `G${Math.floor((t - gatherAt) / 33)}`,
-        cells: gather.map(([sx, sy, dx, dy]) => [Math.round(sx + (dx - sx) * e), Math.round(sy + (dy - sy) * e), 1]),
-        glow: { x: BIG.ox + 23 + (smallMark().cx - BIG.ox - 23) * e, y: BIG.oy + 23 + (smallMark().cy - BIG.oy - 23) * e, r: 15, a: 0.2 * e, inner: 0.9 },
-      }
+      const u = t - gatherAt
+      return { key: `G${Math.round(u)}`, cells: gather.map((b) => bitAt(b, u)), wash: wash() }
     }
     return live(t)
   }

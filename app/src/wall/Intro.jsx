@@ -4,10 +4,12 @@
 //
 // A phone, on black, once per tab, before the page exists. Its screen comes
 // on, a boy and a girl run in from either edge of it, and she falls into his
-// arms; they hold on, a heart rises off them, and a soft pink light leaves
-// them and fills the glass and then the dark round the phone, while what they
-// were holding on to becomes the mark. Then the screen goes out and the page
-// is there. It plays over the wall at `/` and at `/berkeley`, and over Main's
+// arms; she leans into him and then back, and he dips her, like a tango. A
+// heart rises off them while he holds her there, and the phone's backlight
+// turns pink, a wave from where they meet out to the edges of the glass and
+// on into the dark round the phone, while what they were holding on to
+// glides together as the mark. Then the screen goes out and the page is
+// there. It plays over the wall at `/` and at `/berkeley`, and over Main's
 // front door, and it is the same three and a half seconds on all of them.
 //
 // It used to be the mark poured in liquid metal, uncovered along its own
@@ -23,27 +25,31 @@
 // battery and nothing that would say a message had come in, because nothing
 // has; no name, because the name is in the bar of the page underneath.
 //
-// ── the beats: 2940ms to the lift, 3600ms to a bare page ────────────────────
+// ── the beats: 2990ms to the lift, 3600ms to a bare page ────────────────────
 //
 //   0 ·    0ms   black. A held frame before anything moves. The screen
 //                comes on at 120, the phone's own flicker (screen.css
 //                `wl-wake`), and throws its light on the black round it.
-//   1 ·  300ms   THE RUN. She comes in from the right, he from the left,
-//                three cells a frame, twelve frames a second. At 1100 he
+//   1 ·  260ms   THE RUN. She comes in from the right, he from the left,
+//                three cells a frame, twelve frames a second. At 980 he
 //                plants his feet and opens his arms and she leaves the
-//                ground; at 1210 she is falling, and hangs there.
-//   2 · 1360ms   THE CATCH. She lands in his arms and he rocks back a
-//                cell to take her; then the cuddle, swaying a cell each
-//                way while her hair and her heel come down, and a small
-//                heart beats once over them from 1560 and rises.
-//     · 1960ms   THE LIGHT. A pastel pink leaves the place they meet and
-//                goes out across the glass, and out of the phone into the
-//                black round it (`.hi-bloom`, `.hi-halo`).
-//   3 · 2800ms   THE MARK. From 2140 what they stood on lifts into the
-//                ring and the two of them gather into the star, carrying
-//                the pink and cooling to ink as each pixel lands on its
-//                cell. The light is gone from the glass at 3060.
-//   4 · 2940ms   THE LIFT. The screen goes to sleep, the phone rises a
+//                ground; at 1090 she is falling, and hangs there.
+//   2 · 1240ms   THE CATCH. She lands in his arms and he rocks back a
+//                cell to take her. At 1380 she leans into him; at 1600
+//                she leans back, and he steps in and dips her, and from
+//                1800 he holds her there, breathing, her head below her
+//                hips and her hair to the floor. A small heart beats once
+//                over them from 1840 and rises.
+//     · 1880ms   THE PINK. The backlight turns pink from where they meet,
+//                a wave out to the edges of the glass, the two of them dark
+//                on it; as it reaches the glass's edge the phone's light on
+//                the black turns pink too and goes out across the room
+//                (`.hi-halo`, `.hi-bloom`).
+//   3 · 2910ms   THE MARK. From 2120 what they stood on lifts into the
+//                ring and the two of them glide together into the star,
+//                every pixel between the cells as it travels and put on
+//                one as it lands. The mark stands whole on a pink screen.
+//   4 · 2990ms   THE LIFT. The screen goes to sleep, the phone rises a
 //                little and dissolves, and the black goes with it; the
 //                page is already rising underneath by the time the black
 //                is half gone, and the last of the pink goes over it.
@@ -53,10 +59,12 @@
 // It plays once per tab: walking back to the wall from a letter does not
 // replay it; a refresh does. It is skippable on any tap or key, and a skip
 // lands the mark and lifts at once, so a brand animation is never a toll
-// gate. A skip before the light has left them does not send it: the pink is
-// the moment, and a moment hurried past is not played in a flash. Under
-// prefers-reduced-motion it draws the mark with the pink standing still
-// round the phone, holds a beat, and lifts; nothing on the glass moves.
+// gate. A skip lands the mark on its pink screen, but it does not send the
+// pink out into the room if it had not gone yet: the wave is the moment, and
+// a moment hurried past is not played in a flash. Under
+// prefers-reduced-motion it draws the mark on the pink screen with the pink
+// standing still round the phone, holds a beat, and lifts; nothing on the
+// glass moves.
 //
 // ── and it waits, when there is something to wait for ───────────────────────
 // `ready` is whether the page under it is ready to be seen. The wall hands it
@@ -79,12 +87,12 @@ import PixelStory, { SQUARE } from './PixelStory.jsx'
 import { introStory } from './pixmark.js'
 import './intro.css'
 
-const STORY = introStory(300)
+const STORY = introStory(260)
 //                 0    1           2                   3                   4
-const BEATS = [0, 300, STORY.times.catch, STORY.times.done, STORY.times.done + 140]
+const BEATS = [0, 260, STORY.times.catch, STORY.times.done, STORY.times.done + 80]
 const LIFT = 4
-// How long the black takes to leave. 2940 + 660 = 3600.
-const OUT = 660
+// How long the black takes to leave. 2990 + 610 = 3600.
+const OUT = 610
 // when the light leaves them, which is when the room takes it up
 const GLOW = STORY.times.glow
 
