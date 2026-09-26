@@ -610,11 +610,11 @@
 .wl-tile-bot i + i { width: 13cqw; }
 
 /* ── the picture, anywhere ── */
+/* A picture keeps its own colours everywhere (screen.jsx `PixelPic`), so
+   nothing here filters or blends it. One that came without CORS was pulled
+   grey and multiplied into the panel, and is drawn as it is now, with the
+   screen's light laid over it by the canvas. */
 .wl-pic { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
-.wl-pic.is-plain { filter: grayscale(1) contrast(1.35); mix-blend-mode: multiply; }
-/* a negative's picture that came without CORS: lit over the dark panel,
-   where multiply would lose it */
-.wl-tile[data-kind='neg'] .wl-pic.is-plain { mix-blend-mode: screen; }
 
 /* ═══ THE THUMBNAIL ════════════════════════════════════════════════════════ */
 /* the bands, a print's own light (`--t-spot`) and the panel; `--mini-in` is

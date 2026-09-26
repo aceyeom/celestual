@@ -99,28 +99,45 @@ function glyph(k, fill) {
 }
 
 // ── the picture ─────────────────────────────────────────────────────────────
-// A profile picture, as a screen of that era would have shown it: cut
+// A profile picture, as a colour screen of that era would have shown it: cut
 // square round the face, brought down to a few dozen pixels, pulled to its
-// own contrast and sharpened, and dithered in four tones of the screen's ink
-// with Atkinson's error diffusion, which is the dither the first bitmap
-// screens were drawn with. On a screen the tones are alpha over the panel,
-// so the same picture is green on a green screen. On a print they are the
-// print's own inks, opaque, so the press strikes each tone as one ink, and
-// a copy has two, since the copier has only toner or none.
+// own contrast and sharpened, and laid on the screen's own colour depth,
+// sixteen steps a channel (the four thousand colours of the first colour
+// phones), with Atkinson's error diffusion, which is the dither the first
+// bitmap screens were drawn with. It keeps the photograph's colours
+// wherever it stands: on a bar, a row, a sheet, opened large, and on the
+// wall's small screens, where a little of that screen's own light lies over
+// it (`glaze`), so a face on a green screen is a face under a green light
+// and never a green face.
+//
+// It was struck in four tones of the screen's ink until 26 September, so
+// the same picture was green on a green screen, grey on every sheet and a
+// negative on the negative, and a person read as a black and white photo
+// everywhere but the field. The owner asked for every picture in its own
+// colour, wherever it is seen. What made it the phone's was never the
+// greys: it is the cut, the few dozen cells and the dither between them.
 //
 // Read with CORS, which the avatar bucket serves. If a picture will not
 // come with CORS it still comes: drawn into the same few pixels without
-// reading them back, and pulled grey by the stylesheet instead of by the
-// dither. Either way a failure is the monogram under it, which was always
-// the designed state.
-const DITHERED = new Map() // `${src}|${cells}|${inv}|${levels}` -> Uint8ClampedArray of tones, or 'taint'
+// reading them back, in its own colour, with the screen's light laid over
+// it by the canvas rather than by the arithmetic. Either way a failure is
+// the monogram under it, which was always the designed state.
+const PICTURES = new Map() // `${src}|${cells}|${glaze}|${over}` -> RGBA cells, or 'taint'
 const IMAGES = new Map()   // src -> Promise<{ img, cors }>
 const LOADED = new Map()   // src -> the image, once it has come
 
-// How many steps of ink a lit screen's picture is struck in: seven tones,
-// so a face reads as a face and not as a scatter of dots. A print keeps its
-// own inks (looks.js `pic`), and a copy the toner's four greys.
-export const PIC_LEVELS = 6
+// How many steps a channel is laid in, less one: sixteen steps, so a skin
+// tone is a skin tone and the dither between two steps is a texture felt up
+// close rather than a scatter of coloured dots.
+const PIC_DEPTH = 15
+// How much of the contrast work (its own levels, the pull off the
+// background and the sharpening, in `toneOf`) is carried onto the colour. A
+// little less than the whole of it: stretched to its own ends in all three
+// channels at once a small picture goes hard and hot.
+const PIC_CARRY = 0.8
+// and how much chroma is given back after the halving, which averages a
+// picture toward grey at a few dozen cells a side
+const PIC_CHROMA = 1.12
 
 export function loadImage(src) {
   if (IMAGES.has(src)) return IMAGES.get(src)
@@ -216,8 +233,9 @@ const ATKINSON = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]
 
 // The picture's own light, cell by cell, in 0..1: the crop brought down to
 // `cells` a side, stretched to its own levels, pulled off its background and
-// sharpened. The dither and the tint (below) both start from it; `raw` is
-// the light before any of that, and `data` the crop's colour, for the tint.
+// sharpened. The colour (below) starts from it: `raw` is the light before
+// any of that, `lum` after it, and `data` the crop's colour, which the
+// difference between the two is carried onto.
 function toneOf(img, cells) {
   const cv = shrink(img, cells)
   if (!cv) return null
@@ -249,76 +267,64 @@ function toneOf(img, cells) {
   return { lum, raw, data }
 }
 
-export function dither(img, cells, inv, levels = PIC_LEVELS) {
-  const t = toneOf(img, cells)
-  if (!t) return null
-  const { lum } = t
-  const n = cells * cells
-  // ink is shadow: how much of the screen's ink each cell wants, in 0..1
-  const want = new Float32Array(n)
-  for (let i = 0; i < n; i++) {
-    const v = lum[i] ** 0.92
-    want[i] = inv ? v : 1 - v
-  }
-  const LEVELS = levels // levels + 1 tones: seven on a lit screen, four on a print, two on a copy
-  const out = new Uint8ClampedArray(n)
-  for (let y = 0; y < cells; y++) {
-    for (let x = 0; x < cells; x++) {
-      const i = y * cells + x
-      const v = Math.min(1, Math.max(0, want[i]))
-      // paper stays paper: no ink and no carried error, so a bright sky
-      // does not grow a row of stray dots
-      if (v < 0.1) { out[i] = 0; continue }
-      const q = Math.round(v * LEVELS) / LEVELS
-      out[i] = Math.round(q * 255)
-      const e = (v - q) / 8
-      for (const [dx, dy] of ATKINSON) {
-        const xx = x + dx
-        const yy = y + dy
-        if (xx >= 0 && xx < cells && yy < cells) want[yy * cells + xx] += e
-      }
-    }
-  }
-  return out
-}
-
-// ── and in colour ──
-// A lit screen's small picture on the wall keeps some of the photograph's
-// own colour, so a face reads from across the field and not only as a shape
-// in the screen's one ink. Each cell is the screen's own drawing of it (the
-// panel where the picture is light, the ink where it is dark, by the light
-// the dither reads) with `amount` of the photograph's colour mixed back over
-// it, moved to that same light. Every cell whole, in RGBA.
-export function tint(img, cells, { inv = false, ink = '#131313', panel = '#FFFFFF', amount = 0.5 } = {}) {
+// ── the picture, in its own colour ──
+// Each cell is the photograph's own colour, moved by the contrast work the
+// light went through (`toneOf`), given back the chroma the halving took,
+// then glazed with `glaze` of the screen's light (`over`, a hex) and laid on
+// the screen's colour depth with Atkinson's diffusion, channel by channel.
+// Every cell whole, in RGBA. The glaze is how a picture sits on a screen of
+// a colour: a lit green screen lays a little green over the face on it, the
+// way a lit screen does, and the face is still that face.
+export function pixelate(img, cells, { glaze = 0, over = '' } = {}) {
   const t = toneOf(img, cells)
   if (!t) return null
   const { lum, raw, data } = t
-  const I = hexRgb(ink)
-  const P = hexRgb(panel)
+  const O = over && glaze > 0 ? hexRgb(over) : null
   const n = cells * cells
-  const out = new Uint8ClampedArray(n * 4)
+  const want = new Float32Array(n * 3)
   for (let i = 0; i < n; i++) {
-    const v = lum[i] ** 0.92
-    const w = inv ? v : 1 - v
-    const d = (lum[i] - raw[i]) * 255
+    const d = (lum[i] - raw[i]) * 255 * PIC_CARRY
+    const r = data[i * 4] + d
+    const g = data[i * 4 + 1] + d
+    const b = data[i * 4 + 2] + d
+    const y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    const px = [y + (r - y) * PIC_CHROMA, y + (g - y) * PIC_CHROMA, y + (b - y) * PIC_CHROMA]
     for (let c = 0; c < 3; c++) {
-      const screen = P[c] + (I[c] - P[c]) * w
-      out[i * 4 + c] = screen + (data[i * 4 + c] + d - screen) * amount
+      const v = O ? px[c] + (O[c] - px[c]) * glaze : px[c]
+      want[i * 3 + c] = Math.min(1, Math.max(0, v / 255))
     }
-    out[i * 4 + 3] = 255
+  }
+  const out = new Uint8ClampedArray(n * 4)
+  for (let y = 0; y < cells; y++) {
+    for (let x = 0; x < cells; x++) {
+      const i = y * cells + x
+      for (let c = 0; c < 3; c++) {
+        const v = Math.min(1, Math.max(0, want[i * 3 + c]))
+        const q = Math.round(v * PIC_DEPTH) / PIC_DEPTH
+        out[i * 4 + c] = Math.round(q * 255)
+        const e = (v - q) / 8
+        for (const [dx, dy] of ATKINSON) {
+          const xx = x + dx
+          const yy = y + dy
+          if (xx >= 0 && xx < cells && yy < cells) want[(yy * cells + xx) * 3 + c] += e
+        }
+      }
+      out[i * 4 + 3] = 255
+    }
   }
   return out
 }
 
-// `amount` over nothing is the dither; over something, the tint, with the
-// screen's `ink` and `panel` under it
-function usePicture(src, cells, inv, levels = PIC_LEVELS, amount = 0, ink = '', panel = '') {
-  const key = `${src}|${cells}|${inv ? 1 : 0}|${levels}${amount ? `|${amount}|${ink}|${panel}` : ''}`
-  const [got, setGot] = useState(() => (src && DITHERED.has(key) ? DITHERED.get(key) : null))
+// The picture for one source at one size under one light, made once for
+// the page and kept, since the same face stands on a bar, a row and forty
+// small screens at once.
+function usePicture(src, cells, glaze = 0, over = '') {
+  const key = `${src}|${cells}|${glaze}|${over}`
+  const [got, setGot] = useState(() => (src && PICTURES.has(key) ? PICTURES.get(key) : null))
   const [img, setImg] = useState(() => (src && LOADED.get(src)) || null)
   useEffect(() => {
     if (!src || typeof document === 'undefined') { setGot(null); setImg(null); return undefined }
-    if (DITHERED.has(key)) { setGot(DITHERED.get(key)); setImg(LOADED.get(src) || null); return undefined }
+    if (PICTURES.has(key)) { setGot(PICTURES.get(key)); setImg(LOADED.get(src) || null); return undefined }
     let live = true
     loadImage(src).then((r) => {
       if (!live) return
@@ -326,50 +332,35 @@ function usePicture(src, cells, inv, levels = PIC_LEVELS, amount = 0, ink = '', 
       let out = 'taint'
       if (r.cors) {
         try {
-          out = (amount ? tint(r.img, cells, { inv, ink, panel, amount }) : dither(r.img, cells, inv, levels)) || 'taint'
+          out = pixelate(r.img, cells, { glaze, over }) || 'taint'
         } catch { out = 'taint' }
       }
-      DITHERED.set(key, out)
+      PICTURES.set(key, out)
       setImg(r.img)
       setGot(out)
     })
     return () => { live = false }
-  }, [src, key, cells, inv, levels, amount, ink, panel])
+  }, [src, key, cells, glaze, over])
   return { got, img }
 }
 
-// The tones struck into a canvas: a print's in its own inks, opaque, so the
-// press prints each tone as one ink, a screen's as alpha in its ink over the
-// panel, and a tint as it is. A picture that came without CORS is drawn as
-// it is too.
-function strike(g, got, img, cells, ink, tones) {
+// The cells struck into a canvas. A picture that came without CORS is drawn
+// as it is, in the same few pixels, and the screen's light is laid over it
+// with the canvas's own fill, since drawing on a canvas it cannot read is
+// allowed and reading it back is not.
+function strike(g, got, img, cells, glaze = 0, over = '') {
   g.clearRect(0, 0, cells, cells)
   if (got === 'taint') {
-    if (img) drawCover(g, img, cells, cells)
-  } else if (got.length === cells * cells * 4) {
-    g.putImageData(new ImageData(got, cells, cells), 0, 0)
-  } else if (tones) {
-    const rgb = tones.map(hexRgb)
-    const top = tones.length - 1
-    const px = g.createImageData(cells, cells)
-    for (let i = 0; i < got.length; i++) {
-      const t = rgb[Math.round((got[i] / 255) * top)]
-      px.data[i * 4] = t[0]
-      px.data[i * 4 + 1] = t[1]
-      px.data[i * 4 + 2] = t[2]
-      px.data[i * 4 + 3] = 255
+    if (!img) return
+    drawCover(g, img, cells, cells)
+    if (over && glaze > 0) {
+      g.globalAlpha = glaze
+      g.fillStyle = over
+      g.fillRect(0, 0, cells, cells)
+      g.globalAlpha = 1
     }
-    g.putImageData(px, 0, 0)
   } else {
-    const [r, gg, b] = hexRgb(ink)
-    const px = g.createImageData(cells, cells)
-    for (let i = 0; i < got.length; i++) {
-      px.data[i * 4] = r
-      px.data[i * 4 + 1] = gg
-      px.data[i * 4 + 2] = b
-      px.data[i * 4 + 3] = got[i]
-    }
-    g.putImageData(px, 0, 0)
+    g.putImageData(new ImageData(got, cells, cells), 0, 0)
   }
 }
 
@@ -378,15 +369,14 @@ function strike(g, got, img, cells, ink, tones) {
 // as a canvas. A canvas is a compositor layer of its own, and every small
 // screen with a face on it was cut round that layer into three, on a field
 // of a hundred moving screens; an image is painted into the screen's own
-// layer. One PNG per picture, colour and size, struck once for the page,
+// layer. One PNG per picture, light and size, struck once for the page,
 // so the same face on forty screens is forty references to one file. A
 // picture that came without CORS cannot be read back into a file and stays
 // a canvas.
-const STILLS = new Map()   // `${picture}|${ink}|${tones}` -> a PNG data URL, or ''
+const STILLS = new Map()   // the picture's key -> a PNG data URL, or ''
 const DECODED = new Set()  // the ones this page has decoded once
 
-function stillOf(id, got, cells, ink, tones) {
-  const k = `${id}|${ink}|${tones ? tones.join(',') : ''}`
+function stillOf(k, got, cells) {
   if (STILLS.has(k)) return STILLS.get(k)
   let url = ''
   const cv = document.createElement('canvas')
@@ -394,33 +384,29 @@ function stillOf(id, got, cells, ink, tones) {
   cv.height = cells
   const g = cv.getContext('2d')
   if (g) {
-    strike(g, got, null, cells, ink, tones)
+    strike(g, got, null, cells)
     try { url = cv.toDataURL('image/png') } catch { url = '' }
   }
   STILLS.set(k, url)
   return url
 }
 
-// `ink` is the colour the dither is struck in, a hex; the stylesheet puts the
-// panel under it. `tones`, on a print, is its inks from paper to darkest, one
-// per tone, and `levels` is one less than how many tones there are. `colour`,
-// on a lit screen, is how much of the photograph's own colour is left in it
-// (`tint`), drawn whole over `panel`, the screen's lit colour. `onReady`
-// tells a caller the picture has landed, so a monogram under it can step
-// aside. `still` draws it as an image (above), and only once it is decoded,
-// so the monogram steps aside for a picture that is there.
-export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels = PIC_LEVELS, tones = null, colour = 0, panel = '', still = false, className = '', onReady }) {
-  // a print is struck in its own inks, and never tinted
-  const amount = tones ? 0 : colour
-  const { got, img } = usePicture(src, cells, inv, levels, amount, ink, panel)
+// `glaze` is how much of the screen's light lies over the picture, and
+// `over` that light, a hex: nothing on a face in the chrome, a little on the
+// wall's small screens, in each one's own colour (`Tile`). `onReady` tells a
+// caller the picture has landed, so a monogram under it can step aside.
+// `still` draws it as an image (above), and only once it is decoded, so the
+// monogram steps aside for a picture that is there.
+export function PixelPic({ src, cells = 28, glaze = 0, over = '', still = false, className = '', onReady }) {
+  const { got, img } = usePicture(src, cells, glaze, over)
   const ref = useRef(null)
   const ready = useRef(onReady)
   ready.current = onReady
   const url = useMemo(() => (
     still && got && got !== 'taint' && typeof document !== 'undefined'
-      ? stillOf(`${src}|${cells}|${inv ? 1 : 0}|${levels}|${amount}|${panel}`, got, cells, ink, tones)
+      ? stillOf(`${src}|${cells}|${glaze}|${over}`, got, cells)
       : ''
-  ), [still, got, src, cells, inv, levels, amount, panel, ink, tones])
+  ), [still, got, src, cells, glaze, over])
   const [seen, setSeen] = useState('')
   const decoded = !!url && (seen === url || DECODED.has(url))
   useEffect(() => {
@@ -442,9 +428,9 @@ export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels
     if (!cv || !got) return
     const g = cv.getContext('2d')
     if (!g) return
-    strike(g, got, img, cells, ink, tones)
+    strike(g, got, img, cells, glaze, over)
     if (ready.current) ready.current(true)
-  }, [url, decoded, got, img, ink, cells, tones])
+  }, [url, decoded, got, img, cells, glaze, over])
   if (!src || !got) return null
   if (url) {
     return decoded ? (
@@ -952,16 +938,19 @@ export function ScreenNote({ glyph = '', title, children }) {
 }
 
 // ── the small screen ────────────────────────────────────────────────────────
-// How much of the photograph's own colour a lit small screen's picture keeps
-// (`tint`): enough that a face reads from across the wall, not so much that
-// it stops being a picture on that screen.
-const TILE_COLOUR = 0.5
+// How much of a small screen's own light lies over the picture on it
+// (`PixelPic` `glaze`): enough that the face is seen to be ON that screen,
+// lit by it, and never so much that it stops being that person's own
+// colours. A lit panel lays its colour, the negative its dark, the square
+// its lime; a print lays its main ink as a press would under a photograph,
+// and a copy its paper, a little more, since a copier washes out.
+const TILE_GLAZE = { lit: 0.14, neg: 0.1, brat: 0.2, print: 0.18, xerox: 0.26 }
 
 // A name on the wall: its newest letter's screen, in that letter's colour,
 // small. The aerial across the top, the battery how long since the last
 // letter, and an envelope blinks on a name that heard from
-// somebody today. The middle is the name's picture, in the screen's own
-// tones with some of the photograph's colour left in, or its monogram.
+// somebody today. The middle is the name's picture, in its own colours
+// under a little of the screen's light, or its monogram.
 export function Tile({ look, seed = '', mono = '', src = '', at = 0, className = '' }) {
   const colour = colourOf(look, seed)
   const s = skinOf(colour)
@@ -999,12 +988,12 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
           <span className={`wl-tile-mid${shown ? ' is-pic' : ''}`}>
             {src ? (
               <PixelPic
-                key={src} src={src} cells={64} ink={s.flat.ink} inv={s.kind === 'neg'} tones={s.flat.pic || null}
-                /* a print in its own inks, a copy in the toner's four greys
-                   (looks.js `skinOf`), and a lit screen in its own two tones
-                   with some of the photograph's colour left in */
-                levels={s.flat.pic ? s.flat.pic.length - 1 : s.kind === 'xerox' ? 3 : PIC_LEVELS}
-                colour={s.print ? 0 : TILE_COLOUR} panel={s.mid}
+                key={src} src={src} cells={64}
+                /* the person's own colours, under a little of this
+                   screen's light: a print's main ink or a copy's paper
+                   (looks.js `skinOf`, `flat.body`), a panel's own colour */
+                glaze={TILE_GLAZE[s.print ? (s.kind === 'xerox' ? 'xerox' : 'print') : s.kind] ?? TILE_GLAZE.lit}
+                over={s.print ? s.flat.body : s.mid}
                 still className="wl-tile-pic" onReady={() => setShownFor(src)}
               />
             ) : null}

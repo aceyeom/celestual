@@ -1670,9 +1670,11 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 
 // ── the face ────────────────────────────────────────────────────────────────
 // A person, as a small lit screen: a square of the night LCD, sized by
-// `size`, carrying their picture dithered into the screen's ink when the
-// resolver has one (screen.jsx `PixelPic`), and their monogram in the
-// screen's face until then and otherwise. The monogram is in place under
+// `size`, carrying their picture cut to the screen's pixels in its own
+// colours when the resolver has one (screen.jsx `PixelPic`), and their
+// monogram in the screen's face until then and otherwise. The picture was
+// dithered into the panel's grey ink until 26 September, which drew every
+// person on a sheet, a row or the bar as a black and white photo. The monogram is in place under
 // the picture, so a picture that never arrives is a designed state and one
 // that fails to load is the same state. `resolve` off draws the monogram
 // only, for the one identity in the product that is not an Instagram handle.

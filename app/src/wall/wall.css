@@ -4541,10 +4541,12 @@ a.wl-lq { text-decoration: none; }
    The face replaced the constellation, and as of the screens (looks.js)
    it is no longer a disc either. A person on this product is a picture on a
    small lit screen: a square of the night LCD, their profile picture cut to
-   a few dozen pixels and dithered into the screen's ink (screen.jsx
-   `PixelPic`), or their monogram in the screen's face while there is no
-   picture. Nothing round is left of it. The corner is a screen's, a pixel
-   or two, and the edge is the panel's own glow rather than a hairline. */
+   a few dozen pixels in its own colours (screen.jsx `PixelPic`), or their
+   monogram in the screen's face while there is no picture. Nothing round is
+   left of it. The corner is a screen's, a pixel or two, and the edge is the
+   panel's own glow rather than a hairline. The picture was dithered into
+   the panel's grey ink until 26 September, and a person read as a black and
+   white photo on every sheet; it keeps its colour now wherever it is. */
 .wl-face {
   --face-ink: #131313;
   position: relative; flex: 0 0 auto; isolation: isolate;
@@ -4575,12 +4577,11 @@ a.wl-lq { text-decoration: none; }
   line-height: 1; color: var(--face-ink); user-select: none;
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
 }
-/* the dither lands over the monogram, and the monogram steps aside */
+/* the picture lands over the monogram, and the monogram steps aside. One
+   that would only come without CORS is drawn in its own pixels and its own
+   colours too, and nothing here pulls it grey */
 .wl-face .wl-pic { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; }
 .wl-face.has-img .wl-face-mono { opacity: 0; }
-/* a picture that would only come without CORS is drawn in its own pixels
-   and pulled grey into the panel by the blend instead of by the dither */
-.wl-face .wl-pic.is-plain { filter: grayscale(1) contrast(1.35) brightness(1.05); mix-blend-mode: multiply; }
 
 .wl-who { display: inline-flex; align-items: center; gap: 11px; min-width: 0; }
 .wl-who-id { min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
