@@ -36,6 +36,129 @@ tier has no point in time recovery.
 
 ---
 
+## The rulings of 26 September: the deploy (migrations 0065 to 0068)
+
+The owner's batch of 26 September (docs/ONE-WALL.md, "The rulings of 26
+September"): the email login on our own link and the number that is typed,
+every letter open, anybody writing to an @, the wall sorted, and the replies.
+Four migrations, one new function, three redeployed, then the front end. The
+database goes first and the front end last, as before, with one place where
+the order has a cost, which is said where it is.
+
+### Before
+
+- [ ] **`MODERATION_API_KEY` is set.** Confirm it. It matters more now: without it every @-note posted `on the wall` and
+      every reply waits for the desk (`pending` and `held`, reason
+      `unconfigured`), since both are read before they are written.
+      `celestual-wall-reply` reads the same two secrets as
+      `celestual-wall-moderate`, `MODERATION_API_KEY` and, optionally,
+      `MODERATION_MODEL`, and nothing else of its own.
+- [ ] `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL` and `CELESTUAL_SITE_URL` are
+      set, as for 0064: the login mail is the verify mail.
+
+### The order
+
+1. [ ] **Apply `0065_the_link_for_everybody.sql`.** The login purpose, the
+       bind by address, the number that is asked for, the resend that keeps
+       its number, and `celestual_session_handle_proof`. From the moment it
+       is applied, a link opened on a device that did not ask for it answers
+       `match` and waits, because the function deployed today calls the two
+       argument confirm, which is the same check with no number: it fails
+       closed. A link opened on the device that asked confirms as it always
+       did. So steps 1, 5 and 9 belong together, the same hour.
+2. [ ] **Apply `0066_every_letter_open.sql`.** Every letter's body to anybody,
+       `wall_free_reads` dropped with its rows (**irreversible**, and all it
+       held was which browser had read which letter, at most eight a
+       browser), the six `wall_free_*` functions left doing nothing, and the
+       thirteen argument `wall_write`. The build that is live starts drawing
+       every letter whole at once, since it only drew the seal off `gated`.
+3. [ ] **Apply `0067_the_wall_sorted.sql`.** One view, three columns appended
+       at its end. The live build asks for its columns by name and does not
+       notice.
+4. [ ] **Apply `0068_the_replies.sql`.** The heart open to any device, the
+       five reply tables, the salt row, the thread, like, report and shut
+       functions, the service role's write, and the desk's two.
+5. [ ] **`supabase functions deploy celestual-edu-verify`.** Needs 0065: the
+       `login` purpose, `match` passed on to the confirm, the number the
+       database kept answered back on a resend, and the mail that no longer
+       prints the number.
+6. [ ] **`supabase functions deploy celestual-wall-moderate`.** Reads `proof`
+       (0066). A request without it is the Berkeley kind, as every @-note was,
+       so a tab on the live build is answered exactly as before; against a
+       database without 0066 it steps down to the twelve argument write.
+7. [ ] **`supabase functions deploy celestual-wall-reply`.** New. JWT
+       verification on, as `config.toml` says
+       (`[functions.celestual-wall-reply] verify_jwt = true`), so no
+       `--no-verify-jwt`. Needs 0068 (`wall_reply_can`, `wall_reply_agree`,
+       `wall_reply_replay`, `wall_reply_write`); if `wall_reply_agree` is
+       missing the call is only logged and the write keeps the agreement.
+8. [ ] **`supabase functions deploy celestual-admin`.** The desk's
+       `desk_replies` and `desk_reply_set` (0068). It is deployed with JWT
+       verification on today and `config.toml` says off (Settings worth
+       knowing, below); deploy it the way it is deployed now.
+9. [ ] **Ship the front end.** The email door on the link, the number on the
+       asking screens and the number step on `/verify`, the nudge, the three
+       ways to post, the mark, the filter, the replies, and the desk's
+       replies screen.
+
+Apply each migration through the SQL editor or the MCP's `apply_migration`
+with the file's name (`0065_the_link_for_everybody`, `0066_every_letter_open`,
+`0067_the_wall_sorted`, `0068_the_replies`), so the history says what ran.
+
+### After: Supabase Auth's Email provider can go off
+
+The door's `continue with email` no longer touches Supabase Auth: it is
+`celestual-edu-verify`'s own link, purpose `login`, and
+`supabase/templates/magic-link.html` is deleted with the code that wrote it.
+Google signs in through Supabase Auth and does not need the Email provider. So
+once the front end is out, Supabase → Authentication → Providers → **Email**
+can be switched off, and the Magic Link template and the Auth SMTP settings
+(The Auth template, below) stop mattering.
+
+A tab still open on the previous build keeps calling Supabase's OTP from its
+email door (`signInWithOtp`) until it is reloaded. It never signed anybody in
+that way (the live template mailed eight digits into a box of six); with the
+provider off it is refused instead of mailing that code. Leave it on for a day
+if that tail matters.
+
+### After: the checks
+
+```sql
+-- the four are in the history
+select version, name from supabase_migrations.schema_migrations
+ where name in ('0065_the_link_for_everybody', '0066_every_letter_open',
+                '0067_the_wall_sorted', '0068_the_replies');
+
+-- the readership record is gone, and the index carries the filter's numbers
+select to_regclass('public.wall_free_reads');   -- null
+select target_handle, hearts, berkeley, berkeley_at from wall_index_all order by hearts desc limit 5;
+
+-- the replies' salt is there, and nothing is waiting yet
+select count(*) from celestual_settings where key = 'wall_reply_salt';   -- 1
+select status, count(*) from wall_replies group by 1;
+
+-- the login and the number, as they are used
+select purpose, status, count(*) from celestual_edu_verifications
+ where kind = 'link' and created_at > now() - interval '1 day' group by 1, 2;
+```
+
+Then, by hand: ask for a login link on a phone, open it on a laptop, and see
+the laptop ask for the number the phone shows; type a wrong one on another
+try and see the phone say the link ran out. Post to an @ without the Berkeley
+address and see it read first. Reply to a letter from a school address.
+
+### If it has to come back
+
+- New replies off at once: `supabase functions delete celestual-wall-reply`.
+  It is the only way a reply is written; the threads stay readable.
+- The functions: redeploy the previous version from the dashboard. An older
+  `celestual-edu-verify` against 0065 fails closed across devices (it never
+  passes a number), and confirms on the asking device as it did.
+- 0066's table does not come back, and nothing needs it: the six functions
+  that kept it answer as though every letter were free.
+
+---
+
 ## One wall: the deploy (migrations 0062 to 0064)
 
 The rulings of 25 September (docs/ONE-WALL.md). Three migrations, three
@@ -94,7 +217,7 @@ database goes first and the new front end ships last.
        every person with a proved campus address (six live).
 6. [ ] **`supabase functions deploy celestual-edu-verify`.** Needs 0064 (the
        link RPCs). `send` / `verify` are unchanged for the old build.
-7. [ ] **The Auth template** (below).
+7. [ ] **The Auth template** (below). Superseded by 0065: skip it.
 8. [ ] **Ship the front end** that speaks `v: 2`, `/verify`, `/r` and `/alerts`.
 
 Apply each migration through the SQL editor or the MCP's `apply_migration` with
@@ -102,6 +225,11 @@ the file's name (`0062_the_google_identity_moves`, `0063_one_wall`,
 `0064_mail_links_and_alerts`), so the history says what ran.
 
 ### The Auth template
+
+**Superseded on 26 September by 0065.** The email login is our own link now
+(the deploy above), the template file and the code that wrote it are deleted,
+and Supabase Auth's Email provider can be switched off. What follows is the
+step as it stood.
 
 "continue with email" (migration 0057) is Supabase Auth's own mail, a six digit
 code. Its template is `supabase/templates/magic-link.html`, written by
@@ -993,6 +1121,8 @@ are real redeploys, not formalities.
       `celestual-manychat` (19) and `celestual-ig-webhook` (17) for the
       verified DM's new wording.
 - [ ] `supabase functions deploy celestual-wall-moderate`.
+- [ ] `supabase functions deploy celestual-wall-reply`. New on 26 September,
+      after 0068; the order is at the top of this file.
 - [ ] `supabase functions deploy celestual-edu-verify`.
 - [ ] `supabase functions deploy celestual-notify`.
 - [ ] `supabase functions deploy celestual-manychat`.
@@ -1656,6 +1786,10 @@ failure until it has. Apply first, then deploy the function, then the app.
 
 ## Eight before the door (migration 0049)
 
+**Undone on 26 September by 0066**, which gives every letter to anybody,
+drops `wall_free_reads` and leaves the functions doing nothing (the deploy at
+the top of this file). Kept as the record.
+
 The free reads go from five to eight. One migration, and no app change: the
 allowance is one function (`wall_free_allowance()`) and everything 0045 built
 reads its ceiling from it, so the meter, the key and the reads are as they
@@ -1666,6 +1800,9 @@ were and a browser that has spent five has three left.
    into the SQL editor. Re-runnable. Nothing else has to move.
 
 ## Five before the door (migration 0045)
+
+**Undone on 26 September by 0066**, as 0049 was; `test-free-reads.sql` went
+with it. Kept as the record.
 
 The first five letters anybody reads are free, whoever they are, and the sixth
 is blurred with the gate on it. One migration and the app. No function changes.

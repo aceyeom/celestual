@@ -85,8 +85,9 @@ export const alertsOffByToken = (token) =>
 // ── the address the alerts go to ────────────────────────────────────────────
 // A magic link, confirmed on /verify (built beside this), for the purpose
 // 'alerts'. The answer carries `request`, which `linkStatus` is asked about,
-// and `match`, the two digits printed in the email so a person can tell their
-// own request from somebody else's.
+// and `match`, the two digits the asking screen shows and nothing else does:
+// the email never prints them (migration 0065), and a link opened on another
+// device confirms only once they are typed there.
 async function invoke(body) {
   if (!hasSupabase) return OFFLINE
   try {

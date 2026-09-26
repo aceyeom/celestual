@@ -14,17 +14,45 @@ be.
 
 **The wall**, at `/`. The front door is the wall for everybody: short anonymous
 letters, each addressed to one Instagram handle or to a first name. The list
-of names is public, and so are the first eight letters anybody reads. After
-those, reading needs a proof of a person, any of the four the product takes: a
-verified Instagram handle, a Google account, an address a code was mailed to,
-or a campus address. Writing there needs the same. Every letter goes up at
-once and is read where it stands, and what comes down is a letter with a
-consequence in it, never a tone (`supabase/functions/celestual-wall-moderate`).
+of names is public, and since 26 September so is every letter on it, whole, to
+anybody, as many as they care to read (migration 0066). It used to be the first
+eight letters and then a proof. Now nothing is withheld: a reader who is not
+signed in is nudged, a small note under the card from the eighth letter this
+browser opens and again every twelve after that, which they can put away and
+which never stands in front of a word.
 
-**The wall at Berkeley**, at `/berkeley`. The same wall for one campus, reached
-by scanning a code off a flyer. Reading is the same; writing needs a
-`berkeley.edu` address, proved by a mailed code or by the campus's own Google
-account.
+Anybody can write, to an @ or to a name, and what they write is read before it
+goes up: a pass goes up, a doubt waits for a person at the desk, a refusal
+never goes up. A writer who has proved a `berkeley.edu` address can post as a
+Berkeley student instead, and that letter goes up at once, is read where it
+stands, and carries the Berkeley mark: the network's name, `CAL`, the aerial lit
+in gold and a star, in the status row of its screen, the way an old phone named
+its carrier. Either way, what comes down is a letter with a consequence in it,
+never a tone (`supabase/functions/celestual-wall-moderate`). The @ is never
+printed on a letter or its picture: a letter to a handle says `dear` and the
+writer's greeting, or the first name the resolver has for the handle, or
+`dear you`, and the handle stays the key it is filed and found under.
+
+Under every letter is its thread of replies (migration 0068): anonymous to
+everybody reading, written from a proved school address or by the person the
+letter is to, whose replies are lit in the letter's own colour, and read before
+they go up (`supabase/functions/celestual-wall-reply`). A heart on a letter,
+and a like on a reply, is anybody's. The field of names can be looked at four
+ways, all, newest, most liked and Berkeley, from a key at the end of its search
+(migration 0067).
+
+Signing in is any of the four proofs of a person the product takes: a verified
+Instagram handle, a Google account, an address a link was mailed to (migration
+0065: the product's own link, since the code Supabase mailed could never be
+typed back), or a campus address. Any of them is what reporting a letter asks
+for; a private note, and the email that says a letter was written to you, ask
+for the Instagram one, because both are about the @. Reading never asks.
+
+**The wall at Berkeley.** It used to be a second wall, at `/berkeley`, reached
+by scanning a code off a flyer, where writing needed a `berkeley.edu` address.
+Since 25 September it is one wall (docs/ONE-WALL.md): `/berkeley` and `/beta`
+redirect to `/`, and a letter's campus is the school it carries, not the wall
+it is on.
 
 **Main**, at `/ping`. The product the wall hands off into: place a ping, hold
 two at a time, sixty days each, and a reveal that happens to both people or to
@@ -53,12 +81,18 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0058, in order. 0029 onward is the rebuild; 0038 is
+  migrations/       0001 to 0068, in order. 0029 onward is the rebuild; 0038 is
                     the audit; 0057 is the wall at the root and the login;
-                    0058 gives every letter a colour of the screens
+                    0058 gives every letter a colour of the screens; 0063 is
+                    the one wall; 0065 is the login by our own mailed link,
+                    the number that is typed and not printed, and the @ that
+                    comes back with the person; 0066 opens every letter and
+                    lets anybody write to an @; 0067 sorts the wall; 0068 is
+                    the replies, and the heart open to anybody
   functions/        the edge functions. celestual-resolve, -admin,
-                    -wall-moderate, -edu-verify, -ig-webhook, -manychat,
-                    -mutual-dm, -notify, -stripe, -stripe-webhook
+                    -wall-moderate, -wall-reply, -edu-verify, -ig-webhook,
+                    -manychat, -mutual-dm, -notify, -remind, -stripe,
+                    -stripe-webhook
 
 design/             the design system. DESIGN.md is the source of truth
 scripts/            the tooling: migrations, screenshots, the mark, the voice
@@ -91,6 +125,9 @@ scripts/verify-migrations.sh --test    apply every migration to a bare
                                        PostgreSQL, then run scripts/sql/test-*
 node scripts/preview.mjs               screenshot every route, with fixtures
 node scripts/mail-preview.mjs          screenshot every email template
+node scripts/check-stories.mjs         the stories on the glass, checked on
+                                       every frame: the two come on together,
+                                       and a note never touches either of them
 node scripts/shots.mjs /terms          screenshot one address or one file
 node scripts/export-mark.mjs           the logo, out of the code that draws it
 node scripts/export-liquid.mjs         the liquid metal mask, from the same geometry
@@ -131,8 +168,9 @@ order to apply what is left.
 | [design/components.html](./design/components.html) | The system rendered: every component, colour, type size and state |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy model: hashed targets, the slot rule, the purge, the opt out |
 | [docs/HANDLE-RESOLVER.md](./docs/HANDLE-RESOLVER.md) | The resolver: Apify, the permanent cache, the three caps, the stored face |
-| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | The campus email gate, wired live |
-| [docs/GOOGLE-AUTH-SETUP.md](./docs/GOOGLE-AUTH-SETUP.md) | Google sign in and the mailed code, step by step, for a first time |
+| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | The mailed link: a campus address, an alert address and signing in by email, and the number that is typed rather than printed |
+| [docs/GOOGLE-AUTH-SETUP.md](./docs/GOOGLE-AUTH-SETUP.md) | Google sign in, step by step, for a first time. Its mailed code went with migration 0065 |
+| [docs/ONE-WALL.md](./docs/ONE-WALL.md) | The rulings of 25 and 26 September, and the contract the front end, the functions and the database agree on |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/MANYCHAT-SETUP.md](./docs/MANYCHAT-SETUP.md) | The DM relay |
 | [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | Telling somebody on Instagram that it is mutual, inside Meta's rules |
@@ -156,8 +194,8 @@ order to apply what is left.
 | `/place`, `/place/<handle>`, `/@handle` | placing one |
 | `/sky` | what you have out |
 | `/reveal/<handle>` | a mutual, opened |
-| `/berkeley` | the wall at Berkeley, and the same eight addresses under it |
-| `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
+| `/berkeley`, `/beta` | the wall's printed addresses. They were the wall at Berkeley, with its own sheets under it; since 25 September they redirect to `/`, keeping what follows them (`/berkeley/letter/<id>` is `/letter/<id>`, docs/ONE-WALL.md) |
+| `/verify#t=` | the link every mail that proves an address carries: a login, a school address or an alert address. Opened on the device that asked, it confirms at once; opened anywhere else, it asks for the number on the asking screen (migration 0065) |
 | `/c/<code>` | what the five printed cards carry in their QR. Logs the scan, then hands the visitor to wherever that card is pointed |
 | `/optout` | take a handle off, permanently, proved with one DM, no account |
 | `/signin` | the link a mail sends somebody to |

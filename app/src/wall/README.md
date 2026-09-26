@@ -21,6 +21,20 @@ ring on the disc nearest the middle came off. **Every disc on the glass turns
 over on its own clock**, ten to forty seconds by its distance from the light,
 a few at a time, rather than one disc every few seconds.
 
+**And since 26 September more of what follows is the record and not the
+wall** (the owner's batch, docs/ONE-WALL.md, migrations 0065 to 0068). Every
+letter reads whole to anybody, as many as they like, and the eight before the
+door, the struck out words and the seal under the ninth card are gone: a
+reader who is not signed in gets a nudge under the card instead (rule 1,
+below, says what it does now before it tells what it was). Anybody can write
+to an @, and what they write is read before it goes up; a letter from a
+proved Berkeley address goes up at once and carries the Berkeley mark in its
+status row where the sticker stood. The @ is never printed on a letter. A
+letter has a thread of replies under it (The replies, below), the heart is
+anybody's, and the field can be looked at four ways from a key at the end of
+its search (The search, The hive and The deck, below). The door's email way in
+is a link now, with a number to type on another device, where it was a code.
+
 **As of Phase 6b of the rebuild it reaches a server.** The letters, the campus
 gate, the handle proof, the reports and the takedowns are in the schema
 (`supabase/migrations/0032_the_wall.sql`), reached through `wall/api.js`.
@@ -43,12 +57,38 @@ Run it: nothing to configure. `npm run dev`, open `/berkeley`.
 
 ### 1 · The index is public. The letters are not.
 
+**Since 26 September the letters are public too, and this rule is the
+record.** "Never hide or limit how many letters a user can view. Only nudge
+them." Migration 0066 hands every live letter's body to anybody, proved or
+not, as many as they read, and the database keeps no count: `wall_free_reads`
+is dropped with its rows, and the six `wall_free_*` functions stay and do
+nothing, so an older read run again hands over every body. The seal is gone
+from the letter (the struck out words, the padlock, the `read it` key and its
+line), and so are `gated` and `free` from the reads. What is left of the door
+is a nudge (`Nudge.jsx`, `nudge.css`): a small note under the card in the
+phone's own style, an unlit panel with the envelope, a dotted seam and two
+soft keys, `not now` and a lit `confirm your Instagram`, over the line
+`confirm your Instagram once and we'll email you, and only you.` It is shown
+only to somebody not signed in, from the eighth letter this browser has opened
+(`store.js` `opened`), which is where the door used to stand, then every
+twelve after that, and a `not now` is remembered for three days and twelve letters. It is
+decided once, as the letter's sheet opens, so its room under the card is there
+from the first frame and the card never moves when it arrives; put away, it
+folds shut and the card settles back where it would stand with no note. It
+never says a count or that anything will run out, because nothing will. Its
+key opens the account on the Instagram DM and then asks about the email
+(`You.jsx` `openForAlerts`), since the one thing a proof gets a reader that
+reading does not is the email when a letter is written to their own @, and
+only the DM proves the @. The report still asks for a proof (`wall_read_gate`
+stands). What follows, to rule 1a, is how it was, with the doors table
+corrected where a door has moved.
+
 The wall carries two different things and they cannot have the same rule.
 
 | | |
 | --- | --- |
 | **the index** | sixty-six handles, the count against each one, and nothing else. **Open to everybody.** It is what somebody who has just scanned a code off a card has to be able to see in four seconds without answering anything, and it is how a person finds their own name in order to ask for it to come off. |
-| **the letters** | what was actually written, who may write one, and who may take one down. **Eight to anybody, then a proof.** |
+| **the letters** | what was actually written, who may write one, and who may take one down. **Eight to anybody, then a proof.** Since 0066, every one to anybody. |
 
 Every browser is handed **eight whole letters** before it is asked for anything
 (migration 0045, raised from five in 0049). After those, a letter arrives
@@ -79,9 +119,10 @@ the letters" on a surface they had signed in to.
 
 | | | |
 | --- | --- | --- |
-| **reading** | the first eight are free to anybody. After that, any proof: a `berkeley.edu` address, a handle verified by the DM code, a google account or a mailed code (migration 0057). The heart goes with reading. This browser's copy of that answer (`auth.js` `refresh`, the `reader` flag) counted only the first two until the like fix, so a person signed in by google or a code read every letter and could never heart one: each press went to a gate they had already been through | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
-| **reporting** | any proof, with reading | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
-| **writing** | the `berkeley.edu` address, and three letters in any five days (seven until migration 0051). The number is never drawn; once they are spent the composer says only how many days to wait before drafting more. Since 0052 both the number and whether it is counted at all are rows the desk holds, and the ration is **currently switched off** while the wall is being filled by the people who built it — the address is not | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
+| **reading** | **Since 0066, nobody is asked: every letter, whole, to anybody, and a nudge under the card from the eighth (above). Since 0068 the heart is anybody's too: a device the product has never seen gets a bare row and a session, so a heart is still one per person.** Before that: the first eight are free to anybody. After that, any proof: a `berkeley.edu` address, a handle verified by the DM code, a google account or a mailed code (migration 0057). The heart goes with reading. This browser's copy of that answer (`auth.js` `refresh`, the `reader` flag) counted only the first two until the like fix, so a person signed in by google or a code read every letter and could never heart one: each press went to a gate they had already been through | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
+| **reporting** | any proof, with reading. **Still any proof, now that reading asks for none: a person not signed in is told on the report's first step, sent to the door with the report as where it lands, and the report is filed once they are back** | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
+| **replying** (0068) | a proved school address (any `.edu`, or the desk's pass list), or the person the letter is to, proved by the Instagram claim. Liking a reply is anybody's, as the heart is | the accountability the @-notes keep, on the one place where one anonymous writer answers another in public; and the person a letter is about is the one reader who should never need a school to answer it |
+| **writing** | **Since 0066, anybody, to an @ or a name, read before it goes up (a pass goes up, a doubt waits for the desk, a refusal never goes up), with no school and never the mark; or, as a Berkeley student, the `berkeley.edu` address, up at once, read where it stands, with the Berkeley mark.** Before that: the `berkeley.edu` address, and three letters in any five days (seven until migration 0051). The number is never drawn; once they are spent the composer says only how many days to wait before drafting more. Since 0052 both the number and whether it is counted at all are rows the desk holds, and the ration is **currently switched off** while the wall is being filled by the people who built it — the address is not | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
 
 **Being let in is not being known.** The address is never attached to a letter,
 the composer never reads it, and a letter still has three fields with no fourth
@@ -212,20 +253,25 @@ its cards screen. What each card is judged on is not scans but `joined`: a
 campus address or a handle proved after that code was scanned (migration 0047).
 
 ```
-                     ┌──▶ a letter ──┬─ from berkeley? ──▶ read it whole
-                     │               │                     └─▶ the flag ──▶ off
-                     │               │                        the wall NOW, then
-                     │               │                        read by a person
-                     │               └─ otherwise ───────▶ redacted, and one
-                     │                                     offer: an address
-   scan ──▶ THE WALL ┼──▶ look for a name
+                     ┌──▶ a letter ──▶ read it whole, whoever you are (0066)
+                     │         │         ├─▶ the flag ──▶ off the wall NOW,
+                     │         │         │               then read by a person
+                     │         │         ├─▶ the heart, anybody's (0068)
+                     │         │         └─▶ its thread: read the replies, or
+                     │         │             answer (a school, or the one it is to)
+                     │         └─ not signed in, from the eighth ──▶ a nudge
+                     │            under the card, and never a word withheld
+   scan ──▶ THE WALL ┼──▶ look for a name, or look at the field four ways
      (the names ask  │         └──▶ nobody has? be the first
       nothing, ever) ├──▶ that's my name ──▶ prove it (instagram) ──▶ the whole
                      │                                        name off, for good
-                     └──▶ write ─────── berkeley? ── screened ──┐
-                                  │                            │
-                                  ▼                            ▼
-                             it's up ──▶ the wall, with it on ◀┘
+                     └──▶ write ── as a Berkeley student? ── the mark, up
+                                  │                         at once, read
+                                  │                         where it stands ──┐
+                                  └── anybody ── read first ── a pass ──┐     │
+                                                   └─ a doubt: the desk │     │
+                                                                        ▼     ▼
+                             it's up ──▶ the wall, with it on ◀─────────┴─────┘
                                               │
                                     ┌─────────┴──────────┐
                                     │  and only NOW, a   │
@@ -237,6 +283,13 @@ campus address or a handle proved after that code was scanned (migration 0047).
                                               ▼
                                       THE CORE SERVICE
 ```
+
+Until 26 September the letter's branch split on the reader, `from berkeley?`
+to read it whole and `otherwise` to a letter redacted with one offer, an
+address, and the write's on the writer, `berkeley?` and then screened. The
+letter does not split on who you are any more, it is whole to everybody; and
+the write asks how public the letter is, and asks for the Berkeley address
+only of somebody who chooses the mark.
 
 Two things called *register* live on this surface and they are not the same
 thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
@@ -290,6 +343,37 @@ in, so what is seen is one thing growing. A name is found and pressed from
 the surface the names are on, which is the whole argument for the wall being
 the landing. The sheet is still there at `/find`: a link into the search, and
 the fuller answer for somebody who arrived looking rather than browsing.
+
+**And it carries the filter** (`Filter.jsx`, `filter.css`, 26 September: "Add
+a filtering mechanism, to see only Berkeley, newest, most liked, these kind of
+things. Make it clean."). At the end of the strip, inside the same glass and
+behind a seam of its own dashed pixels, stands the word for what the field is
+showing and the phone's down chevron after it: the phone's options key on the
+phone's find. The word is ash while the field shows every name and chalk while
+it shows fewer, and it is never lit, since the lit key on this screen is the
+act at its foot. It opens a phone's menu in the strip's own panel, under the
+same dashed seam the answers open under, the row under the finger or the
+arrows inverted and the phone's check on the one that is on; arrows, Home,
+End, Enter and Escape work, and the focus comes back to the key. The search
+and the menu are one panel and never both: pressing the key folds the answers,
+typing again puts the menu away, and so does a press anywhere else. There are
+four choices (`data.js` `FILTERS`), kept for as long as the tab is
+(`sessionStorage`, `celestual.wall.filter`), because a filter is where
+somebody is looking this visit and not a setting they made:
+
+| | |
+| --- | --- |
+| `all` | every name, seated as the wall has always been seated |
+| `newest` | the names written to in the last seven days, newest first, and never fewer than the twelve newest, so a quiet week still shows what came in last |
+| `most liked` | the names whose letters carry a heart, the most first: every heart on every letter under the name, the seeded and the pressed, the number each letter shows, added up (migration 0067, `wall_index_all.hearts`). Not offered on an index without the hearts, rather than drawn empty |
+| `Berkeley` | the names with a letter from a verified Berkeley address, the newest of those first (`berkeley`, `berkeley_at`; on an older index, the newest letter's own mark) |
+
+A filter that lets nothing through says so on an unlit panel, `no letters
+from Berkeley yet.` or `no letter has a heart yet.`, with one key, `see every
+name`. A letter posted while the filter leaves its name out puts the field
+back to `all`, so its arrival is seen. `data.js` `wall()` answers the filtered
+field in the filter's order, and `wall(true)` every name, which is what the
+search sheet's six newest read.
 
 The sheet hears what a person actually types (migration 0054): the query goes
 to the server as typed, and the server matches the handle, the handle with
@@ -373,18 +457,21 @@ still after the last word. Every letter is the same screen, set in one face
 
 | | |
 | --- | --- |
-| **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. Then the pen, `dear` and the first name, and the handle. Where the resolver has no name it is `dear` and the handle alone. A sealed letter has a padlock where the pen is. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 140 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and a story screen (the intro, the door, the mutual) carries the glyphs, or the two handles, and neither |
-| **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter is its stars |
-| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; a press from outside the gate is carried through it and pressed on the way back in, and a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
+| **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. A letter from a verified Berkeley address carries the Berkeley mark in this row (below). Then the pen and `dear` with the writer's greeting, or the resolver's first name for the @, or, with neither, `dear you`. It used to be `dear` and the first name and then the handle, and `dear` and the handle alone where the resolver had no name; since 26 September the @ is never printed on a letter, its card while it loads, the letters asleep either side of it or its picture, and the handle is only the key the letter is filed and found under (`wall_search` still finds it by it). A sealed letter had a padlock where the pen is, until the seal went with 0066. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 140 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and a story screen (the intro, the door, the mutual) carries the glyphs, or the two handles, and neither |
+| **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter was its stars, until 0066 |
+| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; since 0068 a press is anybody's and goes straight to the server, where it used to be carried through the gate from outside it and pressed on the way back in; a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
 The only thing a writer chooses is the COLOUR it is lit in, from one pool of
 twelve under no heading, in the order of a spectrum (`Look.jsx`, under the
-composer's screen while its `colour` key is on): six lit screens, the
-negative, three posters and a riso, which keep their own ground, and the
+composer's screen while its `colour` key is on): seven lit screens, the
+negative, two posters and a riso, which keep their own ground, and the
 xerox. Each colour brings its treatment with it, and a print its own light
 (`LIGHTS`): acid keeps the backlight's hot corner, teal has a keyline inside
-its rule, lilac its light as a
-halftone, and violet / yellow the phone's two bands in the violet drum. The
+its rule, and violet / yellow the phone's two bands in the violet drum. Lilac
+was a poster with its light as a halftone until 26 September, and is a lit
+screen now, a lavender backlight between rose and ice with the photograph's
+treatment the other lit screens have; its slug and name did not change, so no
+row moved. The
 light is drawn the same on the letter, the tile, the thumbnail and the
 shared picture, and `/looks.html` on the dev server draws all four side by
 side. Blush, cobalt, pink / blue, orange / teal and red / green left the
@@ -396,13 +483,33 @@ little off (`rgbTile`) and dust come out of its id (`quirks`), so no two
 letters are the same photograph and no letter is a different design. The
 aerial, the battery and the pen are the one phone's, drawn at its sizes.
 
+**A Berkeley letter is a phone on Berkeley's network.** A letter posted from a
+verified Berkeley address carries, in its status row, the aerial lit in Cal
+gold, then the network's short name, `CAL`, in the screen's own face a size
+under the date, and a seven pixel star (`looks.js` `PIX.star`), the way an old
+phone named its carrier; the date stays between them and the battery, and
+nothing covers the battery. The whole phone carries two quieter signs in the
+same gold, a hairline round the glass and a faint cast down the status band,
+on lit, negative and acid screens alike. A print strikes the name, the star
+and the aerial in its palest ink, and leaves off the trim and the cast, which
+its press would break into specks. A screen reader hears the row as one
+image, `written by a verified berkeley.edu student`. The shared picture draws
+the same (`share.js`), and off a screen, on the composer and the verify page,
+the row stands on a small unlit plate (`Sticker.jsx`, which kept its name and
+its props). It replaced a die cut `CAL` sticker that sat over the battery and
+read as stuck on from outside. Where a school is only named, on a name note
+(`schools.js` `letterMarks`), it reads `at UC Berkeley`, so it cannot be taken
+for the mark. Only a letter that went up as a Berkeley student carries it: a
+letter anybody posts on the wall, to an @ or a name, never does.
+
 The room an opened letter stands in is black, with the screen's own light
 falling on it (`.wl-room-light`); the wall goes out behind it. On the wall
 each name is its newest letter's screen, small (`Tile`): the aerial across the
 top, the battery how long since the last, an envelope blinks on a
-name written to today, and the middle is the name's picture, in the screen's
-own tones with some of the photograph's colour left in, or its monogram. A
-print's small screen carries its print's light. Nothing on the wall is round.
+name written to today, and the middle is the name's picture, in its own
+colours cut to the phone's cells with a little of the screen's light laid
+over it (it was the screen's own tones until 26 September), or its monogram.
+A print's small screen carries its print's light. Nothing on the wall is round.
 
 Everything round the screens is the same phone (design/DESIGN.md 2.6,
 `phone.css`): one face for every word but the brand's, square keys, unlit
@@ -428,9 +535,10 @@ the brand at its top left and `view the wall` under it (`Letter.jsx`
 `LetterBrand`, `ViewWall`). Either one drops the wall's poster and closes
 the letter onto the names; the close key still lands on the poster.
 
-The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
-it: the gate under a sealed card says `read it` and not a word of policy,
-because the card beside it has already said what it is.
+The one stamp a letter could carry was `sealed`, and only a SHUT letter
+carried it: the gate under a sealed card said `read it` and not a word of
+policy, because the card beside it had already said what it was. The seal
+went with 0066, and the nudge stands where its line stood (rule 1).
 
 It was forty-two papers, twenty-nine colours and twenty-four faces, on one
 rail of three over a gallery. The papers, the faces and the rail went with the
@@ -453,7 +561,8 @@ hue, and a migration moves its rows (0061, backed up in
 **The screen of a name is the screen of its newest letter.** The index
 carries the look of the newest letter under each key, so a name's small
 screen on the wall is lit in that colour (`screen.jsx` `Tile`), with the
-name's picture dithered into its ink or its monogram. The search rows, the
+name's picture in its own colours under a little of that light, or its
+monogram. It was dithered into the screen's ink until 26 September. The search rows, the
 suggestions, the tab at the foot and the notice draw the name as its face, a
 small square of the night LCD (`parts.jsx` `Face`). Every letter under a name
 is read on its own screen, so a deck turned from a green letter to an older
@@ -474,19 +583,53 @@ question is the name on the card itself, which is a press, and the dots in
 the head. And the act, `send anonymously`, stands alone in the middle of the
 foot, at a width a thumb finds.
 
+## The replies, under a letter
+
+Since 26 September a letter has a thread under it (`Replies.jsx`,
+`replies.css`, `replies-api.js`, `replies-check.js`, `avatars.js`; migration
+0068 and `supabase/functions/celestual-wall-reply` are the rules). It sits
+under the phone, in the phone's own language, and never on its screen: the
+screen is the letter, and a thread folded into it would push the writer's
+words off their own glass, while a clean comment panel of the kind every other
+app draws under a post would be the one thing in the black room that is not
+the phone. So it is what an old phone drew under a message it had kept: an
+unlit panel of the same glass with the pixel grid and a one pixel bezel,
+dotted pixel rules between its parts, a head that is a status row (the newest
+three repliers' pictures, the count, and a line lit in the letter's colour,
+`the recipient replied`, when they have), and each reply a message in Jersey
+with its writer's picture on a small screen beside it. Two things on it are
+lit: the pictures, which are small screens as faces are, and the recipient's
+reply, a small lit screen in the letter's own inks with its hot corner, its
+grid and its glow, a `recipient` badge struck out of the ink and the @'s own
+face, because it is the letter answering. With a thread mounted the letter's
+sheet scrolls, the phone and the thread's head centred together in the first
+screenful, the scrim and the close mark fixed, and a black band fading what
+scrolls under them.
+
+| | |
+| --- | --- |
+| **reading and liking** | anybody, as the heart is. A like is optimistic and one tap |
+| **replying** | a proved school address (any `.edu`, or the desk's pass list), or the person the letter is to, proved by the Instagram claim, who needs nothing else. Anybody else is offered the school address in place (a link with `draft: false`, the composer's words and its `your number` panel, and the thread listening until it is confirmed, through any of the links it sent), and, under a letter to an @, a quiet line, `is this letter to you? confirm your Instagram to answer as the recipient.`, to the claim |
+| **writing one** | 280 characters with the count, the phone's caret, and the list and the rule that a reply names nobody else checked as it is typed (`replies-check.js`: no @, no word shaped like a handle, no full name, and the line under the field quotes what it caught). `you reply as <creature>`, or the recipient's badge. Sent, it says `it's up`, `being read`, or why it was refused, and a refused reply keeps its key off until the words change |
+| **the first one** | a sheet with the terms for replying, portaled into the wall's root, agreed once and recorded on the server; a first reply that is then refused does not ask again. For the recipient the sheet says their reply is marked as the recipient's |
+| **who is who** | nobody's name. Each writer is a creature (`avatars.js`: fifteen symmetric pixel creatures in the twelve colours' own inks, named with a gentle word and the creature, `fond penguin`), from a salted hash of the letter and the writer, so one person is one creature down one thread and another under the next letter. Two writers who land on one name in a thread get a number. The desk sees who wrote each reply |
+| **the recipient's say** | a row, `this letter is to you`, a lit `reply as the recipient`, and `stop new replies` / `let people reply again` (no new replies but theirs, the ones there stay) and `hide all replies` / `show the replies` (nobody else sees the thread, and nobody replies, themselves included) |
+| **a report** | one tap on a reply, which folds it with an undo. Three from three devices put it out of sight until the desk restores or removes it (the desk's replies screen, `admin/Replies.jsx`) |
+| **what its writer sees** | their own held, hidden and removed replies, marked, and nobody else's; a locked or put away thread says so; the throttle (forty a day, six under one letter in ten minutes) says to wait |
+
 ## The screens
 
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, to anybody (it was whole or redacted until 0066), the heart on its foot with the count beside it, the thread of replies under it (The replies, above), a nudge under the card for somebody not signed in from the eighth letter (rule 1), and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
-| `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
+| `/berkeley/gate` | **the door on the wall**: Instagram first, then Google and an address. The address was a mailed six digit code, Supabase Auth's (0057), and is a mailed link since 0065 (`linkdoor.jsx`): `check your inbox.` with the address, `your number` large on an unlit panel with `tap the link in the mail. on another phone or computer, it asks for this number.`, `waiting for the link`, a resend after thirty seconds that keeps the number, and `use a different address`. It asks the link's status and lands the moment it is tapped, on this device or another. Signed in already, it is the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its ping is doing, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, twenty words at most, read by them only if it is ever mutual. The proof, only when this browser does not hold one: the gate's Instagram door, in place. Then `it's out.` and the sixty days, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen |
-| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their pings (mutuals first, each opening the reveal; standing ones with their days, each opening its own screen, whose options are `sixty more days` and `let it go`), what is left of the slots, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `place a ping` and `sign out`. With no @ proved here it says so and proves it; with nobody known it is the door |
+| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its ping is doing, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, eighty words and 280 characters at most, as long as a letter and as the composer's private note (it said twenty words until 26 September, long after the card took eighty in 0063), read by them only if it is ever mutual. The proof, only when this browser does not hold one and cannot get it back from its session (0065, for a person whose @ was proved before): the gate's Instagram door, in place. Then `it's out.` and the sixty days, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen |
+| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their pings (mutuals first, each opening the reveal; standing ones with their days, each opening its own screen, whose options are `sixty more days` and `let it go`), what is left of the slots, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `place a ping` and `sign out`. With no @ proved here it says so and proves it; with nobody known it is the door. A person signed in on this device by any proof whose @ was proved before, anywhere, reads their private notes with the proof restored from the session (0065, `auth.js` `restoreProof`), and is never asked for a second DM |
 | `/berkeley/reveal/:handle` | **it's mutual.** A sheet in the black room: the two of them run into each other on a letter's screen and become the mark, the sentence is typed under it, the two lines rise together on unlit panels, and `open @them` is the key; `keep this to yourself` closes onto the wall, with its names and not its poster. Its facts are who this is (`main/data.js` `me`, then the handle the ping and the account sheets use, `pings.js` `myHandle`), `celestual_my_pings` and the held copy (`pings.js`). When there is nothing to show it says `nothing here.` whatever the reason, and its key is `your pings`, the account sheet, where the reason has its own words. At the root it is `/reveal/:handle`, which the wall took from Main |
 | `/berkeley/join` | what a ping is, drawn: three lines and the mark assembling, and `place a ping` raises the ping sheet over the wall, giving this page's place in the history to the wall first |
 
@@ -584,7 +727,8 @@ looks.js     the colours a letter's screen can be lit in, what each is painted
              with, the quirks each letter's id gives its screen, the glyphs,
              and the memo of which colour each name was last written in
 screen.jsx   the screen, at three sizes (the letter, the wall's tile, the
-             panel's thumbnail), and a picture dithered into its ink
+             panel's thumbnail), and a picture cut to the phone's cells in
+             its own colours (`pixelate`)
 share.js     `share`: the letter drawn as a picture signed with the mark
              and the word, and the share sheet, the save and the copied link
 phone.css    the wall as the phone: the tokens remapped for the wall's root,
@@ -603,6 +747,14 @@ seed.js      the printed sources and nothing else now: the corpus and the
              seeded ledger went with the orbit stand-in
 screens/     one file per screen. Wall.jsx carries `Seek`, the search on the
              wall; Find.jsx the sheet it raises
+Nudge.jsx    the note under a letter for somebody not signed in (0066)
+Filter.jsx   the key at the end of the search, its menu, and the field's
+             move from one filter to the next (0067)
+Replies.jsx  the thread under a letter, with replies-api.js, replies-check.js
+             (the rule that a reply names nobody, at the keyboard) and
+             avatars.js (the creatures a thread names its writers by) (0068)
+linkdoor.jsx the wait for a mailed link: your number, the wait, the resend
+             (0065)
 ```
 
 ## The hive
@@ -726,7 +878,15 @@ thirteen pixels sliding past is a handle nobody reads.
   of the tile and not a rank, so when the tile is cut larger for names that
   have arrived, everybody keeps the cell they had and only the arrivals take
   cells; and the tile is never smaller than four by four, so a wall of a
-  handful of names is not re-cut for each of its first dozen letters.
+  handful of names is not re-cut for each of its first dozen letters. **The
+  one exception is the filter** (The search, above): choosing one is asking
+  for a different field, so the crowd goes out and a little smaller (220ms),
+  and the filtered field is seated afresh, its first name in the light and
+  the rest outward in the filter's order, and comes up from a hair larger
+  over 560ms (`Filter.jsx`, `filter.css` `wl-sift-in`; a cut under reduced
+  motion). The stage is keyed by the filter, so the hive under it is a new
+  one. Two hundred screens sliding into new seats would be two hundred things
+  moving to say one thing changed. Inside a filter, nobody moves again.
 - **It moves while you look at it.** The index is read again every three
   quarters of a minute while the tab is on the screen, the moment the tab
   comes back to it, and at once on a nudge from the campus's Realtime
@@ -795,7 +955,16 @@ Every letter on the wall is one card in one deck, and the deck is turned
 where the card is. The order is the wall's own: the names in the order the
 index carries them, newest first, and under each name its letters, so the
 card after the last letter under a name is the first letter under the next
-name and a swipe can be kept up from one end of the wall to the other. The
+name and a swipe can be kept up from one end of the wall to the other. Since
+26 September it is the filter's order (The search, above): the names as
+`data.js` `wall()` answers them, so a person reading the most liked turns
+from one to the next most liked, and under a name its letters in the filter's
+order where the filter says something about letters, the most hearted first
+under `most liked` and the Berkeley ones first under `Berkeley`
+(`lettersFor`). That order is worked out once per name and filter and then
+held, so a heart pressed while reading does not swap the cards either side;
+a letter that arrives meanwhile goes after the ones already there. A filter
+hides nothing inside a name. The
 next name's letters are asked for while this one is being read, so the turn
 onto them lands on its card and not on a request; the turn back lands on the
 name before's last letter.
@@ -886,7 +1055,8 @@ The lattice is a torus: a tile of C by R cells that repeats in both axes, so
 there is no first name, no last one and no edge to reach. The tile is the
 smallest with room for every name (R even, so the offset rows line up across
 the seam), and on the first seating the names are laid into it from its middle
-outward in the order the index carries them, newest first, so the people most
+outward in the order the index carries them, newest first (under a filter, in
+the filter's order, since 26 September), so the people most
 recently written to sit together at the centre of the tile and the stalest at
 its rim. Every later seating keeps everybody where they already were; seats
 given up by names that have come down are handed to names that have just
@@ -1468,4 +1638,6 @@ which is what keeps the two surfaces one product.
 - **The write gate checks a domain, not a person.** Any `berkeley.edu` address
   may write. The Instagram handoff is the only place a *person* is checked; it
   opens reading (0044) and it is asked for again, about one handle, on the one
-  action nobody can undo.
+  action nobody can undo. Since 26 September the domain is asked only of a
+  letter that goes up at once with the Berkeley mark, and of a reply; anybody
+  else's letter is read before it goes up, and reading asks for nothing.

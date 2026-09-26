@@ -230,7 +230,8 @@ Idempotent migrations, applied in order:
 - `migrations/0042_the_hearts_and_the_faces.sql`: **a letter can be hearted,
   and the faces ride on the reads.** `wall_hearts` is one row per (letter,
   person), counted and never listed: `wall_heart(token, id, on)` puts one on
-  or takes it off, behind the same gate as reading, and answers the count;
+  or takes it off, behind the same gate as reading (until 0068, which opens it
+  to any device), and answers the count;
   `wall_letters_for` and `wall_letter` carry `hearts` and `hearted` on every
   row. A trigger folds the absorbed row's heart into the survivor's under
   `celestual_user_merge`, so a shared heart never turns a merge into a
@@ -242,6 +243,100 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0068_the_replies.sql`: **a letter gets a thread under it, and
+  the heart is anybody's.** `wall_heart` takes any device, with no proof: one
+  the product has never seen gets a bare row and a session
+  (`celestual_session_user_or_new`), so a heart is still one row per person
+  and the count every read answers is unchanged. Five tables, RLS on and every
+  grant revoked, each folded by a merge trigger (`wall_reply_fold`):
+  `wall_replies` (the letter, the author, the body of 1 to 280 characters,
+  `recipient` as it was when written, `status` `live`, `held`, `rejected`,
+  `hidden` or `removed`, the reading in `moderation`, and a nonce unique per
+  author), `wall_reply_likes` (one per reply and person), `wall_reply_reports`
+  (one per reply and device, ever, with `cleared_at` for the desk putting it
+  back), `wall_reply_threads` (a thread the recipient `locked` or `closed`; no
+  row is open) and `wall_reply_terms` (who accepted the terms for replying,
+  once). A thread names each writer by `who`, sixteen hex of the SHA-256 of a
+  salt (`celestual_settings` `wall_reply_salt`, 24 random bytes, a second run
+  keeps the first), the letter and the author (`wall_reply_who`), and nothing
+  a browser can call returns the author. The browser's four:
+  `wall_reply_thread(token, letter)` (the replies and what this device may
+  do, `me`), `wall_reply_like`, `wall_reply_report` (the third uncleared report
+  from a third device hides a live reply until the desk decides; taken back,
+  it comes back unless the desk has) and `wall_reply_thread_set(token, letter,
+  open|locked|closed)`, for the recipient alone. Service role only:
+  `wall_reply_can` (who may reply here, the throttle, and the letter for the
+  reading), `wall_reply_agree` (the terms, kept before the reply is read, so a
+  caught first reply does not ask again), `wall_reply_replay`,
+  `wall_reply_write` (idempotent on author and nonce; checks who, the
+  thread's state, the terms, the throttle and the list again, and stores
+  nothing the list catches), `wall_reply_caught` (`celestual_text_caught`
+  plus an @, a word shaped like a handle and a full name: the database's copy
+  of the rule that a reply names nobody else), and the desk's
+  `celestual_desk_replies(status, limit, offset)` (`waiting`, the held and the
+  hidden, oldest first; or `held`, `hidden`, `live`, `removed`, `rejected`,
+  `all`; with the author) and `celestual_desk_reply_set(id, live|removed,
+  note)`. Who may reply: a verified school address (`edu_verified_at`, the
+  pass list included) or the claimed owner of the letter's @, who may reply in
+  a locked thread; closed shuts everybody until it is opened. Forty replies a
+  day and six under one letter in ten minutes. Re-runnable. **Tested by
+  `scripts/sql/test-replies.sql`.**
+- `migrations/0067_the_wall_sorted.sql`: **the wall, sorted.** One `create or
+  replace view`: `wall_index_all` keeps every column 0063 gave it, in order,
+  and appends `hearts` (every heart on every standing letter under the name,
+  seeded and pressed, the number each letter shows, summed), `berkeley` (how
+  many of those letters went up from a verified Berkeley address) and
+  `berkeley_at` (the newest of them), which are the filter's orders and cuts
+  (app/src/wall/data.js). Nothing a reader cannot already count off the wall;
+  `wall_hearts`'s grants do not move, and `wall_pulse_all` and `wall_search`
+  read the columns they always read. **Tested by
+  `scripts/sql/test-wall-sorted.sql`, 20 assertions.**
+- `migrations/0066_every_letter_open.sql`: **every letter open, and an @ for
+  anybody.** `wall_letters_for` and `wall_letter` are their 0063 selves with
+  the gate and the count taken out: every live letter's body to anybody,
+  `open` always true, every key a letter carried kept, and `gated` and `free`
+  gone from the envelope. `wall_free_reads` is dropped with its rows; the six
+  `wall_free_*` functions (0045) stay and do nothing (take answers true and
+  writes nothing, used is 0, the allowance and the state are null), because
+  `scripts/sql/test-hearts-seed.sql` runs 0059 again and a read restored from
+  any older file should hand over every body rather than fail. `wall_read_gate`
+  is unchanged, so the report still asks for a proof. `wall_write` gains a
+  thirteenth argument, `p_proof`: `'edu'` is 0063's path (a verified school
+  address, `verified`, the mark, up at once), and `'none'` is the open one (a
+  device with no account gets a bare row, the campus is `global`, never
+  `verified`, and the status is whatever the reading decided before the
+  write). A name note is always `'none'`. The twelve argument write stands and
+  is the `'edu'` path, so a function deployed before this writes what it
+  wrote. **Tested by `scripts/sql/test-every-letter-open.sql`, 35
+  assertions**; `test-free-reads.sql` is deleted, and the redaction
+  assertions in `test-reading-room.sql` and `test-wall.sql` are turned to
+  "the words reach everyone".
+- `migrations/0065_the_link_for_everybody.sql`: **the link for everybody, and
+  the @ comes back with the person.** `celestual_edu_verifications` takes a
+  third purpose, `login`, and a third status, `refused`.
+  `celestual_user_bind_email_hash(hash, email)` (service role) is the login's
+  bind: the session is signed in as whoever holds the address by a login
+  (`email` with `email_verified_at`), a campus proof (`edu_email`) or a google
+  account (`google_email`), merged into them, the older row surviving
+  (`bind_email`), or moved onto them where the two are two different people;
+  a `.edu` address proves its campus too, and the address fills an empty
+  alert address. `celestual_edu_link_open`, `_confirm` and `_status` are
+  replaced: `open` takes `login` (any address, no domain rule, never `taken`)
+  and gives a resend from the same session, for the same address and purpose,
+  the pending link's number; `celestual_edu_link_confirm(token, session,
+  match)` confirms on the asking session at once and on any other only with
+  the number (none answers `match` and spends nothing, a wrong one answers
+  `mismatch` and refuses the link for good), and every refusal names the
+  purpose; the two argument form stays and is the same check with no number,
+  so the function deployed before this fails closed across devices; `status`
+  answers a `.edu` login's campus, and reads a refused link as `expired`.
+  `celestual_session_handle_proof(token, proof_hash)`, granted to `anon` and
+  `authenticated`, mints the DM flow's proof for the verified @ the session's
+  person already holds, under a hash the browser made (`verified_via =
+  'session'`, thirty days, idempotent per hash, a dozen an hour an @), and
+  errors `no_session`, `invalid`, `unclaimed`, `banned` and `rate`; it never
+  claims an @. Re-runnable. **Tested by `scripts/sql/test-login-link.sql`**,
+  and one assertion in `test-mail.sql` for the number.
 - `migrations/0064_mail_links_and_alerts.sql`: **the mail's links, and the
   alerts.** A campus address is proved by a magic link: `celestual_edu_verifications`
   gains `kind` (code or link), `purpose` (edu or alerts), the asking session's
@@ -452,7 +547,8 @@ Idempotent migrations, applied in order:
   to eight. Everything 0045 built reads its ceiling from that function, so
   the reads, the key and the meter are untouched, and a browser that spent
   five under 0045 has three left under this. Five arrived while a person who
-  had just scanned a card was still finding out what the wall is.
+  had just scanned a card was still finding out what the wall is. Undone by
+  0066, which gives every letter to anybody and leaves the allowance null.
 - `migrations/0048_the_faces_on_the_index.sql` (**applied 10 September 2026**):
   **the faces ride on the index.** `wall_index` carries the resolver's answer
   for every name on it, the way `wall_search` has since 0040 and the letter
@@ -514,7 +610,8 @@ Idempotent migrations, applied in order:
   database, and `wall_free_clear` deletes a browser's rows the moment it passes
   the gate. `wall_free_allowance`, `_key`, `_used`, `_take`, `_state` and
   `_clear` are service role only. **Tested by `scripts/sql/test-free-reads.sql`,
-  39 assertions.**
+  39 assertions**, until 0066 dropped the table and emptied the functions, and
+  the test with them.
 
 - `migrations/0044_the_reading_room_and_the_three.sql`: **reading opens, and
   writing gets a meter.** `wall_gate` answered three questions and should have
@@ -606,7 +703,9 @@ Idempotent migrations, applied in order:
   the bodies come through `wall_letters_for`, which returns a null body to
   anybody outside the read gate (0044: either proof) who has spent the five
   free letters every browser gets (0045), because a redaction the client
-  performs is not a redaction and a count the client keeps is not a count. `wall_letter_seal` is the only function anywhere that returns
+  performs is not a redaction and a count the client keeps is not a count.
+  (Since 0066 it returns every body to anybody, and there is nothing to
+  redact.) `wall_letter_seal` is the only function anywhere that returns
   `sealed_line`, and it wants the verified handle, the ask and the author's yes.
   **Tested by `scripts/sql/test-wall.sql`, 72 assertions.**
 
@@ -668,12 +767,13 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |
 | `functions/_shared/mutual.ts` | not a function — the one copy of the mutual line and the ManyChat sender, imported by both of the above so the two carriers can never say different things | — |
 | `functions/_shared/mail.ts` | not a function: the one mail design, the wall's black room (design/DESIGN.md 2.5, 2.6). `#000`, one unlit LCD panel with a chalk bezel and 3px corners, the header image at `${SITE}/mail/head.png` (the lockup and a small LCD with the pixel mark), Jersey 10 by `@font-face` with a Helvetica fallback for the headline, the key and a number, Helvetica for sentences, one chalk plate with black words, lowercase. Tables and inline styles, `bgcolor` for Outlook and an `mso` block pinning it to Helvetica | — |
-| `functions/_shared/mails.ts` | not a function: the words of every mail (verify, mutual, wrote, the old code, and the Supabase Auth code template), each answering `{ subject, html, text }`. `scripts/mail-preview.mjs` imports it as it is (Node strips the types) and shoots every mail in three views into `design/shots/` (gitignored), and writes `supabase/templates/magic-link.html` from it | — |
+| `functions/_shared/mails.ts` | not a function: the words of every mail (verify, for a school address, an alert address and since 0065 a login; mutual; wrote; and the old code), each answering `{ subject, html, text }`. The verify mail carries the link and never the number (0065). `scripts/mail-preview.mjs` imports it as it is (Node strips the types) and shoots every mail in three views into `design/shots/` (gitignored). It also held the Supabase Auth code template, which the preview wrote to `supabase/templates/magic-link.html` for pasting into the dashboard; the email login is the product's own link since 0065, and the template and the file are gone | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
-| `functions/celestual-edu-verify` | the campus proof. `link` mails a magic link (`${SITE}/verify#t=<token>`, 32 random bytes, sha256 stored, thirty minutes, once) with the number from 10 to 99 the asking screen shows, for a .edu (or, with `campus`, that campus's domain) or a pass for `edu`, and any address for `alerts`; `confirm` binds it through `celestual_edu_link_confirm` (to the asking session's person and to the opening session's, opening the campus and filling the alert address); `status` answers the asking session alone. The six digit `send` / `verify` stay for a tab on the old build. Limits: five an address and fifteen a network address an hour. **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a name and `look` for the paper it chose (0055, cleaned here to the three slugs the schema admits), through the eleven argument write, stepping down to the ten argument one and, for a handle letter, to the eight argument one against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeployed 20 September 2026 as version 11, carrying 0053 to 0055; redeploy after pulling this **Since 0063 a request with `v: 2` is the one wall's** (docs/ONE-WALL.md): an @-note goes up as before and is read after, and the schema decides who may write it (`edu`, `campus`) and which school it carries; a name note is counted (five a device, twenty an address a day), read by the classifier BEFORE it is written (a pass writes it live, a review or no key pending for the desk, a reject rejected), and written with the author a bare row for a new device; the dear line goes through layer 1 as the words do; the same (device, nonce) answers the first send. Deployed with JWT verification on (config.toml) | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
-| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here. One action is not an RPC: `desk_canary_run` asks `celestual-resolve` for the daily check now, with the service role key, and logs it as `canary run` (0060) | `CELESTUAL_ADMIN_PASSWORD` |
+| `functions/celestual-edu-verify` | the campus proof, the alert address and, since 0065, the email login. `link` mails a magic link (`${SITE}/verify#t=<token>`, 32 random bytes, sha256 stored, thirty minutes, once) for a .edu (or, with `campus`, that campus's domain) or a pass for `edu`, any address for `alerts`, and any address for `login`, and answers the number from 10 to 99 the asking screen shows (on a resend from the same screen, the pending link's). The mail never prints the number (0065; it did under 0064). `confirm` binds it through `celestual_edu_link_confirm` (to the asking session's person and to the opening session's, opening the campus and filling the alert address; for `login`, both signed in as whoever holds the address), and passes on `match`, the number typed on a device that did not ask, only when it is two digits: without it that device is answered `match` and nothing is spent, and a wrong one `mismatch`, which burns the link. `status` answers the asking session alone, and reads a burned link as `expired`. The six digit `send` / `verify` stay for a tab on the old build. Limits: five an address and fifteen a network address an hour. **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a name and `look` for the paper it chose (0055, cleaned here to the three slugs the schema admits), through the eleven argument write, stepping down to the ten argument one and, for a handle letter, to the eight argument one against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeployed 20 September 2026 as version 11, carrying 0053 to 0055; redeploy after pulling this **Since 0063 a request with `v: 2` is the one wall's** (docs/ONE-WALL.md): an @-note goes up as before and is read after, and the schema decides who may write it (`edu`, `campus`) and which school it carries; a name note is counted (five a device, twenty an address a day), read by the classifier BEFORE it is written (a pass writes it live, a review or no key pending for the desk, a reject rejected), and written with the author a bare row for a new device; the dear line goes through layer 1 as the words do; the same (device, nonce) answers the first send. **Since 0066 an @-note says which kind it is, `proof: 'edu'` or `'none'`**: `'edu'`, or no `proof` at all as a tab from before sends, is the Berkeley student's note above; `'none'` is anybody's, treated as a name note is (counted by the same throttle, read before it is written, a pass live, a review or no key pending, a reject rejected), carrying no school and never the mark, and written through the thirteen argument `wall_write`, stepping down to the twelve argument one only when the database has no such function (`PGRST202`), where an open @-note is answered `edu`. Deployed with JWT verification on (config.toml) | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-wall-reply` | **the one way a reply goes under a letter** (0068). `{ token, letter, body, nonce, accept? }`: the same (device, nonce) answers the first send's answer; then `wall_reply_can` (a verified school address or the letter's recipient, the thread not shut, the throttle), the terms (`terms` unless accepted before or `accept` is true, and then kept at once through `wall_reply_agree`), layer 1 (wall-moderate's list, copied, and the rule that a reply names nobody else: no @, no word shaped like a handle, no full name), then one classifier call before anything is written, with wall-moderate's model, call and category schema and a prompt written for replies that adds `third` and `pile` (a `pile` only holds). A pass writes it `live`; a review, no key or no answer `held` for the desk, shown to its writer alone; a reject `rejected`, kept for the desk. The write is `wall_reply_write`, the service role's alone. Answers `{ ok, id, status, recipient, say?, reasons?, replay? }` or errors `edu`, `locked`, `closed`, `gone`, `terms`, `throttle`, `caught`, `empty`, `long`, `nonce`, `no_session`, `write`. Deployed with JWT verification on (`config.toml` `[functions.celestual-wall-reply] verify_jwt = true`), called by the browser through `supabase.functions.invoke` with the anon key, as wall-moderate is. **Contract: [../docs/ONE-WALL.md](../docs/ONE-WALL.md)** | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`), the same two celestual-wall-moderate reads. Without the key every reply is held for the desk |
+| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log; and since 0068 the replies, `desk_replies` and `desk_reply_set`) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here. One action is not an RPC: `desk_canary_run` asks `celestual-resolve` for the daily check now, with the service role key, and logs it as `canary run` (0060) | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
@@ -689,9 +789,11 @@ the stats RPC are what the trial links run on. If you had it deployed, remove it
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
 for most of these in `config.toml` because anonymous visitors, Meta's webhook,
 pg_net or a mail client's unsubscribe call them; each enforces its own checks.
-`celestual-wall-moderate` is the exception: it is deployed with JWT verification
-on. `supabase/templates/magic-link.html` is the Supabase Auth code mail, pasted
-into the dashboard (docs/launchsteps.md). See
+`celestual-wall-moderate` and `celestual-wall-reply` are the exceptions: both
+are deployed with JWT verification on. `supabase/templates/magic-link.html`
+was the Supabase Auth code mail, pasted into the dashboard; since 0065 the
+email login is `celestual-edu-verify`'s own link, the file is deleted, and
+the app uses Supabase Auth for Google alone. See
 [../docs/DEBUG-IG-WEBHOOK.md](../docs/DEBUG-IG-WEBHOOK.md).
 
 ## Data model (post-0006)
@@ -754,7 +856,9 @@ back anonymous by design) · `celestual_slots_for` (owner's slot snapshot) ·
 `celestual_campus` / `celestual_campus_preregister` ·
 `celestual_start_ig_verification` / `celestual_poll_ig_verification` ·
 `celestual_bind_recovery` (bind handle⇄email under a live proof, for DM-free
-re-login) · `celestual_norm`.
+re-login) · `celestual_norm` · `celestual_session_handle_proof` (0065: the DM
+proof, minted from a signed in session for the verified @ its person already
+holds, and never for another).
 
 **Operator-only (service role):** `celestual_complete_ig_verification` (the
 webhook's completion path — adopts the DMing account as the identity),

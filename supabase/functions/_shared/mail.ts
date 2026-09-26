@@ -12,8 +12,13 @@
 //   ONE LIT KEY.         a chalk plate with the word struck out of it in black,
 //                        the way the phone lit the chosen row of a menu. One
 //                        per mail, and it is the thing to press.
-//   THE ACCENT, ONCE.    #74C7DE, spent on the one fact a mail most needs read
-//                        (the number on the verify mail), and on nothing else.
+//   THE ACCENT, ONCE.    #74C7DE, spent on the one fact a mail most needs read,
+//                        and on nothing else: the day a lapsing ping's slot
+//                        opens (celestual-remind). It was the number on the
+//                        verify mail until migration 0065, which took the
+//                        number out of every mail: it is on the asking
+//                        screen alone, and a link opened on another device
+//                        asks for it there.
 //   THE PIXEL FACE.      Jersey 10, the Series 40 grid, for what the phone
 //                        would print: the headline, the key, a number. Loaded
 //                        by @font-face from the site, which Apple Mail and iOS

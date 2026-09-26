@@ -157,9 +157,12 @@
 .wl-write.is-how .wl-write-foot { padding-top: 18px; }
 
 /* ═══ CONFIRM YOU'RE AT BERKELEY ═══════════════════════════════════════════
-   The door's shape (wall.css THE DOOR), with the sticker the letter will
-   carry standing where the mark stands, and, once the link is out, the two
-   digits the mail prints, large, in a panel of their own. */
+   The door's shape (wall.css THE DOOR), with the Berkeley mark the letter
+   will carry standing where the mark stands (on its plate, Sticker.jsx),
+   and, once the link is out, the two digits of `your number`, large, in a
+   panel of their own: on this screen and nowhere else, since the mail never
+   prints them and a link opened on another device asks for them there
+   (migration 0065). */
 .wl-edu { display: flex; flex-direction: column; justify-content: center; }
 .wl-edu .wl-door, .wl-verify .wl-door { padding-top: 6px; }
 .wl-edu .wl-gate-fault { text-align: center; }

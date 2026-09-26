@@ -100,8 +100,10 @@ export async function startGoogle(returnTo) {
 // ── email ───────────────────────────────────────────────────────────────────
 // A link, mailed. Answers { ok, request, match, email } for the screen to
 // wait on (`linkStatus` with `request`, and `match` drawn large, the number
-// the mail prints), or { ok: false, error } with the slugs the gate puts
-// words to: 'email', 'rate', 'send', 'offline'.
+// that is on this screen and nowhere else: the mail never prints it, and a
+// link opened on another device asks for it there, migration 0065), or
+// { ok: false, error } with the slugs the gate puts words to: 'email',
+// 'rate', 'send', 'offline'.
 export async function sendEmailLink(email) {
   if (!hasSupabase) return { ok: false, error: 'offline' }
   const e = String(email || '').trim().toLowerCase()

@@ -781,12 +781,14 @@ export async function write({ to, body, source, kind = 'handle', name = '', look
 //           follows the name
 //   school  a name note's school, a campus slug, or '' for none
 //   proof   how a letter to an @ goes up: 'edu', as a Berkeley student, with
-//           the sticker and at once; or 'none', from anybody, read first
-//           (0066). A name note is always 'none'
+//           the Berkeley mark and at once; or 'none', from anybody, read
+//           first (0066). A name note is always 'none'
 //   nonce   made once per draft (`newNonce`), so the same draft posted twice
 //           is one letter (docs/ONE-WALL.md)
 //   held    the Berkeley link it is waiting on, once one is out:
-//           { email, request, match, at }
+//           { email, request, match, at, earlier }, where `earlier` is the
+//           requests sent before it for the same address, up to four, so a
+//           tap on any of the mails posts the letter (screens/Write.jsx)
 //
 // `draftPost` turns that into what goes up, and `postDraft` sends it and, if
 // it went, lands it: the composer calls it on the press, and the verify page
