@@ -93,21 +93,25 @@
 // one to have spent.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
-  Sheet, SheetFoot, Pill, Close, Brand, ArrowLink, useProfile, useSheet,
+  Sheet, SheetFoot, Pill, Close, Brand, ArrowLink, Toast, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
-import { colourOf, chargeOf, stampOf } from '../looks.js'
+import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf } from '../looks.js'
+import { stripMoving, idle, unidle } from '../strip.js'
 import { shareLetter, prepareLetter, letterFace, starred, canShare, isReady } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
-  atHandle, nameFor, normHandle, heart, wall, freeReads,
+  atHandle, nameFor, normHandle, heart, wall, freeReads, loadWall, removeLetter,
 } from '../data.js'
+import { ownerRemove, ownerRestore } from '../../api/alerts.js'
 import { href } from '../router.js'
 import { mark, setAfterGate, getState, patch } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
 import { campus, needsCampus } from '../campus.js'
+import { letterMarks } from '../schools.js'
 
 // ── the name on the screen ──────────────────────────────────────────────────
 // The top row carries who the letter is for the way a phone carried the
@@ -242,27 +246,42 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 // The card on the glass, or the letter either side of it, asleep. Keyed by
 // its letter, so a turn draws nothing again: the neighbour that lands is the
 // card from then on, the same element where it already stood, and the card
-// that left is the neighbour on the other side. Only the one past it is new,
-// and a screen that comes to stand beside the card once the sheet is up (that
-// one, or a name whose letters have just arrived) comes up out of the dark
-// rather than appearing (`fresh`). The neighbours are pictures of the next
-// letter and not a second set of controls, so they are `inert`.
+// that left is the neighbour on the other side. A name whose letters are
+// still on their way stands keyed by the name, and keeps that element when
+// they land (Letter `keyOf`). Only the one past the neighbour is new, and a
+// screen that comes to stand beside the card once the sheet is up comes up
+// out of the dark rather than appearing (`fresh`). The neighbours are
+// pictures of the next letter and not a second set of controls, so they are
+// `inert`.
 function Cell({ side = 0, fresh = false, arrived = false, reduce = false, children }) {
   const ref = useRef(null)
   // one that stood there when the sheet was first drawn is brought up by the
   // stylesheet instead, once the card has woken (wall.css `.is-waking`)
   const [early] = useState(!fresh)
+  // The fade writes the screen's light for as long as it runs, over the light
+  // the strip gives it (Letter `place`), so a screen faded in under a hand
+  // came across the glass at a tenth of its light. Not while the strip moves,
+  // then, and not for one standing off the glass where nobody would see it; a
+  // hand or a turn stops one under way (Letter `wake`), and so does the screen
+  // becoming the card.
+  const up = useRef(null)
   useLayoutEffect(() => {
     const el = ref.current
     if (!fresh || !side || reduce || !el || typeof el.animate !== 'function') return undefined
+    if (el.closest('.wl-letter-stage[data-moving]')) return undefined
+    const r = el.getBoundingClientRect()
+    if (r.right <= 0 || r.left >= window.innerWidth) return undefined
     const dim = parseFloat(getComputedStyle(el).getPropertyValue('--peek-dim')) || 0.4
-    const up = el.animate([{ opacity: 0 }, { opacity: dim }], { duration: 420, easing: EASE_HOME })
-    return () => up.cancel()
+    up.current = el.animate([{ opacity: 0 }, { opacity: dim }], { duration: 420, easing: EASE_HOME })
+    return () => { if (up.current) up.current.cancel(); up.current = null }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    if (!side && up.current) { up.current.cancel(); up.current = null }
+  }, [side])
   return (
     <div
       ref={ref} className={side ? `wl-letter-slot${early ? ' is-early' : ''}` : 'wl-letter-card'}
-      data-side={side > 0 ? 'next' : side < 0 ? 'prev' : undefined}
+      data-side={Math.abs(side) > 1 ? 'far' : side > 0 ? 'next' : side < 0 ? 'prev' : undefined}
       aria-hidden={side ? 'true' : undefined} inert={side ? true : undefined}
     >
       <div className={`wl-letter-leaf${arrived ? ' is-arrived' : ''}`}>{children}</div>
@@ -316,7 +335,7 @@ function Lights({ look, seed }) {
 // per person, the count is a count and nothing else, and zero says nothing
 // rather than "0". Behind the same gate as reading, so on a letter from
 // outside it the heart is the way to the gate.
-function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
+function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '', onRemove = null }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
   const [busy, setBusy] = useState(false)
@@ -349,9 +368,11 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
 
   if (!l) {
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
-       neither shut nor open, so it is only the lit glass */
+       neither shut nor open, so it is only the lit glass, lit in the colour
+       the name was last seen in (looks.js `lookFor`) so that its letter
+       landing does not change it */
     return (
-      <Screen seed={String(seed || handle || '')} look={null} top={{ name: toName, handle: toHandle, dear: true, icon: 'pen' }} live={false} nameId={id}>
+      <Screen seed={String(seed || handle || '')} look={lookFor(handle)} top={{ name: toName, handle: toHandle, dear: true, icon: 'pen' }} live={false} nameId={id}>
         <ScreenText text="" />
       </Screen>
     )
@@ -373,14 +394,22 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     setBusy(false)
   }
 
+  /* A first name is nobody's to claim or to empty: forty people share it,
+     and no handle proof can stand for it (0053). A letter to an @ is its
+     owner's (docs/ONE-WALL.md): to the person who has proved it (`mine`,
+     api.js), the first row takes this one letter down, with an undo
+     (`removeMine`, below); to anybody else, "this is about me" is the way
+     to prove it (screens/Claim.jsx). Taking the whole name off for good
+     stays under both (screens/Remove.jsx). */
+  const toAt = !isNameKey(l.to)
   const optionItems = [
+    ...(l.mine && onRemove ? [{ t: 'remove this letter', run: () => onRemove(l) }] : []),
     ...(open
       ? [{ t: `write to ${first || 'them'}`, run: () => toWrite(go, l.to) }]
       : [{ t: 'read it', run: toGate }]),
     { t: 'report this letter', run: () => go('report', l.id) },
-    /* A first name is nobody's to empty: forty people share it, and no
-       handle proof can stand for it (0053). */
-    ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
+    ...(toAt && !l.mine ? [{ t: 'this is about me', run: () => go('claim', l.to) }] : []),
+    ...(toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
   ]
   const face = () => letterFace(l, { name: toName, handle: toHandle })
   // Under a menu titled `share`, the row that opens the phone's own share
@@ -418,8 +447,13 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   // an empty strip and the sheet keeps its name. By the battery, the day it
   // went up, where the draft counted what was left: a letter that is up has
   // nothing left to count, and one date on the row, not two
+  // the greeting its writer chose, and the school it was posted from: a
+  // sticker on the phone's corner for a letter from a proved address, a
+  // plain tag for a name note's picked campus (schools.js `letterMarks`)
+  const marks = letterMarks(l)
   const letterTop = {
     name: toName, handle: toHandle, dear: true,
+    salutation: marks.salutation, tag: marks.tag,
     icon: open ? 'pen' : 'lock',
     stamp: stampOf(l.at), bat: chargeOf(l.at),
   }
@@ -454,11 +488,20 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     top = letterTop
     body = <ScreenNote glyph={at.glyph} title={at.title}>{at.text || null}</ScreenNote>
     keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
+  } else if (at.kind === 'ask') {
+    /* a question the screen puts before an act that cannot be taken back:
+       the act on the left key, and keeping things as they are on the right */
+    top = letterTop
+    body = <ScreenNote title={at.title}>{at.text || null}</ScreenNote>
+    keys = {
+      l: { label: at.yes, onClick: at.onYes, aria: at.aria || at.yes },
+      r: { label: 'keep it', onClick: back, aria: 'keep it on the wall' },
+    }
   } else {
     top = letterTop
     body = <ScreenText text={text} sealed={!open} />
     keys = {
-      l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: open ? 'options: write to them, report' : 'options: read it, report' },
+      l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: `options: ${optionItems.map((x) => x.t).join(', ')}` },
       /* never disabled while a press is out: the heart is drawn at once
          (data.js `heart`), and a key that dimmed until the server answered
          read as a press that had not taken, and let go of the focus */
@@ -475,7 +518,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   return (
     <Screen
       look={l.look} seed={l.id} top={top} keys={keys} live={live}
-      state={woke} nameId={id}
+      state={woke} nameId={id} sticker={marks.sticker}
       className={open ? '' : 'is-shut'}
     >
       {body}
@@ -508,13 +551,73 @@ export default function Letter({
     via.current = 'wall'
     if (toWall) toWall()
   }, [toWall])
-  const aside = cold
-    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} /></>
-    : <LetterX label={upLabel} />
   const wrap = `is-letter${cold ? ' is-cold' : ''}`
   // What the live screen is showing: the letter (null), a menu, or a note.
   // Nothing else on this sheet holds state: the letter is the server's.
   const [view, setView] = useState(null)
+
+  // ── the owner takes it down ──
+  // One tap from the menu, by the person who has proved the letter's @
+  // (docs/ONE-WALL.md `wall_owner_remove`): it comes down, the card says so,
+  // and for five seconds a line at the foot of the glass offers it back
+  // (`wall_owner_restore`, good for a day on the server). It files no claim
+  // and shuts nothing else. A database that does not have the call yet is
+  // answered with the old removal, which cannot be undone and closes the @
+  // to new letters, so it is asked for first, on the screen.
+  const [toast, setToast] = useState(null)   // { id, to, said, stamp, busy }
+  const freshen = (l) => Promise.all([loadLetter(l.id, true), loadHandle(l.to, true), loadWall(true)])
+  const removeForGood = async (l) => {
+    setView({ kind: 'note', glyph: 'wait', title: 'removing' })
+    const out = await removeLetter(l.id)
+    if (out?.ok) { setView(null); return }
+    setView({
+      kind: 'note', glyph: '', title: 'it did not come down', done: true,
+      text: out?.error === 'unverified' || out?.error === 'no_session' ? 'confirm your Instagram again, then try' : 'try again',
+    })
+  }
+  const removeMine = async (l) => {
+    setView({ kind: 'note', glyph: 'wait', title: 'removing' })
+    const out = await ownerRemove(l.id)
+    if (out?.ok) {
+      setView({ kind: 'note', glyph: 'check', title: 'removed', done: true })
+      setToast({ id: l.id, to: l.to, said: 'removed.', stamp: Date.now() })
+      await freshen(l)
+      return
+    }
+    if (out?.error === 'missing') {
+      setView({
+        kind: 'ask', title: 'remove it for good?', yes: 'remove', aria: 'remove it for good',
+        text: 'this cannot be undone, and nobody can write to your @ again.',
+        onYes: () => removeForGood(l),
+      })
+      return
+    }
+    setView({ kind: 'note', glyph: '', title: 'it did not come down', text: 'try again', done: true })
+  }
+  const undoMine = async () => {
+    const t = toast
+    if (!t || t.busy) return
+    setToast({ ...t, said: 'putting it back.', busy: true })
+    const out = await ownerRestore(t.id)
+    if (out?.ok) {
+      setToast(null)
+      setView(null)
+      await freshen(t)
+      return
+    }
+    setToast({ ...t, busy: false, said: 'it did not come back. try again.', stamp: Date.now() })
+  }
+  const owned = toast ? (
+    <Toast
+      act={toast.busy ? '' : 'undo'} onAct={undoMine} stamp={toast.stamp}
+      ms={toast.busy ? 0 : 5000} onDone={() => setToast(null)}
+    >
+      {toast.said}
+    </Toast>
+  ) : null
+  const aside = cold
+    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} />{owned}</>
+    : <><LetterX label={upLabel} />{owned}</>
   // The screen wakes once, on the first letter the sheet opens on, the way a
   // phone's backlight comes up; a turn does not wake it again.
   const [woke, setWoke] = useState('waking')
@@ -610,13 +713,23 @@ export default function Letter({
   const stage = useRef(null)
   const track = useRef(null)
   const dx = useRef(0)
-  // the card's height when the strip started to move, which is where the
-  // track's height is measured from while it moves
-  const hBase = useRef(0)
+  // what was last written to the strip, which is written again to a screen
+  // that comes to stand on it while it moves (the effect after the landing)
+  const wrote = useRef(null)
+  // the frame a hand has asked for, and where it will put the card
+  const frame = useRef(0)
+  const want = useRef(0)
+  // the three screens' heights, and the foot under them, read once as the
+  // strip starts to move (`measure`)
+  const tall = useRef(null)
   const silent = silentRef
-  // a turn running on, which nothing takes back; a spring, a lean or a bump,
-  // which a hand can catch; and the strip's measure while either is under way
+  // a turn running on, and where it is going, which a hand or a key that
+  // comes before it has landed lands at once, where it is seen (`landNow`);
+  // where that leaves the card; a spring, a lean or a bump, which a hand can
+  // catch; and the strip's measure while any of them is under way
   const busy = useRef(false)
+  const turning = useRef(null)
+  const carry = useRef(null)
   const settling = useRef(false)
   const measured = useRef(null)
   const timers = useRef([])
@@ -636,7 +749,8 @@ export default function Letter({
   const viewRef = useRef(view)
   viewRef.current = view
   // whether the sheet has been drawn once: a screen that comes to stand on
-  // the strip after that comes up out of the dark (`Cell`)
+  // the strip after that comes up out of the dark (`Cell`), and is drawn
+  // when the page is idle (`admit`)
   const opened = useRef(false)
   const born = useRef(0)
   useEffect(() => { opened.current = true; born.current = performance.now() }, [])
@@ -645,7 +759,13 @@ export default function Letter({
   // the lean, put off for this sheet: a hand or a key got there first
   const leaned = useRef(false)
   const hush = () => { leaned.current = true; clearTimeout(nudgeAt.current); nudgeAt.current = 0 }
-  useEffect(() => () => { hold(); clearTimeout(nudgeAt.current); clearTimeout(unfling.current) }, [])
+  useEffect(() => () => {
+    hold()
+    clearTimeout(nudgeAt.current)
+    clearTimeout(unfling.current)
+    cancelAnimationFrame(frame.current)
+    stripMoving(false)
+  }, [])
 
   // the three, as they stand now
   const cells = () => {
@@ -675,17 +795,27 @@ export default function Letter({
     return measured.current
   }
 
-  // a screen's height as it is laid out, to the fraction of a pixel and
-  // whatever it is scaled by, which is the height the track lands on
-  const heightOf = (el) => (el.firstElementChild ? parseFloat(getComputedStyle(el.firstElementChild).height) || 0 : 0)
   // The strip with the card at `x`. Each screen is lit and sized by how far
   // from the middle it stands: at rest that is the stylesheet's own numbers,
   // and between two rests the one leaving goes to sleep as the one arriving
   // wakes. Each shrinks toward its near edge, so the gap between two screens
   // stays the gap.
-  const place = (x, transition = 'none', ms = 0, ease = EASE_SLIDE, grow = true) => {
+  //
+  // Nothing is read here, and the track's height is not written. It used to
+  // follow the strip from this card's height toward the neighbour's, read off
+  // the neighbour on every report of the hand, and a read after a write is a
+  // layout forced on the spot: one for every report, which is more often than
+  // a phone draws, and each moved the screens inside their own layers, so a
+  // print was pulled through its press again on every frame. Every screen on
+  // the track stands on its middle, so the track can keep the card's height
+  // while they move and take the next card's once it has landed, and nothing
+  // on the strip is seen to change; only the foot under it moves, and it is
+  // carried there (the landing, below).
+  const place = (x, transition = 'none') => {
+    if (frame.current) { cancelAnimationFrame(frame.current); frame.current = 0 }
     const G = geo()
     dx.current = x
+    wrote.current = { x, transition }
     const c = cells()
     const put = (el, p) => {
       if (!el) return
@@ -698,24 +828,20 @@ export default function Letter({
     put(c.card, x)
     put(c.prev, x - G.span)
     put(c.next, x + G.span)
-    // ── the height goes with the strip ──
-    // A short letter beside a long one is a card beside a taller card. The
-    // track's height follows the strip from this card's height toward the
-    // neighbour's by how far the strip has gone, and every screen on it is
-    // centred on its middle, so the card is seen to grow or shrink with the
-    // hand about its own middle and the next card takes over at exactly that
-    // height (`rest`). A lean does not carry it: the bob is not worth it.
-    const tr = track.current
-    if (tr && grow && hBase.current) {
-      const side = x < 0 ? c.next : x > 0 ? c.prev : null
-      const h1 = side ? heightOf(side) || hBase.current : hBase.current
-      const f = Math.min(1, Math.abs(x) / G.span)
-      tr.style.transition = ms ? `height ${ms}ms ${ease}` : 'none'
-      tr.style.height = `${(hBase.current + (h1 - hBase.current) * f).toFixed(2)}px`
-    }
+  }
+  // Where a hand puts the card, written on the frame's own clock: a hand
+  // reports as often as it likes, and the strip is written once a frame, at
+  // the last place it reported.
+  const placeSoon = (x) => {
+    dx.current = x
+    want.current = x
+    if (frame.current) return
+    frame.current = requestAnimationFrame(() => { frame.current = 0; place(want.current) })
   }
   // Back to what the stylesheet draws: nothing written on any of the three.
   const rest = () => {
+    if (frame.current) { cancelAnimationFrame(frame.current); frame.current = 0 }
+    wrote.current = null
     const c = cells()
     for (const el of [c.card, c.prev, c.next]) {
       if (!el) continue
@@ -724,20 +850,44 @@ export default function Letter({
       el.style.transformOrigin = ''
       el.style.opacity = ''
     }
-    if (track.current) { track.current.style.transition = ''; track.current.style.height = '' }
-    hBase.current = 0
     dx.current = 0
   }
   // and still: the measure is read again next time, since the window may
-  // have changed under a strip at rest
+  // have changed under a strip at rest, and what landed meanwhile is drawn
+  // (strip.js)
   const settled = () => {
     settling.current = false
     measured.current = null
+    tall.current = null
     if (stage.current) delete stage.current.dataset.moving
+    stripMoving(false)
   }
+  // The three heights, read as the strip starts to move and before anything
+  // is written to it on that frame, so the read costs nothing, for the foot
+  // to be carried by when the next card lands.
   const measure = () => {
-    const { card } = cells()
-    hBase.current = card ? heightOf(card) : 0
+    if (tall.current) return
+    const c = cells()
+    const h = (el) => (el && el.firstElementChild ? el.firstElementChild.offsetHeight : 0)
+    const up = stage.current && stage.current.parentElement
+    tall.current = {
+      card: h(c.card), prev: h(c.prev), next: h(c.next),
+      foot: up ? up.querySelector(':scope > .wl-foot') : null,
+    }
+  }
+  // The strip starts to move. What lands meanwhile waits (strip.js); a
+  // screen still coming up out of the dark is let be at its light, since the
+  // strip is about to give it one (`Cell`); the heights are read; and a
+  // screen still to come beside the card is drawn now, since the hand may be
+  // about to want it (`admit`).
+  const wake = () => {
+    stripMoving(true)
+    const c = cells()
+    for (const el of [c.card, c.prev, c.next]) {
+      if (el && el.getAnimations) for (const a of el.getAnimations()) a.cancel()
+    }
+    admit(true)
+    measure()
   }
   // Where the card is SEEN, halfway through a spring or a lean, for a hand
   // that catches it there: the strip stops where it is, and the hand has it
@@ -749,8 +899,36 @@ export default function Letter({
     try { if (card) x = new DOMMatrixReadOnly(getComputedStyle(card).transform).m41 } catch { /* the last place written stands */ }
     hold()
     settling.current = false
-    place(x, 'none', 0, EASE_SLIDE, !!hBase.current)
+    place(x)
     return x
+  }
+  // A turn still running on, caught by a hand or asked for again by a key:
+  // it lands at once, where it is seen, and whatever caught it has the card
+  // it was bringing in from there. It used to be let run on, and the hand or
+  // the key was ignored until it had, so a second throw a moment after the
+  // first did nothing at all. Returns where the new card stands.
+  const landNow = () => {
+    const t = turning.current
+    if (!t || closing.current) return null
+    const { card } = cells()
+    let x = dx.current
+    try { if (card) x = new DOMMatrixReadOnly(getComputedStyle(card).transform).m41 } catch { /* the last place written stands */ }
+    place(x)
+    if (landing.current) { landing.current(); landing.current = null }
+    hold()
+    carry.current = x + t.dir * geo().span
+    silent.current = true
+    flushSync(() => go('letter', t.target))
+    if (turning.current) {
+      // the address did not change after all: the strip is let go of
+      turning.current = null
+      carry.current = null
+      busy.current = false
+      rest()
+      settled()
+      return null
+    }
+    return dx.current
   }
   // the first turn a device makes is the last lean it is shown
   const turned = () => {
@@ -763,8 +941,9 @@ export default function Letter({
   const bump = (dir) => {
     if (reduce || busy.current || settling.current || closing.current) return
     settling.current = true
-    place(-dir * 16, `transform 150ms ${EASE_OUT}, opacity 150ms ${EASE_OUT}`, 0, EASE_OUT, false)
-    after(160, () => place(0, `transform 420ms ${EASE_HOME}, opacity 420ms ${EASE_HOME}`, 0, EASE_HOME, false))
+    stripMoving(true)
+    place(-dir * 16, `transform 150ms ${EASE_OUT}, opacity 150ms ${EASE_OUT}`)
+    after(160, () => place(0, `transform 420ms ${EASE_HOME}, opacity 420ms ${EASE_HOME}`))
     after(600, () => { rest(); settled() })
   }
 
@@ -773,7 +952,16 @@ export default function Letter({
   // it has landed.
   const slide = (dir, { from = null, v = 0, ms: fixed = TURN_MS } = {}) => {
     // a key or a wheel while a hand holds the card is the hand's to finish
-    if (busy.current || closing.current || (drag.current && from == null)) return
+    if (closing.current || (drag.current && from == null)) return
+    // and one while a turn is still running on lands it, and turns again
+    // from where it was seen: a key pressed twice is two letters
+    if (turning.current) {
+      if (from != null) return
+      const x = landNow()
+      if (x != null) slideRef.current(dir, { from: x, ms: fixed })
+      return
+    }
+    if (busy.current) return
     hush()
     const side = dir > 0 ? nextCard : prevCard
     if (!side) { bump(dir); return }
@@ -785,7 +973,7 @@ export default function Letter({
     turned()
     if (reduce) { hold(); settled(); silent.current = true; go('letter', side.target); return }
     busy.current = true
-    if (!hBase.current) measure()
+    wake()
     if (stage.current) stage.current.dataset.moving = dir > 0 ? 'next' : 'prev'
     const G = geo()
     place(x0)
@@ -795,12 +983,20 @@ export default function Letter({
     if (track.current) void track.current.offsetWidth
     const to = -dir * G.span
     const { ms, ease } = v > 0 ? handoff(Math.abs(to - x0), v, SLIDE_MIN, SLIDE_MAX) : { ms: fixed, ease: EASE_SLIDE }
-    place(to, `transform ${ms}ms ${ease}, opacity ${ms}ms ${ease}`, ms, ease)
+    place(to, `transform ${ms}ms ${ease}, opacity ${ms}ms ${ease}`)
+    turning.current = { dir, target: side.target }
+    run.current = { dir, from: x0, to, ms, ease, t0: performance.now() }
+    // and the screen past the neighbour is drawn while it runs (`ahead`)
+    unidle(aheadAt.current)
+    const n = turnNo.current
+    aheadAt.current = idle(() => { aheadAt.current = 0; setAhead({ dir, from: param, n }) })
     // The address changes when the neighbour has arrived, which is the end
     // of its own travel and not a clock started beside it: a phone that
     // drops the first frame of a turn starts the travel late, and a landing
     // timed from the press cut the last of it off and jumped. The clock is
-    // only the fallback, for a travel that never reports its end.
+    // only the fallback, for a travel that never reports its end. The change
+    // is drawn there and then, before the next frame, so there is never a
+    // frame between the travel's end and the card that has landed.
     const arriving = dir > 0 ? cells().next : cells().prev
     let down = false
     const onEnd = (e) => { if (e.target === arriving && e.propertyName === 'transform') land() }
@@ -812,14 +1008,14 @@ export default function Letter({
       if (down || closing.current) return
       unland()
       silent.current = true
-      go('letter', side.target)
+      flushSync(() => go('letter', side.target))
     }
     if (arriving) arriving.addEventListener('transitionend', onEnd)
     landing.current = unland
     after(ms + 320, land)
     // and should the address not change after all, the strip is let go of
     // rather than left running on to nothing
-    after(ms + 1200, () => { unland(); busy.current = false; rest(); settled() })
+    after(ms + 1200, () => { unland(); busy.current = false; turning.current = null; run.current = null; rest(); settled() })
   }
   const slideRef = useRef(slide)
   slideRef.current = slide
@@ -832,29 +1028,93 @@ export default function Letter({
     const home = Math.sign(v) === -Math.sign(x0) ? Math.abs(v) : 0
     const { ms, ease } = handoff(Math.abs(x0), home, SPRING_MIN, SPRING_MAX)
     settling.current = true
-    place(0, `transform ${ms}ms ${ease}, opacity ${ms}ms ${ease}`, ms, ease)
+    stripMoving(true)
+    place(0, `transform ${ms}ms ${ease}, opacity ${ms}ms ${ease}`)
     after(ms + 20, () => { rest(); settled() })
   }
 
   // ── the landing ──
   // The card that has just taken the glass. The strip is put back to rest
-  // before paint, and since every screen on it is keyed by its letter, the
-  // one that landed is already where rest puts it, and so is the one that
-  // left: nothing is seen to change. A card that came by another way (a
-  // link, the history) is put down the same way, and whatever was under way
-  // is let go.
+  // before paint, and since every screen on it keeps its element, the one
+  // that landed is already where rest puts it, and so is the one that left:
+  // nothing is seen to change. A card that came by another way (a link, the
+  // history) is put down the same way, and whatever was under way is let go.
+  // A turn landed early (`landNow`) is put down where it was seen instead,
+  // for whatever landed it; the screen past the new card is drawn when that
+  // hand or key moves it (`wake`), and not for a hand that only stops it.
   useLayoutEffect(() => {
     hold()
     if (landing.current) { landing.current(); landing.current = null }
+    if (aheadAt.current) { unidle(aheadAt.current); aheadAt.current = 0 }
+    turnNo.current += 1
+    const was = turning.current
+    const t = tall.current
+    turning.current = null
+    run.current = null
+    // the screen drawn ahead of the turn travelled in on its own (the effect
+    // below); it stands beside the card now, where the stylesheet puts it
+    const fe = farEl.current
+    if (fe && fe.getAnimations) for (const a of fe.getAnimations()) a.cancel()
+    farEl.current = null
     rest()
-    settled()
     busy.current = false
     silent.current = false
+    const x = carry.current
+    carry.current = null
+    if (x != null) {
+      tall.current = null
+      place(x)
+    } else settled()
+    // ── and the foot goes with it ──
+    // The track took the new card's height on this frame, and nothing on the
+    // strip moved, since every screen on it stands on its middle; what stands
+    // under the strip moved by half the difference, and is carried there
+    // from where it stood.
+    if (was && t && t.foot && t.foot.isConnected && !reduce && typeof t.foot.animate === 'function') {
+      const h1 = was.dir > 0 ? t.next : t.prev
+      const d = h1 && t.card ? (h1 - t.card) / 2 : 0
+      if (Math.abs(d) >= 1) {
+        t.foot.animate(
+          [{ transform: `translate3d(0, ${(-d).toFixed(1)}px, 0)` }, { transform: 'translate3d(0, 0, 0)' }],
+          { duration: 300, easing: EASE_SLIDE },
+        )
+      }
+    }
     const k = keyed.current
     keyed.current = ''
     const key = k && track.current ? track.current.querySelector(`:scope > .wl-letter-card .wl-sk.${k}`) : null
     if (key && !key.disabled) key.focus({ preventScroll: true })
   }, [param]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A screen that comes to stand on the strip while it is written to (the
+  // one past the card, drawn for a hand) is written to with the rest. And the
+  // one drawn ahead of a turn joins the strip where it would have been had it
+  // been there from the start, two screens along, off the glass, and travels
+  // in with it on the same curve, from the same moment: it arrives beside the
+  // new card as the card lands, the way the next phone on a table is simply
+  // there when the one before it is moved, and never appears or fades in.
+  const run = useRef(null)
+  const slid = useRef(new WeakSet())
+  useLayoutEffect(() => {
+    const w = wrote.current
+    if (w) place(w.x, w.transition)
+    const f = track.current ? track.current.querySelector(':scope > [data-side="far"]') : null
+    farEl.current = f
+    const r = run.current
+    if (!f || !r || slid.current.has(f) || typeof f.animate !== 'function') return
+    slid.current.add(f)
+    const G = geo()
+    const at = (x) => `translate3d(${(x + 2 * r.dir * G.span).toFixed(2)}px, 0, 0) scale(${G.scale})`
+    f.style.transition = 'none'
+    f.style.transformOrigin = r.dir > 0 ? '0% 50%' : '100% 50%'
+    f.style.opacity = String(G.dim)
+    const a = f.animate([{ transform: at(r.from) }, { transform: at(r.to) }], { duration: r.ms, easing: r.ease, fill: 'forwards' })
+    // on the card's own clock where it can be read, since the card's travel
+    // began on a frame and not on the call that asked for it
+    const { card } = cells()
+    const lead = card && card.getAnimations ? card.getAnimations().find((t) => t.transitionProperty === 'transform') : null
+    a.currentTime = lead && lead.currentTime != null ? lead.currentTime : Math.min(r.ms, performance.now() - r.t0)
+  })
 
   // ── the lean ──
   // The first two times a device opens the deck, and until it has turned it
@@ -871,8 +1131,9 @@ export default function Letter({
     if (s.turned || (s.hinted || 0) >= NUDGES) return
     patch({ hinted: (s.hinted || 0) + 1 })
     settling.current = true
-    place(-NUDGE_PX, `transform 380ms ${EASE_OUT}, opacity 380ms ${EASE_OUT}`, 0, EASE_OUT, false)
-    after(440, () => place(0, `transform 680ms ${EASE_HOME}, opacity 680ms ${EASE_HOME}`, 0, EASE_HOME, false))
+    stripMoving(true)
+    place(-NUDGE_PX, `transform 380ms ${EASE_OUT}, opacity 380ms ${EASE_OUT}`)
+    after(440, () => place(0, `transform 680ms ${EASE_HOME}, opacity 680ms ${EASE_HOME}`))
     after(1140, () => { rest(); settled() })
   }
   const nudgeRef = useRef(nudge)
@@ -951,14 +1212,20 @@ export default function Letter({
   // pointer wherever it goes, only the first finger counts, and the click a
   // drag ends in is swallowed, so a drag let go of over a soft key does not
   // heart the letter or open its menu. A mouse over a turnable deck selects
-  // no words (wall.css): the card is a thing that is picked up.
+  // no words (wall.css): the card is a thing that is picked up. A hand that
+  // comes down while a turn is still running on catches it (`landNow`).
   const onDown = (e) => {
-    if (!e.isPrimary || drag.current || busy.current || !canTurn) return
+    if (!e.isPrimary || drag.current || !canTurn) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
+    let ox
+    if (turning.current) {
+      ox = landNow()
+      if (ox == null) return
+    } else if (busy.current) return
+    else ox = catchStrip()
     hush()
     flung.current = false
-    const ox = catchStrip()
-    drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox, axis: '', s: [] }
+    drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, lx: e.clientX, ox, axis: '', s: [{ x: e.clientX, t: e.timeStamp }] }
   }
   const onMove = (e) => {
     const d = drag.current
@@ -970,28 +1237,35 @@ export default function Letter({
       d.axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y'
       if (d.axis === 'y') { drag.current = null; if (d.ox) spring(); return }
       // the slack is not taken up: the card moves from here, and where it
-      // was still giving at an end it is taken back to the pull behind it
-      d.sx = e.clientX
+      // was still giving at an end it is taken back to the pull behind it.
+      // Only the slack: a phone that was busy for a moment reports a stretch
+      // of travel as one move, and that travel was the hand's
+      d.sx = e.clientX - Math.sign(mx) * Math.max(0, Math.abs(mx) - SLOP)
       try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* a pointer the browser is not tracking, as scripts/preview.mjs sends */ }
+      wake()
       const G = geo()
       const end = (d.ox < 0 && !nextTo) || (d.ox > 0 && !prevTo)
       if (end) d.ox = unband(d.ox, G.w / 2)
-      if (!hBase.current) measure()
       const st = stage.current
+      // moving, once: what the stylesheet draws differently while the strip
+      // moves is the same either way it goes, so a hand that changes its
+      // mind does not have the stage's style worked out again
+      if (st && st.dataset.moving == null) st.dataset.moving = mx < 0 ? 'next' : 'prev'
       if (st && e.pointerType === 'mouse') st.dataset.grab = ''
       const sel = window.getSelection ? window.getSelection() : null
       if (sel && !sel.isCollapsed) sel.removeAllRanges()
     }
+    // every report the browser folded into this one, so a throw read off a
+    // busy frame is read off the whole of it
     const t = e.timeStamp
-    d.s.push({ x: e.clientX, t })
+    const ev = e.nativeEvent
+    const all = ev && typeof ev.getCoalescedEvents === 'function' ? ev.getCoalescedEvents() : []
+    for (const p of all.length ? all : [e]) d.s.push({ x: p.clientX, t: p.timeStamp })
     while (d.s.length > 2 && t - d.s[0].t > SAMPLE_MS * 2) d.s.shift()
+    d.lx = e.clientX
     const raw = d.ox + e.clientX - d.sx
     const end = (raw < 0 && !nextTo) || (raw > 0 && !prevTo)
-    // the way the strip is going, which wakes the neighbour it is going to
-    // in full (wall.css, what a print asleep costs)
-    const way = raw < 0 ? 'next' : 'prev'
-    if (stage.current && stage.current.dataset.moving !== way) stage.current.dataset.moving = way
-    place(end ? band(raw, geo().w / 2) : raw)
+    placeSoon(end ? band(raw, geo().w / 2) : raw)
   }
   const onUp = (e) => {
     const d = drag.current
@@ -1004,15 +1278,20 @@ export default function Letter({
     unfling.current = setTimeout(() => { flung.current = false }, 400)
     const v = speed(d.s, e.timeStamp)
     const x = dx.current
-    const dir = x < 0 ? 1 : -1
-    const to = dir > 0 ? nextTo : prevTo
-    // thrown, it goes the way it was thrown; let go slowly, it goes where
-    // it was taken, if that was far enough
-    const along = Math.sign(v) === Math.sign(x)
+    const w = geo().w
+    // Thrown, it goes one letter the way it was thrown, from the card the
+    // hand took, wherever that card was when it was taken: a second throw
+    // that catches a turn on its way in is the letter after, not a push home.
+    // Unless the hand had carried it most of the way the other way first.
+    // Let go slowly, it goes where it was taken, if that was far enough and
+    // it was the hand that took it there.
     const thrown = Math.abs(v) > FLICK
-    if (to && Math.abs(x) > 0.5 && (thrown ? along : Math.abs(x) > COMMIT * geo().w)) {
-      slide(dir, { from: x, v: along ? Math.abs(v) : 0 })
-    } else spring(v)
+    const dir = thrown ? (v < 0 ? 1 : -1) : (x < 0 ? 1 : -1)
+    const to = dir > 0 ? nextTo : prevTo
+    const toward = -dir * (d.lx - d.sx)
+    const ok = !!to && (thrown ? toward > -COMMIT * w : Math.abs(x) > COMMIT * w && toward > 0)
+    if (ok) slide(dir, { from: x, v: thrown ? Math.abs(v) : 0 })
+    else spring(v)
   }
   const onCancel = (e) => {
     const d = drag.current
@@ -1057,6 +1336,121 @@ export default function Letter({
       onPointerCancel: onCancel, onLostPointerCapture: onLost, onClickCapture: onClick,
     }
     : null
+
+  // ── which element each screen keeps ──
+  // A screen is keyed by its letter, so a turn draws nothing again. A name
+  // whose letters are still on their way stands as its waiting card, keyed by
+  // the name, and when they land its letter takes the name's key for as long
+  // as the sheet is up: the element is kept, rather than drawn again and
+  // brought up out of the dark again the moment its words arrive, under a
+  // hand or at rest. The card a turn lands on by its name keeps it the same
+  // way.
+  const alias = useRef(new Map())
+  const drawnKeys = useRef(new Set())
+  const keyOf = (l, name, fallback) => {
+    if (l && alias.current.has(l.id)) return alias.current.get(l.id)
+    const k = name ? `@${name}` : ''
+    if (!l) return k || fallback
+    if (k && drawnKeys.current.has(k)) { alias.current.set(l.id, k); return k }
+    return l.id
+  }
+  // ── and the one past the neighbour ──
+  // A turn lands on a card whose neighbour past it has never been drawn, and
+  // drawing a screen is the dearest thing on the sheet (the words set to
+  // fit, the pixels struck): done on the frame the turn landed on, it was
+  // that frame dropped, and done as the next hand came down, it was the
+  // first frame of that hand's drag. So it is drawn while the strip runs on
+  // toward it (`ahead`), when the page is otherwise only waiting on the
+  // compositor to move the strip, and it travels in with the strip (the
+  // effect after the landing). A screen new to the strip any other way is
+  // drawn when the page is next idle, and at once whenever a hand, a key or
+  // a turn wants it before then (`wake`).
+  const [, setRoom] = useState(0)
+  const [ahead, setAhead] = useState(null)
+  const aheadAt = useRef(0)
+  const farEl = useRef(null)
+  // which turn this is, so a screen drawn ahead of one turn is never drawn
+  // for another that happens to leave from the same letter
+  const turnNo = useRef(0)
+  const shown = useRef(new Set())
+  const pending = useRef([])
+  const admit = (now) => {
+    const ks = pending.current
+    if (!ks.length) return
+    for (const k of ks) shown.current.add(k)
+    pending.current = []
+    if (now) flushSync(() => setRoom((n) => n + 1))
+    else setRoom((n) => n + 1)
+  }
+  // the letter past a neighbour, in the deck's own order
+  const past = (c, dir) => {
+    if (!c || !c.l) return null
+    const ls = lettersFor(c.l.to)
+    const i = ls.findIndex((x) => x.id === c.l.id)
+    if (i >= 0 && ls[i + dir]) return { l: ls[i + dir], name: '' }
+    const t = tiles.findIndex((x) => x.handle === c.l.to)
+    const name = t >= 0 && tiles[t + dir] ? tiles[t + dir].handle : ''
+    const hs = name ? lettersFor(name) : []
+    return { l: hs.length ? (dir > 0 ? hs[0] : hs[hs.length - 1]) : null, name }
+  }
+  const waiting = []
+  const strip = [
+    prevCard ? { key: keyOf(prevCard.l, prevCard.handle, prevCard.target), side: -1, c: prevCard } : null,
+    { key: keyOf(one, handle, String(param)), side: 0 },
+    nextCard ? { key: keyOf(nextCard.l, nextCard.handle, nextCard.target), side: 1, c: nextCard } : null,
+  ].filter((s) => {
+    if (!s) return false
+    if (!s.side || !opened.current || shown.current.has(s.key)) { shown.current.add(s.key); return true }
+    waiting.push(s.key)
+    return false
+  })
+  // the one past the neighbour a turn is running on toward: last on the
+  // strip going on and first going back, so that no screen already drawn is
+  // moved in the page when the turn lands
+  const far = ahead && ahead.from === param && ahead.n === turnNo.current ? past(ahead.dir > 0 ? nextCard : prevCard, ahead.dir) : null
+  if (far && (far.l || far.name)) {
+    const s = {
+      key: keyOf(far.l, far.name, far.name), side: 2 * ahead.dir,
+      c: { l: far.l, handle: far.l ? null : far.name, target: far.l ? far.l.id : far.name },
+    }
+    if (!strip.some((x) => x.key === s.key)) {
+      shown.current.add(s.key)
+      if (s.side > 0) strip.push(s)
+      else strip.unshift(s)
+    }
+  }
+  // two screens are never one element
+  if (strip.length > 1 && new Set(strip.map((s) => s.key)).size < strip.length) {
+    strip.forEach((s) => { if (s.side) s.key = `${s.side}:${s.key}` })
+  }
+  pending.current = waiting
+  useLayoutEffect(() => { drawnKeys.current = new Set(strip.map((s) => s.key)) })
+  // The letter two away either side, whose screen is the one drawn when the
+  // deck is turned onto its neighbour: its name's letters are asked for, and
+  // its pixels struck (looks.js `rgbTile`, kept per letter), while the page
+  // is idle and one at a time, so that drawing it later is only drawing it.
+  const beyond = [past(nextCard, 1), past(prevCard, -1)]
+  const warm = () => {
+    for (const b of beyond) {
+      if (!b) continue
+      if (b.name && !knowsHandle(b.name)) loadHandle(b.name)
+      if (b.l && !skinOf(colourOf(b.l.look, b.l.id)).print) idle(() => rgbTile(b.l.id))
+    }
+  }
+  const warmRef = useRef(warm)
+  warmRef.current = warm
+  const later = waiting.join(' ')
+  useEffect(() => {
+    let id = 0
+    const draw = () => {
+      if (busy.current || drag.current || settling.current) { id = idle(draw); return }
+      id = 0
+      admit(false)
+      warmRef.current()
+    }
+    id = idle(draw)
+    return () => { if (id) unidle(id) }
+  }, [param, later])
 
   // The letter, then the rest of its handle's letters for the turn. Two
   // requests rather than one, because a person who opened a link off a card
@@ -1104,19 +1498,13 @@ export default function Letter({
   const open = !!one && one.body !== null
   const toGate = () => { if (one) setAfterGate({ name: 'letter', id: one.id }); go('gate') }
 
-  // The three on the strip: the letter before, this one and the letter
-  // after, each keyed by its letter (`Cell`). The card is the one whose
-  // address this is, lit and live; either side, the screen that letter is,
-  // with its keys drawn and not pressable. A card that is an arrival and not
-  // the strip landing (a link, the history) takes a beat of fade, decided
-  // with the address (above), and the first card none, since it is the
-  // sheet's own entrance.
-  const here = one ? one.id : String(param)
-  const strip = [
-    prevCard ? { key: prevCard.target, side: -1, c: prevCard } : null,
-    { key: here, side: 0 },
-    nextCard ? { key: nextCard.target, side: 1, c: nextCard } : null,
-  ].filter(Boolean)
+  // The three on the strip (`strip`, above): the letter before, this one and
+  // the letter after, each keeping its element (`keyOf`). The card is the one
+  // whose address this is, lit and live; either side, the screen that letter
+  // is, with its keys drawn and not pressable. A card that is an arrival and
+  // not the strip landing (a link, the history) takes a beat of fade,
+  // decided with the address (above), and the first card none, since it is
+  // the sheet's own entrance.
 
   // ── what stands under the screen ──
   // Nothing, almost always: writing to them, reporting it and taking a name
@@ -1163,7 +1551,7 @@ export default function Letter({
                   <LetterScreen
                     l={one || null} handle={one ? null : handle} seed={String(param)}
                     id="wl-letter-to" live view={view} onView={setView} go={go} toGate={toGate}
-                    woke={moved.current ? '' : woke}
+                    woke={moved.current ? '' : woke} onRemove={removeMine}
                   />
                 )}
               </Cell>

@@ -1,88 +1,65 @@
-// ── the campus ──────────────────────────────────────────────────────────────
+// ── the wall ────────────────────────────────────────────────────────────────
 //
-// The wall is one tree drawn for two walls. `/berkeley` is the campus wall
-// it was built as: a berkeley.edu address writes, and the cards printed with
-// its address still land on it. `/` is the same wall for everybody: no
-// campus, no domain, and anybody the product has proved may write, by their
-// instagram, their google or an address with a code (migration 0057).
+// The wall was one tree drawn for two walls: `/berkeley`, the campus wall it
+// was built as, and `/`, the same wall for everybody. Since the rulings of
+// 25 September there is one (docs/ONE-WALL.md). Every letter is on the wall
+// at `/`, and a letter's campus is the school it CARRIES, not the wall it is
+// on: an @-note posted by a verified Berkeley address carries Berkeley and
+// its sticker (schools.js), and a name note carries whichever school the
+// writer picked, or none.
 //
-// Everything that differs between the two is a row here and nothing else:
-// where it is mounted, which campus row the schema files it under, what the
-// gate asks for, and the handful of lines that name the place. A screen that
-// needs to know which wall it is on asks `campus()`; nothing under wall/
-// spells a slug or a domain of its own.
+// So what is left here is the wall's own lines, in one row: the masthead,
+// the composer's first question and the examples under its empty card, and
+// the tab's title. The schools themselves (their names, their colours,
+// which domain is which) are schools.js, and which campuses are open is the
+// server's (`wall_campuses_open`, api.js `campuses`).
 //
-// `configure` is called once, by the entry (main.jsx), before the shell
-// mounts, because the router's base is read by everything that builds an
-// address and has to be settled before the first one is built.
+// `configure` is still called once, by the entry (main.jsx), before the
+// shell mounts, because the router's base is read by everything that builds
+// an address and has to be settled before the first one is built.
 import { setBase } from './router.js'
 
-export const CAMPUSES = {
-  berkeley: {
-    slug: 'berkeley',
-    base: '/berkeley',
-    // the word in the caption over the search, and in the composer
-    name: 'berkeley',
-    place: 'Berkeley',
-    // the address that writes here, and how celestual-edu-verify knows it
-    domain: 'berkeley.edu',
-    eduSlug: 'uc-berkeley',
-    // the veil: the title, the line under it, and whether the mark stands
-    // over it
-    title: ['a wall of', 'unforgettable', 'berkeley bears.'],
-    sub: 'anonymous letters to the one you never told.',
-    mark: false,
-    // the composer's first question, and the examples under its empty card,
-    // set on this campus: a place a person there has actually stood.
-    //
-    // They are LOWER CASE, like the wall they are examples of. They were
-    // sentence case, and they are the same sentences the corpus carries in
-    // lower case — so the model the product held up to a writer, on the one
-    // screen where it is showing them what a letter looks like, was the one
-    // piece of text on the wall that did not look like the wall. VOICE.md
-    // exempts what a person in the product WROTE, and these are not that:
-    // they are the product demonstrating. The place names keep their case.
-    someone: ['someone at Berkeley', 'you can’t forget.'],
-    examples: [
-      'you gave me your umbrella outside Wheeler and walked home in it. i still have it.',
-      'you sat two rows ahead in Dwinelle all semester and never once turned round. i noticed anyway.',
-      'you held the door at Moffitt at two in the morning and asked if i was okay. i was not, and then i was.',
-      'you were the one singing on the 51B that night. i wanted the song to be about me.',
-    ],
-    docTitle: 'celestual · berkeley · someone here wrote something they never sent',
-  },
-  global: {
-    slug: 'global',
-    base: '',
-    name: 'celestual',
-    place: '',
-    domain: null,
-    eduSlug: null,
-    title: ['a wall of', 'the ones you', 'never told.'],
-    sub: 'anonymous letters, addressed to an instagram. read them, or write one.',
-    mark: true,
-    someone: ['someone you', 'can’t forget.'],
-    examples: [
-      'you gave me your umbrella outside the station and walked home in it. i still have it.',
-      'you sat two rows ahead all year and never once turned round. i noticed anyway.',
-      'you held the door at two in the morning and asked if i was okay. i was not, and then i was.',
-      'you were the one singing on the last train that night. i wanted the song to be about me.',
-    ],
-    docTitle: 'celestual · someone wrote something they never sent',
-  },
+export const WALL = {
+  slug: 'global',
+  base: '',
+  // the word in the caption over the search, and in the composer
+  name: 'celestual',
+  place: '',
+  domain: null,
+  // the veil: the title, the line under it, and whether the mark stands
+  // over it
+  title: ['a wall of', 'the ones you', 'never told.'],
+  sub: 'anonymous letters, to an instagram or to a name. read them, or write one.',
+  mark: true,
+  // the composer's first question, and the examples under its empty card.
+  //
+  // They are LOWER CASE, like the wall they are examples of: VOICE.md exempts
+  // what a person in the product WROTE, and these are not that, they are
+  // the product demonstrating.
+  someone: ['someone you', 'can’t forget.'],
+  examples: [
+    'you gave me your umbrella outside the station and walked home in it. i still have it.',
+    'you sat two rows ahead all year and never once turned round. i noticed anyway.',
+    'you held the door at two in the morning and asked if i was okay. i was not, and then i was.',
+    'you were the one singing on the last train that night. i wanted the song to be about me.',
+  ],
+  docTitle: 'celestual · someone wrote something they never sent',
 }
 
-let CURRENT = CAMPUSES.berkeley
+// The one row, under the name the old table used for it, so anything that
+// still looks a wall up by slug finds it.
+export const CAMPUSES = { global: WALL }
 
-export function configure(slug) {
-  CURRENT = CAMPUSES[slug] || CAMPUSES.berkeley
-  setBase(CURRENT.base)
-  return CURRENT
+export function configure() {
+  setBase(WALL.base)
+  return WALL
 }
 
 // The wall this tree is drawn for.
-export function campus() { return CURRENT }
+export function campus() { return WALL }
 
-// Whether writing here needs a campus address (a wall with a domain), or
-// any proof the product takes (the wall at the root).
-export function needsCampus() { return !!CURRENT.domain }
+// Whether writing here needs a campus address. It never does now: an @-note
+// asks for a Berkeley address at the moment it is posted, and a name note
+// asks for nothing (screens/Write.jsx). Kept, answering no, for the screens
+// that still ask it (screens/Letter.jsx `sealSay`).
+export function needsCampus() { return false }

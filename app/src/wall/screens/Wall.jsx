@@ -123,7 +123,7 @@
 // moment its question is fresh again. A door that cannot be closed is a
 // banner, and a door that never reopens is a door somebody missed once.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { PixIcon, Wait } from '../screen.jsx'
@@ -258,9 +258,10 @@ function tabDue(state) {
 // printed its number over the question as the one fact about it, and a small
 // number reads as an empty room rather than an open one. The figure, its roll
 // and the line an empty wall says are all still here and come back with the
-// switch; until then the line is what an idle phone kept in that row, the
-// network's name and nothing after it. A wall that did not load still says
-// so, since that is not a count.
+// switch; until then the row is empty and takes no room: the name over the
+// search came off on 25 September, since the wall is one wall and the brand
+// already stands in the top bar. A wall that did not load still says so,
+// since that is not a count.
 const COUNTED = false
 function Ear({ letters }) {
   const err = wallError()
@@ -288,8 +289,6 @@ function Ear({ letters }) {
   }
   return (
     <div className="wl-ear" aria-live="polite">
-      <span className="wl-ear-name">{campus().name}</span>
-      {meta ? <span className="wl-ear-dot" aria-hidden="true">&middot;</span> : null}
       {meta}
     </div>
   )
@@ -459,7 +458,8 @@ function Tab({ faces, onGo, onHide, going }) {
             : <Sparkle size={12} />}
         </span>
         <span className="wl-tab-text">
-          get notified if they<br />ping you too.
+          <span className="wl-tab-h">find out if it&rsquo;s mutual.</span>
+          <span className="wl-tab-sub">send them a note privately too. they only read it if they send you one.</span>
         </span>
         <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
       </button>
@@ -510,7 +510,10 @@ function Down({ letter: l, onLeave }) {
   )
 }
 
-export default function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
+// the wall under a sheet is not drawn again when only the sheet changed: a
+// letter's deck turned is a new address, and nothing here reads it
+export default memo(Wall)
+function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   // The index, shaped (data.js `wall`). The same array until the index is
   // read again, whatever else the corpus does, so the hive under it, which
   // keys its layout off the array's identity, is laid out once per reading

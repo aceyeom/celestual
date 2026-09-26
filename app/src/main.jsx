@@ -1,46 +1,41 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
-import { BERKELEY_BASE, ownsAt, legacyRewrite, movedRewrite } from './wall/router.js'
+import { ownsAt, legacyRewrite, movedRewrite } from './wall/router.js'
 import { configure as configureWall } from './wall/campus.js'
 import { landing as cardLanding } from './cards.js'
 
 // No OAuth popup/callback to intercept — identity is proven with an Instagram
 // DM code entirely in-tab (see api/igverify.js), so the app just boots.
 //
-// ── /berkeley, and why the fork is here ──────────────────────────────────────
+// ── the wall, and why the fork is here ───────────────────────────────────────
 // This file used to fork on `/beta` before mounting, because the beta was not a
 // theme: it was a second brand with its own palette, faces, geometry, motion,
 // backdrop and screens, deliberately sealed off from production so the two
 // could be judged side by side.
 //
-// That judgement was made and the Bindery won — the tokens are in theme.js, the
-// parts are in components/ui.jsx, the materials are in texture.js, and one
-// stylesheet governs the whole product. What used to be behind that fork is
-// production now, and the word "beta" no longer describes anything in this
-// repository.
+// That judgement was made and the Bindery won, and what used to be behind that
+// fork is production now. The fork that is left is THE WALL: the letters,
+// reached by scanning a QR code off a card or a flyer, plus the hand off into
+// the mutual blind that the wall exists to fill. It was the Berkeley campus
+// surface at /berkeley and, beside it, a second wall for everybody at the
+// root. Since 25 September it is one wall, at the root (docs/ONE-WALL.md):
+// every letter is on it, Berkeley's included, and a letter's campus is the
+// school it carries.
 //
-// The fork that is left is not a beta. It is THE WALL: the Berkeley campus
-// surface, reached by scanning a QR code off a card or a flyer, plus the hand
-// off into the mutual blind that the wall exists to fill. It lives at
-// /berkeley because that is what it is — a campus, not a phase — and because
-// the next campus should be a sibling address rather than a second rewrite of
-// this file.
-//
-// It is a second brand for the same reason the first one was: a blue-black
-// void, four different faces, a field of drifting points, and a cream card that
-// is the only bright object in it. None of that belongs in the almanac, and the
-// almanac's ground, grain and cursor do not belong in it.
+// It is a second brand for the same reason the first one was: a black room,
+// the phone's one face, and the screens that are the only bright objects in
+// it. None of that belongs in the almanac, and the almanac's ground, grain
+// and cursor do not belong in it.
 //
 // Production's path below is untouched and stays synchronous: the wall is a
-// dynamic import, so its chunk — and the four Google faces it injects — never
-// reach anybody who did not scan a piece of paper.
+// dynamic import, so its chunk never reaches anybody Main is drawing for.
 //
 // ── the paper that is already out there ──────────────────────────────────────
-// Cards and flyers carry /beta and cannot be redeployed. The old prefix is
-// rewritten onto the new one here, in the history rather than through a
-// navigation, so a scan of an old card lands on the wall with the right address
-// in the bar and no visible redirect.
+// Cards and flyers carry /beta and /berkeley and cannot be redeployed.
+// vercel.json redirects both to the root for good, and the same rule is
+// applied here, in the history rather than through a navigation, for a dev
+// server and for a tab that loaded before the redirect existed.
 const here = (window.location.pathname || '/').replace(/\/+$/, '') || '/'
 
 // ── the cards ────────────────────────────────────────────────────────────────
@@ -68,26 +63,25 @@ const legacy = legacyRewrite(at)
 // the flow at /place and /@handle, the list at /sky, the mutual at /reveal.
 // It is a sheet on the wall now (wall/screens/Ping.jsx, You.jsx), and every
 // one of those addresses is already printed somewhere, in a mail, a DM, a
-// bio, so each is rewritten onto the wall that is home (wall/router.js
-// `HOME_BASE`) the same way the old prefix is: in the history, before
-// anything mounts, with nothing anybody watches happen.
-const moved = legacy || movedRewrite(at)
+// bio, so each is rewritten onto the wall (wall/router.js `HOME_BASE`) the
+// same way the old prefixes are: in the history, before anything mounts,
+// with nothing anybody watches happen. An old prefix is taken off first, so
+// /berkeley/place lands where /place does.
+const moved = movedRewrite(legacy || at) || legacy
 if (moved) {
   window.history.replaceState(window.history.state, '', moved + window.location.search + window.location.hash)
 }
 
 const path = moved || at
-// ── the two walls ────────────────────────────────────────────────────────────
-// The campus wall owns everything under /berkeley. The wall for everybody
-// owns the root and its own sheets under it (/letter, /find, /write, /gate,
-// /report, /remove, /join, /ping, /you); Main keeps the three addresses that
-// arrive from outside (/optout, /copy, /signin). Which wall is decided here,
-// once, before anything mounts, and the wall's tree is told which one it is
-// drawing (wall/campus.js) before it builds a single address.
-const wallPath = ownsAt(BERKELEY_BASE, path)
-const homePath = !wallPath && ownsAt('', path)
-if (wallPath) configureWall('berkeley')
-else if (homePath) configureWall('global')
+// ── the one wall ─────────────────────────────────────────────────────────────
+// The wall owns the root and its own sheets under it (/letter, /find, /write,
+// /gate, /report, /remove, /join, /ping, /you, /reveal, /verify); Main keeps
+// the three addresses that arrive from outside (/optout, /copy, /signin).
+// Which one draws is decided here, once, before anything mounts, and the
+// wall's tree is configured (wall/campus.js) before it builds a single
+// address.
+const wallPath = ownsAt('', path)
+if (wallPath) configureWall()
 
 // ── the project, connected early ─────────────────────────────────────────────
 // Every read on either surface goes to the one Supabase project, and every
@@ -190,7 +184,7 @@ if (adminPath) {
       </StrictMode>,
     )
   })
-} else if (wallPath || homePath) {
+} else if (wallPath) {
   import('./wall/index.jsx').then(({ default: WallApp }) => {
     root.render(
       <StrictMode>

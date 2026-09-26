@@ -17,6 +17,16 @@
 
 .wl-scene, .wl-tile, .wl-mini {
   --wl-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* the square's film grain (acid, below): one channel of the same noise,
+     pulled to three times its contrast and split at its middle into specks
+     of black and specks of white, each as opaque as it is far from the
+     middle. Laid over plainly, it moves the lime's lightness and never its
+     hue, which is what film's grain does; in overlay it had turned the lime
+     yellow wherever it lifted it. An image, since feTurbulence inside an
+     image is drawn by every engine, where a filter laid on the page is not
+     drawn by WebKit */
+  --wl-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1'/%3E%3CfeFuncA type='linear' slope='3' intercept='-1'/%3E%3C/feComponentTransfer%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0'/%3E%3CfeFuncG type='linear' slope='0'/%3E%3CfeFuncB type='linear' slope='0'/%3E%3CfeFuncA type='table' tableValues='0.36 0 0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)'/%3E%3C/svg%3E");
+  --wl-grain-hi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1'/%3E%3CfeFuncA type='linear' slope='3' intercept='-1'/%3E%3C/feComponentTransfer%3E%3CfeComponentTransfer%3E%3CfeFuncR type='table' tableValues='0 0 0.26'/%3E%3CfeFuncG type='table' tableValues='0 0 0.26'/%3E%3CfeFuncB type='table' tableValues='0 0 0.26'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
 /* ── the photograph ── */
@@ -238,10 +248,11 @@
 .wl-sk.is-on .wl-px { animation: wl-sk-heart 420ms var(--ease, ease); }
 @keyframes wl-sk-heart { 0% { transform: scale(0.6); } 50% { transform: scale(1.4); } 100% { transform: none; } }
 /* under a mouse a soft key answers the pointer: it is lit behind, in the
-   screen's own light or a print's own ink */
+   colour of the words on its band, which on every screen now is the band's
+   own light: a lit screen's, a copy's paper, a print's palest ink, acid's
+   lime */
 @media (hover: hover) and (pointer: fine) {
   .wl-root .wl-sk:not(:disabled):hover { background: color-mix(in srgb, var(--s-lit) 16%, transparent); border-radius: 1cqw; }
-  .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-sk:not(:disabled):hover { background: color-mix(in srgb, var(--s-ink) 12%, transparent); }
 }
 
 /* the LCD itself, over everything: its pixels, the moiré a camera makes of
@@ -299,44 +310,45 @@
 .wl-scr[data-kind='neg'] .wl-scr-menu li.is-on { box-shadow: 0 0 1.2cqw rgba(255,255,255,0.32), 0 0 3cqw rgba(255,255,255,0.12); }
 
 /* ── the prints ──
-   A poster and a riso are the screen's LAYOUT printed flat: one tone edge
-   to edge, every word in ink, and a black rule round the sheet where the
-   screen's bezel was. The colours are the filter's (looks.js
-   `printFilter`), pulled from these greys. */
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top,
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-bot { background: none; color: var(--s-ink); }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top { padding-top: calc(var(--q-top-pad, 2.6cqw) + 1cqw); }
+   A poster and a riso are the screen's LAYOUT printed: the panel in the
+   paper's colour with the words in the darkest ink, the phone's two bands
+   of glass above and below it laid in one of the inks with the status and
+   the keys struck out of them in the palest (looks.js `bands`, drawn by the
+   base rules above from `--s-top` and `--s-lit`), and a black rule round
+   the sheet where the screen's bezel was. The colours are the filter's
+   (looks.js `printFilter`), pulled from these greys. They were one tone
+   edge to edge, and beside the screens with bands read as other objects. */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='brat']) .wl-scr-top { padding-top: calc(var(--q-top-pad, 2.6cqw) + 1cqw); }
 /* and nothing blooms on a print or a copy: on a copy the bloom crossed the
    threshold and turned the status rows into blobs of paper */
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit { text-shadow: none; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit-g .wl-px,
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-px.wl-lit-g { filter: none; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) :is(.wl-scr-cur, .wl-caret) { box-shadow: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-lit { text-shadow: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-lit-g .wl-px,
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-px.wl-lit-g { filter: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) :is(.wl-scr-cur, .wl-caret) { box-shadow: none; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass {
   box-shadow: inset 0 0 0 1.4cqw rgba(0, 0, 0, 0.85);
 }
 /* a print's words stand clear of its 1.4cqw rule by the same 2.4-3.4cqw a
    lit screen has of glass, and its status rows and keys by a little less
-   (keep the 1.4 with the rule above) */
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 5cqw; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top { padding-left: 3.2cqw; padding-right: 3.2cqw; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-bot { padding-left: 2.4cqw; padding-right: 2.4cqw; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-sb { right: 2.6cqw; }
+   (keep the 1.4 with the rule above). The square has no rule and keeps the
+   same margins, which on a cover are the white space round the word */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='brat']) .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 5cqw; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='brat']) .wl-scr-top { padding-left: 3.2cqw; padding-right: 3.2cqw; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='brat']) .wl-scr-bot { padding-left: 2.4cqw; padding-right: 2.4cqw; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='brat']) .wl-scr-sb { right: 2.6cqw; }
 
 /* ── the prints' lights ──
    Where a print's palest ink falls is its colour's own (looks.js `LIGHTS`):
    drawn here in greys inside the press, so every one of them comes out in
    the print's own inks and none is a new hue, and drawn the same way by
-   share.js before its press. `corner`, acid's, is the panel's own radial
-   (`.wl-scr-bg`) and needs nothing more. */
-/* teal: a keyline of the palest ink inside the rule, a hair clear of it,
-   and a hair clear of the first letter of every row */
-.wl-scr[data-light='keyline'] .wl-scr-fx.is-glass { outline: 0.7cqw solid #FFF; outline-offset: -2.4cqw; }
-/* ember: the light falls from the top of the sheet. The status rows stand
-   in the palest ink, and it breaks up into the main one in the grain a
-   third of the way down, deeper where this phone's backlight sits low */
-.wl-scr[data-light='sky'] .wl-scr-bg {
-  background: linear-gradient(180deg, var(--s-hi) calc(var(--q-hy, 66%) * 0.4 + 5%), var(--s-mid) calc(var(--q-hy, 66%) * 0.4 + 19%), var(--s-lo) 100%);
+   share.js before its press. `corner`, the press's default, is the panel's
+   own radial (`.wl-scr-bg`) and needs nothing more. Each is on the panel,
+   between the bands. */
+/* teal: a keyline of the palest ink round the panel, a hair inside the rule
+   and the bands, and a hair clear of the first letter of every row */
+.wl-scr[data-light='keyline'] .wl-scr-body::after {
+  content: ''; position: absolute; inset: 1cqw 2.4cqw; pointer-events: none;
+  box-shadow: inset 0 0 0 0.7cqw #FFF;
 }
 /* lilac: the light as a halftone. The panel is flat in the main ink, and
    over it a screen of white cones on the forty five degree lattice a
@@ -353,10 +365,7 @@
   -webkit-mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
   mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
 }
-/* violet / yellow: the phone's two bands of glass, laid in the violet drum,
-   and the status and the keys on them struck out in paper */
-.wl-scr[data-light='bands'] .wl-scr-top { background: var(--s-top); color: var(--s-lit); }
-.wl-scr[data-light='bands'] .wl-scr-bot { background: var(--s-bot); color: var(--s-lit); }
+/* violet / yellow: no light, the panel the yellow drum flat (`plain`) */
 
 /* ── a print where the press does not run ──
    (looks.js `PRESS`) The screen is painted in its inks already, so what the
@@ -367,12 +376,58 @@
 .wl-scr[data-inked]:is([data-kind='poster'], [data-kind='riso']) :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire, .wl-scr-fx.is-streak, .wl-scr-fx.is-glare),
 .wl-scr[data-inked][data-kind='xerox'] :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire) { display: none; }
 .wl-scr[data-inked]:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass { box-shadow: inset 0 0 0 1.4cqw var(--s-ink); }
-.wl-scr[data-inked][data-light='keyline'] .wl-scr-fx.is-glass { outline-color: var(--s-lit); }
+.wl-scr[data-inked][data-light='keyline'] .wl-scr-body::after { box-shadow: inset 0 0 0 0.7cqw var(--s-lit); }
 .wl-scr[data-inked][data-light='dots'] .wl-scr-bg::after {
   background:
     radial-gradient(circle closest-side, var(--s-lit) 62%, transparent 70%) 0 0 / 3.2cqw 3.2cqw,
     radial-gradient(circle closest-side, var(--s-lit) 62%, transparent 70%) 1.6cqw 1.6cqw / 3.2cqw 3.2cqw;
 }
+
+/* ── acid: the square ──
+   (looks.js, acid and `brat`) An album cover's square of lime, photographed
+   on cheap film. Everything here is painted, and nothing is pulled through
+   the press, so it is one square on every engine. The lime is the panel's
+   own radial (`.wl-scr-bg`), warm at this phone's hot corner and deeper at
+   the edge, between the phone's two bands, which are the lime's near black
+   shadow with the status and the keys struck in the lime (looks.js). No
+   rule round it: a cover has none. */
+/* the grain, in the lime itself: the film's dark specks laid over it, and
+   its light ones dodged into it, so a speck makes the lime deeper or
+   brighter and never greyer or yellower. Both leave black black, so the
+   words need none of it over them. Started where this letter's own grain
+   starts (`--q-grain`), and a second pass at two and a half times the
+   size under it, so the grain clumps the way film's does and is not the
+   even hiss of a sensor */
+.wl-scr[data-kind='brat'] .wl-scr-bg {
+  background:
+    var(--wl-grain) var(--q-grain, 0 0) / 256px 256px,
+    var(--wl-grain-hi) var(--q-grain, 0 0) / 256px 256px,
+    radial-gradient(120% 95% at var(--q-hx, 80%) var(--q-hy, 66%), var(--s-hi), var(--s-mid) 52%, var(--s-lo) 100%);
+  background-blend-mode: normal, color-dodge, normal;
+}
+/* and the same grain across the bands, the same specks: dark ones laid
+   over, which on near black are nearly nothing, and light ones lifted in
+   screen, where dodging would leave the black black. So the band reads as
+   the same photograph of the same square */
+.wl-scr[data-kind='brat'] :is(.wl-scr-top, .wl-scr-bot) {
+  background:
+    var(--wl-grain) var(--q-grain, 0 0) / 256px 256px,
+    var(--wl-grain-hi) var(--q-grain, 0 0) / 256px 256px,
+    var(--s-top);
+  background-blend-mode: normal, screen, normal;
+}
+/* the words soft, the way that cover's type is: a hair of blur on what the
+   three rows hold, which on a screen 470 pixels wide is under a pixel, and
+   the ink's own halo round each word (`--s-soft`), or on a band the lime's.
+   On the rows' contents and not on the rows, so a band's own edge and its
+   grain stay as sharp as the panel's */
+.wl-scr[data-kind='brat'] :is(.wl-scr-top > *, .wl-scr-body, .wl-scr-bot > *) { filter: blur(0.18cqw); }
+.wl-scr[data-kind='brat'] :is(.wl-scr-msg, .wl-scr-menu, .wl-scr-note) { text-shadow: 0 0 0.5cqw var(--s-soft); }
+.wl-scr[data-kind='brat'] .wl-lit { text-shadow: 0 0 0.5cqw color-mix(in srgb, var(--s-lit) 40%, transparent); }
+/* and none of the LCD: no grid, no moiré, no column the driver left on, no
+   pixels up close, no dead pixel or dust on glass it does not have, and no
+   backlight's clouds */
+.wl-scr[data-kind='brat'] :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire, .wl-scr-fx.is-streak, .wl-scr-fx.is-glass, .wl-scr-fx.is-light, .wl-scr-fx.is-shine) { display: none; }
 
 .wl-scr[data-kind='xerox'] .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 4.4cqw; }
 /* ── the copy: the roller's streaks down the sheet, and the grey the lid
@@ -432,10 +487,11 @@
 .wl-sheet-wrap.is-closing .wl-scene-halo-2 { animation: none; }
 /* a print does not wake, it is uncovered, and outside the press
    (`.wl-scr-press`), so the inks do not walk while it fades. Nor is a blur
-   stacked on the press */
-.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) { filter: none; }
-.wl-scr.is-waking:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']),
-.wl-scr.is-dip:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) { animation: none; }
+   stacked on the press. The square is paper too, uncovered the same way,
+   and keeps its grain sharp: only its words are soft (acid, above) */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) { filter: none; }
+.wl-scr.is-waking:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']),
+.wl-scr.is-dip:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) { animation: none; }
 .wl-scr-press.is-waking { animation: wl-uncover 700ms var(--ease, ease) both; }
 @keyframes wl-uncover { from { opacity: 0; } to { opacity: 1; } }
 .wl-scr.is-dip { animation: wl-dip 300ms ease; }
@@ -493,9 +549,31 @@
 .wl-tile[data-kind='xerox'] .wl-tile-in::before {
   background: var(--wl-noise) 0 0 / 90px 90px; mix-blend-mode: multiply; opacity: 0.5;
 }
+/* the square, small: its lime and its warm corner (`--t-body`) with the
+   film's grain in it, as on the letter, where a lit tile has its pixel
+   grid, and the words a hair soft */
+.wl-tile[data-kind='brat'] .wl-tile-in {
+  background:
+    var(--wl-grain) var(--q-grain, 0 0) / 200px 200px,
+    var(--wl-grain-hi) var(--q-grain, 0 0) / 200px 200px,
+    var(--t-body);
+  background-blend-mode: normal, color-dodge, normal;
+}
+.wl-tile[data-kind='brat'] :is(.wl-tile-top, .wl-tile-bot) {
+  background: var(--wl-grain-hi) var(--q-grain, 0 0) / 200px 200px, var(--t-top);
+  background-blend-mode: screen, normal;
+}
+.wl-tile[data-kind='brat'] .wl-tile-in::before { display: none; }
+/* soft by a shadow and not a filter: a filter is an offscreen pass of its
+   own, and the wall moves a hundred of these */
+.wl-tile[data-kind='brat'] .wl-tile-bot i { box-shadow: 0 0 1px var(--t-ink); }
 /* a print's own light, small: its fill is looks.js `SPOTS` (`--t-spot`),
-   and the keyline is a line inside the rule, clear of it as on the letter */
-.wl-tile[data-light='keyline'] .wl-tile-in::after { outline: 1.4cqw solid var(--t-accent); outline-offset: -5.4cqw; }
+   and the keyline is a line round the panel, clear of the rule and the
+   bands as on the letter */
+.wl-tile[data-light='keyline'] .wl-tile-mid::after {
+  content: ''; position: absolute; inset: 3cqw 5.4cqw; pointer-events: none;
+  box-shadow: inset 0 0 0 1.4cqw var(--t-accent);
+}
 .wl-tile-top {
   position: relative; flex: 0 0 18%; display: flex; align-items: center; gap: 3cqw; padding: 0 6cqw;
   background: var(--t-top); color: var(--t-lit);
@@ -530,9 +608,6 @@
 }
 .wl-tile-bot i { display: block; width: 23cqw; height: 3cqw; background: var(--t-lit); opacity: 0.9; }
 .wl-tile-bot i + i { width: 13cqw; }
-.wl-tile:is([data-kind='poster'], [data-kind='riso']) .wl-tile-bot i { background: var(--t-ink); }
-/* and on a print that keeps the phone's bands, the keys stand out of them */
-.wl-tile[data-light='bands'] .wl-tile-bot i { background: var(--t-lit); }
 
 /* ── the picture, anywhere ── */
 .wl-pic { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
@@ -551,7 +626,11 @@
   background: linear-gradient(var(--t-top) 0 22%, transparent 22% 84%, var(--t-bot) 84%), var(--t-spot, none), var(--t-body);
   box-shadow: var(--mini-in), 0 0 12px -2px var(--s-glow);
 }
-.wl-mini[data-light='keyline'] { --mini-in: inset 0 0 0 2px var(--t-border), inset 0 0 0 3px var(--t-body), inset 0 0 0 4px var(--t-accent); }
+/* teal's keyline round the panel, between the bands, as on the letter */
+.wl-mini[data-light='keyline']::before {
+  content: ''; position: absolute; left: 4px; right: 4px; top: calc(22% + 2px); bottom: calc(16% + 2px); z-index: 1;
+  box-shadow: inset 0 0 0 1px var(--t-accent); pointer-events: none;
+}
 .wl-mini::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background:
@@ -559,6 +638,15 @@
     repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0 1px, transparent 1px 2.5px);
 }
 .wl-mini:is([data-kind='poster'], [data-kind='riso'])::after { background: radial-gradient(rgba(0,0,0,0.18) 28%, transparent 34%) 0 0 / 2.4px 2.4px; }
+/* the square's swatch: the lime, its corner and its grain, and no grid */
+.wl-mini[data-kind='brat'] {
+  background:
+    var(--wl-grain) 0 0 / 200px 200px, var(--wl-grain-hi) 0 0 / 200px 200px,
+    linear-gradient(var(--t-top) 0 22%, transparent 22% 84%, var(--t-bot) 84%), var(--t-body);
+  background-blend-mode: normal, color-dodge, normal, normal;
+}
+.wl-mini[data-kind='brat']::after { display: none; }
+.wl-mini[data-kind='brat'] .wl-mini-body i { box-shadow: 0 0 1px var(--t-ink); }
 .wl-mini-body i { position: absolute; left: 12%; height: 7%; border-radius: 1px; background: var(--t-ink); }
 .wl-mini-body i:nth-child(1) { top: 34%; width: 70%; }
 .wl-mini-body i:nth-child(2) { top: 48%; width: 52%; }

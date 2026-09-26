@@ -13,8 +13,13 @@
 // where it is and takes it out of the queue.
 //
 // It used to open on `held`: letters written at pending that rendered nowhere
-// until a person moved them. That tab is still here, because the desk can
-// still hold a letter back by hand, and nothing lands in it on its own now.
+// until a person moved them. Since 25 September (docs/ONE-WALL.md) things
+// land there on their own again: a name-only note always goes through the
+// classifier, and one it sends to review, or one written while no classifier
+// is configured, waits off the wall for this desk. So the tab says what it
+// is, "waiting for review", each row says why it is waiting, and the two
+// answers are on the row itself: approve puts it on the wall, reject keeps it
+// off.
 //
 // ── AND WHY THE REJECTED ONES ARE HERE AT ALL ───────────────────────────────
 // Spec section 9: rejected content is stored with a rejection reason so it
@@ -28,12 +33,47 @@ import { Search, useDebounced, Tabs, Paging, Empty, Fault, When, State, Btn, Arm
 const LIMIT = 50
 const TABS = [
   { value: 'flagged', label: 'flagged' },
+  { value: 'pending', label: 'waiting for review' },
   { value: 'live', label: 'live' },
-  { value: 'pending', label: 'held' },
   { value: 'rejected', label: 'rejected' },
   { value: 'removed', label: 'down' },
   { value: '', label: 'all' },
 ]
+
+// What the classifier's own reason words mean, for the ones that are about
+// the classifier rather than about the letter.
+const REASON_WORDS = {
+  unconfigured: 'no classifier is set up, so every name note waits here',
+  classifier_timeout: 'the classifier did not answer in time',
+  classifier_error: 'the classifier failed',
+  unparsed: 'the classifier answered in a way that could not be read',
+  unreachable: 'the classifier could not be reached',
+}
+function reasonWords(rs) {
+  return (rs || []).map((r) => {
+    const k = String(r)
+    if (REASON_WORDS[k]) return REASON_WORDS[k]
+    if (k.startsWith('lex:')) return `the word list caught "${k.slice(4)}"`
+    return k
+  })
+}
+
+// Why a letter is waiting, in one line: the desk's own hold, or the
+// classifier's verdict and its reasons, or whatever reason the row carries.
+function heldWhy(l) {
+  const m = l.moderation && typeof l.moderation === 'object' ? l.moderation : {}
+  const desk = m.desk && typeof m.desk === 'object' ? m.desk : null
+  if (desk && desk.status === 'pending') return `held back by hand${desk.note ? `: ${desk.note}` : ''}`
+  const said = reasonWords(m.reasons)
+  // no classifier ran, or it failed: that is the reason, and nothing asked
+  const system = (m.reasons || []).some((r) => REASON_WORDS[String(r)])
+  if (system) return said.join(', ')
+  if (m.verdict === 'review') return said.length ? `the classifier asked for a person: ${said.join(', ')}` : 'the classifier asked for a person'
+  if (m.verdict === 'reject') return said.length ? `the classifier said no: ${said.join(', ')}` : 'the classifier said no'
+  if (m.reason) return String(m.reason)
+  if (said.length) return said.join(', ')
+  return 'no reason was recorded'
+}
 
 export default function Letters({ password, initialStatus = 'flagged', onChanged, onLock }) {
   const [status, setStatus] = useState(initialStatus)
@@ -97,7 +137,9 @@ export default function Letters({ password, initialStatus = 'flagged', onChanged
       <div className="ad-head">
         <h1>the wall</h1>
         <span className="ad-head-note">
-          a flagged letter is on the wall while it waits for you. looks fine keeps it there; take it down takes it off.
+          {status === 'pending'
+            ? 'these are off the wall until you decide. approve puts one on the wall. reject keeps it off.'
+            : 'a flagged letter is on the wall while it waits for you. looks fine keeps it there. take it down takes it off.'}
         </span>
         <div className="ad-head-acts">
           <Tabs value={status} onChange={setStatus} options={TABS} />
@@ -110,7 +152,7 @@ export default function Letters({ password, initialStatus = 'flagged', onChanged
       {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>
           {status === 'flagged' ? 'nothing is waiting to be read.'
-            : status === 'pending' ? 'nothing is held back.'
+            : status === 'pending' ? 'nothing is waiting for review.'
             : q ? 'nothing matches that.'
               : 'nothing here yet.'}
         </Empty>
@@ -153,22 +195,29 @@ export default function Letters({ password, initialStatus = 'flagged', onChanged
 
 function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
   const reasons = l.moderation?.reasons || []
+  // waiting for a person, and nothing else deciding it: a report still open
+  // on it is decided on the reports page
+  const waiting = l.status === 'pending' && !l.reports_open
+  const named = l.target_kind === 'name'
   return (
     <>
       <tr className={open ? 'is-open' : ''}>
-        <td><State>{l.flagged ? 'flagged' : l.status}</State></td>
+        <td><State tone={waiting ? 'is-hold' : undefined}>{l.flagged ? 'flagged' : waiting ? 'waiting' : l.status}</State></td>
         {/* a first name (0053) prints as written, with no @; the paper the
             letter chose (0055) stands under it, as its slugs */}
         <td>
-          <span className="ad-id">{l.target_kind === 'name' ? (l.target_name || String(l.target_handle).slice(1)) : `@${l.target_handle}`}</span>
+          <span className="ad-id">{named ? (l.target_name || String(l.target_handle).slice(1)) : `@${l.target_handle}`}</span>
+          <div className="ad-id is-dim">{named ? 'a name note' : 'an @ note'}</div>
           {l.look && typeof l.look === 'object' ? (
             <div className="ad-id is-dim">{['theme', 'tint', 'face'].map((k) => l.look[k]).filter(Boolean).join(' · ')}</div>
           ) : null}
         </td>
         <td className="is-wide">
           <p className="ad-body-text is-quote" style={{ margin: 0 }}>{l.body}</p>
-          {reasons.length ? (
-            <div className="ad-head-note ad-meta">the screen said: {reasons.join(', ')}</div>
+          {waiting ? (
+            <div className="ad-head-note ad-meta">why it is waiting: {heldWhy(l)}</div>
+          ) : reasons.length ? (
+            <div className="ad-head-note ad-meta">the screen said: {reasonWords(reasons).join(', ')}</div>
           ) : null}
         </td>
         <td>
@@ -178,7 +227,17 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
         </td>
         <td className="is-num">{l.reports_open ? <span style={{ color: 'var(--ad-stop)' }}>{l.reports}</span> : l.reports || ''}</td>
         <td><When at={l.created_at} /></td>
-        <td className="is-act"><Btn onClick={onOpen}>{open ? 'close' : 'decide'}</Btn></td>
+        <td className="is-act">
+          {waiting && !open ? (
+            <div className="ad-btns">
+              <Arm tone="go" armed="approve it" busy={acting} onAct={() => onDecide(l.id, 'live')}>approve</Arm>
+              <Arm armed="reject it" busy={acting} onAct={() => onDecide(l.id, 'rejected')}>reject</Arm>
+              <Btn onClick={onOpen}>more</Btn>
+            </div>
+          ) : (
+            <Btn onClick={onOpen}>{open ? 'close' : 'decide'}</Btn>
+          )}
+        </td>
       </tr>
       {open ? (
         <tr className="ad-drawer">
@@ -224,8 +283,8 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
                   </Arm>
                 ) : null}
                 {l.status !== 'live' && !l.reports_open ? (
-                  <Arm tone="go" armed="publish it" busy={acting} onAct={() => onDecide(l.id, 'live')}>
-                    put it on the wall
+                  <Arm tone="go" armed={waiting ? 'approve it' : 'publish it'} busy={acting} onAct={() => onDecide(l.id, 'live')}>
+                    {waiting ? 'approve' : 'put it on the wall'}
                   </Arm>
                 ) : null}
                 {l.status !== 'removed' ? (
@@ -235,7 +294,7 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
                 ) : null}
                 {l.status !== 'rejected' ? (
                   <Arm armed="reject it" busy={acting} onAct={() => onDecide(l.id, 'rejected')}>
-                    reject it
+                    {waiting ? 'reject' : 'reject it'}
                   </Arm>
                 ) : null}
                 {l.status !== 'pending' ? (

@@ -1,113 +1,122 @@
 #!/usr/bin/env node
 // mail-preview.mjs: the visual loop in docs/rebuild-spec.md 7.3, for the mail.
 //
-// An email is a surface, and until Phase 8 nobody had looked at one. This
-// renders every template `supabase/functions/_shared/mail.ts` builds, at the
-// widths a mail is actually read at, and screenshots them.
+// Renders every mail the product sends from the REAL templates
+// (supabase/functions/_shared/mails.ts on _shared/mail.ts), at the widths a
+// mail is read at, and screenshots them into design/shots/ (gitignored:
+// regenerate, never commit). It also writes the one mail Supabase sends for
+// us, the "continue with email" code, to supabase/templates/magic-link.html,
+// from the same template function, so the file pasted into the dashboard is
+// never a hand copy of the design.
 //
-//   node scripts/mail-preview.mjs          every template, both viewports
-//   node scripts/mail-preview.mjs mutual   one of them
+//   node scripts/mail-preview.mjs            every mail, every view
+//   node scripts/mail-preview.mjs wrote      one of them
 //
-// It imports mail.ts by transliterating it: the file is Deno TypeScript, and
-// the only TypeScript in it is three type annotations. Stripping those is
-// cheaper and more honest than adding a bundler to look at an email.
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
+// The templates are Deno TypeScript and are imported as they are: Node 22
+// strips the types itself, so what is shot is what the edge functions send.
+//
+// Three views:
+//   phone   390 wide at 2x, with the pixel face, as iOS Mail draws it
+//   desk    800 wide, with the pixel face, as Apple Mail on a desk draws it
+//   plain   800 wide with the web font refused, as Gmail and Outlook draw it
+//           (neither loads @font-face, so every stack falls back to Helvetica)
+//
+// The font and the header image are answered from this checkout rather than
+// the live site, so a change is shot before it is deployed. Until
+// app/public/mail/head.png exists (builder E draws it), a stand-in is drawn
+// here from the real mark and the real faces, 600 by 150 at 2x, and the shots
+// say so in the list they print.
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, 'design/shots')
-const tmp = join(root, 'node_modules/.cache-mail')
 mkdirSync(out, { recursive: true })
-mkdirSync(tmp, { recursive: true })
 
-const ts = readFileSync(join(root, 'supabase/functions/_shared/mail.ts'), 'utf8')
-// The frame's destructured parameter carries an object type, so it is named
-// before the general pass: a `[^)]*` capture would swallow half of it.
-const js = ts
-  .replace(/\{ kicker, inner \}: \{[^}]*\}/, '{ kicker, inner }')
-  .replace(/export function (\w+)\(([^)]*)\)/g, (m, n, a) => `export function ${n}(${a.replace(/:\s*[\w.<>|[\] ]+/g, '')})`)
-writeFileSync(join(tmp, 'mail.mjs'), js)
-
-const mail = await import(pathToFileURL(join(tmp, 'mail.mjs')).href)
+const mails = await import(pathToFileURL(join(root, 'supabase/functions/_shared/mails.ts')).href)
 
 const SITE = 'https://celestual.us'
+const LINK = `${SITE}/verify#t=q9VbX2mL0cN4rT7yW1eA5sD8fG3hJ6kZ0pOiUuYtReW`
+const TOKEN = 'Hk3n0pQ8rS2tU6vW9xY1zA4bC7dE0fG3hJ6kL9mN2p'
 
-// Every mail the product sends. Three, and that is all of them.
+// Every mail the product sends, with the words it will carry.
 const MAILS = {
-  mutual: () => mail.frame({
-    inner: `
-      ${mail.title('It is mutual.')}
-      ${mail.body(
-        `you entered @jules.k. ` +
-        `<span style="color:${mail.C.accent}">@jules.k entered you.</span><br/>` +
-        `this only ever happens when it is real on both sides.`,
-      )}
-      ${mail.body('they left a card for you. it opens when you do.')}
-      ${mail.plate(`${SITE}/sky`, 'go and see')}
-      ${mail.colophon(
-        `you are reading this because you placed a ping on celestual and it resolved mutual. ` +
-        `one sided pings are never revealed to anybody. to take your @ off entirely, go to ${SITE}/optout.`,
-      )}`,
+  verify: () => mails.verifyMail({ link: LINK, match: 47, purpose: 'edu', domain: 'berkeley.edu' }),
+  'verify-alerts': () => mails.verifyMail({ link: LINK, match: 82, purpose: 'alerts' }),
+  mutual: () => mails.mutualMail({
+    other: 'jules.k', hasCard: true,
+    openUrl: `${SITE}/reveal/jules.k`, stopUrl: `${SITE}/alerts#off=${TOKEN}`,
   }),
-  code: () => mail.frame({
-    inner: `
-      ${mail.title('You are at UC Berkeley.')}
-      ${mail.body('type this back into celestual and the wall opens.')}
-      ${mail.code('481920')}
-      ${mail.tick('press and hold it to copy · it lasts 15 minutes')}
-      ${mail.colophon(
-        `you are reading this because somebody entered this address on celestual. ` +
-        `if that was not you, ignore it and nothing happens. ${SITE}`,
-      )}`,
+  wrote: () => mails.wroteMail({
+    handle: 'sofia.reyes', readUrl: `${SITE}/letter/5f0c2a4e-3b1d-4c8e-9a7f-2d6b8e1c0f93`,
+    removeUrl: `${SITE}/r#t=${TOKEN}`, stopUrl: `${SITE}/alerts#off=${TOKEN}`,
   }),
-  lapse: () => mail.frame({
-    kicker: 'one of your pings',
-    inner: `
-      ${mail.title('Still feel it?')}
-      ${mail.body(
-        'it lapses on November 3. renewing is one tap and free, as often as you feel it. ' +
-        'it restarts the sixty days from the day you tap it, and it never uses a slot.',
-      )}
-      ${mail.body('or let it go, and it disappears completely. nothing was ever revealed either way, and the slot opens back up the same day.')}
-      ${mail.plate(SITE, 'keep it standing')}
-      ${mail.tick('the slot opens November 3', mail.C.accent)}
-      ${mail.colophon(
-        'this note is about your own ping only. we cannot and do not tell you anything about anyone else: ' +
-        `celestual stores who you entered as a salted hash, and even we cannot read it. opt out entirely at ${SITE}/optout.`,
-      )}`,
-  }),
+  code: () => mails.codeMail({ code: '481920', school: 'UC Berkeley', minutes: 10 }),
+  // Supabase fills `{{ .Token }}`; the shot shows a code in its place, and
+  // the file written below keeps the placeholder.
+  magic: () => {
+    const t = mails.magicLinkTemplate()
+    return { ...t, html: t.html.replaceAll('{{ .Token }}', '520734') }
+  },
 }
 
-// A phone reading pane and a desktop one. Both are the WIDTH of a mail client's
-// reading area, not of a browser window: the mail is 480px at most and what is
-// being looked at is how it sits in the space around it.
-const VIEWPORTS = [
-  { name: 'phone', width: 390, height: 900, scale: 2 },
-  { name: 'desk', width: 800, height: 900, scale: 1 },
+const VIEWS = [
+  { name: 'phone', width: 390, height: 900, scale: 2, font: true },
+  { name: 'desk', width: 800, height: 900, scale: 1, font: true },
+  { name: 'plain', width: 800, height: 900, scale: 1, font: false },
 ]
 
 const want = process.argv[2]
 const list = Object.keys(MAILS).filter((k) => !want || k === want)
+
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH
     || (process.env.PLAYWRIGHT_BROWSERS_PATH && join(process.env.PLAYWRIGHT_BROWSERS_PATH, 'chromium'))
     || undefined,
 })
+
+// ── the header image ─────────────────────────────────────────────────────────
+const headFile = join(root, 'app/public/mail/head.png')
+let head = existsSync(headFile) ? readFileSync(headFile) : null
+const standIn = !head
+if (!head) {
+  const fonts = join(root, 'app/public/fonts')
+  const b64 = (f) => readFileSync(f).toString('base64')
+  const page = await browser.newPage({ viewport: { width: 600, height: 150 }, deviceScaleFactor: 2 })
+  await page.setContent(`<!doctype html><html><head><style>
+    @font-face { font-family: Newsreader; src: url(data:font/woff2;base64,${b64(join(fonts, 'newsreader-normal-200-800-latin.woff2'))}) format('woff2'); font-weight: 200 800; }
+    @font-face { font-family: 'Jersey 10'; src: url(data:font/woff2;base64,${b64(join(fonts, 'jersey-10-normal-400-latin.woff2'))}) format('woff2'); }
+    html, body { margin: 0; background: #000; }
+    .h { width: 600px; height: 150px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; box-sizing: border-box; }
+    .lock { display: flex; align-items: center; gap: 10px; color: #F4F1EA; font: 500 30px/1 Newsreader, serif; letter-spacing: -0.02em; }
+    .lock img { width: 34px; height: 34px; }
+    .lcd { width: 132px; height: 92px; background: #0B0B0B; border: 1px solid rgba(244,241,234,.16); border-radius: 3px;
+      display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
+    .lcd img { width: 40px; height: 40px; image-rendering: pixelated; filter: contrast(1.4); }
+    .lcd span { font: 16px/1 'Jersey 10', sans-serif; color: #9C978E; }
+  </style></head><body><div class="h">
+    <div class="lock"><img src="data:image/png;base64,${b64(join(root, 'app/public/mark-chalk-256.png'))}"><span>celestual.</span></div>
+    <div class="lcd"><img src="data:image/png;base64,${b64(join(root, 'app/public/mark-chalk-256.png'))}"><span>stand-in</span></div>
+  </div></body></html>`, { waitUntil: 'load' })
+  await page.evaluate(() => document.fonts.ready)
+  head = await page.screenshot({ clip: { x: 0, y: 0, width: 600, height: 150 } })
+  await page.close()
+}
+
+// ── the shots ────────────────────────────────────────────────────────────────
 const made = []
 for (const key of list) {
-  const html = MAILS[key]()
-  for (const v of VIEWPORTS) {
+  const m = MAILS[key]()
+  for (const v of VIEWS) {
     const page = await browser.newPage({ viewport: { width: v.width, height: v.height }, deviceScaleFactor: v.scale })
-    // The mark, from this checkout rather than off the live site. mail.ts points
-    // it at `<origin>/mark-chalk-256.png` and that is what ships, so the HTML is
-    // left exactly as it is sent and only the FETCH is answered locally: before
-    // the file is deployed the mail would otherwise preview with a broken image
-    // at its head, and after it is, a change to the mark would be shot against
-    // production's copy of it instead of the one in the repository.
-    await page.route('**/mark-chalk-256.png', (r) => r.fulfill({ path: join(root, 'app/public/mark-chalk-256.png') }))
-    await page.setContent(html, { waitUntil: 'load' })
+    await page.route('**/fonts/jersey-10-normal-400-latin.woff2', (r) => v.font
+      ? r.fulfill({ path: join(root, 'app/public/fonts/jersey-10-normal-400-latin.woff2'), contentType: 'font/woff2' })
+      : r.abort())
+    await page.route('**/mail/head.png', (r) => r.fulfill({ body: head, contentType: 'image/png' }))
+    await page.setContent(m.html, { waitUntil: 'load' })
+    await page.evaluate(() => document.fonts.ready)
     const file = join(out, `mail-${key}-${v.name}.png`)
     await page.screenshot({ path: file, fullPage: true })
     made.push(`design/shots/mail-${key}-${v.name}.png`)
@@ -115,4 +124,18 @@ for (const key of list) {
   }
 }
 await browser.close()
+
+// ── the one template Supabase sends ──────────────────────────────────────────
+if (!want || want === 'magic') {
+  const t = mails.magicLinkTemplate()
+  const dir = join(root, 'supabase/templates')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'magic-link.html'),
+    `<!-- supabase/templates/magic-link.html: Supabase Auth, "Magic Link" template.\n` +
+    `     Written by scripts/mail-preview.mjs from _shared/mails.ts magicLinkTemplate(). Do not edit by hand.\n` +
+    `     Subject: ${t.subject} -->\n` + t.html + '\n')
+  made.push('supabase/templates/magic-link.html')
+}
+
 console.log(made.join('\n'))
+if (standIn) console.log('(the header is a stand-in: app/public/mail/head.png is not in this checkout yet)')

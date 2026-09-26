@@ -94,7 +94,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
       <Sheet onClose={up} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">reading it.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">finding the letter.</Display>
           <div className="wl-push" />
         </div>
       </Sheet>
@@ -106,8 +106,8 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
       <Sheet onClose={up} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">it is already down.</Display>
-          <Prose className="wl-gate-copy">nothing here is on the wall any more.</Prose>
+          <Display size="s" as="h2" id="wl-rep-h">it&rsquo;s already down.</Display>
+          <Prose className="wl-gate-copy">this letter is not on the wall any more.</Prose>
           <div className="wl-push" />
           <SheetFoot><ClosePill tone="light" wide onClose={up}>{upLabel}</ClosePill></SheetFoot>
         </div>
@@ -134,10 +134,10 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
       <Sheet onClose={up} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">you have to be<br />signed in for this.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">sign in to report<br />this letter.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'report', id }); go('gate') }}>
-            sign in to take a letter down.
+            it comes down right away while a person reviews it.
           </Locked>
         </div>
       </Sheet>
@@ -150,11 +150,11 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
       <Sheet onClose={up} tall labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">this comes down<br />when you tap it.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">report this letter.</Display>
 
           <div className="wl-report-what">
             <Label tone="dim">
-              the letter under <span className="wl-h">{labelFor(one.to)}</span> · {ago(one.at)}
+              the letter to <span className="wl-h">{labelFor(one.to)}</span> · {ago(one.at)}
             </Label>
             {/* The words themselves, quoted short. Somebody about to take a
                 letter off a public wall should be looking at the letter while
@@ -171,7 +171,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
               here to think about. Somebody standing on this screen wants to know
               what the tap does, which is one sentence long. */}
           <Prose className="wl-gate-copy">
-            it comes off the wall now, and someone reads it after.
+            it comes down right away while a person reviews it.
           </Prose>
 
           <div className="wl-push" />
@@ -179,12 +179,12 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
           <SheetFoot>
             <Pill tone="light" wide
               disabled={busy} onClick={() => take('')}>
-              {busy ? 'taking it down…' : 'take it down'}
+              {busy ? 'reporting…' : 'report it'}
             </Pill>
             {fault === 'network' ? (
-              <Label tone="dim">it did not go through</Label>
+              <Label tone="dim">the report did not go through. try again</Label>
             ) : fault === 'rate' ? (
-              <Label tone="dim">that is a lot of reports in one hour. give it time</Label>
+              <Label tone="dim">that is a lot of reports in one hour. try again later</Label>
             ) : null}
             <CloseQuiet onClose={up}>leave it up</CloseQuiet>
           </SheetFoot>
@@ -204,7 +204,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
             off the wall · <span className="wl-h">{labelFor(one.to)}</span>
           </Label>
 
-          <Prose className="wl-gate-copy">saying why is optional.</Prose>
+          <Prose className="wl-gate-copy">a person will review it. you can tell them why, or skip this.</Prose>
 
           <ReasonField
             value={why} onChange={setWhy} autoFocus
@@ -218,7 +218,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
                 report on the same letter is a second row for the desk, which is
                 what a person adding a reason after the fact actually wants. */}
             <Pill tone="light" wide disabled={busy} onClick={() => (why.trim() ? take(why) : setStep(2))}>
-              {why.trim() ? 'send it' : 'send it without a reason'}
+              {why.trim() ? 'send the reason' : 'skip'}
             </Pill>
           </SheetFoot>
         </div>
@@ -239,10 +239,10 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
     <Sheet onClose={up} labelledBy="wl-rep-h">
       <div className="wl-sheet-in wl-report">
         {head}
-        <Display size="s" as="h2" id="wl-rep-h">someone will<br />look at it.</Display>
+        <Display size="s" as="h2" id="wl-rep-h">a person will<br />review it.</Display>
 
         <div className="wl-report-read">
-          <Prose className="wl-gate-copy">off the wall, and a person reads it from here.</Prose>
+          <Prose className="wl-gate-copy">it stays off the wall while they do. if it breaks no rules, they can put it back.</Prose>
         </div>
 
         <div className="wl-push" />

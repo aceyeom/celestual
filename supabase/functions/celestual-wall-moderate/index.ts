@@ -31,6 +31,10 @@
 //     { ok:false, error:'cap', limit, used, resets_at }
 //                                                   the allowance, spent
 //
+//   A request with `v: 2` is the one wall's (docs/ONE-WALL.md, migration
+//   0063), and is answered by `v2()` below. Without it, everything here is
+//   as it was.
+//
 // ── MODERATE THE CONSEQUENCE, NOT THE EMOTION ───────────────────────────────
 // The wall is where people say the thing they never said, and a good deal
 // of what they never said is unkind. Heartbreak, anger, a grudge, a roast, a
@@ -230,13 +234,33 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
       },
       body: JSON.stringify({
         model,
-        // the answer is a verdict and a word or two: the output is the
-        // expensive half of a call, and this one is kept small
-        max_tokens: 60,
+        // the answer is a verdict and a word or two, but sixty tokens cut a
+        // few answers off mid-object; the schema below keeps it short anyway
+        max_tokens: 256,
         // The same letter gets the same answer: a screen that flips a coin on
         // a borderline letter is a screen somebody can retry their way past.
         temperature: 0,
         system: SYSTEM_PROMPT,
+        // Structured output: the answer is held to this schema by the API, so
+        // it always parses. Asked for in the prompt alone, about a third of
+        // the verdicts of 24 September came back as prose round the object or
+        // cut off, and went to the desk as `unparsed`; with a name note read
+        // before it goes up (docs/ONE-WALL.md), each of those would have held
+        // a clean note back for a person.
+        output_config: {
+          format: {
+            type: 'json_schema',
+            schema: {
+              type: 'object',
+              properties: {
+                verdict: { type: 'string', enum: ['pass', 'review', 'reject'] },
+                reasons: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['verdict', 'reasons'],
+              additionalProperties: false,
+            },
+          },
+        },
         messages: [{
           role: 'user',
           content: `<addressee>${addressee}</addressee>\n<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
@@ -249,9 +273,18 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
   if (!res.ok) return { verdict: 'review', reasons: ['classifier_error'], model }
 
   const data = await res.json()
-  const text = (data?.content?.[0]?.text || '').trim()
+  // A refusal, or an answer cut off, is not a verdict: a person reads it
+  if (data?.stop_reason === 'refusal') return { verdict: 'review', reasons: ['classifier_refused'], model }
+  if (data?.stop_reason === 'max_tokens') return { verdict: 'review', reasons: ['unparsed'], model }
+  const block = Array.isArray(data?.content) ? data.content.find((b: { type?: string }) => b?.type === 'text') : null
+  const text = String(block?.text || '').trim()
   try {
-    const out = JSON.parse(text.replace(/^```json\s*|\s*```$/g, ''))
+    // the schema makes this the whole text; the object is still found inside
+    // anything round it, so a model without structured output reads the same
+    const whole = text.replace(/^```json\s*|\s*```$/g, '')
+    const at = whole.indexOf('{')
+    const end = whole.lastIndexOf('}')
+    const out = JSON.parse(at >= 0 && end > at ? whole.slice(at, end + 1) : whole)
     const v = out.verdict === 'pass' || out.verdict === 'reject' ? out.verdict : 'review'
     return { verdict: v, reasons: Array.isArray(out.reasons) ? out.reasons.slice(0, 6).map(String) : [], model }
   } catch {
@@ -345,6 +378,191 @@ function after(work: Promise<unknown>): Promise<unknown> | undefined {
 
 const CAMPUS_SLUG = /^[a-z0-9-]{2,40}$/
 
+// ── version 2: the one wall (docs/ONE-WALL.md, migration 0063) ──────────────
+// A request carrying `v: 2`. Everything above this line is the version 1
+// path, byte for byte, for a tab still on the old build.
+//
+//   request  { v: 2, token, kind: 'handle'|'name', target?, name?, salutation?,
+//              look?, campus?: slug|null, nonce, source?, body }
+//   ok       { ok: true, id, status: 'live'|'pending'|'rejected', handle, kind,
+//              name, look, campus, school, verified, salutation, say?, reasons? }
+//   error    { ok: false, error: 'edu' | 'campus' | 'throttle' | 'salutation'
+//              | 'nonce' | 'no_session' | 'removed' | 'name' | 'handle'
+//              | 'empty' | 'cap' | 'write', ... }
+//
+// An @-note goes up as version 1's letters do: layer 1 before, the write at
+// `live`, and the reading after the answer. The schema decides who may write
+// one (wall_write v2: `edu`, `campus`) and which school it carries.
+//
+// A name note is read BEFORE it is written, by the classifier itself: it
+// needs no proof, so nothing stands between a stranger and the wall but the
+// reading. A pass writes it `live`; a review, or no classifier configured,
+// writes it `pending` for the desk; a reject writes it `rejected`. The lexicon
+// that spares most @-notes a model call is not a pass here, because "no
+// classifier configured" has to hold a note for the desk, not wave it up.
+// Name notes are throttled, five a device and twenty an address a day,
+// counted before the reading so a refused note is not a free retry.
+//
+// The same (device, nonce) answers the first send's answer before anything
+// is read or counted, so a draft posted from two tabs is one letter, one
+// reading and one throttle.
+const NONCE = /^[A-Za-z0-9_-]{8,64}$/
+
+function clientIp(req: Request): string | null {
+  return req.headers.get('cf-connecting-ip')?.trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+    null
+}
+
+// deno-lint-ignore no-explicit-any
+function answerV2(a: any, extra: Record<string, unknown> = {}) {
+  const status = String(a.status)
+  const say = status === 'pending'
+    ? `it's being read. it goes up once it passes.`
+    : status === 'rejected' ? `it can't go up as it's written.` : undefined
+  return json({
+    ok: true,
+    id: a.id,
+    status,
+    handle: a.handle ?? null,
+    kind: a.kind ?? null,
+    name: a.name ?? null,
+    look: a.look ?? null,
+    campus: a.campus ?? null,
+    school: a.school ?? null,
+    verified: a.verified === true,
+    salutation: a.salutation ?? null,
+    ...(say ? { say } : {}),
+    ...(status === 'rejected' && Array.isArray(a.reasons) ? { reasons: a.reasons } : {}),
+    ...extra,
+  })
+}
+
+async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
+  const token = String(p.token || '')
+  const kind = p.kind === 'name' ? 'name' : 'handle'
+  const target = kind === 'handle' ? String(p.target || '').trim() : ''
+  const name = kind === 'name' ? String(p.name || '').replace(/\s+/g, ' ').trim().slice(0, 30) : null
+  const body = String(p.body || '').slice(0, 280)
+  const source = p.source ? String(p.source).slice(0, 32) : null
+  const look = cleanLook(p.look)
+  const pickRaw = p.campus == null ? '' : String(p.campus).toLowerCase()
+  const pick = CAMPUS_SLUG.test(pickRaw) ? pickRaw : null
+  const nonce = String(p.nonce || '')
+  const salRaw = p.salutation == null ? '' : String(p.salutation).replace(/\s+/g, ' ').trim()
+  const salutation = salRaw === '' ? null : salRaw
+
+  if (!body.trim()) return json({ ok: false, error: 'empty' })
+  if (kind === 'name' && !name) return json({ ok: false, error: 'name' })
+  if (kind === 'handle' && !target) return json({ ok: false, error: 'handle' })
+  if (!NONCE.test(nonce)) return json({ ok: false, error: 'nonce' })
+  if (token.length < 16 || token.length > 256) return json({ ok: false, error: 'no_session' })
+  if (salutation !== null && salutation.length > 40) return json({ ok: false, error: 'salutation' })
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
+
+  // ── the same draft, again ──
+  const { data: replay, error: replayErr } = await supabase.rpc('wall_write_replay', { p_token: token, p_nonce: nonce })
+  if (replayErr) {
+    console.error('wall_write_replay failed', replayErr.message)
+    return json({ ok: false, error: 'write' }, 500)
+  }
+  if (replay && replay.ok) return answerV2(replay, { replay: true })
+
+  // ── the dear line goes through the same list as the words ──
+  if (salutation !== null) {
+    const s = deterministic(salutation)
+    if (s.verdict === 'reject') return json({ ok: false, error: 'salutation', reasons: s.reasons })
+  }
+
+  // ── a name note is counted before it is read ──
+  if (kind === 'name') {
+    const { data: allowed, error: thErr } = await supabase.rpc('wall_name_throttle_take', {
+      p_token: token,
+      p_ip: clientIp(req),
+    })
+    if (thErr) {
+      console.error('wall_name_throttle_take failed', thErr.message)
+      return json({ ok: false, error: 'write' }, 500)
+    }
+    if (allowed !== true) return json({ ok: false, error: 'throttle' })
+  }
+
+  // ── layer 1, on the name, the dear line and the words ──
+  const layer1 = deterministic(`${name || ''}\n${salutation || ''}\n${body}`)
+  const caught = layer1.verdict === 'reject'
+  const at = new Date().toISOString()
+  const addressee = kind === 'name' ? String(name) : `@${target.replace(/^@+/, '')}`
+  const reading = salutation ? `${salutation}\n${body}` : body
+
+  let status: 'live' | 'pending' | 'rejected'
+  let moderation: Record<string, unknown>
+  if (caught) {
+    status = 'rejected'
+    moderation = { verdict: 'reject', reasons: layer1.reasons, flagged: false, at, model_layer: 1 }
+  } else if (kind === 'name') {
+    // read before it is written
+    let out: { verdict: string; reasons: string[]; model: string }
+    try {
+      out = await classify(reading, null, addressee)
+    } catch {
+      out = { verdict: 'review', reasons: ['unreachable'], model: '' }
+    }
+    const hits = needsReading(`${addressee}\n${reading}`)
+    if (out.verdict !== 'pass') {
+      out.reasons = [...new Set([...out.reasons, ...hits.map((h) => `lex:${h}`)])].slice(0, 8)
+    }
+    status = out.verdict === 'pass' ? 'live' : out.verdict === 'reject' ? 'rejected' : 'pending'
+    moderation = {
+      verdict: out.verdict, reasons: out.reasons, flagged: out.verdict === 'review',
+      at, screened_at: new Date().toISOString(), model_layer: 3, model: out.model || null, before: true,
+    }
+  } else {
+    status = 'live'
+    moderation = { verdict: 'unread', reasons: [], flagged: false, at, model_layer: 0 }
+  }
+
+  // ── the write: the schema decides who, where and whether ──
+  const { data, error } = await supabase.rpc('wall_write', {
+    p_token: token,
+    p_kind: kind,
+    p_target: kind === 'handle' ? target : null,
+    p_name: name,
+    p_salutation: salutation,
+    p_body: body,
+    p_look: look,
+    p_campus_pick: pick,
+    p_source: source,
+    p_status: status,
+    p_moderation: moderation,
+    p_nonce: nonce,
+  })
+  if (error) {
+    console.error('wall_write v2 failed', error.message)
+    return json({ ok: false, error: 'write' }, 500)
+  }
+  if (!data?.ok) return json({ ...data, ok: false, error: String(data?.error ?? 'write') })
+  if (data.replay) return answerV2(data, { replay: true })
+
+  // ── told, and read where it stands ──
+  if (data.status === 'live') {
+    const topics = [...new Set([String(data.campus || 'global'), 'global'])]
+    const work: Promise<unknown>[] = topics.map((t) => nudge(t))
+    if (kind === 'handle') {
+      // a reject takes it down and tells the one wall (`global`), which is
+      // where the build that sent `v: 2` is listening
+      work.push(readWhereItStands(supabase, String(data.id), reading, null, 'global', addressee))
+    }
+    const inline = after(Promise.all(work))
+    if (inline) await inline
+  }
+  return answerV2(data, caught ? { reasons: layer1.reasons } : {})
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405)
@@ -361,6 +579,7 @@ Deno.serve(async (req: Request) => {
     look?: unknown
   }
   try { payload = await req.json() } catch { return json({ ok: false, error: 'malformed' }, 400) }
+  if ((payload as { v?: unknown })?.v === 2) return await v2(payload as Record<string, unknown>, req)
 
   const token = String(payload.token || '')
   const target = String(payload.target || '')

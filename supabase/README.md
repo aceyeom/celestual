@@ -242,6 +242,69 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0064_mail_links_and_alerts.sql`: **the mail's links, and the
+  alerts.** A campus address is proved by a magic link: `celestual_edu_verifications`
+  gains `kind` (code or link), `purpose` (edu or alerts), the asking session's
+  hash, the link token's hash, the number from 10 to 99 the asking screen shows,
+  the confirming session's hash and the campus; `celestual_edu_link_open`,
+  `_confirm` and `_status` (service role) open, confirm and answer a request,
+  binding by the session's hash (`celestual_user_bind_edu_hash`; the old
+  `celestual_user_bind_edu` hashes and hands on). `celestual_users` gains
+  `alert_email`, `alert_email_verified_at`, `alerts_wrote` (off) and
+  `alerts_mutual` (on); a proved campus address fills an empty alert address,
+  existing ones backfilled once, and a merge carries a confirmed one to the
+  survivor. One queue, `celestual_mail_outbox` (mutual and wrote), its links in
+  `celestual_mail_tokens` (sha256 only, one kind, one use) and a stop list,
+  `celestual_mail_suppressions`, all service role only. Triggers queue the
+  mail: a letter to a claimed @ once the screen has read it (at most three a
+  day, never to its own writer, never once taken down by the screen), a match
+  (each side with a confirmed address), and a row `celestual_submit` still writes
+  to `celestual_notifications` (moved as it is written and stamped, so the old
+  drain never sends it twice). A row in the outbox calls `celestual-notify`
+  through pg_net at once, and `celestual-mail-sweep` (pg_cron, every five
+  minutes, only when something is owed) catches whatever a push missed. The
+  drain's two, `celestual_mail_take` (claims for ten minutes, mints the links,
+  skips what is no longer owed) and `celestual_mail_done` (sent, or 1, 5, 30,
+  120 minutes and failed after the fifth), are service role. The browser's
+  five: `celestual_alerts_get`, `celestual_alerts_set`,
+  `celestual_alerts_off_by_token`, `wall_remove_by_token` and
+  `wall_restore_by_token`. Re-runnable. **Tested by
+  `scripts/sql/test-mail.sql`, 83 assertions.**
+- `migrations/0063_one_wall.sql`: **one wall** (docs/ONE-WALL.md). `wall_campuses`
+  gains `short` ('Cal') and `handle_notes` (Berkeley alone), and
+  `celestual_campus_for_domain` finds or opens the campus of a proved .edu
+  domain (`cs.stanford.edu` is `stanford`, a taken slug takes a number).
+  `wall_letters` gains `verified`, `salutation` (the dear line, forty characters,
+  held to `wall_salutation_clean`) and `nonce` (unique per author); @-notes
+  from a campus are backfilled verified, and ember's letters move to amber,
+  kept first in `wall_look_backup_0063`. `wall_index_all` is the index grouped
+  by key alone, with the newest letter's campus, `verified` and `school`;
+  `wall_pulse_all()` and `wall_campuses_open()` read it. The four letter reads
+  carry `verified`, `salutation` and `school`, `wall_mine` its `campus` too, and
+  `wall_search` reads the one wall. A twelve argument `wall_write` is the v2
+  write: an @-note needs a verified address at a school with `handle_notes` or
+  a pass (`edu`, `campus`) and is verified; a name note needs no proof
+  (`celestual_session_user_or_new` gives a new device a bare row) and takes the
+  picked campus or the root; both are idempotent on the nonce
+  (`wall_write_replay`), shut if the name came off anywhere
+  (`wall_name_shut_any`) and counted by the allowance; name notes are
+  throttled, five a device and twenty an address a day (`wall_name_throttle`).
+  Sessions slide to a year on use. `wall_owner_remove` and `wall_owner_restore`
+  take a letter down for its claimed owner with no claim filed, so the name
+  is never shut, and put it back within a day. The cards land on `/`. And the
+  private note: a ping's card holds eighty words and 280 characters, and
+  `celestual_submit` refuses a card the letter list catches
+  (`celestual_text_caught`, the edge function's layer 1 in SQL) with
+  `error: 'card'` and its reasons. Every old signature and the old view stand.
+  Re-runnable. **Tested by `scripts/sql/test-one-wall.sql`, 101 assertions.**
+- `migrations/0062_the_google_identity_moves.sql`: **the google login moves
+  with a merge.** The two migrations applied to the live project on 25
+  September and never written here (`merge_moves_google_identity`,
+  `fix_google_clear_pair_and_repair`), word for word and made re-runnable,
+  plus the line they needed: `celestual_merge_conflicts` takes kind `google`,
+  where its check threw. **Tested by `scripts/sql/test-google-merge.sql`, 10
+  assertions.**
+
 - `migrations/0061_the_prints_thin_out.sql`: **the prints thin out.** The
   colours are one pool of thirteen (app/src/wall/looks.js), and the five
   retired prints are moved to the colour nearest their hue: blush and pink /
@@ -598,17 +661,18 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 
 | Function | What it does | Required secrets |
 | --- | --- | --- |
-| `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to each side of a match, at addresses they stored (retry + dead-letter). Says whether a card is waiting, never what it says | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-notify` | **the one drain every alert mail goes out of** (0064): claims owed rows from `celestual_mail_outbox` (`celestual_mail_take`), renders them from `_shared/mails.ts` (mutual: "it's mutual.", THAT a note waits and never a word of it; wrote: "someone wrote you a letter.", with the one tap removal link and nothing about who) and sends each through Resend with a stop link and `List-Unsubscribe` (https and mailto) plus `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, reporting back through `celestual_mail_done`. `POST ?unsub=<token>` is the one click unsubscribe; `GET ?unsub=` redirects to `/alerts#off=` and changes nothing. Called by pg_net on every outbox insert and by the five minute `celestual-mail-sweep`; still drains any pre-0064 unsent `celestual_notifications`, closing those older than fourteen days as stale. Deploy with `--no-verify-jwt` | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` (optional: `CELESTUAL_UNSUB_MAILTO`) |
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-resolve` | **the handle resolver** (0031): turns a typed @ into a display name, the verified badge and a face, so a person confirms against an account instead of against their own spelling. One Apify actor run per cache miss, profile details only with the post limit at the actor's floor of one. The face is downloaded once into the public `avatars` bucket at `ig/<handle>.jpg` and served to the browser from Supabase, so no Instagram CDN URL (signed, expires within days) ever reaches anybody and a cached card draws a cached face. The cache is permanent; the picture refreshes at thirty days. Caps are three rolling 24h windows enforced in the database (`handle_search_allow`): 20 per signed-in user, 20 per anonymous device, 200 per address, and a cache hit costs nothing because only a call that reached Apify writes a row. On a limit it answers 429 with the seconds remaining. The device id is a UUID this function issues in an httpOnly SameSite=Lax cookie, which is first party only because `/api/resolve` in `vercel.json` rewrites onto it. Never blocks a ping. Once a day it is also its own check: `{ canary: true }` runs the first look on `RESOLVER_CANARY_HANDLE` (@instagram) past the cache and writes what came back to `resolver_canary_runs` (0060), posted by the hourly `celestual-resolver-canary` job when one is owed, or by the desk with the service role key whenever it asks. Deploy with `--no-verify-jwt`. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)** | `APIFY_TOKEN` (optional: `APIFY_ACTOR_ID`, `RESOLVER_CANARY_HANDLE`) |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. Since 0023 it also records the sender's contact + open window (`celestual_dm_touch`) and appends any waiting mutual news to that same reply (`celestual_dm_take`), which is how the reveal reaches somebody whose window closed weeks ago. **Full setup: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md) · [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |
 | `functions/_shared/mutual.ts` | not a function — the one copy of the mutual line and the ManyChat sender, imported by both of the above so the two carriers can never say different things | — |
-| `functions/_shared/mail.ts` | not a function — the one email design, imported by every sender. The case blind-tooled, the mark, tooled rules, the ivory plate for the one action, the code struck into a well, and a colophon at the foot. There used to be five templates and no two agreed on a ground, an accent or a corner radius; each sender owns only its words now (**[../design/DESIGN.md](../design/DESIGN.md)**) | — |
+| `functions/_shared/mail.ts` | not a function: the one mail design, the wall's black room (design/DESIGN.md 2.5, 2.6). `#000`, one unlit LCD panel with a chalk bezel and 3px corners, the header image at `${SITE}/mail/head.png` (the lockup and a small LCD with the pixel mark), Jersey 10 by `@font-face` with a Helvetica fallback for the headline, the key and a number, Helvetica for sentences, one chalk plate with black words, lowercase. Tables and inline styles, `bgcolor` for Outlook and an `mso` block pinning it to Helvetica | — |
+| `functions/_shared/mails.ts` | not a function: the words of every mail (verify, mutual, wrote, the old code, and the Supabase Auth code template), each answering `{ subject, html, text }`. `scripts/mail-preview.mjs` imports it as it is (Node strips the types) and shoots every mail in three views into `design/shots/` (gitignored), and writes `supabase/templates/magic-link.html` from it | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
-| `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a name and `look` for the paper it chose (0055, cleaned here to the three slugs the schema admits), through the eleven argument write, stepping down to the ten argument one and, for a handle letter, to the eight argument one against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeployed 20 September 2026 as version 11, carrying 0053 to 0055; redeploy after pulling this | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-edu-verify` | the campus proof. `link` mails a magic link (`${SITE}/verify#t=<token>`, 32 random bytes, sha256 stored, thirty minutes, once) with the number from 10 to 99 the asking screen shows, for a .edu (or, with `campus`, that campus's domain) or a pass for `edu`, and any address for `alerts`; `confirm` binds it through `celestual_edu_link_confirm` (to the asking session's person and to the opening session's, opening the campus and filling the alert address); `status` answers the asking session alone. The six digit `send` / `verify` stay for a tab on the old build. Limits: five an address and fifteen a network address an hour. **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a name and `look` for the paper it chose (0055, cleaned here to the three slugs the schema admits), through the eleven argument write, stepping down to the ten argument one and, for a handle letter, to the eight argument one against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeployed 20 September 2026 as version 11, carrying 0053 to 0055; redeploy after pulling this **Since 0063 a request with `v: 2` is the one wall's** (docs/ONE-WALL.md): an @-note goes up as before and is read after, and the schema decides who may write it (`edu`, `campus`) and which school it carries; a name note is counted (five a device, twenty an address a day), read by the classifier BEFORE it is written (a pass writes it live, a review or no key pending for the desk, a reject rejected), and written with the author a bare row for a new device; the dear line goes through layer 1 as the words do; the same (device, nonce) answers the first send. Deployed with JWT verification on (config.toml) | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
 | `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here. One action is not an RPC: `desk_canary_run` asks `celestual-resolve` for the daily check now, with the service role key, and logs it as `canary run` (0060) | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
@@ -623,8 +687,11 @@ client half of that flow (`openInvite`, `signAgreement`) is gone too. 0016's
 the stats RPC are what the trial links run on. If you had it deployed, remove it:
 `supabase functions delete celestual-recruit`.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
-for these in `config.toml` because anonymous visitors (or Meta's webhook) call
-them; each enforces its own checks. See
+for most of these in `config.toml` because anonymous visitors, Meta's webhook,
+pg_net or a mail client's unsubscribe call them; each enforces its own checks.
+`celestual-wall-moderate` is the exception: it is deployed with JWT verification
+on. `supabase/templates/magic-link.html` is the Supabase Auth code mail, pasted
+into the dashboard (docs/launchsteps.md). See
 [../docs/DEBUG-IG-WEBHOOK.md](../docs/DEBUG-IG-WEBHOOK.md).
 
 ## Data model (post-0006)

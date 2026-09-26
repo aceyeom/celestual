@@ -1,245 +1,195 @@
-# EDU EMAIL VERIFICATION — connecting it, end to end
+# EDU EMAIL VERIFICATION: the magic link, end to end
 
-How a `.edu` gate actually works in celestual, and the exact steps to turn it
-from its safe local stub into the real, email-backed thing in production.
+How a person proves a school address on celestual, since the rulings of 25
+September (docs/ONE-WALL.md): **a magic link, never a code**, verified once per
+device, and the device's session kept a year. The address it proves becomes the
+person's alert address. The same link confirms an address for alerts alone.
 
-A ping only ever reaches people from your own community, so **membership has to
-be real, not self-declared.** Joining a curated school requires proving you're
-there: a six digit code is emailed to an address at that school's domain, and you
-enter it back to confirm. This doc is the operator playbook for wiring that up.
-
----
-
-## 1 · How it works today (the moving parts)
-
-The whole flow is already built and shipping in the repo. It runs in one of two
-modes depending on a single flag:
-
-| Mode | When | What happens |
-| --- | --- | --- |
-| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, no Supabase env, **or the `/demo` sandbox** | The join sheet accepts **any** plausibly-formatted address (any domain), waits a beat, accepts any four to six digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview + the `/demo` sandbox fully testable with no real inbox. |
-| **Live** | `VITE_EDU_VERIFY_ENABLED=1` **and** Supabase URL/anon key set, **outside `/demo`** | Real code emailed via Resend, hashed + stored in Postgres, verified server-side against the genuine school domain. |
-
-> **`/demo` always uses Stub mode**, even on a build with the flag on and Supabase
-> wired: the sandbox fakes the whole workflow locally so a reviewer can join a
-> community with any address and any code, and nothing ever reaches a server
-> (`EduVerifySheet` sets `real = eduVerifyEnabled() && !demo`). To smoke-test the
-> *real* email pipeline, use a normal (non-demo) preview build with the flag on
-> and a genuine school address.
-
-The pieces that make the **live** mode work:
-
-```
-app/src/components/screens.jsx  ·  EduVerifySheet   the join UI (email → code → verified)
-app/src/api/eduverify.js        ·  send / verify    calls the edge function; picks stub vs live
-app/src/communities.js          ·  CURATED[]        the curated schools + their email domains
-supabase/functions/
-    celestual-edu-verify/index.ts                    the edge function (the only writer)
-supabase/migrations/
-    0007_edu_verification.sql                        the celestual_edu_verifications table
-    0008_edu_hardening.sql                           per-IP send accounting (anti-spray)
-```
-
-**The security model (why it's shaped this way):**
-
-- The six digit code is a **secret** (four before the audit of 4 September, which also made the try count atomic: the attempt is spent before the code is compared, so a burst of guesses cannot share one counter). It is emailed, **never returned to the
-  browser**, and only its **SHA-256 hash** is stored. A dump of the table reveals
-  no live codes. (This is the opposite of the Instagram DM code, which the user
-  re-sends to us — see `docs/DEBUG-IG-WEBHOOK.md`.) Four digits is enough here
-  because a code dies after 6 wrong guesses and 10 minutes, and fresh codes are
-  themselves rate-limited per address and per IP.
-- The table is **RLS-locked to the service role**: `anon`/`authenticated` get
-  nothing. Only the edge function (running as the service role) reads or writes
-  it. The browser only ever holds a random correlation `token`, never a secret.
-- **Rate limited:** max **5** fresh codes per address per hour and **15** per IP
-  per hour (0008). Codes live **10 minutes** and die after **6** wrong guesses.
-  Expired rows self-sweep.
-- The server keeps a legacy **@gmail.com carve-out** for `demo:true` requests
-  (`CELESTUAL_SANDBOX_GMAIL`, ON by default). **The app no longer reaches it:**
-  `/demo` now fakes the flow entirely client-side (any address, no send), so the
-  browser never issues a `demo:true` edu request. The carve-out therefore only
-  matters to a hand-crafted `demo:true` call against the live function — which is
-  why **setting `CELESTUAL_SANDBOX_GMAIL=0` before launch stays a release gate**
-  (it's on the SECURITY.md operator checklist). With the frontend change it is
-  belt-and-suspenders rather than the sandbox's test path.
-- A subdomain counts as the school (`andrew.cmu.edu` ⊂ `cmu.edu`).
-
-**The request shape** (one endpoint, two actions):
-
-```
-POST celestual-edu-verify  { action:'send',   email, slug }  → { ok, token, expires_at } | { ok:false, error }
-POST celestual-edu-verify  { action:'verify', token, code }  → { ok, email, slug }        | { ok:false, error }
-```
-
-Error slugs the UI localizes: `domain` · `email` · `rate` · `send` · `code` ·
-`expired`.
+The six digit code (`send` / `verify`) still runs for a tab on the old build.
+It is described at the end.
 
 ---
 
-### The pass list (migration 0043)
+## 1 · What a proof opens
 
-An address that is not at the campus can still get in: put it on the pass
-list on the desk's access screen. `send` asks `celestual_pass_email` before it
-refuses a domain, mails the code to that inbox, and `verify` binds it through
-`celestual_user_bind_edu`, which takes an address on the list as a campus one,
-as does `wall_gate`. The gate on the wall takes a whole address typed with its
-@ for exactly this. The list is the whole of it: take the row off and the
-address is refused again.
-
-## 2 · What you need before you start
-
-1. The Supabase project already linked to this repo (the same one the `celestual_*`
-   tables live in). `supabase link --project-ref <ref>` if it isn't.
-2. The **Supabase CLI** installed and logged in (`supabase login`).
-3. A **[Resend](https://resend.com)** account — this is what actually sends the
-   code email. (The function calls the Resend REST API directly; no SDK.)
-4. Access to the DNS for your sending domain (to verify it in Resend).
-
----
-
-## 3 · The steps to go live
-
-### Step 1 — apply the database migration
-
-Creates `celestual_edu_verifications` (one row per code issued) with RLS on and
-no client grant.
-
-```bash
-supabase db push          # applies 0007_edu_verification.sql + 0008_edu_hardening.sql
-```
-
-Verify it exists and is locked down:
-
-```sql
-select tablename, rowsecurity from pg_tables where tablename = 'celestual_edu_verifications';
--- rowsecurity should be true
-```
-
-### Step 2 — set up Resend (the email sender)
-
-1. Create a Resend account and **add + verify your sending domain** (e.g.
-   `celestual.us`) by adding the DNS records Resend gives you (SPF/DKIM). Until the
-   domain is verified, sends will fail.
-2. Create an **API key** (Resend → API Keys).
-3. Decide your **From** address. It must be on the verified domain, e.g.
-   `celestual <hello@celestual.us>`.
-
-> Without a verified domain you can still smoke-test using Resend's sandbox
-> sender `onboarding@resend.dev` (the function's built-in fallback), but it only
-> delivers to your own Resend account email — never ship on it.
-
-### Step 3 — set the edge-function secrets
-
-```bash
-supabase secrets set RESEND_API_KEY="re_xxxxxxxxxxxxxxxxx"
-supabase secrets set CELESTUAL_FROM_EMAIL="celestual <hello@celestual.us>"
-# optional — only used in the email footer link; defaults to https://celestual.us
-supabase secrets set CELESTUAL_SITE_URL="https://celestual.us"
-# the /demo sandbox's @gmail.com carve-out — ON by default so the pipeline is
-# testable with an inbox you actually hold. RELEASE GATE: set it to 0 before a
-# real launch, because the client's demo flag is untrusted input and could
-# otherwise pass a gmail address through the production gate too.
-supabase secrets set CELESTUAL_SANDBOX_GMAIL="0"
-```
-
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the platform — you
-do **not** set those.
-
-### Step 4 — confirm the function config
-
-`supabase/config.toml` must declare the function public (it's called by anonymous
-visitors with the anon key; it does its own checks). This is already in the repo:
-
-```toml
-[functions.celestual-edu-verify]
-verify_jwt = false
-```
-
-### Step 5 — deploy the edge function
-
-```bash
-supabase functions deploy celestual-edu-verify
-```
-
-Confirm it's live: `supabase functions list` should show it deployed.
-
-### Step 6 — turn the flag on in the frontend
-
-Set the flag wherever the app is built. **Vercel → Project → Settings →
-Environment Variables** (and, for local testing, `app/.env.local`):
-
-```
-VITE_EDU_VERIFY_ENABLED=1
-VITE_SUPABASE_URL=https://YOUR-REF.supabase.co
-VITE_SUPABASE_ANON_KEY=YOUR-ANON-PUBLIC-KEY
-```
-
-Redeploy the frontend so the new build picks up the flag. Live mode only engages
-when the flag is `1` **and** the Supabase env vars are present.
-
-### Step 7 — keep the schools list in sync
-
-The curated schools live in **two** places that must agree on `slug` → `domain`:
-
-- `app/src/communities.js` → `CURATED[]` (frontend)
-- `supabase/functions/celestual-edu-verify/index.ts` → `SCHOOLS` (backend)
-
-To add or change a school, edit **both**, then redeploy the function. If they
-disagree, the frontend pre-check and the server check will diverge and users get
-a confusing `domain` error. Current set: `uc-berkeley` (`berkeley.edu`),
-`wesleyan` (`wesleyan.edu`), `cmu` (`cmu.edu`).
-
----
-
-## 4 · Verify it end to end
-
-1. On production (flag on), open a curated community and tap **join**.
-2. Enter an address that is **not** on the school's domain → expect the "that's
-   not a `<domain>` address" (`domain`) error, no email sent.
-3. Enter a **real** address on the school's domain → a code email should arrive
-   within seconds (check spam the first time; a verified Resend domain fixes
-   deliverability).
-4. Enter the wrong code → `code` error; the correct one → **verified**, and you're
-   a member.
-5. Spot-check the table (service role / SQL editor):
-
-```sql
-select email, slug, status, attempts, created_at, verified_at
-from celestual_edu_verifications order by created_at desc limit 5;
-```
-
-You should see a `verified` row, and **no plaintext code anywhere** — only
-`code_hash`.
-
-### If something's off
-
-| Symptom | Likely cause |
+| A proved address at | It opens |
 | --- | --- |
-| Sheet auto-accepts any code in prod | Flag not `1`, or Supabase env missing → app fell back to the stub. Check the built env. |
-| `send` error, no email | `RESEND_API_KEY` unset/invalid, or the From domain isn't verified in Resend. Check `supabase functions logs celestual-edu-verify`. |
-| Email in spam / not delivered | Resend domain not fully verified (SPF/DKIM), or you're on the `resend.dev` sandbox sender. |
-| `domain` error for a valid student | The school's `domain` differs between `communities.js` and the function's `SCHOOLS`, or the student uses a subdomain not covered. |
-| 401 / auth error calling the function | `verify_jwt` not `false` for this function, or it wasn't redeployed after the config change. |
+| any `.edu` (or under one: `cs.stanford.edu`) | reading the wall, as any proof does, and a campus for that school, opened on the first proof (`celestual_campus_for_domain`: `cs.stanford.edu` is the campus `stanford`) |
+| a school with `handle_notes` (Berkeley alone today) | writing **@-notes**: letters to an Instagram handle, which carry `verified: true` and the school's sticker |
+| an address on the pass list (0043) | whatever a Berkeley address opens, whatever its domain |
 
-Logs are your friend:
-
-```bash
-supabase functions logs celestual-edu-verify --tail
-```
+A name note needs no proof at all. A person proved at a school without
+`handle_notes` who tries an @-note is answered `campus`, and one with no proof
+is answered `edu` (`wall_write` v2, migration 0063).
 
 ---
 
-## 5 · Operating it
+## 2 · The flow
 
-- **Tuning:** code TTL (`CODE_TTL_MIN`, 10), max guesses (`MAX_ATTEMPTS`, 6), and
-  sends-per-hour (`SEND_PER_EMAIL_HOUR`, 5) are constants at the top of the edge
-  function. Change + redeploy to adjust.
-- **Cleanup:** expired rows are swept opportunistically on ~20% of sends, so the
-  table stays small on its own. No cron needed. (Add one only if you ever want
-  verified rows purged on a schedule — the current design keeps them as the
-  membership record.)
-- **Privacy:** the table stores the school address in plaintext (it's the
-  membership claim), lowercased, plus the code **hash**. Fold it into the same
-  retention + deletion story as the rest of `celestual_*` (see `docs/SECURITY.md`).
-- **Adding schools at launch:** edit both lists (§3, Step 7), redeploy the
-  function, ship the frontend. No migration needed — the table is school-agnostic.
+```
+asking device                         celestual-edu-verify                     inbox
+─────────────                         ────────────────────                     ─────
+{ action:'link', email, session,  →   checks the address, mints 32 random
+  purpose:'edu', campus?:'berkeley',  bytes (the token) and a number 10–99,
+  draft?: true }                      keeps sha256(token), sha256(session),
+                                      the number                              →  "tap to verify your
+← { ok, request, match: 47,           (celestual_edu_link_open), mails            school email."
+    domain, campus, school }          ${SITE}/verify#t=<token>                    your screen shows 47.
+
+shows 47, polls                                                               the person taps the
+{ action:'status', request, session } → answers the asking session only           link on any device
+← { ok, verified: false, … }                                                          │
+                                                                                      ▼
+                                      { action:'confirm', token, session }  ←  /verify#t=<token>
+                                      celestual_edu_link_confirm:               (opening device)
+                                        binds the address to the asking
+                                        session's person, and to the opening
+                                        session's if it is another device;
+                                        opens the campus; fills the alert
+                                        address if empty
+                                      → { ok, purpose, request, campus,
+                                          school, same_device }
+← { ok, verified: true, campus,
+    school }   (next status poll)
+posts the held draft
+```
+
+- **The number** is shown on the asking screen and printed in the email. A link
+  confirms on whatever device opens it, so the number is how a person tells their
+  own request from somebody else's: the email says "your screen shows 47. if it
+  doesn't, ignore this email."
+- **The link** is `${SITE}/verify#t=<token>`. The token is in the fragment, so it
+  never reaches a server log on the way to the page. It lasts **thirty minutes**
+  and works **once**. A second open answers `used`, except to the device that
+  confirmed it (a page loaded twice), which is answered again.
+- **`status`** answers only the session that asked (`session_hash` must match).
+- **`same_device`** tells the opening page whether it is the device that asked,
+  so it knows whether a held draft is on it ("/verify#t= confirms, then posts
+  the held draft if it is on this device").
+- **`campus`** on `link` (optional, a slug): the address must be at that campus's
+  domain or under it, or on the pass list, else `domain`. The composer sends
+  `campus: 'berkeley'` for an @-note.
+- **`draft`** on `link` (optional, default true for `edu`): false words the mail
+  for a proof with no letter waiting ("verify", and no "your letter goes up").
+- **`purpose: 'alerts'`** takes any address, mails "tap to confirm this address."
+  with the same number and link, and `confirm` sets the asking person's
+  `alert_email` and `alert_email_verified_at` (and takes the address off the
+  stop list).
+
+### Errors
+
+| action | error | meaning |
+| --- | --- | --- |
+| link | `email` | not an address |
+| link | `session` | no session token (16 to 256 characters) |
+| link | `domain` | not a .edu (or not under the campus asked for), and not on the pass list |
+| link | `taken` | this device is already proved at a different campus address |
+| link | `rate` | five an address, or fifteen a network address, in the hour (codes and links together) |
+| link | `send` | the mail could not be sent (Resend refused, or no key) |
+| confirm | `invalid` | no such link |
+| confirm | `expired` | past thirty minutes |
+| confirm | `used` | already confirmed, by another device |
+| confirm | `taken` | the bind refused (a different campus address on the asking person); rare, since `link` checks it first |
+| status | `invalid` | no such request for this session |
+
+---
+
+## 3 · The security model
+
+- **The token is a secret and is only in the email.** 32 random bytes, base64url.
+  Only its SHA-256 is stored (`celestual_edu_verifications.link_hash`, unique). A
+  dump of the table confirms nothing.
+- **Sessions are hashes too.** The asking session and the confirming session are
+  kept as SHA-256 (`session_hash`, `confirmed_session_hash`), the same trust model
+  as every session since 0030. The bind by hash (`celestual_user_bind_edu_hash`)
+  is how a link opened on a laptop proves the phone that asked.
+- **What a link can do is what the address can do.** Whoever opens the link is
+  bound to the address's person. That is the nature of a magic link, and the
+  number is the defence: a person who opens a link their screen did not ask for
+  is told, in the mail, to ignore it.
+- **Service role only.** `celestual_edu_link_open`, `_confirm`, `_status` and the
+  binds are not callable by a browser; the function is the only caller.
+- **Rate limited** as the code always was: five an address and fifteen a network
+  address an hour, counted across codes and links, in `celestual_edu_link_open`.
+- **Nobody sees the address.** The wall never shows one; the alert address comes
+  back to its owner masked (`celestual_alerts_get`: `s***@berkeley.edu`).
+
+---
+
+## 4 · The schema (migrations 0063, 0064)
+
+`celestual_edu_verifications` (0007) gains, in 0064:
+
+| column | |
+| --- | --- |
+| `kind` | `code` (default) or `link` |
+| `purpose` | `edu` (default) or `alerts` |
+| `session_hash` | sha256 of the asking session |
+| `link_hash` | sha256 of the token, unique |
+| `match` | the number, 10 to 99 |
+| `confirmed_session_hash` | sha256 of the session that opened it |
+| `campus` | the campus asked for, then the campus proved |
+
+`code_hash` is nullable now; a check holds a code row to its hash and a link row
+to its link hash, session hash and number. `token` stays the correlation id: it
+is the `request` a link answers with.
+
+`celestual_users` gains `alert_email`, `alert_email_verified_at`, `alerts_wrote`
+(off) and `alerts_mutual` (on). Every bind of a campus address (the link, the code,
+a google login at a .edu) fills an empty alert address.
+
+`wall_campuses` gains `short` (the sticker's word, `Cal`) and `handle_notes`
+(0063), and `celestual_campus_for_domain(domain)` finds the campus of a domain or
+under it, or opens one keyed on the registrable domain and slugged by its label
+(a taken slug takes a number: `ucsd-2`).
+
+---
+
+## 5 · Turning it on
+
+1. Apply migrations 0062, 0063 and 0064 (docs/launchsteps.md has the order).
+2. Deploy the function: `supabase functions deploy celestual-edu-verify`
+   (`verify_jwt = false` in `config.toml`).
+3. Secrets on the function (Supabase → Edge Functions → Secrets):
+
+   | secret | value |
+   | --- | --- |
+   | `RESEND_API_KEY` | the Resend key |
+   | `CELESTUAL_FROM_EMAIL` | `celestual <hello@celestual.us>` (the code's default; set it anyway). Needs `celestual.us` verified in Resend |
+   | `CELESTUAL_SITE_URL` | `https://celestual.us` (the link and the images point here) |
+
+4. The site serves `/verify` (the page that reads `#t=` and calls `confirm`),
+   `/fonts/jersey-10-normal-400-latin.woff2` and `/mail/head.png`.
+
+### Testing it by hand
+
+```sh
+# ask (the session is any 16+ character string the browser would hold)
+curl -s "$SUPABASE_URL/functions/v1/celestual-edu-verify" -H 'Content-Type: application/json' \
+  -d '{"action":"link","email":"you@berkeley.edu","session":"test-session-0000000001","purpose":"edu","campus":"berkeley"}'
+# → { ok, request, match, domain: "berkeley.edu", campus: "berkeley", school: "UC Berkeley" }
+
+# open the link from the email in a browser, or confirm with its token:
+curl -s ... -d '{"action":"confirm","token":"<token from the link>","session":"test-session-0000000002"}'
+
+# the asking session sees it
+curl -s ... -d '{"action":"status","request":"<request>","session":"test-session-0000000001"}'
+```
+
+`scripts/sql/test-mail.sql` exercises every rule above against a local database
+(`scripts/verify-migrations.sh --test`).
+
+---
+
+## 6 · The code, for the old build
+
+`{ action:'send', email, slug }` mails a six digit code (hash stored, six tries,
+the try spent before the code is compared, ten minutes) to an address at one of
+the curated schools (`SCHOOLS` in the function: `uc-berkeley`, `wesleyan`, `cmu`),
+or on the pass list; `{ action:'verify', token, code, session? }` checks it and
+binds through `celestual_user_bind_edu`. The mail is the same design as the rest
+(`codeMail` in `_shared/mails.ts`). Nothing on the one wall uses it; it stays so a
+tab that loaded the old build before a deploy still gets through.
+
+The `@gmail.com` sandbox carve-out (`demo: true` with `CELESTUAL_SANDBOX_GMAIL=1`)
+still exists on `send` for a test rig, off by default.

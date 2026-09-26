@@ -1,224 +1,253 @@
-// CELESTUAL: the mail, cut and finished. One design, and the senders own only
-// their words.
+// CELESTUAL: the mail, in the wall's black room. One design, and the senders
+// own only their words (_shared/mails.ts holds the words of every mail).
 //
-// Phase 8. Rebuilt on the system the rest of the product is in. It used to be
-// the Bindery's: a leather case, chocolate through ivory, blind tooled borders,
-// nothing round. docs/plan.md finding 1.9 retired that system, so this is the
-// same argument made again in the one that won.
+// ── THE ROOM, AT MAIL SCALE ──────────────────────────────────────────────────
+// design/DESIGN.md 2.5 and 2.6. The wall is a black room with a phone left on
+// in it, and a mail from it is the same room:
 //
-// ── THE SYSTEM, AT MAIL SCALE ────────────────────────────────────────────────
-// app/src/wall/wall.css, and every value below is one of its tokens:
+//   THE VOID IS BLACK.   #000. The room's ground, and the mail's.
+//   ONE UNLIT PANEL.     `--lcd`, #0B0B0B, a step off the black, inside a one
+//                        pixel bezel of chalk at sixteen percent and a 3px
+//                        corner. The words of the mail sit on it.
+//   ONE LIT KEY.         a chalk plate with the word struck out of it in black,
+//                        the way the phone lit the chosen row of a menu. One
+//                        per mail, and it is the thing to press.
+//   THE ACCENT, ONCE.    #74C7DE, spent on the one fact a mail most needs read
+//                        (the number on the verify mail), and on nothing else.
+//   THE PIXEL FACE.      Jersey 10, the Series 40 grid, for what the phone
+//                        would print: the headline, the key, a number. Loaded
+//                        by @font-face from the site, which Apple Mail and iOS
+//                        draw; Gmail and Outlook do not load web fonts, so
+//                        every stack falls back to Helvetica, and every size
+//                        below is chosen to read in both.
+//   THE READING VOICE.   Helvetica for the sentences. A pixel face at body
+//                        size is a phone's; in a mail it is also the fallback
+//                        nobody chose, so the sentences are set in the
+//                        fallback on purpose.
+//   THE BRAND.           the header image, `${SITE}/mail/head.png`: the
+//                        lockup (the Ecliptic mark and `celestual.` in
+//                        Newsreader) and a small LCD with the pixel mark on
+//                        it, on black, 600px wide at 2x. Its alt text is the
+//                        word, so a blocked image still signs the mail.
 //
-//   THE VOID, NOT BLACK.  #08070B. Pure black is a screen that is off; this is
-//                         a room. Sheets are laid on it, one step lighter.
-//   ONE BRIGHT SURFACE.   The paper, #E9E4D8, and it is the only one. On the
-//                         wall it means somebody wrote this; here it is the
-//                         one thing to press, and there is one per mail.
-//   THE ACCENT, RATIONED. #74C7DE, and wall.css says it is the whole chromatic
-//                         budget of the product. At most one use per mail, on
-//                         the single fact that matters most, and most mails
-//                         spend none of it.
-//   NOTHING GLOWS.        No text-shadow, no gradient nebula, no second accent
-//                         and no state colour. A thing stands out by being
-//                         closer to chalk.
-//
-// ── LEFT ALIGNED, WHICH IS THE WHOLE TELL ────────────────────────────────────
-// Every transactional mail ever sent is a centred column with a centred pill in
-// the middle of it. That is what this was on the first pass, and looking at it
-// is what showed the problem: it was a perfectly good email belonging to no
-// product at all.
-//
-// The wall is left aligned type with a great deal of room around it, and so is
-// this. A rag on the right is the single cheapest signal that a person set the
-// page rather than a template generator, it costs nothing in any client, and it
-// is also simply easier to read: a centred paragraph moves its own left edge on
-// every line, so the eye hunts for the start of the next one.
-//
-// ── AND THE CONSTRAINT THAT SHAPES ALL OF IT ─────────────────────────────────
-// Mail clients are a decade behind. No web fonts (Gmail strips @font-face and
-// half of them ignore the link), no custom properties, no flexbox worth
-// trusting, and Outlook renders through Word. So every rule is inline, the
-// layout is one centred column of block elements, and the four faces fall back
-// honestly: a Didone to Didot then Georgia, the garalde to Georgia, the util
-// sans to Arial, the mono to Courier. The design survives that because it was
-// never carried by the typefaces. It is carried by the value scale and by what
-// is absent.
-//
-// ── THE MARK, AND WHY IT IS A PNG AT A URL ───────────────────────────────────
-// It was an inline SVG data URI once and it rendered in almost nothing: Gmail
-// does not draw SVG in an <img> at all, and it proxies every image through its
-// own cache, which drops `data:`; Outlook.com strips them too. So the sigil at
-// the head of every mail this product sent was, in the two clients most of its
-// readers use, a broken image icon. It came off, and for a while the mail
-// signed itself with the wordmark in type alone.
-//
-// A raster at a public URL is the one thing every client draws, and there is
-// one to serve now: `app/public/mark-chalk-256.png`, written by
-// scripts/export-mark.mjs from the same nine constants as every other export
-// (design/DESIGN.md 3.2), so the mark in an inbox is the mark on the wall and
-// cannot drift from it. It is drawn at 26px beside the word, the lockup's own
-// proportion (DESIGN.md 3.3: the mark is 1.13 times the word's size).
-//
-// It still cannot be the ONLY signature. An image blocked, still loading or
-// refused is a mail with nothing at its head, so the word stands beside it in
-// type and carries the mail on its own; the mark's `alt` is empty because the
-// word is already there and a client drawing "celestual celestual" is worse
-// than one drawing the word once.
+// ── THE CLIENTS ─────────────────────────────────────────────────────────────
+// Tables for layout, every rule inline, `bgcolor` beside every background for
+// Outlook's Word engine, and a conditional block that pins Outlook to
+// Helvetica (it falls back to Times when the first face in a stack is a web
+// font it cannot load). Dark mode: the mail is dark already and says so
+// (`color-scheme: light dark`, so Apple Mail leaves it as it is); Gmail's app
+// inverts light surfaces, which turns the chalk key dark with light words,
+// which still reads. Copy is lowercase (design/VOICE.md).
 
 // ── the tokens ───────────────────────────────────────────────────────────────
-// The same values as app/src/wall/wall.css. Kept as literals rather than
-// imported because an edge function does not share a bundle with the front end,
-// and a colour that drifts between the two is worse than one written twice.
+// The wall's values (app/src/wall/phone.css, design/DESIGN.md 2.6). The
+// bezel is chalk at sixteen percent, flattened against the black because a
+// mail cannot be trusted with alpha.
 export const C = {
-  void: '#08070B', //      the ground. never pure black
-  void1: '#0D0C12', //     a sheet laid on it
-  void2: '#131219', //     a sheet laid on that
-  chalk: '#F4F1EA', //     what you are meant to read
-  ash: '#9C978E', //       the quieter voice. meaningful text only
-  ashDim: '#605C55', //    a footnote, a tick, the legal foot
-  paper: '#E9E4D8', //     the one bright surface. once per mail
-  paperInk: '#17150F',
+  void: '#000000', //      the room
+  lcd: '#0B0B0B', //       the unlit panel
+  edge: '#2A2927', //      its bezel, chalk at 16% on black
+  chalk: '#F4F1EA', //     what you are meant to read, and the lit key
+  ash: '#9C978E', //       the quieter voice
+  dim: '#77736B', //       the foot of the mail
+  ink: '#000000', //       the word struck out of the lit key
+  accent: '#74C7DE', //    once per mail, at most
+  // Kept for the senders written against the old sheet (celestual-remind).
+  void1: '#0B0B0B',
+  void2: '#000000',
+  ashDim: '#77736B',
+  paper: '#F4F1EA',
+  paperInk: '#000000',
   paperInk2: '#6A6357',
-  accent: '#74C7DE', //    the whole chromatic budget. at most once per mail
-  // Hairlines are rgba on the wall. A mail cannot be trusted with alpha over an
-  // arbitrary ground, so these are the flattened values against the void.
-  hair: '#232228',
-  hairSoft: '#181820',
+  hair: '#2A2927',
+  hairSoft: '#1C1B1A',
 }
 
-// wall.css --f-display, --f-util and --f-id, each with the fallback a mail
-// client will actually reach for. Chosen for metric proximity, not taste.
-//
-// --f-letter is deliberately absent. On the wall that face carries what people
-// wrote to each other and nothing else, and no mail this product sends quotes a
-// letter: the mutual note says THAT a card exists and never a word of what it
-// says, because a mail is forwarded, screenshotted and left open on a desk, and
-// none of that is a thing we get to do to somebody else's message. If a mail
-// ever does carry one, it needs the letter face and this is where it goes.
+// The origin every link and image in a mail points at. Reached through
+// `globalThis` because scripts/mail-preview.mjs imports this module under
+// Node to screenshot it, where a bare `Deno` is a ReferenceError.
+// deno-lint-ignore no-explicit-any
+const ENV = (globalThis as any).Deno?.env
+export const SITE: string = (ENV?.get?.('CELESTUAL_SITE_URL') || 'https://celestual.us').replace(/\/+$/, '')
+export const HEAD = `${SITE}/mail/head.png`
+export const FONT = `${SITE}/fonts/jersey-10-normal-400-latin.woff2`
 
-// The mark, as a file this origin serves. The origin is the same
-// CELESTUAL_SITE_URL every sender reads, so a staging deploy draws its own copy
-// rather than production's. Reached through `globalThis` because this module is
-// also imported by scripts/mail-preview.mjs, which runs it under Node to
-// screenshot the templates, and a bare `Deno` there is a ReferenceError at load.
-const SITE = globalThis.Deno?.env?.get?.('CELESTUAL_SITE_URL') || 'https://celestual.us'
-const MARK = `${SITE}/mark-chalk-256.png`
+// The column. The header image is drawn at 600 and shown at this width.
+export const WIDTH = 520
 
-const DISPLAY = "Didot, 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif"
-const UTIL = "'Helvetica Neue', Helvetica, Arial, sans-serif"
-const MONO = "'SF Mono', Menlo, Consolas, 'Courier New', Courier, monospace"
+export const PIXEL = "'Jersey 10', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+export const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif"
+const SERIF = "Newsreader, Georgia, 'Times New Roman', serif"
+const MONO = "'SF Mono', Menlo, Consolas, 'Courier New', monospace"
+
+// Text for a mail is escaped once, here. Handles and names come from rows a
+// person wrote, and a mail is HTML.
+export function esc(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 // ── the parts ────────────────────────────────────────────────────────────────
 
-// A hairline. One div, one colour: the wall's rules are a single 1px line and
-// the two-line tooled channel belonged to leather.
+// A hairline, the panel's own bezel colour.
 export function rule(width = '100%') {
-  return `<div style="width:${width};height:1px;background:${C.hair};font-size:0;line-height:0">&nbsp;</div>`
+  return `<div style="width:${width};height:1px;background:${C.edge};font-size:0;line-height:0">&nbsp;</div>`
 }
 
-// The stamped label. wall.css .wl-label: mono, 10.5px, tracked to 0.15em,
-// uppercase, ash. It is a caption printed on a plate, not small text.
-export function label(text: string, color = C.ash) {
-  return `<div style="font-family:${MONO};font-size:11px;letter-spacing:1.7px;text-transform:uppercase;color:${color};margin:0">${text}</div>`
+// What stands over a thing, the way the phone prints the row above a field.
+export function label(text: string, color: string = C.ash) {
+  return `<div class="px" style="font-family:${PIXEL};font-size:16px;line-height:1.2;color:${color};margin:0;mso-line-height-rule:exactly">${text}</div>`
 }
 
-// The one headline a mail is allowed. wall.css .wl-display: a Didone, set large
-// and light, leading pulled tight, so it reads as a title page.
+// The one headline a mail is allowed, in the phone's face.
 export function title(text: string) {
-  return `<h1 style="font-family:${DISPLAY};font-weight:400;font-size:34px;line-height:1.04;letter-spacing:-0.6px;margin:16px 0 0;color:${C.chalk}">${text}</h1>`
+  return `<h1 class="px" style="font-family:${PIXEL};font-weight:400;font-size:32px;line-height:1.08;letter-spacing:0;margin:0;color:${C.chalk};mso-line-height-rule:exactly">${text}</h1>`
 }
 
-// The reading register.
-export function body(text: string) {
-  return `<p style="font-family:${UTIL};font-size:15px;line-height:1.62;margin:20px 0 0;max-width:380px;color:${C.ash}">${text}</p>`
+// A sentence. The reading voice.
+export function body(text: string, color: string = C.ash) {
+  return `<p style="font-family:${SANS};font-size:15px;line-height:1.6;margin:16px 0 0;color:${color};mso-line-height-rule:exactly">${text}</p>`
 }
 
-// Metadata. Mono only, and never allowed to carry a feeling.
-export function tick(text: string, color = C.ashDim) {
-  return `<p style="font-family:${MONO};font-size:12px;letter-spacing:0.4px;line-height:1.6;margin:16px 0 0;color:${color}">${text}</p>`
+// Metadata, small and quiet.
+export function tick(text: string, color: string = C.dim) {
+  return `<p style="font-family:${SANS};font-size:13px;line-height:1.55;margin:14px 0 0;color:${color};mso-line-height-rule:exactly">${text}</p>`
 }
 
-// The one thing to press: the paper, which is the only bright surface the
-// product has. A pill, because every control in this system is a pill, and
-// Outlook rendering it square is a rounded corner lost rather than a design
-// lost.
+// The lit key: a chalk plate, the word in black, a 3px corner. The padding is
+// on the cell so Outlook, which ignores it on a link, still draws a key.
 export function plate(href: string, text: string) {
   return `
-  <div style="margin:30px 0 0">
-    <a href="${href}" style="display:inline-block;background:${C.paper};color:${C.paperInk};text-decoration:none;
-      border-radius:999px;padding:15px 34px;
-      font-family:${UTIL};font-size:14px;font-weight:500;letter-spacing:0.1px;color:${C.paperInk}">${text}</a>
-  </div>`
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;margin:26px 0 0">
+    <tr>
+      <td bgcolor="${C.chalk}" style="background:${C.chalk};border-radius:3px;padding:13px 24px 12px;mso-padding-alt:13px 24px 12px">
+        <a href="${href}" class="px" style="font-family:${PIXEL};font-size:20px;line-height:1;color:${C.ink};text-decoration:none;display:inline-block;mso-line-height-rule:exactly">${text}</a>
+      </td>
+    </tr>
+  </table>`
 }
 
-// ── the code ────────────────────────────────────────────────────────────────
-// The same object the app draws, to the pixel: wall.css `.wl-codebox`, which is
-// the box a person types this code back into ten seconds after reading it here.
-// That is the whole argument for the values below — a code that is one shape in
-// the inbox and another in the field is two codes, and somebody checking their
-// six digits against the screen has to do it twice. So: `--void-2` behind a
-// hairline, the field's own 14px corner, and the digits in the identifier face
-// at 38px tracked 0.14em, which is what the app sets.
-//
-// ── and it is COPIED FROM HERE, not from a page ─────────────────────────────
-// The code used to carry a capsule under it that opened /copy on the site with
-// the digits in the fragment, and that page put them on the clipboard. It was a
-// button that answered "copy this" by opening a browser: a tab, a page load and
-// a second screen between somebody and six characters already in front of them.
-//
-// A mail cannot run script, so there is no button here that can write to a
-// clipboard. What a mail CAN do is be easy to take: `user-select: all` makes one
-// long press on a phone, or one double click on a desktop, select the whole code
-// and nothing around it, and every mail client offers copy on that selection.
-// The digits are the target and the line under them says so. /copy still stands
-// for the mails already sitting in inboxes; nothing sent from here points at it.
+// A quiet key: the words on the panel, underlined, for the second thing a
+// mail offers (remove it) beside its one lit key.
+export function quiet(href: string, text: string) {
+  return `<a href="${href}" style="font-family:${SANS};font-size:15px;color:${C.chalk};text-decoration:underline">${text}</a>`
+}
+
+// A thing set on the black inside the panel: the room showing through, the
+// way a field is on the phone. `big` is what is read off it.
+export function well(caption: string, big: string, color: string = C.chalk) {
+  return `
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;margin:22px 0 0">
+    <tr>
+      <td bgcolor="${C.void}" style="background:${C.void};border:1px solid ${C.edge};border-radius:3px;padding:10px 16px 8px">
+        ${label(caption)}
+        <div class="px" style="font-family:${PIXEL};font-size:48px;line-height:1;color:${color};margin:4px 0 0;letter-spacing:2px;mso-line-height-rule:exactly">${big}</div>
+      </td>
+    </tr>
+  </table>`
+}
+
+// The code, for the mails that still carry one (the old `send`, and the
+// Supabase Auth code). Set so one long press or one double click takes the
+// whole of it: a mail cannot write to a clipboard, but it can be easy to take.
 export function code(value: string) {
   return `
-  <div style="margin:26px 0 0;background:${C.void2};border:1px solid ${C.hair};border-radius:14px;padding:24px 22px 22px;text-align:center">
-    <div style="font-family:${MONO};font-size:38px;font-weight:500;letter-spacing:5.3px;padding-left:5.3px;line-height:1.1;color:${C.chalk};white-space:nowrap;
-      -webkit-user-select:all;-moz-user-select:all;-ms-user-select:all;user-select:all">${value}</div>
-  </div>`
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;margin:24px 0 0">
+    <tr>
+      <td bgcolor="${C.void}" align="center" style="background:${C.void};border:1px solid ${C.edge};border-radius:3px;padding:18px 12px 16px">
+        <div class="px" style="font-family:${PIXEL};font-size:48px;line-height:1;letter-spacing:6px;padding-left:6px;color:${C.chalk};white-space:nowrap;
+          -webkit-user-select:all;-moz-user-select:all;-ms-user-select:all;user-select:all;mso-line-height-rule:exactly">${value}</div>
+      </td>
+    </tr>
+  </table>`
 }
 
-// The colophon: why this arrived, and the way out. Every mail carries one.
+// Why this arrived, and the way out. Every mail has one, under the panel.
 export function colophon(text: string) {
-  return `
-  <div style="margin:38px 0 0;max-width:400px">
-    ${rule('44px')}
-    <p style="font-family:${UTIL};font-size:11.5px;line-height:1.7;margin:18px 0 0;color:${C.ashDim}">${text}</p>
-  </div>`
+  return `<p style="font-family:${SANS};font-size:12px;line-height:1.6;margin:0;color:${C.dim};mso-line-height-rule:exactly">${text}</p>`
 }
 
-// ── the case the whole thing sits in ─────────────────────────────────────────
-// One sheet on the void, with the wordmark at its head. `kicker` is the one
-// stamped label above the headline; a mail should drop it whenever the headline
-// underneath already says the same thing.
-export function frame({ kicker, inner }: { kicker?: string; inner: string }) {
+// A link in the foot, in the foot's colour.
+export function footLink(href: string, text: string) {
+  return `<a href="${href}" style="color:${C.ash};text-decoration:underline">${text}</a>`
+}
+
+// ── the room the whole thing sits in ─────────────────────────────────────────
+// The header image, one panel with the mail's words on it, and the foot
+// under the panel. `preheader` is the line an inbox shows beside the
+// subject; `kicker` is a label over the headline, for a mail that needs one.
+// `foot` is the colophon under the panel, and a sender that passes its old
+// colophon inside `inner` still renders (celestual-remind).
+export function frame({ kicker, inner, foot, preheader }: {
+  kicker?: string
+  inner: string
+  foot?: string
+  preheader?: string
+}) {
+  const pre = preheader
+    ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${C.void};opacity:0">${esc(preheader)}${'&nbsp;&zwnj;'.repeat(40)}</div>`
+    : ''
   return `<!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head>
-<body style="margin:0;padding:0;background:${C.void}">
-  <div style="background:${C.void};padding:34px 14px 60px;margin:0">
-    <div style="max-width:480px;margin:0 auto;background:${C.void1};border:1px solid ${C.hairSoft};border-radius:22px;padding:34px 28px 36px;text-align:left">
-      <!-- The signature: the mark and the word, on one baseline, with a hairline
-           under them rather than beside them, so it reads as the head of a sheet
-           rather than as a caption floating over one. A table because this is the
-           one row in the mail that has to hold two things side by side, and a
-           table is the only horizontal layout Outlook renders the same way twice. -->
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 0 16px">
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<meta name="x-apple-disable-message-reformatting">
+<title>celestual.</title>
+<style>
+  @font-face { font-family: 'Jersey 10'; font-style: normal; font-weight: 400;
+    src: url('${FONT}') format('woff2'); }
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  body { margin: 0; padding: 0; background: ${C.void}; -webkit-text-size-adjust: 100%; }
+  a { color: ${C.chalk}; }
+  @media (max-width: 560px) {
+    .panel { padding: 26px 20px 24px !important; }
+    .foot { padding: 20px 20px 0 !important; }
+  }
+</style>
+<!--[if mso]>
+<style>
+  .px, h1, p, a, div, td { font-family: Helvetica, Arial, sans-serif !important; }
+</style>
+<noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+<![endif]-->
+</head>
+<body bgcolor="${C.void}" style="margin:0;padding:0;background:${C.void};">
+${pre}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.void}" style="background:${C.void};border-collapse:collapse">
+  <tr>
+    <td align="center" style="padding:28px 12px 56px">
+      <table role="presentation" width="${WIDTH}" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:${WIDTH}px;border-collapse:collapse">
         <tr>
-          <td style="padding:0 9px 0 0;vertical-align:middle;line-height:0">
-            <img src="${MARK}" width="26" height="26" alt="" style="display:block;width:26px;height:26px;border:0;outline:none;text-decoration:none" />
-          </td>
-          <td style="vertical-align:middle">
-            <div style="font-family:${UTIL};font-size:12px;font-weight:500;letter-spacing:3.4px;text-transform:uppercase;color:${C.chalk};line-height:1">celestual</div>
+          <td style="padding:0 0 16px;line-height:0">
+            <a href="${SITE}" style="text-decoration:none"><img src="${HEAD}" width="${WIDTH}" alt="celestual."
+              style="display:block;width:100%;max-width:${WIDTH}px;height:auto;border:0;outline:none;text-decoration:none;
+              font-family:${SERIF};font-size:26px;line-height:1.2;color:${C.chalk};background:${C.void}" /></a>
           </td>
         </tr>
+        <tr>
+          <td class="panel" bgcolor="${C.lcd}" style="background:${C.lcd};border:1px solid ${C.edge};border-radius:3px;padding:30px 28px 28px;text-align:left">
+            ${kicker ? `<div style="margin:0 0 14px">${label(kicker)}</div>` : ''}
+            ${inner}
+          </td>
+        </tr>
+        ${foot ? `<tr><td class="foot" style="padding:22px 28px 0;text-align:left">${foot}</td></tr>` : ''}
       </table>
-      ${rule('100%')}
-      ${kicker ? `<div style="margin:30px 0 0">${label(kicker)}</div>` : '<div style="height:12px;font-size:0;line-height:0">&nbsp;</div>'}
-      ${inner}
-    </div>
-  </div>
-</body></html>`
+    </td>
+  </tr>
+</table>
+</body>
+</html>`
+}
+
+// A mono aside, kept for any sender that wants the identifier face.
+export function mono(text: string, color: string = C.ash) {
+  return `<span style="font-family:${MONO};font-size:13px;color:${color}">${text}</span>`
 }

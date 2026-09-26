@@ -35,9 +35,9 @@
 // is the expensive one: a person with a mutual on their row was told they had
 // nothing out, and had no control on the screen to prove the handle again.
 // So each has its own words and its own way on.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, useProfile,
+  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait } from '../screen.jsx'
 import { Provider } from '../art.jsx'
@@ -52,6 +52,8 @@ import {
   myHandle, myPings, heldPings, forgetPings, renew, release, daysLeft, daysLeftWords, stateWords, slotCap, PING_DAYS,
 } from '../pings.js'
 import { useProve, ProveDoor } from './Ping.jsx'
+import { useAlertLink, AlertEmail } from './Alerts.jsx'
+import { alertsGet, alertsSet } from '../../api/alerts.js'
 
 // ── the letters this person put up ──────────────────────────────────────────
 // A list, one row per letter: the face and the name it was written to, how
@@ -72,7 +74,7 @@ function Wrote({ go }) {
   const rows = own && own.length
     ? own.map((l) => ({ id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0, down: !!l.downBy, live: !l.downBy }))
     : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, down: false, live: true }))
-  if (!rows.length) return <p className="wl-profile-none">nobody yet</p>
+  if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const cut = !more && rows.length > SHOWN
   const shown = cut ? rows.slice(0, SHOWN) : rows
   const open = (r) => {
@@ -179,7 +181,7 @@ function PingScreen({ p, me, onBack, onChange }) {
       r: { label: 'back', onClick: () => setMode('line'), aria: 'back to the ping' },
     }
   } else if (mode === 'ask') {
-    body = <ScreenNote title="let it go?">this frees the slot. nothing was ever revealed.</ScreenNote>
+    body = <ScreenNote title="let it go?">this frees the slot. they never find out you sent it.</ScreenNote>
     keys = {
       l: { label: 'let it go', onClick: drop, disabled: busy, aria: 'let it go' },
       r: { label: 'keep it', onClick: () => setMode('line'), aria: 'keep it standing' },
@@ -190,10 +192,10 @@ function PingScreen({ p, me, onBack, onChange }) {
   } else {
     body = p.line
       ? <ScreenText text={p.line} />
-      : <ScreenNote>placed without a line.</ScreenNote>
+      : <ScreenNote>sent without a note.</ScreenNote>
     keys = {
       l: { label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy, aria: 'options: sixty more days, or let it go' },
-      r: { label: 'back', onClick: onBack, aria: 'back to your pings' },
+      r: { label: 'back', onClick: onBack, aria: 'back to your private notes' },
     }
   }
 
@@ -205,6 +207,142 @@ function PingScreen({ p, me, onBack, onChange }) {
       <p className="wl-you-floor" aria-live="polite">
         {said || `standing · ${daysLeftWords(expires)}`}
       </p>
+    </div>
+  )
+}
+
+// ── your @ ───────────────────────────────────────────────────────────────────
+// The @ this person has claimed (docs/ONE-WALL.md: Instagram verification is
+// ownership), and what owning it is for: an email when somebody writes to
+// them, an email when a private note turns out mutual, the address those go
+// to, and the way to take the name off the wall for good. Or, with no @
+// claimed, the one line on what claiming it gets them and the key to it.
+//
+// The switches are the server's (`celestual_alerts_get` / `_set`). A database
+// that does not have them yet answers `missing`, and the section then shows
+// the @ alone, with nothing to switch: no control on this card may promise an
+// email that nothing will send.
+function YourAt({ handle, rev, go, onProve }) {
+  // null while it is asked · the answer · { ok: false, error }
+  const [alerts, setAlerts] = useState(null)
+  const [saving, setSaving] = useState('')
+  const [said, setSaid] = useState('')
+  const [mail, setMail] = useState(false)
+  const [ask, setAsk] = useState(0)
+  // a switch turned on before there was an address to send to, kept until
+  // the address is confirmed and then turned on for real
+  const waiting = useRef(null)
+
+  useEffect(() => {
+    let on = true
+    alertsGet().then((a) => { if (on) setAlerts(a || { ok: false, error: 'network' }) })
+    return () => { on = false }
+  }, [rev, ask])
+
+  const link = useAlertLink({
+    onConfirmed: async () => {
+      const want = waiting.current
+      waiting.current = null
+      if (want) await alertsSet(want.wrote, want.mutual)
+      const a = await alertsGet()
+      setAlerts(a || { ok: false, error: 'network' })
+      setMail(false)
+      setSaid('')
+      link.reset()
+    },
+  })
+
+  const ok = !!alerts?.ok
+  const claimed = ok ? (alerts.claimed ? normHandle(alerts.handle || handle) : '') : handle
+  const hasMail = ok && !!alerts.email_verified
+
+  const flip = async (key, value) => {
+    if (!ok || saving) return
+    const next = { wrote: !!alerts.wrote, mutual: !!alerts.mutual, [key]: value }
+    setSaid('')
+    if (value && !hasMail) {
+      waiting.current = next
+      setMail(true)
+      setSaid('add an email first. it turns on once the address is confirmed.')
+      return
+    }
+    const was = alerts
+    setAlerts({ ...alerts, [key]: value })
+    setSaving(key)
+    const out = await alertsSet(next.wrote, next.mutual)
+    setSaving('')
+    if (out?.ok) return
+    setAlerts(was)
+    if (out?.error === 'email') { waiting.current = next; setMail(true); setSaid('add an email first. it turns on once the address is confirmed.'); return }
+    if (out?.error === 'claim') { setSaid('confirm your Instagram again to turn this on.'); return }
+    setSaid('that did not save. try again.')
+  }
+
+  if (!claimed) {
+    return (
+      <div className="wl-profile-sect wl-owner-at">
+        <Label tone="dim">your @</Label>
+        <div className="wl-you-ask">
+          <p className="wl-you-say">
+            claim your @ to get an email when someone writes to you, and to remove letters about you in one tap.
+          </p>
+          <Pill tone="ghost" icon={<Provider size={15} />} onClick={onProve}>confirm your Instagram</Pill>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="wl-profile-sect wl-owner-at">
+      <Label tone="dim">your @</Label>
+      <div className="wl-owner-me">
+        <Face handle={claimed} size={30} />
+        <span className="wl-wrote-who">
+          <span className="wl-wrote-name">{atHandle(claimed)}</span>
+          <span className="wl-wrote-meta">confirmed with Instagram</span>
+        </span>
+      </div>
+
+      {alerts === null ? (
+        <p className="wl-profile-none wl-you-wait" aria-label="reading your alerts"><Wait /></p>
+      ) : ok ? (
+        <div className="wl-owner-alerts">
+          <Switch on={!!alerts.wrote} busy={saving === 'wrote'} onChange={(v) => flip('wrote', v)}>
+            email me when someone writes to me
+          </Switch>
+          <Switch on={!!alerts.mutual} busy={saving === 'mutual'} onChange={(v) => flip('mutual', v)}>
+            email me when it&rsquo;s mutual
+          </Switch>
+          <p className="wl-owner-to">
+            {hasMail
+              ? <>emails go to <span className="wl-h">{alerts.email}</span></>
+              : 'no email address yet'}
+            {!mail ? (
+              <button type="button" className="wl-quiet" onClick={() => { setMail(true); setSaid('') }}>
+                {hasMail ? 'change' : 'add one'}
+              </button>
+            ) : null}
+          </p>
+          {said ? <p className="wl-owner-said" aria-live="polite">{said}</p> : null}
+          {mail ? (
+            <div className="wl-owner-change">
+              <AlertEmail link={link} compact autoFocus />
+              {!link.sent ? (
+                <button type="button" className="wl-quiet" onClick={() => { setMail(false); waiting.current = null; setSaid('') }}>cancel</button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : alerts.error !== 'missing' ? (
+        <div className="wl-you-ask">
+          <p className="wl-you-say">your email alerts did not load.</p>
+          <button type="button" className="wl-quiet" onClick={() => { setAlerts(null); setAsk((n) => n + 1) }}>try again</button>
+        </div>
+      ) : null}
+
+      <button type="button" className="wl-quiet wl-owner-off" onClick={() => go('remove', claimed)}>
+        take my name off the wall for good
+      </button>
     </div>
   )
 }
@@ -286,8 +424,8 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           <div className="wl-push" />
           <ProveDoor
             p={proof} headId="wl-you-h" onAsk={() => proof.ask()}
-            title={lapsed ? <>one message,<br />and it is back.</> : <>your pings are<br />behind your @.</>}
-            say={'nothing happens unless it’s mutual.'}
+            title={lapsed ? <>confirm your<br />Instagram again.</> : <>confirm this is<br />your Instagram.</>}
+            say="to see the notes you sent privately, get email alerts, and remove letters about you."
           />
           <div className="wl-push" />
           <SheetFoot>
@@ -296,7 +434,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
             ) : known ? (
               <button type="button" className="wl-quiet" onClick={() => { proof.setSaid(''); setView(null) }}>not now</button>
             ) : (
-              <button type="button" className="wl-quiet" onClick={() => go('ping')}>or place one first</button>
+              <button type="button" className="wl-quiet" onClick={() => go('ping')}>or send a private note first</button>
             )}
           </SheetFoot>
           <DoorFoot />
@@ -335,12 +473,11 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   const left = allowance()
   const spent = !!who && !!left && left.left <= 0
   const title = who ? memberLabel(who) : handle ? atHandle(handle) : 'signed in'
-  const also = who && handle && !String(who).includes(handle) ? atHandle(handle) : ''
 
   const ask = (words) => (
     <div className="wl-you-ask">
       <p className="wl-you-say">{words}</p>
-      <Pill tone="ghost" icon={<Provider size={15} />} onClick={() => setView('prove')}>prove it with one DM</Pill>
+      <Pill tone="ghost" icon={<Provider size={15} />} onClick={() => setView('prove')}>confirm your Instagram</Pill>
     </div>
   )
 
@@ -354,9 +491,11 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
             <Face handle={handle || who} size={52} resolve={!!handle || String(who).startsWith('@')} className="wl-profile-face" />
             <div className="wl-profile-who">
               <p className="wl-profile-addr" id="wl-you-h">{title}</p>
-              {also ? <p className="wl-you-also">{also}</p> : null}
             </div>
           </div>
+
+          {/* ── your @ ── what claiming it is for, and the switches */}
+          <YourAt handle={handle} rev={rev} go={go} onProve={() => setView('prove')} />
 
           {/* ── the pings ──
               The mutuals first and set apart, then the standing ones with
@@ -365,20 +504,21 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               reasons it is, and the one thing to do about it. */}
           <div className="wl-profile-sect">
             <div className="wl-you-head">
-              <Label tone="dim">your pings</Label>
+              <Label tone="dim">your private notes</Label>
               {slots ? <Label tone="dim" className="wl-you-slots">{slots}</Label> : null}
             </div>
-            {list.error === 'none' ? ask('your pings are behind your @.')
-              : list.error === 'unverified' ? ask('one message, and it is back.')
+            {list.error === 'none' ? (
+              <p className="wl-profile-none">confirm your Instagram above to see them.</p>
+            ) : list.error === 'unverified' ? ask('confirm your Instagram again to see them.')
               : list.error ? (
                 <div className="wl-you-ask">
-                  <p className="wl-you-say">your pings did not load. nothing about them has changed.</p>
+                  <p className="wl-you-say">your private notes did not load. nothing about them changed.</p>
                   <button type="button" className="wl-quiet" onClick={() => setRev((n) => n + 1)}>try again</button>
                 </div>
               ) : list.loading && !list.pings.length ? (
-                <p className="wl-profile-none wl-you-wait" aria-label="reading your pings"><Wait /></p>
+                <p className="wl-profile-none wl-you-wait" aria-label="reading your private notes"><Wait /></p>
               ) : !list.pings.length ? (
-                <p className="wl-profile-none">nothing out yet</p>
+                <p className="wl-profile-none">none sent yet</p>
               ) : (
                 <div className="wl-wrote">
                   {mutuals.map((p) => (
@@ -430,7 +570,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
                     <Face handle={waiting} size={30} />
                     <span className="wl-wrote-who">
                       <span className="wl-wrote-name">{atHandle(waiting)}</span>
-                      <span className="wl-wrote-meta">a ping, waiting on one DM</span>
+                      <span className="wl-wrote-meta">a private note, waiting on one DM</span>
                     </span>
                   </button>
                 ) : null}
@@ -443,7 +583,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               letter points back here. The server answers a writer about
               their OWN letters and nobody else's (wall_mine, 0050). */}
           <div className="wl-profile-sect">
-            <Label tone="dim">written to</Label>
+            <Label tone="dim">letters you wrote</Label>
             <Wrote go={go} />
           </div>
 
@@ -455,7 +595,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
         <div className="wl-push" />
 
         <SheetFoot>
-          <Pill tone="light" wide onClick={() => go('ping')}>place a ping</Pill>
+          <Pill tone="light" wide onClick={() => go('ping')}>send a private note</Pill>
           <Pill tone="ghost" className="wl-profile-out" icon={<Icon name="signout" size={15} />} onClick={out}>
             sign out
           </Pill>

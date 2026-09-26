@@ -1,12 +1,23 @@
 // CELESTUAL — celestual-edu-verify edge function.
 //
-// School (.edu) email verification for community membership. Your ping only ever
-// reaches people from your own community, so joining one requires proving you're
-// there: a 4-digit code sent to an address at the school's domain. The code rides
-// the email's SUBJECT line too, so the phone's notification alone is enough to
-// read it and type it straight in.
+// School (.edu) email verification, and the confirmation of an alert address.
+// A school address proves a person is at that school: it opens reading, and at
+// a school that takes @-notes (Berkeley) it writes them. It becomes the alert
+// address when there is none.
 //
-// Two actions on one endpoint:
+// Five actions on one endpoint. The first two are the six digit code, kept for
+// a tab on the old build; the last three are the magic link the one wall asks
+// for (docs/ONE-WALL.md, docs/EDU-VERIFICATION.md, migration 0064):
+//   { action:'link', email, session, purpose:'edu'|'alerts', campus?, draft? }
+//        → { ok:true, request, match, domain, campus, school }
+//        | { ok:false, error:'email'|'domain'|'rate'|'send'|'taken'|'session' }
+//   { action:'confirm', token, session }
+//        → { ok:true, purpose, request, campus, school, same_device }
+//        | { ok:false, error:'invalid'|'expired'|'used'|'taken' }
+//   { action:'status', request, session }
+//        → { ok:true, verified, purpose, campus, school, expired } | { ok:false, error:'invalid' }
+//
+// The code actions:
 //   { action:'send',   email, slug, demo? }  → validate the address is at the
 //        school's domain, rate-limit (per address AND per IP), mint a 4-digit
 //        code, store ONLY its SHA-256 hash, email the code via Resend, and
@@ -40,10 +51,10 @@
 //
 // Deploy:  supabase functions deploy celestual-edu-verify
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as mail from '../_shared/mail.ts';
+import { codeMail, type Mail, verifyMail } from '../_shared/mails.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
+const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <hello@celestual.us>';
 const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
 // The sandbox's @gmail.com carve-out, OFF unless CELESTUAL_SANDBOX_GMAIL=1.
 // It defaulted to on, and `demo` is client input: one crafted POST with
@@ -115,51 +126,46 @@ function sixDigit(): string {
   return String(n).padStart(6, '0');
 }
 
-// The code email. The frame is _shared/mail.ts's: one sheet on the void, with
-// the code in the mono face at the size of a thing you read off one device and
-// type into another.
-//
-// Nothing here links out. The code used to carry a capsule under it that opened
-// /copy on the site with the digits in the fragment, and that page put them on
-// the clipboard: a tab and a page load between somebody and six characters they
-// were already looking at. A mail cannot run script, so the code is made easy to
-// TAKE instead — `user-select: all` on the digits, so one long press or one
-// double click selects the whole code and the client's own copy does the rest —
-// and the line under it says so. mail.ts `code()` carries the argument in full.
-//
-// Phase 8: what a campus address opens is the WALL now, not a community sky.
-// Communities are retired (Q15) and the .edu gate is the Berkeley Wall's.
-function codeEmailHtml(code: string, schoolName: string) {
-  return mail.frame({
-    inner: `
-      ${mail.title(`You are at ${schoolName}.`)}
-      ${mail.body('type this back into celestual and the wall opens.')}
-      ${mail.code(code)}
-      ${mail.tick(`press and hold it to copy · it lasts ${CODE_TTL_MIN} minutes`)}
-      ${mail.colophon(
-        `you are reading this because somebody entered this address on celestual. ` +
-        `if that was not you, ignore it and nothing happens. ${SITE}`,
-      )}`,
-  });
-}
-
-async function sendCodeEmail(to: string, code: string, schoolName: string) {
+// The mails. Their words and their room are _shared/mails.ts and
+// _shared/mail.ts, so this function owns neither: the code mail for a tab on
+// the old build, and the magic link for the one wall.
+async function sendMail(to: string, m: Mail) {
   if (!RESEND_API_KEY) throw new Error('no_email_provider');
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     // A mail API that hangs must not hang the person at the gate.
     signal: AbortSignal.timeout(15_000),
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: FROM,
-      to,
-      // the code IS the title — the notification alone is enough to read it
-      // and type it straight in
-      subject: `${code} is your celestual code`,
-      html: codeEmailHtml(code, schoolName),
-    }),
+    body: JSON.stringify({ from: FROM, to, subject: m.subject, html: m.html, text: m.text }),
   });
   if (!res.ok) throw new Error(`resend ${res.status}: ${await res.text()}`);
+}
+
+// ── the link (migration 0064) ────────────────────────────────────────────────
+// 32 random bytes, base64url: the token is only ever in the email. Its sha256
+// is what the database keeps.
+function linkToken(): string {
+  const b = crypto.getRandomValues(new Uint8Array(32));
+  let s = '';
+  for (const x of b) s += String.fromCharCode(x);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// The number the asking screen shows and the email prints, 10 to 99.
+function matchNumber(): number {
+  return 10 + (crypto.getRandomValues(new Uint32Array(1))[0] % 90);
+}
+
+function clientIp(req: Request): string | null {
+  return req.headers.get('cf-connecting-ip')?.trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+    null;
+}
+
+// A host at a domain, or under it.
+function under(host: string, domain: string): boolean {
+  return host === domain || host.endsWith('.' + domain);
 }
 
 Deno.serve(async (req) => {
@@ -242,7 +248,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-      await sendCodeEmail(email, code, school.name);
+      await sendMail(email, codeMail({ code, school: school.name, minutes: CODE_TTL_MIN }));
     } catch (e) {
       console.error('edu email failed', String(e));
       // Leave the row so a retry can reuse verify; report a send failure.
@@ -338,6 +344,123 @@ Deno.serve(async (req) => {
       user,
       ...(identityError ? { identity_error: identityError } : {}),
     });
+  }
+
+  // ── LINK ────────────────────────────────────────────────────────────────
+  // docs/ONE-WALL.md. An address, and the session of the device that asks.
+  //   edu     any address at a .edu (or under one), or on the pass list; with
+  //           `campus`, an address at that campus's domain (or under it), or
+  //           on the pass list
+  //   alerts  any address
+  // The token goes in the email and nowhere else; the database keeps its hash,
+  // the number and the asking session's hash (celestual_edu_link_open, which
+  // also holds the limits: five an address and fifteen a network address an
+  // hour, codes and links together). `draft: false` words the mail for a
+  // proof with no letter waiting on it.
+  if (action === 'link') {
+    const email = String(body.email || '').trim().toLowerCase();
+    const session = String(body.session || '');
+    const purpose = body.purpose === 'alerts' ? 'alerts' : 'edu';
+    const campusRaw = body.campus == null ? '' : String(body.campus).toLowerCase();
+    const draft = body.draft !== false;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) return json({ ok: false, error: 'email' });
+    if (session.length < 16 || session.length > 256) return json({ ok: false, error: 'session' });
+    const host = emailDomain(email) ?? '';
+
+    let campus: string | null = null;
+    let school: string | null = null;
+    let domain: string | null = host;
+    if (purpose === 'edu') {
+      const { data: passed, error: passErr } = await supabase.rpc('celestual_pass_email', { p_email: email });
+      if (passErr) console.error('pass list read failed', passErr.message);
+      const isPass = passed === true;
+      if (campusRaw) {
+        if (!/^[a-z0-9-]{2,40}$/.test(campusRaw)) return json({ ok: false, error: 'domain' });
+        const { data: c } = await supabase
+          .from('wall_campuses')
+          .select('slug, name, edu_domain, is_open')
+          .eq('slug', campusRaw)
+          .maybeSingle();
+        if (!c || !c.edu_domain || !c.is_open) return json({ ok: false, error: 'domain' });
+        if (!under(host, c.edu_domain) && !isPass) return json({ ok: false, error: 'domain' });
+        campus = c.slug;
+        school = c.name;
+        domain = isPass && !under(host, c.edu_domain) ? null : c.edu_domain;
+      } else {
+        if (!/\.edu$/.test(host) && !isPass) return json({ ok: false, error: 'domain' });
+        const { data: peek } = await supabase.rpc('celestual_campus_peek', { p_domain: host });
+        if (peek) {
+          campus = String(peek.slug);
+          school = String(peek.name);
+          domain = String(peek.domain);
+        } else {
+          domain = null; // a passed address that is not a school's
+        }
+      }
+    } else {
+      domain = null;
+    }
+
+    const token = linkToken();
+    const match = matchNumber();
+    const { data: opened, error: openErr } = await supabase.rpc('celestual_edu_link_open', {
+      p_email: email,
+      p_session: session,
+      p_purpose: purpose,
+      p_campus: campusRaw || null,
+      p_ip: clientIp(req),
+      p_link_hash: await sha256Hex(token),
+      p_match: match,
+    });
+    if (openErr) {
+      console.error('edu link open failed', openErr.message);
+      return json({ ok: false, error: 'send' });
+    }
+    if (!opened?.ok) return json({ ok: false, error: String(opened?.error ?? 'send') });
+
+    try {
+      await sendMail(email, verifyMail({ link: `${SITE}/verify#t=${token}`, match, purpose, domain, draft }));
+    } catch (e) {
+      console.error('edu link email failed', String(e));
+      return json({ ok: false, error: 'send' });
+    }
+    return json({ ok: true, request: opened.request, match, domain, campus, school });
+  }
+
+  // ── CONFIRM ─────────────────────────────────────────────────────────────
+  // The link, opened. `session` is the device that opened it. The binding is
+  // the database's (celestual_edu_link_confirm): the address to the asking
+  // session's person and to this one, the campus opened, the alert address
+  // filled; or, for alerts, the asking person's alert address confirmed.
+  if (action === 'confirm') {
+    const token = String(body.token || '');
+    const session = String(body.session || '');
+    if (token.length < 16 || token.length > 128) return json({ ok: false, error: 'invalid' });
+    const { data, error } = await supabase.rpc('celestual_edu_link_confirm', {
+      p_token: token,
+      p_session: session.length >= 16 && session.length <= 256 ? session : null,
+    });
+    if (error) {
+      console.error('edu link confirm failed', error.message);
+      return json({ ok: false, error: 'invalid' }, 500);
+    }
+    return json(data ?? { ok: false, error: 'invalid' });
+  }
+
+  // ── STATUS ──────────────────────────────────────────────────────────────
+  // Whether the link was opened, answered to the session that asked for it and
+  // to nobody else: the asking screen polls this while the person is in their
+  // inbox, and moves on the moment it is true.
+  if (action === 'status') {
+    const request = String(body.request || '');
+    const session = String(body.session || '');
+    if (!request || session.length < 16 || session.length > 256) return json({ ok: false, error: 'invalid' });
+    const { data, error } = await supabase.rpc('celestual_edu_link_status', { p_request: request, p_session: session });
+    if (error) {
+      console.error('edu link status failed', error.message);
+      return json({ ok: false, error: 'invalid' }, 500);
+    }
+    return json(data ?? { ok: false, error: 'invalid' });
   }
 
   return json({ ok: false, error: 'bad_input' }, 400);

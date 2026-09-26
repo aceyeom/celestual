@@ -1,8 +1,10 @@
 /* ── THE INTRO ───────────────────────────────────────────────────────────────
    A phone's screen on black, and the story on it (Intro.jsx). Over the wall
-   and over Main's front door, the same. What animates is the screen's own
-   wake and sleep (screen.css), transform and opacity; nothing touches layout
-   after the first frame. Every value is a token from wall.css or a length. */
+   at the root and at a campus, the same. What animates is the screen's own
+   wake and sleep (screen.css), the phone's glass turning from the night's to
+   the rose's, and the lift, all of it opacity, transform and three numbers;
+   nothing touches layout after the first frame. Every value is a token from
+   wall.css, or a length, or a colour looks.js made. */
 
 .hi {
   /* The large viewport, not `inset: 0`: a fixed layer that tracks the layout
@@ -14,6 +16,7 @@
   display: grid; place-items: center;
   pointer-events: none;
   padding: 24px;
+  overflow: hidden;
 }
 /* pure black, and the only pure black in the build that is not the room's:
    nothing is lit yet but the one screen.
@@ -26,7 +29,7 @@
   position: absolute; inset: 0;
   background: #000;
   opacity: 1;
-  transition: opacity 720ms var(--ease-out);
+  transition: opacity 610ms var(--ease-out);
   will-change: opacity;
 }
 .hi.is-at4 .hi-veil { opacity: 0; }
@@ -45,18 +48,57 @@
 /* ── the screen ──
    As wide as a letter's is on the same window, and never taller than the
    window can hold with room round it: 304 on a phone, 380 on a desk. The
-   story's grid is 57 cells across, so a cell is five or six pixels, which
-   is the size a phone's own pixels were to the eye. */
+   story's grid is 95 cells across, so a cell is three or four pixels, which
+   is the pitch every letter's panel is photographed at (looks.js `quirks`). */
 .hi-screen { width: min(78vw, 46vh, 380px); }
 /* one status row: the aerial and the battery. The second row is a letter's
    (the pen, the name, the handle) and this is nobody's letter */
 .hi .wl-scr-r2 { display: none; }
 
 /* it comes on after the held frame, and its light on the black comes with
-   it, dark while it is dark (screen.css `wl-wake`, `wl-wake-light`) */
-.hi .wl-scr.is-waking { animation-delay: 120ms; }
+   it, dark while it is dark (screen.css `wl-wake`, `wl-wake-light`). The
+   same wake as a letter's, the flicker and the focus, in a little over half
+   the time: the two of them are already running in, and the run is not to
+   be seen through the blur of a screen still coming on. */
+.hi .wl-scr.is-waking { animation-duration: 560ms; animation-delay: 60ms; }
 .hi .wl-scene-halo,
-.hi .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both; }
+.hi .wl-scene-halo-2 { animation: wl-wake-light 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms both; }
+
+/* ── the rose ──
+   The pink leaves the two of them as a wave across the panel, drawn on the
+   glass in the rose letter's own panel colours (PixelStory.jsx, pixmark.js
+   `introStory`). The rest of the phone turns with it, so that when the wave
+   has filled the glass the phone is a letter lit in rose, as looks.js lights
+   one: its dark rose bands, its status in the rose's light, and the rose's
+   own glow on the black round it, the halo every rose letter has. Nothing
+   goes on out past that: no ring, no bloom, nothing travelling into the
+   room.
+
+   Three numbers carry it. Each of the skin's colours is the night's and the
+   rose's mixed by one of them (Intro.jsx `FRAME`), so what animates is a
+   number on one element and the colours follow. `--hi-top` turns the top
+   band and its aerial and battery as the wave reaches the top edge of the
+   glass, 130ms after it leaves them; `--hi-bot` the bottom band as it
+   reaches the bottom, 250ms after; `--hi-glow` the light round the phone,
+   as the wave fills the glass. On `--ease`, a colour's curve. */
+@property --hi-top { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --hi-bot { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --hi-glow { syntax: '<number>'; inherits: false; initial-value: 0; }
+.hi-screen {
+  --hi-top: 0; --hi-bot: 0; --hi-glow: 0;
+  /* a skip before the pink lands the rose in a quarter of a second */
+  transition: --hi-top 240ms var(--ease), --hi-bot 240ms var(--ease), --hi-glow 240ms var(--ease);
+}
+.hi.is-glow .hi-screen {
+  animation:
+    hi-top 340ms var(--ease) 130ms both,
+    hi-bot 380ms var(--ease) 250ms both,
+    hi-glow 760ms var(--ease) 220ms both;
+}
+.hi.is-rose .hi-screen { --hi-top: 1; --hi-bot: 1; --hi-glow: 1; }
+@keyframes hi-top { from { --hi-top: 0; } to { --hi-top: 1; } }
+@keyframes hi-bot { from { --hi-bot: 0; } to { --hi-bot: 1; } }
+@keyframes hi-glow { from { --hi-glow: 0; } to { --hi-glow: 1; } }
 
 /* and it goes out, the way a letter's does when it is closed, while the
    black lifts off the page (screen.css `wl-sleep`) */
@@ -64,15 +106,22 @@
 .hi.is-at4 .wl-scene-halo,
 .hi.is-at4 .wl-scene-halo-2 { animation: none; opacity: 0; transition: opacity 560ms var(--ease-out); }
 
-/* held for the screenshot loop: lit from the first frame */
+/* held for the screenshot loop: lit from the first frame, and the glass's
+   turn held on the same moment as the pink (Intro.jsx `--hi-since`) */
 .hi.is-held .wl-scr.is-waking,
 .hi.is-held .wl-scene-halo,
 .hi.is-held .wl-scene-halo-2 { animation: none; }
+.hi.is-held.is-glow .hi-screen {
+  animation-delay: calc(var(--hi-since, 0ms) + 130ms), calc(var(--hi-since, 0ms) + 250ms), calc(var(--hi-since, 0ms) + 220ms);
+  animation-play-state: paused;
+}
 
+/* ── reduced motion ──
+   The last frame, the mark on the rose letter, standing still: the story
+   still ARRIVES at the light, it simply does not travel to get there. The
+   veil is the only thing that moves. */
+.hi.is-still .hi-screen { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) {
-  /* the story still ARRIVES, it simply does not travel to get there: the
-     glass is drawn on its last frame and the veil is the only thing that
-     moves */
   .hi .hi-stage { transform: none; }
   .hi .wl-scene-halo,
   .hi .wl-scene-halo-2,

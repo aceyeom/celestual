@@ -18,8 +18,13 @@ end; $$;
 
 -- ── 1. the registry ─────────────────────────────────────────────────────────
 select cd_ok('five cards are seeded', (select count(*) from wall_cards) = 5);
-select cd_ok('every card is on the open campus and points at the wall',
-  (select bool_and(campus = 'berkeley' and landing = '/berkeley' and is_active) from wall_cards));
+-- 0063: there is one wall, at `/`, and every card lands on it. The card is
+-- still Berkeley's: the campus is where it was handed out.
+select cd_ok('every card is on the open campus and points at the one wall',
+  (select bool_and(campus = 'berkeley' and landing = '/' and is_active) from wall_cards));
+select cd_ok('and a new card lands there too',
+  (select column_default from information_schema.columns
+    where table_schema = 'public' and table_name = 'wall_cards' and column_name = 'landing') = '''/''::text');
 select cd_ok('the codes are a through e, one letter each',
   (select array_agg(code order by code) from wall_cards)
     = array['a', 'b', 'c', 'd', 'e']);

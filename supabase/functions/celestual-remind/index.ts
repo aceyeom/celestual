@@ -39,7 +39,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as mail from '../_shared/mail.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
+const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <hello@celestual.us>';
 const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
 
 const supabase = createClient(
@@ -59,7 +59,7 @@ function lapseHtml(lapseDate: string) {
   return mail.frame({
     kicker: 'one of your pings',
     inner: `
-      ${mail.title('Still feel it?')}
+      ${mail.title('still feel it?')}
       ${mail.body(
         `it lapses on ${lapseDate}. renewing is one tap and free, as often as you feel it. ` +
         `it restarts the sixty days from the day you tap it, and it never uses a slot.`,
@@ -67,10 +67,11 @@ function lapseHtml(lapseDate: string) {
       ${mail.body('or let it go, and it disappears completely. nothing was ever revealed either way, and the slot opens back up the same day.')}
       ${mail.plate(SITE, 'keep it standing')}
       ${mail.tick(`the slot opens ${lapseDate}`, mail.C.accent)}
-      ${mail.colophon(
-        `this note is about your own ping only. we cannot and do not tell you anything about anyone else: ` +
-        `celestual stores who you entered as a salted hash, and even we cannot read it. opt out entirely at ${SITE}/optout.`,
-      )}`,
+`,
+    foot: mail.colophon(
+      `this note is about your own ping only. we cannot and do not tell you anything about anyone else: ` +
+      `celestual stores who you entered as a salted hash, and even we cannot read it. opt out entirely at ${SITE}/optout.`,
+    ),
   });
 }
 

@@ -191,40 +191,81 @@ lit in, and each colour carries its own treatment with it:
 | --- | --- | --- |
 | lit | night, white, ice, green, amber, rose | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
 | negative | negative | the same screen with the panel dark and the words the bright thing |
-| poster | teal, acid, ember, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
+| poster | teal, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge. Its bands are laid in one of its inks, the status and the keys struck out in the palest |
 | riso | violet / yellow | two drum inks on warm paper, the second a hair out of register |
 | xerox | xerox | photocopied and blown out: one threshold between toner and paper, walked by the copier's heat |
+| brat | acid | the album cover's square: an acid lime panel between near black bands, black words a hair soft, photographed on cheap film. Painted, never pressed (below) |
 
-These thirteen are the only other hues in the product. They live in that one
+These twelve are the only other hues in the product. They live in that one
 file and are drawn only on a screen, its thumbnail in the composer and the
 small screen of the name it was written to; no bar, sheet, control or line of
 the system's own type is ever set in one.
 
 **One pool.** The composer offers them as one pool (`Look.jsx`), in the order
 of a spectrum and under no heading: the greys, then round the wheel from ice
-through the greens and yellows to ember, rose and lilac, and the negative and
-the xerox last. Seven to a row, two rows, at every width down to 320, and
+through the greens and yellows to amber, rose and lilac, and the negative and
+the xerox last. Six to a row, two even rows, at every width down to 320, and
 nothing scrolls sideways. How a colour is drawn is the colour's own business;
 the words lit, printed and copied were the machinery's, and they came off the
 panel. Blush, cobalt, pink / blue, orange / teal and red / green left the pool
 on 25 September, and a letter in one of them draws the colour nearest its hue
-(`RETIRED`: rose, ice, rose, ember, ember), which migration 0061 wrote into the
-rows.
+(`RETIRED`: rose, ice, rose, amber, amber), which migration 0061 wrote into the
+rows. Ember left on 25 September as well, so the panel is two even rows of
+six, and its letters are amber (migration 0063).
+
+**Every screen keeps the phone's two bands.** The status across the top and
+the keys at the foot stand on two bands of the phone's glass above and below
+the panel, on all twelve: a lit screen's dark glass, the negative's, a copy's
+toner, a print's bands laid in one of its own inks with the status and the keys
+struck out in the palest (`bands` in `looks.js`: teal and violet / yellow in
+the second ink, lilac in the darkest), and acid's near black. Teal, lilac and
+acid were one poster edge to edge until 26 September, and beside nine screens
+with bands they read as three other objects rather than one phone in twelve
+colours. Each keeps its own light on the panel between the bands.
+
+| colour | bands | the words on them |
+| --- | --- | --- |
+| teal | the second ink, `#3D6257` | the palest, `#E3A58C` |
+| lilac | the darkest, `#130F20`, so it is not violet / yellow's violet | the palest, `#F0D86D` |
+| violet / yellow | the violet drum, `#5A3DA8` | the paper, `#F4F0E4` |
+| acid | the lime 88 percent to black, `#111900`, with the grain across them | the lime a fifth towards `#F4F07A` |
+
+**Acid is the square.** It was a poster, a lime pulled out of the night
+screen by the press with its hot corner caught in pale yellow, and beside the
+others it read as one more tint of the same machine. The lime everybody
+carries in their head is a flat square of `#8ACE00` with a word on it in
+black, the type a little soft, as if made small once and blown up again. So
+acid is that square (`kind: 'brat'`, the slug and the name still `acid`, so
+no letter's row changes):
+
+| part | what it is |
+| --- | --- |
+| the lime | `#8ACE00`, the panel between the bands, with no rule round it. Mixed 40 percent towards `#F4F07A` at this phone's hot corner (`--q-hx`, `--q-hy`), which on paper is where the lamp caught it, and 26 percent towards `#1C3300` at the edge. From across the room it is one flat colour |
+| the bands | the phone's two, as every screen has: the lime's own shadow, `#111900`, with the status and the keys struck in the lime. The cover's two colours, the other way round |
+| the grain | heavy and monochrome, in the lime itself: the film's dark specks laid over it (up to 36 percent black) and its light ones dodged into it (up to 26 percent grey in `color-dodge`), so a speck makes the lime deeper or brighter and never greyer or yellower, and black stays black. On the near black bands the light specks are lifted in `screen` instead, since dodging black leaves it black, so the grain runs across the whole square. An SVG `feTurbulence` inside a data URL image (`--wl-grain`, `--wl-grain-hi`), since an image's filter is drawn by every engine where a filter laid on the page is not drawn by WebKit; started where the letter's own grain starts (`--q-grain`) |
+| the words | `#050505` on the lime, softened by `blur(0.18cqw)` on what the three rows hold (not on the bands themselves, so their edges and grain stay sharp) and a halo of the ink at 55 percent. Never so soft a word has to be guessed |
+| what it is not | an LCD: no pixel grid, moiré, ghost column, pixels up close, dead pixel, dust or backlight's clouds. It is paper (`skinOf().paper`), so it throws almost no light on the room and is uncovered rather than woken, as a print is |
+
+It is painted by the stylesheet on the letter, the composer, the tile and the
+swatch alike, so it is the same square in WebKit, where the press does not
+run, as in Chromium. `share.js` draws it by hand: the square made small and
+blown up again for the soft words, then the same dark and light specks off
+the letter's grain seed.
 
 **A print's light is its colour's.** The press lays a print's palest ink
 wherever the greys under it cross three quarters, so where the light falls is
 decided by the panel's greys, and each print has its own (`LIGHTS` in
 `looks.js`, drawn in `screen.css` under the press and by `share.js` before
-its own). It is bound to the colour and never a second choice, and the letter,
-the tile, the thumbnail and the shared picture draw the same one:
+its own), on the panel between the bands. It is bound to the colour and never
+a second choice, and the letter, the tile, the thumbnail and the shared
+picture draw the same one:
 
 | print | light | what it is |
 | --- | --- | --- |
-| acid | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print, and read as the same white stain on each |
-| teal | keyline | no light on the panel, and a line of the palest ink inside the black rule, a hair clear of it |
-| ember | sky | the light falling from the top of the sheet: the status rows stand in the palest ink, which breaks up into the main one in the press's grain a third of the way down |
+| (none) | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print and read as the same white stain on each, then acid's alone; acid is the square now, and the corner stays as the press's default and `?light=corner` |
+| teal | keyline | no light on the panel, and a line of the palest ink round it, a hair inside the black rule and the bands |
 | lilac | dots | the light as a halftone: white cones on a forty five degree lattice, faded out from the hot corner, cut by the press into dots that are large where the light is strong and gone where it is not |
-| violet / yellow | bands | the phone's two bands of glass laid in the violet drum, and the status and the keys on them struck out in paper |
+| violet / yellow | plain | no light: the panel the yellow drum, flat. It was called `bands` while violet / yellow was the one print with the phone's bands |
 
 `/looks.html` on the dev server (`app/src/wall/proto/looks.jsx`) draws every
 colour in all four places side by side, and `?light=` draws every print in one
@@ -379,24 +420,39 @@ Main runs a light round an edge.
 
 **The stories.** Three screens tell one small story on a letter's night
 screen, in the phone's own pixels: the intro, the door (`/join`, the mechanic)
-and the mutual (`/reveal/:handle`). Two shadows run in from either side of
-the panel, reach, touch (the whole panel inverts for one frame), hold on, and
-what they stood on lifts into the ring while the two of them gather into the
-star. Nothing in it is a picture. The runners are drawn by hand, a pixel at a
-time, 16 by 22, in two inks: the far arm and leg are the same ink, thinner,
-so one drawing gives both steps and a silhouette never reads as a shuffle.
-They are the same drawing turned round, not two people with a hair colour
-each: two shadows, nobody in particular. The mark is `mark.js` rasterised on
-an odd grid, 47 cells, the ring cut at a third of a cell and the star at a
-half (`pixmark.js`). `PixelStory` draws it on a canvas in the screen's body,
+and the mutual (`/reveal/:handle`). A guy runs in from the left and a girl
+from the right, her hair streaming and her dress swinging; he slows and opens
+his arms, and her run carries her on into them, leaning gently the way she
+ran, until she is held half behind him, his arms round her, and they breathe.
+The panel's backlight turns pink, spreading from the two of them to the edges
+of the glass and no further, and the whole phone becomes a letter lit in
+rose, its panel, its two bands and its glow (`turn.js`, `intro.css`). Then
+what they stood on glides into the ring and the two of them into the star,
+each pixel travelling between cells at the display's rate and landing on the
+grid (owner, 26 September: bodies and not stick figures, her lean gentle and
+with her run, her tucked in behind him, no heart in the intro, the pink only
+inside the phone, the frame the rose letter). On the door they first stand
+apart and each sends a note, and the notes become one heart only when both
+are there; on the mutual the mark gathers up over the words and the phone's
+light keeps drifting, from the rose through the pinks, the oranges and the
+greens and back, once every 24 seconds. Nothing in it is a picture. The two
+of them are bodies (`folk.js`): a head, a neck, a torso with a chest and a
+back, arms and legs thick at the top and thin at the wrist and the ankle,
+her hair and her hem with weight, posed for every frame, their feet planted
+where they land, and laid on the grid cell by cell by how much of each cell
+they cover, in three inks (near, a mid tone for faces and arms, far for the
+far limbs), with a line of light where he stands in front of her. The mark
+is `mark.js` rasterised on an odd grid, 77 cells on the stories' 95 by 75
+and 47 for the page's seal, the ring cut at a third of a cell and the star
+at a half (`pixmark.js`). `PixelStory` draws it on a canvas in the screen's body,
 a whole number of device pixels to a cell with the gap an LCD has, the unlit
 cells faintly there. A screen with a story on it is held square to the
 camera and loses the photograph's pixel grid and moire, because a canvas of
 square cells under a tilt and a second grid beats into a moire of its own;
-its dust, glare and backlight stay. The status row names the two of them on
-the door and the mutual (`is-pair`: two names of one weight) and nobody on
-the intro. The run steps at 80ms a frame and the mark at 33, the canvas is
-drawn only when the frame changes, and the loop stops at the last frame.
+its dust, glare and backlight stay. The status row names nobody. The two of
+them are posed afresh at the display's rate and the mark glides at it, the
+canvas is drawn only when the frame changes, and the loop stops at the last
+frame (the mutual's goes on, ten frames a second).
 Under reduced motion every story is drawn on its last frame.
 
 **The context.** `PhoneChrome` (`parts.jsx`) is turned on at the wall's root
@@ -543,8 +599,9 @@ wall`; the close key still lands on the poster (`index.jsx` `toWall`, the
 ## 4. Type
 
 Three faces, and the first does two jobs at two ends of one axis. Files are in
-`app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` and served from
-this origin. Nothing renders from a CDN.
+`app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` (and the pixel
+face for Korean, Japanese and Chinese by `node scripts/fetch-cjk.mjs`, 4.0a)
+and served from this origin. Nothing renders from a CDN.
 
 This section is Main's type. On the wall one face carries every word but the
 brand's, Jersey 10 (4.0a), and the tokens below are remapped to it (2.6).
@@ -633,6 +690,38 @@ Main it is never a headline, a label or a control outside a screen.
 It was twenty-four faces a writer chose between, one menu per paper. The
 screen took the choice away with the papers (2.5): a phone has one font, and
 the font is part of what makes it that phone.
+
+**In Korean, Japanese and Chinese.** Jersey 10 is latin, and a letter in any
+of the three fell through it to the reader's system monospace: a smooth
+outline face in the middle of a screen drawn a pixel at a time. Past Jersey's
+latin, `--f-s40` now falls to one pixel design for all three, Fusion Pixel Font
+(TakWolf, SIL Open Font License 1.1), the 12px proportional cut in its Korean,
+Japanese, simplified and traditional Chinese variants, so a letter in Korean
+and a letter in Chinese are the same phone. `scripts/fetch-cjk.mjs` makes it:
+
+| | |
+| --- | --- |
+| the families | `Celestual Pixel KO`, `JA`, `ZH` and `ZH Hant`, renamed because Fusion Pixel is a Reserved Font Name and a subset is a modified font. The licence is `app/public/fonts/cjk/OFL.txt` |
+| what is kept | Hangul in the Korean face, kana in the Japanese, bopomofo in the Chinese, and in all four the ideographs, the CJK punctuation and the full width forms. Latin stays Jersey's |
+| the grid | drawn at three quarters and declared 1400 to the em, so a pixel is 75/1400 of an em, Jersey's own: an ideograph is eleven pixels tall, as tall as a capital and one under the line, and the ascent and descent are Jersey's. It is in the files, so the stylesheet needs no `size-adjust`, and the shared picture's canvas and older Safari draw it the same |
+| the weight | Jersey's strokes are two pixels and Fusion's one, so every glyph is made bold as a pixel face is: a pixel to the right of each upright, unless it would close a one pixel gap. Uprights are two pixels, horizontals one, every advance a pixel wider |
+| the files | 289 woff2, 2.7 MB in all, declared in `app/public/fonts/faces-cjk.css` (160 KB, 25 KB over the wire). Each language's commonest 3500 characters are cut as Google Fonts cuts Noto Sans KR, JP, SC and TC, by frequency; the rare rest in runs of code points, declared first so a common character never pulls a rare file |
+| per letter | a letter of eighty to ninety characters fetches 27 KB in Korean (9 files), 42 KB in Japanese (15), 72 KB in Chinese (10); a latin letter fetches none |
+
+Which face draws an ideograph is the text's language, since the three
+languages draw many of the same characters differently. A letter has no
+language field, so `type.js` `langOf` reads it off the words (any Hangul is
+Korean, any kana Japanese, ideographs alone Chinese, the traditional
+characters over the simplified Traditional Chinese), and `screen.jsx` sets it
+as `lang` on the words, the draft and the name's row. `phone.css` orders
+`--f-cjk` by `:lang()`: the language's own face first and the others after it
+for a script it lacks. The stylesheet is linked by `ensureFaces` once the page
+is idle and nothing waits on it; the shared picture links it itself and loads
+the faces its words need before it draws.
+
+Main and the desk have no pixel face. Their four stacks end in the system's
+own Korean, Japanese and Chinese sans (`Apple SD Gothic Neo`, `Hiragino Sans`,
+`PingFang SC`, `Noto Sans CJK KR`) before the generic family.
 
 ### 4.2 The rest
 
@@ -796,7 +885,7 @@ Chosen per element, never a default applied everywhere.
 | the deck (`screens/Letter.jsx`) | the letter before and the letter after stand either side of an opened letter, asleep: dimmer and a little smaller, a sliver at the edges of a phone and whole in a wide room, coming up over 480ms from 420ms into the card's wake. A hand has the card one to one and each screen is lit by how near the middle it stands. Let go, the strip runs on in 240 to 420ms at the speed it was let go at, on the travel curve bent to leave at the hand's speed, or springs home in 220 to 380ms; a press on a neighbour turns it in 340ms and an arrow key in 260ms. The first two times a device opens it the card leans 26px toward the next letter and back, 380ms out and 680ms home. Under reduced motion a turn is a cut and nothing leans |
 | `wl-mast-ring` | the ring leaving the veil's capsule every 1600ms, the shape of the pulse a tap sends through the crowd |
 | `wl-glass-out`, `wl-tab-drop` | a sheet's glass fading in place while a card flies home to its disc; the tab at the foot of the wall being put away |
-| the story (`PixelStory`) | two shadows running in on a letter's night screen, meeting, and becoming the mark (2.6). The run is stepped, 80ms a frame and three cells a frame, so no foot slides; the frame they touch inverts the whole panel for 70ms; they hold on for 480ms; then the ground lifts into the ring over 380ms and the hug gathers into the star from its middle out, 220 to 660ms, every pixel on a hard start and a long settle and rounded to a whole cell each frame, so the pixels hop. Tap to land |
+| the story (`PixelStory`) | a guy and a girl running in on a letter's night screen, the catch that carries her on into his arms and half behind him, and the mark (2.6). They are posed afresh at the display's rate with their feet planted where they land; the hold breathes; the backlight turns pink in a wave from the couple to the glass's edges and the phone becomes the rose letter (`PANEL` in `pixmark.js`, `turn.js`); then the ground and the pair glide into the ring and the star, easing in and out, each pixel landing on the grid. The mark is whole on the rose screen at about 2.9s. Tap to land |
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
@@ -909,7 +998,7 @@ had already said it. The role went with the caller.
 | Component | Class | Notes |
 | --- | --- | --- |
 | Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot. Every ink on it is one of its look tokens (`--lk-ground`, `--lk-ink`, `--lk-ink-2`, `--lk-rule`, the strengths of the ink, `--lk-face`, `--lk-radius`), declared at the plain paper's values on the card itself; a look (`has-look`, `wl-looked`, `data-look`) sets the same tokens inline and the card is the same card. See the looks, below |
-| Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. One pool of thirteen under no heading, in the order of a spectrum, each colour drawn as the small screen it makes (`Mini`) with a print's own light on it, the chosen one ringed and named under the lot. Seven to a row and two rows at every width, the swatches taking what the row has up to 40px, and nothing scrolls sideways, centred under the name it stands over, beside the screen as under it. A swatch is a key: a step brighter under a pointer, a pixel down under a finger, never scaled. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
+| Look panel | `.wl-look`, `Look.jsx` | the composer's colours: under its screen while the left key is on, and always beside it on a spread, where that key takes the focus to them. One pool of twelve under no heading, in the order of a spectrum, each colour drawn as the small screen it makes (`Mini`) with a print's own light on it, the chosen one ringed and named under the lot. Six to a row and two even rows at every width, the swatches taking what the row has up to 40px, and nothing scrolls sideways, centred under the name it stands over, beside the screen as under it. A swatch is a key: a step brighter under a pointer, a pixel down under a finger, never scaled. The screen is the preview, and it gives the panel room while it is open. Escape takes the panel down before the sheet |
 | Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px. It is GLASS, and it has to look like it. Written as glass and drawn as a panel (a tint at 66 to 80 percent over a fourteen pixel blur, which on a near-black wall is opaque), nothing came through it while the search plate twelve pixels above it read as the glass it is, which is two surfaces on one ground in two materials. A sheet is also the biggest surface here, and a big translucent surface reads as a THICKER one, so it takes the heavier blur and the deeper shadow rather than the lighter. On the wall it is not glass: an opaque unlit panel under the pixel grid, a one pixel bezel, 4px corners and a grip of three pixel dashes (2.6) |
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters. A letter to a first name draws the name as written in the name's face, a monogram, and no handle line |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
@@ -984,7 +1073,7 @@ on a pale panel.
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands on the account screen beside each of a person's letters (`Gate.jsx`), and on the wall it is the screen's own pixel heart, outlined and filled (`PIX.heartO`, `PIX.heart`, 2.6). A letter's heart is not this component: it is the centre soft key on the letter's screen (2.5). It stood in a letter's foot while letters were paper |
 | `Roll` | a count whose figures turn: each digit a window one figure tall over a column of the ten, slid to the figure it shows, 640ms on `--ease` when the number changes and still on mount. Keyed from the right so a hundredth letter mounts a column at the head and keeps the two it had. The wall's count in the ear. Under reduced motion the columns do not slide (`.wl-roll`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the root wall's poster, the seal on the hero's scene and a mutual on the sky. The flat mark stands under it until the metal is opaque and leaves after, 900ms on `--ease-out` then 320ms: a fade in over the flat, never a crossfade, because two opaque shapes of one silhouette crossfading on black dip to three quarters halfway and blink. See 3.5 |
-| `PixelStory` | the story on a screen's body: a canvas of the phone's cells, drawn from `pixmark.js` (the runners, the hug, the mark on its grid, and the three stories as functions of the clock). `at` holds the clock on a frame, `mode="ascii"` sets each lit cell as a character instead, for comparison only. `SQUARE` holds the screen square to the camera. See 2.6 |
+| `PixelStory` | the story on a screen's body: a canvas of the phone's cells, drawn from `pixmark.js` and `folk.js` (the two of them, the notes and the hearts, the mark on its grid, and the three stories as functions of the clock). `at` holds the clock on a frame, `mode="ascii"` sets each lit cell as a character instead, for comparison only. `SQUARE` holds the screen square to the camera. See 2.6 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
 
 ### 8.5 The door

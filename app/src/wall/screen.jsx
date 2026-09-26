@@ -26,8 +26,10 @@
 // looks.js `quirks`, off the letter's id.
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS, PRESS } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS } from './looks.js'
 import { Caret } from './caret.jsx'
+import { Sticker } from './Sticker.jsx'
+import { langOf } from './type.js'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -492,13 +494,24 @@ function Press({ id, colour, q }) {
 // `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
 // it was when the key is pressed with a pointer. The body is the children.
 //
+// `salutation` is the whole of that line when the writer set one of their
+// own ("to the girl on the 51B"), and with none it is "dear" and the name
+// as before. `greet` is the same line on the composer, where it is the
+// writer's to edit: `{ value, onChange, max, label, inputRef, onFocus }`,
+// set in the line's own face, size and colour. `tag` stands where the
+// handle does, for a name note carrying a school.
+//
+// `sticker` is a school (schools.js `schoolOf`), for a letter posted from a
+// verified school address: its sticker is stuck on the phone's corner
+// (Sticker.jsx), and nothing is drawn there without one.
+//
 // `live` off draws the keys without letting them be pressed or tabbed to:
 // the neighbours on the letter's strip are pictures of the next letter, not
 // a second set of controls. `nameId` lands on the name in the top row, so a
 // sheet can be labelled by who the letter is for.
 export function Screen({
   look, seed = '', top = {}, keys = {}, live = true, state = '', className = '', style, children,
-  nameId,
+  nameId, sticker = null,
 }) {
   const colour = colourOf(look, seed)
   const q = quirks(seed)
@@ -510,9 +523,14 @@ export function Screen({
   const press = !!s.print && PRESS
   const inked = !!s.print && !PRESS
   const vars = { ...skinVars(colour, inked), ...q.vars }
-  // this phone's own pixels, up close (looks.js `rgbTile`); a print has none
-  const rgb = useMemo(() => (s.print ? '' : rgbTile(seed)), [s.print, seed])
-  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4 } = top
+  // this phone's own pixels, up close (looks.js `rgbTile`), when they are
+  // made; a print and the square are paper, and have none
+  const rgb = useRgbTile(s.paper ? '' : seed)
+  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4, salutation = '', greet = null, tag = '' } = top
+  const said = salutation || (dear && name ? `dear ${name}` : name)
+  // a line the writer set is set smaller when it is long (`lineSize`); the
+  // name the screen makes itself keeps its size and its cut, as it always did
+  const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '') : salutation ? lineSize(salutation) : undefined
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -541,7 +559,7 @@ export function Screen({
           `.wl-scr-press`), and a print is uncovered here. Always drawn, so a
           screen turned from lit to print keeps the field in it */}
       <div
-        className={`wl-scr-press${s.print && state ? ` is-${state}` : ''}`}
+        className={`wl-scr-press${s.paper && state ? ` is-${state}` : ''}`}
         style={press ? { filter: `url(#${fid})` } : undefined}
       >
         <div
@@ -564,10 +582,12 @@ export function Screen({
                 <Pix name={`bata${bat}`} h={8} />
               </span>
             </div>
-            <div className="wl-scr-r2">
+            {/* the line's language, for its face (type.js `langOf`): the
+                greeting its writer chose where there is one, else the name */}
+            <div className="wl-scr-r2" lang={langOf(greet ? `${greet.value || ''}${name}` : said) || undefined}>
               {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
-              <span className="wl-scr-nm wl-lit" id={nameId}>{dear && name ? `dear ${name}` : name}</span>
-              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle}</span>
+              {greet ? <Greet {...greet} id={nameId} style={nmStyle} /> : <span className="wl-scr-nm wl-lit" id={nameId} style={nmStyle}>{said}</span>}
+              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
             </div>
           </div>
           <div className="wl-scr-body">{children}</div>
@@ -578,12 +598,7 @@ export function Screen({
           </div>
           <span className="wl-scr-fx is-light" aria-hidden="true" />
           <span className="wl-scr-fx is-grid" aria-hidden="true" />
-          {rgb ? (
-            <span
-              className="wl-scr-fx is-rgb" aria-hidden="true"
-              style={{ backgroundImage: `url(${rgb})`, backgroundSize: `calc(var(--q-pitch, 3px) * ${RGB_CELLS})` }}
-            />
-          ) : null}
+          {rgb.url ? <RgbLayer url={rgb.url} late={rgb.late} /> : null}
           <span className="wl-scr-fx is-moire" aria-hidden="true" />
           <span className="wl-scr-fx is-streak" aria-hidden="true" />
           <span className="wl-scr-fx is-glass" aria-hidden="true" />
@@ -591,7 +606,92 @@ export function Screen({
           <span className="wl-scr-fx is-shine" aria-hidden="true" />
         </div>
       </div>
+      {sticker ? <Sticker school={sticker} seed={seed} className="wl-scr-sticker" /> : null}
     </div>
+  )
+}
+
+// ── a long line, set smaller ────────────────────────────────────────────────
+// A greeting the writer set can run to forty characters, and the line holds
+// seventy per cent of the row (screen.css), about seventeen characters of the
+// face at its own size, a third of an em and a little more each. So a longer
+// line is set smaller, down to half the row's size, before anything is cut;
+// the shared picture does the same with the canvas's own measure (share.js).
+function lineSize(text) {
+  const n = [...String(text || '')].length
+  const fits = 64 / (0.36 * Math.max(1, n))
+  return fits < 11 ? { fontSize: `${Math.max(5.6, fits).toFixed(2)}cqw` } : undefined
+}
+
+// ── the greeting, being written ─────────────────────────────────────────────
+// The composer's "dear Sofia", as a field in the line's own place: the same
+// face, size, colour and bloom, sized to what is in it (the value is mirrored
+// into the box it stands in, post.css `.wl-scr-greet`), so the handle beside
+// it stays where it was. The screen's own caret, in the line's colour, while
+// it is being typed in.
+function Greet({ value, onChange, max = 40, label = 'the greeting', placeholder = '', inputRef = null, onFocus = null, onBlur = null, id, style }) {
+  const ref = useRef(null)
+  return (
+    <span className="wl-scr-nm wl-scr-greet wl-lit" data-value={value || placeholder || ' '} style={style}>
+      <input
+        ref={(n) => { ref.current = n; if (inputRef) inputRef.current = n }}
+        id={id} type="text" value={value} maxLength={max} aria-label={label} placeholder={placeholder}
+        /* its own width is the mirror's, so it asks for none of its own */
+        size={1}
+        onChange={(e) => onChange(e.target.value.slice(0, max))}
+        onFocus={onFocus || undefined} onBlur={onBlur || undefined}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+        autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="done"
+      />
+      <Caret of={ref} screen />
+    </span>
+  )
+}
+
+// ── the pixels, when they come ──
+// A lit screen's texture up close (looks.js `rgbTile`) is made while the page
+// is idle, so a screen can mount before its own is ready: it draws without
+// it and lays it on when it is told, `late`, which brings it up under the
+// grain in a few steps rather than in one frame (`RgbLayer`). A tile already
+// made is there from the first frame and is not faded.
+function useRgbTile(seed) {
+  const [got, setGot] = useState(() => ({ seed, url: seed ? rgbTile(seed) : '', late: false }))
+  useEffect(() => {
+    if (!seed) return undefined
+    const now = rgbTile(seed)
+    if (now) {
+      setGot((g) => (g.seed === seed && g.url === now ? g : { seed, url: now, late: false }))
+      return undefined
+    }
+    return onRgbTile(seed, (url) => setGot({ seed, url, late: true }))
+  }, [seed])
+  if (!seed) return { url: '', late: false }
+  return got.seed === seed ? got : { url: rgbTile(seed), late: false }
+}
+
+// The texture's layer. One that comes late is brought up in three steps a
+// sixth of a second apart, written straight onto the layer: a CSS animation
+// there gave the layer a compositor surface of its own for its length, and
+// inside the screen's blur that repainted the whole screen on every frame of
+// it, three dozen of them on a slow phone. Three steps are three paints, and
+// at this strength a step is not seen as one
+function RgbLayer({ url, late }) {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !late) return undefined
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (still) return undefined
+    const steps = [0.2, 0.4, 0.6]
+    el.style.opacity = '0'
+    const ids = steps.map((o, i) => setTimeout(() => { el.style.opacity = String(o) }, 150 * (i + 1)))
+    return () => ids.forEach(clearTimeout)
+  }, [late])
+  return (
+    <span
+      ref={ref} className="wl-scr-fx is-rgb" aria-hidden="true"
+      style={{ backgroundImage: `url(${url})`, backgroundSize: `calc(var(--q-pitch, 3px) * ${RGB_CELLS})` }}
+    />
   )
 }
 
@@ -614,17 +714,42 @@ export function RoomLight({ look, seed = '' }) {
 // the steps, so typing reflows only at a threshold. Past the smallest size
 // the message scrolls, with the phone's own bar down the right to say so, and
 // is cut to a whole number of lines, so its foot is never a sliced one.
+//
+// ── and what that costs ──
+// Every step tried is the words laid out again, and a letter used to be
+// fitted in about a dozen of them, each forced in the middle of the frame,
+// a tenth of a second on a slow phone for every screen a run of swipes
+// brought on. So: the fit is made when the ResizeObserver first reports the
+// body, which is after the browser has laid the page out and before it
+// paints, so reading the body's size costs nothing; a fit is remembered
+// (`FITS`) by the body's size and the words, so a screen seen again, or the
+// same letter drawn a moment ago as a neighbour, is set in none; and the
+// search between two steps halves to a fifth of a unit and then once more,
+// a tenth of a unit short of the finest at most, which no line break has
+// ever turned on. A face that finishes loading starts the memory over
+// (`faceEpoch`), since the words came out another size in it.
 const SIZES = [15.4, 13.8, 12.4, 11.2, 10, 9.2, 8.4, 7.6]
+const FITS = new Map()
+const FIT_KEEP = 96
+let faceEpoch = 0
+if (typeof document !== 'undefined' && document.fonts && document.fonts.addEventListener) {
+  document.fonts.addEventListener('loadingdone', () => { faceEpoch++ })
+}
 export function useFit(ref, deps, fill = false) {
   const [over, setOver] = useState(false)
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return undefined
-    // the box the last fit was made in, so the observer's first report,
-    // which is always of the box as it already is, does not fit it again:
-    // every fit sets the words at a dozen sizes and lays the screen out for
-    // each, and a letter turned was three screens fitted three times over
+    // the box the last fit was made in, so a report of the box as it already
+    // is does not fit it again
     const was = { w: -1, h: -1, sh: -1 }
+    const put = (f) => {
+      el.style.setProperty('--fs', `${f.fs}cqw`)
+      el.style.maxHeight = f.mh
+      el.style.overflowY = f.o ? 'auto' : 'hidden'
+      was.sh = f.sh
+      setOver(f.o)
+    }
     const fit = () => {
       // the room is the body's, measured without its padding: the message
       // itself may be clamped from the last fit, and is not unclamped mid-fit
@@ -634,54 +759,96 @@ export function useFit(ref, deps, fill = false) {
       was.h = box.clientHeight
       const bs = getComputedStyle(box)
       const room = box.clientHeight - parseFloat(bs.paddingTop) - parseFloat(bs.paddingBottom)
+      const wide = box.clientWidth - parseFloat(bs.paddingLeft) - parseFloat(bs.paddingRight)
+      const words = el.tagName === 'TEXTAREA' ? el.value : el.textContent
+      const key = `${fill ? 1 : 0}|${faceEpoch}|${box.clientWidth}|${wide}|${room}|${el.lang}|${words}`
+      const hit = FITS.get(key)
+      if (hit) {
+        FITS.delete(key)
+        FITS.set(key, hit)
+        put(hit)
+        return
+      }
       el.style.overflowY = 'hidden'
-      const fits = (s) => { el.style.setProperty('--fs', `${s}cqw`); return el.scrollHeight <= room + 1 }
+      let at = 0
+      let tall = 0
+      const fits = (sz) => { at = sz; el.style.setProperty('--fs', `${sz}cqw`); tall = el.scrollHeight; return tall <= room + 1 }
+      // the largest step that fits. Not walked down from the top: the words
+      // at the top step say how far over they run, and their height goes
+      // about with the square of their size (as many more lines, each one
+      // taller), so the walk starts at the step that guess lands on and goes
+      // up or down from there, a step or two
       let i = 0
-      while (i < SIZES.length && !fits(SIZES[i])) i++
+      if (!fits(SIZES[0])) {
+        const guess = SIZES[0] * Math.sqrt((room + 1) / Math.max(1, tall)) * 1.04
+        i = Math.max(1, SIZES.findIndex((z) => z <= guess))
+        if (SIZES[i] > guess) i = SIZES.length - 1
+        if (fits(SIZES[i])) {
+          while (i > 1 && fits(SIZES[i - 1])) i--
+        } else {
+          i++
+          while (i < SIZES.length && !fits(SIZES[i])) i++
+        }
+      }
+      let fs = SIZES[Math.min(i, SIZES.length - 1)]
       if (fill && i > 0 && i < SIZES.length) {
         let lo = SIZES[i]
         let hi = SIZES[i - 1]
-        while (hi - lo > 0.05) {
+        while (hi - lo > 0.2) {
           const m = (lo + hi) / 2
           if (fits(m)) lo = m
           else hi = m
         }
-        fits(lo)
+        // and one step finer, into what is left
+        const m = (lo + hi) / 2
+        if (fits(m)) lo = m
+        fs = lo
       }
-      was.sh = el.scrollHeight
-      const o = was.sh > room + 1
+      if (at !== fs) fits(fs)
+      const sh = el.scrollHeight
+      const o = sh > room + 1
       const lh = parseFloat(getComputedStyle(el).lineHeight)
-      el.style.maxHeight = o && lh > 0 ? `${Math.floor(room / lh + 0.02) * lh}px` : ''
-      el.style.overflowY = o ? 'auto' : 'hidden'
-      setOver(o)
+      const f = { fs, o, sh, mh: o && lh > 0 ? `${Math.floor(room / lh + 0.02) * lh}px` : '' }
+      FITS.set(key, f)
+      if (FITS.size > FIT_KEEP) FITS.delete(FITS.keys().next().value)
+      put(f)
     }
-    fit()
     const refit = () => {
       const box = el.parentElement
       if (box && box.clientWidth === was.w && box.clientHeight === was.h) return
       fit()
     }
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(refit) : null
-    // the body: once clamped, the message alone would never see it grow
-    if (ro) ro.observe(el.parentElement || el)
     let off = false
     // and again once the face has loaded, if the words came out another
-    // height in it
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!off && el.scrollHeight !== was.sh) fit() })
+    // height in it; only when a face is on its way, since asking the page
+    // the words' height when none is would lay it out for nothing
+    const after = () => {
+      if (!document.fonts || document.fonts.status !== 'loading') return
+      document.fonts.ready.then(() => { if (!off && el.scrollHeight !== was.sh) fit() })
+    }
+    const ro = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => { const first = was.w < 0; refit(); if (first) after() })
+      : null
+    // the body: once clamped, the message alone would never see it grow. Its
+    // first report comes after the page is laid out and before it is painted
+    if (ro) ro.observe(el.parentElement || el)
+    else { fit(); after() }
     return () => { off = true; if (ro) ro.disconnect() }
   }, deps) // eslint-disable-line react-hooks/exhaustive-deps
   return over
 }
 
+// the bar is placed on the next frame, so a screen that mounts overflowing
+// does not ask for its scroll height in the middle of mounting
 function Bar({ of, over }) {
   const [t, setT] = useState(0)
   useEffect(() => {
     const el = of.current
     if (!el || !over) return undefined
     const on = () => setT(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight))
-    on()
+    const id = requestAnimationFrame(on)
     el.addEventListener('scroll', on, { passive: true })
-    return () => el.removeEventListener('scroll', on)
+    return () => { cancelAnimationFrame(id); el.removeEventListener('scroll', on) }
   }, [of, over])
   if (!over) return null
   return <span className="wl-scr-sb" aria-hidden="true"><i style={{ top: `${(t * 78).toFixed(1)}%` }} /></span>
@@ -696,7 +863,7 @@ export function ScreenText({ text, cursor = false, sealed = false, className = '
   const over = useFit(ref, [text, sealed], true)
   return (
     <>
-      <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1}>
+      <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1} lang={sealed ? undefined : langOf(text) || undefined}>
         {sealed
           ? String(text).split(/(\*+)/).map((p, i) => (/^\*+$/.test(p) ? <span key={i} className="wl-scr-stars">{p}</span> : p))
           : text}
@@ -730,7 +897,7 @@ export function ScreenDraft({ value, onChange, max = 280, placeholder = '', auto
       <textarea
         ref={(n) => { ref.current = n; if (inputRef) inputRef.current = n }}
         className="wl-scr-msg wl-scr-draft" value={value} placeholder={placeholder}
-        maxLength={max} rows={1} spellCheck="true" aria-label={label}
+        maxLength={max} rows={1} spellCheck="true" aria-label={label} lang={langOf(value) || undefined}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
       />
       <Caret of={ref} screen />

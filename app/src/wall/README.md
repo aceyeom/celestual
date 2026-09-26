@@ -378,12 +378,12 @@ still after the last word. Every letter is the same screen, set in one face
 | **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; a press from outside the gate is carried through it and pressed on the way back in, and a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
 The only thing a writer chooses is the COLOUR it is lit in, from one pool of
-thirteen under no heading, in the order of a spectrum (`Look.jsx`, under the
+twelve under no heading, in the order of a spectrum (`Look.jsx`, under the
 composer's screen while its `colour` key is on): six lit screens, the
-negative, four posters and a riso, which keep their own ground, and the
+negative, three posters and a riso, which keep their own ground, and the
 xerox. Each colour brings its treatment with it, and a print its own light
 (`LIGHTS`): acid keeps the backlight's hot corner, teal has a keyline inside
-its rule, ember the light falling from the top, lilac its light as a
+its rule, lilac its light as a
 halftone, and violet / yellow the phone's two bands in the violet drum. The
 light is drawn the same on the letter, the tile, the thumbnail and the
 shared picture, and `/looks.html` on the dev server draws all four side by
@@ -851,23 +851,34 @@ it changes when the neighbour's own travel has ended, not on a clock beside
 it. Nothing is drawn again when it does: every screen on the strip is keyed
 by its letter (`Cell`), so the neighbour that landed is the card from then
 on, the same element in the same place, and the card that left is the
-neighbour on the other side. Only the screen past the new card is new. The
+neighbour on the other side. Only the screen past the new card is new, and
+it is drawn while the strip runs on toward it, off the glass, and travels in
+with the strip (`ahead`), so the frame a turn lands on draws nothing. The
 room's light is handed across in the same beat (`Lights`), the old colour
 going out while the new one comes up.
 
-The height goes with the strip. A short letter beside a long one is a card
-beside a taller card, and the glass used to take the new height on the frame
-the address changed: everything under the card jumped. The track's height
-follows the strip instead, from this card's height toward the neighbour's by
-how far the strip has gone, and every screen on it stands on its middle, so
-the sheet is seen to grow or shrink about the card's middle, and the next
-card takes over at exactly the height the strip arrived at
-(`Letter.jsx place`).
+A hand or a key that comes while a turn is still running on catches it: the
+turn lands at once, where it is seen, and the hand has the card it was
+bringing in from there (`landNow`), so a second throw a moment after the
+first is the letter after, and never lost. A hand is written to the strip
+once a frame, whatever it reports, and while the strip moves whatever the
+network brings is held and drawn once it is still (`strip.js`), so no
+screen is drawn again under the hand.
 
-A print asleep beside the card is turned in its own plane only, and takes
-its depth back the moment the strip moves its way: a print's press (an SVG
-filter) over a screen turned in depth is drawn again on every frame the
-page draws, and three of them in a wide room were most of every frame.
+The height settles as the card lands. A short letter beside a long one is a
+card beside a taller card. The track's height used to follow the strip, read
+off the neighbour on every report of the hand, which was a layout forced on
+every move and every screen drawn again inside its own layer. Every screen
+on the track stands on its middle, so the track keeps the card's height
+while the strip moves and takes the new card's on the frame it lands, and
+nothing on the strip is seen to change; the foot under it, which does move,
+by half the difference, is carried there (`Letter.jsx`, the landing).
+
+A print asleep beside the card is turned in its own plane only, and stays so
+all the way across while the strip moves, taking its depth back once it has
+landed as the card: a print's press (an SVG filter) over a screen turned in
+depth is drawn again on every frame the page draws, and three of them in a
+wide room were most of every frame.
 
 ### It has to work at five names and at five hundred
 
@@ -1307,19 +1318,20 @@ screens, the night one, with the product's story on it in the phone's pixels
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`) |
 | `120ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in |
-| `300ms` | **the run.** Two shadows come in off either edge of the panel, three cells a frame and a frame every 80ms, which is the stride the drawings take, so no foot slides. The runners are drawn by hand in two inks, the far arm and leg thinner, so one drawing gives both steps; the one from the right is the same drawing turned round |
-| `1180ms` | **the meeting.** Arms out; on the frame they touch the whole panel inverts for 70ms, the way a phone's screen flashed when something came in; the catch, and the hold, one foot off the ground |
-| `1810ms` | **the mark.** The dashed ground they ran on lifts into the ring, left to right along both halves, and the two of them gather into the star from its middle out. Every pixel is rounded to a whole cell each frame, so they hop across the glass. The mark is `mark.js` rasterised at 47 cells, whole at `2470ms` |
-| `2870ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
-| `3590ms` | the black is gone |
+| `180ms` | **the run.** She comes in off the right edge and he off the left, bodies posed from the feet up (`folk.js`) on the pitch every letter is lit at, sixteen drawings a second and sliding between the cells at the display's rate, her hair streaming and her dress swinging. From `870ms` he slows, and at `1055ms` he stands with his arms open |
+| `1180ms` | **the catch.** She lands in his arms and her run carries her on, leaning gently the way she ran, into him and half behind him: he is in front, her hair at his neck, her dress and her raised heel past his back. From `1490ms` they hold each other, and breathe. No heart |
+| `1550ms` | **the pink.** The backlight turns pink from where they hold each other, a wave out to the edges of the glass and no further, and as it reaches them the phone's bands, its status and the light it throws turn with it, until the whole phone is a letter lit in rose (`intro.css`, looks.js `skinOf`) |
+| `2090ms` | **the mark.** The ground glides into the ring and the two of them into the star, each pixel travelling between cells at the display's rate and landing on the grid. Whole at `2920ms`, on the rose screen |
+| `3080ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
+| `3690ms` | the black is gone |
 
 No name, because the name is in the bar of the page underneath. A canvas has
 nothing to compile, so the held frame no longer waits on a shader, and the
 cover, the feathered cuts and the fallback for a slow driver went with the
 metal.
 
-The canvas is drawn only when the frame changes, twelve times a second while
-they run and thirty while the mark forms, and the loop stops at the last
+The canvas is drawn only when the frame changes, which while they run, hold
+and glide is every frame of the display, and the loop stops at the last
 frame. The screen is held square to the camera, because a tilted canvas of
 square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
 any tap or key, which lands the mark and lifts at once; it never plays twice in
@@ -1329,10 +1341,13 @@ frame, and `?intro=ascii` and `?tint=green` draw the same story in characters
 or on the classic green, for comparison.
 
 The door (`screens/Join.jsx`) and the mutual (`screens/Reveal.jsx`) tell the
-same story on the same screen: on the door @you runs in and waits, @them runs
-in and waits, and both set off on the same frame, which is the mechanic; on the
-mutual it is the two handles in the status row, and `it's mutual.` is typed
-under the screen from the frame they touch.
+same story with the same two and the same ending. On the door they first
+stand apart and each sends a note, which seals over the middle of the glass;
+only when both are there do the notes become one heart, which is the
+mechanic, and then they go to each other. On the mutual the mark gathers up
+to the top of the glass, `it's mutual.` is typed under it, and the phone's
+light drifts from the rose through the pinks, the oranges and the greens and
+back, once every 24 seconds (`Reveal.jsx drift`).
 
 ## The design, and where it comes from
 

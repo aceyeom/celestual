@@ -23,14 +23,19 @@
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } from './looks.js'
+import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady } from './looks.js'
 import { CHALK } from './mark.js'
 import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
+import { stickerGrid, stickerInks, stickerRuns, stickerTilt, letterMarks } from './schools.js'
+import { langOf, s40Face, ensureCjk } from './type.js'
 
 const W = 1080
 const H = 1350
-const FACE = '"Jersey 10", "Geist Mono", ui-monospace, monospace'
+// The screen's face is Jersey 10, and past its latin the pixel face for the
+// letter's own language (type.js `s40Face`), worked out per letter
+// (`drawScreen`, `renderLetter`) as the page works it out by `lang`
+const faceOf = (o) => s40Face(`${o.text} ${o.salutation || ''} ${o.name || ''}`)
 // the word's face, with the fallbacks wall.css gives `--f-display`
 const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
 
@@ -200,6 +205,73 @@ function press(g, w, h, s, q) {
   g.putImageData(img, 0, 0)
 }
 
+// ── the square, by hand ─────────────────────────────────────────────────────
+// Acid is the album cover's square (looks.js, acid), and the page paints it
+// without the press: its words a hair soft, and the film's grain in the lime,
+// dark specks laid over it and light ones dodged into it, both of which leave
+// the black black (screen.css, acid). Here the same, after the screen is
+// drawn: the whole square made small and blown up again, which is what
+// softened that cover's type in the first place, and then the grain, off the
+// letter's own seed so the picture is the same picture every time. Nothing
+// is `ctx.filter`, which Safari does not draw.
+function square(cv, sw, sh, q, clip, topH, botH) {
+  const g = cv.getContext('2d')
+  // the words soft: down to two fifths and back, smoothed both ways, which
+  // at this size is the page's blur of 0.18cqw
+  const k = 2.5
+  const small = document.createElement('canvas')
+  small.width = Math.round(sw / k)
+  small.height = Math.round(sh / k)
+  const sg = small.getContext('2d')
+  sg.imageSmoothingEnabled = true
+  sg.imageSmoothingQuality = 'high'
+  sg.drawImage(cv, 0, 0, small.width, small.height)
+  g.save()
+  clip(g)
+  g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(small, 0, 0, sw, sh)
+  // the grain, in cells of two pixels, which is the page's grain at the
+  // page's size: a sum of three draws, so it gathers round the middle as the
+  // page's noise does, pulled to three times its contrast and split there
+  // into dark specks and light ones, each as strong as it is far out
+  let t = (q.grainSeed * 2246822519) >>> 0
+  const rnd = () => { t = (t + 0x6d2b79f5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r; return ((r ^ (r >>> 14)) >>> 0) / 4294967296 }
+  const gw = Math.ceil(sw / 2)
+  const gh = Math.ceil(sh / 2)
+  const dark = document.createElement('canvas')
+  const light = document.createElement('canvas')
+  dark.width = light.width = gw
+  dark.height = light.height = gh
+  const dd = dark.getContext('2d').createImageData(gw, gh)
+  const ld = light.getContext('2d').createImageData(gw, gh)
+  for (let i = 0; i < gw * gh; i++) {
+    const n = 0.5 + (rnd() + rnd() + rnd() - 1.5) * 0.22
+    const a = Math.min(1, Math.max(0, 3 * n - 1))
+    const j = i * 4
+    dd.data[j + 3] = Math.round(255 * 0.36 * Math.max(0, 1 - 2 * a))
+    const v = Math.round(255 * 0.26 * Math.max(0, 2 * a - 1))
+    ld.data[j] = v; ld.data[j + 1] = v; ld.data[j + 2] = v; ld.data[j + 3] = 255
+  }
+  dark.getContext('2d').putImageData(dd, 0, 0)
+  light.getContext('2d').putImageData(ld, 0, 0)
+  g.imageSmoothingEnabled = true
+  g.globalCompositeOperation = 'color-dodge'
+  g.drawImage(light, 0, 0, sw, sh)
+  g.globalCompositeOperation = 'source-over'
+  g.drawImage(dark, 0, 0, sw, sh)
+  // and on the two near black bands the light specks lifted in screen, as
+  // the page lays them there, since dodging black leaves it black
+  g.beginPath()
+  g.rect(0, 0, sw, topH)
+  g.rect(0, sh - botH, sw, botH)
+  g.clip()
+  g.globalCompositeOperation = 'screen'
+  g.drawImage(light, 0, 0, sw, sh)
+  g.globalCompositeOperation = 'source-over'
+  g.restore()
+}
+
 // ── the backlight ───────────────────────────────────────────────────────────
 // The clouds, the bleed along one edge and the falling corners the page
 // draws as `--q-mura` (looks.js `quirks`), from the same numbers. A CSS
@@ -247,6 +319,7 @@ function drawScreen(o, tile = null) {
   const colour = colourOf(o.look, o.seed)
   const s = skinOf(colour)
   const q = quirks(o.seed)
+  const FACE = faceOf(o)
   const sw = 820
   const sh = Math.round(sw * q.ar)
   const u = sw / 100 // one cqw
@@ -254,34 +327,24 @@ function drawScreen(o, tile = null) {
   cv.width = sw
   cv.height = sh
   const g = cv.getContext('2d', { willReadFrequently: !!s.print })
-  const flat = s.kind === 'poster' || s.kind === 'riso'
-  // a print that keeps the phone's two bands of glass (looks.js `LIGHTS`)
-  const banded = s.light === 'bands'
+  // the square (looks.js, acid) is laid out as a print is, with no rule,
+  // and is never pulled through the press
+  const brat = s.kind === 'brat'
+  const flat = s.kind === 'poster' || s.kind === 'riso' || brat
   // how far in the status rows stand: on a print, clear of its rule
   const ex = flat ? 3.2 * u : 2.2 * u
 
-  roundRect(g, 0, 0, sw, sh, Math.max(4, (q.rad / 100) * sw))
+  const edge = (c) => { roundRect(c, 0, 0, sw, sh, Math.max(4, (q.rad / 100) * sw)); c.clip() }
   g.save()
-  g.clip()
+  edge(g)
 
-  // the panel, brightest where this phone's backlight is; or, on a print
-  // whose light falls from the top, in that light (screen.css, the prints'
-  // lights, in the same stops)
+  // the panel, brightest where this phone's backlight is
   const hx = (q.hx / 100) * sw
   const hy = (q.hy / 100) * sh
-  let pg
-  if (s.light === 'sky') {
-    const e = q.hy * 0.4
-    pg = g.createLinearGradient(0, 0, 0, sh)
-    pg.addColorStop((e + 5) / 100, s.hi)
-    pg.addColorStop((e + 19) / 100, s.mid)
-    pg.addColorStop(1, s.lo)
-  } else {
-    pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
-    pg.addColorStop(0, s.hi)
-    pg.addColorStop(0.52, s.mid)
-    pg.addColorStop(1, s.lo)
-  }
+  const pg = g.createRadialGradient(hx, hy, 0, hx, hy, Math.hypot(Math.max(hx, sw - hx), Math.max(hy, sh - hy)))
+  pg.addColorStop(0, s.hi)
+  pg.addColorStop(0.52, s.mid)
+  pg.addColorStop(1, s.lo)
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
   // and a light carried by a halftone screen, as the page draws it: white
@@ -321,19 +384,19 @@ function drawScreen(o, tile = null) {
     }
   }
 
-  // the bands
+  // the bands, which every screen has: a lit one's glass, a print's in one
+  // of its inks, acid's near black (looks.js, and every one keeps the
+  // phone's two bands)
   const topH = (q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
   const botH = 14 * u
-  if (!flat || banded) {
-    const tg = g.createLinearGradient(0, 0, 0, topH)
-    tg.addColorStop(0, s.top)
-    tg.addColorStop(1, s.top2)
-    g.fillStyle = tg
-    g.fillRect(0, 0, sw, topH)
-    g.fillStyle = s.bot
-    g.fillRect(0, sh - botH, sw, botH)
-  }
-  const lit = flat && !banded ? s.ink : s.lit
+  const tg = g.createLinearGradient(0, 0, 0, topH)
+  tg.addColorStop(0, s.top)
+  tg.addColorStop(1, s.top2)
+  g.fillStyle = tg
+  g.fillRect(0, 0, sw, topH)
+  g.fillStyle = s.bot
+  g.fillRect(0, sh - botH, sw, botH)
+  const lit = s.lit
   const bloom = flat ? 'transparent' : s.bloom
   const withBloom = (fn) => {
     g.save()
@@ -369,27 +432,36 @@ function drawScreen(o, tile = null) {
     g.textAlign = 'left'
     // the name first; the handle gives way to it, down to two fifths of the row
     const room = sw - 2 * ex - lw
-    const said = o.dear && o.name ? `dear ${o.name}` : o.name || ''
+    // the writer's own greeting where they set one, and "dear" and the name
+    // where they did not (screen.jsx `Screen`)
+    const said = o.salutation || (o.dear && o.name ? `dear ${o.name}` : o.name || '')
+    // a name note's school stands where a handle would (schools.js
+    // `letterMarks`)
+    const aside = o.handle || o.tag || ''
     g.font = `400 ${11 * u}px ${FACE}`
     const nw = g.measureText(said).width
     g.font = `400 ${7.4 * u}px ${FACE}`
-    const hw = o.handle ? Math.min(g.measureText(o.handle).width, Math.max(room - nw - 2.4 * u, room * 0.4)) : 0
-    g.font = `400 ${11 * u}px ${FACE}`
-    const name = fit(g, said, room - (hw ? hw + 2.4 * u : 0))
+    const hw = aside ? Math.min(g.measureText(aside).width, Math.max(room - nw - 2.4 * u, room * 0.4)) : 0
+    // a long line the writer set is set smaller, down to half the row's
+    // size, before it is cut, as on the page (screen.jsx `lineSize`)
+    const avail = room - (hw ? hw + 2.4 * u : 0)
+    const nsz = o.salutation && nw > avail ? Math.max(5.6, (11 * avail) / nw) : 11
+    g.font = `400 ${nsz * u}px ${FACE}`
+    const name = fit(g, said, avail)
     g.fillText(name, ex + lw, mid2 + 0.4 * u)
-    if (o.handle) {
+    if (aside) {
       const nameEnd = ex + lw + g.measureText(name).width + 2.4 * u
       g.globalAlpha = 0.82
       g.textAlign = 'right'
       g.font = `400 ${7.4 * u}px ${FACE}`
-      g.fillText(fit(g, o.handle, sw - ex - nameEnd), sw - ex, mid2 + 0.4 * u)
+      g.fillText(fit(g, aside, sw - ex - nameEnd), sw - ex, mid2 + 0.4 * u)
       g.globalAlpha = 1
     }
   })
 
   // the words, as large as the screen will hold them (screen.css
   // `.wl-scr-body`)
-  const bx = (q.pad + (s.print ? 1.4 : 0)) * u
+  const bx = (q.pad + (s.print || brat ? 1.4 : 0)) * u
   const by = topH + q.lift * u
   const bw = sw - bx - (flat ? 5 : s.kind === 'xerox' ? 4.4 : 3.6) * u
   const bh = sh - botH - by - u
@@ -488,11 +560,14 @@ function drawScreen(o, tile = null) {
   // the LCD over all of it: the backlight's faults, the grid, the pixels up
   // close, the glare, the dust, a ghost column
   const pitch = q.pitch * (sw / 470)
-  if (!s.print) backlight(g, q.light, sw, sh)
-  g.fillStyle = s.kind === 'neg' ? 'rgba(0, 0, 0, 0.26)' : 'rgba(0, 0, 0, 0.14)'
-  for (let y = 0; y < sh; y += pitch) g.fillRect(0, y, sw, Math.max(1, pitch * 0.34))
-  g.fillStyle = s.kind === 'neg' ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.11)'
-  for (let x = 0; x < sw; x += pitch) g.fillRect(x, 0, Math.max(1, pitch * 0.34), sh)
+  if (!s.paper) backlight(g, q.light, sw, sh)
+  // the square is paper, not an LCD: no grid
+  if (!brat) {
+    g.fillStyle = s.kind === 'neg' ? 'rgba(0, 0, 0, 0.26)' : 'rgba(0, 0, 0, 0.14)'
+    for (let y = 0; y < sh; y += pitch) g.fillRect(0, y, sw, Math.max(1, pitch * 0.34))
+    g.fillStyle = s.kind === 'neg' ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.11)'
+    for (let x = 0; x < sw; x += pitch) g.fillRect(x, 0, Math.max(1, pitch * 0.34), sh)
+  }
   if (tile) {
     // one stripe to an image pixel, three to a pixel of the grid's pitch,
     // laid over as the page lays them (screen.css `.wl-scr-fx.is-rgb`)
@@ -508,7 +583,7 @@ function drawScreen(o, tile = null) {
       g.restore()
     }
   }
-  if (q.streak && s.kind !== 'xerox') {
+  if (q.streak && s.kind !== 'xerox' && !brat) {
     const sx = (q.streakX / 100) * sw
     const sg = g.createLinearGradient(0, sh * 0.22, 0, sh * 0.86)
     sg.addColorStop(0, 'rgba(0,0,0,0)')
@@ -536,20 +611,22 @@ function drawScreen(o, tile = null) {
     g.fillStyle = gl
     g.fillRect(0, 0, sw, sh)
   }
-  if (flat) {
+  if (flat && !brat) {
     g.strokeStyle = 'rgba(0, 0, 0, 0.85)'
     g.lineWidth = 2.8 * u
     g.strokeRect(0, 0, sw, sh)
   }
-  // a keyline of the palest ink inside the rule, clear of it
+  // a keyline of the palest ink round the panel, clear of the rule and the
+  // bands (screen.css, the prints' lights)
   if (s.light === 'keyline') {
-    const k = 2.05 * u
+    const kx = 2.75 * u
     g.strokeStyle = '#FFF'
     g.lineWidth = 0.7 * u
-    g.strokeRect(k, k, sw - 2 * k, sh - 2 * k)
+    g.strokeRect(kx, topH + 1.35 * u, sw - 2 * kx, sh - topH - botH - 2.7 * u)
   }
   g.restore()
   if (s.print) press(g, sw, sh, s, q)
+  if (brat) square(cv, sw, sh, q, edge, topH, botH)
   return { cv, s, q, sw, sh }
 }
 
@@ -614,16 +691,67 @@ function signature(g, cx, cy) {
   g.restore()
 }
 
+// ── the sticker ─────────────────────────────────────────────────────────────
+// The school's sticker, for a letter posted from a verified school address:
+// the same pixels as the page's (schools.js `stickerGrid`), struck here one
+// rectangle a run, on a canvas of its own so its shadow is the whole
+// sticker's and not each pixel's. `width` is how wide it is drawn.
+function stickerCanvas(school, width) {
+  const grid = stickerGrid(school.short)
+  const cell = Math.max(1, Math.round(width / grid.w))
+  const cv = document.createElement('canvas')
+  cv.width = grid.w * cell
+  cv.height = grid.h * cell
+  const g = cv.getContext('2d')
+  const ink = stickerInks(school)
+  for (const [v, x, y, w] of stickerRuns(grid)) {
+    g.fillStyle = ink[v]
+    g.fillRect(x * cell, y * cell, w * cell, cell)
+  }
+  // the vinyl's sheen, over the sticker and not the glass round it
+  g.globalCompositeOperation = 'source-atop'
+  const sheen = g.createLinearGradient(0, 0, cv.width, cv.height)
+  sheen.addColorStop(0, 'rgba(255, 255, 255, 0.22)')
+  sheen.addColorStop(0.38, 'rgba(255, 255, 255, 0.05)')
+  sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)')
+  sheen.addColorStop(1, 'rgba(0, 0, 0, 0.1)')
+  g.fillStyle = sheen
+  g.fillRect(0, 0, cv.width, cv.height)
+  return cv
+}
+
+// Stuck on the phone's top right corner, hanging a little off it, at the
+// letter's own angle, as the page sticks it (post.css `.wl-scr-sticker`).
+// Drawn in the screen's own turned frame, so it turns with the phone.
+function stick(g, school, seed, sw, sh) {
+  const st = stickerCanvas(school, sw * 0.26)
+  const w = sw * 0.26
+  const h = (w * st.height) / st.width
+  g.save()
+  g.translate(sw / 2 - w * 0.34, -sh / 2 + h * 0.08)
+  g.rotate((stickerTilt(seed) * Math.PI) / 180)
+  g.shadowColor = 'rgba(0, 0, 0, 0.55)'
+  g.shadowBlur = 18
+  g.shadowOffsetY = 8
+  g.imageSmoothingEnabled = false
+  g.drawImage(st, -w / 2, -h / 2, w, h)
+  g.restore()
+}
+
 // ── the room ────────────────────────────────────────────────────────────────
 export async function renderLetter(o) {
   if (document.fonts && document.fonts.load) {
-    // with the words, so the faces for any letters past plain latin come too
-    try { await document.fonts.load(`400 40px ${FACE}`, `${o.text}${o.name || ''}${o.handle || ''}`) } catch { /* the fallback, then */ }
+    // with the words, so the faces for any letters past plain latin come too:
+    // for Korean, Japanese or Chinese the stylesheet that declares them first,
+    // then the files the words fall in (a canvas never asks for a face itself)
+    const words = `${o.text}${o.name || ''}${o.handle || ''}${o.salutation || ''}`
+    if (langOf(words)) await ensureCjk()
+    try { await document.fonts.load(`400 40px ${faceOf(o)}`, words) } catch { /* the fallback, then */ }
     try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
   // the letter's own pixels, up close, as an image the canvas can lay down;
-  // a print is paper and has none
-  const tile = skinOf(colourOf(o.look, o.seed)).print ? null : await imageOf(rgbTile(o.seed))
+  // a print and the square are paper and have none
+  const tile = skinOf(colourOf(o.look, o.seed)).paper ? null : await imageOf(await rgbTileReady(o.seed))
   const { cv: scr, s, q, sw, sh } = drawScreen(o, tile)
   const cv = document.createElement('canvas')
   cv.width = W
@@ -634,7 +762,7 @@ export async function renderLetter(o) {
   const cx = W / 2
   const cy = H / 2 - 36
   // the light it throws on the dark round it
-  const glow = s.print ? 0.1 : 0.34 * s.k
+  const glow = s.paper ? 0.1 : 0.34 * s.k
   const hg = g.createRadialGradient(cx, cy, sw * 0.2, cx, cy, sw * 0.95)
   hg.addColorStop(0, rgba(s.glow, glow))
   hg.addColorStop(0.55, rgba(s.glow, glow * 0.32))
@@ -645,9 +773,12 @@ export async function renderLetter(o) {
   g.save()
   g.translate(cx, cy)
   g.rotate((q.rz * Math.PI) / 180)
-  g.shadowColor = s.print ? 'rgba(0, 0, 0, 0.9)' : rgba(s.glow, 0.5 * s.k)
-  g.shadowBlur = s.print ? 40 : 30
+  g.shadowColor = s.paper ? 'rgba(0, 0, 0, 0.9)' : rgba(s.glow, 0.5 * s.k)
+  g.shadowBlur = s.paper ? 40 : 30
   g.drawImage(scr, -sw / 2, -sh / 2)
+  g.shadowColor = 'transparent'
+  g.shadowBlur = 0
+  if (o.sticker) stick(g, o.sticker, o.seed, sw, sh)
   g.restore()
   // the signature, in the dark under it
   signature(g, cx, SIGN_Y)
@@ -676,10 +807,14 @@ export async function renderLetter(o) {
 export function letterFace(l, { name, handle }) {
   const open = l.body !== null && l.body !== undefined
   const text = open ? l.body : starred(l.words, l.chars, l.id)
+  // the greeting the writer set, the school's sticker on a verified
+  // letter, and a name note's school (schools.js `letterMarks`)
+  const marks = letterMarks(l)
   return {
     look: l.look, seed: l.id, text, sealed: !open,
     name, handle,
     icon: open ? 'pen' : 'lock', dear: true,
+    salutation: marks.salutation, sticker: marks.sticker, tag: marks.tag,
     // the day it went up, between the aerial and the battery, and no
     // second date
     stamp: stampOf(l.at), bat: chargeOf(l.at),
@@ -716,7 +851,7 @@ export const canShare = () => typeof navigator !== 'undefined' && typeof navigat
 // first. The last few are kept; one that failed is dropped, so the next ask
 // draws it again.
 const READY = new Map()
-const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}`
+const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}|${o.salutation || ''}|${o.sticker ? o.sticker.slug : ''}`
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }
   requestAnimationFrame(() => setTimeout(done, 0))
