@@ -1318,21 +1318,20 @@ screens, the night one, with the product's story on it in the phone's pixels
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`) |
 | `120ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in |
-| `260ms` | **the run.** He comes in off the left edge and she off the right, her hair streaming and her dress swinging, stepped at 12 frames a second so no foot slides |
-| `980ms` | **the catch.** He plants and opens his arms; she leaps, falls, and lands in them at `1240ms` |
-| `1380ms` | **the tango.** She leans in, tilts back from the waist, and he swoops into a held dip over her at `1800ms`, breathing a cell each way; a small pink heart rises |
-| `1880ms` | **the pink.** The panel's own backlight turns pastel pink in a wave from the two of them, the whole screen pink by about `2360ms`, the room's glow rising with it (`PANEL`, `intro.css`) |
-| `2120ms` | **the mark.** The ground and the two of them glide into the ring and the star, each pixel travelling between cells at the display's rate and snapping to the grid as it lands. Whole at `2910ms`, on a pink screen |
-| `2990ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
-| `3590ms` | the black is gone |
+| `180ms` | **the run.** She comes in off the right edge and he off the left, bodies posed from the feet up (`folk.js`) on the pitch every letter is lit at, sixteen drawings a second and sliding between the cells at the display's rate, her hair streaming and her dress swinging. From `870ms` he slows, and at `1055ms` he stands with his arms open |
+| `1180ms` | **the catch.** She lands in his arms and her run carries her on, leaning gently the way she ran, into him and half behind him: he is in front, her hair at his neck, her dress and her raised heel past his back. From `1490ms` they hold each other, and breathe. No heart |
+| `1550ms` | **the pink.** The backlight turns pink from where they hold each other, a wave out to the edges of the glass and no further, and as it reaches them the phone's bands, its status and the light it throws turn with it, until the whole phone is a letter lit in rose (`intro.css`, looks.js `skinOf`) |
+| `2090ms` | **the mark.** The ground glides into the ring and the two of them into the star, each pixel travelling between cells at the display's rate and landing on the grid. Whole at `2920ms`, on the rose screen |
+| `3080ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
+| `3690ms` | the black is gone |
 
 No name, because the name is in the bar of the page underneath. A canvas has
 nothing to compile, so the held frame no longer waits on a shader, and the
 cover, the feathered cuts and the fallback for a slow driver went with the
 metal.
 
-The canvas is drawn only when the frame changes, twelve times a second while
-they run and thirty while the mark forms, and the loop stops at the last
+The canvas is drawn only when the frame changes, which while they run, hold
+and glide is every frame of the display, and the loop stops at the last
 frame. The screen is held square to the camera, because a tilted canvas of
 square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
 any tap or key, which lands the mark and lifts at once; it never plays twice in
@@ -1342,10 +1341,13 @@ frame, and `?intro=ascii` and `?tint=green` draw the same story in characters
 or on the classic green, for comparison.
 
 The door (`screens/Join.jsx`) and the mutual (`screens/Reveal.jsx`) tell the
-same story on the same screen: on the door @you runs in and waits, @them runs
-in and waits, and both set off on the same frame, which is the mechanic; on the
-mutual it is the two handles in the status row, and `it's mutual.` is typed
-under the screen from the frame they touch.
+same story with the same two and the same ending. On the door they first
+stand apart and each sends a note, which seals over the middle of the glass;
+only when both are there do the notes become one heart, which is the
+mechanic, and then they go to each other. On the mutual the mark gathers up
+to the top of the glass, `it's mutual.` is typed under it, and the phone's
+light drifts from the rose through the pinks, the oranges and the greens and
+back, once every 24 seconds (`Reveal.jsx drift`).
 
 ## The design, and where it comes from
 
