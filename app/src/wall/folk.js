@@ -982,9 +982,11 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   const T_HOLD = T_LAND + 500
   // past this the two of them are the mark, and nothing of them moves
   const T_END = 3200
-  // where each of them holds the other
+  // where each of them holds the other: she comes to rest close in, so
+  // that he is in front of her and she is half behind him, her hair at his
+  // neck and her dress and her raised heel past his back
   const HX = mid - 4
-  const SX = mid + 6
+  const SX = mid + 4
 
   // ── him ──
   // The pelvis: running, then slowing to a stand over D ms; x is along the
@@ -1071,9 +1073,10 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   // her near leg, once it has left the ground for the last time: the heel
   // comes up behind her, a little, and stays
   const nearOff = sSteps.filter((s) => s.leg === 0).pop().off
-  // held: her near arm round his back, the hand on his shoulder blade and
-  // no more of it seen; the far arm round his neck, behind him
-  const HOLD_HER = { lean: 10.5, neck: 5, nod: 9, sN: 70, eN: 72, wN: 10, sF: 92, eF: 40, handN: 'flat', handF: 'flat', armF: false }
+  // held: her near arm round his back, bent close so that the hand is on
+  // his shoulder blade and no more of it is seen past him; the far arm
+  // round his neck, behind him
+  const HOLD_HER = { lean: 10.5, neck: 5, nod: 9, sN: 58, eN: 92, wN: 10, sF: 92, eF: 40, handN: 'flat', handF: 'flat', armF: false }
   const L0 = runTop('her', 0.5)
   const HER_KEYS = [
     [T_LAND - 60, runTop('her', phiS(T_LAND - 60))],
@@ -1081,8 +1084,8 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
     // her arms go out to him at the height of his chest, and round him: the
     // near one round his back, the far one round his neck, behind him
     [T_LAND + 90, { ...L0, lean: 13, neck: -1, nod: 3, sN: 58, eN: 48, sF: 76, eF: 44, handN: 'open', handF: 'open' }],
-    [T_LAND + 150, { ...HOLD_HER, lean: 13.8, neck: 2, nod: 5, sN: 63, eN: 60, wN: 6, sF: 92, eF: 62, armF: true }],
-    [T_LAND + 210, { ...HOLD_HER, lean: 14, neck: 3, nod: 6, sN: 66, eN: 66, wN: 6 }],
+    [T_LAND + 150, { ...HOLD_HER, lean: 13.8, neck: 2, nod: 5, sN: 55, eN: 75, wN: 6, sF: 92, eF: 62, armF: true }],
+    [T_LAND + 210, { ...HOLD_HER, lean: 14, neck: 3, nod: 6, sN: 57, eN: 85, wN: 6 }],
     [T_LAND + 330, { ...HOLD_HER, lean: 11.5, neck: 4, nod: 8 }],
     [T_HOLD, HOLD_HER],
   ]
