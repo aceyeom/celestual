@@ -73,6 +73,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfile } from '../parts.jsx'
 import { Screen, Wait } from '../screen.jsx'
 import { skinOf, skinVars } from '../looks.js'
+import { TURNS, turnStyle } from '../turn.js'
 import PixelStory, { SQUARE } from '../PixelStory.jsx'
 import { revealStory } from '../pixmark.js'
 import { normHandle, atHandle } from '../data.js'
@@ -118,17 +119,9 @@ const NO_TOP = {}
 
 // ── the phone's light ──
 // It starts as the night's, and as the pink spreads on the glass the whole
-// phone becomes a letter lit in rose, as the intro's does: each colour the
-// Screen paints with is the night's mixed toward the rose by one number
-// (mutual.css `--mu-turn`), so what animates is a number and the colours
-// follow. The rose it turns to is itself a variable (`--mu-s-*`, the rose's
-// until the drift below sets it), so the phone's panel, its two bands, its
-// glow and the light round it are one light from there on.
-const TURNS = ['--s-top', '--s-top-2', '--s-bot', '--s-hi', '--s-mid', '--s-lo', '--s-lit', '--s-cur', '--s-bloom', '--s-glow', '--s-glow-2', '--s-edge', '--s-halo', '--s-halo-2']
-const N = skinVars('night')
-const R = skinVars('rose')
-const PHONE = { ...SQUARE }
-for (const k of TURNS) PHONE[k] = `color-mix(in srgb, ${N[k]}, var(--mu${k}, ${R[k]}) calc(var(--mu-turn) * 100%))`
+// phone becomes a letter lit in rose, as the intro's does (turn.js), and the
+// rose it turns to is the one the drift below moves on from.
+const PHONE = turnStyle('night', 'rose', SQUARE)
 
 // ── the drift ──
 // Once the mark is alive the light does not stay rose. It drifts, a shade at

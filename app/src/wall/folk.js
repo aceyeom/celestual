@@ -975,6 +975,24 @@ const RUN = {
   her: { T: 720, S: 0.38, A: 6.2, H: 23.05, bob: 0.55 },
 }
 for (const r of Object.values(RUN)) r.v = (r.A * 2.3) / (r.S * r.T)
+// ── standing ────────────────────────────────────────────────────────────────
+// Still, for the door (pixmark.js `joinStory`): the weight on both feet and
+// the knees soft, the arms down and a little bent, the head up, and `over`
+// for what is not still, a hand going up with a note. Her hair falls and her
+// hem hangs.
+export function standing(who, over = {}) {
+  const her = who === 'her'
+  return {
+    lean: her ? 1.5 : 1, neck: her ? -2 : -3, nod: her ? 2 : 1,
+    sN: her ? 6 : 4, eN: her ? 20 : 16, wN: 0, handN: 'fist',
+    sF: her ? -5 : -4, eF: her ? 18 : 14, wF: 0, handF: 'fist',
+    hN: her ? 5 : 8, kN: her ? 7 : 11, fN: her ? 2 : 3, hF: her ? 3 : 6, kF: her ? 6 : 10, fF: 0,
+    lift: 0,
+    ...(her ? { hair: [-10, -7, -3, 1, -1], skirt: 0 } : {}),
+    ...over,
+  }
+}
+
 export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   const T_BRAKE = 480
   const T_PLANT = T_BRAKE + 380

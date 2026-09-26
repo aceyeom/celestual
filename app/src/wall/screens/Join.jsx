@@ -52,9 +52,10 @@
 //              beside it.
 //   3  3600ms  only now do the two notes wake, slide into each other and
 //              become one heart, on one frame: both of them find out at once.
-//              They run to each other under it, she falls into his arms and
-//              he dips her, the phone's backlight turns pink, and they glide
-//              together into the mark.
+//              The heart goes up, they go to each other under it, her run
+//              carries her on into his arms and half behind him, the phone's
+//              backlight turns pink and the phone becomes a letter lit in
+//              rose (turn.js), and they glide together into the mark.
 //
 // Nobody is named on the phone. It used to carry @you over the one on the
 // left and @them over the one on the right, and with a boy and a girl on the
@@ -74,6 +75,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Display, Pill, Close } from '../parts.jsx'
 import { Screen } from '../screen.jsx'
+import { skinOf } from '../looks.js'
+import { turnStyle } from '../turn.js'
 import PixelStory, { SQUARE } from '../PixelStory.jsx'
 import { joinStory } from '../pixmark.js'
 import { cardStep } from '../seed.js'
@@ -92,13 +95,17 @@ const STEPS = [
 // 180ms and 900 of flicker), so the note is seen to leave and not found
 // already in the air. The key comes up once both have found out, while the
 // two of them are still running to each other.
-const STORY = joinStory({ you: 900, them: 2300, both: 3600 })
+const NIGHT = skinOf('night')
+const ROSE = skinOf('rose')
+const STORY = joinStory({ you: 900, them: 2300, both: 3600, panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
 //              1                2                 3                  4
 const BEATS = [STORY.times.you, STORY.times.them, STORY.times.both, STORY.times.found + 400]
 const LAST = 4
 
-// the night screen, with nobody named on it, and no keys
+// the night screen, with nobody named on it, and no keys, turning into the
+// rose letter as the pink spreads over it
 const LOOK = { tint: 'night' }
+const PHONE = turnStyle('night', 'rose', SQUARE)
 const NO_KEYS = {}
 const NO_TOP = {}
 
@@ -163,7 +170,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
   const on = at >= LAST ? -1 : at - 1
 
   return (
-    <div className={`wl-page wl-join is-at${at}${at >= LAST ? ' is-told' : ''}`}>
+    <div className={`wl-page wl-join is-at${at}${at >= LAST ? ' is-told' : ''}${landed ? ' is-landed' : ''}${reduce ? ' is-still' : ''}`}>
       <header className="wl-top">
         {/* The corner mark is GONE from this screen, and only from this one.
             Everywhere else it is the thing that says which product you are in;
@@ -191,7 +198,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           <span className="wl-join-light" />
           <Screen
             look={LOOK} seed="join" top={NO_TOP} keys={NO_KEYS} live={false} state="waking"
-            className="wl-join-scr" style={SQUARE}
+            className="wl-join-scr" style={PHONE}
           >
             <PixelStory story={STORY} at={reduce || landed ? STORY.end : null} from={t0} />
           </Screen>
