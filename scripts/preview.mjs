@@ -1665,7 +1665,7 @@ for (const r of list) {
     })
     const problems = []
     page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
-    page.on('pageerror', (e) => problems.push(String(e)))
+    page.on('pageerror', (e) => problems.push(process.env.PREVIEW_STACK ? String(e.stack) : String(e)))
     await page.route('**/*', (route) => {
       const u = route.request().url()
       // /api/resolve is SAME ORIGIN by design: vercel.json rewrites it onto the

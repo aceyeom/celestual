@@ -1483,6 +1483,11 @@ export default function Letter({
     )
   }
 
+  // every letter is whole since 0066, so the thread (0068) stands under any
+  // letter that is here; the body is still checked, as a letter can arrive
+  // before its words have
+  const open = !!one && one.body !== null
+
   // The three on the strip (`strip`, above): the letter before, this one and
   // the letter after, each keeping its element (`keyOf`). The card is the one
   // whose address this is, lit and live; either side, the screen that letter
