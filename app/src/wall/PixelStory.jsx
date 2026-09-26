@@ -127,8 +127,11 @@ function faint(rgb, a = 0.07) {
 }
 
 // which ink wins a cell two drawings light at once: the near ink, then the
-// rose, then the far ink
-const RANK = [0, 3, 1, 2]
+// rose, then the mid, then the far ink
+const RANK = [0, 4, 1, 3, 2]
+// how much of the ink each is lit at: the near whole, the far at half, and
+// the mid (ink 4, the intro's faces, hands and her dress) between them
+const LIT = [1, 1, 0.5, 1, 0.72]
 
 // The fill of a lit cell: its ink, carried toward the rose by its heat, and
 // lit by its alpha. Heat and alpha are counted in sixteenths, so a frame has
@@ -142,7 +145,7 @@ function fillOf(s, ink, heat, alpha) {
   const base = ink === 3 ? ROSE_RGB : s.rgb
   const k = ink === 3 ? 0 : h / 16
   const c = base.map((v, i) => Math.round(v + (ROSE_RGB[i] - v) * k))
-  const lit = ink === 2 ? 0.5 : 1
+  const lit = LIT[ink] ?? 1
   f = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${((lit + (1 - lit) * k) * (a / 16)).toFixed(3)})`
   s.fills.set(key, f)
   return f
@@ -198,9 +201,10 @@ function pinkPanel(s, host, el, dpr) {
   const p = cv.getContext('2d')
   p.setTransform(1, 0, 0, ry / rx, cx, cy)
   const gr = p.createRadialGradient(0, 0, 0, 0, 0, rx)
-  gr.addColorStop(0, PANEL[0])
-  gr.addColorStop(0.52, PANEL[1])
-  gr.addColorStop(1, PANEL[2])
+  const pan = s.panel || PANEL
+  gr.addColorStop(0, pan[0])
+  gr.addColorStop(0.52, pan[1])
+  gr.addColorStop(1, pan[2])
   p.fillStyle = gr
   p.fillRect(-cx, (-cy * rx) / ry, s.W, (s.H * rx) / ry)
   s.pink = cv
@@ -263,6 +267,14 @@ function paint(g, f, s) {
   const { pc, pr, ox, oy, cell, gap, W, H, mx, my } = s
   g.setTransform(1, 0, 0, 1, 0, 0)
   g.clearRect(0, 0, W, H)
+  // a story may carry its own ink from frame to frame (the intro's goes from
+  // the night's to the rose's with the pink)
+  if (f.ink && f.ink !== s.inkNow) {
+    s.inkNow = f.ink
+    s.rgb = rgbOf(f.ink)
+    s.ghost = faint(s.rgb)
+    s.fills.clear()
+  }
   // one ink per cell, by rank, so a cell two pixels pass through on the
   // same frame is drawn once; the warmer of two of the same ink
   const n = pc * pr
@@ -288,6 +300,16 @@ function paint(g, f, s) {
   }
   const d = cell - gap
   const at = (i) => [(i % pc) * cell, Math.floor(i / pc) * cell]
+  // the unlit dot under a cell on its way somewhere is not drawn: a body
+  // sliding between the panel's cells covers the dots it is mostly over, so
+  // the faint grid does not show through it at another pitch (and only
+  // those, or a ring of missing dots goes round it as a light)
+  const under = free.length ? new Uint8Array(n) : null
+  for (const c of free) {
+    const x = Math.round(c[0] + ox)
+    const y = Math.round(c[1] + oy)
+    if (x >= 0 && y >= 0 && x < pc && y < pr) under[y * pc + x] = 1
+  }
   // The frame they touched used to be the whole panel in ink with the cells
   // cut out of it, the way a phone's screen flashed when something came in.
   // It read as a collision, and it went with the collision (pixmark.js
@@ -320,7 +342,7 @@ function paint(g, f, s) {
   // the panel's own dots, unlit
   g.fillStyle = s.ghost
   for (let i = 0; i < n; i++) {
-    if (ink[i]) continue
+    if (ink[i] || (under && under[i])) continue
     const [x, y] = at(i)
     g.fillRect(x, y, d, d)
   }
@@ -375,7 +397,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       s = {
         pc, pr, ox: (pc - story.cols) >> 1, oy: (pr - story.rows) >> 1, cell, mode,
         gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
-        ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(),
+        ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
         face: cs.fontFamily || 'monospace',
       }
       s.ghost = faint(s.rgb)

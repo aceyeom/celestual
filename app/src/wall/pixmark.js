@@ -19,6 +19,7 @@
 // last frame first under reduced motion, and read in node.
 
 import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
+import { introFolk } from './folk.js'
 
 // ── the mark, on a canvas ───────────────────────────────────────────────────
 // Moved here out of share.js, which signs the shared picture with it, so the
@@ -1108,22 +1109,73 @@ function approach({ start, frames, him = 1, her = 4 }) {
   return { at, plantAt, catchAt, standHim, standHer }
 }
 
-// The intro: both at once, from off either edge, and the mark.
+// ── the intro ───────────────────────────────────────────────────────────────
+// Its own story now, and not the door's and the mutual's ending: the two of
+// them are bodies drawn from poses (folk.js), a head taller than the typed
+// sprites, on a ground four rows lower; she runs into his arms and does not
+// dip; there is no heart. From `start`, in ms:
 //
-//   260  they run in, twelve frames a second
-//   980  he plants and opens his arms; she leaves the ground
-//  1090  she falls
-//  1240  and is in his arms. From here, the ending above: the lean at
-//        1380, the dip from 1600 and held from 1800, the pink from 1880,
-//        the mark gliding in from 2120 and whole at 2910
-export function introStory(start = 260) {
-  const run = approach({ start, frames: 9, him: 2, her: 5 })
-  const s = makeStory({
-    before: (t) => (t < start ? { key: '-', cells: ground() } : run.at(t)),
-    catchAt: run.catchAt,
-  })
-  s.times.meet = run.plantAt
-  return s
+//      0   they run in from either edge, sixteen drawings a second, and
+//          slide between the panel's cells at the display's own rate
+//    690   he slows, the stride shortening, and stops at 875 with his arms
+//          open to her
+//   1000   she lands in them: her run carries her on into him, leaning the
+//          way she ran, her heel up behind her, her hair and hem swinging
+//          past and settling, until at 1310 she is still, behind him, his
+//          arm round her; and they hold on, breathing
+//   1370   THE PINK, from where they hold each other: the backlight, a wave
+//          out to the edges of the glass, the phone's own bands and the
+//          light it throws turning with it (Intro.jsx, intro.css), until the
+//          whole phone is a letter lit in rose
+//   1970   THE MARK: the two of them into the star and the ground into the
+//          ring, gliding, whole at 2760
+//
+// `panel` is the rose letter's three panel colours and `ink` the night's
+// ink and the rose's, which the wave carries the one to the other.
+const I_GROUND = 38
+const I_WASH = 60
+const I_HOLD = 540
+function groundAt(row) {
+  const out = []
+  for (let x = 0; x < COLS; x++) if (x % 3 !== 2) out.push([x, row, 2])
+  return out
+}
+function washFrom(u, x, y) {
+  if (u < 0) return null
+  const p = u / WASH_MS
+  if (p >= 1) return { x, y, r: null, level: 1, rim: 0 }
+  return { x, y, r: washR(p), level: 1, rim: 0.6 * (1 - p) }
+}
+export function introStory(start = 180, { panel = PANEL, ink = null } = {}) {
+  const folk = introFolk({ start, ground: I_GROUND, mid: (COLS - 1) >> 1 })
+  const floor = groundAt(I_GROUND)
+  const washAt = folk.times.hold + I_WASH
+  const morphs = washAt + I_HOLD
+  const done = morphs + MORPH_MS
+  const end = Math.max(done, washAt + WASH_MS)
+  let morph = null
+  // the ink, from the night's to the rose's as the wave goes out
+  const inkAt = (u) => (ink ? (u < WASH_MS * 0.45 ? ink[0] : ink[1]) : null)
+  const frame = (t) => {
+    // the glide is worked out while the screen is still dark (it rasterises
+    // the mark), so the frame it starts on is not the one that pays for it
+    if (!morph && t < start) morph = morphOf(folk.pair, floor)
+    const u = t - washAt
+    const wash = washFrom(u, folk.heart.x, folk.heart.y)
+    const wk = !wash ? '' : wash.r == null ? 'W' : `w${Math.round(u)}`
+    if (t >= morphs) {
+      if (!morph) morph = morphOf(folk.pair, floor)
+      const mt = t - morphs
+      return { key: `m${mt >= MORPH_MS ? 'done' : Math.round(mt)}|${wk}`, cells: morphAt(morph, mt), wash, ink: inkAt(u) }
+    }
+    const f = folk.at(t)
+    return { key: `${f.key}|${wk}`, cells: [...floor, ...f.cells], wash, ink: inkAt(u) }
+  }
+  return {
+    cols: COLS, rows: ROWS, end, panel,
+    times: { ...folk.times, catch: folk.times.meet, glow: washAt, morphs, done, end },
+    frame,
+  }
 }
 
 // ── the door ────────────────────────────────────────────────────────────────
