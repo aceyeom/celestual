@@ -100,7 +100,17 @@ let indexTier = 0
 // that view, unfiltered, and folds the rows under each key together here:
 // the counts summed, the newest row's face and paper. Either way the wall is
 // every letter, and never a blank one.
-const ALL_TIERS = [`${INDEX_LOOKED}, campus, verified`, INDEX_LOOKED]
+//
+// And since 0067 the numbers the wall's filter sorts and cuts by (data.js,
+// the filter): every heart on the letters under the name, how many of those
+// went up from a verified Berkeley address, and when the newest of them did.
+// A database from before 0067 refuses the three and the read steps down,
+// and the filter offers only what the index it has can answer.
+const ALL_TIERS = [
+  `${INDEX_LOOKED}, campus, verified, hearts, berkeley, berkeley_at`,
+  `${INDEX_LOOKED}, campus, verified`,
+  INDEX_LOOKED,
+]
 let allTier = 0
 let allGone = false
 
@@ -141,6 +151,12 @@ function shapeRow(r) {
     // badge on Instagram.
     campus: r.campus && r.campus !== 'global' ? String(r.campus) : null,
     edu: !!r.verified && kind === 'handle',
+    // what the filter reads (0067), and null where the index did not say,
+    // which is not the same as none: a row from a database before it, or
+    // a row of the search, which is never filtered
+    hearts: r.hearts == null ? null : Number(r.hearts) || 0,
+    berkeley: r.berkeley == null ? null : Number(r.berkeley) || 0,
+    berkeleyAt: r.berkeley_at ? new Date(r.berkeley_at).getTime() : 0,
   }
 }
 

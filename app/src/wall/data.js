@@ -230,6 +230,7 @@ export function mine() { return MINE }
 export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
+  ORDERED.clear()
   PRESSED.clear()
   GATED = null
   FREE = null
@@ -530,6 +531,7 @@ function shapeTile(t, was) {
   if (was && was.count === t.count && was.at === t.at && was.known === t.known
     && was.name === t.name && was.verified === t.verified && was.avatar === t.avatar
     && was.campus === t.campus && was.edu === t.edu
+    && was.hearts === t.hearts && was.berkeley === t.berkeley && was.berkeleyAt === t.berkeleyAt
     && lookKey(was.look) === lookKey(t.look)) return { ...was, look: was.look }
   return {
     ...t,
@@ -537,14 +539,25 @@ function shapeTile(t, was) {
     seed: hash(t.handle),
   }
 }
-let SHAPED = { of: null, tiles: [] }
+//
+// ── and it is the field the filter shows ──
+// `wall()` is what the field draws and what the deck turns through: the
+// names the filter lets through, in its order (the filter, below), memoised
+// on the reading AND the filter, so it is the same array until one of the
+// two moves. `wall(true)` is every name in the index's own order, for what
+// is about the whole wall whatever the field shows (the find sheet's six
+// names most recently written to).
+let SHAPED = { of: null, all: [], filter: null, tiles: [] }
 let SHAPES = new Map()
-export function wall() {
-  if (SHAPED.of === TILES) return SHAPED.tiles
-  const tiles = TILES.map((t) => shapeTile(t, SHAPES.get(t.handle)))
-  SHAPES = new Map(tiles.map((t) => [t.handle, t]))
-  SHAPED = { of: TILES, tiles }
-  return tiles
+export function wall(every = false) {
+  if (SHAPED.of !== TILES) {
+    const all = TILES.map((t) => shapeTile(t, SHAPES.get(t.handle)))
+    SHAPES = new Map(all.map((t) => [t.handle, t]))
+    SHAPED = { of: TILES, all, filter: null, tiles: [] }
+  }
+  if (every) return SHAPED.all
+  if (SHAPED.filter !== FILTER) SHAPED = { ...SHAPED, filter: FILTER, tiles: sieve(SHAPED.all, FILTER) }
+  return SHAPED.tiles
 }
 
 // The masthead's number. The sum off the index rather than a second count, so
@@ -553,12 +566,140 @@ export function liveCount() {
   return TILES.reduce((n, t) => n + t.count, 0)
 }
 
+// ── the filter ──────────────────────────────────────────────────────────────
+// The owner, 26 September: "Add a filtering mechanism, to see only Berkeley,
+// newest, most liked, these kind of things. Make it clean." So the field can
+// be looked at four ways, one at a time, and the choice is kept for as long
+// as the tab is (sessionStorage), because a filter is where somebody is
+// looking this visit and not a setting they made:
+//
+//   all        every name, as the wall has always been seated: the newest
+//              written to nearest the light, and nobody moving after that
+//   newest     the names written to this week, newest first; and never
+//              fewer than the dozen newest, so a quiet week still shows what
+//              came in last rather than a field of three
+//   most liked the names whose letters carry a heart, the most hearted
+//              first, which is every heart on every letter under the name
+//              added up, the count each letter shows (migration 0067)
+//   Berkeley   the names with a letter from a verified Berkeley address, the
+//              one that carries the Cal sticker, newest of those first
+//
+// What it changes is what the field shows and in what order: the hive seats
+// a filtered field afresh, its first name in the light and the rest outward
+// in the filter's order (Hive.jsx, the tile), and the deck turns through the
+// names in the same order, so a person reading the most liked turns from
+// one to the next most liked. Under a name the letters follow the filter
+// where the filter says something about letters (`ordered`, below): the
+// most hearted first, or the Berkeley ones first. It filters nothing out of
+// a name, since a filter is a way of looking at the wall and never a way of
+// hiding a letter from somebody who opened one.
+//
+// The numbers are the server's, on the index (0067). On a database from
+// before them the Berkeley cut falls back to the newest letter's sticker,
+// and most liked is not offered (`filtersOpen`), rather than drawn empty.
+export const FILTERS = [
+  { key: 'all', word: 'all' },
+  { key: 'new', word: 'newest' },
+  { key: 'liked', word: 'most liked' },
+  { key: 'berkeley', word: 'Berkeley' },
+]
+const FILTER_STORE = 'celestual.wall.filter'
+const NEW_DAYS = 7
+const NEW_FLOOR = 12
+function readFilter() {
+  try {
+    const k = typeof sessionStorage === 'undefined' ? '' : sessionStorage.getItem(FILTER_STORE)
+    return FILTERS.some((f) => f.key === k) ? k : 'all'
+  } catch {
+    return 'all'
+  }
+}
+let FILTER = readFilter()
+export function wallFilter() { return FILTER }
+
+// One choice at a time. A new one drops the order the last one gave each
+// name's letters, and moves the field: every screen reading `wall()` is
+// told by the revision.
+export function setWallFilter(key) {
+  if (!FILTERS.some((f) => f.key === key) || key === FILTER) return
+  FILTER = key
+  ORDERED.clear()
+  try { sessionStorage.setItem(FILTER_STORE, key) } catch { /* a private tab keeps it in memory */ }
+  bump()
+}
+
+// Which of the four this index can answer: all four once the index carries
+// the hearts (0067); without them, most liked stays off the menu. A filter
+// that is on and stops being answerable reads as all.
+export function filtersOpen() {
+  const all = wall(true)
+  const hearts = !all.length || all.some((t) => t.hearts !== null)
+  return FILTERS.filter((f) => f.key !== 'liked' || hearts).map((f) => f.key)
+}
+
+// the Berkeley cut: the server's count, or on an older index the newest
+// letter's sticker
+const berkeleyOf = (t) => (t.berkeley !== null && t.berkeley !== undefined
+  ? t.berkeley > 0
+  : !!t.edu && t.campus === 'berkeley')
+
+function sieve(all, key) {
+  if (key === 'new') {
+    const byAt = [...all].sort((a, b) => b.at - a.at)
+    const since = Date.now() - NEW_DAYS * DAY
+    const week = byAt.filter((t) => t.at >= since)
+    return week.length >= NEW_FLOOR ? week : byAt.slice(0, NEW_FLOOR)
+  }
+  if (key === 'liked') {
+    if (!all.some((t) => t.hearts !== null)) return all
+    return all.filter((t) => t.hearts > 0).sort((a, b) => b.hearts - a.hearts || b.at - a.at)
+  }
+  if (key === 'berkeley') {
+    return all.filter(berkeleyOf).sort((a, b) => (b.berkeleyAt || b.at) - (a.berkeleyAt || a.at))
+  }
+  return all
+}
+
+// ── and the letters under a name, in the filter's order ──
+// Most liked: the most hearted first. Berkeley: the letters from a verified
+// Berkeley address first, newest first, and then the rest as they were.
+//
+// Worked out once per name and filter and then held: a heart pressed while
+// the name is being read moves the count on the card and not the card, so
+// the letter before and the letter after do not swap places under the
+// reader's thumb. A letter that arrives while it is held goes after the
+// ones already there. A new filter works every name out afresh.
+const ORDERED = new Map() // key -> { of, ids, list }
+const calOf = (l) => (l.verified && l.campus === 'berkeley' ? 1 : 0)
+function orderOf(list) {
+  if (FILTER === 'liked') return [...list].sort((a, b) => (b.hearts || 0) - (a.hearts || 0) || b.at - a.at)
+  if (FILTER === 'berkeley') return [...list].sort((a, b) => calOf(b) - calOf(a) || b.at - a.at)
+  return list
+}
+function ordered(k, list) {
+  const was = ORDERED.get(k)
+  if (was && was.of === list) return was.list
+  let out
+  if (was) {
+    const rank = new Map(was.ids.map((id, i) => [id, i]))
+    const kept = list.filter((l) => rank.has(l.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id))
+    out = [...kept, ...orderOf(list.filter((l) => !rank.has(l.id)))]
+  } else {
+    out = orderOf(list)
+  }
+  ORDERED.set(k, { of: list, ids: out.map((l) => l.id), list: out })
+  return out
+}
+
 // ── reading ─────────────────────────────────────────────────────────────────
 // Both of these answer out of the cache. A caller that wants them filled calls
 // the matching loader first, or renders the empty state and lets the
 // subscription bring it back.
 export function lettersFor(handle) {
-  return BY_HANDLE.get(targetKey(handle)) || []
+  const k = targetKey(handle)
+  const list = BY_HANDLE.get(k)
+  if (!list) return []
+  return FILTER === 'liked' || FILTER === 'berkeley' ? ordered(k, list) : list
 }
 
 // Three states, and screens need all three:

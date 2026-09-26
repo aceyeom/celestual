@@ -113,6 +113,23 @@ NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
 const COUNT_OF = new Map(INDEX.map((r) => [r.target_handle, r.letters]))
 // the names whose newest letter went up from a verified school address
 const EDU = new Set(['ren.tanaka', 'jules.k', 'thom.iversen', 'elias.brandt'])
+// ── what the wall's filter reads (0067) ──
+// Every heart under a name, added up; how many of its letters went up from
+// a verified Berkeley address, and when the newest of them did. A spread of
+// each, so the most liked and the Berkeley fields are fields of their own
+// and not the whole wall reshuffled: about half the names carry a heart and
+// four carry a Berkeley letter. A route marked `nocal` takes the Berkeley
+// letters off, for the filter's empty state.
+const LIKED = {
+  'sofiaaa.reyes': 31, 'aya.nakamura': 24, 'pilar.echevarria': 15, 'jules.k': 9,
+  'ace03d': 7, '~sofia': 6, 'nour.haddad': 4, 'dani.arroyo': 2,
+}
+const FROM_CAL = { 'jules.k': 2, 'pilar.echevarria': 1, 'nour.haddad': 1, 'elias.brandt': 1 }
+INDEX.forEach((r, i) => {
+  r.hearts = LIKED[r.target_handle] || 0
+  r.berkeley = FROM_CAL[r.target_handle] || 0
+  r.berkeley_at = r.berkeley ? new Date(now - (i * 11 + 5) * 3600000).toISOString() : null
+})
 
 // The second line runs long on purpose: a deck of letters of one height
 // never shows what the sheet does when the next card is taller, which is
@@ -216,6 +233,9 @@ let GOOGLE = false
 // What the daily check on apify last said (0060): 'ok', 'failing', 'stale'
 // or 'never'. The desk draws its line at the top of every screen from it.
 let CANARY = 'ok'
+// Whether no letter on the wall went up from a verified Berkeley address
+// (0067), so the Berkeley filter lets nothing through.
+let NOCAL = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -1058,6 +1078,27 @@ const ROUTES = [
   // menu of names, the first one chosen by the pointer that typed it
   { label: 'berkeley-seek-typed', path: '/berkeley',
     acts: [['click', '.wl-mast-go'], ['wait', 3400], ['fill', '.wl-seek .wl-field input', 'a']], settle: 1200 },
+  // the filter (Filter.jsx): the key at the end of the strip, its menu in
+  // the strip's panel, the field it seats for most liked and for Berkeley,
+  // the field caught going out and coming up, and the empty field when a
+  // filter lets nothing through
+  { label: 'wall-filter-menu', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key']], settle: 600 },
+  { label: 'wall-filter-liked', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(3)']], settle: 1600 },
+  { label: 'wall-filter-cal', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(4)']], settle: 1600 },
+  { label: 'wall-filter-new', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(2)']], settle: 1600 },
+  { label: 'wall-filter-out', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(3)', null, 120]], settle: 0 },
+  { label: 'wall-filter-in', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(3)', null, 420]], settle: 0 },
+  // a name opened from the most liked field: its most hearted letter first,
+  // and the deck turning on to the next most liked name
+  { label: 'wall-filter-deck', path: '/letter/sofiaaa.reyes', filter: 'liked', settle: 1800 },
+  { label: 'wall-filter-none', path: '/', nocal: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(4)']], settle: 1600 },
   // the same two under prefers-reduced-motion (rebuild-spec 7.2): the veil
   // composed with nothing arriving, and the field still, with the lens on
   { label: 'berkeley-still',        path: '/berkeley', still: true, settle: 1200 },
@@ -1307,6 +1348,8 @@ for (const r of list) {
   PASS = r.pass === true
   FULL = r.full === true
   GOOGLE = r.google === true
+  NOCAL = r.nocal === true
+  INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
@@ -1341,6 +1384,13 @@ for (const r of list) {
     // on every call. Seeding it here is what puts the screenshot behind the
     // door rather than on it; `admin-gate` deliberately does not, because the
     // door is a surface too.
+    // a tab already looking at the wall through a filter (data.js, the
+    // filter), which it keeps for as long as the tab is open
+    if (r.filter) {
+      await page.addInitScript((f) => {
+        try { sessionStorage.setItem('celestual.wall.filter', f) } catch { /* private mode */ }
+      }, r.filter)
+    }
     if (r.desk) {
       await page.addInitScript(() => {
         try { sessionStorage.setItem('celestual:adminpw', 'preview') } catch { /* private mode */ }
