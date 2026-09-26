@@ -565,8 +565,9 @@ wall`; the close key still lands on the poster (`index.jsx` `toWall`, the
 ## 4. Type
 
 Three faces, and the first does two jobs at two ends of one axis. Files are in
-`app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` and served from
-this origin. Nothing renders from a CDN.
+`app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` (and the pixel
+face for Korean, Japanese and Chinese by `node scripts/fetch-cjk.mjs`, 4.0a)
+and served from this origin. Nothing renders from a CDN.
 
 This section is Main's type. On the wall one face carries every word but the
 brand's, Jersey 10 (4.0a), and the tokens below are remapped to it (2.6).
@@ -655,6 +656,38 @@ Main it is never a headline, a label or a control outside a screen.
 It was twenty-four faces a writer chose between, one menu per paper. The
 screen took the choice away with the papers (2.5): a phone has one font, and
 the font is part of what makes it that phone.
+
+**In Korean, Japanese and Chinese.** Jersey 10 is latin, and a letter in any
+of the three fell through it to the reader's system monospace: a smooth
+outline face in the middle of a screen drawn a pixel at a time. Past Jersey's
+latin, `--f-s40` now falls to one pixel design for all three, Fusion Pixel Font
+(TakWolf, SIL Open Font License 1.1), the 12px proportional cut in its Korean,
+Japanese, simplified and traditional Chinese variants, so a letter in Korean
+and a letter in Chinese are the same phone. `scripts/fetch-cjk.mjs` makes it:
+
+| | |
+| --- | --- |
+| the families | `Celestual Pixel KO`, `JA`, `ZH` and `ZH Hant`, renamed because Fusion Pixel is a Reserved Font Name and a subset is a modified font. The licence is `app/public/fonts/cjk/OFL.txt` |
+| what is kept | Hangul in the Korean face, kana in the Japanese, bopomofo in the Chinese, and in all four the ideographs, the CJK punctuation and the full width forms. Latin stays Jersey's |
+| the grid | drawn at three quarters and declared 1400 to the em, so a pixel is 75/1400 of an em, Jersey's own: an ideograph is eleven pixels tall, as tall as a capital and one under the line, and the ascent and descent are Jersey's. It is in the files, so the stylesheet needs no `size-adjust`, and the shared picture's canvas and older Safari draw it the same |
+| the weight | Jersey's strokes are two pixels and Fusion's one, so every glyph is made bold as a pixel face is: a pixel to the right of each upright, unless it would close a one pixel gap. Uprights are two pixels, horizontals one, every advance a pixel wider |
+| the files | 289 woff2, 2.7 MB in all, declared in `app/public/fonts/faces-cjk.css` (160 KB, 25 KB over the wire). Each language's commonest 3500 characters are cut as Google Fonts cuts Noto Sans KR, JP, SC and TC, by frequency; the rare rest in runs of code points, declared first so a common character never pulls a rare file |
+| per letter | a letter of eighty to ninety characters fetches 27 KB in Korean (9 files), 42 KB in Japanese (15), 72 KB in Chinese (10); a latin letter fetches none |
+
+Which face draws an ideograph is the text's language, since the three
+languages draw many of the same characters differently. A letter has no
+language field, so `type.js` `langOf` reads it off the words (any Hangul is
+Korean, any kana Japanese, ideographs alone Chinese, the traditional
+characters over the simplified Traditional Chinese), and `screen.jsx` sets it
+as `lang` on the words, the draft and the name's row. `phone.css` orders
+`--f-cjk` by `:lang()`: the language's own face first and the others after it
+for a script it lacks. The stylesheet is linked by `ensureFaces` once the page
+is idle and nothing waits on it; the shared picture links it itself and loads
+the faces its words need before it draws.
+
+Main and the desk have no pixel face. Their four stacks end in the system's
+own Korean, Japanese and Chinese sans (`Apple SD Gothic Neo`, `Hiragino Sans`,
+`PingFang SC`, `Noto Sans CJK KR`) before the generic family.
 
 ### 4.2 The rest
 

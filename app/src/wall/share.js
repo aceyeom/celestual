@@ -27,10 +27,14 @@ import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } fro
 import { CHALK } from './mark.js'
 import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
+import { langOf, s40Face, ensureCjk } from './type.js'
 
 const W = 1080
 const H = 1350
-const FACE = '"Jersey 10", "Geist Mono", ui-monospace, monospace'
+// The screen's face is Jersey 10, and past its latin the pixel face for the
+// letter's own language (type.js `s40Face`), worked out per letter
+// (`drawScreen`, `renderLetter`) as the page works it out by `lang`
+const faceOf = (o) => s40Face(`${o.text} ${o.name || ''}`)
 // the word's face, with the fallbacks wall.css gives `--f-display`
 const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
 
@@ -305,6 +309,7 @@ function drawScreen(o, tile = null) {
   const colour = colourOf(o.look, o.seed)
   const s = skinOf(colour)
   const q = quirks(o.seed)
+  const FACE = faceOf(o)
   const sw = 820
   const sh = Math.round(sw * q.ar)
   const u = sw / 100 // one cqw
@@ -671,8 +676,12 @@ function signature(g, cx, cy) {
 // ── the room ────────────────────────────────────────────────────────────────
 export async function renderLetter(o) {
   if (document.fonts && document.fonts.load) {
-    // with the words, so the faces for any letters past plain latin come too
-    try { await document.fonts.load(`400 40px ${FACE}`, `${o.text}${o.name || ''}${o.handle || ''}`) } catch { /* the fallback, then */ }
+    // with the words, so the faces for any letters past plain latin come too:
+    // for Korean, Japanese or Chinese the stylesheet that declares them first,
+    // then the files the words fall in (a canvas never asks for a face itself)
+    const words = `${o.text}${o.name || ''}${o.handle || ''}`
+    if (langOf(words)) await ensureCjk()
+    try { await document.fonts.load(`400 40px ${faceOf(o)}`, words) } catch { /* the fallback, then */ }
     try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
   // the letter's own pixels, up close, as an image the canvas can lay down;

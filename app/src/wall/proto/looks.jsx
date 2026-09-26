@@ -16,6 +16,10 @@
 //                               and acid's square beside them, which is paper
 //                               too but never pulled through the press
 //   /looks.html?pictures=0      without the shared pictures, which are slow
+//   /looks.html?words=ko        the letter in Korean, and `ja`, `zh`,
+//                               `zh-hant` and `mix` (Korean with a line of
+//                               Japanese and one of Chinese in it), for the
+//                               screen's pixel face in those languages
 //
 // `light` is drawn by giving every print that light before anything is
 // painted: the catalogue's rows are read once, when a colour is first drawn
@@ -42,13 +46,22 @@ const PRINTS = ask.get('prints') === '1'
 const PICTURES = ask.get('pictures') !== '0'
 if (FORCE) for (const c of COLOURS) if (c.kind === 'poster' || c.kind === 'riso') c.light = FORCE
 
-const BODY = 'you gave me your umbrella outside wheeler and walked home in it. i still have it, and i think about the walk.'
+// the same letter in each of the languages the screen's pixel face draws
+const WORDS = {
+  en: ['you gave me your umbrella outside wheeler and walked home in it. i still have it, and i think about the walk.', 'Sofia'],
+  ko: ['도서관 앞에서 우산 빌려줬던 거 기억나? 그날 비 맞으면서 집까지 걸어갔는데, 아직도 그 우산 가지고 있어. 가끔 그 길을 생각해.', '민지'],
+  ja: ['図書館の前で傘を貸してくれたこと、覚えてる？あの日は濡れて帰ったけど、まだその傘を持ってる。ときどきあの道のことを考える。', 'さくら'],
+  zh: ['你还记得在图书馆门口借给我雨伞吗？那天我淋着雨走回家，现在那把伞还在我这里。我常常想起那段路。', '小雨'],
+  'zh-hant': ['你還記得在圖書館門口借給我雨傘嗎？那天我淋著雨走回家，現在那把傘還在我這裡。我常常想起那段路。', '小雨'],
+  mix: ['우산 고마웠어. 傘をありがとう。谢谢你的伞。 i still have it.', 'Sofia 민지'],
+}
+const [BODY, NAME] = WORDS[ask.get('words')] || WORDS.en
 const idOf = (c, k) => `${(k * 0x2f1b3 + c.slug.length * 7919 + SEED * 104729).toString(16).padStart(8, '0').slice(-8)}-2222-4333-8444-5555${String(k).padStart(8, '0')}`
 
 function letterOf(c, i) {
   const id = idOf(c, i)
   const l = { id, to: 'sofia.reyes', look: { tint: c.slug }, body: BODY, words: 22, chars: BODY.length, hearts: 3, hearted: false, at: Date.now() - 86400000 }
-  return { l, face: letterFace(l, { name: 'Sofia', handle: '@sofia.reyes' }) }
+  return { l, face: letterFace(l, { name: NAME, handle: '@sofia.reyes' }) }
 }
 
 function Picture({ face, go }) {

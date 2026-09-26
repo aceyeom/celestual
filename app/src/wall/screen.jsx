@@ -28,6 +28,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, RGB_CELLS, PRESS } from './looks.js'
 import { Caret } from './caret.jsx'
+import { langOf } from './type.js'
 import './screen.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
@@ -564,7 +565,8 @@ export function Screen({
                 <Pix name={`bata${bat}`} h={8} />
               </span>
             </div>
-            <div className="wl-scr-r2">
+            {/* the name's language, for its face (type.js `langOf`) */}
+            <div className="wl-scr-r2" lang={langOf(name) || undefined}>
               {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
               <span className="wl-scr-nm wl-lit" id={nameId}>{dear && name ? `dear ${name}` : name}</span>
               <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle}</span>
@@ -697,7 +699,7 @@ export function ScreenText({ text, cursor = false, sealed = false, className = '
   const over = useFit(ref, [text, sealed], true)
   return (
     <>
-      <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1}>
+      <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1} lang={sealed ? undefined : langOf(text) || undefined}>
         {sealed
           ? String(text).split(/(\*+)/).map((p, i) => (/^\*+$/.test(p) ? <span key={i} className="wl-scr-stars">{p}</span> : p))
           : text}
@@ -731,7 +733,7 @@ export function ScreenDraft({ value, onChange, max = 280, placeholder = '', auto
       <textarea
         ref={(n) => { ref.current = n; if (inputRef) inputRef.current = n }}
         className="wl-scr-msg wl-scr-draft" value={value} placeholder={placeholder}
-        maxLength={max} rows={1} spellCheck="true" aria-label={label}
+        maxLength={max} rows={1} spellCheck="true" aria-label={label} lang={langOf(value) || undefined}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
       />
       <Caret of={ref} screen />
