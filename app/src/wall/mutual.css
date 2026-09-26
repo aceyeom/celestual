@@ -29,8 +29,8 @@
 .wl-join-fig { position: relative; display: grid; place-items: center; margin: clamp(14px, 2.6svh, 26px) 0; }
 .wl-join-scr { width: clamp(160px, calc((100svh - 500px) / 1.16), 290px); }
 /* When the backlight turns pink on the glass the phone's light on the room
-   turns pink with it, as it does in the intro (intro.css `.hi-halo`): out
-   past the phone as the wave reaches the glass's edge, and resting at a
+   turns pink with it, as it does in the intro: out past the phone as the
+   pink reaches the glass's top edge (Join.jsx `TURN`), and resting at a
    softer pink for as long as the screen is pink. A tap that lands the story
    before then does not send it. */
 .wl-join-light {
@@ -43,7 +43,7 @@
     rgba(var(--story-glow-rgb), 0) 100%);
   transform: translate3d(-50%, -50%, 0) scale(0.6);
 }
-.wl-join-fig.is-lit .wl-join-light { animation: wl-join-light 1700ms var(--ease-out) both; }
+.wl-join-fig.is-lit .wl-join-light { animation: wl-join-light 1700ms var(--ease-out) var(--mu-turn-at, 0ms) both; }
 @keyframes wl-join-light {
   0%   { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.6); }
   26%  { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(0.9); }
@@ -51,7 +51,8 @@
 }
 .wl-join-fig { isolation: isolate; }
 
-/* it comes on as the page does, a beat after the question */
+/* it comes on as the page does, a beat after the question, and again after
+   each sleep */
 .wl-join-scr .wl-scr.is-waking { animation-delay: 180ms; }
 .wl-join-scr .wl-scene-halo,
 .wl-join-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 180ms both; }
@@ -170,18 +171,49 @@
 .wl-mutual-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
 /* The phone's light (turn.js, and `PHONE` in Reveal.jsx and Join.jsx): the
-   night's, turned to the rose by
-   one number as the pink spreads over the glass, the panel under the pink
-   first and the bands and the light round the phone with it, so the whole
-   phone is a letter lit in rose by the time the pink reaches its edges. A
-   tap lands it in a quarter of a second, and reduced motion draws it lit. */
+   night's, turned to the rose by two numbers as the pink spreads over the
+   glass a few cells at a time. `--mu-turn` turns the bands, their status and
+   the light round the phone, from when the pink reaches the top of the
+   glass; `--mu-pan` the panel itself under the pink, once the pink has
+   covered all of it, so the grey is only ever seen to go over a block of
+   cells at a time (PixelStory.jsx `underPink`). The moments are the story's
+   (`--mu-turn-at`, `--mu-pan-at`, set by the page from pixmark.js). Between
+   two tellings, with the screen asleep and dark, the two go back to the
+   night's, and the next telling turns them again. A tap lands it in a
+   quarter of a second, and reduced motion draws it lit. */
 @property --mu-turn { syntax: '<number>'; inherits: true; initial-value: 0; }
-:is(.wl-mutual-scr, .wl-join-scr) { --mu-turn: 0; transition: --mu-turn 240ms var(--ease); }
+@property --mu-pan { syntax: '<number>'; inherits: true; initial-value: 0; }
+:is(.wl-mutual-scr, .wl-join-scr) {
+  --mu-turn: 0; --mu-pan: 0;
+  transition: --mu-turn 240ms var(--ease), --mu-pan 240ms var(--ease);
+}
 .wl-mutual.is-glow .wl-mutual-scr,
-.wl-join-fig.is-lit .wl-join-scr { animation: wl-mutual-turn 460ms var(--ease) 240ms both; }
-.wl-mutual:is(.is-landed, .is-still) .wl-mutual-scr,
-.wl-join:is(.is-landed, .is-still) .wl-join-scr { --mu-turn: 1; }
+.wl-join-fig.is-lit .wl-join-scr {
+  animation:
+    wl-mutual-turn 460ms var(--ease) var(--mu-turn-at, 400ms) both,
+    wl-mutual-pan 160ms linear var(--mu-pan-at, 1500ms) both;
+}
+.wl-mutual:is(.is-skip, .is-still) .wl-mutual-scr,
+.wl-join:is(.is-landed, .is-still) .wl-join-scr { animation: none; --mu-turn: 1; --mu-pan: 1; }
+/* a frame held for the screenshot loop holds the light where it is then */
+:is(.wl-mutual-fig, .wl-join-fig).is-held :is(.wl-mutual-scr, .wl-join-scr) {
+  animation: none; transition: none; --mu-turn: var(--held-turn, 0); --mu-pan: var(--held-pan, 0);
+}
 @keyframes wl-mutual-turn { from { --mu-turn: 0; } to { --mu-turn: 1; } }
+@keyframes wl-mutual-pan { from { --mu-pan: 0; } to { --mu-pan: 1; } }
+
+/* ── between two tellings ──
+   The door and the mutual are told again for as long as they are open
+   (pixmark.js `loop`). Between the two the screen goes to sleep the way a
+   letter's does when it is put away (screen.css `wl-sleep`), its light on
+   the room with it, stays dark a moment, and wakes on the first frame of
+   the next telling, flickering on as it first did: the one change of frame
+   that is never seen happen. */
+:is(.wl-join-scr, .wl-mutual-scr) .wl-scr.is-asleep { animation: wl-sleep 560ms cubic-bezier(0.4, 0, 1, 1) both; }
+:is(.wl-join-scr, .wl-mutual-scr):has(.wl-scr.is-asleep) :is(.wl-scene-halo, .wl-scene-halo-2),
+.wl-join-fig.is-asleep .wl-join-light {
+  animation: none; opacity: 0; transition: opacity 420ms var(--ease-out);
+}
 
 /* The sentence, on the glass, under the mark: in the phone's face and its
    ink, the size of a letter's words on a small screen, set whole from the
@@ -201,9 +233,11 @@
    The glass is alive on its own (pixmark.js `revealStory`); round it, the
    phone rises and settles a few pixels, slowly, and its light in the room
    breathes in the story's pink with it, once every 4.2 seconds. The light
-   comes up as the backlight turns pink on the glass, 1.7s in, and the
-   phone starts to move once the mark is whole, 2.7s in. Transform and opacity,
-   on a radial gradient already painted, and paused with the tab. */
+   comes up as the pink on the glass reaches its edge (`--mu-turn-at`, on
+   each telling) and goes out as the screen sleeps between two; the phone
+   starts to move once the mark is whole, 2.7s in, and goes on moving.
+   Transform and opacity, on a radial gradient already painted, and paused
+   with the tab. */
 .wl-mutual-halo {
   position: absolute; left: 50%; top: 50%; z-index: -1;
   width: min(150vw, 720px); aspect-ratio: 1; pointer-events: none;
@@ -214,8 +248,12 @@
     rgba(var(--story-glow-rgb), 0) 100%);
   transform: translate3d(-50%, -50%, 0);
   opacity: 0;
-  animation: wl-mutual-light 1100ms var(--ease-out) 1700ms both, wl-mutual-breathe 4200ms ease-in-out 2800ms infinite;
   will-change: transform, opacity;
+}
+.wl-mutual.is-glow .wl-mutual-halo {
+  animation:
+    wl-mutual-light 1100ms var(--ease-out) var(--mu-turn-at, 400ms) both,
+    wl-mutual-breathe 4200ms ease-in-out calc(var(--mu-turn-at, 400ms) + 1100ms) infinite;
 }
 .wl-mutual-float {
   position: relative; width: 100%; display: grid; place-items: center;
@@ -232,8 +270,10 @@
   50%      { transform: translate3d(0, -6px, 0); }
 }
 /* landed by a tap: alive at once */
-.wl-mutual.is-landed .wl-mutual-halo { animation: wl-mutual-breathe 4200ms ease-in-out infinite; }
+.wl-mutual.is-skip .wl-mutual-halo { animation: wl-mutual-breathe 4200ms ease-in-out infinite; }
 .wl-mutual.is-landed .wl-mutual-float { animation-delay: 0ms; }
+/* and out with the screen, between two tellings */
+.wl-mutual.is-asleep .wl-mutual-halo { animation: none; opacity: 0; transition: opacity 420ms var(--ease-out); }
 .wl-mutual.is-hidden :is(.wl-mutual-halo, .wl-mutual-float) { animation-play-state: paused; }
 
 /* ── the two of them ──

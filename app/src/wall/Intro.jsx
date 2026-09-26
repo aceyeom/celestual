@@ -1,18 +1,20 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE INTRO, the first three and a half seconds of either surface         ║
+// ║  THE INTRO, the first five seconds of either surface                     ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // A phone, on black, once per tab, before the page exists. Its screen comes
 // on grey, the night screen every letter is lit in unless its writer chose;
-// a boy and a girl run in from either edge of it; he slows and opens his
-// arms, and she runs into them, her own run carrying her on into him, and
-// is held. From where they hold each other the backlight turns pink, a wave
+// a boy and a girl run in from either edge of it, onto the glass together;
+// he slows and opens his arms, and she runs into them, her own run carrying
+// her on into him, and is held. From where they hold each other the
+// backlight turns pink, the panel's own cells going over a few at a time,
 // out to the edges of the glass, and as it reaches them the phone's own
 // glass turns with it, its bands, its status and the light it throws, until
 // the whole phone is a letter lit in rose (looks.js `skinOf`). What they
-// were holding on to glides together as the mark, on the rose screen. Then
-// the screen goes out and the page is there. It plays over the wall at `/`
-// and at `/berkeley`, and it is the same three and a half seconds on both.
+// were holding on to glides together as the mark, on the rose screen, and
+// the mark stands there a second. Then the screen goes out and the page is
+// there. It plays over the wall at `/` and at `/berkeley`, and it is the
+// same five seconds on both.
 //
 // The story on the glass is the product's, told in the phone's own pixels
 // (pixmark.js, folk.js, PixelStory.jsx): two people, and the moment they
@@ -20,34 +22,42 @@
 // and the battery and nothing that would say a message had come in, because
 // nothing has; no name, because the name is in the bar of the page under it.
 //
-// ── the beats: 3080ms to the lift, 3690ms to a bare page ────────────────────
+// ── the beats: 4330ms to the lift, 4940ms to a bare page ────────────────────
 //
 //   0 ·    0ms   black. A held frame before anything moves. The screen
 //                comes on at 120, the phone's own flicker (screen.css
 //                `wl-wake`), and throws its grey light on the black round it.
-//   1 ·  180ms   THE RUN. She comes in from the right, he from the left,
-//                sixteen drawings a second, sliding between the cells at the
-//                display's own rate. From 870 he slows; at 1055 he stands
-//                with his arms open.
-//   2 · 1180ms   THE CATCH. She lands in them and her run carries her on,
+//   1 ·  100ms   THE RUN. He comes in from the left and she from the right,
+//                over the edges of the glass on the same frame, posed afresh
+//                at the display's own rate and sliding between the cells.
+//                From 580 he slows; at 960 he stands with his arms open.
+//   2 · 1040ms   THE CATCH. She lands in them and her run carries her on,
 //                leaning the way she ran, into him and behind him; her heel
 //                comes up, her hair and her hem swing past and settle. From
-//                1490 they hold each other, and breathe.
-//     · 1550ms   THE PINK, from where they hold each other: the backlight,
-//                a wave out to the edges of the glass; at the glass's edges
-//                it takes the phone's bands, its status and the light it
-//                throws on the black with it (intro.css, the rose), so the
-//                phone becomes the rose letter. Nothing goes on out into the
-//                room: the light round the phone is a rose letter's own.
-//   3 · 2920ms   THE MARK. From 2090 the two of them glide into the star and
+//                1540 they hold each other, and breathe.
+//     · 1460ms   THE PINK, from where they hold each other: the backlight
+//                turning, a few of the panel's cells at a time, in a ragged
+//                front that steps out to the last corner of the glass over a
+//                second and a half. As it reaches them it takes the phone's
+//                top band and its status (1870), its bottom band (2220) and
+//                the light it throws on the black (intro.css, the rose), and
+//                once the whole panel has turned, the panel under it (2960),
+//                so the phone becomes the rose letter. Nothing goes on out
+//                into the room: the light round the phone is a rose letter's
+//                own.
+//   3 · 3270ms   THE MARK. From 2410 the two of them glide into the star and
 //                the ground into the ring, every pixel between the cells as
 //                it travels and put on one as it lands. The mark stands whole
-//                on the rose screen.
-//   4 · 3080ms   THE LIFT. The screen goes to sleep, the phone rises a
+//                on the rose screen, for a second.
+//   4 · 4330ms   THE LIFT. The screen goes to sleep, the phone rises a
 //                little and dissolves, and the black goes with it; the page
 //                is already rising underneath by the time the black is half
 //                gone.
-//     · 3690ms   the black is gone.
+//     · 4940ms   the black is gone.
+//
+// It was three and a half seconds, and the mark stood for a sixth of one
+// before the screen went out; the owner asked for the pink to take its time
+// and for the mark to be there long enough to be seen.
 //
 // ── what it refuses to do ───────────────────────────────────────────────────
 // It plays once per tab: walking back to the wall from a letter does not
@@ -55,8 +65,8 @@
 // lands the mark and lifts at once, so a brand animation is never a toll
 // gate: the glass jumps to the mark on the rose screen and the phone's glass
 // turns rose in a quarter of a second as it goes out. Under
-// prefers-reduced-motion it draws the mark on the rose letter, holds a beat,
-// and lifts; nothing on the glass moves.
+// prefers-reduced-motion it draws the mark on the rose letter, holds it a
+// little over a second, and lifts; nothing on the glass moves.
 //
 // ── and it waits, when there is something to wait for ───────────────────────
 // `ready` is whether the page under it is ready to be seen. The wall hands it
@@ -81,21 +91,29 @@ import './intro.css'
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
 const STORY = introStory(100, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
+// how long the mark stands whole on the rose screen before the lift
+const MARK_HOLD = 1060
 //                 0    1                  2                   3                   4
-const BEATS = [0, STORY.times.run, STORY.times.catch, STORY.times.done, STORY.times.done + 160]
+const BEATS = [0, STORY.times.run, STORY.times.catch, STORY.times.done, STORY.times.done + MARK_HOLD]
 const LIFT = 4
-// How long the black takes to leave. 3080 + 610 = 3690.
+// How long the black takes to leave. 4330 + 610 = 4940.
 const OUT = 610
 // when the pink leaves them, which is when the phone's glass starts to turn
 const GLOW = STORY.times.glow
+// under reduced motion, how long the mark is held before the lift
+const STILL_HOLD = 1200
 
 // The phone's glass, from the night's to the rose's: each of the skin's
 // colours the Screen paints with (looks.js `skinVars`, screen.css) is the
-// two mixed by how far the pink has come. Three numbers carry it, animated
-// in intro.css: the top band and its status as the wave reaches the top of
-// the glass, the bottom band and the panel under the pink as it reaches the
-// bottom, and the light the phone throws on the black as the whole glass is
-// pink. Handed to `Screen` as its `style`, which is laid over its skin.
+// two mixed by how far the pink has come. Four numbers carry it, animated
+// in intro.css: the top band and its status as the pink reaches the top of
+// the glass, the bottom band as it reaches the bottom, the light the phone
+// throws on the black as the pink fills the glass, and the panel itself
+// under the pink only once the pink has covered all of it, so that no part
+// of the grey is seen to turn except a block of cells at a time. Handed to
+// `Screen` as its `style`, which is laid over its skin; the moments, from
+// the story (pixmark.js `introStory` times), as the delays of those four
+// animations (`TURN`).
 const N = skinVars('night')
 const R = skinVars('rose')
 const turn = (name, by) => `color-mix(in srgb, ${N[name]}, ${R[name]} calc(var(${by}) * 100%))`
@@ -106,12 +124,18 @@ const FRAME = {
   '--s-lit': turn('--s-lit', '--hi-top'),
   '--s-bloom': turn('--s-bloom', '--hi-top'),
   '--s-bot': turn('--s-bot', '--hi-bot'),
-  '--s-hi': turn('--s-hi', '--hi-bot'),
-  '--s-mid': turn('--s-mid', '--hi-bot'),
-  '--s-lo': turn('--s-lo', '--hi-bot'),
+  '--s-hi': turn('--s-hi', '--hi-pan'),
+  '--s-mid': turn('--s-mid', '--hi-pan'),
+  '--s-lo': turn('--s-lo', '--hi-pan'),
   '--s-halo': turn('--s-halo', '--hi-glow'),
   '--s-halo-2': turn('--s-halo-2', '--hi-glow'),
   '--s-edge': turn('--s-edge', '--hi-glow'),
+}
+const TURN = {
+  '--hi-top-at': `${STORY.times.top - GLOW}ms`,
+  '--hi-bot-at': `${STORY.times.bottom - GLOW}ms`,
+  '--hi-pan-at': `${STORY.times.covered - GLOW}ms`,
+  '--hi-glow-ms': `${STORY.times.covered - GLOW - 200}ms`,
 }
 
 // the night screen, as a letter with no colour of its own is lit, and no keys
@@ -174,7 +198,7 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
     // with (the phone turning rose after the pink has reached its edges).
     const on = (ms) => Math.max(0, ms - (performance.now() - t0))
     if (reduce) {
-      timers.current.push(setTimeout(() => setDue(true), on(560)))
+      timers.current.push(setTimeout(() => setDue(true), on(STILL_HOLD)))
       return () => timers.current.forEach(clearTimeout)
     }
     BEATS.forEach((ms, i) => {
@@ -234,11 +258,11 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   const clock = heldClock !== null ? heldClock : reduce || skipped ? STORY.end : null
   // A held clock holds the glass's turn on the same moment as the pink:
   // its animations paused that far in (intro.css `.hi.is-held`).
-  const since = heldClock !== null && lit ? { '--hi-since': `${GLOW - heldClock}ms` } : undefined
+  const since = heldClock !== null && lit ? { ...TURN, '--hi-since': `${GLOW - heldClock}ms` } : TURN
   // the phone is the rose letter already: under reduced motion, and after a
-  // skip, which lands the mark on the rose screen (the pink not yet having
-  // gone, it turns in a quarter of a second as the screen goes out)
-  const rose = reduce || (skipped && !lit)
+  // skip, which lands the mark on the rose screen (whatever of the glass has
+  // not yet turned turns in a quarter of a second as the screen goes out)
+  const rose = reduce || skipped
   const cls = ['hi', `is-at${at}`, held && 'is-held', lit && 'is-glow', rose && 'is-rose', reduce && 'is-still'].filter(Boolean).join(' ')
 
   return (

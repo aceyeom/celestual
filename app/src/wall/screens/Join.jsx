@@ -43,19 +43,31 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // A letter's screen, the night one, with the intro's two on it, a boy and a
-// girl, and the story is the mechanic in the order it happens (pixmark.js
-// `joinStory`):
+// girl, one at either side of the glass from the first frame, and the story
+// is the mechanic in the order it happens (pixmark.js `joinStory`):
 //
-//   1  900ms   he lets a note go. It rises, stops in the air over the middle
-//              of the glass and seals, dimmed. She does not look up.
+//   1  900ms   he holds a note up and lets it go. It goes over to the middle
+//              of the glass, above and ahead of him and never across him,
+//              and stops there, sealed and dimmed. She does not look up.
 //   2  2300ms  she lets one go, not having seen his, and it stops and seals
 //              beside it.
-//   3  3600ms  only now do the two notes wake, slide into each other and
-//              become one heart, on one frame: both of them find out at once.
-//              The heart goes up, they go to each other under it, her run
-//              carries her on into his arms and half behind him, the phone's
-//              backlight turns pink and the phone becomes a letter lit in
-//              rose (turn.js), and they glide together into the mark.
+//   3  3600ms  only now do the two notes wake and slide into each other, and
+//              on the frame they meet they are one note, lit: both of them
+//              find out at once. It goes out a pixel at a time as the two of
+//              them set off to each other on the same beat; her run carries
+//              her on into his arms and half behind him, the phone's
+//              backlight turns pink a few cells at a time and the phone
+//              becomes a letter lit in rose (turn.js), and they glide
+//              together into the mark.
+//
+// The mark stands, the screen goes to sleep, and it wakes on the two of them
+// apart again and tells it all again (`STORY.loop`), for as long as the page
+// is open. The steps under it follow the phone each time round; the key,
+// once it has come up, stays.
+//
+// There was a heart: the notes became one and it rose off the top of the
+// glass over them as they ran. It is gone, and so is the way the notes used
+// to seal on his head and cross his face on their way to it.
 //
 // Nobody is named on the phone. It used to carry @you over the one on the
 // left and @them over the one on the right, and with a boy and a girl on the
@@ -77,7 +89,7 @@ import { Display, Pill, Close } from '../parts.jsx'
 import { Screen } from '../screen.jsx'
 import { skinOf } from '../looks.js'
 import { turnStyle } from '../turn.js'
-import PixelStory, { SQUARE } from '../PixelStory.jsx'
+import PixelStory, { SQUARE, underPink, useStoryClock, heldAt } from '../PixelStory.jsx'
 import { joinStory } from '../pixmark.js'
 import { cardStep } from '../seed.js'
 import { patch } from '../store.js'
@@ -98,36 +110,64 @@ const STEPS = [
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
 const STORY = joinStory({ you: 900, them: 2300, both: 3600, panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
-//              1                2                 3                  4
-const BEATS = [STORY.times.you, STORY.times.them, STORY.times.both, STORY.times.found + 400]
+const T = STORY.times
+// The moments a telling passes, in order: the three steps and the key
+// (`LAST` of them), the pink leaving the two of them, the screen going to
+// sleep, and dark enough that the phone's light can go back to the night's
+// unseen (mutual.css, `wl-sleep` is 560ms).
+//              1       2        3        4                5       6       7
+const MARKS = [T.you, T.them, T.both, T.found + 400, T.glow, T.rest, T.rest + 600]
 const LAST = 4
+const GLOW = 5
+const ASLEEP = 6
+const DARK = 7
 
 // the night screen, with nobody named on it, and no keys, turning into the
-// rose letter as the pink spreads over it
+// rose letter as the pink spreads over it, the panel under the pink once it
+// is all pink; and how long after the pink leaves them the bands and the
+// light turn (as it reaches the top of the glass), and the panel
 const LOOK = { tint: 'night' }
-const PHONE = turnStyle('night', 'rose', SQUARE)
+const PHONE = underPink(turnStyle('night', 'rose', SQUARE))
+const TURN = { '--mu-turn-at': `${T.top - T.glow}ms`, '--mu-pan-at': `${T.covered - T.glow}ms` }
 const NO_KEYS = {}
 const NO_TOP = {}
 
+// ── the screenshot loop's hold ──
+// Development only, as the intro's `?t=` is: `?story=5200` holds the glass,
+// the steps and the phone's light on 5200ms into a telling.
+function devHold() {
+  if (!import.meta.env.DEV) return null
+  const v = new URLSearchParams(window.location.search).get('story')
+  return v === null ? null : Math.max(0, Number(v) || 0) % STORY.loop
+}
+
 export default function Join({ go, up, upLabel = 'back to the wall', setField, reduce }) {
-  const [at, setAt] = useState(reduce ? LAST : 0)
-  // the pink has left the two of them on the glass, and the room takes it up
-  const [lit, setLit] = useState(false)
-  // a tap lands the whole thing, the glass on its last frame with it
+  const hold = useRef(devHold()).current
+  // A tap lands the telling on its mark, from which it goes on round; the
+  // clock is moved, not stopped. Reduced motion holds the mark still.
+  const [from, setFrom] = useState(() => performance.now())
   const [landed, setLanded] = useState(false)
-  const t0 = useRef(performance.now()).current
-  const timers = useRef([])
+  const still = reduce || hold !== null
+  const clock = useStoryClock(STORY, from, MARKS, still)
+  const now = reduce ? heldAt(MARKS, T.done) : hold !== null ? heldAt(MARKS, hold) : clock
+  const at = Math.min(LAST, now.i)
+  // the key, and the steps told, stay once a telling has reached them
+  const told = reduce || now.n > 0 ? LAST : at
+  // the pink has left the two of them on the glass, and the room takes it
+  // up; asleep between two tellings, and then dark
+  const lit = now.i >= GLOW && now.i < DARK
+  const asleep = !reduce && now.i >= ASLEEP
+  // a landing is for the telling it lands, and the next one is told whole
+  const skip = landed && now.n === 0
+  // a held frame holds the phone's light where it is at that moment too
+  const fig = hold === null ? TURN : {
+    ...TURN,
+    '--held-turn': lit ? Math.max(0, Math.min(1, (hold - T.top) / 460)) : 0,
+    '--held-pan': lit && hold >= T.covered ? 1 : 0,
+  }
   useEffect(() => { setField('slow') }, [setField])
   // Shown once: the tab goes straight on from here (Wall.jsx `Tab`).
   useEffect(() => { patch({ joined: true }) }, [])
-
-  useEffect(() => {
-    if (reduce) return undefined
-    BEATS.forEach((ms, i) => timers.current.push(setTimeout(() => setAt(i + 1), ms)))
-    timers.current.push(setTimeout(() => setLit(true), STORY.times.glow))
-    const all = timers.current
-    return () => all.forEach(clearTimeout)
-  }, [reduce])
 
   // The last step a card can be credited with, and the furthest one: from the
   // wall into the rest of the product (migration 0047). The sheet it opens
@@ -147,30 +187,29 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
     go('ping')
   }
 
-  // The same escape the intro has, for the same reason: this runs five
-  // seconds and the second person at a demo table has already seen it. A
-  // tap anywhere lands the whole thing.
+  // The same escape the intro has, for the same reason: a telling runs
+  // seven seconds and the second person at a demo table has already seen
+  // it. A tap anywhere lands it on the mark, the steps told and the key up,
+  // and from there it goes on round.
   useEffect(() => {
-    if (reduce) return undefined
-    const skip = () => {
-      timers.current.forEach(clearTimeout)
-      timers.current = []
-      setAt(LAST)
+    if (still) return undefined
+    const land = () => {
+      setFrom(performance.now() - T.done)
       setLanded(true)
     }
-    window.addEventListener('pointerdown', skip)
-    window.addEventListener('keydown', skip)
+    window.addEventListener('pointerdown', land)
+    window.addEventListener('keydown', land)
     return () => {
-      window.removeEventListener('pointerdown', skip)
-      window.removeEventListener('keydown', skip)
+      window.removeEventListener('pointerdown', land)
+      window.removeEventListener('keydown', land)
     }
-  }, [reduce])
+  }, [still])
 
-  // the step the phone is on; every step once it has told them all
+  // the step the phone is on; none once it has told them all
   const on = at >= LAST ? -1 : at - 1
 
   return (
-    <div className={`wl-page wl-join is-at${at}${at >= LAST ? ' is-told' : ''}${landed ? ' is-landed' : ''}${reduce ? ' is-still' : ''}`}>
+    <div className={`wl-page wl-join is-at${at}${told >= LAST ? ' is-told' : ''}${skip ? ' is-landed' : ''}${reduce ? ' is-still' : ''}`}>
       <header className="wl-top">
         {/* The corner mark is GONE from this screen, and only from this one.
             Everywhere else it is the thing that says which product you are in;
@@ -193,14 +232,18 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
         {/* The figure is a picture of the three steps beside it, and the steps
             are what a screen reader hears. The screen is the one lit thing on
             this page until the key comes up under it. */}
-        <div className={`wl-join-fig${lit ? ' is-lit' : ''}`} aria-hidden="true">
+        <div
+          className={`wl-join-fig${lit ? ' is-lit' : ''}${asleep ? ' is-asleep' : ''}${hold !== null ? ' is-held' : ''}`}
+          style={fig} aria-hidden="true"
+        >
           {/* the light off the glass, into the room (mutual.css) */}
           <span className="wl-join-light" />
+          {/* asleep between two tellings, and waking on the next (mutual.css) */}
           <Screen
-            look={LOOK} seed="join" top={NO_TOP} keys={NO_KEYS} live={false} state="waking"
+            look={LOOK} seed="join" top={NO_TOP} keys={NO_KEYS} live={false} state={asleep ? 'asleep' : 'waking'}
             className="wl-join-scr" style={PHONE}
           >
-            <PixelStory story={STORY} at={reduce || landed ? STORY.end : null} from={t0} />
+            <PixelStory story={STORY} at={reduce ? T.done : hold} from={from} />
           </Screen>
         </div>
 
@@ -208,7 +251,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           {STEPS.map((s, i) => (
             <li
               key={s.line}
-              className={`wl-join-step${i === on ? ' is-on' : ''}${at > i ? ' is-told' : ''}`}
+              className={`wl-join-step${i === on ? ' is-on' : ''}${told > i ? ' is-told' : ''}`}
               aria-current={i === on ? 'step' : undefined}
             >
               <span className="wl-join-n" aria-hidden="true">{i + 1}</span>
@@ -220,7 +263,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           ))}
         </ol>
 
-        <div className={`wl-join-foot${at >= LAST ? ' is-in' : ''}`}>
+        <div className={`wl-join-foot${told >= LAST ? ' is-in' : ''}`}>
           {/* ── the hand-off ──
               This used to open /berkeley/orbit, a drawn stand-in for the core
               service, and then Main's /place by a real navigation out of this
