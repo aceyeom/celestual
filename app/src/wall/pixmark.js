@@ -939,10 +939,10 @@ function morphOf(pair, dashes) {
 const I_RING_SPREAD = 240
 const I_RING_FLIGHT = 560
 const I_STAR_AT = 90
-const I_STAR_SPREAD = 150
-const I_STAR_JITTER = 70
+const I_STAR_SPREAD = 170
+const I_STAR_JITTER = 18
 const I_STAR_FLIGHT = 560
-const I_BEND = 5
+const I_BEND = 3
 export const I_MORPH_MS = Math.max(I_RING_SPREAD + 60 + I_RING_FLIGHT, I_STAR_AT + I_STAR_SPREAD + I_STAR_JITTER + I_STAR_FLIGHT)
 // the intro's mark is cut as the seal is, sampled six to a cell's side and
 // not eight: on seventy seven cells that is the same drawing, in half the time
@@ -968,10 +968,17 @@ function glideOf(pair, dashes, n, ox, oy, cols) {
   // the faintest of their outline cells are let go of first: they are the
   // soft edge of a drawing and not pixels of it
   const body = pair.filter((c) => (c[4] ?? 1) >= 0.2)
-  const src = byAngle(body, (p) => [p[0], p[1]])
-  const dst = byAngle(m.star, (p) => [p.x, p.y])
+  // The two of them become the star as one shape and not as a spray: each
+  // of their cells goes to the cell of the star that stands where it stands
+  // in the reading order, row by row, so their heads rise into the star's
+  // upper arm and their feet run down into the lower, and the cells beside
+  // each other on the way stay beside each other. It starts where they hold
+  // each other, the middle of the star, and runs out to its points.
+  const order = (a, b) => (a[1] - b[1]) || (a[0] - b[0])
+  const src = [...body].sort(order)
+  const dst = [...m.star].map((p) => [p.x, p.y, p.r]).sort(order)
   pairs(src, dst).forEach(([s, d], i) => {
-    bits.push(bit(s, d.x, d.y, I_STAR_AT + (d.r / maxR) * I_STAR_SPREAD + hash(i, 7) * I_STAR_JITTER, I_STAR_FLIGHT))
+    bits.push(bit(s, d[0], d[1], I_STAR_AT + (d[2] / maxR) * I_STAR_SPREAD + hash(i, 7) * I_STAR_JITTER, I_STAR_FLIGHT))
   })
   const faint = pair.filter((c) => (c[4] ?? 1) < 0.2)
   return { bits, faint, done: m.all }
@@ -1203,7 +1210,7 @@ const I_GROUND = 67
 const I_MARK = 77
 const I_WASH_AT = -80
 const I_WASH_MS = 760
-const I_GLIDE_AT = 660
+const I_GLIDE_AT = 600
 // the ground, dashed, three lit and one dark, in the far ink
 function groundAt(row, cols) {
   const out = []

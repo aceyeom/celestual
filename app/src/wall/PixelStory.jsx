@@ -259,6 +259,69 @@ function washOn(g, w, s) {
   }
 }
 
+// The fine story's pink is worked out at a quarter of the canvas's size and
+// laid on it smoothly. It is a light, all gradient, with a front soft over a
+// dozen cells, and a gradient a quarter the size is the same gradient; the
+// sixteenth of the pixels is what lets a phone spread it sixty times a
+// second.
+const QW = 4
+function washFine(g, w, s) {
+  if (!s.pink) return
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.globalAlpha = Math.max(0, Math.min(1, w.level ?? 1))
+  if (w.r == null) {
+    g.drawImage(s.pink, 0, 0)
+    g.globalAlpha = 1
+    return
+  }
+  if (!s.pinkS) {
+    const sw = Math.ceil(s.W / QW)
+    const sh = Math.ceil(s.H / QW)
+    const a = document.createElement('canvas')
+    a.width = sw
+    a.height = sh
+    a.getContext('2d').drawImage(s.pink, 0, 0, sw * QW, sh * QW, 0, 0, sw, sh)
+    const b = document.createElement('canvas')
+    b.width = sw
+    b.height = sh
+    s.pinkS = a
+    s.tmpS = b
+  }
+  const { ox, oy, cell, mx, my } = s
+  const x = (mx + (w.x + ox + 0.5) * cell) / QW
+  const y = (my + (w.y + oy + 0.5) * cell) / QW
+  const R = (Math.max(0.5, w.r) * cell) / QW
+  const E = ((w.soft || 5) * cell) / QW
+  const out = R + E
+  const sw = s.tmpS.width
+  const sh = s.tmpS.height
+  const t = s.tmpS.getContext('2d')
+  t.globalCompositeOperation = 'source-over'
+  t.clearRect(0, 0, sw, sh)
+  t.drawImage(s.pinkS, 0, 0)
+  t.globalCompositeOperation = 'destination-in'
+  const m = t.createRadialGradient(x, y, 0, x, y, out)
+  m.addColorStop(0, 'rgba(0, 0, 0, 1)')
+  m.addColorStop(Math.max(0, (R - E) / out), 'rgba(0, 0, 0, 1)')
+  m.addColorStop(1, 'rgba(0, 0, 0, 0)')
+  t.fillStyle = m
+  t.fillRect(0, 0, sw, sh)
+  t.globalCompositeOperation = 'source-over'
+  const rim = Math.max(0, Math.min(1, w.rim ?? 0))
+  if (rim > 0.01) {
+    const r = t.createRadialGradient(x, y, 0, x, y, out)
+    r.addColorStop(0, `rgba(${FRONT_RGB}, 0)`)
+    r.addColorStop(Math.max(0, (R - 1.6 * E) / out), `rgba(${FRONT_RGB}, 0)`)
+    r.addColorStop(Math.max(0, (R - 0.4 * E) / out), `rgba(${FRONT_RGB}, ${(0.42 * rim).toFixed(3)})`)
+    r.addColorStop(1, `rgba(${FRONT_RGB}, 0)`)
+    t.fillStyle = r
+    t.fillRect(0, 0, sw, sh)
+  }
+  g.imageSmoothingEnabled = true
+  g.drawImage(s.tmpS, 0, 0, sw, sh, 0, 0, sw * QW, sh * QW)
+  g.globalAlpha = 1
+}
+
 // The whole body of the screen is the panel: `pc` by `pr` cells, the story's
 // own grid centred in it at (`ox`, `oy`), so the unlit dots run edge to edge
 // and there is no second rectangle standing inside the glass. The canvas is
@@ -387,7 +450,6 @@ function ghostGrid(s) {
   for (let y = 0; y < s.pr; y++) for (let x = 0; x < s.pc; x++) g.rect(s.mx + x * s.cell, s.my + y * s.cell, d, d)
   g.fill()
   s.grid = cv
-  s.gridInk = s.inkNow || s.ink
 }
 function paintFine(g, f, s) {
   const { pc, pr, ox, oy, cell, gap, W, H, mx, my } = s
@@ -399,8 +461,11 @@ function paintFine(g, f, s) {
     s.ghost = faint(s.rgb)
     s.fills.clear()
   }
-  if (!s.grid || s.gridInk !== (s.inkNow || s.ink)) ghostGrid(s)
-  if (f.wash) washOn(g, f.wash, s)
+  // (the unlit dots are a few per cent of the ink, and are not drawn again
+  // for each step of the ink toward the rose's: at that strength the two
+  // inks are one grey)
+  if (!s.grid) ghostGrid(s)
+  if (f.wash) washFine(g, f.wash, s)
   if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
   g.drawImage(s.grid, 0, 0)
   // the lit cells, by their fill; a cell lit twice keeps the stronger

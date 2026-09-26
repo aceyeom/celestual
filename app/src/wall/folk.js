@@ -548,16 +548,16 @@ function handOf(B, A, kind, tone, z, part, w = 0) {
 // tapering from there to its ends, which part a little, the outer lock
 // lifting from the inner as it streams. One shape, the way a fall of hair
 // is one shape in a silhouette.
-const HAIR_LEN = [3.6, 3.6, 3.4, 3.2, 2.9]
+const HAIR_LEN = [3.4, 3.4, 3.1, 2.9, 2.6]
 // the half widths at each joint of the chain, the outer side and the inner
-const HAIR_OUT = [2.3, 2.75, 2.55, 2.05, 1.35, 0.5]
-const HAIR_IN = [2.3, 2.45, 2.2, 1.7, 1.1, 0.4]
+const HAIR_OUT = [2.9, 2.6, 2.15, 1.6, 1.0, 0.35]
+const HAIR_IN = [2.5, 2.3, 1.9, 1.4, 0.85, 0.3]
 function hairOf(p, j, T) {
   const { nt, ha } = j
   const hair = p.hair || [-10, -8, -6, -4, -2]
   // the fall's top, full over the nape and the back of the shoulders
-  const out = [ell(inFrame(nt, ha, -2.8, 1.6), 2.3, 3.1, -ha, T.hair, 21.5, 'hair')]
-  const chain = [inFrame(nt, ha, -2.6, 2.6)]
+  const out = [ell(inFrame(nt, ha, -2.9, 2.2), 2.4, 3.4, -ha, T.hair, 21.5, 'hair')]
+  const chain = [inFrame(nt, ha, -2.9, 3.3)]
   hair.forEach((a, i) => chain.push(add(chain[i], down(a), HAIR_LEN[i])))
   // each joint's normal: the outer side is the side away from her back
   const norm = chain.map((q, i) => {
@@ -646,11 +646,19 @@ export function cellsOf(S) {
 
 // Him in front of her, on two sheets of the same grid: where he is, she is
 // not seen, and round his outline where it lies over her there is a line of
-// light, so the two of them are two and not one shape.
+// light, so the two of them are two and not one shape. His far arm and far
+// leg are on the far side of him, and she is too: where they cross her,
+// they are behind her.
 const SOLID = 0.35
+const BEHIND = new Set(['armF', 'legF'])
 export function together(H, S) {
   const out = []
   const { w, h } = H
+  // his far limbs, where she is, are hers
+  for (let k = 0; k < H.count; k++) {
+    const i = H.touched[k]
+    if (BEHIND.has(H.part[i]) && S.cov[i] >= SOLID) H.cov[i] = 0
+  }
   for (let k = 0; k < H.count; k++) {
     const i = H.touched[k]
     if (H.cov[i] < SOLID) continue
@@ -792,7 +800,7 @@ function onGround(who, B, fx, f, px, hy, side) {
 const ROLL = [[0, 8], [0.2, 0], [0.62, 0], [1, -32]]
 // and a leg through the air, as a share of the swing: the heel up behind,
 // the knee through, the reach for the ground
-const SWING = [[0.25, { h: -4, k: 92, f: -48 }], [0.5, { h: 18, k: 102, f: -30 }], [0.75, { h: 30, k: 58, f: -8 }]]
+const SWING = [[0.25, { h: 2, k: 80, f: -44 }], [0.5, { h: 20, k: 90, f: -28 }], [0.75, { h: 30, k: 50, f: -8 }]]
 const pitchAt = (keys, u) => keyed(keys.map(([a, b]) => [a, { f: b }]), u).f
 
 // One walker: its steps (`leg` 0 near, 1 far; `t` the moment the foot comes
@@ -864,14 +872,17 @@ const slowing = (u) => {
 }
 
 // the arms and the body through a run, by the phase of the near leg
+// (the arms swing close, the elbows bent, the hands coming up to the chest
+// in front and back past the hip behind; hers a little less)
 function runTop(who, phi) {
   const c = Math.cos(2 * Math.PI * phi)
   const her = who === 'her'
+  const [s0, sa, e0, ea] = her ? [-9, 22, 86, 14] : [-11, 26, 88, 16]
   return {
     lean: (her ? 10 : 12) + 1.2 * Math.cos(4 * Math.PI * phi),
     neck: her ? -6 : -8,
     nod: -2,
-    sN: -12 - 30 * c, eN: 92 - 20 * c, sF: -12 + 30 * c, eF: 92 + 20 * c,
+    sN: s0 - sa * c, eN: e0 - ea * c, sF: s0 + sa * c, eF: e0 + ea * c,
     handN: 'fist', handF: 'fist',
   }
 }
@@ -960,8 +971,8 @@ const RUN = {
   // a stride (two steps) in ms, the share of it a foot is down, how far in
   // front of the pelvis a foot comes down, the pelvis's height and its rise
   // and fall, and the pace that comes of them, in cells a ms
-  him: { T: 640, S: 0.38, A: 8.5, H: 24.9, bob: 0.7 },
-  her: { T: 720, S: 0.38, A: 6.2, H: 22.8, bob: 0.55 },
+  him: { T: 640, S: 0.38, A: 8.5, H: 25.2, bob: 0.7 },
+  her: { T: 720, S: 0.38, A: 6.2, H: 23.05, bob: 0.55 },
 }
 for (const r of Object.values(RUN)) r.v = (r.A * 2.3) / (r.S * r.T)
 export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
@@ -1013,7 +1024,9 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   // hands open, the chest up and back a little and the head up.
   const OPEN = { lean: -1.5, neck: -4, nod: -3, sN: 58, eN: 24, sF: 104, eF: 12, handN: 'open', handF: 'open' }
   const WAIT = { ...OPEN, lean: 1, neck: -3, nod: -2, sN: 62, eN: 22, sF: 108, eF: 10 }
-  const HOLD_HIM = { ...WAIT, lean: -2, neck: 13, nod: 9, sN: 30, eN: 76, wN: -92, handN: 'flat', armF: false }
+  // held: both his arms round her, the near one across her back and the far
+  // one behind her, and of each only the hand is seen past her, on her back
+  const HOLD_HIM = { ...WAIT, lean: -2, neck: 13, nod: 9, sN: 30, eN: 76, wN: -92, handN: 'flat', sF: 44, eF: 58, wF: -70, handF: 'flat' }
   const TOP_KEYS = [
     [T_BRAKE - 60, runTop('him', phiH(T_BRAKE - 60))],
     [T_BRAKE, runTop('him', 0)],
@@ -1021,9 +1034,11 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
     [T_BRAKE + 240, { ...mixPose(runTop('him', 0.4), OPEN, 0.55), lean: 3, neck: -5 }],
     [T_PLANT, OPEN],
     [T_LAND - 30, WAIT],
-    [T_LAND + 110, { ...WAIT, lean: -2.5, neck: 3, nod: 3, sN: 50, eN: 50, sF: 90, eF: 40, wN: -20 }],
-    [T_LAND + 230, { ...HOLD_HIM, lean: -4, neck: 9, nod: 7, sN: 36, eN: 72, wN: -45 }],
-    [T_LAND + 380, { ...HOLD_HIM, lean: -2.5, neck: 12, nod: 9 }],
+    // she is in his arms: they close round her, the near one across her
+    // back and the far one behind her, and he bows his head to hers
+    [T_LAND + 70, { ...WAIT, lean: -1.5, neck: 2, nod: 2, sN: 50, eN: 46, sF: 70, eF: 36, wN: -10 }],
+    [T_LAND + 160, { ...HOLD_HIM, lean: -3.5, neck: 7, nod: 5, sN: 36, eN: 68, wN: -50, wF: -40 }],
+    [T_LAND + 320, { ...HOLD_HIM, lean: -3, neck: 11, nod: 8 }],
     [T_HOLD, HOLD_HIM],
   ]
   const himTop = (t) => (t < T_BRAKE - 60 ? runTop('him', phiH(t)) : keyed(TOP_KEYS, t))
@@ -1063,9 +1078,12 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   const HER_KEYS = [
     [T_LAND - 60, runTop('her', phiS(T_LAND - 60))],
     [T_LAND, L0],
-    [T_LAND + 100, { ...L0, lean: 13, neck: -2, nod: 2, sN: 76, eN: 40, sF: 90, eF: 34, handN: 'open', handF: 'open' }],
-    [T_LAND + 210, { ...HOLD_HER, lean: 14, neck: 2, nod: 6, sN: 74, eN: 62, wN: 4, handF: 'open', armF: true }],
-    [T_LAND + 340, { ...HOLD_HER, lean: 11.5, neck: 4, nod: 8 }],
+    // her arms go out to him at the height of his chest, and round him: the
+    // near one round his back, the far one round his neck, behind him
+    [T_LAND + 90, { ...L0, lean: 13, neck: -1, nod: 3, sN: 58, eN: 48, sF: 76, eF: 44, handN: 'open', handF: 'open' }],
+    [T_LAND + 150, { ...HOLD_HER, lean: 13.8, neck: 2, nod: 5, sN: 63, eN: 60, wN: 6, sF: 92, eF: 62, armF: true }],
+    [T_LAND + 210, { ...HOLD_HER, lean: 14, neck: 3, nod: 6, sN: 66, eN: 66, wN: 6 }],
+    [T_LAND + 330, { ...HOLD_HER, lean: 11.5, neck: 4, nod: 8 }],
     [T_HOLD, HOLD_HER],
   ]
   // and as she settles it comes down, to rest on its toes behind her
@@ -1103,9 +1121,22 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
 
   // held, they breathe: in and out every 1400ms
   const breath = (t) => (1 - Math.cos((2 * Math.PI * Math.max(0, t - T_HOLD)) / 1400)) / 2
+  // and running, the fall and the hem lift and drop with every step, a
+  // beat behind her: the hair falls as she rises and flies up as she comes
+  // down, the ends later than the roots
+  const bounce = (t, p) => {
+    const run = t < T_LAND ? 1 : Math.max(0, 1 - (t - T_LAND) / 260)
+    if (run <= 0) return p
+    const ph = 4 * Math.PI * (phiS(t) - RS.S / 2)
+    return {
+      ...p,
+      hair: p.hair.map((a, i) => a + run * [1, 2.2, 3.6, 5, 6][i] * Math.sin(ph - 0.5 - 0.4 * i)),
+      skirt: p.skirt + run * 3.5 * Math.sin(ph - 1.1),
+    }
+  }
   const poseAt = (t) => {
     let him = himPose(t)
-    let her = { ...herPoseBase(t), ...tail(t) }
+    let her = bounce(t, { ...herPoseBase(t), ...tail(t) })
     if (t > T_HOLD) {
       const b = breath(t)
       him = { ...him, lean: him.lean + 0.6 * b, neck: him.neck + 1.2 * b }
@@ -1116,11 +1147,32 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   // the two sheets they are laid on, the grid and a margin either side
   const SH = sheet(-70, ground - 66, cols + 140, 72)
   const SS = sheet(-70, ground - 66, cols + 140, 72)
+  // A drawing is laid once for a pose: held, they breathe, and a breath
+  // passes through the same few drawings again and again, so a pose seen
+  // before (to a tenth of a degree and a hundredth of a cell) is drawn from
+  // what was laid for it.
+  const seen = new Map()
+  const print = (p, x) => {
+    let k = x.toFixed(2)
+    for (const key of Object.keys(p).sort()) {
+      const v = p[key]
+      k += `|${Array.isArray(v) ? v.map((a) => a.toFixed(1)).join(',') : typeof v === 'number' ? v.toFixed(1) : v}`
+    }
+    return k
+  }
   const frameAt = (t) => {
     const { him, her } = poseAt(t)
-    drawBody('him', him, himX(t), ground, false, SH)
-    drawBody('her', her, herX(t), ground, true, SS)
-    return together(SH, SS)
+    const hx = himX(t)
+    const sx = herX(t)
+    const key = print(him, hx) + print(her, sx)
+    const hit = seen.get(key)
+    if (hit) return hit
+    drawBody('him', him, hx, ground, false, SH)
+    drawBody('her', her, sx, ground, true, SS)
+    const cells = together(SH, SS)
+    if (seen.size > 96) seen.delete(seen.keys().next().value)
+    seen.set(key, cells)
+    return cells
   }
   let last = null
   const at = (t) => {
