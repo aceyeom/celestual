@@ -29,12 +29,18 @@
 // Supabase's own undesigned template, with EIGHT digits, into a box that holds
 // six, so the door could not be walked through at all. It is the product's own
 // link now, the one the campus proof already used: mailed in the black room
-// from hello@celestual.us, with two digits this screen shows large and the
-// mail prints, tapped on whichever device the mail is read on. This sheet
-// waits for the tap (wall/linkdoor.jsx) and moves on the moment it lands; a
-// tap on this same phone opens /verify, which says so and signs it in there.
-// Whoever already holds the address is who this device becomes, with their
-// @ and their private notes (auth.js `restoreProof`).
+// from hello@celestual.us, tapped on whichever device the mail is read on.
+// This sheet waits for the tap (wall/linkdoor.jsx) and moves on the moment it
+// lands; a tap on this same phone opens /verify, which says so and signs it in
+// there. Whoever already holds the address is who this device becomes, with
+// their @ and their private notes (auth.js `restoreProof`).
+//
+// The two digits this screen shows large are YOUR NUMBER, and the mail does
+// not print them (0065 section 3). The link opened on another phone or
+// computer asks for them before it signs anything in, so a person who was
+// sent a link they never asked for cannot hand their account to whoever
+// typed their address here. The line under the heading says so, in the words
+// every asking screen uses.
 //
 // ── the door names the act that knocked on it ───────────────────────────────
 // Three acts come here and only one of them is writing, so a door that asks
@@ -44,9 +50,17 @@
 // and met "verify you're at Berkeley", a sentence about a room, in answer
 // to a question about a letter. The screen that sent them already leaves a
 // return address behind (store.js `setAfterGate`), so the heading reads it
-// and says what they are here to get back to: the whole wall. A person who
-// pressed a sign in chip on the bar left no return address and gets the
-// heading the door always had.
+// and says what they are here to get back to: the report. Anybody else is
+// asked to sign in, and nothing more, since reading is open and the one
+// promise under the heading has to be true of all three ways in.
+//
+// It said "sign in to ping and be told." A ping is the product's own word,
+// never the wall's (design/VOICE.md: on the wall it is a note sent
+// privately), "be told" never said of what, and only one of the three ways
+// in can tell anybody anything: an alert needs the @, and the @ is proved by
+// the Instagram DM. Google and an address buy something else, and the door
+// says what: the same way in as last time brings back your @ and your private
+// notes (0065), and a note sent privately asks for the Instagram once.
 //
 // ── what a signed-in person buys, and what they do not ──────────────────────
 // Reading, the heart and the report, by any proof. It is never attached to
@@ -125,10 +139,13 @@ export function AddressField({ value, onChange, onSubmit, domain = '', autoFocus
 // The return address across a redirect. The gate remembers where to land
 // once it opens (store.js `setAfterGate`), in memory; a login that leaves
 // for Google and comes back is a fresh tab, so the address is put away in
-// the session's storage for the walk and taken back on the return.
+// the session's storage for the walk and taken back on the return. `home` is
+// the door's own landing (`after`, below), for a door drawn with no address
+// left for it: Google brings the browser back to /gate, not to where the door
+// was drawn.
 const STASH = 'celestual.gate.after'
-function stashAfter() {
-  try { sessionStorage.setItem(STASH, JSON.stringify(peekAfterGate() || null)) } catch { /* private mode */ }
+function stashAfter(home = null) {
+  try { sessionStorage.setItem(STASH, JSON.stringify(peekAfterGate() || home || null)) } catch { /* private mode */ }
 }
 function unstashAfter() {
   try {
@@ -159,10 +176,14 @@ function resumeIg() {
   return p && p.use === IG_USE ? p : null
 }
 
-export default function Gate({ go, up, upLabel = 'back to the wall' }) {
+// `after` is where the door lands when nothing that sent somebody here left a
+// return address: the account sheet draws this door for a person it does not
+// know yet (You.jsx), and signing in there is signing in to the account.
+export default function Gate({ go, up, upLabel = 'back to the wall', after = null }) {
   // Held in state rather than read on every render: signing out has to repaint
   // this sheet, and the store is not something React is watching.
   const [who, setWho] = useState(() => member())
+  const home = useRef(after)
   // Which door is open on the sheet: the three ways, and one is chosen.
   const [way, setWay] = useState(() => (resumeIg() ? 'instagram' : ''))
   const [local, setLocal] = useState('')
@@ -188,8 +209,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // its mind on the last render before the sheet closes is a heading
   // somebody sees flicker.
   const [forReading] = useState(() => {
-    const after = peekAfterGate() || peekStash()
-    return !!after && (after.name === 'letter' || after.name === 'report')
+    const to = peekAfterGate() || peekStash() || home.current
+    return !!to && (to.name === 'letter' || to.name === 'report')
   })
 
   // Back to whatever sent somebody here: the letter they pressed "read it"
@@ -199,9 +220,9 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // opens with it already on; the cache it lands in was emptied by the
   // sign in, and data.js `heart` holds the press until the letter is read.
   const finish = () => {
-    const after = takeAfterGate()
-    if (after && after.name === 'letter' && after.heart && after.id && isReader()) heart(after.id, true)
-    if (after) go(after.name, after.id)
+    const to = takeAfterGate() || home.current
+    if (to && to.name === 'letter' && to.heart && to.id && isReader()) heart(to.id, true)
+    if (to) go(to.name, to.id)
     else up()
   }
 
@@ -237,7 +258,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     if (busy) return
     setSaid('')
     setBusy(true)
-    stashAfter()
+    stashAfter(home.current)
     const out = await startGoogle(href('gate'))
     if (!alive.current) return
     if (!out.ok) { setBusy(false); setSaid(out.error === 'offline' ? 'not connected here' : 'google did not answer. try again') }
@@ -424,11 +445,12 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
                  not behind this door any more (migration 0066: every letter
                  is whole to anybody), so neither heading says read: from a
                  letter, what a proof gets a reader is the report (the heart
-                 is anybody's since 0068); from anywhere else, the ping. Writing is not behind
-                 this door either (the head of this file says why). */
-              title={forReading ? <>sign in to<br />report it.</>
-                : <>sign in to ping<br />and be told.</>}
-              say="your information will stay anonymous."
+                 is anybody's since 0068); from anywhere else, signing in,
+                 and the line under it says what it brings back. Writing is
+                 not behind this door either (the head of this file says
+                 why). */
+              title={forReading ? <>sign in to<br />report it.</> : <>sign in.</>}
+              say="been here before? use the same way in and your @ and private notes come back."
             />
             <div className="wl-door-ways" role="group" aria-label="how to sign in">
               <Pill
@@ -453,6 +475,9 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
               >
                 continue with email
               </Pill>
+              {/* and what the two of them do not buy, said before either is
+                  picked rather than found out at the first private note */}
+              <p className="wl-door-why">to send a note privately you&rsquo;ll confirm your Instagram once.</p>
             </div>
             <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
@@ -530,7 +555,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
 
   // ── any address, and a link (the wall at the root) ──
   // Two states on the door's one shape: the address and its key, then the
-  // inbox it went to, the two digits the mail prints and the wait.
+  // inbox it went to, your number (which the mail does not print, and which
+  // the link asks for on another device) and the wait.
   if (way === 'email') {
     return (
       <Sheet onClose={up} tall labelledBy="wl-gate-h">
@@ -540,9 +566,9 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h" className={sent ? 'wl-edu-head' : ''}
-              title={sent ? <>check your inbox.</> : <>an address, and<br />a link mailed to it.</>}
+              title={sent ? <>check your inbox.</> : <>sign in with<br />your email.</>}
               say={sent
-                ? <>we sent a link to <span className="wl-h">{sent.email}</span>. tap it on any device and you&rsquo;re in here.</>
+                ? <>we sent a link to <span className="wl-h">{sent.email}</span>. tap the link in the mail.{sent.match == null ? null : ' on another phone or computer, it asks for this number.'}</>
                 : 'your information will stay anonymous.'}
             />
             {sent ? (

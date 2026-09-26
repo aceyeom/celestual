@@ -49,14 +49,42 @@
 // public wall, reachable by the whole internet, means the wall's contents are
 // decided by whoever is bored. It is the same door, opened once, and it is the
 // cheapest thing that is not nothing.
+//
+// ── said before the tap, and asked once ─────────────────────────────────────
+// Somebody not signed in used to press "report it", be told by the server
+// that they could not, see the sheet turn into "sign in to report this
+// letter." with a lone "sign in", and then meet the gate saying "sign in to
+// report it.": two sign in screens in a row, and back on the first step
+// afterwards to press "report it" a second time. Now the step says it first:
+// the key reads "sign in and report it" with the line "it asks you to sign in
+// first." under it, and the press goes straight to the gate, which comes back
+// here and files the report on the way in (`WANTED`), so the one press is
+// the report. A server that refuses a report this tab thought it could file
+// is sent the same way.
 
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, ClosePill, CloseQuiet, Prose,
-  ReasonField, Locked,
+  ReasonField,
 } from '../parts.jsx'
 import { letter, loadLetter, report, labelFor, ago } from '../data.js'
+import { isReader } from '../auth.js'
 import { setAfterGate } from '../store.js'
+
+// The report asked for by somebody who had to sign in first, filed when
+// they come back signed in. In the session's storage rather than in memory,
+// since a Google sign in leaves the page and comes back to a fresh one.
+const WANTED = 'celestual.report.wanted'
+function want(id) {
+  try { sessionStorage.setItem(WANTED, String(id)) } catch { /* private mode */ }
+}
+function wanted(id) {
+  try {
+    if (sessionStorage.getItem(WANTED) !== String(id)) return false
+    sessionStorage.removeItem(WANTED)
+    return true
+  } catch { return false }
+}
 
 export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
   const [step, setStep] = useState(0)     // 0 the tap · 1 the box · 2 it is filed
@@ -72,6 +100,15 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
 
   useEffect(() => { loadLetter(id) }, [id])
 
+  // ── the door, on the way ──
+  // To the gate with this report as the way back, and the report remembered
+  // so it is filed the moment this sheet is back and signed in.
+  const signFirst = () => {
+    want(id)
+    setAfterGate({ name: 'report', id })
+    go('gate')
+  }
+
   // ── the tap ──
   // It comes down here, in the same request that files the report, and step 1
   // is only reached once the server has said so. Advancing the screen first and
@@ -83,9 +120,17 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
     const out = await report(id, reason)
     setBusy(false)
     if (out?.ok) { setStep(reason ? 2 : 1); return }
-    setFault(out?.error === 'gate' || out?.error === 'no_session' ? 'gate'
-      : out?.error === 'rate_limited' ? 'rate' : 'network')
+    if (out?.error === 'gate' || out?.error === 'no_session') { signFirst(); return }
+    setFault(out?.error === 'rate_limited' ? 'rate' : 'network')
   }
+
+  // Back from the gate, signed in, with this report asked for: it is filed
+  // once the letter is on the sheet again (the sign in emptied the cache it
+  // was in), and the sheet opens on the box.
+  const ready = one ? one.id : ''
+  useEffect(() => {
+    if (ready && isReader() && wanted(id)) take('')
+  }, [ready]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const head = <SheetHead onClose={up} label={upLabel} />
 
@@ -115,37 +160,15 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
     )
   }
 
-  // ── the door ──
-  // Said in the one wording the build uses everywhere this door is met, and
-  // said INSTEAD of the control rather than under a disabled one. A greyed-out
-  // button with an explanation beside it makes somebody read a sentence to find
-  // out they cannot do the thing; this makes the sentence the thing.
-  //
-  // The gate is the server's answer, not this tab's: a letter read from outside
-  // the gate arrives with no body, and wall_report refuses the same reader.
-  //
-  // Since 0044 that gate is wall_read_gate rather than the campus, so anybody
-  // who can READ this letter can take it down. It is the direction that
-  // protects the person the letter is about: the likeliest reader to want a
-  // letter down is its subject, and the subject holds a handle far more often
-  // than they hold a berkeley.edu address at the moment they find their name.
-  if (one.body === null || fault === 'gate') {
-    return (
-      <Sheet onClose={up} labelledBy="wl-rep-h">
-        <div className="wl-sheet-in wl-report">
-          {head}
-          <Display size="s" as="h2" id="wl-rep-h">sign in to report<br />this letter.</Display>
-          <div className="wl-push" />
-          <Locked onOpen={() => { setAfterGate({ name: 'report', id }); go('gate') }}>
-            it comes down right away while a person reviews it.
-          </Locked>
-        </div>
-      </Sheet>
-    )
-  }
-
   // ── 0 · the tap ──
+  // Anybody signed in by any proof can take a letter down, since 0044. It is
+  // the direction that protects the person the letter is about: the likeliest
+  // reader to want a letter down is its subject, and the subject holds a
+  // handle far more often than they hold a berkeley.edu address at the moment
+  // they find their name. Anybody else is told so on this step, under the one
+  // key, and the key says what it does: the head of this file says why.
   if (step === 0) {
+    const reader = isReader()
     return (
       <Sheet onClose={up} tall labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
@@ -160,7 +183,7 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
                 letter off a public wall should be looking at the letter while
                 they do it — not at a confirmation dialogue describing one. */}
             <p className="wl-report-quote">
-              {one.body.length > 150 ? `${one.body.slice(0, 150).trim()}…` : one.body}
+              {String(one.body || '').length > 150 ? `${String(one.body).slice(0, 150).trim()}…` : one.body}
             </p>
           </div>
 
@@ -169,17 +192,20 @@ export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
               the two: a numbered account of an internal process, set out like
               terms, above a button whose whole argument is that there is nothing
               here to think about. Somebody standing on this screen wants to know
-              what the tap does, which is one sentence long. */}
+              what the tap does, which is one sentence long. For somebody not
+              signed in it is two: the second says what the tap asks first. */}
           <Prose className="wl-gate-copy">
-            it comes down right away while a person reviews it.
+            {reader
+              ? 'it comes down right away while a person reviews it.'
+              : 'it comes down right away while a person reviews it. it asks you to sign in first.'}
           </Prose>
 
           <div className="wl-push" />
 
           <SheetFoot>
             <Pill tone="light" wide
-              disabled={busy} onClick={() => take('')}>
-              {busy ? 'reporting…' : 'report it'}
+              disabled={busy} onClick={reader ? () => take('') : signFirst}>
+              {busy ? 'reporting…' : reader ? 'report it' : 'sign in and report it'}
             </Pill>
             {fault === 'network' ? (
               <Label tone="dim">the report did not go through. try again</Label>

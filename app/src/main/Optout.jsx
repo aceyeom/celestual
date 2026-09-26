@@ -28,18 +28,26 @@
 // and one control; anybody else proves the @ first, in the same block the sky
 // uses, and the control appears the moment the DM lands.
 //
+// "Proved on this device" includes a person signed in here by any proof whose
+// row holds their @ (migration 0065): the proof is asked of the server as the
+// screen opens (wall/auth.js `restoreProof`), the way the wall asks it, and
+// the one control appears. It only looked for a DM proof in this browser's
+// storage, and Main never asked the server for one, so a person signed in by
+// email, whose chip said their @ and whose private notes opened on the wall
+// with no DM, was asked for the DM again here.
+//
 // ── what it actually does ───────────────────────────────────────────────────
 // celestual_suppress: it bars the @ from ever being entered again, and erases
 // every row referencing it on either side, the proof it was just given
 // included. Since migration 0046 it reaches the wall as well: every letter
 // written about the handle comes down, the name goes off the index, and no
 // desk can put either back. It cannot be undone from here, and it says so.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Display, Label, Pill, Prose, Rule, Who, COMPANY } from '../wall/parts.jsx'
 import { Sparkle } from '../wall/art.jsx'
 import { suppressHandle } from '../api/celestual.js'
 import { atHandle } from '../wall/data.js'
-import { heldProof, signOut as leaveWall } from '../wall/auth.js'
+import { heldProof, restoreProof, signOut as leaveWall } from '../wall/auth.js'
 import { signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../wall/handoff.js'
 import { useSkyAvoid } from '../wall/ground.jsx'
@@ -58,6 +66,16 @@ export default function Optout({ go, who, refreshWho }) {
   // whoami lands after the first paint. A person who arrives signed in sees
   // their own @ the moment the row answers, and never a field.
   const held = proved || (who.handleVerified && heldProof(who.handle) ? who.handle : '')
+
+  // And a person whose row holds the @ with no proof in this browser gets it
+  // back from the server, as the wall's surfaces do (the head of this file).
+  // A refusal leaves the field where it is: the DM is still the way.
+  useEffect(() => {
+    if (!who.handleVerified || !who.handle || heldProof(who.handle)) return undefined
+    let on = true
+    restoreProof(who.handle).then((p) => { if (on && p) setProved(who.handle) })
+    return () => { on = false }
+  }, [who.handleVerified, who.handle])
 
   async function submit() {
     if (!held || phase === 'working') return
@@ -120,15 +138,15 @@ export default function Optout({ go, who, refreshWho }) {
           <>
             <Display size="m" as="h1" ref={avoid}>take your @<br />off celestual.</Display>
             <Prose className="mn-copy">
-              it can never be entered again. every ping is erased both ways, and every
-              letter about it comes off the wall.
+              it can never be entered again. every private note to it or from it is
+              erased, and every letter about it comes off the wall.
             </Prose>
             <div className="mn-step">
               <Who handle={held} size={40} />
               {phase === 'asking' ? (
                 <Prose className="mn-copy">
-                  this cannot be undone from here. every ping placed on it, every ping it
-                  placed, and every letter written about it goes with it.
+                  this cannot be undone from here. every private note sent to it, every one
+                  it sent, and every letter written about it goes with it.
                 </Prose>
               ) : null}
             </div>
@@ -142,7 +160,7 @@ export default function Optout({ go, who, refreshWho }) {
             onProved={(h) => { setProved(h); setPhase('idle') }}
             headRef={avoid}
             title={<>take your @<br />off celestual.</>}
-            copy="it can never be entered again. one instagram message proves the @ is yours first."
+            copy="it can never be entered again. one Instagram DM confirms the @ is yours first."
           />
         )}
 
@@ -151,7 +169,7 @@ export default function Optout({ go, who, refreshWho }) {
         ) : phase === 'rate' ? (
           <Prose className="mn-copy mn-fault">too many from this connection in one hour. try again later, or write to {COMPANY.email}.</Prose>
         ) : phase === 'lapsed' ? (
-          <Prose className="mn-copy mn-fault">the proof this device held has lapsed. one more message proves it again.</Prose>
+          <Prose className="mn-copy mn-fault">the proof this device held has lapsed. one more DM confirms it again.</Prose>
         ) : null}
       </div>
       <div className="mn-foot">
@@ -175,9 +193,9 @@ export default function Optout({ go, who, refreshWho }) {
         <Rule tone="soft" />
         <Label>what this product does</Label>
         <Prose className="mn-copy">
-          the person a ping is on is never told. the only thing that ever surfaces is
-          a pair who both placed one, shown to those two at once. a handle is kept as
-          a salted one way hash, and a ping lapses after sixty days.
+          the person a private note is sent to is never told. the only thing that ever
+          surfaces is a pair who both sent one, shown to those two at once. a handle is
+          kept as a salted one way hash, and a private note lapses after sixty days.
         </Prose>
         <Prose className="mn-copy mn-links">
           <a className="wl-quiet" href="/privacy">privacy</a>

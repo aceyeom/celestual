@@ -4,8 +4,9 @@
 // (the owner, 26 September; migration 0066). Every letter is whole to
 // anybody, as many as they read, and this is all that is left of the door
 // that used to stand on the ninth: a small note under the letter, on the
-// phone's own unlit panel, saying the one thing signing in gets a reader who
-// has been reading, with two soft keys, `not now` and `sign in`.
+// phone's own unlit panel, saying the one thing a proof gets a reader who
+// has been reading, with two soft keys, `not now` and `confirm your
+// Instagram`.
 //
 // ── what it replaced ────────────────────────────────────────────────────────
 // Eight whole letters, counted by the database, and then a letter that
@@ -28,11 +29,18 @@
 // or that anything will run out, because nothing will.
 //
 // ── what it says ────────────────────────────────────────────────────────────
-// The one thing signing in gets that reading does not: being told when a
-// letter is written to your own @ (docs/ONE-WALL.md, the claim and the alert,
-// by Instagram), and the heart, which is counted per person. Said as a
-// condition and never as an event, since "someone wrote about you" is the
-// line VOICE.md bans: `if one is ever written to you`, not `one was`.
+// The one thing a proof gets a reader that reading does not: an email when a
+// letter is written to your own @ (docs/ONE-WALL.md, the claim and the
+// alert). Said as a condition and never as an event, since "someone wrote
+// about you" is the line VOICE.md bans: `if one is ever written to you`, not
+// `one was`.
+//
+// And said as the one way it is true. It read "sign in once and we'll tell
+// you", over a key to the gate, where two of the three ways in (Google, an
+// address) can never send that email: it needs the @, and the @ is proved by
+// the Instagram DM. So the line names the Instagram, the key says so, and
+// the screen it opens is the DM, then the question about the email
+// (screens/Letter.jsx, You.jsx `openForAlerts`).
 import { useCallback, useEffect, useState } from 'react'
 import { PixIcon } from './screen.jsx'
 import { getState, patch } from './store.js'
@@ -102,7 +110,8 @@ export function useNudge(ready, about) {
 // screens/Wall.jsx `Down`): an unlit panel under its pixel grid with a one
 // pixel bezel, the envelope and the line in chalk, the reason under it in
 // ash, and under a dotted seam the two soft keys a phone put under a note it
-// wanted answered. `sign in` is the lit one; `not now` puts it away. Inside
+// wanted answered. `confirm your Instagram` is the lit one (`onSignIn`, kept
+// by its old name); `not now` puts it away. Inside
 // a fold (`.wl-signnote-fold`), which holds its room under the card and
 // closes it when the note is put away; shut, it is out of the tab order and
 // out of the tree a screen reader reads.
@@ -117,12 +126,12 @@ export function Nudge({ nudge, onSignIn }) {
             <PixIcon name="env" scale={2} className="wl-signnote-env" />
             <div className="wl-signnote-text">
               <p className="wl-signnote-h" id="wl-signnote-h">hear if one is ever written to you.</p>
-              <p className="wl-signnote-why">sign in once and we’ll tell you, and only you. nobody sees who you are.</p>
+              <p className="wl-signnote-why">confirm your Instagram once and we’ll email you, and only you. nobody sees who you are.</p>
             </div>
           </div>
           <div className="wl-signnote-keys">
             <button type="button" className="wl-signnote-no" onClick={nudge.dismiss}>not now</button>
-            <button type="button" className="wl-signnote-go" onClick={onSignIn}>sign in</button>
+            <button type="button" className="wl-signnote-go" onClick={onSignIn}>confirm your Instagram</button>
           </div>
         </aside>
       </div>

@@ -7,10 +7,11 @@
 // whichever device the mail is read on, and confirmed there (/verify#t=), and
 // the screen that asked for it is left waiting for a tap it cannot see.
 //
-// This is that wait, once, for the door: the two digits the mail prints,
-// large, so a person can tell their own mail from anybody else's before they
-// tap (the mail says not to tap when they differ); the line that says it is
-// waiting; and the way to ask again. The pieces carry the composer's own
+// This is that wait, once, for the door: your number, the two digits this
+// screen shows large and nothing else does (migration 0065 section 3: the
+// mail stopped printing them, and the link opened on another phone or
+// computer asks for them before it signs anything in); the line that says it
+// is waiting; and the way to ask again. The pieces carry the composer's own
 // classes (post.css `.wl-edu-match`, `.wl-edu-wait`), so the wait on the door
 // and the wait on the composer are one object, drawn in two places.
 //
@@ -71,12 +72,13 @@ export function useLinkWait({ request, onConfirmed, onLapsed, every = 2500 }) {
   }, [request, every])
 }
 
-// The two digits, as the mail prints them, in the unlit panel.
+// The two digits, in the unlit panel: your number, to be typed where the
+// link is opened if that is not here.
 export function LinkMatch({ n }) {
   if (n == null) return null
   return (
-    <div className="wl-edu-match" role="group" aria-label={`your email says ${n}`}>
-      <span className="wl-edu-match-lab" aria-hidden="true">your email says</span>
+    <div className="wl-edu-match" role="group" aria-label={`your number is ${n}`}>
+      <span className="wl-edu-match-lab" aria-hidden="true">your number</span>
       <span className="wl-edu-match-n" aria-hidden="true">{n}</span>
     </div>
   )

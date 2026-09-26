@@ -94,7 +94,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
-  Sheet, SheetFoot, Close, Brand, ArrowLink, Toast, useProfile, useSheet,
+  Sheet, SheetFoot, Close, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
 import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf } from '../looks.js'
@@ -111,6 +111,7 @@ import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
 import { letterMarks } from '../schools.js'
 import { Nudge, useNudge } from '../Nudge.jsx'
+import { openForAlerts } from './You.jsx'
 import Replies from '../Replies.jsx'
 
 // ── the name on the screen ──────────────────────────────────────────────────
@@ -316,6 +317,27 @@ function Lights({ look, seed }) {
   ))
 }
 
+// ── a letter its owner has just taken down ──
+// The screen once the owner has removed a letter (`removeMine` in the sheet
+// below): what happened, and the two soft keys a phone put under it, `undo`
+// on the left, which puts it back, and `back` on the right, which leaves.
+// Drawn on the letter's own glass, and on the "not on the wall" one once the
+// letter is read again and is gone, so the undo stands as long as either
+// does. `r` is { busy, said, onUndo, onLeave, leaveLabel }.
+function removedFace(r) {
+  return {
+    body: r.busy
+      ? <ScreenNote glyph="wait" title="putting it back" />
+      : r.said
+        ? <ScreenNote title="it did not come back">{r.said}</ScreenNote>
+        : <ScreenNote glyph="check" title="removed" />,
+    keys: r.busy ? {} : {
+      l: { label: 'undo', onClick: r.onUndo, aria: 'undo: put the letter back on the wall' },
+      r: { label: 'back', onClick: r.onLeave, aria: r.leaveLabel || 'back' },
+    },
+  }
+}
+
 // The card, for one letter, or the waiting card for a name whose letters are
 // still on their way. Drawn once here and used for the card on the glass and
 // for the neighbours beside it, so what slides in is what lands.
@@ -391,18 +413,25 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
 
   /* A first name is nobody's to claim or to empty: forty people share it,
      and no handle proof can stand for it (0053). A letter to an @ is its
-     owner's (docs/ONE-WALL.md): to the person who has proved it (`mine`,
-     api.js), the first row takes this one letter down, with an undo
-     (`removeMine`, below); to anybody else, "this is about me" is the way
-     to prove it (screens/Claim.jsx). Taking the whole name off for good
-     stays under both (screens/Remove.jsx). */
+     owner's (docs/ONE-WALL.md), and the menu is two menus, one for each
+     side of that. To the person who has proved it (`mine`, api.js): this
+     one letter down, with an undo (`removeMine`, below), and the whole
+     name off for good (screens/Remove.jsx). Writing to yourself and
+     reporting a letter you can remove in one tap are not on it. To anybody
+     else: write to them, report it, and "this is about me", which is the
+     way to prove it (screens/Claim.jsx) and the way to everything the owner
+     can do, taking the name off included (the claim's own sheet and the
+     account's "take my name off the wall for good"). It was four look alike
+     rows, "this is about me" beside "take my name off", a claim beside a DM
+     that ends in something permanent. */
   const toAt = !isNameKey(l.to)
-  const optionItems = [
-    ...(l.mine && onRemove ? [{ t: 'remove this letter', run: () => onRemove(l) }] : []),
+  const optionItems = l.mine && onRemove ? [
+    { t: 'remove this letter', run: () => onRemove(l) },
+    ...(toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
+  ] : [
     { t: `write to ${first || 'them'}`, run: () => toWrite(go, l.to) },
     { t: 'report this letter', run: () => go('report', l.id) },
-    ...(toAt && !l.mine ? [{ t: 'this is about me', run: () => go('claim', l.to) }] : []),
-    ...(toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
+    ...(toAt ? [{ t: 'this is about me', run: () => go('claim', l.to) }] : []),
   ]
   const face = () => letterFace(l, { name: toName })
   // Under a menu titled `share`, the row that opens the phone's own share
@@ -481,6 +510,11 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     top = letterTop
     body = <ScreenNote glyph={at.glyph} title={at.title}>{at.text || null}</ScreenNote>
     keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
+  } else if (at.kind === 'removed') {
+    top = letterTop
+    const off = removedFace(at)
+    body = off.body
+    keys = off.keys
   } else if (at.kind === 'ask') {
     /* a question the screen puts before an act that cannot be taken back:
        the act on the left key, and keeping things as they are on the right */
@@ -540,13 +574,20 @@ export default function Letter({
 
   // ── the owner takes it down ──
   // One tap from the menu, by the person who has proved the letter's @
-  // (docs/ONE-WALL.md `wall_owner_remove`): it comes down, the card says so,
-  // and for five seconds a line at the foot of the glass offers it back
-  // (`wall_owner_restore`, good for a day on the server). It files no claim
-  // and shuts nothing else. A database that does not have the call yet is
-  // answered with the old removal, which cannot be undone and closes the @
-  // to new letters, so it is asked for first, on the screen.
-  const [toast, setToast] = useState(null)   // { id, to, said, stamp, busy }
+  // (docs/ONE-WALL.md `wall_owner_remove`): it comes down, and the screen
+  // says so with the way back on its own key, `undo`, for as long as the
+  // screen stands (`wall_owner_restore`, good for a day on the server). It
+  // files no claim and shuts nothing else. A database that does not have the
+  // call yet is answered with the old removal, which cannot be undone and
+  // closes the @ to new letters, so it is asked for first, on the screen.
+  //
+  // The undo was a toast at the foot of the glass for five seconds, over the
+  // thread's "you reply as" row, and after it the screen read "removed" with
+  // nothing on it to put the letter back, while the server would have for a
+  // day. It is the screen's now, on the letter's own glass or, once the
+  // letter is read again and is gone, on the "not on the wall" screen that
+  // takes its place (`removedFace`), until the sheet is left.
+  const [removed, setRemoved] = useState(null)   // { id, to, busy, said }
   const freshen = (l) => Promise.all([loadLetter(l.id, true), loadHandle(l.to, true), loadWall(true)])
   const removeForGood = async (l) => {
     setView({ kind: 'note', glyph: 'wait', title: 'removing' })
@@ -561,8 +602,8 @@ export default function Letter({
     setView({ kind: 'note', glyph: 'wait', title: 'removing' })
     const out = await ownerRemove(l.id)
     if (out?.ok) {
-      setView({ kind: 'note', glyph: 'check', title: 'removed', done: true })
-      setToast({ id: l.id, to: l.to, said: 'removed.', stamp: Date.now() })
+      setRemoved({ id: l.id, to: l.to, busy: false, said: '' })
+      setView(null)
       await freshen(l)
       return
     }
@@ -577,29 +618,23 @@ export default function Letter({
     setView({ kind: 'note', glyph: '', title: 'it did not come down', text: 'try again', done: true })
   }
   const undoMine = async () => {
-    const t = toast
-    if (!t || t.busy) return
-    setToast({ ...t, said: 'putting it back.', busy: true })
-    const out = await ownerRestore(t.id)
+    const r = removed
+    if (!r || r.busy) return
+    setRemoved({ ...r, busy: true, said: '' })
+    const out = await ownerRestore(r.id)
     if (out?.ok) {
-      setToast(null)
+      setRemoved(null)
       setView(null)
-      await freshen(t)
+      await freshen(r)
       return
     }
-    setToast({ ...t, busy: false, said: 'it did not come back. try again.', stamp: Date.now() })
+    setRemoved({ ...r, busy: false, said: 'try again' })
   }
-  const owned = toast ? (
-    <Toast
-      act={toast.busy ? '' : 'undo'} onAct={undoMine} stamp={toast.stamp}
-      ms={toast.busy ? 0 : 5000} onDone={() => setToast(null)}
-    >
-      {toast.said}
-    </Toast>
-  ) : null
+  // what the removed screen's keys do, with the state it draws
+  const removedAt = removed ? { ...removed, onUndo: undoMine, onLeave: leave, leaveLabel: upLabel } : null
   const aside = cold
-    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} />{owned}</>
-    : <><LetterX label={upLabel} />{owned}</>
+    ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} /></>
+    : <LetterX label={upLabel} />
   // The screen wakes once, on the first letter the sheet opens on, the way a
   // phone's backlight comes up; a turn does not wake it again.
   const [woke, setWoke] = useState('waking')
@@ -1464,7 +1499,12 @@ export default function Letter({
   //
   // `undefined` is "not asked yet" and `null` is "asked, and it is gone". The
   // card waits rather than announcing a removal that has not happened.
+  //
+  // One gone letter is not a stranger's: the one its owner just removed on
+  // this sheet, which is read again the moment it comes down and answers
+  // gone. Its screen keeps the undo (`removedFace`).
   if (one === null) {
+    const mineGone = removedAt && (removedAt.id === param || removedAt.to === handle) ? removedFace(removedAt) : null
     return (
       <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside}>
         <div className="wl-sheet-in wl-letter">
@@ -1472,10 +1512,10 @@ export default function Letter({
             <Screen
               seed={String(param)} look={null} state={woke}
               top={{ name: 'not on the wall', icon: 'lock' }}
-              keys={{ r: { label: 'back', onClick: up, aria: upLabel } }}
+              keys={mineGone ? mineGone.keys : { r: { label: 'back', onClick: up, aria: upLabel } }}
               live nameId="wl-letter-h"
             >
-              <ScreenNote title="gone">that letter has come down.</ScreenNote>
+              {mineGone ? mineGone.body : <ScreenNote title="gone">that letter has come down.</ScreenNote>}
             </Screen>
           </div>
         </div>
@@ -1500,9 +1540,13 @@ export default function Letter({
   // Nothing, almost always: writing to them, reporting it and taking a name
   // off are in the screen's own options, and sharing it is its own key. Once
   // in a while, the nudge (`note`, above), which asks and never stands in
-  // the way: the letter over it is already whole. `sign in` goes to the
-  // gate, which closes back onto this letter.
-  const foot = note.on ? <Nudge nudge={note} onSignIn={() => go('gate')} /> : null
+  // the way: the letter over it is already whole. Its key goes to the one
+  // door that can keep its promise: the account, opened on the Instagram DM,
+  // since an email when a letter is written to you needs the @ proved, and
+  // then asked about the email (You.jsx `openForAlerts`). It went to the
+  // gate, whose Google and address could never send that email, and which
+  // closed back onto this letter with nothing turned on.
+  const foot = note.on ? <Nudge nudge={note} onSignIn={() => openForAlerts(go)} /> : null
 
   return (
     <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-to" className={wrap} aside={aside}>
@@ -1533,7 +1577,9 @@ export default function Letter({
                 ) : (
                   <LetterScreen
                     l={one || null} handle={one ? null : handle} seed={String(param)}
-                    id="wl-letter-to" live view={view} onView={setView} go={go}
+                    id="wl-letter-to" live go={go}
+                    view={removedAt && one && removedAt.id === one.id ? { kind: 'removed', ...removedAt } : view}
+                    onView={setView}
                     woke={moved.current ? '' : woke} onRemove={removeMine}
                   />
                 )}

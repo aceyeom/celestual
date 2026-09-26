@@ -57,17 +57,48 @@
 -- hold. docs/SECURITY.md "Durable, DM-free recovery" is this, finally wired:
 -- email ownership carries every return, cross-device.
 --
+-- ── 3. the number is typed, not printed ──────────────────────────────────────
+-- 0064 showed a number from 10 to 99 on the asking screen and printed the same
+-- number in the mail, so a person could tell their own request from somebody
+-- else's before they tapped. That defends the careful reader and nobody else,
+-- and a link confirms on whatever device opens it. So anybody who can type
+-- somebody's address into the door and get them to tap one link they did not
+-- ask for ("is this you?") is signed in as them on the device that asked:
+-- their @, their private notes, their alerts. With `login` on every address,
+-- that is every account.
+--
+-- So the number stops being printed and starts being asked. It is on the
+-- asking screen and nowhere else. The link opened on the device that asked
+-- (the same session) confirms at once, as before. Opened anywhere else, it
+-- confirms nothing until the number on the asking screen is typed into the
+-- page it opened: without a number it answers `match` and nothing is spent,
+-- the right number confirms as before, and a wrong one burns the link
+-- (`refused`, and run out, so the asking screen says so and asks again).
+-- One guess in ninety, once a link, five links an address an hour. A person
+-- who never asked has no screen to read a number off, and the page says to
+-- close it.
+--
+--   celestual_edu_link_confirm(token, session, match)   the check
+--   celestual_edu_link_confirm(token, session)          the deployed function's
+--       call, kept: it is the same check with no number, so a link opened on
+--       another device through it answers `match` and is never confirmed.
+--       Closed, not open, while the function and the page catch up.
+--
 -- ── the shape ────────────────────────────────────────────────────────────────
---   celestual_edu_verifications      purpose + 'login'
+--   celestual_edu_verifications      purpose + 'login'; status + 'refused'
 --   celestual_user_bind_email_hash   new, service role: an address proves a person
 --   celestual_edu_link_open          replaced: takes 'login'
---   celestual_edu_link_confirm       replaced: binds 'login'
+--   celestual_edu_link_confirm       replaced: binds 'login', and asks the
+--                                    number of another device (3 arguments;
+--                                    the 2 argument call is the same check)
 --   celestual_edu_link_status        replaced: a .edu login answers its campus
 --   celestual_session_handle_proof   new, the browser's: the @'s proof, restored
 --
--- Backward compatible: nothing is renamed or removed, and the three replaced
--- functions answer 'edu' and 'alerts' exactly as 0064 did, so the build that
--- is live keeps working against this. Re-runnable.
+-- Backward compatible: nothing is renamed or removed, and the replaced
+-- functions answer 'edu' and 'alerts' as 0064 did, except that a link opened
+-- on a device that did not ask for it now wants the number (section 3), so
+-- the build that is live keeps working against this, and a tap from another
+-- device waits for the build that asks. Re-runnable.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── 1. the request row takes a third purpose ─────────────────────────────────
@@ -77,6 +108,10 @@ alter table celestual_edu_verifications add constraint celestual_edu_kind_ck
 
 comment on column celestual_edu_verifications.purpose is
   '0064, 0065: what the link proves. edu: a school address. alerts: where the alerts go. login: an address that signs a person in.';
+comment on column celestual_edu_verifications.match is
+  '0064, 0065: the number from 10 to 99 shown on the asking device, and only there. A link opened on another device confirms only once it is typed there; a wrong one refuses the link.';
+comment on column celestual_edu_verifications.status is
+  '0007, 0065: pending, verified, or refused (a link opened on another device with the wrong number, which is then spent).';
 
 -- ── 2. an address proves a person ────────────────────────────────────────────
 -- By the session's hash, because the link is confirmed on whatever device
@@ -297,12 +332,24 @@ $$;
 
 -- Confirm. `login` binds the address to the asking session's person and then
 -- to the opening session's, which finds the same person and follows it.
-create or replace function celestual_edu_link_confirm(p_token text, p_session text)
+--
+-- The number (section 3). `p_match` is what was typed on the page that
+-- opened the link, or null when nothing was. The device that asked needs
+-- none. Any other gets `match` for no number, with nothing spent, and
+-- `mismatch` for a wrong one, which refuses the link for good and runs its
+-- clock out, so the asking screen's `status` reads it as run out. Every
+-- refusal names the link's purpose, so the page can say where to ask again.
+--
+-- Answers { ok, purpose, request, campus, school, same_device }
+--       | { ok: false, error: 'invalid' | 'expired' | 'used' | 'taken'
+--                          | 'match' | 'mismatch', purpose? }.
+create or replace function celestual_edu_link_confirm(p_token text, p_session text, p_match integer)
 returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare
   r        celestual_edu_verifications%rowtype;
   v_conf   text;
+  v_same   boolean;
   v_res    jsonb;
   v_me     uuid;
   v_campus text;
@@ -318,14 +365,32 @@ begin
   if p_session is not null and length(p_session) between 16 and 256 then
     v_conf := encode(digest(p_session, 'sha256'), 'hex');
   end if;
+  v_same := v_conf is not null and v_conf = r.session_hash;
 
   if r.status = 'verified' then
     if v_conf is null or v_conf not in (coalesce(r.confirmed_session_hash, ''), r.session_hash) then
-      return jsonb_build_object('ok', false, 'error', 'used');
+      return jsonb_build_object('ok', false, 'error', 'used', 'purpose', r.purpose);
     end if;
     v_campus := r.campus;
+  elsif r.status = 'refused' then
+    return jsonb_build_object('ok', false, 'error', 'mismatch', 'purpose', r.purpose);
   else
-    if r.expires_at < now() then return jsonb_build_object('ok', false, 'error', 'expired'); end if;
+    if r.expires_at < now() then
+      return jsonb_build_object('ok', false, 'error', 'expired', 'purpose', r.purpose);
+    end if;
+
+    -- another device: the number on the asking screen, or nothing happens
+    if not v_same then
+      if p_match is null then
+        return jsonb_build_object('ok', false, 'error', 'match', 'purpose', r.purpose);
+      end if;
+      if p_match is distinct from r.match::integer then
+        update celestual_edu_verifications
+           set status = 'refused', expires_at = least(expires_at, now())
+         where id = r.id;
+        return jsonb_build_object('ok', false, 'error', 'mismatch', 'purpose', r.purpose);
+      end if;
+    end if;
 
     if r.purpose = 'edu' then
       v_res := celestual_user_bind_edu_hash(r.session_hash, r.email);
@@ -368,12 +433,24 @@ begin
   select name into v_school from wall_campuses where slug = v_campus and edu_domain is not null;
   return jsonb_build_object('ok', true, 'purpose', r.purpose, 'request', r.token,
                             'campus', v_campus, 'school', v_school,
-                            'same_device', v_conf is not null and v_conf = r.session_hash);
+                            'same_device', v_same);
 end;
 $$;
 
+-- The call the deployed function makes, with no number: the same check. A
+-- link opened on the device that asked confirms through it; opened anywhere
+-- else it answers `match` and nothing is spent, until the function that
+-- passes the number is deployed beside the page that asks for it.
+create or replace function celestual_edu_link_confirm(p_token text, p_session text)
+returns jsonb
+language sql security definer set search_path = public, extensions as $$
+  select celestual_edu_link_confirm(p_token, p_session, null::integer)
+$$;
+
 -- Status, for the device that asked and for nobody else. A login at a .edu
--- answers the campus it opens, as a campus link does.
+-- answers the campus it opens, as a campus link does. A link refused for a
+-- wrong number (section 3) is run out to the screen that asked, which then
+-- says so and offers another, as it does after thirty minutes.
 create or replace function celestual_edu_link_status(p_request text, p_session text)
 returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
@@ -397,16 +474,21 @@ begin
   end if;
   return jsonb_build_object('ok', true, 'verified', r.status = 'verified', 'purpose', r.purpose,
                             'campus', v_campus, 'school', v_school,
-                            'expired', r.status <> 'verified' and r.expires_at < now());
+                            'expired', r.status = 'refused' or (r.status <> 'verified' and r.expires_at < now()));
 end;
 $$;
 
 revoke all on function celestual_edu_link_open(text, text, text, text, text, text, integer) from public, anon, authenticated;
+revoke all on function celestual_edu_link_confirm(text, text, integer) from public, anon, authenticated;
 revoke all on function celestual_edu_link_confirm(text, text) from public, anon, authenticated;
 revoke all on function celestual_edu_link_status(text, text)  from public, anon, authenticated;
 grant execute on function celestual_edu_link_open(text, text, text, text, text, text, integer) to service_role;
+grant execute on function celestual_edu_link_confirm(text, text, integer) to service_role;
 grant execute on function celestual_edu_link_confirm(text, text) to service_role;
 grant execute on function celestual_edu_link_status(text, text)  to service_role;
+
+comment on function celestual_edu_link_confirm(text, text, integer) is
+  '0065: service role only. Confirms a mailed link. On a device that did not ask for it, only with the number the asking screen shows: none answers match and spends nothing; a wrong one refuses the link.';
 
 -- ── 4. the @ comes back with the person ──────────────────────────────────────
 -- The browser mints a secret, keeps it, and sends its sha256 with its
