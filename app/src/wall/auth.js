@@ -70,7 +70,7 @@
 import { getState, patch, push } from './store.js'
 import { cardStep } from './seed.js'
 import { normHandle, targetKey, forgetLetters } from './data.js'
-import { whoamiStrict, bindHandle, forgetSession, isProved } from '../api/identity.js'
+import { whoamiStrict, bindHandle, forgetSession, isProved, claimHandleProof, sessionToken } from '../api/identity.js'
 import { getSession, markVerified, signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../api/igverify.js'
 import { atBerkeley } from './schools.js'
@@ -173,7 +173,7 @@ export function signIn(email) {
   return e
 }
 
-// The login landed (api/login.js): a google account or a mailed code. The
+// The login landed (api/login.js): a google account or a mailed link. The
 // server's row is read again, because what it proved is the server's to say:
 // on the campus wall a google address at the campus opens writing and any
 // other opens reading; on the wall at the root either opens both.
@@ -217,6 +217,10 @@ export async function refresh() {
   const me = await whoamiStrict()
   if (me === null) return member()
   const verified = me.handleVerified && me.handle ? [me.handle] : (getState().verified || [])
+  // The @ this person owns comes back to this device with them (0065): not
+  // awaited, so the door is not held up for it, and every surface that
+  // spends the proof waits on the same request (`proofFor`).
+  if (me.handleVerified && me.handle) restoreProof(me.handle)
 
   // Any of the four proofs opens the letters, and the heart and the report
   // with them: the handle, the campus address, google, or a mailed code
@@ -370,4 +374,74 @@ export function heldProof(handle) {
   const want = normHandle(handle)
   if (want && normHandle(s.handle) !== want) return null
   return s.proof
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  THE @ COMES BACK WITH THE PERSON (migration 0065)                       ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+//
+// The proof above was minted in the browser that did the DM and lived there
+// alone, thirty days sliding. The person's row remembers the @ for good. So a
+// person who DMd once on their phone and signed in by email on their laptop
+// was signed in, read the wall, and was asked for the DM again before their
+// private notes would show; and on the phone too, after a month away. Every
+// new browser, every month, the same DM, for an @ the server already knew was
+// theirs.
+//
+// `restoreProof` asks the server for a proof of the @ this session's person
+// owns (api/identity.js `claimHandleProof`), and keeps it where the DM's is
+// kept, so every surface that spends one (the pings, the reveal, placing one,
+// the composer's private send) finds it and asks nothing. The server decides:
+// it answers only for the @ the row holds, verified, and the browser cannot
+// name one. With no @ on the row, nothing comes back, and the DM is what the
+// screen asks for, as it always did: that is claiming an @, and only the DM
+// can do that.
+//
+// One request at a time per @, shared by whoever asks while it is out, and
+// only kept if the session that asked is still this device's: a sign out
+// while it was in flight must not leave a proof behind for the next person.
+//
+// A refusal that will not change while this page is open (an @ the desk
+// banned, a database without 0065) is remembered for the page, so the
+// surfaces that ask on every mount do not ask the server every time. "No @
+// on this row" is not one of them: a sign in on this page can move the
+// device onto a person who has one.
+let restoring = null
+const REFUSED = new Set(['banned', 'missing'])
+const refused = new Set()
+
+export function restoreProof(handle) {
+  const h = normHandle(handle)
+  if (!h) return Promise.resolve(null)
+  const have = heldProof(h)
+  if (have) return Promise.resolve(have)
+  const asked = sessionToken()
+  if (refused.has(`${asked}:${h}`)) return Promise.resolve(null)
+  if (restoring && restoring.handle === h) return restoring.p
+  const p = claimHandleProof().then((out) => {
+    if (!out.ok && REFUSED.has(out.error)) refused.add(`${asked}:${h}`)
+    if (!out.ok || normHandle(out.handle) !== h || sessionToken() !== asked) return null
+    markVerified(h, out.proof)
+    if (!verified().includes(h)) push('verified', h)
+    return out.proof
+  }).finally(() => { if (restoring && restoring.p === p) restoring = null })
+  restoring = { handle: h, p }
+  return p
+}
+
+// The proof to spend for `handle`: the one held here, or one restored.
+export function proofFor(handle) {
+  return restoreProof(handle)
+}
+
+// The server just refused `stale` (thirty idle days, or a proof minted on a
+// build that has since been signed out elsewhere). It is dropped, and a fresh
+// one asked for, once: a refusal of the fresh one is an answer, not a reason
+// to ask again.
+export async function renewProof(handle, stale) {
+  const h = normHandle(handle)
+  if (!h) return null
+  if (stale && heldProof(h) === stale) dropProof()
+  const fresh = await restoreProof(h)
+  return fresh && fresh !== stale ? fresh : null
 }

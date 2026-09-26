@@ -208,6 +208,20 @@ let FULL = false
 // outside the read gate; the store is seeded with that stale answer, so the
 // shot shows the wall asking the server and drawing what it says.
 let GOOGLE = false
+// Whether the fixture browser signed in with a mailed link (0065) on a device
+// that never did the DM: the row holds a verified @, and this browser holds no
+// proof for it. The store is seeded with nothing, so the shot shows the @ and
+// its private notes coming back from the server (auth.js `restoreProof`)
+// rather than the DM door the owner kept being sent to.
+let EMAIL = false
+// What `celestual-edu-verify` answers about a link: whether the one the door
+// is waiting on has been tapped, and, for /verify, what `confirm` says.
+let LINKED = false
+let CONFIRM = null
+// A door that is anonymous until its link is tapped, and then the person
+// signed in by it (`EMAIL`): the whole walk, from the address to the notes.
+let TAPS = false
+let TAPPED = false
 // What the daily check on apify last said (0060): 'ok', 'failing', 'stale'
 // or 'never'. The desk draws its line at the top of every screen from it.
 let CANARY = 'ok'
@@ -240,7 +254,14 @@ for (const r of INDEX) if (FACES[r.target_handle]) r.avatar_path = `ig/${r.targe
 const faceUrl = (h) => (REAL.has(h) ? `https://fixture.supabase.co/storage/v1/object/public/avatars/ig/${h}.jpg` : FACES[h] || '')
 
 function whoami() {
-  if (ANON) return { ok: true, signed_in: false }
+  if (ANON && !(TAPS && TAPPED)) return { ok: true, signed_in: false }
+  if (EMAIL || (TAPS && TAPPED)) {
+    return { ok: true, signed_in: true, user: {
+      id: '99999999-8888-4777-8666-555544443335', handle: 'ace03d', handle_verified: true, email: 'ace@gmail.com',
+      edu_verified: false, campus: null, google_verified: false, email_verified: true,
+      login_email: 'ace@gmail.com',
+    } }
+  }
   if (GOOGLE) {
     return { ok: true, signed_in: true, user: {
       id: '99999999-8888-4777-8666-555544443334', handle: null, handle_verified: false, email: null,
@@ -659,6 +680,18 @@ const DESK = {
 
 const RPC = {
   celestual_whoami: () => whoami(),
+  // 0065: the @'s proof, back from the session, for the person who holds one
+  celestual_session_handle_proof: () => ((ANON && !(TAPS && TAPPED)) || GOOGLE || (!VERIFIED && !EMAIL)
+    ? { ok: false, error: 'unclaimed' }
+    : { ok: true, handle: 'ace03d' }),
+  // 0064: the owner's alerts, about the caller. Without it the account sheet
+  // read the absent RPC's empty answer as an @ nobody had claimed.
+  celestual_alerts_get: () => (ANON && !(TAPS && TAPPED)
+    ? { ok: false, error: 'no_session' }
+    : {
+      ok: true, handle: VERIFIED || EMAIL ? 'ace03d' : null, claimed: !GOOGLE && (VERIFIED || EMAIL),
+      email: EMAIL ? 'a•••@gmail.com' : null, email_verified: EMAIL, wrote: false, mutual: true,
+    }),
   // 0044: the week's allowance, about the caller. Without this the composer
   // read the RPC's absence as a limit of nought and drew its act dark.
   // `capped` is 0052's switch, and the fixture keeps it on: the shot this
@@ -872,16 +905,40 @@ async function fulfil(route) {
     } })
   }
 
+  // The links (0064, 0065): mailed with the number the door shows, waited on
+  // until a route says the link was tapped, and confirmed on /verify with
+  // whatever the route says the confirm answered.
+  if (url.includes('/functions/v1/celestual-edu-verify')) {
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    const edu = /\.edu$/.test(String(b.email || ''))
+    if (b.action === 'link') {
+      return route.fulfill({ json: {
+        ok: true, request: 'preview-request', match: 47,
+        domain: edu ? 'berkeley.edu' : null, campus: edu ? 'berkeley' : null, school: edu ? 'UC Berkeley' : null,
+      } })
+    }
+    if (b.action === 'status') {
+      if (LINKED) TAPPED = true
+      return route.fulfill({ json: { ok: true, verified: LINKED, purpose: 'login', campus: null, school: null, expired: false } })
+    }
+    if (b.action === 'confirm') {
+      const c = CONFIRM || { purpose: 'login', same: true }
+      return route.fulfill({ json: {
+        ok: c.ok !== false, error: c.error, purpose: c.purpose, request: 'preview-request',
+        campus: c.campus || null, school: c.campus ? 'UC Berkeley' : null, same_device: !!c.same,
+      } })
+    }
+    return route.fulfill({ json: { ok: false, error: 'bad_input' } })
+  }
+
   // Every other edge function.
   if (url.includes('/functions/v1/')) {
     return route.fulfill({ json: { ok: true } })
   }
 
-  // Supabase Auth, for the door that mails a code to any address (api/login.js
-  // `sendEmailCode`, `checkEmailCode`). signInWithOtp posts to /auth/v1/otp and
-  // answers with an empty object; verifyOtp posts to /auth/v1/verify and answers
-  // with a session. Without both, the catch-all below 404s and every shot of the
-  // code step is a shot of the ADDRESS step with a fault line under it.
+  // Supabase Auth. Only google rides it since 0065 (the address door is our
+  // own link, answered above), and a route that shoots the google return
+  // needs a session back; these two stay for a build that still mails a code.
   if (url.includes('/auth/v1/otp')) return route.fulfill({ json: {} })
   if (url.includes('/auth/v1/verify')) {
     return route.fulfill({ json: {
@@ -1002,31 +1059,43 @@ const ROUTES = [
   { label: 'home-gate',       path: '/gate', anon: true },
   { label: 'home-gate-ig',    path: '/gate', anon: true, press: '[data-way="instagram"]' },
   { label: 'home-gate-email', path: '/gate', anon: true, press: '[data-way="email"]' },
-  // The code step, on both walls: the address typed, the code asked for, and
-  // the box it comes back into. The one screen in the door nobody had ever
-  // looked at, because reaching it needs a mail to have gone out.
-  { label: 'home-gate-code', path: '/gate', anon: true, acts: [
+  // The address door is a link since 0065 (it was a code, mailed by Supabase,
+  // that could not be typed back): the address typed, the link sent, and the
+  // door waiting on it with the number the mail prints.
+  { label: 'home-gate-link', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
-  { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
+  // the link tapped on another device while the door waits: it lands on the
+  // person, with their @ and their private notes, and no DM asked for
+  { label: 'home-gate-link-in', path: '/gate', anon: true, taps: true, linked: true, settle: 1600, acts: [
+    ['click', '[data-way="email"]'],
+    ['fill', '.wl-addr-in', 'ace@gmail.com'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
+    ['wait', 4500],
+    ['click', '.wl-mast-go'],
+    ['wait', 3400],
+    ['click', '.wl-memberbtn'],
+  ] },
+  { label: 'home-gate-link-typed', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-pill.is-light'],
-    ['fill', '.wl-codebox-in', '481920'],
   ] },
+  // the link, landed: on the device that asked, and on another one
+  { label: 'verify-login',      path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: true } },
+  { label: 'verify-login-away', path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: false } },
+  { label: 'verify-login-used', path: '/verify#t=preview-token-preview-token', anon: true, confirm: { ok: false, error: 'used' } },
+  // signed in by a mailed link on a device that never did the DM: the @ and
+  // its private notes are back, and nothing asks for Instagram
+  { label: 'you-email',  path: '/you', email: true, settle: 1400 },
+  { label: 'ping-email', path: '/ping/pilar.echevarria', email: true, settle: 1400 },
   // the DM code, on the door: the one screen whose success depends on what
   // somebody does after they have left the product
   { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="instagram"]'],
     ['fill', '.wl-field input', 'ace03d'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
-  ] },
-  { label: 'berkeley-gate-code', path: '/berkeley/gate', anon: true, acts: [
-    ['fill', '.wl-addr-in', 'you'],
-    ['click', '.wl-door-ways .wl-pill.is-light'],
-    ['fill', '.wl-codebox-in', '481920'],
   ] },
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
   { label: 'home-letter',     path: '/letter/pilar.echevarria' },
@@ -1295,6 +1364,11 @@ for (const r of list) {
   PASS = r.pass === true
   FULL = r.full === true
   GOOGLE = r.google === true
+  EMAIL = r.email === true
+  LINKED = r.linked === true
+  CONFIRM = r.confirm || null
+  TAPS = r.taps === true
+  TAPPED = false
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
@@ -1338,12 +1412,12 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
-          member: ANON || GOOGLE ? null : 'someone@berkeley.edu',
-          reader: !ANON && !GOOGLE,
-          verified: VERIFIED && !ANON && !GOOGLE ? ['ace03d'] : [],
+          member: ANON || GOOGLE || EMAIL ? null : 'someone@berkeley.edu',
+          reader: !ANON && !GOOGLE && !EMAIL,
+          verified: VERIFIED && !ANON && !GOOGLE && !EMAIL ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: WRITTEN,
           proof: 'a'.repeat(64),
@@ -1355,7 +1429,7 @@ for (const r of list) {
         // a verified handle with no proof to spend, `celestual_my_pings` is
         // never asked, and the reveal draws "nothing here" over a fixture that
         // has a mutual in it.
-        if (VERIFIED && !ANON) {
+        if (VERIFIED && !ANON && !EMAIL) {
           localStorage.setItem('celestual:auth', JSON.stringify({
             verified: true, handle: 'ace03d', proof: 'a'.repeat(64), at: Date.now(),
           }))
@@ -1363,7 +1437,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL })
     // The letter's deck leans toward the next letter the first times a
     // device opens it (screens/Letter.jsx `nudge`), which would catch a shot
     // part way through. Every device here has turned it, but the one the

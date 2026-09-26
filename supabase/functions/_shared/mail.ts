@@ -151,9 +151,10 @@ export function well(caption: string, big: string, color: string = C.chalk) {
   </table>`
 }
 
-// The code, for the mails that still carry one (the old `send`, and the
-// Supabase Auth code). Set so one long press or one double click takes the
-// whole of it: a mail cannot write to a clipboard, but it can be easy to take.
+// The code, for the one mail that still carries one (the old `send`, for a
+// tab on an old build; every sign in is a link since 0065). Set so one long
+// press or one double click takes the whole of it: a mail cannot write to a
+// clipboard, but it can be easy to take.
 export function code(value: string) {
   return `
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;margin:24px 0 0">
