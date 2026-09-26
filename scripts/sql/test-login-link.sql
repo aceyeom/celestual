@@ -322,4 +322,17 @@ select ll_ok('a campus link still proves a campus',
   and (select (u->>'edu_verified')::boolean and not (u->>'email_verified')::boolean
          from (select celestual_whoami('token-ll-campus-0000')->'user' as u) s));
 
+-- ── 11. a resend from the same screen keeps the number ───────────────────────
+select ll_ok('the first link answers the number it was given',
+  (celestual_edu_link_open('again@gmail.com', 'token-ll-again-00000', 'login', null, null,
+                           ll_hash('link-ll-again-aaaaaaaaaaaa'), 31)->>'match')::int = 31);
+select ll_ok('a second link for the same address from the same screen carries the first one''s number',
+  (celestual_edu_link_open('again@gmail.com', 'token-ll-again-00000', 'login', null, null,
+                           ll_hash('link-ll-again-bbbbbbbbbbbb'), 77)->>'match')::int = 31);
+select ll_ok('so the late first mail opened elsewhere takes the number on the screen',
+  (celestual_edu_link_confirm('link-ll-again-aaaaaaaaaaaa', 'token-ll-again-other0', 31)->>'ok')::boolean);
+select ll_ok('another screen asking for the same address gets its own number',
+  (celestual_edu_link_open('again@gmail.com', 'token-ll-again-third0', 'login', null, null,
+                           ll_hash('link-ll-again-cccccccccccc'), 58)->>'match')::int = 58);
+
 rollback;

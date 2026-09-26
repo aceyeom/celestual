@@ -443,7 +443,10 @@ Deno.serve(async (req) => {
       console.error('edu link email failed', String(e));
       return json({ ok: false, error: 'send' });
     }
-    return json({ ok: true, request: opened.request, match, domain, campus, school });
+    // the number the database kept: a resend from the same screen carries the
+    // first link's (0065), so the screen's number stays the one to type
+    const shown = Number(opened.match) || match;
+    return json({ ok: true, request: opened.request, match: shown, domain, campus, school });
   }
 
   // ── CONFIRM ─────────────────────────────────────────────────────────────

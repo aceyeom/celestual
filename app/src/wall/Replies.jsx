@@ -390,7 +390,7 @@ function School({ onVerified, onTheirs }) {
           <>
             <p className="wl-rp-school-say">
               a link is on its way to <span className="wl-h">{sent.email}</span>.{' '}
-              {sent.again ? 'tap the link in the newest mail.' : 'tap the link in the mail.'}
+              tap the link in the mail.
               {n != null ? ' on another phone or computer, it asks for this number.' : ''}
             </p>
             {n != null ? (

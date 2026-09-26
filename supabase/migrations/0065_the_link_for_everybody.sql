@@ -274,6 +274,8 @@ declare
   v_ip    text := nullif(left(btrim(coalesce(p_ip, '')), 64), '');
   v_token text := gen_random_uuid()::text;
   v_exp   timestamptz := now() + interval '30 minutes';
+  v_prev  smallint;
+  v_match integer;
 begin
   if ne is null or ne !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' or char_length(ne) > 200 then
     return jsonb_build_object('ok', false, 'error', 'email');
@@ -316,17 +318,29 @@ begin
     if v_n >= 15 then return jsonb_build_object('ok', false, 'error', 'rate'); end if;
   end if;
 
+  -- One number for one ask. A second link for the same address from the
+  -- same screen, while the first still stands, carries the first one's
+  -- number: the screen shows one number, and whichever mail is opened on
+  -- another device takes it. A number that changed with every resend made
+  -- the older mail, the one that arrived late, burn on the number the screen
+  -- was showing.
+  select match into v_prev from celestual_edu_verifications
+   where kind = 'link' and session_hash = v_hash and email = ne and purpose = p_purpose
+     and status = 'pending' and expires_at > now()
+   order by created_at desc limit 1;
+  v_match := coalesce(v_prev, p_match);
+
   insert into celestual_edu_verifications
     (token, email, slug, kind, purpose, session_hash, link_hash, match, campus, status, expires_at, ip)
   values
     (v_token, ne, coalesce(nullif(p_campus, ''), p_purpose), 'link', p_purpose, v_hash, p_link_hash,
-     p_match, case when p_purpose = 'login' then null else nullif(p_campus, '') end, 'pending', v_exp, v_ip);
+     v_match, case when p_purpose = 'login' then null else nullif(p_campus, '') end, 'pending', v_exp, v_ip);
 
   if random() < 0.2 then
     delete from celestual_edu_verifications where expires_at < now() - interval '1 day';
   end if;
 
-  return jsonb_build_object('ok', true, 'request', v_token, 'expires_at', v_exp);
+  return jsonb_build_object('ok', true, 'request', v_token, 'expires_at', v_exp, 'match', v_match);
 end;
 $$;
 

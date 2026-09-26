@@ -527,9 +527,9 @@ export default function Write({
     }
     // A link asked for again leaves the one before it alive, for its thirty
     // minutes: the mail that came late is the one somebody taps. So the
-    // requests before it are kept with it and asked after too, and the
-    // screen says to use the newest mail, since it is the newest one's number
-    // on the glass.
+    // requests before it are kept with it and asked after too. They all
+    // carry one number (0065: a resend from this screen keeps the first
+    // link's), so whichever mail is tapped, the number on the glass is it.
     setHeld((was) => ({
       email: address, request: out.request, match: out.match, at: Date.now(),
       earlier: was && was.request && was.email === address ? [...(was.earlier || []), was.request].slice(-4) : [],
@@ -1039,12 +1039,11 @@ export default function Write({
     // mail no longer prints them, and a link opened on another device than
     // this one asks for them before it confirms anything, so a link nobody
     // here asked for cannot sign anybody in (celestual-edu-verify). Opened on
-    // this device it confirms at once. After "send it again" it is the
-    // newest mail whose number this is, and the screen says to use that one.
+    // this device it confirms at once. "send it again" keeps the number, so
+    // any of the mails works with it.
     // The way out of it is said plainly: not at Berkeley, the same letter
     // goes up on the wall, read first, without the mark.
     const waiting = !!held
-    const again = waiting && !!(held.earlier && held.earlier.length)
     body_ = (
       <div className="wl-write-step wl-edu">
         <div className="wl-door">
@@ -1060,7 +1059,7 @@ export default function Write({
                 : waiting ? (held.legacy
                   ? <>we mailed a code to <span className="wl-h">{held.email}</span>. type it here and your letter goes up.</>
                   : held.match != null
-                    ? <>at <span className="wl-h">{held.email}</span>. tap the link in the {again ? 'newest mail' : 'mail'}. on another phone or computer, it asks for this number.</>
+                    ? <>at <span className="wl-h">{held.email}</span>. tap the link in the mail. on another phone or computer, it asks for this number.</>
                     : <>at <span className="wl-h">{held.email}</span>. tap the link and your letter goes up.</>)
                 : 'the Berkeley mark is for Berkeley students. we email you one link, and your address never goes on the letter.'}
             </p>
