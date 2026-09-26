@@ -191,9 +191,10 @@ lit in, and each colour carries its own treatment with it:
 | --- | --- | --- |
 | lit | night, white, ice, green, amber, rose | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
 | negative | negative | the same screen with the panel dark and the words the bright thing |
-| poster | teal, acid, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
+| poster | teal, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
 | riso | violet / yellow | two drum inks on warm paper, the second a hair out of register |
 | xerox | xerox | photocopied and blown out: one threshold between toner and paper, walked by the copier's heat |
+| brat | acid | the album cover's square: acid lime edge to edge, black words a hair soft, photographed on cheap film. Painted, never pressed (below) |
 
 These twelve are the only other hues in the product. They live in that one
 file and are drawn only on a screen, its thumbnail in the composer and the
@@ -212,6 +213,27 @@ on 25 September, and a letter in one of them draws the colour nearest its hue
 rows. Ember left on 25 September as well, so the panel is two even rows of
 six, and its letters are amber (migration 0063).
 
+**Acid is the square.** It was a poster, a lime pulled out of the night
+screen by the press with its hot corner caught in pale yellow, and beside the
+others it read as one more tint of the same machine. The lime everybody
+carries in their head is a flat square of `#8ACE00` with a word on it in
+black, the type a little soft, as if made small once and blown up again. So
+acid is that square (`kind: 'brat'`, the slug and the name still `acid`, so
+no letter's row changes):
+
+| part | what it is |
+| --- | --- |
+| the lime | `#8ACE00` edge to edge: no bands of glass, no rule. Mixed 40 percent towards `#F4F07A` at this phone's hot corner (`--q-hx`, `--q-hy`), which on paper is where the lamp caught it, and 26 percent towards `#1C3300` at the edge. From across the room it is one flat colour |
+| the grain | heavy and monochrome, in the lime itself: the film's dark specks laid over it (up to 36 percent black) and its light ones dodged into it (up to 26 percent grey in `color-dodge`), so a speck makes the lime deeper or brighter and never greyer or yellower, and black stays black. An SVG `feTurbulence` inside a data URL image (`--wl-grain`, `--wl-grain-hi`), since an image's filter is drawn by every engine where a filter laid on the page is not drawn by WebKit; started where the letter's own grain starts (`--q-grain`) |
+| the words | `#050505`, the status and the keys in the same ink as the message, softened by `blur(0.18cqw)` on the three rows and a halo of the ink at 55 percent. Never so soft a word has to be guessed |
+| what it is not | an LCD: no pixel grid, moiré, ghost column, pixels up close, dead pixel, dust or backlight's clouds. It is paper (`skinOf().paper`), so it throws almost no light on the room and is uncovered rather than woken, as a print is |
+
+It is painted by the stylesheet on the letter, the composer, the tile and the
+swatch alike, so it is the same square in WebKit, where the press does not
+run, as in Chromium. `share.js` draws it by hand: the square made small and
+blown up again for the soft words, then the same dark and light specks off
+the letter's grain seed.
+
 **A print's light is its colour's.** The press lays a print's palest ink
 wherever the greys under it cross three quarters, so where the light falls is
 decided by the panel's greys, and each print has its own (`LIGHTS` in
@@ -221,7 +243,7 @@ the tile, the thumbnail and the shared picture draw the same one:
 
 | print | light | what it is |
 | --- | --- | --- |
-| acid | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print, and read as the same white stain on each |
+| (none) | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print and read as the same white stain on each, then acid's alone; acid is the square now, and the corner stays as the press's default and `?light=corner` |
 | teal | keyline | no light on the panel, and a line of the palest ink inside the black rule, a hair clear of it |
 | lilac | dots | the light as a halftone: white cones on a forty five degree lattice, faded out from the hot corner, cut by the press into dots that are large where the light is strong and gone where it is not |
 | violet / yellow | bands | the phone's two bands of glass laid in the violet drum, and the status and the keys on them struck out in paper |
@@ -543,8 +565,9 @@ wall`; the close key still lands on the poster (`index.jsx` `toWall`, the
 ## 4. Type
 
 Three faces, and the first does two jobs at two ends of one axis. Files are in
-`app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` and served from
-this origin. Nothing renders from a CDN.
+`app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` (and the pixel
+face for Korean, Japanese and Chinese by `node scripts/fetch-cjk.mjs`, 4.0a)
+and served from this origin. Nothing renders from a CDN.
 
 This section is Main's type. On the wall one face carries every word but the
 brand's, Jersey 10 (4.0a), and the tokens below are remapped to it (2.6).
@@ -633,6 +656,38 @@ Main it is never a headline, a label or a control outside a screen.
 It was twenty-four faces a writer chose between, one menu per paper. The
 screen took the choice away with the papers (2.5): a phone has one font, and
 the font is part of what makes it that phone.
+
+**In Korean, Japanese and Chinese.** Jersey 10 is latin, and a letter in any
+of the three fell through it to the reader's system monospace: a smooth
+outline face in the middle of a screen drawn a pixel at a time. Past Jersey's
+latin, `--f-s40` now falls to one pixel design for all three, Fusion Pixel Font
+(TakWolf, SIL Open Font License 1.1), the 12px proportional cut in its Korean,
+Japanese, simplified and traditional Chinese variants, so a letter in Korean
+and a letter in Chinese are the same phone. `scripts/fetch-cjk.mjs` makes it:
+
+| | |
+| --- | --- |
+| the families | `Celestual Pixel KO`, `JA`, `ZH` and `ZH Hant`, renamed because Fusion Pixel is a Reserved Font Name and a subset is a modified font. The licence is `app/public/fonts/cjk/OFL.txt` |
+| what is kept | Hangul in the Korean face, kana in the Japanese, bopomofo in the Chinese, and in all four the ideographs, the CJK punctuation and the full width forms. Latin stays Jersey's |
+| the grid | drawn at three quarters and declared 1400 to the em, so a pixel is 75/1400 of an em, Jersey's own: an ideograph is eleven pixels tall, as tall as a capital and one under the line, and the ascent and descent are Jersey's. It is in the files, so the stylesheet needs no `size-adjust`, and the shared picture's canvas and older Safari draw it the same |
+| the weight | Jersey's strokes are two pixels and Fusion's one, so every glyph is made bold as a pixel face is: a pixel to the right of each upright, unless it would close a one pixel gap. Uprights are two pixels, horizontals one, every advance a pixel wider |
+| the files | 289 woff2, 2.7 MB in all, declared in `app/public/fonts/faces-cjk.css` (160 KB, 25 KB over the wire). Each language's commonest 3500 characters are cut as Google Fonts cuts Noto Sans KR, JP, SC and TC, by frequency; the rare rest in runs of code points, declared first so a common character never pulls a rare file |
+| per letter | a letter of eighty to ninety characters fetches 27 KB in Korean (9 files), 42 KB in Japanese (15), 72 KB in Chinese (10); a latin letter fetches none |
+
+Which face draws an ideograph is the text's language, since the three
+languages draw many of the same characters differently. A letter has no
+language field, so `type.js` `langOf` reads it off the words (any Hangul is
+Korean, any kana Japanese, ideographs alone Chinese, the traditional
+characters over the simplified Traditional Chinese), and `screen.jsx` sets it
+as `lang` on the words, the draft and the name's row. `phone.css` orders
+`--f-cjk` by `:lang()`: the language's own face first and the others after it
+for a script it lacks. The stylesheet is linked by `ensureFaces` once the page
+is idle and nothing waits on it; the shared picture links it itself and loads
+the faces its words need before it draws.
+
+Main and the desk have no pixel face. Their four stacks end in the system's
+own Korean, Japanese and Chinese sans (`Apple SD Gothic Neo`, `Hiragino Sans`,
+`PingFang SC`, `Noto Sans CJK KR`) before the generic family.
 
 ### 4.2 The rest
 

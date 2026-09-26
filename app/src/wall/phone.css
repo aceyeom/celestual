@@ -42,6 +42,33 @@
   --f-serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
 }
 
+/* ═══ THE FACE IN KOREAN, JAPANESE AND CHINESE ═════════════════════════════
+   Jersey 10 is latin. Past it, `--f-s40` (wall.css) falls to `--f-cjk`: the
+   screen's pixel face for the three languages (scripts/fetch-cjk.mjs,
+   faces-cjk.css), one family per language, on Jersey's own pixel grid. The
+   three draw many of the same ideographs differently, so the order is the
+   text's language's: its own face first, and the others after it for a
+   script it does not carry (a Korean letter's kana, a Japanese letter's
+   Hangul). Untagged text, the wall's chrome and a name on a small screen, is
+   Chinese first; Hangul and kana find their faces behind it either way,
+   since the Chinese face carries neither, and only the faces a character is
+   drawn in are ever fetched.
+
+   A custom property that holds a `var()` is worked out where it is declared,
+   so an element tagged with a language (screen.jsx, off type.js `langOf`)
+   declares the stack again with its own `--f-cjk`, and its type is set in
+   that. The Traditional Chinese face goes last, so a `zh-Hant` element,
+   which `:lang(zh)` matches too, takes it. */
+.wl-root { --f-cjk: 'Celestual Pixel ZH', 'Celestual Pixel JA', 'Celestual Pixel KO'; }
+.wl-root :lang(zh) { --f-cjk: 'Celestual Pixel ZH', 'Celestual Pixel JA', 'Celestual Pixel KO'; }
+.wl-root :is(:lang(zh-Hant), :lang(zh-TW), :lang(zh-HK), :lang(zh-MO)) { --f-cjk: 'Celestual Pixel ZH Hant', 'Celestual Pixel ZH', 'Celestual Pixel JA', 'Celestual Pixel KO'; }
+.wl-root :lang(ja) { --f-cjk: 'Celestual Pixel JA', 'Celestual Pixel ZH', 'Celestual Pixel KO'; }
+.wl-root :lang(ko) { --f-cjk: 'Celestual Pixel KO', 'Celestual Pixel JA', 'Celestual Pixel ZH'; }
+.wl-root .wl-scr [lang] {
+  --f-s40: 'Jersey 10', var(--f-cjk), 'Geist Mono', ui-monospace, monospace;
+  font-family: var(--f-s40);
+}
+
 .wl-root.is-room {
   /* ── one face ──
      The four jobs the faces carried on Main (the display, the reading, the

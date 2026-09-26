@@ -191,13 +191,17 @@
      Fallbacks are chosen for metric proximity, not for taste: the swap has to
      be invisible, so a Didone falls back to a Didone and a Garamond falls back
      to an old-style with the same x-height. */
-  --f-display:  'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  --f-letter:   'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  --f-util:     'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --f-id:       'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  /* and past the latin faces, Korean, Japanese and Chinese in the system's
+     own sans, before the generic family would pick one at random */
+  --f-display:  'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Apple SD Gothic Neo', 'Hiragino Sans', 'PingFang SC', 'Noto Sans CJK KR', serif;
+  --f-letter:   'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Apple SD Gothic Neo', 'Hiragino Sans', 'PingFang SC', 'Noto Sans CJK KR', serif;
+  --f-util:     'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Hiragino Sans', 'PingFang SC', 'Noto Sans CJK KR', sans-serif;
+  --f-id:       'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Apple SD Gothic Neo', 'Hiragino Sans', 'PingFang SC', 'Noto Sans CJK KR', monospace;
   /* the screen's one face (looks.js): every word on a letter, every
-     monogram on a small screen and on a face, and nothing else */
-  --f-s40:      'Jersey 10', 'Geist Mono', ui-monospace, monospace;
+     monogram on a small screen and on a face, and nothing else. Past its
+     latin, the screen's pixel face for Korean, Japanese and Chinese, in the
+     order the text's language wants (phone.css `--f-cjk`) */
+  --f-s40:      'Jersey 10', var(--f-cjk, 'Celestual Pixel ZH', 'Celestual Pixel JA', 'Celestual Pixel KO'), 'Geist Mono', ui-monospace, monospace;
 
   position: relative;
   z-index: 2;
