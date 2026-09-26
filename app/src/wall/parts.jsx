@@ -440,13 +440,16 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
             at the foot, where a thumb is (`WriteAct`). The bar keeps the way
             home and the person. */}
         {/* The one target here, and the only one that changes what it draws. A
-            keyhole while the letters are shut, and once they are open, the
-            face of the address that opened them, so a person's own mark is
-            the same object here as it is on the wall.
+            key while nobody is signed in, and once somebody is, the face of
+            the address they signed in with, so a person's own mark is the
+            same object here as it is on the wall.
             It opens the person: their pings, what they have not finished and
             what they have written (screens/You.jsx), for anybody the product
             knows by any proof. Anybody else is asked in first, and lands on
-            the same sheet once they are. */}
+            the same sheet once they are. The key is named for that and for
+            nothing else: it went on saying "sign in to read the letters" to
+            a screen reader and on hover after every letter was open to
+            anybody (migration 0066). */}
         <button
           type="button"
           className={`wl-iconbtn wl-memberbtn${at === 'gate' || at === 'you' ? ' is-on' : ''}`}
@@ -458,8 +461,8 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
           aria-label={who ? `signed in as ${who}`
             : mine ? `signed in as ${atHandle(mine)}`
             : reads ? 'your account'
-            : 'sign in to read the letters'}
-          title={who || (mine ? atHandle(mine) : reads ? 'your account' : 'sign in to read')}
+            : 'sign in'}
+          title={who || (mine ? atHandle(mine) : reads ? 'your account' : 'sign in')}
           aria-current={at === 'gate' || at === 'you' ? 'page' : undefined}
         >
           {who || reads
@@ -2306,31 +2309,15 @@ export function SiteFoot({ go = null, className = '' }) {
 }
 
 // ── THE OWNER'S PARTS ───────────────────────────────────────────────────────
-// Three small objects for the person who has claimed their @ (docs/ONE-WALL.md,
-// api/alerts.js): the toast that carries an undo, the switch an alert is
-// turned on with, and the field an alert's address is typed into. Styled in
-// owner.css, in the phone's language, like everything else on the wall.
-
-// A line at the foot of the glass that says what just happened, with the one
-// act that takes it back, and goes on its own after `ms`. The clock restarts
-// when `stamp` changes, so a second removal gets its own five seconds.
-export function Toast({ children, act = '', onAct = null, ms = 5000, onDone, stamp = 0 }) {
-  const done = useRef(onDone)
-  done.current = onDone
-  useEffect(() => {
-    if (!ms) return undefined
-    const t = setTimeout(() => { if (done.current) done.current() }, ms)
-    return () => clearTimeout(t)
-  }, [ms, stamp])
-  return (
-    <div className="wl-toast" role="status" aria-live="polite">
-      <span className="wl-toast-say">{children}</span>
-      {act && onAct ? (
-        <button type="button" className="wl-toast-act" onClick={onAct}>{act}</button>
-      ) : null}
-    </div>
-  )
-}
+// Two small objects for the person who has claimed their @ (docs/ONE-WALL.md,
+// api/alerts.js): the switch an alert is turned on with, and the field an
+// alert's address is typed into. Styled in owner.css, in the phone's
+// language, like everything else on the wall.
+//
+// There was a third, the toast that carried a removal's undo for five
+// seconds at the foot of the glass, over the thread under the letter. The
+// undo is the letter's own screen's now, for as long as it stands
+// (screens/Letter.jsx `removedFace`), and the toast went with it.
 
 // One setting, on or off: the sentence it is about, and a switch at its end.
 // The whole row is the control, so the sentence is what is pressed.

@@ -114,8 +114,13 @@ select ml_ok('a number that is not two digits is refused',
 select ml_ok('a token nobody minted confirms nothing',
   (celestual_edu_link_confirm('link-token-nobody-minted-this', 'token-ml-dev-b-00000000')->>'error') = 'invalid');
 
+-- another device is asked for the number on the asking screen (0065), and
+-- nothing happens until it is typed
+select ml_ok('opened on another device, the link asks for the number first',
+  (celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-b-00000000')->>'error') = 'match'
+  and (select status = 'pending' from celestual_edu_verifications where token = (select r from ml_req)->>'request'));
 create temp table ml_conf as
-  select celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-b-00000000') as r;
+  select celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-b-00000000', 47) as r;
 select ml_ok('the link confirms on the device that opened it',
   ((select r from ml_conf)->>'ok')::boolean
   and ((select r from ml_conf)->>'purpose') = 'edu'

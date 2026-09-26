@@ -104,11 +104,18 @@ export async function verifyEduCode({ token, code, session }) {
 //                asks the function to refuse an address that is not at that
 //                school ('domain'). Answers { ok, request, match, domain,
 //                campus, school }: `request` is what `linkStatus` asks after,
-//                and `match` the two digits the mail prints, so a person can
-//                tell their own mail from anybody else's.
-//   confirmLink  the link's token, spent by whichever device tapped it.
+//                and `match` the two digits the asking screen shows, and
+//                nothing else does: the mail never prints them (migration
+//                0065 section 3).
+//   confirmLink  the link's token, spent by whichever device tapped it. On
+//                the device that asked it confirms at once. On any other it
+//                answers 'match' and spends nothing, until it is called again
+//                with `match`, the number typed off the asking screen: the
+//                right one confirms, a wrong one burns the link ('mismatch').
 //                Answers { ok, purpose, request, campus, school, sameDevice }
-//                or an error: 'invalid', 'expired', 'used'.
+//                or { ok: false, error, purpose }, with error one of
+//                'invalid', 'expired', 'used', 'match', 'mismatch' or
+//                'offline', and `purpose` whenever the link was found.
 //   linkStatus   whether the request this session made has been confirmed,
 //                wherever the link was tapped. { ok, verified, expired,
 //                purpose, campus, school }.
@@ -154,11 +161,20 @@ export async function sendLink({ email, session, purpose = 'edu', campus = null 
   }
 }
 
-export async function confirmLink({ token, session }) {
-  const out = await invokeLink({ action: 'confirm', token: String(token || ''), session: String(session || '') })
+// The answers the page words, each its own way. 'taken' was read as 'invalid'
+// here, and the page's own line for it ("already confirmed on another
+// account") was never drawn.
+const CONFIRM_FAULTS = new Set(['expired', 'used', 'offline', 'taken', 'match', 'mismatch'])
+
+export async function confirmLink({ token, session, match = null }) {
+  const typed = match == null ? '' : String(match).replace(/\D/g, '')
+  const out = await invokeLink({
+    action: 'confirm', token: String(token || ''), session: String(session || ''),
+    ...(typed ? { match: typed } : {}),
+  })
   if (!out.ok) {
-    const e = out.error === 'expired' || out.error === 'used' || out.error === 'offline' ? out.error : 'invalid'
-    return { ok: false, error: e }
+    const e = CONFIRM_FAULTS.has(out.error) ? out.error : 'invalid'
+    return { ok: false, error: e, purpose: out.purpose ? purposeOf(out.purpose) : null }
   }
   return {
     ok: true,

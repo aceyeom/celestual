@@ -147,9 +147,11 @@ export default function Signin({ go, who, refreshWho }) {
         <div className="mn-foot">
           {/* Out to the wall, which is where the pings are now: the account
               sheet for somebody whose handle came back, and the one that asks
-              for it again when the link had lapsed; the wall itself otherwise. */}
+              them in again when the link had lapsed (its door has every way
+              in, Instagram first); the wall itself otherwise. In the wall's
+              words: "your private notes", never "your pings". */}
           <Pill tone="light" wide onClick={() => go(phase === 'done' && !handle ? 'hero' : 'sky')}>
-            {phase === 'done' ? (handle ? 'see your pings' : 'the wall') : 'prove it again'}
+            {phase === 'done' ? (handle ? 'your private notes' : 'the wall') : 'sign in again'}
           </Pill>
         </div>
       ) : null}

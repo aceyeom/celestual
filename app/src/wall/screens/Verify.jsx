@@ -9,13 +9,16 @@
 //
 //   the one that wrote the letter
 //       The draft is on this device, waiting on the link (store.js `draft`,
-//       with `held`). It goes up here, and the letter opens: "verified. your
-//       letter is up." The composer in the other tab, polling the same
+//       with `held`). It goes up here, and the letter opens: "confirmed.
+//       your letter is up." The composer in the other tab, polling the same
 //       request, posts the same draft with the same nonce, and the function
 //       answers it with this letter rather than writing a second one.
 //   another one (the mail opened on a laptop, the letter written on a phone)
-//       "verified. go back to where you wrote it, it's going up there." The
-//       composer on the phone sees the request confirmed and posts.
+//       It asks for the number first (below). Then "confirmed. go back to
+//       where you asked for the link. it carries on there.", which is true
+//       of a letter waiting in a composer and of a reply waiting under a
+//       letter (Replies.jsx asks for the same link with no draft behind it,
+//       and "it's going up there" was a promise about a letter nobody wrote).
 //   for the alerts
 //       The alert address is confirmed: "your alerts are on."
 //   for signing in (migration 0065, the door's "continue with email")
@@ -25,20 +28,33 @@
 //       back with the person (auth.js `restoreProof`), so the one quiet line
 //       under the key opens them.
 //
+// ── the number, on another device ───────────────────────────────────────────
+// The asking screen shows two digits, and since 0065 (section 3) the mail
+// does not. Tapped on the device that asked, the link confirms at once. Tapped
+// anywhere else, the server answers `match` and spends nothing, and this page
+// asks for the number on the screen where the link was asked for. The right
+// number confirms; a wrong one burns the link (`mismatch`), and the asking
+// screen, polling, sees it run out and offers another. Before this, a link
+// confirmed on whatever opened it, so anybody who typed somebody's address
+// into the door and got them to tap the mail was signed in as them on the
+// device that asked. A person who never asked for a link has no screen to
+// read a number off, and the page tells them to close it.
+//
 // A link works once and lasts thirty minutes, and one that has been used or
-// has run out says so, with the next step: ask for a new one where the
-// letter was written.
+// has run out says so, with the next step: back to the letter this device is
+// holding, to the account for an alerts link, or the door again for a
+// sign in.
 //
 // Raised over the wall like the gate and the report (router.js `SHEETS`), in
 // the door's shape (parts.jsx `DoorHead`), since it is the end of a door.
 
 import { useEffect, useRef, useState } from 'react'
-import { Sheet, SheetHead, Pill, DoorHead, Display } from '../parts.jsx'
+import { Sheet, SheetHead, Pill, DoorHead, Display, CodeBox } from '../parts.jsx'
 import { Wait } from '../screen.jsx'
 import { confirmLink } from '../../api/eduverify.js'
 import { sessionToken } from '../../api/identity.js'
-import { refresh } from '../auth.js'
-import { getState } from '../store.js'
+import { refresh, isReader } from '../auth.js'
+import { getState, setAfterGate } from '../store.js'
 import { postDraft } from '../data.js'
 import { schoolOf } from '../schools.js'
 import { Sticker } from '../Sticker.jsx'
@@ -57,7 +73,8 @@ function readToken() {
 
 // One confirmation per token for the life of the page: the shell's
 // development mode mounts every screen twice, and a link spent by the first
-// mount would answer `used` to the second.
+// mount would answer `used` to the second. The number, when one is asked
+// for, is a second call and never cached: each is a guess of its own.
 const SPENT = new Map()
 function spend(token) {
   if (!SPENT.has(token)) SPENT.set(token, confirmLink({ token, session: sessionToken() }))
@@ -72,13 +89,18 @@ function heldDraft() {
 
 export default function Verify({ go, up, upLabel = 'back to the wall', toWall = null }) {
   const [token] = useState(readToken)
-  // checking · posting · up · elsewhere · alerts · in · failed · bad
+  // checking · number · posting · up · review · elsewhere · alerts · in · failed · bad
   const [state, setState] = useState(token ? 'checking' : 'bad')
   const [why, setWhy] = useState(token ? '' : 'invalid')
+  // what the link was for, when the server said: where to ask again
+  const [purpose, setPurpose] = useState('')
   const [id, setId] = useState('')
   const [school, setSchool] = useState(() => schoolOf('berkeley'))
   // a login: whether the device that asked for the link is this one
   const [here, setHere] = useState(true)
+  // the number typed off the asking screen, and whether it is being checked
+  const [n, setN] = useState('')
+  const [trying, setTrying] = useState(false)
   const alive = useRef(true)
   useEffect(() => {
     alive.current = true
@@ -91,33 +113,54 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     try { window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search) } catch { /* a sandbox */ }
   }, [])
 
+  // What the server answered, first time or after the number: the page it
+  // lands on, and for a letter this device is holding, the letter put up.
+  const settle = async (out) => {
+    if (!alive.current) return
+    if (!out.ok) {
+      setPurpose(out.purpose || '')
+      if (out.error === 'match') { setState('number'); return }
+      setWhy(out.error)
+      setState('bad')
+      return
+    }
+    setPurpose(out.purpose)
+    if (out.campus) setSchool(schoolOf(out.campus, { name: out.school || '' }) || schoolOf('berkeley'))
+    await refresh()
+    if (!alive.current) return
+    if (out.purpose === 'alerts') { setState('alerts'); return }
+    if (out.purpose === 'login') { setHere(out.sameDevice); setState('in'); return }
+    const d = heldDraft()
+    if (!d) { setState('elsewhere'); return }
+    setState('posting')
+    const posted = await postDraft(d)
+    if (!alive.current) return
+    if (posted && posted.ok && (posted.status === 'live' || posted.status === 'pending')) {
+      setId(posted.id || '')
+      setState(posted.status === 'live' ? 'up' : 'review')
+      return
+    }
+    setWhy(posted && posted.error ? String(posted.error) : 'network')
+    setState('failed')
+  }
+
   useEffect(() => {
     if (!token) return undefined
     let on = true
-    ;(async () => {
-      const out = await spend(token)
-      if (!on || !alive.current) return
-      if (!out.ok) { setWhy(out.error); setState('bad'); return }
-      if (out.campus) setSchool(schoolOf(out.campus, { name: out.school || '' }) || schoolOf('berkeley'))
-      await refresh()
-      if (!on || !alive.current) return
-      if (out.purpose === 'alerts') { setState('alerts'); return }
-      if (out.purpose === 'login') { setHere(out.sameDevice); setState('in'); return }
-      const d = heldDraft()
-      if (!d) { setState('elsewhere'); return }
-      setState('posting')
-      const posted = await postDraft(d)
-      if (!on || !alive.current) return
-      if (posted && posted.ok && (posted.status === 'live' || posted.status === 'pending')) {
-        setId(posted.id || '')
-        setState(posted.status === 'live' ? 'up' : 'review')
-        return
-      }
-      setWhy(posted && posted.error ? String(posted.error) : 'network')
-      setState('failed')
-    })()
+    spend(token).then((out) => { if (on) settle(out) })
     return () => { on = false }
   }, [token])
+
+  // The number, typed. Two digits or nothing is sent: the key waits for the
+  // second, so a slip of one digit is never a guess that burns the link.
+  const check = async () => {
+    if (trying || n.length !== 2) return
+    setTrying(true)
+    const out = await confirmLink({ token, session: sessionToken(), match: n })
+    if (!alive.current) return
+    setTrying(false)
+    settle(out)
+  }
 
   // the letter, opened, a beat after it is said to be up
   useEffect(() => {
@@ -128,26 +171,45 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
 
   const wall = () => { if (toWall) toWall(); go('wall') }
   const toLetter = () => { if (toWall) toWall(); go('write') }
+  // A sign in link that did not work, and the door again, which lands on
+  // the wall once it opens rather than back on this page.
+  const again = () => { setAfterGate({ name: 'wall' }); go('gate') }
 
   let title
   let say
   let act = null
   let quiet = null
+  let ways = null
   if (state === 'checking' || state === 'posting') {
     title = <>one moment.</>
     say = <span className="wl-verify-wait"><Wait />{state === 'checking' ? 'checking the link' : 'putting your letter up'}</span>
+  } else if (state === 'number') {
+    title = <>type your<br />number.</>
+    say = 'type the number on the screen where you asked for this link. if you didn’t ask for one, close this page.'
+    ways = (
+      <CodeBox
+        value={n} onChange={setN} onSubmit={check} length={2} autoFocus
+        label="the number on the screen where you asked"
+      />
+    )
+    act = (
+      <Pill tone="light" wide onClick={check} disabled={trying || n.length !== 2} aria-busy={trying || undefined}>
+        {trying ? 'checking' : 'confirm'}
+      </Pill>
+    )
+    quiet = <button type="button" className="wl-quiet" onClick={up}>close</button>
   } else if (state === 'up') {
-    title = <>verified. your<br />letter is up.</>
+    title = <>confirmed. your<br />letter is up.</>
     say = 'it’s on the wall marked from Berkeley, and nobody sees who wrote it.'
     act = <Pill tone="light" wide onClick={() => { if (toWall) toWall(); go('letter', id) }}>read it</Pill>
     quiet = <button type="button" className="wl-quiet" onClick={wall}>back to the wall</button>
   } else if (state === 'review') {
-    title = <>verified. it&rsquo;s<br />being checked.</>
-    say = 'it goes up once it’s reviewed.'
+    title = <>confirmed. it&rsquo;s<br />being read.</>
+    say = 'it goes up once it passes.'
     act = <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
   } else if (state === 'elsewhere') {
-    title = <>verified.</>
-    say = 'go back to where you wrote it. it’s going up there.'
+    title = <>confirmed.</>
+    say = 'go back to where you asked for the link. it carries on there.'
     act = <Pill tone="light" wide onClick={wall}>go to the wall</Pill>
   } else if (state === 'in') {
     title = <>you&rsquo;re in.</>
@@ -161,26 +223,40 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     say = 'we’ll email you when it matters, and every email has a one tap way to stop.'
     act = <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
   } else if (state === 'failed') {
-    title = <>verified, but it<br />didn&rsquo;t go up.</>
+    title = <>confirmed, but it<br />didn&rsquo;t go up.</>
     say = why === 'campus' ? 'that address is at another school, so it can’t post marked from Berkeley. your letter is still in the composer, and it can go up read first.'
       : why === 'throttle' ? 'too many from this device today. your letter is still in the composer.'
       : 'your letter is still in the composer. open it and send it again.'
     act = <Pill tone="light" wide onClick={toLetter}>open your letter</Pill>
     quiet = <button type="button" className="wl-quiet" onClick={wall}>back to the wall</button>
   } else {
+    const held = heldDraft()
     title = why === 'used' ? <>that link has<br />been used.</>
       : why === 'expired' ? <>that link has<br />run out.</>
+      : why === 'mismatch' ? <>that number<br />didn&rsquo;t match.</>
       : why === 'offline' ? <>we couldn&rsquo;t<br />check it.</>
       : why === 'taken' ? <>that address is<br />already in use.</>
       : <>that link<br />doesn&rsquo;t work.</>
+    const next = held ? 'ask for a new one where you wrote your letter.'
+      : purpose === 'alerts' ? 'ask for a new one from your account.'
+      : 'ask for a new one where you asked for this one.'
     say = why === 'offline' ? 'we could not reach the server. try the link again in a moment.'
       : why === 'taken' ? 'that school email is already confirmed on another account. sign in there, or use a different address.'
-      : heldDraft() ? 'a link works once, for thirty minutes. ask for a new one where you wrote your letter.'
-      : 'a link works once, for thirty minutes. ask for a new one where you asked for this one.'
-    act = heldDraft()
-      ? <Pill tone="light" wide onClick={toLetter}>back to your letter</Pill>
-      : <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
-    quiet = heldDraft() ? <button type="button" className="wl-quiet" onClick={wall}>back to the wall</button> : null
+      : why === 'mismatch' ? `so the link has stopped working, and nobody can try another. ${next}`
+      : `a link works once, for thirty minutes. ${next}`
+    // The one next step, lit: the letter this device is holding; the
+    // account, for an alerts link; the door again, for a sign in (or a
+    // link the server could not name), unless this device is already in.
+    // The wall stays under it, quiet.
+    if (held) {
+      act = <Pill tone="light" wide onClick={toLetter}>back to your letter</Pill>
+    } else if (why !== 'offline' && purpose === 'alerts') {
+      act = <Pill tone="light" wide onClick={() => { if (toWall) toWall(); go('you') }}>open your account</Pill>
+    } else if (why !== 'offline' && purpose !== 'edu' && !isReader()) {
+      act = <Pill tone="light" wide onClick={again}>sign in again</Pill>
+    }
+    quiet = act ? <button type="button" className="wl-quiet" onClick={wall}>back to the wall</button> : null
+    if (!act) act = <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
   }
 
   const won = state === 'up' || state === 'review' || state === 'elsewhere'
@@ -200,6 +276,7 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
             <DoorHead id="wl-verify-h" title={title} say={say} />
           )}
           <div className="wl-door-ways">
+            {ways}
             {act}
             {quiet}
           </div>

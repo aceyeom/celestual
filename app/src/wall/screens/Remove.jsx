@@ -248,15 +248,20 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
             <Display size="s" as="h2" id="wl-rm-h">
               {proven
                 ? <>it&rsquo;s your @.<br />remove yourself<br />from the wall.</>
-                : <>verify your Instagram handle to remove yourself from the wall.</>}
+                : <>confirm your Instagram to take your name off the wall.</>}
             </Display>
 
             {/* Two lines, not a paragraph. What it costs, and the cheaper door
-                beside it. */}
+                beside it: the letter's own "remove this letter", one tap
+                with an undo once the @ is confirmed (Letter.jsx), and no
+                longer the report, which is slower and the desk's. The
+                heading asks in the words every other door asks in:
+                "confirm your Instagram", not "verify your Instagram
+                handle". */}
             <Prose className="wl-gate-copy">
               {proven
                 ? 'every letter to your @ comes down, and nobody can write to it again. this cannot be undone.'
-                : 'this takes down every letter to your @ and stops new ones, for good. for just one letter, report that letter instead.'}
+                : 'this takes down every letter to your @ and stops new ones, for good. for just one letter, choose remove this letter from its menu.'}
             </Prose>
 
             <div className="wl-remove-field">

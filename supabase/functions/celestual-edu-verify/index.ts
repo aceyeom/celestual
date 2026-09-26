@@ -11,9 +11,9 @@
 //   { action:'link', email, session, purpose:'edu'|'alerts'|'login', campus?, draft? }
 //        → { ok:true, request, match, domain, campus, school }
 //        | { ok:false, error:'email'|'domain'|'rate'|'send'|'taken'|'session' }
-//   { action:'confirm', token, session }
+//   { action:'confirm', token, session, match? }
 //        → { ok:true, purpose, request, campus, school, same_device }
-//        | { ok:false, error:'invalid'|'expired'|'used'|'taken' }
+//        | { ok:false, error:'invalid'|'expired'|'used'|'taken'|'match'|'mismatch', purpose? }
 //   { action:'status', request, session }
 //        → { ok:true, verified, purpose, campus, school, expired } | { ok:false, error:'invalid' }
 //
@@ -151,7 +151,10 @@ function linkToken(): string {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// The number the asking screen shows and the email prints, 10 to 99.
+// The number the asking screen shows, 10 to 99, and nothing else does
+// (0065 section 3). The mail never prints it: a link opened on a device that
+// did not ask for it confirms only once this is typed there, so a person sent
+// a link they never asked for has nothing to type.
 function matchNumber(): number {
   return 10 + (crypto.getRandomValues(new Uint32Array(1))[0] % 90);
 }
@@ -360,7 +363,8 @@ Deno.serve(async (req) => {
   // the number and the asking session's hash (celestual_edu_link_open, which
   // also holds the limits: five an address and fifteen a network address an
   // hour, codes and links together). `draft: false` words the mail for a
-  // proof with no letter waiting on it.
+  // proof with no letter waiting on it. The number goes back to the asking
+  // screen in the answer, and into the mail not at all.
   if (action === 'link') {
     const email = String(body.email || '').trim().toLowerCase();
     const session = String(body.session || '');
@@ -434,7 +438,7 @@ Deno.serve(async (req) => {
     if (!opened?.ok) return json({ ok: false, error: String(opened?.error ?? 'send') });
 
     try {
-      await sendMail(email, verifyMail({ link: `${SITE}/verify#t=${token}`, match, purpose, domain, draft }));
+      await sendMail(email, verifyMail({ link: `${SITE}/verify#t=${token}`, purpose, domain, draft }));
     } catch (e) {
       console.error('edu link email failed', String(e));
       return json({ ok: false, error: 'send' });
@@ -449,13 +453,22 @@ Deno.serve(async (req) => {
   // filled; for a login, both devices signed in as whoever holds the address
   // (celestual_user_bind_email_hash, 0065); or, for alerts, the asking
   // person's alert address confirmed.
+  //
+  // `match` is the number the page asked for, typed off the asking screen,
+  // when the device that opened the link is not the one that asked. Anything
+  // that is not two digits goes as no number at all, which asks again and
+  // spends nothing: only a real guess can burn the link, and it does
+  // ('mismatch'). The database decides which device asked; this passes on
+  // what was typed and nothing else.
   if (action === 'confirm') {
     const token = String(body.token || '');
     const session = String(body.session || '');
+    const typed = body.match == null ? '' : String(body.match).trim();
     if (token.length < 16 || token.length > 128) return json({ ok: false, error: 'invalid' });
     const { data, error } = await supabase.rpc('celestual_edu_link_confirm', {
       p_token: token,
       p_session: session.length >= 16 && session.length <= 256 ? session : null,
+      p_match: /^\d{2}$/.test(typed) ? Number(typed) : null,
     });
     if (error) {
       console.error('edu link confirm failed', error.message);

@@ -10,7 +10,7 @@
 // that ask cannot word the code stage three ways:
 //
 //   the ask    the caller's own heading (`title`), the field, the pill
-//   the code   "verify the account belongs to you." over the DM block, and
+//   the code   "confirm this is your Instagram." over the DM block, and
 //              one way out of it
 //
 // Nothing here is new mechanics. `startHandoff` mints the code (or, for a
@@ -21,6 +21,10 @@
 //
 // What it does NOT do is decide what happens next. It reports the handle that
 // was proved and the caller draws its own next screen.
+//
+// Its key says what the wall's keys say, "confirm with one DM" (design/
+// VOICE.md section 2: one act, one name). It said "prove it with one DM",
+// one word from the wall's, for the same DM.
 import { useEffect, useRef, useState } from 'react'
 import { Display, Prose, Pill, HandleField, DmCode, VerifyHead } from '../wall/parts.jsx'
 import { Provider } from '../wall/art.jsx'
@@ -152,7 +156,7 @@ export default function Prove({ who, refreshWho, onProved, title, copy = null, h
           size="lg" placeholder="yourhandle" label="your instagram handle" busy={busy}
         />
         <Pill tone="light" wide onClick={ask} disabled={busy} icon={<Provider size={17} />}>
-          {busy ? 'one moment' : 'prove it with one DM'}
+          {busy ? 'one moment' : 'confirm with one DM'}
         </Pill>
         <p className="mn-said" role="status" aria-live="polite">{said}</p>
       </div>

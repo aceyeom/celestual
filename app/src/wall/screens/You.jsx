@@ -44,6 +44,23 @@
 // by email, and asked to confirm their Instagram every single time. What is
 // left of 'unverified' is a device that holds a DM proof its person's row
 // does not: the DM is the one way to claim an @, and that is when it is owed.
+//
+// ── nobody known here ───────────────────────────────────────────────────────
+// Signed out, this sheet is the gate's door, all three ways in with Instagram
+// first (screens/Gate.jsx, landing back here). It was the Instagram DM alone,
+// with "or send a private note first", and it is reached from the places a
+// returning person comes back by: a mail's link to /sky, the stop page's
+// "turn them back on", the reveal's "your private notes". Somebody who
+// signed in by email or Google before, whose account holds their @ and their
+// notes, was sent into a second DM for what one mailed link would have
+// brought back.
+//
+// One arrival is the DM on purpose: the nudge under a letter
+// (`openForAlerts`), which promises an email when a letter is written to
+// you. Only the @ can be written to, and only the DM proves the @, so that
+// door is the DM, and once it lands the person is asked the one question the
+// nudge was about (screens/Claim.jsx, "want an email when someone writes to
+// you?").
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile,
@@ -62,7 +79,19 @@ import {
 } from '../pings.js'
 import { useProve, ProveDoor } from './Ping.jsx'
 import { useAlertLink, AlertEmail } from './Alerts.jsx'
+import Gate from './Gate.jsx'
 import { alertsGet, alertsSet } from '../../api/alerts.js'
+
+// ── the nudge's way in ──────────────────────────────────────────────────────
+// The account, opened on the Instagram DM rather than on the three ways in,
+// and handed on to the question about the email once the DM lands (the head
+// of this file says why). Held here for the one mount it is for, and carried
+// in the DM's pending record across the walk to Instagram and back.
+let FOR_ALERTS = false
+export function openForAlerts(go) {
+  FOR_ALERTS = true
+  go('you')
+}
 
 // ── the letters this person put up ──────────────────────────────────────────
 // A list, one row per letter: the face and the name it was written to, how
@@ -77,12 +106,19 @@ import { alertsGet, alertsSet } from '../../api/alerts.js'
 // stand in, without counts, since those are the only fact left.
 const SHOWN = 4
 
+// A letter held to be read before it goes up (wall_mine's `down_by: 'held'`,
+// a pending row) is not down, and was drawn greyed as "taken down" while it
+// was still being read. It is "being read" now, in the wall's own words for
+// it, and not opened, since it is not on the wall yet to open.
 function Wrote({ go }) {
   const [more, setMore] = useState(false)
   const own = mine()
   const rows = own && own.length
-    ? own.map((l) => ({ id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0, down: !!l.downBy, live: !l.downBy }))
-    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, down: false, live: true }))
+    ? own.map((l) => ({
+      id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
+      held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
+    }))
+    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true }))
   if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const cut = !more && rows.length > SHOWN
   const shown = cut ? rows.slice(0, SHOWN) : rows
@@ -96,14 +132,14 @@ function Wrote({ go }) {
         {shown.map((r, i) => (
           <button
             type="button" key={r.id || `${r.to}-${i}`}
-            className={`wl-wrote-row${r.live ? '' : ' is-down'}`}
+            className={`wl-wrote-row${r.down ? ' is-down' : ''}`}
             onClick={() => open(r)} disabled={!r.live}
-            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.down ? ', taken down' : ''}`}
+            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.down ? ', taken down' : ''}`}
           >
             <Face handle={r.to} size={30} />
             <span className="wl-wrote-who">
               <span className="wl-wrote-name">{labelFor(r.to)}</span>
-              <span className="wl-wrote-meta">{r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
+              <span className="wl-wrote-meta">{r.held ? 'being read' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
             </span>
             {r.hearts !== null && r.live ? (
               <span className="wl-wrote-n" aria-hidden="true">
@@ -293,7 +329,7 @@ function YourAt({ handle, rev, go, onProve }) {
         <Label tone="dim">your @</Label>
         <div className="wl-you-ask">
           <p className="wl-you-say">
-            claim your @ to get an email when someone writes to you, and to remove letters about you in one tap.
+            confirm your Instagram to get an email when someone writes to you, and to remove letters about you in one tap.
           </p>
           <Pill tone="ghost" icon={<Provider size={15} />} onClick={onProve}>confirm your Instagram</Pill>
         </div>
@@ -369,8 +405,13 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   const handle = myHandle()
   const known = !!(who || reads || handle)
   const [held] = useState(() => { const r = loadPending(); return r && r.use === 'you' ? r : null })
+  // come from the nudge: the DM first, and the email asked about after it
+  // (`openForAlerts`). Read without spending it, since a development mount
+  // runs this twice, and spent once the sheet is up.
+  const [want] = useState(() => !!(held && held.alerts) || FOR_ALERTS)
+  useEffect(() => { FOR_ALERTS = false }, [])
   // null · 'prove' · the handle of the ping whose screen is up
-  const [view, setView] = useState(() => (held ? 'prove' : null))
+  const [view, setView] = useState(() => (held || want ? 'prove' : null))
   const [rev, setRev] = useState(0)
   // loading · pings · error, where error is 'none' (no @ proved here),
   // 'unverified' (one is, and the proof that spends it is not on this
@@ -403,14 +444,18 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // ── proving the @ ──
   // The same door the ping asks at, filed under its own use. Whoever DMs is
   // the identity (0012), so there is nothing to ask afterwards: the card
-  // comes back, and reads the list with the proof it now holds.
+  // comes back, and reads the list with the proof it now holds. From the
+  // nudge, the one thing asked afterwards is the email, on the claim's own
+  // sheet for the @ just proved ("it's yours. want an email when someone
+  // writes to you?"), which closes back onto this card.
   const proof = useProve({
-    use: 'you', held,
-    onLanded: async () => {
+    use: 'you', held, stash: want ? { alerts: true } : null,
+    onLanded: async (got) => {
       await refresh()
       forgetPings()
       setView(null)
       setRev((n) => n + 1)
+      if (want && got) go('claim', got)
     },
   })
 
@@ -425,9 +470,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   }
 
   // ── the door ──
-  // Nobody known here yet, or somebody known by an address and not by an @:
-  // the pings are behind the @, so the card is the door until it is proved.
-  if (view === 'prove' || !known) {
+  // The Instagram DM, asked for: from the card's "confirm your Instagram"
+  // (somebody known by an address and not by an @, whose pings are behind
+  // the @), from a DM this sheet was waiting on, and from the nudge.
+  if (view === 'prove') {
     const lapsed = !!handle
     return (
       <Sheet onClose={up} tall labelledBy="wl-you-h">
@@ -437,7 +483,9 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           <ProveDoor
             p={proof} headId="wl-you-h" onAsk={() => proof.ask()}
             title={lapsed ? <>confirm your<br />Instagram again.</> : <>confirm this is<br />your Instagram.</>}
-            say="to see the notes you sent privately, get email alerts, and remove letters about you."
+            say={want
+              ? 'then we can email you if a letter is ever written to you, and only you.'
+              : 'to see the notes you sent privately, get email alerts, and remove letters about you.'}
           />
           <div className="wl-push" />
           <SheetFoot>
@@ -446,7 +494,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
             ) : known ? (
               <button type="button" className="wl-quiet" onClick={() => { proof.setSaid(''); setView(null) }}>not now</button>
             ) : (
-              <button type="button" className="wl-quiet" onClick={() => go('ping')}>or send a private note first</button>
+              <button type="button" className="wl-quiet" onClick={up}>not now</button>
             )}
           </SheetFoot>
           <DoorFoot />
@@ -454,6 +502,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
       </Sheet>
     )
   }
+
+  // Nobody known here: the gate's three ways in, Instagram first, and this
+  // card once one of them lands (the head of this file says why).
+  if (!known) return <Gate go={go} up={up} upLabel={upLabel} after={{ name: 'you' }} />
 
   const opened = view ? list.pings.find((p) => p.to === view && p.state !== 'mutual') : null
   if (opened) {

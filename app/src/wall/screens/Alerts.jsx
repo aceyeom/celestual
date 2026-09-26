@@ -2,19 +2,24 @@
 //
 // The stop link at the foot of every alert (docs/ONE-WALL.md, "Email links").
 // One tap in an inbox and the emails stop: the token is spent on load, the
-// sheet says so in one line, and the one way back is the switch on the
-// person's own page. Nothing is asked first. An email that makes somebody
+// sheet says so in one line, and the one way back is the switch in the
+// person's own account. Nothing is asked first. An email that makes somebody
 // confirm they want it to stop is an email that has not stopped.
+//
+// The account is called "your account" here, as everywhere a person reads
+// about it. It was "your page", a name shown nowhere else: the bar opens it
+// from a face.
 //
 // This file also keeps the two pieces the other owner's screens share: the
 // token read off the address (`takeHash`), and the address an alert goes to,
 // confirmed by a magic link (`useAlertLink`, `AlertEmail`), which the claim
-// (Claim.jsx) and the person's page (You.jsx) both ask for.
+// (Claim.jsx) and the account (You.jsx) both ask for.
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, CloseQuiet, Prose, EmailField,
 } from '../parts.jsx'
 import { Wait } from '../screen.jsx'
+import { LinkMatch } from '../linkdoor.jsx'
 import { alertsOffByToken, sendAlertLink, linkStatus, linkFault, looksLikeEmail } from '../../api/alerts.js'
 
 // ── the token, off the address ──────────────────────────────────────────────
@@ -81,7 +86,10 @@ export function useAlertLink({ onConfirmed }) {
         if (done.current) done.current(sent.email)
         return
       }
-      if (out?.error === 'expired' || out?.error === 'invalid') {
+      // run out: thirty minutes, or a wrong number typed where the link was
+      // opened (0065), which the status answers as `expired` on an answer
+      // that is otherwise ok, and this used to wait through for ever
+      if ((out?.ok && out.expired) || out?.error === 'expired' || out?.error === 'invalid') {
         setSent(null)
         setSaid('that link has lapsed. send a new one.')
         return
@@ -106,17 +114,22 @@ export function useAlertLink({ onConfirmed }) {
 }
 
 // The form for it, in two states: the field and its key, then the inbox it
-// went to, the two digits the email carries, and the wait. `compact` is the
-// person's page, where it stands inside a section rather than filling a door.
+// went to, your number, and the wait. `compact` is the account, where it
+// stands inside a section rather than filling a door.
+//
+// The number is this screen's and not the mail's (migration 0065 section 3):
+// the link tapped on this phone confirms at once, and tapped on another phone
+// or computer it asks for the number here first. It said "it shows the
+// number 47", about a mail that no longer shows it.
 export function AlertEmail({ link, compact = false, autoFocus = false }) {
   if (link.sent) {
     return (
       <div className={`wl-owner-sent${compact ? ' is-compact' : ''}`} aria-live="polite">
         <p className="wl-owner-say">
-          we sent a link to <span className="wl-h">{link.sent.email}</span>.
-          {link.sent.match ? <> it shows the number <span className="wl-h">{link.sent.match}</span>.</> : null}
-          {' '}open it on any device to confirm.
+          we sent a link to <span className="wl-h">{link.sent.email}</span>. tap the link in the mail.
+          {link.sent.match ? ' on another phone or computer, it asks for this number.' : null}
         </p>
+        <LinkMatch n={link.sent.match} />
         <p className="wl-owner-wait"><Wait /><span>waiting for you to open it</span></p>
         <button type="button" className="wl-quiet" onClick={link.reset}>use another address</button>
       </div>
@@ -162,7 +175,7 @@ export default function Alerts({ go, up, upLabel = 'back to the wall' }) {
     foot = null
   } else if (state.phase === 'off') {
     title = <>you won&rsquo;t get these<br />emails any more.</>
-    body = <Prose className="wl-gate-copy">to turn them back on, open your page and switch them on there.</Prose>
+    body = <Prose className="wl-gate-copy">to turn them back on, open your account and switch them on there.</Prose>
     foot = (
       <>
         <Pill tone="light" wide onClick={toYou}>turn them back on</Pill>
@@ -171,21 +184,21 @@ export default function Alerts({ go, up, upLabel = 'back to the wall' }) {
     )
   } else if (state.phase === 'none') {
     title = <>your email alerts.</>
-    body = <Prose className="wl-gate-copy">they are on your page, with a switch for each.</Prose>
-    foot = <Pill tone="light" wide onClick={toYou}>open your page</Pill>
+    body = <Prose className="wl-gate-copy">they are in your account, with a switch for each.</Prose>
+    foot = <Pill tone="light" wide onClick={toYou}>open your account</Pill>
   } else {
     const missing = state.error === 'missing' || state.error === 'network' || state.error === 'offline'
     title = missing ? <>that did not<br />go through.</> : <>this link<br />does not work.</>
     body = (
       <Prose className="wl-gate-copy">
         {missing
-          ? 'nothing changed yet. try the link again in a moment, or turn the emails off from your page.'
-          : 'it may have been copied wrong. you can turn the emails off from your page.'}
+          ? 'nothing changed yet. try the link again in a moment, or turn the emails off from your account.'
+          : 'it may have been copied wrong. you can turn the emails off from your account.'}
       </Prose>
     )
     foot = (
       <>
-        <Pill tone="light" wide onClick={toYou}>open your page</Pill>
+        <Pill tone="light" wide onClick={toYou}>open your account</Pill>
         <CloseQuiet onClose={up}>back to the wall</CloseQuiet>
       </>
     )
