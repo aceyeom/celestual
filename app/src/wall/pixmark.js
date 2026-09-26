@@ -8,13 +8,13 @@
 // panel; he slows and opens his arms, and her run carries her on into them,
 // leaning the way she ran, until she is still, half behind him, his arms
 // round her, and they breathe. The phone's backlight turns pink, from where
-// they hold each other out to the edges of the glass and no further, the
-// whole phone becomes a letter lit in rose, and the two of them glide
-// together into the mark. This file is how that story is told, and none of
-// it is a picture: the mark is rasterised from mark.js, the two people are
-// bodies posed and laid on the grid cell by cell (folk.js), and the notes
-// and the hearts of the door and the mutual are drawn a pixel at a time, the
-// way looks.js draws the aerial and the pen. PixelStory.jsx puts it on the
+// they hold each other out to the edges of the glass and no further, a
+// cell at a time, the whole phone becomes a letter lit in rose, and the two
+// of them glide together into the mark. This file is how that story is
+// told, and none of it is a picture: the mark is rasterised from mark.js,
+// the two people are bodies posed and laid on the grid cell by cell
+// (folk.js), and the door's notes are drawn a pixel at a time, the way
+// looks.js draws the aerial and the pen. PixelStory.jsx puts it on the
 // glass.
 //
 // Nothing here touches the page. A story is a function of the clock that
@@ -22,7 +22,7 @@
 // last frame first under reduced motion, and read in node.
 
 import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
-import { introFolk, standing, sheet, drawBody, together, mixPose } from './folk.js'
+import { introFolk, standing, sheet, drawBody, together, mixPose, body, SCALE } from './folk.js'
 
 // ── the mark, on a canvas ───────────────────────────────────────────────────
 // Moved here out of share.js, which signs the shared picture with it, so the
@@ -161,41 +161,18 @@ export function markCells(n = 47, { thr = 0.35, star = thr, tip = star, ss = 8, 
 // spot off the screen, looks.js `quirks`). `BLUSH` is a pastel pink for the
 // light round a phone (story.css, intro.css). `ROSE` is a lit cell in the
 // pink, deep enough to stay a pixel on a panel that is already pink: the
-// heart, and the mutual's twinkle. The two of them, and the mark, are in the
-// screen's own ink throughout, and stay dark and crisp on the pink.
+// glint on the mutual's ring and its twinkle. The two of them, and the mark,
+// are in the screen's own ink throughout, and stay dark and crisp on the
+// pink.
 export const PANEL = ['#FFE3EE', '#F5BCD1', '#D992AF']
 export const BLUSH = '#F7C6D9'
 export const ROSE = '#C93F76'
 
-// ── the small things ──
-// The heart that rises off them, and the one two notes become (joinStory),
-// in the rose; the same heart a beat larger, for the frame it arrives; a
-// smaller one for the mutual's screen, where it floats up now and then; and
-// a note, sealed.
-const HEART = [
-  '.pp.pp.',
-  'ppppppp',
-  'ppppppp',
-  '.ppppp.',
-  '..ppp..',
-  '...p...',
-]
-const HEART_BIG = [
-  '.ppp.ppp.',
-  'ppppppppp',
-  'ppppppppp',
-  'ppppppppp',
-  '.ppppppp.',
-  '..ppppp..',
-  '...ppp...',
-  '....p....',
-]
-const HEART_S = [
-  'pp.pp',
-  'ppppp',
-  '.ppp.',
-  '..p..',
-]
+// ── the small thing ──
+// A note, sealed: the one thing drawn on the glass that is not them or the
+// mark. There used to be hearts as well, the one two notes became on the
+// door and the small ones that floated up off the mutual's mark; the owner
+// took them out (26 September), and nothing in the stories is a heart now.
 const NOTE = [
   'XXXXXXX',
   'XX...XX',
@@ -222,8 +199,8 @@ function cellsOf(rows, { near = 'a', flip = false, x = 0, y = 0, ink = 0 } = {})
   return out
 }
 // The same drawing at twice its size, each of its cells four of the story's
-// grid, at (x, y): the notes and the hearts were drawn for a grid half as
-// fine, and at twice the size they are the size they always were on the glass.
+// grid, at (x, y): the note was drawn for a grid half as fine, and at twice
+// the size it is the size it always was on the glass.
 function twice(cells, x, y) {
   const out = []
   for (const [cx, cy, ink, h, a] of cells) {
@@ -466,7 +443,7 @@ function* transport(from, to, rounds = 24) {
 }
 // the whole glide, worked out in steps as `transport` is: the mark
 // rasterised in the first
-function* glideOf(pair, dashes, n, ox, oy, cols, hold) {
+function* glideOf(pair, dashes, n, ox, oy, cols, hug) {
   const m = markOn(n, ox, oy, I_CUT)
   yield
   const bits = []
@@ -507,7 +484,7 @@ function* glideOf(pair, dashes, n, ox, oy, cols, hold) {
   const both = pairs(src, dst)
   yield
   const to = yield* transport(both.map(([s]) => s), both.map(([, d]) => d))
-  const from = (s) => Math.hypot(s[0] - hold.x, s[1] - hold.y)
+  const from = (s) => Math.hypot(s[0] - hug.x, s[1] - hug.y)
   const far = Math.max(...src.map(from))
   both.forEach(([s], i) => {
     const d = both[to[i]][1]
@@ -532,39 +509,27 @@ function glideAt(m, t) {
   return out
 }
 
-const HEART_RISE = 100
-const HEART_ROWS = 6
-
-// A glyph rising a row every `step` ms from `y`, lit in over its first step
-// (unless it is already lit, `lit`) and out over its last three.
-function rising(glyph, x, y, u, rows, step = HEART_RISE, lit = false) {
-  const i = Math.floor(u / step)
-  if (i < 0 || i >= rows) return { cells: [], key: '' }
-  const alpha = i === 0 && !lit ? 0.55 : i >= rows - 3 ? (rows - i) / 4 : 1
-  return {
-    cells: cellsOf(glyph, { x, y: y - i }).map(([cx, cy, ink]) => [cx, cy, ink, 0, alpha]),
-    key: `h${i}`,
-  }
-}
-
 // ── the intro ───────────────────────────────────────────────────────────────
 // The story, and the ending the door and the mutual tell too: the two of
 // them are bodies drawn from poses (folk.js), on a grid of the pitch every
 // letter on the wall is lit at, so that they are people and not sticks; she
-// runs on into his arms and half behind him, and does not dip; and in the
-// intro there is no heart. From 0, in ms (folk.js has the run and the catch):
+// runs on into his arms and half behind him, and does not dip; and there is
+// no heart. From 0, in ms (folk.js has the run and the catch):
 //
-//      0   they run in from either edge, drawn afresh at the display's own
-//          rate, their feet planted where they land
-//    520   he slows and stands, and opens his arms to her
-//    980   she lands in them, her run carrying her on into him and behind
-//          him; from 1480 they hold each other, and breathe
-//   1400   THE PINK, from where they hold each other: the backlight, spread
-//          through the glass to its edges and no further, the phone's own
-//          bands and the light it throws turning with it (Intro.jsx,
-//          intro.css), until the whole phone is a letter lit in rose
-//   2140   THE MARK: the two of them into the star and the ground into the
-//          ring, gliding, whole at about 3000
+//      0   they come onto the glass together, he from the left edge and she
+//          from the right, on the same frame, drawn afresh at the display's
+//          own rate, their feet planted where they land
+//    480   he slows and stands, and opens his arms to her
+//    940   she lands in them, her run carrying her on into him and behind
+//          him; from 1440 they hold each other, and breathe
+//   1360   THE PINK, from where they hold each other: the backlight turning,
+//          a few of the panel's cells at a time, out through the glass to
+//          its edges and no further, over a second and a half; the phone's
+//          own bands and the light it throws turning with it as it reaches
+//          them (Intro.jsx, intro.css), until the whole phone is a letter
+//          lit in rose
+//   2310   THE MARK: the two of them into the star and the ground into the
+//          ring, gliding, while the last of the glass turns; whole at 3170
 //
 // `panel` is the rose letter's three panel colours and `ink` the night's
 // ink and the rose's, which the pink carries the one to the other.
@@ -576,8 +541,8 @@ const I_GROUND = 67
 // grid's first and last rows
 const I_MARK = 77
 const I_WASH_AT = -80
-const I_WASH_MS = 760
-const I_GLIDE_AT = 600
+const I_WASH_MS = 1500
+const I_GLIDE_AT = 950
 // how long a frame of the run may spend working out the glide ahead
 const I_PREP_MS = 3
 // the ground, dashed, three lit and one dark, in the far ink
@@ -586,15 +551,43 @@ function groundAt(row, cols) {
   for (let x = 0; x < cols; x++) if (x % 4 !== 3) out.push([x, row, 2])
   return out
 }
-// the pink, out from where they hold each other, soft at its front and
-// slowing as it goes, to past the far corner of the glass
-const iWashR = (p) => 3 + 86 * (1 - (1 - p) ** 1.7)
+
+// ── the pink, a few cells at a time ──
+// It was a light: a soft disc of pink out from the two of them, smooth at
+// its front, across the glass in three quarters of a second. The owner saw
+// a gradient laid on the phone, and asked for the phone's own pixels. So the
+// pink is the panel's cells turning, in small blocks of them, on the
+// panel's own grid: each block turns when a front reaches it, and the front
+// is how far the block is from where they hold each other, pushed on or
+// held back by a slow noise of its own and a little jitter per block
+// (PixelStory.jsx `spreadMap`), so it grows the way a stain grows, in
+// lobes, with blocks going over ahead of it and islands left behind for a
+// moment, and never as a circle. It steps, twenty five times a second, the
+// way a phone's panel redrew, and it takes its time: a second and a half to
+// the last corner, quick where it starts and slowing as it fills.
+//
+// A frame's `wash` is where it leaves from and `p`, how far the front is
+// through the glass, 0 to 1, with the fronts of the two steps before
+// (`p1`, `p2`), so the blocks that have just turned are drawn a step
+// lighter and settle. `p: null` is the whole panel.
+const WASH_STEP = 40
+const WASH_EASE = 1.6
+const washP = (k) => 1 - (1 - Math.max(0, Math.min(1, k))) ** WASH_EASE
+// the moment the front is `f` through the glass, on the wash's own clock
+const washAtP = (f) => I_WASH_MS * (1 - (1 - f) ** (1 / WASH_EASE))
 function washFrom(u, x, y) {
   if (u < 0) return null
-  const p = u / I_WASH_MS
-  if (p >= 1) return { x, y, r: null, level: 1, rim: 0 }
-  return { x, y, r: iWashR(p), level: 1, rim: 0.3 * (1 - p), soft: 16 }
+  if (u >= I_WASH_MS) return { x, y, p: null }
+  const i = Math.floor(u / WASH_STEP)
+  const at = (n) => washP((n * WASH_STEP) / I_WASH_MS)
+  return { x, y, p: at(i + 1), p1: at(i), p2: at(i - 1), step: i }
 }
+// How far through the glass the front is when it reaches the top band and
+// the bottom band, for the phone's glass to turn with it (Intro.jsx,
+// Join.jsx, Reveal.jsx). From where they hold each other, a little over a
+// third of the way down the glass, the top edge is about two fifths of the
+// way to the farthest corner and the bottom band about two thirds.
+const REACH = { top: 0.4, bottom: 0.68 }
 // two hex colours mixed, `k` of the way
 function mixHex(a, b, k) {
   const A = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16))
@@ -604,7 +597,7 @@ function mixHex(a, b, k) {
 export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null } = {}) {
   // the two of them: the intro's run, or a story's own way to the same hold
   // (the door's, `joinStory`), which answers the same `at`, `times`, `pair`
-  // and `heart`
+  // and `hug`
   const folk = given || introFolk({ ground: I_GROUND, mid: (I_COLS - 1) >> 1 })
   const floor = groundAt(I_GROUND, I_COLS)
   const washAt = start + folk.times.hold + I_WASH_AT
@@ -617,7 +610,7 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
   // the ink, from the night's to the rose's as the pink goes out
   const inkAt = (u) => {
     if (!ink) return null
-    const k = Math.max(0, Math.min(1, u / (I_WASH_MS * 0.7)))
+    const k = Math.max(0, Math.min(1, u / (I_WASH_MS * 0.6)))
     return k <= 0 ? ink[0] : k >= 1 ? ink[1] : mixHex(ink[0], ink[1], Math.round(k * 8) / 8)
   }
   // The glide is worked out ahead, and a little at a time: on the first
@@ -630,7 +623,7 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
   let prep = null
   const warm = (budget) => {
     if (morph) return
-    if (!prep) prep = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS, folk.heart)
+    if (!prep) prep = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS, folk.hug)
     const t0 = performance.now()
     do {
       const r = prep.next()
@@ -643,8 +636,8 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
   const frame = (t) => {
     warm(t >= morphs ? Infinity : I_PREP_MS)
     const u = t - washAt
-    const wash = washFrom(u, folk.heart.x, folk.heart.y)
-    const wk = !wash ? '' : wash.r == null ? 'W' : `w${Math.round(u)}`
+    const wash = washFrom(u, folk.hug.x, folk.hug.y)
+    const wk = !wash ? '' : wash.p == null ? 'W' : `w${wash.step}`
     if (t >= morphs) {
       const mt = t - morphs
       return { key: `m${mt >= I_MORPH_MS ? 'done' : Math.round(mt)}|${wk}`, cells: glideAt(morph, mt), wash, ink: inkAt(u) }
@@ -658,6 +651,11 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
     times: {
       run: start + T.run, slow: start + T.slow, stop: start + T.stop, meet: start + T.meet, hold: start + T.hold,
       catch: start + T.meet, glow: washAt, morphs, done, end,
+      // the front at the top band and at the bottom band, and the panel
+      // all pink, for the phone's glass to turn with it
+      top: Math.round(washAt + washAtP(REACH.top)),
+      bottom: Math.round(washAt + washAtP(REACH.bottom)),
+      covered: washAt + I_WASH_MS,
     },
     frame,
   }
@@ -667,134 +665,222 @@ const smooth01 = (k) => { const x = Math.max(0, Math.min(1, k)); return x * x * 
 
 // ── the door ────────────────────────────────────────────────────────────────
 // The mechanic, told in the order it happens (screens/Join.jsx), with the
-// intro's two on the intro's grid. They stand apart, each on their own side,
-// and each sends the other a note that never arrives: it goes up, stops in
-// the air and seals, dimmed, over the middle of the glass. He sends his
-// (`you`); she sends hers (`them`), neither seeing the other's. Only when
-// both are there (`both`) do the two notes wake, slide into each other and
-// become one heart, and that is the moment they both find out: on the same
-// frame, and not before. Then the heart goes up, they go to each other under
-// it, and the ending is the intro's: her run carries her on into his arms
-// and half behind him, the pink, the rose, the mark.
+// intro's two on the intro's grid. They stand apart, one at either side of
+// the glass and each as far in from their edge as the other, both there
+// from the first frame, and each sends the other a note that never arrives:
+// it leaves the hand held up, goes over to the middle of the glass, above
+// and ahead of the one who sent it and never across them, and stops there,
+// sealed and dimmed. He sends his (`you`); she sends hers (`them`), neither
+// seeing the other's. Only when both are there (`both`) do the two notes
+// wake and slide into each other, and on the frame they meet they are one
+// note, lit: that is the moment they both find out, on the same frame, and
+// not before. It goes out a pixel at a time as the two of them set off
+// toward each other, on the same beat, and the ending is the intro's: her
+// run carries her on into his arms and half behind him, the pink, the rose,
+// the mark. The mark holds, the screen goes to sleep, and it is told again
+// from the beginning (`loop`), for as long as the page is open.
 //
-// Where they stand is where the intro's run has them at `J_FROM` (folk.js),
-// and they set off from there on the intro's own clock, brought up to speed
-// over `J_RAMP`, so from the first stride on it is the intro's run.
-const J_FROM = 560
+// The notes used to leave from the chest, rise over his head and seal on
+// it, and slide across his face on their way to becoming a heart; the owner
+// saw the note cut into him. Now each note leaves from beside the raised
+// hand, on the far side of it from the one who sent it, and everything it
+// does after is further from them than that. There is no heart.
+//
+// Where they stand is where the intro's run has each of them `J_APART`
+// cells from the middle, and that is not the same moment on its clock for
+// the two of them: he runs faster, and is there later. So each sets off
+// from their own moment on it, on the same beat, and is brought up to speed
+// over their own ramp, hers the longer, the way a lighter runner gets going,
+// so that by the time either of them has to slow the two are on the one
+// clock and the catch is the intro's. From the first stride on it is the
+// intro's run.
+const J_APART = 38
 const J_RAMP = 240
-const J_SEND = 620
-const NOTE_FLIGHT = 560
+// A hand going up with a note: up over `J_UP`, and held there until the
+// note has gone most of the way, then down. It used to come down as soon as
+// it was up, and an arm coming down swings forward through where the note
+// had just been.
+const J_UP = 190
+const J_HELD = 640
+const J_SEND = 920
+// when on the way up the hand lets the note go, and how long the note takes
+// to get from there to where it seals
+const J_LET_GO = 200
+const NOTE_FLIGHT = 640
 const SLIDE_MS = 200
-const J_NOTE_Y = 5
-// a note from a hand to where it seals: across, and up on a curve that
-// rises fast and settles
+// the notes' top row: when both are sealed they stand side by side over the
+// middle of the glass, a cell between them
+const J_NOTE_Y = 7
+// the one note, lit, a beat before they set off, and how long it takes to go
+// out once they have
+const J_FOUND_MS = 260
+const J_OUT = 360
+// the mark, whole, before the screen sleeps and the story starts again; and
+// how long it is asleep, dark, between one telling and the next
+const J_MARK_HOLD = 1800
+export const REST_MS = 820
+// a note from beside a hand to where it seals: across on a curve that is
+// quick to leave and settles, and up or down to its row on a gentler one
 function noteAt(u, from, to) {
   const k = Math.max(0, Math.min(1, u / NOTE_FLIGHT))
-  const e = 1 - (1 - k) ** 3
-  return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * e, sealed: k >= 1 }
+  const ex = 1 - (1 - k) ** 3
+  const ey = smooth01(k)
+  return { x: from.x + (to.x - from.x) * ex, y: from.y + (to.y - from.y) * ey, sealed: k >= 1 }
 }
+// the moment on a clock, going one way, that `fn` reaches `v`
+function solve(fn, v, lo, hi) {
+  const up = fn(hi) > fn(lo)
+  for (let i = 0; i < 40; i++) {
+    const m = (lo + hi) / 2
+    if ((fn(m) < v) === up) lo = m
+    else hi = m
+  }
+  return (lo + hi) / 2
+}
+// a runner's clock from standing: still at `from` until they go, then
+// brought up to its own speed over `ramp`
+const rampOf = (u, from, ramp) => (u <= 0 ? from : from + (u < ramp ? (u * u) / (2 * ramp) : u - ramp / 2))
 
 export function joinStory({ you = 900, them = 2300, both = 3600, panel = PANEL, ink = null } = {}) {
-  const folk = introFolk({ ground: I_GROUND, mid: (I_COLS - 1) >> 1 })
+  const mid = (I_COLS - 1) >> 1
+  const folk = introFolk({ ground: I_GROUND, mid })
   const found = both + SLIDE_MS
-  const runAt = found + 300
-  // the intro's clock, still at J_FROM until they go and then coming up to
-  // its own speed; and a moment on it, back on this story's
-  const clock = (t) => {
-    const u = t - runAt
-    if (u <= 0) return J_FROM
-    return J_FROM + (u < J_RAMP ? (u * u) / (2 * J_RAMP) : u - J_RAMP / 2)
-  }
-  const back = (tau) => runAt + J_RAMP / 2 + (tau - J_FROM)
-  const HX = folk.himX(J_FROM)
-  const SX = folk.herX(J_FROM)
+  const runAt = found + J_FOUND_MS
+  const T = folk.times
+  // each of them `J_APART` from the middle, and the moment on the intro's
+  // clock that has them there; his ramp, and hers, as much longer as makes
+  // the two clocks one once both are up to speed
+  const tHim = solve(folk.himX, mid - J_APART, -600, T.slow)
+  const tHer = solve(folk.herX, mid + J_APART, -600, T.meet)
+  const rHer = J_RAMP + 2 * (tHer - tHim)
+  const HX = folk.himX(tHim)
+  const SX = folk.herX(tHer)
   const G = I_GROUND
   const SH = sheet(-70, G - 66, I_COLS + 140, 72)
   const SS = sheet(-70, G - 66, I_COLS + 140, 72)
   // a hand going up with a note, and down again
   const lift = (u) => {
     if (u < 0 || u > J_SEND) return 0
-    const k = u / J_SEND
-    return k < 0.3 ? smooth01(k / 0.3) : k < 0.55 ? 1 : 1 - smooth01((k - 0.55) / 0.45)
+    return u < J_UP ? smooth01(u / J_UP) : u < J_HELD ? 1 : 1 - smooth01((u - J_HELD) / (J_SEND - J_HELD))
   }
   const SEND = { sN: 142, eN: 16, handN: 'open', lean: 0, neck: -9, nod: -6 }
   const stand = (who, k) => (k > 0 ? mixPose(standing(who), standing(who, SEND), k) : standing(who))
-  // the notes: from each hand as it goes up, to the air over the middle
-  const handA = { x: HX + 5, y: G - 40 }
-  const handB = { x: SX - 12, y: G - 37 }
-  const sealA = { x: 30, y: J_NOTE_Y }
-  const sealB = { x: 51, y: J_NOTE_Y }
-  const heartAt = { x: 40, y: J_NOTE_Y - 1 }
+  // Where each note leaves from: beside the hand at the top of its lift, on
+  // the side of it away from the one who sent it, and centred on it; and
+  // where each seals, the two side by side over the middle of the glass,
+  // then where they meet.
+  const NW = 2 * NOTE[0].length
+  const NH = 2 * NOTE.length
+  const handOf = (who, X, sx) => {
+    const w = body(who, standing(who, SEND)).joints.AN.wrist
+    return { x: X + sx * SCALE * w[0], y: G - SCALE * w[1] }
+  }
+  const hA = handOf('him', HX, 1)
+  const hB = handOf('her', SX, -1)
+  const fromA = { x: hA.x + 3, y: hA.y - NH / 2 }
+  const fromB = { x: hB.x - 3 - NW, y: hB.y - NH / 2 }
+  const sealA = { x: mid - NW, y: J_NOTE_Y }
+  const sealB = { x: mid + 1, y: J_NOTE_Y }
+  const meetAt = { x: mid - (NW >> 1) + 1, y: J_NOTE_Y }
+  // the one note's cells, and the order they go out in
+  const one = twice(cellsOf(NOTE, { ink: 1 }), meetAt.x, meetAt.y)
+  const outOf = one.map((c, i) => hash(i, 11) * (J_OUT - 80))
   const notes = (t) => {
     const cells = []
     let key = ''
     if (t < found) {
-      for (const [at, from, to, name] of [[you + 120, handA, sealA, 'a'], [them + 120, handB, sealB, 'b']]) {
+      for (const [at, from, to, name] of [[you + J_LET_GO, fromA, sealA, 'a'], [them + J_LET_GO, fromB, sealB, 'b']]) {
         if (t < at) continue
         let n = noteAt(t - at, from, to)
+        // on its way it is lit; sealed, it is dimmed; and when both are
+        // there the two wake together and slide into each other
         let k = n.sealed ? 2 : 1
         if (t >= both) {
           const e = smooth01(Math.min(1, (t - both) / SLIDE_MS))
-          n = { x: to.x + (heartAt.x + 2 - to.x) * e, y: to.y }
+          n = { x: to.x + (meetAt.x - to.x) * e, y: to.y }
           k = 1
         }
         const x = Math.round(n.x)
         const y = Math.round(n.y)
-        cells.push(...twice(cellsOf(NOTE, { ink: k }), x, y))
-        key += `|${name}${x}.${y}.${k}`
+        // the first frame out of the hand is half lit, as a cell of the
+        // panel comes on
+        const a = t - at < 40 ? 0.5 : 1
+        cells.push(...twice(cellsOf(NOTE, { ink: k }), x, y).map((c) => [c[0], c[1], c[2], 0, a]))
+        key += `|${name}${x}.${y}.${k}${a}`
       }
       return { cells, key }
     }
-    // the heart they become, a beat larger the frame it arrives, and from
-    // when they go it rises off the top of the glass
-    if (t < found + 80) return { cells: twice(cellsOf(HEART_BIG), heartAt.x - 1, heartAt.y - 1), key: '|H' }
-    if (t < runAt) return { cells: twice(cellsOf(HEART), heartAt.x, heartAt.y), key: '|h' }
-    const h = rising(HEART, 0, 0, t - runAt, HEART_ROWS, HEART_RISE, true)
-    return { cells: twice(h.cells, heartAt.x, heartAt.y), key: `|${h.key}` }
+    // the one note: for the frame it arrives, a ring of light a cell out
+    // round it; then lit and still; and from when they go, out a pixel at a
+    // time, each cell a step dimmer on its way
+    if (t < found + 80) {
+      const ring = []
+      for (let y = meetAt.y - 1; y <= meetAt.y + NH; y++) {
+        for (let x = meetAt.x - 1; x <= meetAt.x + NW; x++) {
+          if (y === meetAt.y - 1 || y === meetAt.y + NH || x === meetAt.x - 1 || x === meetAt.x + NW) ring.push([x, y, 1, 0, 0.3])
+        }
+      }
+      return { cells: [...one, ...ring], key: '|N+' }
+    }
+    if (t < runAt) return { cells: one, key: '|N' }
+    const u = t - runAt
+    if (u >= J_OUT) return { cells: [], key: '' }
+    const q = Math.floor(u / 40)
+    const left = []
+    one.forEach((c, i) => {
+      const o = outOf[i]
+      if (q * 40 >= o + 80) return
+      left.push(q * 40 >= o ? [c[0], c[1], 1, 0, 0.45] : c)
+    })
+    return { cells: left, key: `|n${q}` }
   }
   let last = null
-  const at = (t) => {
-    const n = notes(t)
-    let f
-    if (t >= runAt + J_RAMP) f = folk.at(clock(t))
-    else {
-      // standing, a hand going up; and setting off, on the way into the run.
-      // Standing still is one drawing, drawn once.
-      const a = lift(t - you)
-      const b = lift(t - them)
-      const key = t > runAt ? `j${Math.round(t / 16)}` : `j${a.toFixed(2)}|${b.toFixed(2)}`
-      if (last && last.key === key) f = last
-      else {
-        let him = stand('him', a)
-        let her = stand('her', b)
-        let hx = HX
-        let sx = SX
-        if (t > runAt) {
-          const k = smooth01((t - runAt) / J_RAMP)
-          const tau = clock(t)
-          const p = folk.poseAt(tau)
-          him = mixPose(him, p.him, k)
-          her = mixPose(her, p.her, k)
-          hx = folk.himX(tau)
-          sx = folk.herX(tau)
-        }
-        drawBody('him', him, hx, G, false, SH)
-        drawBody('her', her, sx, G, true, SS)
-        f = { key, cells: together(SH, SS) }
-        last = f
-      }
+  // the two of them, without the notes
+  const bodies = (t) => {
+    if (t >= runAt + Math.max(J_RAMP, rHer)) return folk.at(rampOf(t - runAt, tHim, J_RAMP))
+    // standing, a hand going up; and setting off, each into the run on
+    // their own ramp. Standing still is one drawing, drawn once.
+    const a = lift(t - you)
+    const b = lift(t - them)
+    const key = t > runAt ? `j${Math.round(t / 16)}` : `j${a.toFixed(2)}|${b.toFixed(2)}`
+    if (last && last.key === key) return last
+    let him = stand('him', a)
+    let her = stand('her', b)
+    let hx = HX
+    let sx = SX
+    if (t > runAt) {
+      const u = t - runAt
+      const th = rampOf(u, tHim, J_RAMP)
+      const ts = rampOf(u, tHer, rHer)
+      him = mixPose(him, folk.poseAt(th).him, smooth01(u / J_RAMP))
+      her = mixPose(her, folk.poseAt(ts).her, smooth01(u / rHer))
+      hx = folk.himX(th)
+      sx = folk.herX(ts)
     }
+    drawBody('him', him, hx, G, false, SH)
+    drawBody('her', her, sx, G, true, SS)
+    last = { key, cells: together(SH, SS) }
+    return last
+  }
+  const at = (t) => {
+    const f = bodies(t)
+    const n = notes(t)
     return { key: f.key + n.key, cells: [...f.cells, ...n.cells] }
   }
-  const T = folk.times
+  // a moment on the intro's clock, once the two are on it, on this story's
+  const back = (tau) => runAt + (tau - tHim) + J_RAMP / 2
   const door = {
     at,
     times: { run: runAt, slow: back(T.slow), stop: back(T.stop), meet: back(T.meet), hold: back(T.hold) },
-    heart: folk.heart,
+    hug: folk.hug,
     get pair() { return folk.pair },
   }
   const s = introStory(0, { panel, ink, folk: door })
-  Object.assign(s.times, { you, them, both, found, run: runAt })
+  const rest = s.times.done + J_MARK_HOLD
+  Object.assign(s.times, { you, them, both, found, run: runAt, rest })
+  s.loop = rest + REST_MS
+  // the two layers apart, for the frame checks (scripts/check-stories.mjs)
+  s.layers = { bodies, notes }
   return s
 }
 
@@ -803,39 +889,49 @@ export function joinStory({ you = 900, them = 2300, both = 3600, panel = PANEL, 
 // little nearer, so the screen comes to its point sooner; and then the
 // screen does not stop.
 //
-// When the mark is whole it gathers up into the top of the glass at two
-// thirds of its size (`R_SMALL`), gliding like everything else, to leave the
-// bottom of the panel to the words (screens/Reveal.jsx types them there, in
-// the phone's face). As it goes, the pink the story lit on the glass goes
-// out onto the phone's own panel under it, which the rose has reached by
-// then (mutual.css `--mu-turn`), and which from there on drifts slowly
-// through its colours (Reveal.jsx `drift`). Then the mark is alive, ten
-// times a second, on a loop that is only ever a function of the clock:
+// When the mark is whole it stands a moment, and then gathers up into the
+// top of the glass at two thirds of its size (`R_SMALL`), gliding like
+// everything else, to leave the bottom of the panel to the words
+// (screens/Reveal.jsx types them there, in the phone's face). As it goes,
+// the pink the story lit on the glass goes out onto the phone's own panel
+// under it, which the rose has reached by then (mutual.css `--mu-turn`),
+// and which from there on drifts slowly through its colours (Reveal.jsx
+// `drift`). Then the mark is alive, ten times a second, on a loop that is
+// only ever a function of the clock:
 //
-//   the beat     the backlight behind the mark brighter, lub and dub, once
-//                every 1400ms, and the star warming a little with it
+//   the breath   the backlight behind the mark brighter and back, slowly,
+//                once every 2800ms, the star warming a little with it
 //   the glint    a light going round the ring, once every 2400ms
 //   twinkle      a cell or two of the star lit each frame
-//   the heart    a small one floating up off the star every 4000ms
 //
-// None of it is random: each frame is chosen by its own number, so a frame
-// held for a screenshot is the same frame every time. `still` is a frame of
-// it at rest, for reduced motion.
+// There was a heartbeat, the backlight going lub and dub, and a small heart
+// floating up off the star every four seconds. The owner took the heart out
+// of the stories, and the beat is a breath now.
+//
+// And then it is told again. After a while alive the screen goes to sleep,
+// and wakes on the two of them running in, as it first did (`loop`,
+// Reveal.jsx), for as long as the sheet is open. None of it is random: each
+// frame is chosen by its own number, so a frame held for a screenshot is the
+// same frame every time. `still` is a frame of it at rest, for reduced
+// motion.
 const R_NEAR = 250
 const R_SMALL = 51
+// the mark stands whole this long before it gathers up
+const R_MARK_HOLD = 900
 const R_GATHER_MS = 620
 const R_FADE_MS = 480
 const LIVE_MS = 100
-const BEAT = [1, 0.5, 0.78, 0.36, 0.2, 0.1, 0.05, 0, 0, 0, 0, 0, 0, 0]
+// how long it is alive, before the screen sleeps and it is told again
+const R_LIVE = 5600
+const BREATH = 28
 const GLINT = 24
-const FLOAT_EVERY = 40
-const FLOAT_FROM = 14
 
 export function revealStory(start = 200, { panel = PANEL, ink = null } = {}) {
   const told = introStory(start - R_NEAR, { panel, ink })
   const inkEnd = ink ? ink[1] : null
-  const gatherAt = told.times.done + 200
+  const gatherAt = told.times.done + R_MARK_HOLD
   const liveAt = gatherAt + R_GATHER_MS
+  const rest = liveAt + R_LIVE
   const MX = (I_COLS - I_MARK) >> 1
   const MY = (I_ROWS - I_MARK) >> 1
   let gather = null
@@ -848,7 +944,7 @@ export function revealStory(start = 200, { panel = PANEL, ink = null } = {}) {
   const fade = (t) => {
     const k = (t - gatherAt) / R_FADE_MS
     if (k >= 1) return null
-    return { r: null, level: 1 - Math.max(0, k) * Math.max(0, k) * (3 - 2 * Math.max(0, k)), rim: 0 }
+    return { p: null, level: 1 - Math.max(0, k) * Math.max(0, k) * (3 - 2 * Math.max(0, k)) }
   }
   const gatherOf = () => {
     const big = markOn(I_MARK, MX, MY, I_CUT)
@@ -863,7 +959,7 @@ export function revealStory(start = 200, { panel = PANEL, ink = null } = {}) {
   const live = (t) => {
     const i = Math.floor((t - liveAt) / LIVE_MS)
     const m = smallMark()
-    const beat = BEAT[i % BEAT.length]
+    const breath = (1 - Math.cos((2 * Math.PI * (i % BREATH)) / BREATH)) / 2
     const cells = []
     // the glint, going round the ring by its own angle
     const g = ((i % GLINT) / GLINT) * Math.PI * 2 - Math.PI
@@ -872,26 +968,17 @@ export function revealStory(start = 200, { panel = PANEL, ink = null } = {}) {
       if (d > Math.PI) d = Math.PI * 2 - d
       cells.push([p.x, p.y, 1, d < 0.5 ? 0.9 * (1 - d / 0.5) : 0])
     }
-    // the star, warming on the beat, and a cell or two of it lit
+    // the star, warming as the light comes up, and a cell or two of it lit
     m.star.forEach((p, j) => {
       const tw = hash(i, j) < 3.4 / m.star.length ? 1 : 0
-      cells.push([p.x, p.y, 1, Math.max(tw, 0.3 * beat)])
+      cells.push([p.x, p.y, 1, Math.max(tw, 0.24 * breath)])
     })
-    // and now and then a heart off the top of the star, drawn at the door's
-    // size so it is the same small heart
-    const f = i - FLOAT_FROM
-    let fk = ''
-    if (f >= 0) {
-      const h = rising(HEART_S, 0, 0, (f % FLOAT_EVERY) * LIVE_MS, 9, LIVE_MS)
-      cells.push(...twice(h.cells, Math.round(m.cx) - 5, Math.round(m.cy) - 18))
-      fk = h.key
-    }
     return {
-      key: `L${i}${fk}`,
+      key: `L${i}`,
       cells,
       ink: inkEnd,
-      // the beat: the backlight behind the mark going brighter, and back
-      glow: { x: m.cx, y: m.cy, r: 21 + 8 * beat, a: 0.12 + 0.6 * beat, inner: 0.9, light: true },
+      // the breath: the backlight behind the mark going brighter, and back
+      glow: { x: m.cx, y: m.cy, r: 22 + 6 * breath, a: 0.14 + 0.46 * breath, inner: 0.9, light: true },
     }
   }
   const frame = (t) => {
@@ -906,8 +993,9 @@ export function revealStory(start = 200, { panel = PANEL, ink = null } = {}) {
   }
   return {
     cols: I_COLS, rows: I_ROWS, panel, fine: true, frame,
-    // the told part is over when the words start; the rest goes on
-    end: liveAt, live: true, still: liveAt + 6 * LIVE_MS,
-    times: { ...told.times, gather: gatherAt, live: liveAt },
+    // the told part is over when the words start; the rest goes on until
+    // the screen sleeps, and then it is told again
+    end: liveAt, live: true, still: liveAt + 6 * LIVE_MS, loop: rest + REST_MS,
+    times: { ...told.times, gather: gatherAt, live: liveAt, rest },
   }
 }

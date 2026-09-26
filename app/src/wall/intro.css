@@ -65,39 +65,44 @@
 .hi .wl-scene-halo-2 { animation: wl-wake-light 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms both; }
 
 /* ── the rose ──
-   The pink leaves the two of them as a wave across the panel, drawn on the
-   glass in the rose letter's own panel colours (PixelStory.jsx, pixmark.js
-   `introStory`). The rest of the phone turns with it, so that when the wave
-   has filled the glass the phone is a letter lit in rose, as looks.js lights
-   one: its dark rose bands, its status in the rose's light, and the rose's
-   own glow on the black round it, the halo every rose letter has. Nothing
-   goes on out past that: no ring, no bloom, nothing travelling into the
-   room.
+   The pink leaves the two of them across the panel a few cells at a time,
+   drawn on the glass in the rose letter's own panel colours (PixelStory.jsx,
+   pixmark.js `introStory`). The rest of the phone turns with it, so that
+   when the pink has filled the glass the phone is a letter lit in rose, as
+   looks.js lights one: its dark rose bands, its status in the rose's light,
+   and the rose's own glow on the black round it, the halo every rose letter
+   has. Nothing goes on out past that: no ring, no bloom, nothing travelling
+   into the room.
 
-   Three numbers carry it. Each of the skin's colours is the night's and the
+   Four numbers carry it. Each of the skin's colours is the night's and the
    rose's mixed by one of them (Intro.jsx `FRAME`), so what animates is a
    number on one element and the colours follow. `--hi-top` turns the top
-   band and its aerial and battery as the wave reaches the top edge of the
-   glass, 130ms after it leaves them; `--hi-bot` the bottom band as it
-   reaches the bottom, 250ms after; `--hi-glow` the light round the phone,
-   as the wave fills the glass. On `--ease`, a colour's curve. */
+   band and its aerial and battery as the pink reaches the top edge of the
+   glass; `--hi-bot` the bottom band as it reaches the bottom; `--hi-glow`
+   the light round the phone, as the pink fills the glass; and `--hi-pan`
+   the panel itself, under the pink, once the pink has covered it, so the
+   grey is only ever seen to go over a block of cells at a time. The moments
+   are the story's (Intro.jsx `TURN`). On `--ease`, a colour's curve. */
 @property --hi-top { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --hi-bot { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --hi-pan { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --hi-glow { syntax: '<number>'; inherits: false; initial-value: 0; }
 .hi-screen {
-  --hi-top: 0; --hi-bot: 0; --hi-glow: 0;
-  /* a skip before the pink lands the rose in a quarter of a second */
-  transition: --hi-top 240ms var(--ease), --hi-bot 240ms var(--ease), --hi-glow 240ms var(--ease);
+  --hi-top: 0; --hi-bot: 0; --hi-pan: 0; --hi-glow: 0;
+  /* a skip lands whatever has not turned in a quarter of a second */
+  transition: --hi-top 240ms var(--ease), --hi-bot 240ms var(--ease), --hi-pan 240ms var(--ease), --hi-glow 240ms var(--ease);
 }
 .hi.is-glow .hi-screen {
   animation:
-    hi-top 340ms var(--ease) 130ms both,
-    hi-bot 380ms var(--ease) 250ms both,
-    hi-glow 760ms var(--ease) 220ms both;
+    hi-top 340ms var(--ease) var(--hi-top-at, 410ms) both,
+    hi-bot 380ms var(--ease) var(--hi-bot-at, 760ms) both,
+    hi-pan 160ms linear var(--hi-pan-at, 1500ms) both,
+    hi-glow var(--hi-glow-ms, 1300ms) var(--ease) 200ms both;
 }
-.hi.is-rose .hi-screen { --hi-top: 1; --hi-bot: 1; --hi-glow: 1; }
+.hi.is-rose .hi-screen { animation: none; --hi-top: 1; --hi-bot: 1; --hi-pan: 1; --hi-glow: 1; }
 @keyframes hi-top { from { --hi-top: 0; } to { --hi-top: 1; } }
 @keyframes hi-bot { from { --hi-bot: 0; } to { --hi-bot: 1; } }
+@keyframes hi-pan { from { --hi-pan: 0; } to { --hi-pan: 1; } }
 @keyframes hi-glow { from { --hi-glow: 0; } to { --hi-glow: 1; } }
 
 /* and it goes out, the way a letter's does when it is closed, while the
@@ -112,7 +117,9 @@
 .hi.is-held .wl-scene-halo,
 .hi.is-held .wl-scene-halo-2 { animation: none; }
 .hi.is-held.is-glow .hi-screen {
-  animation-delay: calc(var(--hi-since, 0ms) + 130ms), calc(var(--hi-since, 0ms) + 250ms), calc(var(--hi-since, 0ms) + 220ms);
+  animation-delay:
+    calc(var(--hi-since, 0ms) + var(--hi-top-at, 410ms)), calc(var(--hi-since, 0ms) + var(--hi-bot-at, 760ms)),
+    calc(var(--hi-since, 0ms) + var(--hi-pan-at, 1500ms)), calc(var(--hi-since, 0ms) + 200ms);
   animation-play-state: paused;
 }
 
