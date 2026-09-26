@@ -1,14 +1,14 @@
 // CELESTUAL — celestual-edu-verify edge function.
 //
-// School (.edu) email verification, and the confirmation of an alert address.
-// A school address proves a person is at that school: it opens reading, and at
-// a school that takes @-notes (Berkeley) it writes them. It becomes the alert
-// address when there is none.
+// School (.edu) email verification, the confirmation of an alert address, and
+// since 0065 the login by email. A school address proves a person is at that
+// school: it opens reading, and at a school that takes @-notes (Berkeley) it
+// writes them. It becomes the alert address when there is none.
 //
 // Five actions on one endpoint. The first two are the six digit code, kept for
 // a tab on the old build; the last three are the magic link the one wall asks
-// for (docs/ONE-WALL.md, docs/EDU-VERIFICATION.md, migration 0064):
-//   { action:'link', email, session, purpose:'edu'|'alerts', campus?, draft? }
+// for (docs/ONE-WALL.md, docs/EDU-VERIFICATION.md, migrations 0064, 0065):
+//   { action:'link', email, session, purpose:'edu'|'alerts'|'login', campus?, draft? }
 //        → { ok:true, request, match, domain, campus, school }
 //        | { ok:false, error:'email'|'domain'|'rate'|'send'|'taken'|'session' }
 //   { action:'confirm', token, session }
@@ -128,7 +128,7 @@ function sixDigit(): string {
 
 // The mails. Their words and their room are _shared/mails.ts and
 // _shared/mail.ts, so this function owns neither: the code mail for a tab on
-// the old build, and the magic link for the one wall.
+// the old build, and the magic link for the one wall and for signing in.
 async function sendMail(to: string, m: Mail) {
   if (!RESEND_API_KEY) throw new Error('no_email_provider');
   const res = await fetch('https://api.resend.com/emails', {
@@ -352,6 +352,10 @@ Deno.serve(async (req) => {
   //           `campus`, an address at that campus's domain (or under it), or
   //           on the pass list
   //   alerts  any address
+  //   login   any address (0065): the door's "continue with email". It signs
+  //           the device in as the person who holds the address, and a .edu
+  //           address opens its campus as well, so the answer names the
+  //           campus the way an `edu` link's does
   // The token goes in the email and nowhere else; the database keeps its hash,
   // the number and the asking session's hash (celestual_edu_link_open, which
   // also holds the limits: five an address and fifteen a network address an
@@ -360,7 +364,7 @@ Deno.serve(async (req) => {
   if (action === 'link') {
     const email = String(body.email || '').trim().toLowerCase();
     const session = String(body.session || '');
-    const purpose = body.purpose === 'alerts' ? 'alerts' : 'edu';
+    const purpose = body.purpose === 'alerts' ? 'alerts' : body.purpose === 'login' ? 'login' : 'edu';
     const campusRaw = body.campus == null ? '' : String(body.campus).toLowerCase();
     const draft = body.draft !== false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) return json({ ok: false, error: 'email' });
@@ -397,6 +401,17 @@ Deno.serve(async (req) => {
           domain = null; // a passed address that is not a school's
         }
       }
+    } else if (purpose === 'login' && /\.edu$/.test(host)) {
+      // Named before it is proved, as the `edu` link names it: the campus
+      // this address will open once the link is tapped.
+      const { data: peek } = await supabase.rpc('celestual_campus_peek', { p_domain: host });
+      if (peek) {
+        campus = String(peek.slug);
+        school = String(peek.name);
+        domain = String(peek.domain);
+      } else {
+        domain = null;
+      }
     } else {
       domain = null;
     }
@@ -407,7 +422,7 @@ Deno.serve(async (req) => {
       p_email: email,
       p_session: session,
       p_purpose: purpose,
-      p_campus: campusRaw || null,
+      p_campus: purpose === 'login' ? null : (campusRaw || null),
       p_ip: clientIp(req),
       p_link_hash: await sha256Hex(token),
       p_match: match,
@@ -431,7 +446,9 @@ Deno.serve(async (req) => {
   // The link, opened. `session` is the device that opened it. The binding is
   // the database's (celestual_edu_link_confirm): the address to the asking
   // session's person and to this one, the campus opened, the alert address
-  // filled; or, for alerts, the asking person's alert address confirmed.
+  // filled; for a login, both devices signed in as whoever holds the address
+  // (celestual_user_bind_email_hash, 0065); or, for alerts, the asking
+  // person's alert address confirmed.
   if (action === 'confirm') {
     const token = String(body.token || '');
     const session = String(body.session || '');

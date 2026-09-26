@@ -21,9 +21,12 @@
 //     line    the ping's own screen: a line they read if it is ever mutual,
 //             and never otherwise. Twenty words at most, and none at all is a
 //             ping too.
-//     proof   only when this browser does not hold the proof a ping is placed
-//             with: the Instagram DM, the same door the gate draws. It is
-//             asked last, once the person knows what for.
+//     proof   only when this person has no @ the server can vouch for: the
+//             Instagram DM, the same door the gate draws. It is asked last,
+//             once the person knows what for. A person who claimed their @
+//             once, anywhere, and is signed in here by any proof, never sees
+//             it: the proof comes back to this device from the server
+//             (auth.js `restoreProof`, migration 0065).
 //     done    "it's out." and the sixty days, and nothing else.
 //
 // ── what this sheet never does ──────────────────────────────────────────────
@@ -52,7 +55,7 @@ import { startHandoff, pollHandoff, savePending, loadPending, clearPending } fro
 import { signOut as dropProof } from '../../api/auth.js'
 import { cardStep } from '../seed.js'
 import {
-  myHandle, canPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords,
+  myHandle, canPlace, readyToPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords,
 } from '../pings.js'
 
 // The card's own ceilings: twenty words, which is what the server keeps
@@ -356,16 +359,18 @@ export default function Ping({
   useEffect(() => { cardStep('handoff'); loadMine() }, [])
 
   // ── what they have out ──
-  // Read with their own proof, when this browser holds one, so each person
-  // written to can say whether a ping of theirs is standing on them.
+  // Read with their own proof, the one this browser holds or the one the
+  // server gives back to the person it is signed in as (pings.js `myPings`),
+  // so each person written to can say whether a ping of theirs is standing
+  // on them. Read again when the @ arrives, since a sheet opened cold is
+  // drawn before the shell has asked who this is.
   useEffect(() => {
     const me = myHandle()
-    const proof = me && heldProof(me)
-    if (!proof) return undefined
+    if (!me) return undefined
     let on = true
-    myPings({ handle: me, proof }).then((out) => { if (on && out.ok) setPings(out) })
+    myPings({ handle: me, proof: heldProof(me) }).then((out) => { if (on && out.ok) setPings(out) })
     return () => { on = false }
-  }, [rev])
+  }, [rev, own])
   const pingOf = useCallback((x) => (pings?.pings || []).find((p) => p.to === normHandle(x)) || null, [pings])
 
   const h = normHandle(to)
@@ -500,6 +505,15 @@ export default function Ping({
       if (pingOf(h)?.state === 'mutual') { go('reveal', h); return }
       if (adopted) { send(adopted.handle, adopted.proof); return }
       if (canPlace()) { send(myHandle()); return }
+      // An @ this person claimed before, on another device or a month ago:
+      // its proof comes back from the server, and the ping goes with no DM.
+      if (myHandle()) {
+        setPlacing(true)
+        const back = await readyToPlace()
+        if (!alive.current) return
+        setPlacing(false)
+        if (back) { send(myHandle(), back); return }
+      }
       setSaid('')
       setStep('proof')
       return

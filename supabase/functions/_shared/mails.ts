@@ -20,23 +20,40 @@ export type Mail = { subject: string; html: string; text: string }
 //                     list, which proves only that the address is theirs.
 //                     `draft` is whether a letter is waiting on this proof.
 //   purpose 'alerts'  confirms where the alerts go.
+//   purpose 'login'   signs somebody in (0065): the door's "continue with
+//                     email". It replaced a code Supabase mailed in its own
+//                     template, eight digits into a box that held six. A tap
+//                     signs in the screen that asked, which is why this one
+//                     says plainly not to tap when the number is not theirs.
+//                     `domain` is set for a .edu address, which opens its
+//                     campus too.
 export function verifyMail(o: {
   link: string
   match: number
-  purpose: 'edu' | 'alerts'
+  purpose: 'edu' | 'alerts' | 'login'
   domain?: string | null
   draft?: boolean
 }): Mail {
   const n = String(o.match)
   const edu = o.purpose === 'edu'
+  const login = o.purpose === 'login'
   const draft = edu && o.draft !== false
-  const head = edu ? 'tap to verify your school email.' : 'tap to confirm this address.'
-  const proves = edu
+  const head = login ? 'tap to sign in.' : edu ? 'tap to verify your school email.' : 'tap to confirm this address.'
+  const proves = login
+    ? `tap the link and you're signed in on the screen that asked for it.` +
+      (o.domain ? ` it also confirms you're at ${esc(o.domain)}.` : '')
+    : edu
     ? (o.domain ? `this proves you're at ${esc(o.domain)}.` : `this proves the address is yours.`) +
       (draft ? ' your letter goes up once you tap.' : '')
     : `your alerts come here: when someone writes you a letter, and when it's mutual. you choose which.`
-  const key = edu ? (draft ? 'verify and post' : 'verify') : 'confirm this address'
-  const subject = edu ? `tap to verify your school email · ${n}` : `tap to confirm this address · ${n}`
+  const key = login ? 'sign in' : edu ? (draft ? 'verify and post' : 'verify') : 'confirm this address'
+  const subject = login
+    ? `tap to sign in to celestual · ${n}`
+    : edu ? `tap to verify your school email · ${n}` : `tap to confirm this address · ${n}`
+  const otherwise = login ? "if it doesn't, don't tap it. ignore this email." : "if it doesn't, ignore this email."
+  const why = login
+    ? `you're getting this because this address was typed into celestual to sign in. `
+    : `you're getting this because this address was typed into celestual. `
 
   const html = frame({
     preheader: `your screen shows ${n}. the link works once, for 30 minutes.`,
@@ -44,12 +61,11 @@ export function verifyMail(o: {
       ${title(head)}
       ${body(proves)}
       ${well('your screen shows', n, C.accent)}
-      ${body("if it doesn't, ignore this email.", C.chalk)}
+      ${body(otherwise, C.chalk)}
       ${plate(esc(o.link), key)}
       ${tick('the link works once, for 30 minutes. nobody sees your address.')}`,
     foot: colophon(
-      `you're getting this because this address was typed into celestual. ` +
-      `if that wasn't you, ignore it and nothing happens. ${footLink(SITE, 'celestual.us')}`,
+      why + `if that wasn't you, ignore it and nothing happens. ${footLink(SITE, 'celestual.us')}`,
     ),
   })
   const text = [
@@ -59,10 +75,10 @@ export function verifyMail(o: {
     '',
     `${key}: ${o.link}`,
     '',
-    `your screen shows ${n}. if it doesn't, ignore this email.`,
+    `your screen shows ${n}. ${otherwise}`,
     'the link works once, for 30 minutes. nobody sees your address.',
     '',
-    `you're getting this because this address was typed into celestual. if that wasn't you, ignore it and nothing happens.`,
+    `${why}if that wasn't you, ignore it and nothing happens.`,
   ].join('\n')
   return { subject, html, text }
 }
@@ -157,30 +173,4 @@ export function codeMail(o: { code: string; school: string; minutes: number }): 
     `it lasts ${o.minutes} minutes. if you didn't ask for it, ignore this email.`,
   ].join('\n')
   return { subject: `${o.code} is your celestual code`, html, text }
-}
-
-// ── the Supabase Auth code ───────────────────────────────────────────────────
-// "continue with email" (migration 0057) is Supabase Auth's own mail, sent by
-// Supabase from a template pasted into the dashboard. This is that template,
-// written to supabase/templates/magic-link.html by scripts/mail-preview.mjs.
-// `{{ .Token }}` is Supabase's; it is left for Supabase to fill.
-export function magicLinkTemplate(): Mail {
-  const token = '{{ .Token }}'
-  const html = frame({
-    preheader: 'your celestual code is inside. it works once.',
-    inner: `
-      ${title('your code for celestual.')}
-      ${body('type it where you asked for it, and you are in.')}
-      ${code(token)}
-      ${tick(`it works once. if you didn't ask for it, ignore this email.`)}`,
-    foot: colophon(
-      `you're getting this because this address asked to continue on celestual. ` +
-      `nobody sees your address. ${footLink(SITE, 'celestual.us')}`,
-    ),
-  })
-  return {
-    subject: 'your celestual code: {{ .Token }}',
-    html,
-    text: `your code for celestual: ${token}\n\nit works once. if you didn't ask for it, ignore this email.`,
-  }
 }

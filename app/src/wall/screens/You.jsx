@@ -35,6 +35,15 @@
 // is the expensive one: a person with a mutual on their row was told they had
 // nothing out, and had no control on the screen to prove the handle again.
 // So each has its own words and its own way on.
+//
+// And the second is nearly gone (migration 0065). A person who claimed their
+// @ once, on any device, and is signed in here by any proof (the DM, google,
+// a mailed link, a campus address) gets the @'s proof back from the server
+// as the list is read (pings.js `myPings`, auth.js `restoreProof`), so their
+// private notes are simply there. It was the owner's own complaint: signed in
+// by email, and asked to confirm their Instagram every single time. What is
+// left of 'unverified' is a device that holds a DM proof its person's row
+// does not: the DM is the one way to claim an @, and that is when it is owed.
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile,
@@ -375,18 +384,21 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // account and this is the account.
   useEffect(() => { loadMine(); if (member()) loadQuota() }, [])
 
+  // Read with the proof held here, or, with none, with the one the server
+  // gives back to the person this device is signed in as (pings.js `myPings`).
+  // Read again when the @ changes under the card: the shell asks the server
+  // who this is as it mounts (auth.js `refresh`), and a card opened cold is
+  // drawn before the answer is in.
   useEffect(() => {
     const me = myHandle()
     if (!me) { setList({ loading: false, pings: [], error: 'none' }); return undefined }
-    const proof = heldProof(me)
-    if (!proof) { setList({ loading: false, pings: [], error: 'unverified' }); return undefined }
     let on = true
     setList((s) => ({ ...s, loading: true }))
-    myPings({ handle: me, proof }).then((out) => {
+    myPings({ handle: me, proof: heldProof(me) }).then((out) => {
       if (on) setList({ loading: false, pings: out.pings, error: out.ok ? null : out.error })
     })
     return () => { on = false }
-  }, [rev])
+  }, [rev, handle])
 
   // ── proving the @ ──
   // The same door the ping asks at, filed under its own use. Whoever DMs is

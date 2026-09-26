@@ -16,16 +16,28 @@
 //
 // ── what proves what ────────────────────────────────────────────────────────
 // The token is not a credential on its own. It is a name for a row. What put
-// the row there is either:
+// the row there is one of:
 //
 //   the DM code flow   proves the @. bindHandle() carries the proof.
-//   the .edu code      proves the campus. The edge function binds it, because
+//   the .edu link      proves the campus. The edge function binds it, because
 //                      that address is taken on trust and only the server side
 //                      of the gate is entitled to hand one over.
+//   the login link     proves an address (0065), bound the same way, and
+//                      moves this device onto whoever already holds it.
+//   google             proves an account (0057, api/login.js).
+//
+// ── and the @ comes back with the person ────────────────────────────────────
+// A ping is read and placed with the DM flow's proof, a secret that lives in
+// ONE browser (api/auth.js). The row remembers the @ for good; the proof did
+// not travel. `claimHandleProof` is how it does now: a device signed in by any
+// of the four asks the server for a proof of the @ its person already owns,
+// and gets one only if they own it (celestual_session_handle_proof, 0065). The
+// DM is what claims an @ the first time, and nothing here can.
 //
 // Searching for a handle and picking it out of a list proves nothing and
 // reaches nothing here. Spec section 4.
 import { supabase, hasSupabase } from './supabase.js'
+import { genProof, sha256Hex } from './igverify.js'
 
 const KEY = 'celestual.session.v1'
 
@@ -202,6 +214,28 @@ export async function setEmail(email) {
     if (error) return { ok: false, error: 'network' }
     if (!data?.ok) return { ok: false, error: data?.error || 'failed' }
     return { ok: true, user: shape(data.user) }
+  } catch {
+    return { ok: false, error: 'network' }
+  }
+}
+
+// The DM flow's proof for the @ this session's person already holds, minted
+// here and never sent: only its hash goes up, as the DM flow sends it
+// (api/igverify.js). Answers { ok, handle, proof }, or { ok: false, error }
+// with 'unclaimed' (this person holds no @: the DM is the only way to claim
+// one), 'no_session', 'banned', 'rate', 'missing' (a database without 0065),
+// 'network' or 'offline'. Never throws.
+export async function claimHandleProof() {
+  if (!hasSupabase) return { ok: false, error: 'offline' }
+  try {
+    const proof = genProof()
+    const { data, error } = await supabase.rpc('celestual_session_handle_proof', {
+      p_token: sessionToken(),
+      p_proof_hash: await sha256Hex(proof),
+    })
+    if (error) return { ok: false, error: missingRpc(error) ? 'missing' : 'network' }
+    if (!data?.ok || !data.handle) return { ok: false, error: data?.error || 'failed' }
+    return { ok: true, handle: String(data.handle).toLowerCase(), proof }
   } catch {
     return { ok: false, error: 'network' }
   }

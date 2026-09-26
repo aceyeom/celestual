@@ -18,6 +18,12 @@
 //       composer on the phone sees the request confirmed and posts.
 //   for the alerts
 //       The alert address is confirmed: "your alerts are on."
+//   for signing in (migration 0065, the door's "continue with email")
+//       This device is signed in as whoever holds the address, and so is the
+//       one that asked, if it is another: "you're in." The door that asked is
+//       waiting on the same request and moves on by itself. The pings come
+//       back with the person (auth.js `restoreProof`), so the one quiet line
+//       under the key opens them.
 //
 // A link works once and lasts thirty minutes, and one that has been used or
 // has run out says so, with the next step: ask for a new one where the
@@ -66,11 +72,13 @@ function heldDraft() {
 
 export default function Verify({ go, up, upLabel = 'back to the wall', toWall = null }) {
   const [token] = useState(readToken)
-  // checking · posting · up · elsewhere · alerts · failed · bad
+  // checking · posting · up · elsewhere · alerts · in · failed · bad
   const [state, setState] = useState(token ? 'checking' : 'bad')
   const [why, setWhy] = useState(token ? '' : 'invalid')
   const [id, setId] = useState('')
   const [school, setSchool] = useState(() => schoolOf('berkeley'))
+  // a login: whether the device that asked for the link is this one
+  const [here, setHere] = useState(true)
   const alive = useRef(true)
   useEffect(() => {
     alive.current = true
@@ -94,6 +102,7 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
       await refresh()
       if (!on || !alive.current) return
       if (out.purpose === 'alerts') { setState('alerts'); return }
+      if (out.purpose === 'login') { setHere(out.sameDevice); setState('in'); return }
       const d = heldDraft()
       if (!d) { setState('elsewhere'); return }
       setState('posting')
@@ -140,6 +149,13 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     title = <>verified.</>
     say = 'go back to where you wrote it. it’s going up there.'
     act = <Pill tone="light" wide onClick={wall}>go to the wall</Pill>
+  } else if (state === 'in') {
+    title = <>you&rsquo;re in.</>
+    say = here
+      ? 'you’re signed in on this device.'
+      : 'you’re signed in here, and on the screen where you asked for the link.'
+    act = <Pill tone="light" wide onClick={wall}>go to the wall</Pill>
+    quiet = <button type="button" className="wl-quiet" onClick={() => { if (toWall) toWall(); go('you') }}>your private notes</button>
   } else if (state === 'alerts') {
     title = <>your alerts<br />are on.</>
     say = 'we’ll email you when it matters, and every email has a one tap way to stop.'
@@ -159,7 +175,8 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
       : <>that link<br />doesn&rsquo;t work.</>
     say = why === 'offline' ? 'we could not reach the server. try the link again in a moment.'
       : why === 'taken' ? 'that school email is already confirmed on another account. sign in there, or use a different address.'
-      : 'a link works once, for thirty minutes. ask for a new one where you wrote your letter.'
+      : heldDraft() ? 'a link works once, for thirty minutes. ask for a new one where you wrote your letter.'
+      : 'a link works once, for thirty minutes. ask for a new one where you asked for this one.'
     act = heldDraft()
       ? <Pill tone="light" wide onClick={toLetter}>back to your letter</Pill>
       : <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
