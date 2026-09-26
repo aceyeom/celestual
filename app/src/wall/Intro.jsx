@@ -168,19 +168,24 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
 
   useEffect(() => {
     if (held) return undefined
+    // Each beat on the glass's own clock, from the first frame (`t0`), and
+    // not from now: the first frame is worked out before this runs, and a
+    // beat counted from here would come that much after the glass it goes
+    // with (the phone turning rose after the pink has reached its edges).
+    const on = (ms) => Math.max(0, ms - (performance.now() - t0))
     if (reduce) {
-      timers.current.push(setTimeout(() => setDue(true), 560))
+      timers.current.push(setTimeout(() => setDue(true), on(560)))
       return () => timers.current.forEach(clearTimeout)
     }
     BEATS.forEach((ms, i) => {
       if (i === 0) return
       // a beat never takes the sequence backwards: a skip may have put it at
       // the lift already
-      timers.current.push(setTimeout(() => (i === LIFT ? setDue(true) : setAt((a) => Math.max(a, i))), ms))
+      timers.current.push(setTimeout(() => (i === LIFT ? setDue(true) : setAt((a) => Math.max(a, i))), on(ms)))
     })
-    timers.current.push(setTimeout(() => setLit(true), GLOW))
+    timers.current.push(setTimeout(() => setLit(true), on(GLOW)))
     return () => timers.current.forEach(clearTimeout)
-  }, [reduce, held])
+  }, [reduce, held, t0])
 
   useEffect(() => {
     if (due && ready) setAt((a) => (a < LIFT ? LIFT : a))
