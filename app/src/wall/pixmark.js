@@ -1518,58 +1518,74 @@ export function joinStory({ you = 900, them = 2300, both = 3600 } = {}) {
 }
 
 // ── the mutual ──────────────────────────────────────────────────────────────
-// The same run, a little nearer, so the screen comes to its point sooner
-// than the intro does; and then the screen does not stop.
+// The intro's story, the same two on the same grid with the same ending, a
+// little nearer, so the screen comes to its point sooner; and then the
+// screen does not stop.
 //
 // When the mark is whole it gathers up into the top of the glass at two
-// thirds of its size (`SMALL`), gliding like everything else, to leave the
+// thirds of its size (`R_SMALL`), gliding like everything else, to leave the
 // bottom of the panel to the words (screens/Reveal.jsx types them there, in
-// the phone's face). Then it is alive, ten times a second, on the pink the
-// dip left, on a loop that is only ever a function of the clock:
+// the phone's face). As it goes, the pink the story lit on the glass goes
+// out onto the phone's own panel under it, which the rose has reached by
+// then (mutual.css `--mu-turn`), and which from there on drifts slowly
+// through its colours (Reveal.jsx `drift`). Then the mark is alive, ten
+// times a second, on a loop that is only ever a function of the clock:
 //
 //   the beat     the backlight behind the mark brighter, lub and dub, once
 //                every 1400ms, and the star warming a little with it
 //   the glint    a light going round the ring, once every 2400ms
-//   twinkle      a cell or two of the star lit in the rose each frame
+//   twinkle      a cell or two of the star lit each frame
 //   the heart    a small one floating up off the star every 4000ms
 //
 // None of it is random: each frame is chosen by its own number, so a frame
 // held for a screenshot is the same frame every time. `still` is a frame of
 // it at rest, for reduced motion.
-const SMALL_N = 31
-const SMALL = { ox: (COLS - SMALL_N) >> 1, oy: 1 }
-const GATHER_MS = 560
+const R_NEAR = 250
+const R_SMALL = 51
+const R_GATHER_MS = 620
+const R_FADE_MS = 480
 const LIVE_MS = 100
 const BEAT = [1, 0.5, 0.78, 0.36, 0.2, 0.1, 0.05, 0, 0, 0, 0, 0, 0, 0]
 const GLINT = 24
 const FLOAT_EVERY = 40
 const FLOAT_FROM = 14
-const PINK = { r: null, level: 1, rim: 0 }
+// a drawing of the door's grid at twice its size, a cell of it four of
+// this one's, at (x, y)
+function twice(cells, x, y) {
+  const out = []
+  for (const [cx, cy, ink, h, a] of cells) {
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) out.push([x + 2 * cx + dx, y + 2 * cy + dy, ink, h || 0, a ?? 1])
+  }
+  return out
+}
 
-export function revealStory(start = 200) {
-  const run = approach({ start, frames: 7, him: 3, her: 0 })
-  const s = makeStory({
-    before: (t) => (t < start ? { key: '-', cells: ground() } : run.at(t)),
-    catchAt: run.catchAt,
-  })
-  const told = s.frame
-  const gatherAt = s.times.done + 200
-  const liveAt = gatherAt + GATHER_MS
+export function revealStory(start = 200, { panel = PANEL, ink = null } = {}) {
+  const told = introStory(start - R_NEAR, { panel, ink })
+  const inkEnd = ink ? ink[1] : null
+  const gatherAt = told.times.done + 200
+  const liveAt = gatherAt + R_GATHER_MS
+  const MX = (I_COLS - I_MARK) >> 1
+  const MY = (I_ROWS - I_MARK) >> 1
   let gather = null
   let small = null
   const smallMark = () => {
-    if (!small) small = markOn(SMALL_N, SMALL.ox, SMALL.oy)
+    if (!small) small = markOn(R_SMALL, (I_COLS - R_SMALL) >> 1, 2, I_CUT)
     return small
   }
-  const wash = () => ({ ...PINK, x: smallMark().cx, y: smallMark().cy })
+  // the story's pink, going out onto the panel's own light under it
+  const fade = (t) => {
+    const k = (t - gatherAt) / R_FADE_MS
+    if (k >= 1) return null
+    return { r: null, level: 1 - Math.max(0, k) * Math.max(0, k) * (3 - 2 * Math.max(0, k)), rim: 0 }
+  }
   const gatherOf = () => {
-    const big = markOn(MARK_N, BIG.ox, BIG.oy)
+    const big = markOn(I_MARK, MX, MY, I_CUT)
     const to = smallMark()
     const bits = []
     const ring = pairs(byAngle(big.ring, (p) => [p.x, p.y]), byAngle(to.ring, (p) => [p.x, p.y]))
     const star = pairs(byAngle(big.star, (p) => [p.x, p.y]), byAngle(to.star, (p) => [p.x, p.y]))
-    ring.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, hash(i, 3) * 80, GATHER_MS - 100)))
-    star.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, 20 + hash(i, 5) * 80, GATHER_MS - 100)))
+    ring.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, hash(i, 3) * 90, R_GATHER_MS - 110)))
+    star.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, 20 + hash(i, 5) * 90, R_GATHER_MS - 110)))
     return bits
   }
   const live = (t) => {
@@ -1582,42 +1598,44 @@ export function revealStory(start = 200) {
     for (const p of m.ring) {
       let d = Math.abs(p.ang - g)
       if (d > Math.PI) d = Math.PI * 2 - d
-      cells.push([p.x, p.y, 1, d < 0.55 ? 0.9 * (1 - d / 0.55) : 0])
+      cells.push([p.x, p.y, 1, d < 0.5 ? 0.9 * (1 - d / 0.5) : 0])
     }
     // the star, warming on the beat, and a cell or two of it lit
     m.star.forEach((p, j) => {
-      const tw = hash(i, j) < 2.2 / m.star.length ? 1 : 0
+      const tw = hash(i, j) < 3.4 / m.star.length ? 1 : 0
       cells.push([p.x, p.y, 1, Math.max(tw, 0.3 * beat)])
     })
-    // and now and then a heart off the top of the star
+    // and now and then a heart off the top of the star, drawn at the door's
+    // size so it is the same small heart
     const f = i - FLOAT_FROM
     let fk = ''
     if (f >= 0) {
-      const h = rising(HEART_S, Math.round(m.cx) - 2, Math.round(m.cy) - 9, (f % FLOAT_EVERY) * LIVE_MS, 9, LIVE_MS)
-      cells.push(...h.cells)
+      const h = rising(HEART_S, 0, 0, (f % FLOAT_EVERY) * LIVE_MS, 9, LIVE_MS)
+      cells.push(...twice(h.cells, Math.round(m.cx) - 5, Math.round(m.cy) - 18))
       fk = h.key
     }
     return {
       key: `L${i}${fk}`,
       cells,
-      wash: wash(),
+      ink: inkEnd,
       // the beat: the backlight behind the mark going brighter, and back
-      glow: { x: m.cx, y: m.cy, r: 13 + 5 * beat, a: 0.12 + 0.6 * beat, inner: 0.9, light: true },
+      glow: { x: m.cx, y: m.cy, r: 21 + 8 * beat, a: 0.12 + 0.6 * beat, inner: 0.9, light: true },
     }
   }
-  s.frame = (t) => {
-    if (t < gatherAt) return told(t)
+  const frame = (t) => {
+    if (t < gatherAt) return told.frame(t)
+    const w = fade(t)
     if (t < liveAt) {
       if (!gather) gather = gatherOf()
       const u = t - gatherAt
-      return { key: `G${Math.round(u)}`, cells: gather.map((b) => bitAt(b, u)), wash: wash() }
+      return { key: `G${Math.round(u)}`, cells: gather.map((b) => bitAt(b, u)), wash: w, ink: inkEnd }
     }
     return live(t)
   }
-  // the told part is over when the words start; the rest goes on
-  s.end = liveAt
-  s.live = true
-  s.still = liveAt + 6 * LIVE_MS
-  Object.assign(s.times, { gather: gatherAt, live: liveAt, meet: run.plantAt })
-  return s
+  return {
+    cols: I_COLS, rows: I_ROWS, panel, fine: true, frame,
+    // the told part is over when the words start; the rest goes on
+    end: liveAt, live: true, still: liveAt + 6 * LIVE_MS,
+    times: { ...told.times, gather: gatherAt, live: liveAt },
+  }
 }

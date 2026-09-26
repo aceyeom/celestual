@@ -169,6 +169,17 @@
 .wl-mutual-scr .wl-scene-halo,
 .wl-mutual-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* The phone's light (Reveal.jsx `PHONE`): the night's, turned to the rose by
+   one number as the pink spreads over the glass, the panel under the pink
+   first and the bands and the light round the phone with it, so the whole
+   phone is a letter lit in rose by the time the pink reaches its edges. A
+   tap lands it in a quarter of a second, and reduced motion draws it lit. */
+@property --mu-turn { syntax: '<number>'; inherits: true; initial-value: 0; }
+.wl-mutual-scr { --mu-turn: 0; transition: --mu-turn 240ms var(--ease); }
+.wl-mutual.is-glow .wl-mutual-scr { animation: wl-mutual-turn 460ms var(--ease) 240ms both; }
+.wl-mutual:is(.is-landed, .is-still) .wl-mutual-scr { --mu-turn: 1; }
+@keyframes wl-mutual-turn { from { --mu-turn: 0; } to { --mu-turn: 1; } }
+
 /* The sentence, on the glass, under the mark: in the phone's face and its
    ink, the size of a letter's words on a small screen, set whole from the
    first frame and typed over itself, the characters not yet in there and

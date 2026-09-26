@@ -14,19 +14,23 @@
 // ── the order is the meaning ────────────────────────────────────────────────
 //
 //   1  the phone         a boy and a girl run in from either edge of the
-//                        glass, she falls into his arms and he dips her, the
-//                        backlight turns pink, and they glide together into
+//                        glass, the intro's two (folk.js), and her run
+//                        carries her on into his arms and half behind him;
+//                        the backlight turns pink and the phone becomes a
+//                        letter lit in rose, and they glide together into
 //                        the mark (pixmark.js `revealStory`).
 //                        The mark gathers up into the top of the glass, and
 //                        under it, IN the phone, in its own face and with its
 //                        own cursor, "it's mutual." is typed a character at a
 //                        time. Exactly those words: no congratulations, no
 //                        match (VOICE.md 2). And the phone never stops: its
-//                        backlight beats in the pink, lub and dub, a light
-//                        goes round the ring, the star twinkles, a heart
-//                        floats up off it now and then, and the phone itself
-//                        rises and settles in its own pink light, the way a
-//                        thing that is on and alive does.
+//                        backlight beats, lub and dub, a light goes round
+//                        the ring, the star twinkles, a heart floats up off
+//                        it now and then, the phone itself rises and settles
+//                        in its own light, the way a thing that is on and
+//                        alive does, and that light drifts, slowly, from the
+//                        rose through the pinks, the oranges and the greens
+//                        and back (`drift`).
 //   2  the two of them   the pair, face and handle, one beside the other and
 //                        never one before the other: a stagger would say one
 //                        of them mattered more, and the whole premise is that
@@ -68,6 +72,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfile } from '../parts.jsx'
 import { Screen, Wait } from '../screen.jsx'
+import { skinOf, skinVars } from '../looks.js'
 import PixelStory, { SQUARE } from '../PixelStory.jsx'
 import { revealStory } from '../pixmark.js'
 import { normHandle, atHandle } from '../data.js'
@@ -95,7 +100,9 @@ function guessHandle() {
 }
 
 const SAY = 'it’s mutual.'
-const STORY = revealStory(200)
+const NIGHT = skinOf('night')
+const ROSE = skinOf('rose')
+const STORY = revealStory(200, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
 // The sentence, typed on the glass as the mark gathers up to make room for
 // it, a character every 70ms, which is how fast the phone put a message on
 // its screen.
@@ -108,6 +115,50 @@ const SAID_AT = SAY_AT + SAY.length * TYPE_MS + 180
 const LOOK = { tint: 'night' }
 const NO_KEYS = {}
 const NO_TOP = {}
+
+// ── the phone's light ──
+// It starts as the night's, and as the pink spreads on the glass the whole
+// phone becomes a letter lit in rose, as the intro's does: each colour the
+// Screen paints with is the night's mixed toward the rose by one number
+// (mutual.css `--mu-turn`), so what animates is a number and the colours
+// follow. The rose it turns to is itself a variable (`--mu-s-*`, the rose's
+// until the drift below sets it), so the phone's panel, its two bands, its
+// glow and the light round it are one light from there on.
+const TURNS = ['--s-top', '--s-top-2', '--s-bot', '--s-hi', '--s-mid', '--s-lo', '--s-lit', '--s-cur', '--s-bloom', '--s-glow', '--s-glow-2', '--s-edge', '--s-halo', '--s-halo-2']
+const N = skinVars('night')
+const R = skinVars('rose')
+const PHONE = { ...SQUARE }
+for (const k of TURNS) PHONE[k] = `color-mix(in srgb, ${N[k]}, var(--mu${k}, ${R[k]}) calc(var(--mu-turn) * 100%))`
+
+// ── the drift ──
+// Once the mark is alive the light does not stay rose. It drifts, a shade at
+// a time, through the pinks into the oranges and the greens, and back the
+// way it came, once every 24 seconds, as a letter lit in each of those
+// colours would be (looks.js `skinOf`, the lit arithmetic), so the words on
+// it are always the dark of the light they are on. A function of the glass's
+// own clock, set ten times a second, still with the tab, and never under
+// reduced motion, which keeps the rose.
+const DRIFT_MS = 24000
+const DRIFT = [
+  [0, '#DF93AF'], [0.13, '#E88DAE'], [0.27, '#EE9A82'], [0.4, '#E0A95A'],
+  [0.55, '#A3BB6B'], [0.68, '#86C29B'], [0.8, '#A3BB6B'], [0.9, '#E6A267'], [1, '#DF93AF'],
+]
+const DRIFT_STEPS = 480
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+const mixHex = (a, b, k) => `#${hexRgb(a).map((v, i) => Math.round(v + (hexRgb(b)[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
+function drift(u) {
+  const q = Math.floor(((((u % DRIFT_MS) + DRIFT_MS) % DRIFT_MS) / DRIFT_MS) * DRIFT_STEPS)
+  const k = q / DRIFT_STEPS
+  let j = 0
+  while (j < DRIFT.length - 2 && DRIFT[j + 1][0] <= k) j++
+  const [a, ha] = DRIFT[j]
+  const [b, hb] = DRIFT[j + 1]
+  const e = Math.min(1, Math.max(0, (k - a) / (b - a)))
+  const hue = mixHex(ha, hb, e * e * (3 - 2 * e))
+  // a letter in this light, made once for each of the steps and kept
+  const v = skinVars({ slug: `mutual-drift-${q}`, kind: 'lit', hue })
+  return { v, glow: hexRgb(mixHex(hue, '#FFFFFF', 0.25)).join(', ') }
+}
 
 // One of the two: the face and the handle, with the name under it when the
 // resolver has one.
@@ -128,6 +179,7 @@ function Mutual({ mine, them, mutual, reduce }) {
   const [landed, setLanded] = useState(!!reduce)
   const [typed, setTyped] = useState(reduce ? SAY.length : 0)
   const [said, setSaid] = useState(!!reduce)
+  const [glow, setGlow] = useState(false)
   const [mineOpen, setMineOpen] = useState(false)
   const t0 = useRef(performance.now()).current
   // when the glass's clock started: from the mount, or, once landed, from
@@ -139,6 +191,7 @@ function Mutual({ mine, them, mutual, reduce }) {
   useEffect(() => {
     if (landed) return undefined
     const at = (ms, fn) => timers.current.push(setTimeout(fn, Math.max(0, ms - (performance.now() - t0))))
+    at(STORY.times.glow, () => setGlow(true))
     for (let i = 1; i <= SAY.length; i++) at(SAY_AT + i * TYPE_MS, () => setTyped(i))
     at(SAID_AT, () => setSaid(true))
     const all = timers.current
@@ -173,6 +226,24 @@ function Mutual({ mine, them, mutual, reduce }) {
     return () => document.removeEventListener('visibilitychange', on)
   }, [])
 
+  // the light, drifting, once the words are said (see `drift`)
+  const fig = useRef(null)
+  const alive = said && !reduce
+  useEffect(() => {
+    const el = fig.current
+    if (!el || !alive || hidden) return undefined
+    const step = () => {
+      const u = performance.now() - from - STORY.times.live
+      if (u < 0) return
+      const { v, glow: rgb } = drift(u)
+      for (const k of TURNS) el.style.setProperty(`--mu${k}`, v[k])
+      el.style.setProperty('--story-glow-rgb', rgb)
+    }
+    step()
+    const id = setInterval(step, 100)
+    return () => clearInterval(id)
+  }, [alive, hidden, from])
+
   const ago = sinceAgo(mutual.at)
   const theirName = theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)
   const note = mutual.theirLine
@@ -180,7 +251,7 @@ function Mutual({ mine, them, mutual, reduce }) {
 
   return (
     <div
-      className={`wl-mutual${said ? ' is-said' : ''}${landed ? ' is-landed' : ''}${reduce ? ' is-still' : ''}${hidden ? ' is-hidden' : ''}`}
+      className={`wl-mutual${said ? ' is-said' : ''}${glow ? ' is-glow' : ''}${landed ? ' is-landed' : ''}${reduce ? ' is-still' : ''}${hidden ? ' is-hidden' : ''}`}
       onPointerDown={onPress}
     >
       {/* what the page is, for a reader that never sees the phone */}
@@ -191,13 +262,13 @@ function Mutual({ mine, them, mutual, reduce }) {
         {ago ? ` you sent yours ${ago}.` : ''}
       </p>
 
-      <div className="wl-mutual-fig" aria-hidden="true">
+      <div className="wl-mutual-fig" aria-hidden="true" ref={fig}>
         <span className="wl-mutual-halo" />
         <div className="wl-mutual-float">
           <Screen
             look={LOOK} seed={`mutual:${mine}:${them}`} top={NO_TOP}
             keys={NO_KEYS} live={false} state={reduce ? '' : 'waking'}
-            className="wl-mutual-scr" style={SQUARE}
+            className="wl-mutual-scr" style={PHONE}
           >
             <PixelStory story={STORY} at={reduce ? STORY.still : null} from={from} />
             {/* The sentence, on the glass, in the phone's face and its ink,
