@@ -401,14 +401,20 @@ Main runs a light round an edge.
 
 **The stories.** Three screens tell one small story on a letter's night
 screen, in the phone's own pixels: the intro, the door (`/join`, the mechanic)
-and the mutual (`/reveal/:handle`). Two shadows run in from either side of
-the panel, reach, touch (the whole panel inverts for one frame), hold on, and
-what they stood on lifts into the ring while the two of them gather into the
-star. Nothing in it is a picture. The runners are drawn by hand, a pixel at a
-time, 16 by 22, in two inks: the far arm and leg are the same ink, thinner,
+and the mutual (`/reveal/:handle`). A guy runs in from the left and a girl
+from the right, her hair streaming and her dress swinging; he plants and opens
+his arms, she leaps and falls into them, and the catch turns into a tango: she
+leans in, tilts back, and he swoops into a held dip over her, breathing. A
+small pink heart rises, and the panel's own backlight turns pastel pink,
+spreading outward from the two of them as a wave until the whole screen is
+lit pink, while what they stood on glides into the ring and the two of them
+glide into the star, each pixel travelling between cells at the display's
+rate and snapping to the grid as it lands (owner, 25 September: more
+emotion, a girl who falls into his arms, the background turning pink, a
+smoother morph). Nothing in it is a picture. The figures are drawn by hand, a
+pixel at a time, in two inks: the far arm and leg are the same ink, thinner,
 so one drawing gives both steps and a silhouette never reads as a shuffle.
-They are the same drawing turned round, not two people with a hair colour
-each: two shadows, nobody in particular. The mark is `mark.js` rasterised on
+The mark is `mark.js` rasterised on
 an odd grid, 47 cells, the ring cut at a third of a cell and the star at a
 half (`pixmark.js`). `PixelStory` draws it on a canvas in the screen's body,
 a whole number of device pixels to a cell with the gap an LCD has, the unlit
@@ -851,7 +857,7 @@ Chosen per element, never a default applied everywhere.
 | the deck (`screens/Letter.jsx`) | the letter before and the letter after stand either side of an opened letter, asleep: dimmer and a little smaller, a sliver at the edges of a phone and whole in a wide room, coming up over 480ms from 420ms into the card's wake. A hand has the card one to one and each screen is lit by how near the middle it stands. Let go, the strip runs on in 240 to 420ms at the speed it was let go at, on the travel curve bent to leave at the hand's speed, or springs home in 220 to 380ms; a press on a neighbour turns it in 340ms and an arrow key in 260ms. The first two times a device opens it the card leans 26px toward the next letter and back, 380ms out and 680ms home. Under reduced motion a turn is a cut and nothing leans |
 | `wl-mast-ring` | the ring leaving the veil's capsule every 1600ms, the shape of the pulse a tap sends through the crowd |
 | `wl-glass-out`, `wl-tab-drop` | a sheet's glass fading in place while a card flies home to its disc; the tab at the foot of the wall being put away |
-| the story (`PixelStory`) | two shadows running in on a letter's night screen, meeting, and becoming the mark (2.6). The run is stepped, 80ms a frame and three cells a frame, so no foot slides; the frame they touch inverts the whole panel for 70ms; they hold on for 480ms; then the ground lifts into the ring over 380ms and the hug gathers into the star from its middle out, 220 to 660ms, every pixel on a hard start and a long settle and rounded to a whole cell each frame, so the pixels hop. Tap to land |
+| the story (`PixelStory`) | a guy and a girl running in on a letter's night screen, the catch, the tango dip, and the mark (2.6). The run is stepped at 12 frames a second so no foot slides; the dip holds and breathes; the panel's backlight turns pink in a wave from the couple (`PANEL` in `pixmark.js`); then the ground and the pair glide into the ring and the star at the display's rate, easing in and out, each pixel snapping to the grid only as it lands. The mark is whole on a pink panel at about 2.9s. Tap to land |
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |

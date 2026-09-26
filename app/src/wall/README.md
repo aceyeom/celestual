@@ -1318,10 +1318,12 @@ screens, the night one, with the product's story on it in the phone's pixels
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`) |
 | `120ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in |
-| `300ms` | **the run.** Two shadows come in off either edge of the panel, three cells a frame and a frame every 80ms, which is the stride the drawings take, so no foot slides. The runners are drawn by hand in two inks, the far arm and leg thinner, so one drawing gives both steps; the one from the right is the same drawing turned round |
-| `1180ms` | **the meeting.** Arms out; on the frame they touch the whole panel inverts for 70ms, the way a phone's screen flashed when something came in; the catch, and the hold, one foot off the ground |
-| `1810ms` | **the mark.** The dashed ground they ran on lifts into the ring, left to right along both halves, and the two of them gather into the star from its middle out. Every pixel is rounded to a whole cell each frame, so they hop across the glass. The mark is `mark.js` rasterised at 47 cells, whole at `2470ms` |
-| `2870ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
+| `260ms` | **the run.** He comes in off the left edge and she off the right, her hair streaming and her dress swinging, stepped at 12 frames a second so no foot slides |
+| `980ms` | **the catch.** He plants and opens his arms; she leaps, falls, and lands in them at `1240ms` |
+| `1380ms` | **the tango.** She leans in, tilts back from the waist, and he swoops into a held dip over her at `1800ms`, breathing a cell each way; a small pink heart rises |
+| `1880ms` | **the pink.** The panel's own backlight turns pastel pink in a wave from the two of them, the whole screen pink by about `2360ms`, the room's glow rising with it (`PANEL`, `intro.css`) |
+| `2120ms` | **the mark.** The ground and the two of them glide into the ring and the star, each pixel travelling between cells at the display's rate and snapping to the grid as it lands. Whole at `2910ms`, on a pink screen |
+| `2990ms` | **the lift**, after a hold, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 4200ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
 | `3590ms` | the black is gone |
 
 No name, because the name is in the bar of the page underneath. A canvas has
