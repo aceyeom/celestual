@@ -127,38 +127,22 @@ select w_ok('anon cannot call wall_write',
 select w_ok('anon cannot call the gate directly',
   not has_function_privilege('anon', 'wall_gate(uuid, text)', 'EXECUTE'));
 
--- ── 5. the redaction is the database's, not the client's ────────────────────
--- 0045 hands every browser eight whole letters (five then, raised in 0049) before it asks for anything, so
--- a browser that has spent none of them is not a stranger to the wall yet. The
--- redaction is what this section is about, so the two readers who are meant to
--- be refused spend their eight first, on eight letters under a name nothing else
--- here looks at, written by an author of their own so the writer's three a
--- week (0044) is untouched.
-do $$
-declare i int; w uuid;
-begin
-  insert into celestual_users (edu_email, edu_verified_at)
-    values ('spender@berkeley.edu', now()) returning id into w;
-  for i in 1..8 loop
-    insert into wall_letters (target_handle, body, author_id, campus, status, created_at)
-    values ('spendthem', 'a letter written only to be counted, number ' || i,
-            w, 'berkeley', 'live', now() - (i || ' minutes')::interval);
-  end loop;
-end $$;
-select w_ok('the eight spend out',
-  (wall_letters_for('token-nobody-00000000000', 'spendthem')->'free'->>'left')::int = 0
-  and (wall_letters_for('token-unproved-00000000', 'spendthem')->'free'->>'left')::int = 0);
-
-select w_ok('a stranger gets the letter with no words',
-  (wall_letters_for('token-nobody-00000000000', 'subject')->'letters'->0->>'body') is null);
-select w_ok('and is told the gate is shut',
-  (wall_letters_for('token-nobody-00000000000', 'subject')->>'open')::boolean = false);
-select w_ok('but still sees that a letter exists',
-  jsonb_array_length(wall_letters_for('token-nobody-00000000000', 'subject')->'letters') = 1);
+-- ── 5. every letter is whole, to anybody (0066) ─────────────────────────────
+-- It was the redaction, and it was the database's and not the client's: eight
+-- whole letters to a browser, then the words withheld until a proof (0045,
+-- 0049). Since 0066 nothing is withheld from anybody, so what is asserted is
+-- that the words travel to the readers who used to be refused, the sealed line
+-- still never does, and the author never did.
+select w_ok('a stranger gets the letter with its words',
+  (wall_letters_for('token-nobody-00000000000', 'subject')->'letters'->0->>'body')
+    = 'i should have said something in march');
+select w_ok('and is told it is open',
+  (wall_letters_for('token-nobody-00000000000', 'subject')->>'open')::boolean);
 select w_ok('and that it carries a seal',
   (wall_letters_for('token-nobody-00000000000', 'subject')->'letters'->0->>'has_seal')::boolean);
-select w_ok('a session with nothing proved on it gets no words either',
-  (wall_letters_for('token-unproved-00000000', 'subject')->'letters'->0->>'body') is null);
+select w_ok('a session with nothing proved on it gets the words too',
+  (wall_letters_for('token-unproved-00000000', 'subject')->'letters'->0->>'body')
+    = 'i should have said something in march');
 select w_ok('the outsider is handed them, since 0057',
   (wall_letters_for('token-outsider-00000000', 'subject')->'letters'->0->>'body')
     = 'i should have said something in march');

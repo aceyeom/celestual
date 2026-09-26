@@ -2417,18 +2417,18 @@ a.wl-lq { text-decoration: none; }
    The screen is as wide as the glass allows, up to 520 in a big room, and
    never taller than the room: on a short window it is sized off the
    height, so the keys are never below the fold. `--scene-w` is the one
-   number the sheet, the stage, the deck and the seal's foot are all sized
+   number the sheet, the stage, the deck and the nudge's note are all sized
    from, and on a phone it leaves `--gutter` of glass either side for the
    letters beside it (THE LETTER, below). */
 .wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 190px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  /* an open letter has no seal foot to leave room for */
-  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 120px) / 1.22)); }
+  /* a letter with no nudge under it has no foot to leave room for */
+  .wl-sheet-wrap.is-letter:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 120px) / 1.22)); }
 }
 /* a letter reached from a link gives the line to the wall its row */
 .wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 236px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 166px) / 1.22)); }
+  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 166px) / 1.22)); }
 }
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
@@ -2786,40 +2786,14 @@ a.wl-lq { text-decoration: none; }
   .wl-letter-slot { animation: none !important; translate: none !important; }
 }
 
-/* ── the line that says what the seal is ──
-   screens/Letter.jsx `sealSay`. It stands in the SHEET's foot, on the glass
-   over the shut card, and not on the paper: the card is the letter and this
-   is a fact about the reader, which is the same division the marks in the
-   paper's own foot are on the other side of.
-
-   In the mechanics face, at the label's size, in ash, centred over the
-   capsule it is the reason for. Quiet on purpose: it is answering a
-   question somebody just asked by looking, and a sentence set louder than
-   the act under it would be the screen arguing rather than saying. It
-   arrives on the pane's own curve so the reason and the door land together
-   rather than one after the other. */
-.wl-seal {
-  width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 13px;
-}
-/* the capsule is as wide as the screen over it, and no wider */
-.wl-letter .wl-seal { width: min(100%, var(--scene-w)); margin-inline: auto; }
-.wl-seal-say {
-  margin: 0;
-  font-size: var(--t-small);
-  line-height: 1.24;
-  color: var(--ash);
-  text-align: center;
-  text-wrap: pretty;
-  animation: wl-act-in 320ms var(--ease) both;
-}
+/* The seal's line and its `read it` key stood here, in the sheet's foot
+   under a shut card, until every letter was opened to anybody (migration
+   0066). What stands there now, once in a while, is the nudge (nudge.css).
+   The curve they arrived on is the panes' too, and stays. */
 @keyframes wl-act-in {
   from { opacity: 0; transform: translate3d(0, 6px, 0); }
   to   { opacity: 1; transform: none; }
 }
-/* the wide capsule is a grandchild of the foot now, so the foot's own rule
-   for one no longer reaches it */
-.wl-seal > .wl-pill.is-wide { max-width: 100%; overflow: hidden; }
-.wl-seal > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══ THE SEARCH ═══════════════════════════════════════════════════════════ */
 .wl-find { padding-top: 4px; }
@@ -4898,7 +4872,7 @@ a.wl-lq { text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb { animation: none !important; }
-  .wl-write-card, .wl-acts-pane, .wl-act, .wl-seal-say { animation: none !important; }
+  .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
   .wl-look { animation: none !important; }

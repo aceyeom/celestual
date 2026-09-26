@@ -1,71 +1,51 @@
 // ── the gate ────────────────────────────────────────────────────────────────
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE INDEX IS PUBLIC. THE LETTERS ARE NOT.                               ║
+// ║  EVERY LETTER IS OPEN. WHAT YOU DO TO ONE ASKS WHO YOU ARE.              ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The wall carries two different things and they cannot have the same rule.
+// The wall carries two kinds of thing, and since 26 September only one of
+// them has a door (the owner: "never hide or limit how many letters a user
+// can view. only nudge them", migration 0066).
 //
-//   the index    sixty-six handles, the count against each one, and nothing
-//                else. Public, because it is what a person who has just
-//                scanned a code off a card has to be able to see in four
-//                seconds without answering anything, and because a name has
-//                to be findable by the person it belongs to before they can
-//                ask for it to come off.
-//   the letters  what was actually written, who may write one, and who may
-//                take one down. Behind the two gates below.
+//   the index    the names, the count against each one, and nothing else.
+//                Public, because it is what a person who has just scanned a
+//                code off a card has to be able to see in four seconds
+//                without answering anything.
+//   the letters  what was actually written. Public too, whole, as many as
+//                anybody reads. They used to be eight to anybody and then a
+//                proof (0045, 0049), with the ninth arriving blurred; the
+//                seal is gone, and a reader who has read a few is NUDGED,
+//                under the letter and never over it (Nudge.jsx).
 //
-// So the letter arrives whole for the first five reads whoever is asking,
-// whole after that to somebody this product has proved, and blurred to
-// everybody else. The index is untouched in every case.
-//
-// ── TWO DOORS, NOT ONE (migration 0044), AND FIVE STEPS TO THE FIRST (0045) ─
-// It used to be one door for three acts, and that was wrong in a way that took
-// a live wall to see. A person who had proved their Instagram handle through
-// the DM code — this product's own proof, the expensive one — arrived here
-// signed in, was shown a wall of struck-out words, and read "sign in to read
-// the letters" on a screen they had signed in to. So the door splits along the
-// line it was always two things on either side of:
-//
-//   READING    the first FIVE are free to anybody (0045), because a person
-//              asked to answer for something before they have read a sentence
-//              of it has been asked one decision too early. After those,
-//              anybody this product has proved: a campus address, or a
-//              verified handle. Either proof costs something real, and a wall
-//              of things students wrote about each other is still a different
-//              object from one the open internet can read.
+// ── what still asks ─────────────────────────────────────────────────────────
 //   THE HEART AND THE REPORT
-//              the proof, with no free five in front of them. They are things
-//              you DO to a letter rather than things you read, and reporting
-//              goes with reading on purpose otherwise: the person a letter is
-//              about is the likeliest reader to want it down and the least
-//              likely to hold a berkeley.edu address at that moment.
-//   WRITING    since 25 September (docs/ONE-WALL.md), not a door at all
-//              until the letter is written. A letter to an @ goes up on the
-//              Berkeley wall from a verified Berkeley address, asked for when
-//              it is posted, or goes privately to the @ as a ping, from the @
-//              the writer proves is theirs. A letter to a name needs nothing,
-//              and is read before it goes up. The address does not sign the
-//              letter and is never stored beside it (screens/Write.jsx).
+//              a proof, any of the product's four: a campus address, a
+//              verified handle, a google account or a mailed code (0044,
+//              0057). They are things you DO to a letter rather than things
+//              you read, and each is counted against a person. `reader`
+//              below is this browser's copy of that answer; the name is what
+//              it has always been called, and it no longer decides reading.
+//   WRITING    not a door at all until the letter is written (docs/ONE-WALL.md
+//              and 0066). Anybody writes to an @ or to a name, and the note
+//              is read before it goes up. A verified Berkeley address posts
+//              to an @ as a Berkeley student, with the sticker, at once. The
+//              @ the writer proves is theirs sends it privately, as a ping.
+//              The address does not sign the letter and is never stored
+//              beside it (screens/Write.jsx).
 //
 // ── what this is not ────────────────────────────────────────────────────────
 // It is not an identity, and being signed in is still not being known. The
 // address is held in this tab, it is never attached to a letter, and the
-// composer never reads it — there is no author field for it to land in
-// (data.js). Reading is gated. Authorship stays absent. Those two facts are
-// independent on purpose, and the second one is the product.
+// composer never reads it: there is no author field for it to land in
+// (data.js). Authorship stays absent, and that is the product.
 //
 // ── where it actually happens ───────────────────────────────────────────────
-// Phase 6a made this real. The code is minted, hashed and mailed by
-// celestual-edu-verify, checked there, and the verified address is bound to an
-// identity row by celestual_user_bind_edu (migration 0030). Nothing in this
-// module decides whether anybody is a member: it asks, and the server answers.
-//
-// The gate that matters is not here either. Every read of a letter body goes
-// through wall_letters_for, which asks wall_read_gate itself and returns a null
-// body to anybody outside it, so a person who edits `reader` in devtools gets a
-// wall with no words on it. What this module holds is the copy of that answer
-// the interface draws from, not the answer.
+// The proofs are minted and checked by the edge functions and bound to an
+// identity row by the celestual_user_bind_* functions (migration 0030 on).
+// Nothing in this module decides whether anybody is proved: it asks, and the
+// server answers, and the heart and the report ask wall_read_gate themselves,
+// so a person who edits `reader` in devtools gets a key that does nothing.
 
 import { getState, patch, push } from './store.js'
 import { cardStep } from './seed.js'
@@ -126,11 +106,10 @@ export function validCode(raw) {
 // `celestual_whoami` is where it comes from. Never trusted for access: it is
 // what the interface draws, and wall_letters_for is what decides.
 //
-// `member` answers ONE question: may this person write here. On the campus
-// wall it is the campus address; on the wall at the root it is whichever
-// proof this person gave, the handle, the google account or the address
-// (migration 0057). `reader` is any proof and answers the other: may this
-// person read.
+// `member` is who the bar and the account sheet call this person: whichever
+// proof they gave, the handle, the google account or the address (migration
+// 0057). `reader` is any proof and answers the other question: may this
+// person heart and report. Every letter is read by anybody (0066).
 export function member() { return getState().member || null }
 export function isMember() { return !!getState().member }
 export function isReader() { return !!getState().reader }
@@ -157,9 +136,9 @@ export function toWrite(go, handle = '') {
 // Called after celestual-edu-verify confirms a code. The address it takes is
 // the one the server just verified, not one the browser typed.
 //
-// Every letter read before this moment was read from outside the gate and is
-// cached with its body withheld. The cache is dropped here, or "read it" lands
-// on the same redacted card it left and the gate says "signed in".
+// Every letter read before this moment was read as nobody: its heart drawn
+// for nobody and its menu missing what an owner sees. The cache is dropped
+// here, so the next read is this person's (data.js `forgetLetters`).
 export function signIn(email) {
   const e = normEmail(email)
   if (!anyEmail(e)) return null
@@ -227,8 +206,8 @@ export async function refresh() {
   //
   // The cache is dropped when this ANSWER changes rather than when the
   // address does: a person who proved their handle on Main and walked over
-  // here has a cache full of redactions and no address, and a cache keyed on
-  // the address would never drop it.
+  // here has a cache read as nobody and no address, and a cache keyed on the
+  // address would never drop it.
   const was = isReader()
   const now = isProved(me)
   if (was !== now) forgetLetters()
@@ -330,12 +309,12 @@ export async function verifyHandle(handle, proof) {
   }
   if (out.ok) {
     push('verified', h)
-    // ── AND THE LETTERS OPEN ──
+    // ── AND THE HEART COUNTS ──
     // A proved handle is one of the proofs wall_read_gate takes (0044), so
-    // the wall this browser was reading redacted a second ago is readable now.
-    // Every letter in the cache was read through the old answer, so the cache
-    // goes, exactly as it does when a campus address lands, and the handle
-    // is who the bar and the account sheet call this person.
+    // the heart and the report are this person's now. Every letter in the
+    // cache was read as nobody, so the cache goes, exactly as it does when a
+    // campus address lands, and the letters under this @ are read again as
+    // its owner's. The handle is who the bar and the account sheet call them.
     if (!isReader()) { patch({ reader: true }); forgetLetters() }
     if (!isMember()) patch({ member: `@${h}` })
     // ── AND THE PROOF IS KEPT ──

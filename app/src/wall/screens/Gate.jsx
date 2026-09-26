@@ -406,12 +406,14 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h"
-              /* What this person came for, said back to them. A reader who
-                 has run out of the free letters is here for the wall and
-                 not for an account, so the heading is the wall. Writing is
-                 not behind this door (the head of this file says why). */
-              title={forReading ? <>sign in to read<br />the whole wall.</>
-                : <>sign in to read<br />and ping.</>}
+              /* What this person came for, said back to them. Reading is
+                 not behind this door any more (migration 0066: every letter
+                 is whole to anybody), so neither heading says read: from a
+                 letter, what a proof gets a reader is the heart and the
+                 report; from anywhere else, the ping. Writing is not behind
+                 this door either (the head of this file says why). */
+              title={forReading ? <>sign in to heart<br />and report.</>
+                : <>sign in to ping<br />and be told.</>}
               say="your information will stay anonymous."
             />
             <div className="wl-door-ways" role="group" aria-label="how to sign in">
