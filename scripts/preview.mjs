@@ -111,6 +111,8 @@ NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
   kind: 'name', name, look,
 }))
 const COUNT_OF = new Map(INDEX.map((r) => [r.target_handle, r.letters]))
+// the names whose newest letter went up from a verified school address
+const EDU = new Set(['ren.tanaka', 'jules.k', 'thom.iversen', 'elias.brandt'])
 
 // The second line runs long on purpose: a deck of letters of one height
 // never shows what the sheet does when the next card is taller, which is
@@ -149,6 +151,9 @@ function lettersFor(handle, open) {
       chars: body.length,
       has_seal: i === 0,
       campus: 'berkeley',
+      // posted from a berkeley.edu address, so the phone is on Berkeley's
+      // network (schools.js `letterMarks`, screen.jsx `Network`)
+      verified: i === 0 && EDU.has(handle),
       at: new Date(now - (i * 3 + 1) * DAY).toISOString(),
       expires: new Date(now + (27 - i) * DAY).toISOString(),
       // 0042: how many hearted it, and whether this browser did. Two
@@ -1196,6 +1201,13 @@ const ROUTES = [
   { label: 'letter-name-turned', path: '/berkeley/letter/~sofia', press: '.wl-turn.is-next', settle: 1200 },
   // a handle's letter, lit amber
   { label: 'letter-look',   path: '/berkeley/letter/ren.tanaka' },
+  // a Berkeley letter: the phone on Berkeley's network, in lilac, in acid
+  // and in a print, and the composer's option that posts there
+  { label: 'letter-edu-lilac', path: '/berkeley/letter/jules.k' },
+  { label: 'letter-edu-acid', path: '/berkeley/letter/thom.iversen' },
+  { label: 'letter-edu-print', path: '/berkeley/letter/elias.brandt' },
+  { label: 'write-how', path: '/berkeley/write/sofiaaa.reyes',
+    acts: [['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 900 },
   { label: 'letter-look-sealed', path: '/berkeley/letter/m.okonkwo', open: false },
   // the week spent: the act dark, and the one line the foot says about it
   { label: 'write-spent',   path: '/berkeley/write/sofiaaa.reyes', spent: true },

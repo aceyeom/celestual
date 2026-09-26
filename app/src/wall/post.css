@@ -3,38 +3,11 @@
    ╚══════════════════════════════════════════════════════════════════════════╝
    docs/ONE-WALL.md. What the composer draws at the send (the one decision,
    the two confirmations, the name nudge and the greeting on the screen),
-   the page the mailed link lands on, and the school's sticker. All of it in
+   the page the mailed link lands on, and where the school's plate stands
+   (the plate itself is school.css). All of it in
    the phone's language (phone.css): the unlit panel with its one pixel
    bezel, the one face, square corners, and a choice pressed the way the
    phone lit a chosen row, inverted. */
-
-/* ═══ THE STICKER ══════════════════════════════════════════════════════════
-   Sticker.jsx. Pixels, never smoothed; a slight turn of its own; and the
-   shadow of a thing stuck on glass: a hard pixel of dark right under its
-   edge, and a soft one further out where the lifted corner stands off it. */
-.wl-sticker {
-  display: inline-block; position: relative; line-height: 0; flex: 0 0 auto;
-  transform: rotate(var(--st-tilt, -6deg));
-  filter:
-    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.38))
-    drop-shadow(0 3px 5px rgba(0, 0, 0, 0.42));
-}
-.wl-sticker svg {
-  display: block; width: 100%; height: auto; aspect-ratio: var(--st-ar, 3 / 2);
-  image-rendering: pixelated; overflow: visible;
-}
-
-/* on a letter: stuck on the phone's top right corner, hanging a little off
-   it, over the battery, sized in the screen's own width so it is the same
-   sticker on the letter, the deck and the composer */
-.wl-scr-sticker {
-  position: absolute; z-index: 4; pointer-events: none;
-  top: -4.2cqw; right: -3.2cqw; width: 23cqw;
-  transform: rotate(calc(var(--st-tilt, -6deg) + var(--q-rz, 0deg)));
-  filter:
-    drop-shadow(0 0.25cqw 0 rgba(0, 0, 0, 0.4))
-    drop-shadow(0 1.4cqw 1.6cqw rgba(0, 0, 0, 0.5));
-}
 
 /* ═══ THE GREETING ═════════════════════════════════════════════════════════
    screen.jsx `Greet`: "dear Sofia", as a field in the status row's own
@@ -125,7 +98,8 @@
   border-radius: var(--r-lcd);
 }
 .wl-how-mark { display: grid; place-items: center; width: 64px; height: 60px; color: var(--chalk); }
-.wl-how-mark .wl-sticker { width: 64px; }
+.wl-how-mark .wl-sticker { --cell: 2px; padding: 6px 5px; }
+.wl-how-mark .wl-sticker-ant { display: none; }
 .wl-how-mark .wl-pxi { display: block; }
 .wl-how-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .wl-how-title { font-size: var(--t-subject); line-height: 1.02; color: var(--chalk); text-wrap: balance; }
@@ -160,7 +134,7 @@
 @media (max-width: 360px) {
   .wl-how-go { grid-template-columns: 44px minmax(0, 1fr) 12px; gap: 10px; padding: 16px 12px 16px 10px; }
   .wl-how-mark { width: 44px; height: 44px; }
-  .wl-how-mark .wl-sticker { width: 46px; }
+  .wl-how-mark .wl-sticker { --cell: 1px; padding: 5px 6px; }
 }
 
 /* a name note's school: a row of keys under the option it belongs to */
@@ -192,7 +166,7 @@
 .wl-edu .wl-addr { justify-content: center; }
 .wl-edu .wl-addr-in { text-align: right; }
 .wl-edu .wl-addr.is-whole .wl-addr-in { text-align: center; }
-.wl-edu-sticker { width: 104px; margin: 4px 0 22px; animation: wl-rise 520ms var(--ease, ease) both; }
+.wl-edu-sticker { margin: 4px 0 22px; animation: wl-rise 520ms var(--ease, ease) both; }
 .wl-edu-head .wl-door-say .wl-h { color: var(--chalk); overflow-wrap: anywhere; }
 .wl-edu-match {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -213,6 +187,7 @@
 .wl-edu-out { align-self: center; margin-top: 4px; padding: 8px 4px; text-wrap: balance; }
 
 /* ═══ THE LINK, LANDED ═════════════════════════════════════════════════════
-   screens/Verify.jsx: the gate's door, with the sticker once it is done. */
+   screens/Verify.jsx: the gate's door, with the school's plate once it is
+   done. */
 .wl-verify-wait { display: inline-flex; align-items: center; gap: 10px; }
 .wl-verify-note { margin-top: 18px; color: var(--ash); }

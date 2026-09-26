@@ -1,67 +1,59 @@
-// ── the sticker ─────────────────────────────────────────────────────────────
+// ── the school's plate ──────────────────────────────────────────────────────
 //
 // A letter written to an @ goes up from a verified school address, and it
-// says so the way a phone in a student's hand would: a die-cut sticker of the
-// school, slapped on the corner of the phone. It is drawn from the pixels in
-// schools.js (`stickerGrid`), the same pixels the shared picture draws
-// (share.js), so the sticker on the glass and the sticker in the picture are
-// one drawing: the short name in a pixel face of our own on the school's
-// colour, a white die-cut border, a small star in the corner, and the bottom
-// corner lifting off the glass.
+// says so the way the phone in a student's hand would have said it: the
+// phone is on the school's network. Every phone of the era named the network
+// it was on in its status row, beside the aerial, and a Berkeley letter's
+// reads `CAL` there with a small star after it, the aerial and the name lit
+// in the school's gold (screen.jsx `Network`, school.css, and the shared
+// picture in share.js).
 //
-// Each letter's sticker is stuck on at its own angle (`stickerTilt`, off the
-// letter's id), so a deck of letters from one school does not read as one
-// stamp repeated. It is sized by its container: the width of the element
-// it is put in, in whatever unit that element is sized in.
+// It was a die-cut sticker of the school slapped on the phone's top right
+// corner, and it read as a thing stuck on from outside, over the battery.
+// The network's name is the phone's own, and it covers nothing.
+//
+// This is the same status row off a screen, where the composer offers the
+// Berkeley wall and where the mailed link lands (screens/Write.jsx,
+// Verify.jsx): the aerial, the name and the star on an unlit panel of the
+// chrome's own, a small plate. Its name and its props are the sticker's, so
+// the screens that draw it did not change; a sticker's `seed` and `tilt` are
+// taken and let go, since nothing on the phone is stuck on at an angle any
+// more.
 //
 // It is a picture with a sentence, for a screen reader: who wrote it, by the
-// school's address ("written by a verified berkeley.edu student").
-//
-// What a letter carries (its salutation, its sticker, a name note's school)
-// is schools.js `letterMarks`, which is what a screen that draws a letter
-// hands to `Screen`.
+// school's address ("written by a verified berkeley.edu student"). The
+// composer and the landing page pass `label=""` where the words beside it
+// say so already.
 
-import { useId, useMemo } from 'react'
-import { schoolOf, stickerGrid, stickerInks, stickerRuns, stickerLabel, stickerTilt } from './schools.js'
-import './post.css'
+import { schoolOf, stickerLabel } from './schools.js'
+import { glyphPath } from './looks.js'
+import './school.css'
 
-export function Sticker({ school, seed = '', tilt = null, className = '', style, label = '' }) {
+const ANT = glyphPath('ant')
+const STAR = glyphPath('star')
+
+// the glyphs a whole number of the page's pixels to each of theirs
+// (school.css `--cell`), so they are never smoothed
+function Glyph({ g, className }) {
+  return (
+    <svg className={className} viewBox={`0 0 ${g.w} ${g.h}`} shapeRendering="crispEdges" aria-hidden="true" focusable="false">
+      <path d={g.d} />
+    </svg>
+  )
+}
+
+export function Sticker({ school, className = '', style, label = null }) {
   const s = school && typeof school === 'object' && school.short ? school : schoolOf(school)
-  const grid = useMemo(() => (s ? stickerGrid(s.short) : null), [s && s.short]) // eslint-disable-line react-hooks/exhaustive-deps
-  const raw = useId()
-  const gid = `wl-st-${raw.replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const paths = useMemo(() => {
-    if (!grid) return null
-    const by = new Map()
-    let all = ''
-    for (const [v, x, y, w] of stickerRuns(grid)) {
-      const d = `M${x} ${y}h${w}v1h${-w}z`
-      by.set(v, (by.get(v) || '') + d)
-      if (v !== 6 && v !== 7 && v !== 16 && v !== 17) all += d
-    }
-    return { by, all }
-  }, [grid])
-  if (!s || !grid) return null
-  const ink = stickerInks(s)
-  const deg = tilt === null ? stickerTilt(seed || s.slug) : tilt
+  if (!s) return null
+  const said = label === null ? stickerLabel(s) : label
   return (
     <span
-      className={`wl-sticker ${className}`} role="img" aria-label={label || stickerLabel(s)}
-      style={{ '--st-tilt': `${deg.toFixed(2)}deg`, '--st-ar': `${grid.w} / ${grid.h}`, ...style }}
+      className={`wl-sticker ${className}`} style={{ '--net': s.fg, ...style }}
+      role={said ? 'img' : undefined} aria-label={said || undefined} aria-hidden={said ? undefined : 'true'}
     >
-      <svg viewBox={`0 0 ${grid.w} ${grid.h}`} shapeRendering="crispEdges" aria-hidden="true" focusable="false">
-        <defs>
-          {/* the vinyl's sheen: a band of light across it, faint */}
-          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.22" />
-            <stop offset="0.38" stopColor="#FFFFFF" stopOpacity="0.05" />
-            <stop offset="0.5" stopColor="#FFFFFF" stopOpacity="0" />
-            <stop offset="1" stopColor="#000000" stopOpacity="0.1" />
-          </linearGradient>
-        </defs>
-        {[...paths.by.keys()].sort((a, b) => a - b).map((v) => <path key={v} d={paths.by.get(v)} fill={ink[v]} />)}
-        <path d={paths.all} fill={`url(#${gid})`} />
-      </svg>
+      <Glyph g={ANT} className="wl-sticker-ant" />
+      <span className="wl-sticker-nm" aria-hidden="true">{s.short}</span>
+      <Glyph g={STAR} className="wl-sticker-star" />
     </span>
   )
 }

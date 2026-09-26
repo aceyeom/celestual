@@ -27,3 +27,4 @@ body { margin: 0; background: #000; }
 .lk-name b { font-weight: 400; }
 .lk-name span { color: var(--ash); }
 .lk-foot { margin: 48px 0 0; color: var(--ash); font-size: 16px; }
+.lk-plates { display: flex; align-items: center; gap: 20px; margin: -8px 0 32px; color: var(--ash); }

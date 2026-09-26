@@ -26,11 +26,12 @@
 // looks.js `quirks`, off the letter's id.
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS, alpha } from './looks.js'
 import { Caret } from './caret.jsx'
-import { Sticker } from './Sticker.jsx'
+import { stickerLabel } from './schools.js'
 import { langOf } from './type.js'
 import './screen.css'
+import './school.css'
 
 // ── the glyphs ──────────────────────────────────────────────────────────────
 // On the letter each is an SVG on the screen's own pixel grid, sized in the
@@ -502,8 +503,11 @@ function Press({ id, colour, q }) {
 // handle does, for a name note carrying a school.
 //
 // `sticker` is a school (schools.js `schoolOf`), for a letter posted from a
-// verified school address: its sticker is stuck on the phone's corner
-// (Sticker.jsx), and nothing is drawn there without one.
+// verified school address: the phone is on that school's network, its name
+// in the status row beside the aerial (`Network`, below), and the phone
+// carries the school's colour in a few quiet places (school.css). Without
+// one nothing is drawn and nothing moves. The prop kept the sticker's name,
+// so no screen that hands it on changed.
 //
 // `live` off draws the keys without letting them be pressed or tabbed to:
 // the neighbours on the letter's strip are pictures of the next letter, not
@@ -522,7 +526,7 @@ export function Screen({
   // inks where it does not (looks.js `PRESS`)
   const press = !!s.print && PRESS
   const inked = !!s.print && !PRESS
-  const vars = { ...skinVars(colour, inked), ...q.vars }
+  const vars = { ...skinVars(colour, inked), ...q.vars, ...(sticker ? netVars(sticker.fg) : null) }
   // this phone's own pixels, up close (looks.js `rgbTile`), when they are
   // made; a print and the square are paper, and have none
   const rgb = useRgbTile(s.paper ? '' : seed)
@@ -565,7 +569,7 @@ export function Screen({
         <div
           className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
           data-lid={s.kind === 'xerox' ? q.lid : undefined} data-light={s.light || undefined}
-          data-inked={inked ? '' : undefined}
+          data-inked={inked ? '' : undefined} data-school={sticker ? sticker.slug : undefined}
           role="group" aria-labelledby={nameId}
         >
           <div className="wl-scr-bg" aria-hidden="true" />
@@ -574,6 +578,7 @@ export function Screen({
               <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
                 <Pix name="ant" h={9} />
               </span>
+              {sticker ? <Network school={sticker} /> : null}
               {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
               {stamp
                 ? <span className="wl-scr-cnt wl-scr-stamp wl-lit">{stamp}</span>
@@ -606,9 +611,30 @@ export function Screen({
           <span className="wl-scr-fx is-shine" aria-hidden="true" />
         </div>
       </div>
-      {sticker ? <Sticker school={sticker} seed={seed} className="wl-scr-sticker" /> : null}
     </div>
   )
+}
+
+// ── the network ─────────────────────────────────────────────────────────────
+// A letter posted from a verified school address is a phone on the school's
+// network, and says so where every phone of the era did: the network's short
+// name in the status row after the aerial, `CAL`, in the screen's own face a
+// size under the day's, and a small pixel star after it, both lit in the
+// school's colour (school.css). For a screen reader it is the sentence the
+// sticker said: who wrote it, by the school's address.
+function Network({ school }) {
+  return (
+    <span className="wl-scr-net" role="img" aria-label={stickerLabel(school)}>
+      <span className="wl-scr-net-nm" aria-hidden="true">{school.short}</span>
+      <Pix name="star" h={5.2} />
+    </span>
+  )
+}
+
+// A school's colour, where its phone carries it (school.css): the name and
+// the aerial, their bloom, the trim round the glass and the cast on the band
+function netVars(fg) {
+  return { '--net': fg, '--net-glow': alpha(fg, 0.5), '--net-trim': alpha(fg, 0.48), '--net-cast': alpha(fg, 0.14) }
 }
 
 // ── a long line, set smaller ────────────────────────────────────────────────

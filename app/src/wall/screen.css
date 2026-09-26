@@ -17,16 +17,9 @@
 
 .wl-scene, .wl-tile, .wl-mini {
   --wl-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-  /* the square's film grain (acid, below): one channel of the same noise,
-     pulled to three times its contrast and split at its middle into specks
-     of black and specks of white, each as opaque as it is far from the
-     middle. Laid over plainly, it moves the lime's lightness and never its
-     hue, which is what film's grain does; in overlay it had turned the lime
-     yellow wherever it lifted it. An image, since feTurbulence inside an
-     image is drawn by every engine, where a filter laid on the page is not
-     drawn by WebKit */
-  --wl-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1'/%3E%3CfeFuncA type='linear' slope='3' intercept='-1'/%3E%3C/feComponentTransfer%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0'/%3E%3CfeFuncG type='linear' slope='0'/%3E%3CfeFuncB type='linear' slope='0'/%3E%3CfeFuncA type='table' tableValues='0.36 0 0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)'/%3E%3C/svg%3E");
-  --wl-grain-hi: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1'/%3E%3CfeFuncA type='linear' slope='3' intercept='-1'/%3E%3C/feComponentTransfer%3E%3CfeComponentTransfer%3E%3CfeFuncR type='table' tableValues='0 0 0.26'/%3E%3CfeFuncG type='table' tableValues='0 0 0.26'/%3E%3CfeFuncB type='table' tableValues='0 0 0.26'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* the square's film grain (acid, below) is `--wl-film`, a tile of specks
+     struck once by looks.js `filmGrain` and put on the root, and nothing
+     until it is */
 }
 
 /* ── the photograph ── */
@@ -350,38 +343,18 @@
   content: ''; position: absolute; inset: 1cqw 2.4cqw; pointer-events: none;
   box-shadow: inset 0 0 0 0.7cqw #FFF;
 }
-/* lilac: the light as a halftone. The panel is flat in the main ink, and
-   over it a screen of white cones on the forty five degree lattice a
-   single ink is screened at, faded out from where this phone's backlight is
-   brightest. The press cuts each cone where it crosses into the palest ink,
-   so a dot is large where the light is strong, small further out, and gone
-   where it is not: the light's own shape, in dots. Two layers half a cell
-   apart are the lattice, so nothing is turned */
-.wl-scr[data-light='dots'] .wl-scr-bg::after {
-  content: ''; position: absolute; inset: 0;
-  background:
-    radial-gradient(circle closest-side, #FFF, rgba(255, 255, 255, 0)) 0 0 / 3.2cqw 3.2cqw,
-    radial-gradient(circle closest-side, #FFF, rgba(255, 255, 255, 0)) 1.6cqw 1.6cqw / 3.2cqw 3.2cqw;
-  -webkit-mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
-  mask-image: radial-gradient(80% 64% at var(--q-hx, 80%) var(--q-hy, 66%), #000, transparent);
-}
 /* violet / yellow: no light, the panel the yellow drum flat (`plain`) */
 
 /* ── a print where the press does not run ──
    (looks.js `PRESS`) The screen is painted in its inks already, so what the
    press would have cut into them is drawn in them here: the rule in the
-   darkest, the keyline and the halftone in the palest, and the LCD's grid,
+   darkest, the keyline in the palest, and the LCD's grid,
    its moiré, its ghost column and its glare, which the press printed out of
    a print, not drawn at all. The sensor's grain stays, as the paper's */
 .wl-scr[data-inked]:is([data-kind='poster'], [data-kind='riso']) :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire, .wl-scr-fx.is-streak, .wl-scr-fx.is-glare),
 .wl-scr[data-inked][data-kind='xerox'] :is(.wl-scr-fx.is-grid, .wl-scr-fx.is-moire) { display: none; }
 .wl-scr[data-inked]:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass { box-shadow: inset 0 0 0 1.4cqw var(--s-ink); }
 .wl-scr[data-inked][data-light='keyline'] .wl-scr-body::after { box-shadow: inset 0 0 0 0.7cqw var(--s-lit); }
-.wl-scr[data-inked][data-light='dots'] .wl-scr-bg::after {
-  background:
-    radial-gradient(circle closest-side, var(--s-lit) 62%, transparent 70%) 0 0 / 3.2cqw 3.2cqw,
-    radial-gradient(circle closest-side, var(--s-lit) 62%, transparent 70%) 1.6cqw 1.6cqw / 3.2cqw 3.2cqw;
-}
 
 /* ── acid: the square ──
    (looks.js, acid and `brat`) An album cover's square of lime, photographed
@@ -391,30 +364,25 @@
    the edge, between the phone's two bands, which are the lime's near black
    shadow with the status and the keys struck in the lime (looks.js). No
    rule round it: a cover has none. */
-/* the grain, in the lime itself: the film's dark specks laid over it, and
-   its light ones dodged into it, so a speck makes the lime deeper or
-   brighter and never greyer or yellower. Both leave black black, so the
-   words need none of it over them. Started where this letter's own grain
-   starts (`--q-grain`), and a second pass at two and a half times the
-   size under it, so the grain clumps the way film's does and is not the
-   even hiss of a sensor */
+/* the grain, in the lime itself: the film's dark specks and its light ones,
+   one tile of them (looks.js `filmGrain`), laid over the lime plainly, so a
+   speck makes the lime deeper or brighter and nothing else is covered.
+   Started where this letter's own grain starts (`--q-grain`). The lime is
+   painted as a colour under everything as well, so nothing an engine fails
+   to draw over it can leave the square anything but lime: the grain was an
+   SVG filter's and a blend mode's, and on an iPhone it came out black */
 .wl-scr[data-kind='brat'] .wl-scr-bg {
   background:
-    var(--wl-grain) var(--q-grain, 0 0) / 256px 256px,
-    var(--wl-grain-hi) var(--q-grain, 0 0) / 256px 256px,
+    var(--wl-film, none) var(--q-grain, 0 0) / 256px 256px,
     radial-gradient(120% 95% at var(--q-hx, 80%) var(--q-hy, 66%), var(--s-hi), var(--s-mid) 52%, var(--s-lo) 100%);
-  background-blend-mode: normal, color-dodge, normal;
+  background-color: var(--s-mid);
 }
-/* and the same grain across the bands, the same specks: dark ones laid
-   over, which on near black are nearly nothing, and light ones lifted in
-   screen, where dodging would leave the black black. So the band reads as
-   the same photograph of the same square */
+/* and the same grain across the bands, the same specks, so the band reads
+   as the same photograph of the same square: the dark ones are nearly
+   nothing on near black, and the light ones lift it */
 .wl-scr[data-kind='brat'] :is(.wl-scr-top, .wl-scr-bot) {
-  background:
-    var(--wl-grain) var(--q-grain, 0 0) / 256px 256px,
-    var(--wl-grain-hi) var(--q-grain, 0 0) / 256px 256px,
-    var(--s-top);
-  background-blend-mode: normal, screen, normal;
+  background: var(--wl-film, none) var(--q-grain, 0 0) / 256px 256px, var(--s-top);
+  background-color: var(--s-top);
 }
 /* the words soft, the way that cover's type is: a hair of blur on what the
    three rows hold, which on a screen 470 pixels wide is under a pixel, and
@@ -553,15 +521,12 @@
    film's grain in it, as on the letter, where a lit tile has its pixel
    grid, and the words a hair soft */
 .wl-tile[data-kind='brat'] .wl-tile-in {
-  background:
-    var(--wl-grain) var(--q-grain, 0 0) / 200px 200px,
-    var(--wl-grain-hi) var(--q-grain, 0 0) / 200px 200px,
-    var(--t-body);
-  background-blend-mode: normal, color-dodge, normal;
+  background: var(--wl-film, none) var(--q-grain, 0 0) / 200px 200px, var(--t-body);
+  background-color: var(--s-mid);
 }
 .wl-tile[data-kind='brat'] :is(.wl-tile-top, .wl-tile-bot) {
-  background: var(--wl-grain-hi) var(--q-grain, 0 0) / 200px 200px, var(--t-top);
-  background-blend-mode: screen, normal;
+  background: var(--wl-film, none) var(--q-grain, 0 0) / 200px 200px, var(--t-top);
+  background-color: var(--t-top);
 }
 .wl-tile[data-kind='brat'] .wl-tile-in::before { display: none; }
 /* soft by a shadow and not a filter: a filter is an offscreen pass of its
@@ -641,9 +606,9 @@
 /* the square's swatch: the lime, its corner and its grain, and no grid */
 .wl-mini[data-kind='brat'] {
   background:
-    var(--wl-grain) 0 0 / 200px 200px, var(--wl-grain-hi) 0 0 / 200px 200px,
+    var(--wl-film, none) 0 0 / 200px 200px,
     linear-gradient(var(--t-top) 0 22%, transparent 22% 84%, var(--t-bot) 84%), var(--t-body);
-  background-blend-mode: normal, color-dodge, normal, normal;
+  background-color: var(--s-mid);
 }
 .wl-mini[data-kind='brat']::after { display: none; }
 .wl-mini[data-kind='brat'] .wl-mini-body i { box-shadow: 0 0 1px var(--t-ink); }

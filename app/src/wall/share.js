@@ -27,7 +27,7 @@ import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady 
 import { CHALK } from './mark.js'
 import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
-import { stickerGrid, stickerInks, stickerRuns, stickerTilt, letterMarks } from './schools.js'
+import { letterMarks } from './schools.js'
 import { langOf, s40Face, ensureCjk } from './type.js'
 
 const W = 1080
@@ -347,42 +347,6 @@ function drawScreen(o, tile = null) {
   pg.addColorStop(1, s.lo)
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
-  // and a light carried by a halftone screen, as the page draws it: white
-  // cones on the forty five degree lattice, a cone in the middle of each
-  // cell and a quarter of one in each corner, faded out from where this
-  // phone's backlight is brightest, for the press to cut into dots
-  if (s.light === 'dots') {
-    const c = Math.max(4, Math.round(3.2 * u))
-    const cell = document.createElement('canvas')
-    cell.width = c
-    cell.height = c
-    const cg = cell.getContext('2d')
-    for (const [x, y] of [[c / 2, c / 2], [0, 0], [c, 0], [0, c], [c, c]]) {
-      const dg = cg.createRadialGradient(x, y, 0, x, y, c / 2)
-      dg.addColorStop(0, 'rgba(255, 255, 255, 1)')
-      dg.addColorStop(1, 'rgba(255, 255, 255, 0)')
-      cg.fillStyle = dg
-      cg.fillRect(0, 0, c, c)
-    }
-    const screen = document.createElement('canvas')
-    screen.width = sw
-    screen.height = sh
-    const sg = screen.getContext('2d')
-    const pat = sg.createPattern(cell, 'repeat')
-    if (pat) {
-      sg.fillStyle = pat
-      sg.fillRect(0, 0, sw, sh)
-      sg.globalCompositeOperation = 'destination-in'
-      sg.translate(hx, hy)
-      sg.scale(1, (0.64 * sh) / (0.8 * sw))
-      const mg = sg.createRadialGradient(0, 0, 0, 0, 0, 0.8 * sw)
-      mg.addColorStop(0, 'rgba(0, 0, 0, 1)')
-      mg.addColorStop(1, 'rgba(0, 0, 0, 0)')
-      sg.fillStyle = mg
-      sg.fillRect(-4 * sw, -8 * sw, 8 * sw, 16 * sw)
-      g.drawImage(screen, 0, 0)
-    }
-  }
 
   // the bands, which every screen has: a lit one's glass, a print's in one
   // of its inks, acid's near black (looks.js, and every one keeps the
@@ -396,6 +360,16 @@ function drawScreen(o, tile = null) {
   g.fillRect(0, 0, sw, topH)
   g.fillStyle = s.bot
   g.fillRect(0, sh - botH, sw, botH)
+  // a school's phone: its colour where the page lays it (school.css), and a
+  // print's palest ink on a print, which the press would have made of it
+  const net = o.sticker ? (s.print ? '' : o.sticker.fg) : ''
+  if (net) {
+    const cg = g.createLinearGradient(0, 0, 0, topH * 0.85)
+    cg.addColorStop(0, rgba(net, 0.14))
+    cg.addColorStop(1, rgba(net, 0))
+    g.fillStyle = cg
+    g.fillRect(0, 0, sw, topH)
+  }
   const lit = s.lit
   const bloom = flat ? 'transparent' : s.bloom
   const withBloom = (fn) => {
@@ -411,7 +385,8 @@ function drawScreen(o, tile = null) {
   const rowH = 10.4 * u
   const mid1 = r1 + rowH / 2
   withBloom(() => {
-    const aw = glyph(g, 'ant', ex, mid1 - 4.5 * u, 9 * u, lit)
+    let aw = glyph(g, 'ant', ex, mid1 - 4.5 * u, 9 * u, net || lit)
+    if (o.sticker) aw += network(g, o.sticker.short, ex + aw + 1.2 * u, mid1, net || lit, u, FACE) + 1.2 * u
     const bw = 17 * u
     glyph(g, `bata${o.bat}`, sw - ex - bw, mid1 - 4 * u, 8 * u, lit)
     g.fillStyle = lit
@@ -624,6 +599,12 @@ function drawScreen(o, tile = null) {
     g.lineWidth = 0.7 * u
     g.strokeRect(kx, topH + 1.35 * u, sw - 2 * kx, sh - topH - botH - 2.7 * u)
   }
+  // the school's trim round the glass, over all of it (school.css)
+  if (net) {
+    g.strokeStyle = rgba(net, 0.48)
+    g.lineWidth = 0.7 * u
+    g.strokeRect(0, 0, sw, sh)
+  }
   g.restore()
   if (s.print) press(g, sw, sh, s, q)
   if (brat) square(cv, sw, sh, q, edge, topH, botH)
@@ -691,51 +672,23 @@ function signature(g, cx, cy) {
   g.restore()
 }
 
-// ── the sticker ─────────────────────────────────────────────────────────────
-// The school's sticker, for a letter posted from a verified school address:
-// the same pixels as the page's (schools.js `stickerGrid`), struck here one
-// rectangle a run, on a canvas of its own so its shadow is the whole
-// sticker's and not each pixel's. `width` is how wide it is drawn.
-function stickerCanvas(school, width) {
-  const grid = stickerGrid(school.short)
-  const cell = Math.max(1, Math.round(width / grid.w))
-  const cv = document.createElement('canvas')
-  cv.width = grid.w * cell
-  cv.height = grid.h * cell
-  const g = cv.getContext('2d')
-  const ink = stickerInks(school)
-  for (const [v, x, y, w] of stickerRuns(grid)) {
-    g.fillStyle = ink[v]
-    g.fillRect(x * cell, y * cell, w * cell, cell)
-  }
-  // the vinyl's sheen, over the sticker and not the glass round it
-  g.globalCompositeOperation = 'source-atop'
-  const sheen = g.createLinearGradient(0, 0, cv.width, cv.height)
-  sheen.addColorStop(0, 'rgba(255, 255, 255, 0.22)')
-  sheen.addColorStop(0.38, 'rgba(255, 255, 255, 0.05)')
-  sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)')
-  sheen.addColorStop(1, 'rgba(0, 0, 0, 0.1)')
-  g.fillStyle = sheen
-  g.fillRect(0, 0, cv.width, cv.height)
-  return cv
-}
-
-// Stuck on the phone's top right corner, hanging a little off it, at the
-// letter's own angle, as the page sticks it (post.css `.wl-scr-sticker`).
-// Drawn in the screen's own turned frame, so it turns with the phone.
-function stick(g, school, seed, sw, sh) {
-  const st = stickerCanvas(school, sw * 0.26)
-  const w = sw * 0.26
-  const h = (w * st.height) / st.width
-  g.save()
-  g.translate(sw / 2 - w * 0.34, -sh / 2 + h * 0.08)
-  g.rotate((stickerTilt(seed) * Math.PI) / 180)
-  g.shadowColor = 'rgba(0, 0, 0, 0.55)'
-  g.shadowBlur = 18
-  g.shadowOffsetY = 8
-  g.imageSmoothingEnabled = false
-  g.drawImage(st, -w / 2, -h / 2, w, h)
-  g.restore()
+// ── the network ─────────────────────────────────────────────────────────────
+// A school's letter is a phone on the school's network (screen.jsx
+// `Network`): the short name in the status row after the aerial, in the
+// face a size under the day's, and the pixel star after it, as the page sets
+// them. Drawn centred on `mid`, from `x`; answers how wide it is.
+function network(g, short, x, mid, color, u, face) {
+  g.fillStyle = color
+  g.textBaseline = 'middle'
+  g.textAlign = 'left'
+  g.font = `400 ${8.6 * u}px ${face}`
+  if ('letterSpacing' in g) g.letterSpacing = `${(0.02 * 8.6 * u).toFixed(2)}px`
+  g.fillText(short, x, mid + 0.4 * u)
+  const tw = g.measureText(short).width
+  if ('letterSpacing' in g) g.letterSpacing = '0px'
+  const sx = x + tw + 0.9 * u
+  const sw = glyph(g, 'star', sx, mid - 2.6 * u, 5.2 * u, color)
+  return sx + sw - x
 }
 
 // ── the room ────────────────────────────────────────────────────────────────
@@ -778,7 +731,6 @@ export async function renderLetter(o) {
   g.drawImage(scr, -sw / 2, -sh / 2)
   g.shadowColor = 'transparent'
   g.shadowBlur = 0
-  if (o.sticker) stick(g, o.sticker, o.seed, sw, sh)
   g.restore()
   // the signature, in the dark under it
   signature(g, cx, SIGN_Y)

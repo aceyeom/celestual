@@ -16,11 +16,12 @@
 //
 //   lit       a backlit LCD photographed in the dark. The panel glows, the
 //             bands above and below it are the phone's own dark glass, and
-//             the words bloom a little. night, white, ice, green, amber, rose
+//             the words bloom a little. night, white, ice, green, amber,
+//             rose, lilac
 //   negative  the same screen with the panel dark and the words the bright
 //             thing
 //   poster    that photograph screen printed in four flat inks, the paper
-//             the colour. teal, lilac
+//             the colour. teal
 //   riso      two drum inks laid a hair out of register on warm paper.
 //             violet / yellow
 //   xerox     photocopied, and blown out: the toner exposure is the effect
@@ -33,16 +34,25 @@
 // lights). The backlight's hot corner, printed in the palest ink, was on
 // every print, and read as the same white stain on each. Each print has a
 // light of its own out of the same press: teal a keyline round its panel,
-// lilac its light carried as a halftone screen, and violet / yellow none,
-// its panel the yellow drum flat.
+// and violet / yellow none, its panel the yellow drum flat.
+//
+// ── lilac ──
+// Lilac was a poster too, its light carried as a halftone: a circle of dots
+// laid on the panel from the hot corner out. It read as a pattern stuck on
+// a flat sheet, and beside the lit screens as the cheap one of the twelve.
+// So it is lit now, like rose and ice: the same backlit LCD photographed in
+// the dark, with the uneven backlight, the pixels up close, the dust and the
+// glare that make a lit screen a photograph of a phone, and the panel a
+// lavender between rose and ice. The slug and the name stay, so every lilac
+// letter is still lilac, and is this now.
 //
 // ── and every one keeps the phone's two bands ──
 // The status across the top and the keys at the foot stand on two bands of
 // the phone's glass, above and below the panel, on every screen: a lit one's
 // dark glass, a copy's toner, and a print's bands laid in one of its own
-// inks (`bands`: the second, or on lilac the darkest) with the status and the
-// keys struck out of them in the palest. Acid's are near black, the lime's
-// own shadow, with its status and keys in the lime. Teal, lilac and acid were
+// inks (`bands`: the second, or the darkest) with the status and the keys
+// struck out of them in the palest. Acid's are near black, the lime's own
+// shadow, with its status and keys in the lime. Teal, lilac and acid were
 // one poster edge to edge, and beside nine screens with bands they read as
 // three other objects; the bands make the twelve one phone in twelve colours.
 //
@@ -67,10 +77,12 @@
 //               them: near black, the lime's own shadow, with the status
 //               and the keys struck in the lime
 //   the grain   heavy and monochrome, a cheap photograph of a printed
-//               square, across the lime and the bands alike: an SVG noise
-//               laid over it as an image (screen.css `--wl-grain`), since
-//               feTurbulence inside an image is drawn by every engine where
-//               a filter on the page is not
+//               square, across the lime and the bands alike: a tile of
+//               dark and light specks struck once on a canvas and laid over
+//               it in plain source-over (`filmGrain`, screen.css
+//               `--wl-film`). It was an SVG noise that only a filter and a
+//               blend mode made into grain, and on an iPhone it was a black
+//               square over the lime
 //   the words   black on the lime, and all of it softened a hair, never so
 //               far that a word has to be guessed
 //
@@ -126,7 +138,7 @@ export const COLOURS = [
   { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', light: 'plain', bands: 1, paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
   { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
   { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
-  { slug: 'lilac', name: 'lilac', kind: 'poster', light: 'dots', bands: 0, stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
+  { slug: 'lilac', name: 'lilac', kind: 'lit', hue: '#A28CE0' },
   { slug: 'negative', name: 'negative', kind: 'neg', hue: '#BDBDBD' },
   { slug: 'xerox', name: 'xerox', kind: 'xerox', stops: ['#0D0D0C', '#0D0D0C', '#ECEAE4', '#ECEAE4'] },
 ]
@@ -288,16 +300,14 @@ const cache = new Map()
 //   keyline   no light on the panel, which is flat in the main ink, and a
 //             line of the palest ink round the panel instead, a hair inside
 //             the rule and the bands
-//   dots      the hot corner held under the palest ink and carried by a
-//             halftone screen, so it prints as dots that grow towards the
-//             point it is brightest at
+//   (dots)    lilac's, a halftone of the hot corner, went with lilac's
+//             press (lilac, above)
 //   plain     no light at all: the panel flat in the main ink. It was
 //             called `bands`, when violet / yellow was the one print with
 //             the phone's bands; every screen has them now (above)
 const LIGHTS = {
   corner: ['#D4D4D4', '#A9A9A9', '#8C8C8C'],
   keyline: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
-  dots: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
   plain: ['#A2A2A2', '#A0A0A0', '#9F9F9F'],
 }
 // the bands' grey under the press, by the ink they are laid in: one flat
@@ -308,7 +318,6 @@ const BAND_GREY = ['#202020', '#606060']
 // a layer of the palest ink over the main one, in the same place
 const SPOTS = {
   corner: 'radial-gradient(31% 25% at var(--q-hx, 78%) var(--q-hy, 64%), var(--t-accent) 62%, transparent 100%)',
-  dots: 'radial-gradient(80% 64% at var(--q-hx, 78%) var(--q-hy, 64%), transparent, var(--t-body) 66%), radial-gradient(var(--t-accent) 34%, transparent 44%) 0 0 / 4px 4px, radial-gradient(var(--t-accent) 34%, transparent 44%) 2px 2px / 4px 4px',
 }
 export function skinOf(colour) {
   const c = typeof colour === 'string' ? colourBySlug(colour) : colour || colourBySlug(DEFAULT_COLOUR)
@@ -479,6 +488,8 @@ function inkOf(s, hex) {
 // press does not run on (`PRESS`).
 export function skinVars(colour, inked = false) {
   const s = skinOf(colour)
+  // the square's film grain is struck the first time a square is drawn
+  if (s.kind === 'brat') filmGrain()
   const g = (a) => alpha(s.glow, a * s.k)
   const p = inked && s.print ? (hex) => inkOf(s, hex) : (hex) => hex
   return {
@@ -836,6 +847,94 @@ export function rgbTileReady(seed) {
   return job.promise
 }
 
+// ── the square's grain ──────────────────────────────────────────────────────
+// Acid is a printed square photographed on cheap film (at the head of this
+// file), and the film's grain is in the lime: dark specks that make it
+// deeper and light ones that make it brighter, clumped the way film's are and
+// not the even hiss of a sensor. It was an SVG `feTurbulence` inside an
+// image, laid twice: once as black specks, and once as an opaque black square
+// with the light specks in it, which `background-blend-mode: color-dodge`
+// turned into nothing but the specks. Both layers were black until something
+// else made them grain, the filter inside the image and the blend, and on an
+// iPhone the square came out black with no green in it: WebKit laid at least
+// one of them without the other (the opaque black square over the lime,
+// undodged, draws exactly that), where Chromium did both.
+//
+// So the grain is struck here once, the way the pixels up close are
+// (`rgbTile`): a tile of FILM pixels a side, laid at half that (screen.css),
+// so a speck is a pixel of a phone's glass and not of the page, off one
+// fixed seed, each texel
+// either a dark speck (black, up to 36 per cent), a light one (the lime's own
+// highlight, up to 30 per cent) or nothing at all, and laid over the lime in
+// plain source-over, which every engine draws alike. Nothing in it is black
+// that is not a speck and nothing depends on a blend or a filter, so the worst
+// any browser can do is draw the lime without its grain. It is handed to the
+// stylesheet as `--wl-film` on the root, and screen.css lays it where the
+// square is; until it is made (the first idle moment after a square is drawn)
+// the square is its lime, clean.
+const FILM = 512
+let filmAsked = false
+export function filmGrain() {
+  if (filmAsked || typeof document === 'undefined') return
+  filmAsked = true
+  idleOf()(() => {
+    const cv = document.createElement('canvas')
+    cv.width = FILM
+    cv.height = FILM
+    const g = cv.getContext('2d')
+    if (!g) return
+    const r = prng('acid#film')
+    // where the grain clumps: a coarse field, wrapping so the tile does, read
+    // smoothly across it, which pushes a patch of texels the same way
+    const F = 40
+    const field = Float32Array.from({ length: F * F }, () => r() * 2 - 1)
+    const ease = (t) => t * t * (3 - 2 * t)
+    const at = (i, j) => field[(j % F) * F + (i % F)]
+    const clump = (x, y) => {
+      const fx = (x / FILM) * F
+      const fy = (y / FILM) * F
+      const i = Math.floor(fx)
+      const j = Math.floor(fy)
+      const tx = ease(fx - i)
+      const ty = ease(fy - j)
+      const top = at(i, j) + (at(i + 1, j) - at(i, j)) * tx
+      const bot = at(i, j + 1) + (at(i + 1, j + 1) - at(i, j + 1)) * tx
+      return top + (bot - top) * ty
+    }
+    const img = g.createImageData(FILM, FILM)
+    const d = img.data
+    for (let y = 0; y < FILM; y++) {
+      for (let x = 0; x < FILM; x++) {
+        // a sum of three draws gathers round the middle as film's grain does,
+        // the clump leans it, and it is pulled to three times its contrast
+        // and split at the middle into the two kinds of speck, each as strong
+        // as it is far out
+        const n = 0.5 + (r() + r() + r() - 1.5) * 0.22 + clump(x, y) * 0.035
+        const a = Math.min(1, Math.max(0, 3 * n - 1))
+        const i = (y * FILM + x) * 4
+        if (a < 0.5) {
+          d[i + 3] = Math.round(255 * 0.36 * (1 - 2 * a))
+        } else {
+          d[i] = 200; d[i + 1] = 255; d[i + 2] = 40
+          d[i + 3] = Math.round(255 * 0.3 * (2 * a - 1))
+        }
+      }
+    }
+    g.putImageData(img, 0, 0)
+    const lay = (url) => {
+      if (!url) return
+      const el = document.createElement('style')
+      el.dataset.film = ''
+      el.textContent = `:root{--wl-film:url("${url}")}`
+      document.head.appendChild(el)
+    }
+    if (cv.toBlob) cv.toBlob((b) => lay(b ? URL.createObjectURL(b) : ''), 'image/png')
+    else {
+      try { lay(cv.toDataURL('image/png')) } catch { /* the lime, clean */ }
+    }
+  })
+}
+
 // ── the wall's memo ─────────────────────────────────────────────────────────
 // The look on the newest letter under a key, learned from wherever this
 // browser last saw the key (the index, a search, a letter). It is what a
@@ -866,6 +965,9 @@ export const PIX = {
   heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
   heartO: ['.XX.XX.', 'X..X..X', 'X.....X', '.X...X.', '..X.X..', '...X...'],
   check: ['......X', '.....XX', 'X...XX.', 'XX.XX..', '.XXX...', '..X....'],
+  // the star after a school's network in the status row (screen.jsx
+  // `Network`): five points, seven pixels, a head over the name's capitals
+  star: ['...X...', '..XXX..', 'XXXXXXX', '.XXXXX.', '..XXX..', '.XX.XX.', '.X...X.'],
   env: ['XXXXXXXXXXX', 'XX.......XX', 'X.X.....X.X', 'X..X...X..X', 'X...XXX...X', 'X.........X', 'XXXXXXXXXXX'],
   send: ['X..........', 'XXX........', 'X..XXX.....', 'X.....XXX..', 'X........XX', 'X.....XXX..', 'X..XXX.....', 'XXX........', 'X..........'],
   link: ['..XX..XX...', '.X..XX..X..', 'X...XX...X.', 'X..X..X..X.', '.X..XX..X..', '..XX..XX...'],
