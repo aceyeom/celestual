@@ -230,7 +230,8 @@ function washOn(g, w, s) {
   const x = mx + (w.x + ox + 0.5) * cell
   const y = my + (w.y + oy + 0.5) * cell
   const R = Math.max(0.5, w.r) * cell
-  const E = 5 * cell
+  // how soft its front is, in cells (the intro's finer grid asks for more)
+  const E = (w.soft || 5) * cell
   const out = R + E
   const t = s.tmp.getContext('2d')
   t.globalCompositeOperation = 'source-over'
@@ -363,6 +364,86 @@ function paint(g, f, s) {
   }
 }
 
+// ── the fine grid ──
+// The intro is drawn on a grid nearly twice as fine as the door's, at the
+// pitch every letter is lit at, and afresh on every frame of the display
+// while the two of them run: nine thousand dots a frame, laid one by one, is
+// more than a phone can paint sixty times a second. So on a story that asks
+// for it (`fine`) the panel's unlit dots are drawn once, for this size and
+// this ink, onto a canvas of their own, and laid down whole; and the lit
+// cells are drawn by their light, every cell of one strength in one path,
+// so a frame sets a few dozen fills and not a few thousand. The one thing
+// given up is the dot left out under a pixel between cells: on this grid a
+// pixel on its way somewhere is small enough that the dot under it is lost
+// in it.
+function ghostGrid(s) {
+  const cv = document.createElement('canvas')
+  cv.width = s.W
+  cv.height = s.H
+  const g = cv.getContext('2d')
+  const d = s.cell - s.gap
+  g.fillStyle = s.ghost
+  g.beginPath()
+  for (let y = 0; y < s.pr; y++) for (let x = 0; x < s.pc; x++) g.rect(s.mx + x * s.cell, s.my + y * s.cell, d, d)
+  g.fill()
+  s.grid = cv
+  s.gridInk = s.inkNow || s.ink
+}
+function paintFine(g, f, s) {
+  const { pc, pr, ox, oy, cell, gap, W, H, mx, my } = s
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.clearRect(0, 0, W, H)
+  if (f.ink && f.ink !== s.inkNow) {
+    s.inkNow = f.ink
+    s.rgb = rgbOf(f.ink)
+    s.ghost = faint(s.rgb)
+    s.fills.clear()
+  }
+  if (!s.grid || s.gridInk !== (s.inkNow || s.ink)) ghostGrid(s)
+  if (f.wash) washOn(g, f.wash, s)
+  if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
+  g.drawImage(s.grid, 0, 0)
+  // the lit cells, by their fill; a cell lit twice keeps the stronger
+  const d = cell - gap
+  const seen = s.seen && s.seen.length === pc * pr ? s.seen : (s.seen = new Float32Array(pc * pr))
+  seen.fill(0)
+  const by = s.by || (s.by = new Map())
+  for (const list of by.values()) list.length = 0
+  const add = (fs, x, y) => {
+    let list = by.get(fs)
+    if (!list) { list = []; by.set(fs, list) }
+    list.push(x, y)
+  }
+  const on = []
+  for (const c of f.cells) {
+    const x = c[0] + ox
+    const y = c[1] + oy
+    if (!Number.isInteger(x) || !Number.isInteger(y)) {
+      add(fillOf(s, c[2], c[3] || 0, c[4] ?? 1), mx + Math.round(x * cell), my + Math.round(y * cell))
+      continue
+    }
+    if (x < 0 || y < 0 || x >= pc || y >= pr) continue
+    const i = y * pc + x
+    const a = (LIT[c[2]] ?? 1) * (c[4] ?? 1)
+    if (a <= seen[i]) continue
+    if (!seen[i]) on.push(i)
+    seen[i] = a
+    s.cellOf = s.cellOf || new Array(pc * pr)
+    s.cellOf[i] = c
+  }
+  for (const i of on) {
+    const c = s.cellOf[i]
+    add(fillOf(s, c[2], c[3] || 0, c[4] ?? 1), mx + (i % pc) * cell, my + Math.floor(i / pc) * cell)
+  }
+  for (const [fs, list] of by) {
+    if (!list.length) continue
+    g.fillStyle = fs
+    g.beginPath()
+    for (let k = 0; k < list.length; k += 2) g.rect(list[k], list[k + 1], d, d)
+    g.fill()
+  }
+}
+
 // how often a live story is asked for its frame, once it is past its end
 const LIVE_TICK = 50
 
@@ -398,7 +479,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         pc, pr, ox: (pc - story.cols) >> 1, oy: (pr - story.rows) >> 1, cell, mode,
         gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
         ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
-        face: cs.fontFamily || 'monospace',
+        face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
       }
       s.ghost = faint(s.rgb)
       s.W = Math.round(w * dpr)
@@ -418,7 +499,8 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       last = f
       if (!s || f.key === key) return
       key = f.key
-      paint(g, f, s)
+      if (s.fine) paintFine(g, f, s)
+      else paint(g, f, s)
     }
     const now = () => (at != null ? at : performance.now() - t0)
     const stop = () => {

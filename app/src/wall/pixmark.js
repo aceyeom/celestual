@@ -873,8 +873,8 @@ const hash = (a, b) => {
 // the mark on the grid at `n` cells, its ring and its star, placed at
 // (`ox`, `oy`), each ring cell with its place along the ring's long axis
 // (`u`), which half it is on, and its angle round the middle
-function markOn(n, ox, oy) {
-  const m = markCells(n, MARK_CUT)
+function markOn(n, ox, oy, cut = MARK_CUT) {
+  const m = markCells(n, cut)
   const t = rad(ECL.tilt)
   const c = (n - 1) / 2
   const ring = m.list.filter((p) => p.ring).map((p) => {
@@ -926,6 +926,70 @@ function morphOf(pair, dashes) {
     bits.push(bitOf(s[0], s[1], d.x, d.y, s[2], delay, STAR_FLIGHT))
   })
   return { bits, done: m.all }
+}
+
+// ── the intro's glide ──
+// The same gathering on the intro's finer grid, into the mark rasterised
+// for it (`I_MARK`), and with the light each pixel leaves with: the two of
+// them are drawn in the ink at many strengths, their outlines half lit, and
+// a pixel travels at the strength it left with and is lit whole as it lands.
+// The ground goes to the ring and the two of them to the star, as before;
+// the star opens from its middle out and the ring from the left, and every
+// pixel is between the cells while it travels and on one when it lands.
+const I_RING_SPREAD = 240
+const I_RING_FLIGHT = 560
+const I_STAR_AT = 90
+const I_STAR_SPREAD = 150
+const I_STAR_JITTER = 70
+const I_STAR_FLIGHT = 560
+const I_BEND = 5
+export const I_MORPH_MS = Math.max(I_RING_SPREAD + 60 + I_RING_FLIGHT, I_STAR_AT + I_STAR_SPREAD + I_STAR_JITTER + I_STAR_FLIGHT)
+// the intro's mark is cut as the seal is, sampled six to a cell's side and
+// not eight: on seventy seven cells that is the same drawing, in half the time
+const I_CUT = { ...MARK_CUT, ss: 6 }
+function glideOf(pair, dashes, n, ox, oy, cols) {
+  const m = markOn(n, ox, oy, I_CUT)
+  const maxR = Math.max(...m.star.map((p) => p.r))
+  const bits = []
+  const bit = (s, dx, dy, delay, flight) => {
+    const b = bitOf(s[0], s[1], dx, dy, 1, delay, flight)
+    const len = Math.hypot(dx - s[0], dy - s[1]) || 1
+    const bend = Math.min(I_BEND, len * 0.16) / Math.min(BEND, len * 0.16)
+    b.nx *= bend
+    b.ny *= bend
+    b.a = s[4] ?? (s[2] === 2 ? 0.5 : 1)
+    return b
+  }
+  const line = [...dashes].sort((p, q) => p[0] - q[0])
+  for (const near of [true, false]) {
+    const arc = m.ring.filter((p) => p.near === near).sort((p, q) => p.u - q.u)
+    for (const [s, d] of pairs(line, arc)) bits.push(bit(s, d.x, d.y, (s[0] / cols) * I_RING_SPREAD + (near ? 0 : 60), I_RING_FLIGHT))
+  }
+  // the faintest of their outline cells are let go of first: they are the
+  // soft edge of a drawing and not pixels of it
+  const body = pair.filter((c) => (c[4] ?? 1) >= 0.2)
+  const src = byAngle(body, (p) => [p[0], p[1]])
+  const dst = byAngle(m.star, (p) => [p.x, p.y])
+  pairs(src, dst).forEach(([s, d], i) => {
+    bits.push(bit(s, d.x, d.y, I_STAR_AT + (d.r / maxR) * I_STAR_SPREAD + hash(i, 7) * I_STAR_JITTER, I_STAR_FLIGHT))
+  })
+  const faint = pair.filter((c) => (c[4] ?? 1) < 0.2)
+  return { bits, faint, done: m.all }
+}
+function glideAt(m, t) {
+  if (t >= I_MORPH_MS) return m.done
+  const out = []
+  for (const b of m.bits) {
+    const k = (t - b.delay) / b.flight
+    const [x, y] = bitAt(b, t)
+    // lit whole by the time it lands, on the glide's own curve
+    const a = k <= 0 ? b.a : k >= 1 ? 1 : b.a + (1 - b.a) * glide(k)
+    out.push([x, y, 1, 0, a])
+  }
+  // the soft edge goes out as the drawing leaves
+  const f = 1 - Math.min(1, t / 160)
+  if (f > 0) for (const c of m.faint) out.push([c[0], c[1], 1, 0, (c[4] ?? 1) * f])
+  return out
 }
 
 function morphAt(m, t) {
@@ -1111,69 +1175,95 @@ function approach({ start, frames, him = 1, her = 4 }) {
 
 // ── the intro ───────────────────────────────────────────────────────────────
 // Its own story now, and not the door's and the mutual's ending: the two of
-// them are bodies drawn from poses (folk.js), a head taller than the typed
-// sprites, on a ground four rows lower; she runs into his arms and does not
-// dip; there is no heart. From `start`, in ms:
+// them are bodies drawn from poses (folk.js), on a grid of the pitch every
+// letter on the wall is lit at, nearly twice as fine as the door's, so that
+// they are people and not sticks; she runs into his arms and does not dip;
+// there is no heart. From 0, in ms (folk.js has the run and the catch):
 //
-//      0   they run in from either edge, sixteen drawings a second, and
-//          slide between the panel's cells at the display's own rate
-//    690   he slows, the stride shortening, and stops at 875 with his arms
-//          open to her
-//   1000   she lands in them: her run carries her on into him, leaning the
-//          way she ran, her heel up behind her, her hair and hem swinging
-//          past and settling, until at 1310 she is still, behind him, his
-//          arm round her; and they hold on, breathing
-//   1370   THE PINK, from where they hold each other: the backlight, a wave
-//          out to the edges of the glass, the phone's own bands and the
-//          light it throws turning with it (Intro.jsx, intro.css), until the
-//          whole phone is a letter lit in rose
-//   1970   THE MARK: the two of them into the star and the ground into the
-//          ring, gliding, whole at 2760
+//      0   they run in from either edge, drawn afresh at the display's own
+//          rate, their feet planted where they land
+//    520   he slows and stands, and opens his arms to her
+//    980   she lands in them, her run carrying her on into him and behind
+//          him; from 1480 they hold each other, and breathe
+//   1400   THE PINK, from where they hold each other: the backlight, spread
+//          through the glass to its edges and no further, the phone's own
+//          bands and the light it throws turning with it (Intro.jsx,
+//          intro.css), until the whole phone is a letter lit in rose
+//   2140   THE MARK: the two of them into the star and the ground into the
+//          ring, gliding, whole at about 3000
 //
 // `panel` is the rose letter's three panel colours and `ink` the night's
-// ink and the rose's, which the wave carries the one to the other.
-const I_GROUND = 38
-const I_WASH = 60
-const I_HOLD = 540
-function groundAt(row) {
+// ink and the rose's, which the pink carries the one to the other.
+export const I_COLS = 95
+export const I_ROWS = 75
+const I_GROUND = 67
+// the mark, rasterised for this grid from the same geometry: odd, and as
+// tall as the grid, the tips of the star's long arms on its first and last
+// rows, as the 47 is on the door's 45
+const I_MARK = 77
+const I_WASH_AT = -80
+const I_WASH_MS = 760
+const I_GLIDE_AT = 660
+// the ground, dashed, three lit and one dark, in the far ink
+function groundAt(row, cols) {
   const out = []
-  for (let x = 0; x < COLS; x++) if (x % 3 !== 2) out.push([x, row, 2])
+  for (let x = 0; x < cols; x++) if (x % 4 !== 3) out.push([x, row, 2])
   return out
 }
+// the pink, out from where they hold each other, soft at its front and
+// slowing as it goes, to past the far corner of the glass
+const iWashR = (p) => 3 + 86 * (1 - (1 - p) ** 1.7)
 function washFrom(u, x, y) {
   if (u < 0) return null
-  const p = u / WASH_MS
+  const p = u / I_WASH_MS
   if (p >= 1) return { x, y, r: null, level: 1, rim: 0 }
-  return { x, y, r: washR(p), level: 1, rim: 0.6 * (1 - p) }
+  return { x, y, r: iWashR(p), level: 1, rim: 0.3 * (1 - p), soft: 16 }
 }
-export function introStory(start = 180, { panel = PANEL, ink = null } = {}) {
-  const folk = introFolk({ start, ground: I_GROUND, mid: (COLS - 1) >> 1 })
-  const floor = groundAt(I_GROUND)
-  const washAt = folk.times.hold + I_WASH
-  const morphs = washAt + I_HOLD
-  const done = morphs + MORPH_MS
-  const end = Math.max(done, washAt + WASH_MS)
+// two hex colours mixed, `k` of the way
+function mixHex(a, b, k) {
+  const A = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16))
+  const B = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16))
+  return `#${A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
+}
+export function introStory(start = 0, { panel = PANEL, ink = null } = {}) {
+  const folk = introFolk({ ground: I_GROUND, mid: (I_COLS - 1) >> 1 })
+  const floor = groundAt(I_GROUND, I_COLS)
+  const washAt = start + folk.times.hold + I_WASH_AT
+  const morphs = washAt + I_GLIDE_AT
+  const done = morphs + I_MORPH_MS
+  const end = Math.max(done, washAt + I_WASH_MS)
+  const MX = (I_COLS - I_MARK) >> 1
+  const MY = (I_ROWS - I_MARK) >> 1
   let morph = null
-  // the ink, from the night's to the rose's as the wave goes out
-  const inkAt = (u) => (ink ? (u < WASH_MS * 0.45 ? ink[0] : ink[1]) : null)
+  // the ink, from the night's to the rose's as the pink goes out
+  const inkAt = (u) => {
+    if (!ink) return null
+    const k = Math.max(0, Math.min(1, u / (I_WASH_MS * 0.7)))
+    return k <= 0 ? ink[0] : k >= 1 ? ink[1] : mixHex(ink[0], ink[1], Math.round(k * 8) / 8)
+  }
+  // The glide is worked out on the first frame asked for (it rasterises the
+  // mark and draws the hold), which is while the screen is still dark, so
+  // the frame the glide starts on is not the one that pays for it.
+  const warm = () => { if (!morph) morph = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS) }
   const frame = (t) => {
-    // the glide is worked out while the screen is still dark (it rasterises
-    // the mark), so the frame it starts on is not the one that pays for it
-    if (!morph && t < start) morph = morphOf(folk.pair, floor)
+    warm()
     const u = t - washAt
     const wash = washFrom(u, folk.heart.x, folk.heart.y)
     const wk = !wash ? '' : wash.r == null ? 'W' : `w${Math.round(u)}`
     if (t >= morphs) {
-      if (!morph) morph = morphOf(folk.pair, floor)
       const mt = t - morphs
-      return { key: `m${mt >= MORPH_MS ? 'done' : Math.round(mt)}|${wk}`, cells: morphAt(morph, mt), wash, ink: inkAt(u) }
+      return { key: `m${mt >= I_MORPH_MS ? 'done' : Math.round(mt)}|${wk}`, cells: glideAt(morph, mt), wash, ink: inkAt(u) }
     }
-    const f = folk.at(t)
+    const f = folk.at(t - start)
     return { key: `${f.key}|${wk}`, cells: [...floor, ...f.cells], wash, ink: inkAt(u) }
   }
+  const T = folk.times
   return {
-    cols: COLS, rows: ROWS, end, panel,
-    times: { ...folk.times, catch: folk.times.meet, glow: washAt, morphs, done, end },
+    cols: I_COLS, rows: I_ROWS, end, panel, fine: true,
+    times: {
+      run: start + T.run, slow: start + T.slow, stop: start + T.stop, meet: start + T.meet, hold: start + T.hold,
+      catch: start + T.meet, glow: washAt, morphs, done, end,
+    },
     frame,
   }
 }

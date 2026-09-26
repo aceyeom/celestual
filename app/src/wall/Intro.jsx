@@ -80,7 +80,7 @@ import './intro.css'
 // the panel is the rose letter's own panel, and its ink the rose's ink.
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
-const STORY = introStory(180, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
+const STORY = introStory(0, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
 //                 0    1                  2                   3                   4
 const BEATS = [0, STORY.times.run, STORY.times.catch, STORY.times.done, STORY.times.done + 160]
 const LIFT = 4
