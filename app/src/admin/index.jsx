@@ -52,6 +52,7 @@ import Handles from './Handles.jsx'
 import Pings from './Pings.jsx'
 import Letters from './Letters.jsx'
 import Reports from './Reports.jsx'
+import Replies, { useReplyCount } from './Replies.jsx'
 import Waitlist from './Waitlist.jsx'
 import Cards from './Cards.jsx'
 import Resolver from './Resolver.jsx'
@@ -73,6 +74,7 @@ const GROUPS = [
   { word: 'the wall', items: [
     { id: 'wall', word: 'letters', say: 'flagged, live, down', count: 'letters_flagged', live: true },
     { id: 'reports', word: 'reports', say: 'flagged letters', count: 'reports_open', live: true },
+    { id: 'replies', word: 'replies', say: 'held and reported', count: 'replies_waiting', live: true },
     { id: 'waitlist', word: 'waiting', say: 'names looked for', count: 'waitlist' },
     { id: 'cards', word: 'the cards', say: 'which paper worked' },
   ] },
@@ -172,9 +174,13 @@ export default function AdminApp() {
     await refresh()
   }, [password, refresh, lock])
 
+  // the replies' waiting count is read on its own (0068), since the
+  // overview does not carry it, and read again whenever the overview is
+  const replyCount = useReplyCount(ok ? password : '', overview)
+
   if (!ok) return <Gate onIn={(pw) => { setPassword(pw); }} refresh={refresh} />
 
-  const c = overview?.counts || {}
+  const c = { ...(overview?.counts || {}), ...(replyCount == null ? {} : { replies_waiting: replyCount }) }
   const common = { password, go, onLock: lock, onChanged: () => refresh(), overview }
 
   return (
@@ -238,6 +244,7 @@ export default function AdminApp() {
                   : section === 'pings' ? <Pings {...common} />
                     : section === 'wall' ? <Letters {...common} initialStatus={arg || 'flagged'} />
                       : section === 'reports' ? <Reports {...common} />
+                      : section === 'replies' ? <Replies {...common} />
                         : section === 'waitlist' ? <Waitlist {...common} />
                           : section === 'cards' ? <Cards {...common} />
                             : section === 'cache' ? <Resolver {...common} />

@@ -62,10 +62,27 @@ create temp table h_ids as
 select h_ok('the letter is up', (select id is not null from h_ids));
 
 -- ── 1. who may heart ────────────────────────────────────────────────────────
-select h_ok('a stranger cannot heart',
-  (wall_heart('token-nobody-0000000000', (select id from h_ids), true)->>'error') = 'no_session');
-select h_ok('an outsider cannot',
-  (wall_heart('token-h-other-0000000000', (select id from h_ids), true)->>'error') = 'gate');
+-- Anybody, since 0068: a heart was behind the read gate and it is not now. A
+-- device the product has never seen is given a bare row and a session for
+-- it, as a name note's writer is, so a heart is still one per person. Each
+-- is taken back off here so the counts below start from nothing.
+select h_ok('a stranger hearts it',
+  (wall_heart('token-h-stranger-000000', (select id from h_ids), true)->>'hearts')::int = 1);
+select h_ok('and the stranger is a bare row with a session now',
+  exists (select 1 from celestual_sessions s join celestual_users u on u.id = s.user_id
+           where s.token_hash = encode(extensions.digest('token-h-stranger-000000', 'sha256'), 'hex')
+             and u.edu_verified_at is null and u.handle_verified_at is null));
+select h_ok('and can take it off',
+  (wall_heart('token-h-stranger-000000', (select id from h_ids), false)->>'hearts')::int = 0);
+select h_ok('taking off a heart that was never there opens nothing',
+  (wall_heart('token-nobody-0000000000', (select id from h_ids), false)->>'ok')::boolean
+  and not exists (select 1 from celestual_sessions
+                   where token_hash = encode(extensions.digest('token-nobody-0000000000', 'sha256'), 'hex')));
+select h_ok('an outsider hearts it too',
+  (wall_heart('token-h-other-0000000000', (select id from h_ids), true)->>'hearts')::int = 1
+  and (wall_heart('token-h-other-0000000000', (select id from h_ids), false)->>'hearts')::int = 0);
+select h_ok('a token too short to be a session cannot',
+  (wall_heart('short', (select id from h_ids), true)->>'error') = 'no_session');
 select h_ok('a letter that is not there answers gone',
   (wall_heart('token-h-reader1-00000000', gen_random_uuid(), true)->>'error') = 'gone');
 
@@ -179,7 +196,10 @@ select h_ok('and not to the browser',
 -- with them by cascade. The rest is deleted by name.
 delete from celestual_users where edu_email in
   ('h-author@berkeley.edu', 'h-reader1@berkeley.edu', 'h-reader2@berkeley.edu')
-  or email = 'h-other@stanford.edu';
+  or email = 'h-other@stanford.edu'
+  -- and the bare row the stranger's heart opened (0068)
+  or id in (select user_id from celestual_sessions
+             where token_hash = encode(extensions.digest('token-h-stranger-000000', 'sha256'), 'hex'));
 delete from celestual_entries where from_handle = 'hearty';
 delete from celestual_ig_verifications where handle = 'hearty';
 delete from ig_profiles where handle = 'hearted.one';

@@ -109,9 +109,10 @@ import { ownerRemove, ownerRestore } from '../../api/alerts.js'
 import { href } from '../router.js'
 import { mark, setAfterGate, getState, patch } from '../store.js'
 import { cardStep } from '../seed.js'
-import { isReader, toWrite } from '../auth.js'
+import { toWrite } from '../auth.js'
 import { campus, needsCampus } from '../campus.js'
 import { letterMarks } from '../schools.js'
+import Replies from '../Replies.jsx'
 
 // ── the name on the screen ──────────────────────────────────────────────────
 // The top row carries who the letter is for the way a phone carried the
@@ -333,8 +334,9 @@ function Lights({ look, seed }) {
 //
 // The heart is the reader's one mark that is not writing or reporting: once
 // per person, the count is a count and nothing else, and zero says nothing
-// rather than "0". Behind the same gate as reading, so on a letter from
-// outside it the heart is the way to the gate.
+// rather than "0". It was behind the same gate as reading, and on a letter
+// from outside it the heart was the way to the gate; since 0068 it is
+// anybody's, on any device, and pressing it never opens a door.
 function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '', onRemove = null }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
@@ -382,12 +384,10 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
   const text = open ? l.body : starred(l.words, l.chars, l.id)
   const hearts = l.hearts || 0
 
-  // Outside the gate the press is kept rather than dropped: the gate opens
-  // back onto this letter and presses the heart on the way in (Gate.jsx
-  // `finish`), so somebody who signed in to heart it is not sent to find the
-  // key and press it a second time
+  // Anybody's since 0068 (likes are open to everybody): the press goes
+  // straight to the server, which keeps one heart per device, and never to
+  // the gate
   const pressHeart = async () => {
-    if (!isReader()) { setAfterGate({ name: 'letter', id: l.id, heart: true }); go('gate'); return }
     if (busy) return
     setBusy(true)
     await heart(l.id, !l.hearted)
@@ -508,9 +508,8 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
       c: {
         glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? String(hearts) : '',
         onClick: pressHeart, on: l.hearted,
-        pressed: isReader() ? !!l.hearted : undefined,
-        aria: !isReader() ? 'sign in to heart this letter'
-          : `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
+        pressed: !!l.hearted,
+        aria: `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
       },
       r: { label: 'share', onClick: () => { prepareLetter(face()); onView({ kind: 'share', at: 0 }) }, aria: 'share this letter, save its picture, or copy its link' },
     }
@@ -1568,6 +1567,10 @@ export default function Letter({
             {cold ? <ViewWall onWall={onWall} /> : null}
           </SheetFoot>
         ) : null}
+
+        {/* the thread under an open letter (Replies.jsx, 0068), keyed by the
+            letter so a turn of the deck is a thread of its own */}
+        {open ? <Replies key={one.id} letter={one} reduce={reduce} /> : null}
       </div>
     </Sheet>
   )

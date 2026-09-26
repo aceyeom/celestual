@@ -32,7 +32,7 @@ const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
   // that only break at an edge of the range
   ? process.env.PREVIEW_VIEWPORTS.split(',').map((v) => {
     const [width, height] = v.split('x').map(Number)
-    return { name: v, width, height, scale: width < 700 ? 2 : 1 }
+    return { name: v, width, height, scale: Number(process.env.PREVIEW_SCALE) || (width < 700 ? 2 : 1) }
   })
   : [
     { name: 'phone', width: 390, height: 844, scale: 2 },
@@ -211,6 +211,64 @@ let GOOGLE = false
 // What the daily check on apify last said (0060): 'ok', 'failing', 'stale'
 // or 'never'. The desk draws its line at the top of every screen from it.
 let CANARY = 'ok'
+// The thread under an open letter (0068, app/src/wall/Replies.jsx): which of
+// its states the fixture draws. 'empty' by default, since most letters have
+// nothing under them; a replies route names the one it is for.
+let THREAD = 'empty'
+
+// ── the replies (0068) ──────────────────────────────────────────────────────
+// Every field is wall_reply_thread's. `who` is sixteen hex, as the server's
+// salted hash is, and one writer is one `who` all down a thread: the first
+// and the fourth reply here are the same person.
+const REPLY_AT = (mins) => new Date(now - mins * 60000).toISOString()
+const REPLIES = [
+  { id: 'r0000001-2222-4333-8444-555566660001', who: 'd41d8cd98f00b204', recipient: false, status: 'live',
+    body: 'this is the sweetest thing on here. i hope they know who it is.', at: REPLY_AT(300), likes: 14 },
+  { id: 'r0000002-2222-4333-8444-555566660002', who: '3c59dc048e885024', recipient: false, status: 'live',
+    body: 'the umbrella detail got me', at: REPLY_AT(250), likes: 6 },
+  { id: 'r0000003-2222-4333-8444-555566660003', who: '9bf31c7ff062936a', recipient: true, status: 'live',
+    body: 'i still think about that walk. keep the umbrella, it suits you better. and say hi next time.', at: REPLY_AT(180), likes: 31 },
+  { id: 'r0000004-2222-4333-8444-555566660004', who: 'd41d8cd98f00b204', recipient: false, status: 'live',
+    body: 'THEY ANSWERED. i am not okay', at: REPLY_AT(150), likes: 9 },
+  { id: 'r0000005-2222-4333-8444-555566660005', who: 'c74d97b01eae257e', recipient: false, status: 'live',
+    body: 'say it to their face next time, you have got this', at: REPLY_AT(40), likes: 2, mine: true },
+  { id: 'r0000006-2222-4333-8444-555566660006', who: 'e4da3b7fbbce2345', recipient: false, status: 'live',
+    body: 'wheeler at night is the most romantic place on campus and nobody will convince me otherwise', at: REPLY_AT(12), likes: 0 },
+]
+function thread() {
+  const me = { signed: true, recipient: false, edu: true, terms: true, who: 'c74d97b01eae257e', can: true, why: null }
+  const rows = REPLIES.map((r) => ({ liked: r.id.endsWith('1'), reported: false, mine: false, ...r }))
+  const base = { ok: true, letter: '11110111-2222-4333-8444-555566660000', state: 'open', recipient_replied: true }
+  const full = { ...base, count: rows.length, replies: rows, me }
+  switch (THREAD) {
+    case 'full': return full
+    case 'terms': return { ...full, me: { ...me, terms: false } }
+    case 'held': return { ...full, count: rows.length, replies: [...rows,
+      { id: 'r0000007-2222-4333-8444-555566660007', who: 'c74d97b01eae257e', recipient: false, status: 'held', mine: true,
+        body: 'honestly whoever wrote this should just ask them to the thing on friday', at: REPLY_AT(1), likes: 0 },
+      { id: 'r0000008-2222-4333-8444-555566660008', who: 'c74d97b01eae257e', recipient: false, status: 'hidden', mine: true,
+        body: 'called it weeks ago', at: REPLY_AT(90), likes: 0 }].sort((a, b) => a.at.localeCompare(b.at)) }
+    case 'reported': return { ...full, replies: rows.map((r, i) => (i === 1 ? { ...r, reported: true } : r)) }
+    case 'recipient': return { ...full,
+      replies: rows.map((r) => ({ ...r, mine: r.recipient })),
+      me: { ...me, recipient: true, edu: false, who: '9bf31c7ff062936a' } }
+    case 'recipient-new': return { ...base, recipient_replied: false, count: 2, replies: rows.slice(0, 2).map((r) => ({ ...r, mine: false })),
+      me: { ...me, recipient: true, edu: false, terms: false, who: '9bf31c7ff062936a' } }
+    case 'locked': return { ...full, state: 'locked', replies: rows.map((r) => ({ ...r, mine: false })),
+      me: { ...me, can: false, why: 'locked' } }
+    case 'locked-owner': return { ...full, state: 'locked', replies: rows.map((r) => ({ ...r, mine: r.recipient })),
+      me: { ...me, recipient: true, edu: false, who: '9bf31c7ff062936a' } }
+    case 'closed': return { ...base, state: 'closed', recipient_replied: false, count: 0, replies: [],
+      me: { ...me, can: false, why: 'closed' } }
+    case 'closed-owner': return { ...full, state: 'closed', replies: rows.map((r) => ({ ...r, mine: r.recipient })),
+      me: { ...me, recipient: true, edu: false, can: false, why: 'closed', who: '9bf31c7ff062936a' } }
+    case 'school': return { ...full, replies: rows.map((r) => ({ ...r, mine: false, liked: false })),
+      me: { signed: false, recipient: false, edu: false, terms: false, who: null, can: false, why: 'edu' } }
+    case 'empty-school': return { ...base, recipient_replied: false, count: 0, replies: [],
+      me: { signed: false, recipient: false, edu: false, terms: false, who: null, can: false, why: 'edu' } }
+    default: return { ...base, recipient_replied: false, count: 0, replies: [], me }
+  }
+}
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -495,6 +553,51 @@ const DESK_CARDS = {
   totals: { cards: 5, scans: 188, joined: 22, letters: 13, other_scans: 148 },
 }
 
+// 0068: a reply the reading held for a person, one out of sight after three
+// reports, one that went up, one the desk took down, one the reading refused
+const DESK_REPLIES = [
+  { id: 'eee11111-2222-4333-8444-555566660001', status: 'held', recipient: false,
+    body: 'you know exactly what you did at that party and everybody saw it',
+    moderation: { verdict: 'review', reasons: ['pile'], model: 'claude-haiku-4-5-20251001', before: true },
+    created_at: new Date(now - 40 * 60000).toISOString(), updated_at: new Date(now - 40 * 60000).toISOString(),
+    reports: 0, reports_all: 0, likes: 0,
+    letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_target: 'pilar.echevarria', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[2].body, thread_state: 'open',
+    author_id: DESK_USERS[1].id, author_handle: null, author_edu: 'p.echevarria@berkeley.edu', author_replies: 4, author_down: 0 },
+  { id: 'eee11111-2222-4333-8444-555566660002', status: 'hidden', recipient: false,
+    body: 'the umbrella thing is so obviously made up',
+    moderation: { verdict: 'pass', reasons: [], hidden_at: new Date(now - 2 * 3600000).toISOString(), hidden_by: 'reports' },
+    created_at: new Date(now - 5 * 3600000).toISOString(), updated_at: new Date(now - 2 * 3600000).toISOString(),
+    reports: 3, reports_all: 3, likes: 2,
+    letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_target: 'pilar.echevarria', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[2].body, thread_state: 'open',
+    author_id: DESK_USERS[0].id, author_handle: 'ace03d', author_edu: 'ace@berkeley.edu', author_replies: 9, author_down: 1 },
+  { id: 'eee11111-2222-4333-8444-555566660003', status: 'live', recipient: true,
+    body: 'i still think about that walk. keep the umbrella.',
+    moderation: { verdict: 'pass', reasons: [] },
+    created_at: new Date(now - 3 * 3600000).toISOString(), updated_at: new Date(now - 3 * 3600000).toISOString(),
+    reports: 0, reports_all: 0, likes: 31,
+    letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_target: 'pilar.echevarria', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[2].body, thread_state: 'open',
+    author_id: DESK_USERS[2].id, author_handle: 'jules.k', author_edu: null, author_replies: 1, author_down: 0 },
+  { id: 'eee11111-2222-4333-8444-555566660004', status: 'removed', recipient: false,
+    body: 'she only dates people with cars lol',
+    moderation: { verdict: 'review', reasons: ['pile'], desk: { status: 'removed', note: 'piling on', at: new Date(now - DAY).toISOString(), from: 'held' } },
+    created_at: new Date(now - 2 * DAY).toISOString(), updated_at: new Date(now - DAY).toISOString(),
+    reports: 0, reports_all: 0, likes: 0,
+    letter_id: DESK_LETTERS[0].id, letter_status: 'live', letter_target: 'sofiaaa.reyes', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[0].body, thread_state: 'locked',
+    author_id: DESK_USERS[0].id, author_handle: 'ace03d', author_edu: 'ace@berkeley.edu', author_replies: 9, author_down: 1 },
+  { id: 'eee11111-2222-4333-8444-555566660005', status: 'rejected', recipient: false,
+    body: 'i know which bus she takes home, it is the 51b at six',
+    moderation: { verdict: 'reject', reasons: ['locate'], model: 'claude-haiku-4-5-20251001', before: true },
+    created_at: new Date(now - 3 * DAY).toISOString(), updated_at: new Date(now - 3 * DAY).toISOString(),
+    reports: 0, reports_all: 0, likes: 0,
+    letter_id: DESK_LETTERS[0].id, letter_status: 'live', letter_target: 'sofiaaa.reyes', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[0].body, thread_state: 'locked',
+    author_id: DESK_USERS[1].id, author_handle: null, author_edu: 'p.echevarria@berkeley.edu', author_replies: 4, author_down: 0 },
+]
+
 const DESK_WAITLIST = ['nour.haddad', 'elias.brandt', 'aya.nakamura', 'k.villarreal', 'thom.iversen']
   .map((handle, i) => ({
     handle, campus: 'berkeley', source_code: i % 2 ? 'flyer-a' : null,
@@ -645,6 +748,13 @@ const DESK = {
   desk_campus_add: (b) => ({ ok: true, slug: b.slug }),
   desk_name_shut: (b) => ({ ok: true, handle: b.handle, campus: b.campus, letters: 1 }),
   desk_name_open: (b) => ({ ok: true, handle: b.handle, campus: b.campus, letters: 1 }),
+  // 0068: the replies queue, with who wrote each one, and a decision on one
+  desk_replies: (b) => ({
+    ...page(DESK_REPLIES.filter((r) => (b.status === 'waiting' || !b.status ? ['held', 'hidden'].includes(r.status)
+      : b.status === 'all' ? true : r.status === b.status))),
+    counts: { waiting: 2, held: 1, hidden: 1, live: 1, removed: 1, rejected: 1, replies_7d: 5 },
+  }),
+  desk_reply_set: (b) => ({ ok: true, id: b.id, status: b.status, was: 'held' }),
   overview: () => DESK_LEGACY,
   handle_status: (b) => ({
     ok: true, handle: b.handle, suppressed: false, member: true,
@@ -730,6 +840,14 @@ const RPC = {
   }),
   // 0042: a heart on, or off, and the count back
   wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 13 : 12, hearted: !!b.p_on }),
+  // 0068: the thread under a letter, a like, a report and the recipient's say
+  wall_reply_thread: () => thread(),
+  wall_reply_like: (b) => {
+    const r = REPLIES.find((x) => x.id === b.p_reply)
+    return { ok: true, reply: b.p_reply, likes: (r ? r.likes : 0) + (b.p_on ? 1 : 0), liked: !!b.p_on }
+  },
+  wall_reply_report: (b) => ({ ok: true, reply: b.p_reply, reported: !!b.p_on, hidden: false }),
+  wall_reply_thread_set: (b) => ({ ok: true, letter: b.p_letter, state: b.p_state }),
   // 0050: this browser's own letters and where each stands. One of them has
   // been taken down by the reading, after it went up, when the route asks
   // for it: the notice at the foot of the wall.
@@ -870,6 +988,30 @@ async function fulfil(route) {
       ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000',
       handle: key, kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null,
     } })
+  }
+
+  // 0068: a reply, read before it is written. The words say which way the
+  // reading goes, so a route can shoot each answer: 'wait' is held for a
+  // person, 'refuse' is refused, anything else goes up.
+  if (url.includes('/functions/v1/celestual-wall-reply')) {
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    const words = String(b.body || '')
+    if (THREAD === 'terms' && !b.accept) return route.fulfill({ json: { ok: false, error: 'terms' } })
+    const status = /wait/i.test(words) ? 'held' : /refuse/i.test(words) ? 'rejected' : 'live'
+    return route.fulfill({ json: {
+      ok: true, id: 'r0000009-2222-4333-8444-555566660009', status, recipient: THREAD.startsWith('recipient'),
+      ...(status === 'held' ? { say: "it's being read. it shows here once it passes." } : {}),
+      ...(status === 'rejected' ? { say: "it can't go up as it's written.", reasons: ['pile'] } : {}),
+    } })
+  }
+  // The school's link (celestual-edu-verify `link` and `status`), asked from
+  // under a letter: mailed, and not yet tapped.
+  if (url.includes('/functions/v1/celestual-edu-verify')) {
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    if (b.action === 'link') {
+      return route.fulfill({ json: { ok: true, request: 'req-preview-0001', match: 42, domain: 'berkeley.edu', campus: 'berkeley', school: 'UC Berkeley' } })
+    }
+    if (b.action === 'status') return route.fulfill({ json: { ok: true, verified: false, purpose: 'edu' } })
   }
 
   // Every other edge function.
@@ -1229,6 +1371,64 @@ const ROUTES = [
     acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400],
       ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
 
+  // ── the replies (0068) ──
+  // The thread under an open letter, in every state it has: the first
+  // screenful (the letter and the thread's head together), the thread
+  // itself, nothing yet, the recipient's own view and their reply, shut and
+  // put away, a device with no school, the link sent, the terms before a
+  // first reply, a name caught at the keyboard, a reply held and one
+  // refused, a report folded away, and the desk's queue.
+  { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
+  { label: 'replies-thread',   path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1200]], settle: 400 },
+  { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-empty',    path: '/letter/pilar.echevarria', thread: 'empty',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-recipient', path: '/letter/pilar.echevarria', thread: 'recipient-new',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-recipient-thread', path: '/letter/pilar.echevarria', thread: 'recipient',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-locked',   path: '/letter/pilar.echevarria', thread: 'locked',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-locked-owner', path: '/letter/pilar.echevarria', thread: 'locked-owner',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-closed',   path: '/letter/pilar.echevarria', thread: 'closed', settle: 1800 },
+  { label: 'replies-closed-owner', path: '/letter/pilar.echevarria', thread: 'closed-owner',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-school',   path: '/letter/pilar.echevarria', thread: 'school',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-school-sent', path: '/letter/pilar.echevarria', thread: 'empty-school',
+    acts: [['wait', 900], ['fill', '.wl-rp-school .wl-addr-in', 'you@berkeley.edu'], ['click', '.wl-rp-school .wl-pill.is-light'],
+           ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-terms',    path: '/letter/pilar.echevarria', thread: 'terms',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'this made my whole week'],
+           ['click', '.wl-rp-go']], settle: 700 },
+  { label: 'replies-caught',   path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'i bet Maria Delgado wrote this']], settle: 500 },
+  { label: 'replies-held',     path: '/letter/pilar.echevarria', thread: 'held',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'wait until they see this'],
+           ['click', '.wl-rp-go']], settle: 900 },
+  { label: 'replies-refused',  path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'refuse this one please'],
+           ['click', '.wl-rp-go']], settle: 900 },
+  { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
+  // the recipient's reply lit in the letter's own colour, one of each kind
+  { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-acid',     path: '/letter/thom.iversen', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-lilac',    path: '/letter/jules.k', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-teal',     path: '/letter/elias.brandt', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-still',    path: '/letter/pilar.echevarria', thread: 'full', still: true,
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 400]], settle: 400 },
+  { label: 'admin-replies',    path: '/admin', desk: true, click: 'replies' },
+
   // Phase 7. The desk, and the states worth looking at: what it opens on, the
   // queue with something held in it, a report whose letter is already down, the
   // cache with a stale face and a missing one, and the door.
@@ -1295,6 +1495,7 @@ for (const r of list) {
   PASS = r.pass === true
   FULL = r.full === true
   GOOGLE = r.google === true
+  THREAD = r.thread || 'empty'
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
@@ -1438,6 +1639,13 @@ for (const r of list) {
       // the end when it is negative (-1 is after the last one). It blinks on
       // the phone's beat, so once it has been drawn its beat is held on the
       // lit half, and the shot is of the caret and not of the half it is out
+      // a scroller taken to its foot, for the thread under a letter
+      if (act === 'end') {
+        await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+        await page.$eval(sel, (el) => { el.scrollTop = el.scrollHeight }).catch(() => {})
+        await page.waitForTimeout(Number(arg) || 500)
+        continue
+      }
       if (act === 'caret') {
         await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
         await page.$eval(sel, (el, at) => {
@@ -1520,8 +1728,17 @@ for (const r of list) {
       await page.waitForTimeout(900)
     }
 
+    // `PREVIEW_EVAL` is an expression asked of the page before the shot and
+    // printed, for a question a picture cannot answer (a computed style)
+    if (process.env.PREVIEW_EVAL) {
+      console.log(`  ${r.label} ${v.name}:`, await page.evaluate(process.env.PREVIEW_EVAL).catch((e) => String(e)))
+    }
     const file = join(out, `${r.label}-${v.name}.png`)
-    await page.screenshot({ path: file })
+    // `PREVIEW_CLIP` shoots one element rather than the window, for a detail
+    // that has to be looked at closely
+    const clip = process.env.PREVIEW_CLIP ? await page.$(process.env.PREVIEW_CLIP) : null
+    if (clip) await clip.screenshot({ path: file })
+    else await page.screenshot({ path: file })
     made.push(file)
     if (r.full) {
       const whole = join(out, `${r.label}-${v.name}-full.png`)
