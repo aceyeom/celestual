@@ -103,15 +103,17 @@ select rr_ok('one letter reads whole to a proved handle too',
     (wall_letters_for('rr-token-handle-000000', 'rrsubject')->'letters'->0->>'id')::uuid
    )->'letter'->>'body') = 'the letter itself, in words');
 
--- ── 3. the heart and the report follow reading ──────────────────────────────
+-- ── 3. the heart is anybody's, and the report follows reading ───────────────
+-- The heart followed reading until 0068, when likes were opened to every
+-- device: a session with nothing proved on it hearts a letter now too.
 select rr_ok('a proved handle may heart',
   (wall_heart('rr-token-handle-000000',
     (wall_letters_for('rr-token-handle-000000', 'rrsubject')->'letters'->0->>'id')::uuid, true)
    ->>'ok')::boolean);
-select rr_ok('a session with nothing proved on it may not',
+select rr_ok('and since 0068 so may a session with nothing proved on it',
   (wall_heart('rr-token-neither-00000',
     (wall_letters_for('rr-token-handle-000000', 'rrsubject')->'letters'->0->>'id')::uuid, true)
-   ->>'error') = 'gate');
+   ->>'ok')::boolean);
 
 -- The report takes the letter down, so it goes last of the three and against
 -- its own letter.

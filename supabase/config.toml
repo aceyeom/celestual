@@ -82,3 +82,11 @@ verify_jwt = false
 # write still goes through wall_write's own checks (service role inside).
 [functions.celestual-wall-moderate]
 verify_jwt = true
+
+# The one way a reply goes under a letter (celestual-wall-reply, migration
+# 0068). Called by the browser through supabase.functions.invoke with the
+# anon key as its JWT, as celestual-wall-moderate is, and deployed the same
+# way. It reads every reply before it is written, and the write itself is
+# wall_reply_write's, which is the service role's alone.
+[functions.celestual-wall-reply]
+verify_jwt = true
