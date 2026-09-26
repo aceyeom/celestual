@@ -145,12 +145,14 @@ export default function Unwrite({ up, upLabel = 'back to the wall' }) {
     title = e === 'used' ? <>this link was<br />already used.</>
       : e === 'expired' ? <>this link is<br />too old.</>
       : e === 'invalid' ? <>this link<br />does not work.</>
+      : e === 'gone' ? <>it&rsquo;s already<br />off the wall.</>
       : <>that did not<br />go through.</>
     body = (
       <Prose className="wl-gate-copy">
         {e === 'used' ? 'the letter came down the first time it was opened. if it is up again, open it on the wall and choose remove from its menu.'
           : e === 'expired' ? 'removal links work for 30 days. open the letter on the wall, confirm your Instagram, and choose remove from its menu.'
           : e === 'invalid' ? 'it may have been copied wrong. open the letter on the wall, confirm your Instagram, and choose remove from its menu.'
+          : e === 'gone' ? 'that letter came down some other way before this link was opened. there is nothing left to remove.'
           : 'nothing came down yet. open the link from the email again in a moment.'}
       </Prose>
     )

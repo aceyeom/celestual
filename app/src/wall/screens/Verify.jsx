@@ -155,8 +155,10 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     title = why === 'used' ? <>that link has<br />been used.</>
       : why === 'expired' ? <>that link has<br />run out.</>
       : why === 'offline' ? <>we couldn&rsquo;t<br />check it.</>
+      : why === 'taken' ? <>that address is<br />already in use.</>
       : <>that link<br />doesn&rsquo;t work.</>
     say = why === 'offline' ? 'we could not reach the server. try the link again in a moment.'
+      : why === 'taken' ? 'that school email is already confirmed on another account. sign in there, or use a different address.'
       : 'a link works once, for thirty minutes. ask for a new one where you wrote your letter.'
     act = heldDraft()
       ? <Pill tone="light" wide onClick={toLetter}>back to your letter</Pill>

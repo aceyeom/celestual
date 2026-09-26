@@ -140,10 +140,11 @@ const BERKELEY = schoolOf('berkeley')
 // world and with the one next step.
 const PING_SAY = {
   self: 'that is your own @.',
-  slots: 'every ping you hold is standing. letting one go frees it.',
-  suppressed: 'that @ has asked to be left alone.',
-  rate: 'that is a lot of pings for one month. give it time.',
+  slots: 'every slot is in use. let one of your private notes go to free one.',
+  suppressed: 'that @ has opted out of private notes.',
+  rate: 'that is a lot of private notes for one month. try again later.',
   invalid: 'that handle does not look right.',
+  card: 'that can’t go in a note as it is. take out links, addresses and numbers.',
   night: 'it did not go through. try again.',
 }
 
@@ -156,6 +157,7 @@ const WALL_SAY = {
   salutation: 'the greeting can’t go up as it is. change the line at the top of the screen.',
   rate: 'too many links to that address. try again in an hour.',
   send: 'the mail did not go out. try again.',
+  empty: 'there is nothing written yet.',
   network: 'it did not go through. try again.',
 }
 
@@ -540,6 +542,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
           : out.error === 'suppressed' ? 'suppressed'
           : out.error === 'rate_limited' ? 'rate'
           : out.error === 'invalid' ? 'invalid'
+          : out.error === 'card' ? 'card'
           : 'night'])
       return
     }

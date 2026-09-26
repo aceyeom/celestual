@@ -78,6 +78,9 @@ const SAY = {
   rate: 'that is a lot of private notes for one month. try again later.',
   invalid: 'that handle does not look right.',
   night: 'it did not go through. give it a moment, then send it again.',
+  // the card is read by the same list as a letter (0063): a link, an
+  // address, a number or a slur, and nothing is placed
+  card: 'that can’t go in a note as it is. take out links, addresses and numbers.',
 }
 
 function words(s) {
@@ -457,6 +460,7 @@ export default function Ping({
           : out.error === 'suppressed' ? 'suppressed'
           : out.error === 'rate_limited' ? 'rate'
           : out.error === 'invalid' ? 'invalid'
+          : out.error === 'card' ? 'card'
           : 'night',
       )
       shake()
