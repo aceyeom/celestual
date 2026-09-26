@@ -1,152 +1,231 @@
-// CELESTUAL — celestual-notify edge function.
+// CELESTUAL: celestual-notify, the one drain every alert mail goes out of.
 //
-// Drains the `celestual_notifications` queue and sends each pending mutual-match
-// email via Resend, then stamps `sent_at`. It is *idempotent by queue*: it only
-// ever touches rows that are unsent, not yet dead-lettered, and due for an
-// attempt, so it can be safely invoked by either a Supabase Database Webhook
-// (on insert to celestual_notifications) or pg_cron.
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  Drains celestual_mail_outbox (migration 0064) through Resend.           ║
+// ║                                                                          ║
+// ║  Deploy:  supabase functions deploy celestual-notify --no-verify-jwt     ║
+// ║  Secrets: RESEND_API_KEY, CELESTUAL_FROM_EMAIL, CELESTUAL_SITE_URL       ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The email is a reveal channel for BOTH halves of a mutual (framework Screen
-// 8): subject quiet and unmistakable, body in the product's own registers (serif
-// italic for the feeling, small sans for the mechanics), single warm accent on
-// deep navy. Every sentence is literally true; nothing here ever implies
-// activity that didn't happen (the NGL line — see ULTIMATE-PRODUCT-FRAMEWORK §6.2).
+// Two kinds of mail, both in _shared/mails.ts:
+//   mutual   "it's mutual.", to a person whose ping resolved. THAT a note
+//            waits, never a word of it.
+//   wrote    "someone wrote you a letter.", to the claimed owner of an @ who
+//            turned it on, with the one tap removal link. Nothing about who.
+// Every one carries a stop link, `/alerts#off=<token>`, and the headers a
+// mail client needs to offer its own unsubscribe (RFC 8058): a
+// List-Unsubscribe with an https URL and a mailto, and
+// List-Unsubscribe-Post: List-Unsubscribe=One-Click.
 //
-// Since 0023 the queue can hold a row for each side rather than only the earlier
-// entrant, and each row says whether a card is waiting (`has_card`) — the same
-// boolean the Instagram DM carries, and the same seal: THAT there is a card,
-// never a word of it. The rule that decides who gets mail is unchanged and is in
-// celestual_submit: an address is only ever used by the person who stored it.
-// Nobody is emailed at an address that arrived on somebody else's request.
+// ── who calls it ────────────────────────────────────────────────────────────
+//   POST            the drain. pg_net calls it the moment a row lands in the
+//                   outbox (celestual_mail_outbox_push), and pg_cron every
+//                   five minutes when something is owed (celestual-mail-
+//                   sweep). Neither can carry a JWT, so the function is
+//                   deployed with verify_jwt off, as it always was: it takes
+//                   only rows the database says are owed, sends each to the
+//                   address that row was queued for, and answers counts. Calling
+//                   it reveals nothing and sends nothing that was not owed.
+//   POST ?unsub=t   the one click unsubscribe a mail client sends (RFC 8058).
+//                   Stops that kind of mail for the token's person and
+//                   address (celestual_alerts_off_by_token), and answers ok.
+//   GET ?unsub=t    a person who opened the https unsubscribe link in a
+//                   browser. Nothing changes on a GET, since link scanners
+//                   fetch every link in a mail; it redirects to the site's
+//                   stop page, which asks the same function and says so.
+//   GET             a health answer.
 //
-// Retry / dead-letter: a failing send is retried with exponential backoff up to
-// MAX_ATTEMPTS, after which the row is marked `failed_at` (dead-lettered) so a
-// permanently-bad address isn't retried forever.
+// ── the rows ────────────────────────────────────────────────────────────────
+// celestual_mail_take claims the owed rows for ten minutes under skip locked
+// and mints each one's links (only their sha256 is kept); a row no longer
+// owed (the letter came down, the person turned it off or pressed stop) is
+// closed there and never handed out. Each send reports back through
+// celestual_mail_done: sent, or a backoff of 1, 5, 30 and 120 minutes, and
+// failed after the fifth. Resend's Idempotency-Key is the row's id, so a send
+// that landed while its report did not is not sent twice on the retry.
 //
-// Requires migration 0038 (celestual_notify_take). Against an older database
-// the RPC is missing and this answers 500 with the message naming it.
-//
-// Required secrets (Supabase → Edge Functions → Secrets):
-//   RESEND_API_KEY        — your Resend API key
-//   CELESTUAL_FROM_EMAIL  — verified sender, e.g. "celestual <hello@celestual.us>"
-// Provided automatically by the platform:
-//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-//
-// Deploy:  supabase functions deploy celestual-notify
+// ── and the old queue ───────────────────────────────────────────────────────
+// Since 0064 a row written to celestual_notifications is moved to the outbox
+// as it is written. A row written before is still drained here the old way
+// (celestual_notify_take), unless it is more than fourteen days old: news of
+// a mutual that late is not news, and it is closed as stale instead.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as mail from '../_shared/mail.ts';
+import { type Mail, mutualMail, wroteMail } from '../_shared/mails.ts';
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
-const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <hello@celestual.us>';
+const SITE = (Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us').replace(/\/+$/, '');
+const SELF = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/+$/, '')}/functions/v1/celestual-notify`;
+// Where a mailto unsubscribe lands. Read by a person, since nothing parses it.
+const UNSUB_TO = Deno.env.get('CELESTUAL_UNSUB_MAILTO') ?? 'hello@celestual.us';
 
 const MAX_ATTEMPTS = 5;
-// Backoff per attempt index (minutes): ~1m, 5m, 30m, 2h before dead-letter.
 const BACKOFF_MIN = [1, 5, 30, 120];
+const STALE_DAYS = 14;
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-// The design is design/DESIGN.md's, and it is the one every mail this product
-// sends: _shared/mail.ts owns the case, the rules and the plate, and this file
-// owns only its words. It used to own both, which is why there were five
-// templates and no two agreed.
-function emailHtml(other: string, hasCard: boolean) {
-  // The card line says THAT there is one, never a word of what it says. Those
-  // words are read once, in the product, by the person they were written to
-  // (migration 0022, docs/STAR-CARDS.md) — an email is forwarded, screenshotted
-  // and left open on a desk, and none of that is a thing we get to do to
-  // somebody else's message.
-  const card = hasCard
-    ? mail.body('they left a card for you. it opens when you do.')
-    : '';
-  // This is the one mail that spends the accent, and it spends it ONCE. wall.css
-  // rations it to the single object that matters most on the screen it is on,
-  // and here that is the second half of the sentence: the first half is a thing
-  // this person already knows they did, and the second is the news.
-  return mail.frame({
-    inner: `
-      ${mail.title('It is mutual.')}
-      ${mail.body(
-        `you entered @${other}. ` +
-        `<span style="color:${mail.C.accent}">@${other} entered you.</span><br/>` +
-        `this only ever happens when it is real on both sides.`,
-      )}
-      ${card}
-      ${mail.plate(`${SITE}/sky`, 'go and see')}
-      ${mail.colophon(
-        `you are reading this because you placed a ping on celestual and it resolved mutual. ` +
-        `one sided pings are never revealed to anybody. to take your @ off entirely, go to ${SITE}/optout.`,
-      )}`,
-  });
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-async function sendEmail(to: string, other: string, hasCard: boolean) {
+async function send(to: string, m: Mail, opts: { unsub?: string; key?: string } = {}) {
+  const headers: Record<string, string> = {};
+  if (opts.unsub) {
+    const t = encodeURIComponent(opts.unsub);
+    headers['List-Unsubscribe'] = `<${SELF}?unsub=${t}>, <mailto:${UNSUB_TO}?subject=unsubscribe%20${t}>`;
+    headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+  } else {
+    headers['List-Unsubscribe'] = `<mailto:${UNSUB_TO}?subject=unsubscribe>`;
+  }
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     signal: AbortSignal.timeout(15_000),
     headers: {
       Authorization: `Bearer ${RESEND_API_KEY}`,
       'Content-Type': 'application/json',
+      ...(opts.key ? { 'Idempotency-Key': opts.key } : {}),
     },
-    body: JSON.stringify({
-      from: FROM,
-      to,
-      subject: `celestual: it's mutual.`,
-      html: emailHtml(other, hasCard),
-    }),
+    body: JSON.stringify({ from: FROM, to, subject: m.subject, html: m.html, text: m.text, headers }),
   });
   if (!res.ok) throw new Error(`resend ${res.status}: ${await res.text()}`);
 }
 
-Deno.serve(async () => {
-  // The rows are CLAIMED, not selected. celestual_notify_take (0038) takes the
-  // due rows under skip locked and pushes their next attempt ten minutes out,
-  // so a webhook firing once per insert (celestual_submit queues two rows per
-  // match) or a cron overlapping itself cannot send the same mail twice. A
-  // send that fails writes its own backoff over that; one that succeeds
-  // stamps sent_at.
-  const { data: pending, error } = await supabase.rpc('celestual_notify_take', { p_limit: 100 });
+// ── the outbox ───────────────────────────────────────────────────────────────
+type Row = {
+  id: string;
+  kind: 'mutual' | 'wrote';
+  to_email: string;
+  handle: string | null;
+  other_handle: string | null;
+  has_card: boolean;
+  letter_id: string | null;
+  attempts: number;
+  off_token: string;
+  remove_token: string | null;
+};
 
-  if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+function mailFor(r: Row): Mail {
+  const stopUrl = `${SITE}/alerts#off=${r.off_token}`;
+  if (r.kind === 'wrote') {
+    return wroteMail({
+      handle: String(r.handle),
+      readUrl: `${SITE}/letter/${r.letter_id}`,
+      removeUrl: `${SITE}/r#t=${r.remove_token}`,
+      stopUrl,
+    });
   }
+  return mutualMail({
+    other: String(r.other_handle),
+    hasCard: r.has_card === true,
+    openUrl: `${SITE}/reveal/${encodeURIComponent(String(r.other_handle))}`,
+    stopUrl,
+  });
+}
 
+async function drainOutbox() {
+  const { data, error } = await supabase.rpc('celestual_mail_take', { p_limit: 50 });
+  if (error) throw new Error(`celestual_mail_take: ${error.message}`);
+  let sent = 0;
+  const failed: string[] = [];
+  for (const r of (Array.isArray(data) ? data : []) as Row[]) {
+    try {
+      await send(r.to_email, mailFor(r), { unsub: r.off_token, key: `celestual-mail-${r.id}` });
+      const { error: e } = await supabase.rpc('celestual_mail_done', { p_id: r.id, p_ok: true, p_error: null });
+      if (e) console.error('celestual_mail_done failed', r.id, e.message);
+      sent++;
+    } catch (e) {
+      const msg = String(e).slice(0, 500);
+      console.error('send failed', r.id, r.kind, msg);
+      await supabase.rpc('celestual_mail_done', { p_id: r.id, p_ok: false, p_error: msg });
+      failed.push(r.id);
+    }
+  }
+  return { sent, failed };
+}
+
+// ── the old queue ────────────────────────────────────────────────────────────
+async function drainLegacy() {
+  const cutoff = new Date(Date.now() - STALE_DAYS * 86_400_000).toISOString();
+  await supabase
+    .from('celestual_notifications')
+    .update({ failed_at: new Date().toISOString(), last_error: `stale: older than ${STALE_DAYS} days` })
+    .is('sent_at', null)
+    .is('failed_at', null)
+    .lt('created_at', cutoff);
+
+  const { data, error } = await supabase.rpc('celestual_notify_take', { p_limit: 100 });
+  if (error) throw new Error(`celestual_notify_take: ${error.message}`);
   let sent = 0;
   const retried: string[] = [];
   const deadLettered: string[] = [];
-  for (const n of (Array.isArray(pending) ? pending : [])) {
+  for (const n of (Array.isArray(data) ? data : [])) {
+    const m = mutualMail({
+      other: String(n.other_handle),
+      hasCard: n.has_card === true,
+      openUrl: `${SITE}/reveal/${encodeURIComponent(String(n.other_handle))}`,
+      stopUrl: `${SITE}/alerts`,
+    });
     try {
-      await sendEmail(n.to_email, n.other_handle, n.has_card === true);
+      await send(n.to_email, m, { key: `celestual-notification-${n.id}` });
       await supabase.from('celestual_notifications').update({ sent_at: new Date().toISOString() }).eq('id', n.id);
       sent++;
     } catch (e) {
       const attempts = (n.attempts ?? 0) + 1;
-      const msg = String(e);
-      console.error('send failed', n.id, 'attempt', attempts, msg);
+      const msg = String(e).slice(0, 500);
+      console.error('legacy send failed', n.id, 'attempt', attempts, msg);
       if (attempts >= MAX_ATTEMPTS) {
-        await supabase
-          .from('celestual_notifications')
-          .update({ attempts, last_error: msg, failed_at: new Date().toISOString() })
-          .eq('id', n.id);
+        await supabase.from('celestual_notifications')
+          .update({ attempts, last_error: msg, failed_at: new Date().toISOString() }).eq('id', n.id);
         deadLettered.push(n.id);
       } else {
         const mins = BACKOFF_MIN[Math.min(attempts - 1, BACKOFF_MIN.length - 1)];
-        const next = new Date(Date.now() + mins * 60_000).toISOString();
-        await supabase
-          .from('celestual_notifications')
-          .update({ attempts, last_error: msg, next_attempt_at: next })
+        await supabase.from('celestual_notifications')
+          .update({ attempts, last_error: msg, next_attempt_at: new Date(Date.now() + mins * 60_000).toISOString() })
           .eq('id', n.id);
         retried.push(n.id);
       }
     }
   }
+  return { sent, retried, deadLettered };
+}
 
-  // deadLettered is non-empty when a payoff email permanently failed — wire this
-  // to an alert (the product silently fails its one job otherwise).
-  return new Response(JSON.stringify({ sent, retried, deadLettered }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+Deno.serve(async (req: Request) => {
+  const url = new URL(req.url);
+  const unsub = url.searchParams.get('unsub');
+
+  // ── the unsubscribe ──
+  if (unsub) {
+    if (req.method === 'POST') {
+      const { data, error } = await supabase.rpc('celestual_alerts_off_by_token', { p_token: unsub });
+      if (error) {
+        console.error('unsubscribe failed', error.message);
+        return json({ ok: false }, 500);
+      }
+      return json({ ok: data?.ok === true });
+    }
+    return Response.redirect(`${SITE}/alerts#off=${encodeURIComponent(unsub)}`, 303);
+  }
+
+  if (req.method === 'GET') {
+    return json({ ok: true, service: 'celestual-notify', configured: RESEND_API_KEY !== '' });
+  }
+
+  // No key is a configuration, not a failure: nothing is claimed, so every
+  // owed row is still owed the moment the key is set.
+  if (!RESEND_API_KEY) return json({ ok: true, skipped: 'no_resend_api_key' });
+
+  try {
+    const outbox = await drainOutbox();
+    const legacy = await drainLegacy();
+    // failed and deadLettered are the product failing its one job to a person:
+    // wire them to an alert.
+    return json({ ok: true, outbox, legacy });
+  } catch (e) {
+    console.error('drain failed', String(e));
+    return json({ ok: false, error: String(e) }, 500);
+  }
 });
