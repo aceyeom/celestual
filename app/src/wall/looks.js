@@ -678,20 +678,65 @@ export function quirks(seed) {
 // push gathers in soft patches the way a sensor's colour noise does, so the
 // screen reads as photographed rather than drawn and each letter's is its
 // own. Struck once per seed, as a PNG the page and the Send picture share.
+//
+// ── and never in the way ──
+// It was struck the moment a screen asked, all at once: the pixels worked
+// out in script and the PNG encoded on the spot, most of a tenth of a second
+// on a slow phone for every lit screen that mounted, which is every screen a
+// quick run of swipes brings on. So it is a job now. `rgbTile` answers the
+// tile when it is made and '' until then, and starts the job; the job works
+// out a few rows of pixels at a time while the page is idle, hands the image
+// to the browser's own PNG encoder, which does not hold the page, and tells
+// whoever asked (`onRgbTile`), so the screen lays the texture on when it
+// comes, faded in under its grain (screen.jsx `useRgbTile`). The Send
+// picture, which cannot draw without it, waits for it (`rgbTileReady`), and
+// its job is pressed through without waiting for idle. The same seed makes
+// the same tile however the work is sliced: the rows are worked in order off
+// one generator.
 export const RGB_CELLS = 64
-const RGBS = new Map()
-export function rgbTile(seed) {
-  const key = String(seed || '')
-  if (RGBS.has(key)) return RGBS.get(key)
-  if (typeof document === 'undefined') return ''
-  const r = prng(`${key}#rgb`)
+const RGBS = new Map() // seed -> the job: { url, done, subs, promise, urgent, run }
+const RGB_KEEP = 64
+const idleOf = () => (typeof requestIdleCallback === 'function'
+  ? (fn) => requestIdleCallback(fn, { timeout: 2000 })
+  : (fn) => setTimeout(() => fn({ timeRemaining: () => 6, didTimeout: false }), 16))
+
+function rgbJob(key) {
+  if (RGBS.has(key)) {
+    // most recently asked last, so the oldest go first
+    const job = RGBS.get(key)
+    RGBS.delete(key)
+    RGBS.set(key, job)
+    return job
+  }
+  const job = { url: '', done: false, subs: new Set(), urgent: false, run: null }
+  job.promise = new Promise((done) => { job.resolve = done })
+  RGBS.set(key, job)
+  // a strip of letters is a few dozen seeds; past that the oldest finished
+  // tile goes, and its image with it
+  if (RGBS.size > RGB_KEEP) {
+    for (const [k, j] of RGBS) {
+      if (!j.done || k === key) continue
+      if (j.url) URL.revokeObjectURL(j.url)
+      RGBS.delete(k)
+      if (RGBS.size <= RGB_KEEP) break
+    }
+  }
+  const finish = (url) => {
+    job.url = url
+    job.done = true
+    job.resolve(url)
+    for (const fn of job.subs) fn(url)
+    job.subs.clear()
+  }
+  if (typeof document === 'undefined') { finish(''); return job }
+  const cv = document.createElement('canvas')
   const n = RGB_CELLS
   const side = n * 3
-  const cv = document.createElement('canvas')
   cv.width = side
   cv.height = side
   const g = cv.getContext('2d')
-  if (!g) return ''
+  if (!g) { finish(''); return job }
+  const r = prng(`${key}#rgb`)
   // a coarse field per channel, four by four and wrapping, read smoothly
   // across the tile: where the colour noise gathers
   const F = 4
@@ -712,7 +757,9 @@ export function rgbTile(seed) {
   const img = g.createImageData(side, side)
   const d = img.data
   const tint = [0, 0, 0]
-  for (let cy = 0; cy < n; cy++) {
+  // one row of pixels, in order
+  let cy = 0
+  const row = () => {
     for (let cx = 0; cx < n; cx++) {
       // the pixel a hair brighter or dimmer, and its colour pushed off
       const lum = (r() - 0.5) * 22
@@ -726,14 +773,67 @@ export function rgbTile(seed) {
         }
       }
     }
+    cy++
   }
-  g.putImageData(img, 0, 0)
-  let url
-  try { url = cv.toDataURL('image/png') } catch { url = '' }
-  // a strip of letters is a few dozen seeds; the oldest go first
-  if (RGBS.size >= 64) RGBS.delete(RGBS.keys().next().value)
-  RGBS.set(key, url)
-  return url
+  const encode = () => {
+    g.putImageData(img, 0, 0)
+    // the browser's own encoder, off the page's thread where it has one
+    if (cv.toBlob) {
+      cv.toBlob((b) => finish(b ? URL.createObjectURL(b) : ''), 'image/png')
+    } else {
+      let url
+      try { url = cv.toDataURL('image/png') } catch { url = '' }
+      finish(url)
+    }
+  }
+  // a few rows whenever the page is idle, and every row at once when the
+  // Send picture is waiting on it
+  const idle = idleOf()
+  // an urgent run can be asked for while an idle one is waiting: whichever
+  // comes second finds the rows done and the encoding under way, and goes
+  let encoding = false
+  job.run = (deadline) => {
+    if (encoding) return
+    const t0 = performance.now()
+    while (cy < n) {
+      row()
+      if (!job.urgent && (deadline.timeRemaining() < 3 || performance.now() - t0 > 6)) break
+    }
+    if (cy < n) {
+      if (job.urgent) setTimeout(() => job.run({ timeRemaining: () => 50 }), 0)
+      else idle(job.run)
+      return
+    }
+    encoding = true
+    encode()
+  }
+  idle(job.run)
+  return job
+}
+
+// The tile, or '' while it is being made; asking starts it.
+export function rgbTile(seed) {
+  return rgbJob(String(seed || '')).url
+}
+
+// Told once, with the tile's address, when it is made. Answers the way to
+// stop listening.
+export function onRgbTile(seed, fn) {
+  const job = rgbJob(String(seed || ''))
+  if (job.done) { fn(job.url); return () => {} }
+  job.subs.add(fn)
+  return () => job.subs.delete(fn)
+}
+
+// The tile, for a caller that cannot go on without it (share.js), made
+// without waiting for the page to be idle.
+export function rgbTileReady(seed) {
+  const job = rgbJob(String(seed || ''))
+  if (!job.done && !job.urgent) {
+    job.urgent = true
+    setTimeout(() => job.run({ timeRemaining: () => 50 }), 0)
+  }
+  return job.promise
 }
 
 // ── the wall's memo ─────────────────────────────────────────────────────────

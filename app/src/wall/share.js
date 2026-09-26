@@ -23,7 +23,7 @@
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTile } from './looks.js'
+import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady } from './looks.js'
 import { CHALK } from './mark.js'
 import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
@@ -751,7 +751,7 @@ export async function renderLetter(o) {
   }
   // the letter's own pixels, up close, as an image the canvas can lay down;
   // a print and the square are paper and have none
-  const tile = skinOf(colourOf(o.look, o.seed)).paper ? null : await imageOf(rgbTile(o.seed))
+  const tile = skinOf(colourOf(o.look, o.seed)).paper ? null : await imageOf(await rgbTileReady(o.seed))
   const { cv: scr, s, q, sw, sh } = drawScreen(o, tile)
   const cv = document.createElement('canvas')
   cv.width = W
