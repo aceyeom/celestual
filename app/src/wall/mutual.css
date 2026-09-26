@@ -90,13 +90,15 @@
   color: var(--ash); text-wrap: pretty;
 }
 
+/* The key is there with the page, fading in with the kicker over the
+   headline, a beat behind it. It used to stay out of sight until the story
+   had told its third step, and the foot of the page stood empty for four
+   and a half seconds with nothing on it to press (Join.jsx says why). */
 .wl-join-foot {
   flex: 0 0 auto; margin-top: auto; padding-top: 24px;
-  opacity: 0; transform: translate3d(0, 10px, 0);
-  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+  animation: wl-fade 700ms var(--ease) 180ms both;
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
 }
-.wl-join-foot.is-in { opacity: 1; transform: none; }
 
 /* on a spread the phone stands on the right, as large as the window's
    height leaves it, and the head, the steps and the key read down the
@@ -228,6 +230,15 @@
 }
 .wl-mutual-rest { visibility: hidden; }
 .wl-mutual-say .wl-scr-cur { margin-right: -0.214em; }
+
+/* No dead pixel on this glass. Every screen is seeded with its own small
+   faults (looks.js `quirks`), and about one in five has a pixel stuck lit on
+   one of its bands, which on a letter reads as the photograph of a phone
+   somebody owned. The mutual's glass is seeded by the pair, so for some
+   pairs that pixel sat in the empty band under "it's mutual." on every
+   frame, the one lit thing in it, and read as a key that was not there. The
+   dust and the scratch stay. */
+.wl-mutual-scr .wl-scr-fx.is-glass { background: var(--q-scratch, none), var(--q-dust, none); }
 
 /* ── alive ──
    The glass is alive on its own (pixmark.js `revealStory`); round it, the
@@ -397,5 +408,5 @@
 @media (prefers-reduced-motion: reduce) {
   .wl-mutual-halo { animation: none; opacity: 0.8; }
   .wl-mutual-float { animation: none; }
-  .wl-mutual-fig, .wl-join-step, .wl-join-foot { transition: none; }
+  .wl-mutual-fig, .wl-join-step { transition: none; }
 }

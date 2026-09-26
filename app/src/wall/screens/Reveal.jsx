@@ -73,6 +73,17 @@
 // is the account sheet (screens/You.jsx), which is where each reason has its
 // own words and its own way on: a proof this browser does not hold, one the
 // server no longer takes, or no @ at all.
+//
+// Except to somebody this device does not know at all. The mutual mail's link
+// is opened wherever the mail is read, often a phone or a laptop nobody ever
+// signed in on, and "nothing here." there contradicted the mail that had
+// just said it was mutual; its key went on to a door that asked for the DM
+// again, when an email or a Google sign in brings the @ and its private
+// notes back with it (auth.js `restoreProof`). So a person whoami says is not
+// signed in is asked to sign in, by the gate's three ways, and the gate comes
+// back here once they have (store.js `setAfterGate`). It says nothing about
+// anybody: every visitor who is not signed in reads the same line, mutual or
+// not.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfile } from '../parts.jsx'
@@ -84,6 +95,7 @@ import { revealStory } from '../pixmark.js'
 import { normHandle, atHandle } from '../data.js'
 import { heldProof } from '../auth.js'
 import { href } from '../router.js'
+import { setAfterGate } from '../store.js'
 import { getSession } from '../../api/auth.js'
 import { me } from '../../main/data.js'
 import { myHandle, myPings, heldPings, sinceAgo } from '../pings.js'
@@ -331,7 +343,9 @@ function Mutual({ mine, them, mutual, reduce }) {
           <span className="wl-mutual-and" aria-hidden="true">+</span>
           <One handle={them} fallback={atHandle(them)} />
         </div>
-        <p className="wl-mutual-plain">you both said yes. nobody else was told.</p>
+        {/* what happened, as it happened: nobody was asked a question, each
+            of them sent the other a note */}
+        <p className="wl-mutual-plain">you both sent a note. nobody else was told.</p>
 
         {note ? (
           <figure className="wl-mutual-note">
@@ -356,7 +370,7 @@ function Mutual({ mine, them, mutual, reduce }) {
 
         <SheetFoot className="wl-mutual-foot">
           <Pill tone="light" wide href={`https://instagram.com/${them}`} rel="noreferrer noopener" target="_blank">
-            message {atHandle(them)} on instagram
+            message {atHandle(them)} on Instagram
           </Pill>
           {/* The quiet way out closes onto the wall and says nothing to
               anybody (`onClosing` in Reveal below). */}
@@ -367,10 +381,15 @@ function Mutual({ mine, them, mutual, reduce }) {
   )
 }
 
-export default function Reveal({ id, go, up, back, upLabel = 'back to the wall', reduce, toWall = null }) {
+export default function Reveal({
+  id, go, up, back, upLabel = 'back to the wall', nested = false, reduce, toWall = null,
+}) {
   const them = normHandle(id)
   // who this is: null until the server has said, then the row (main/data.js)
   const [who, setWho] = useState(null)
+  // and nobody at all: whoami has answered, and there is no session here by
+  // any proof, so there is no one whose private notes these could be
+  const stranger = !!who && !who.signedIn
   const [mutual, setMutual] = useState(() => fromHeld(guessHandle(), them) || undefined)
 
   useEffect(() => {
@@ -405,13 +424,24 @@ export default function Reveal({ id, go, up, back, upLabel = 'back to the wall',
   // wall was ever opened has its poster still up under the sheet, and it is
   // dropped as the sheet starts to go (index.jsx `toWall`), as the ping's
   // own way back does. The close mark, the scrim and Escape go back one
-  // step, as every sheet's do.
+  // step, as every sheet's do, and when that step is the wall (the mark
+  // says "back to the wall" then, and not "back") they drop the poster too.
+  // They did not, and on a reveal opened from the mail the mark landed on
+  // the poster and its `view the wall` while the line under the note, with
+  // the same words on it, landed on the names.
   const way = useRef('')
   const onClosing = useCallback((by) => {
     way.current = by
-    if (by === 'quiet' && toWall) toWall()
-  }, [toWall])
+    if (toWall && (by === 'quiet' || !nested)) toWall()
+  }, [toWall, nested])
   const onClose = useCallback(() => (way.current === 'quiet' ? back() : up()), [back, up])
+  // Not signed in: the gate, with this reveal as the way back once it has
+  // let them in (Gate.jsx `finish`). Closing the gate without signing in
+  // comes back here too, one step up, as every sheet over a sheet does.
+  const toGate = useCallback(() => {
+    setAfterGate({ name: 'reveal', id: them })
+    go('gate')
+  }, [go, them])
   // Nothing to show, and the account sheet is where the reason is. A reveal
   // the browser opened on directly has nothing behind it, so its entry is
   // given to the wall first, as the door gives its own (Join.jsx `place`),
@@ -434,6 +464,16 @@ export default function Reveal({ id, go, up, back, upLabel = 'back to the wall',
           <div className="wl-reveal-wait">
             <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual</h2>
             <Wait scale={3} />
+          </div>
+        ) : mutual === null && stranger ? (
+          // Nobody this device knows: the same words to every such visitor,
+          // and the one key is the gate, which comes back here.
+          <div className="wl-reveal-none">
+            <Display size="l" as="h2" id="wl-reveal-h">sign in to read it.</Display>
+            <div className="wl-push" />
+            <SheetFoot>
+              <Pill tone="light" wide onClick={toGate}>sign in</Pill>
+            </SheetFoot>
           </div>
         ) : mutual === null ? (
           // Not a mutual, or not this person's to see. Said flatly and

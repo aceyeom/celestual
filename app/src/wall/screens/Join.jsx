@@ -30,7 +30,15 @@
 //                                the phone is on is lit, the ones it has told
 //                                stay lit, and the one it has not reached
 //                                waits, dim
-//   write one                    the one key
+//   send one privately           the one key, there from the first frame
+//
+// The key used to wait for the story to reach its third step, four and a
+// half seconds in, and then read "write one", which is the wall's verb for
+// a letter and not for what the steps over it describe. For those seconds
+// the foot of the page was empty and nothing said a tap would land the
+// telling, so a person who already had the idea had nothing to press. It is
+// there with the page now, at full strength, and it says the act the first
+// step says.
 //
 // It was a headline that said "ping" twice, a picture, and three lines in the
 // poster's display type at one weight, each the same size as the headline's
@@ -62,8 +70,8 @@
 //
 // The mark stands, the screen goes to sleep, and it wakes on the two of them
 // apart again and tells it all again (`STORY.loop`), for as long as the page
-// is open. The steps under it follow the phone each time round; the key,
-// once it has come up, stays.
+// is open. The steps under it follow the phone each time round; the key
+// stands under them the whole time.
 //
 // There was a heart: the notes became one and it rose off the top of the
 // glass over them as they ran. It is gone, and so is the way the notes used
@@ -105,13 +113,14 @@ const STEPS = [
 // The story's beats are the steps': each is lit as its part of the story
 // starts, the first once the screen has come on (mutual.css `.wl-join-scr`,
 // 180ms and 900 of flicker), so the note is seen to leave and not found
-// already in the air. The key comes up once both have found out, while the
-// two of them are still running to each other.
+// already in the air. The last of them is the moment both have found out,
+// while the two of them are still running to each other, when no step is
+// the one the phone is on any more.
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
 const STORY = joinStory({ you: 900, them: 2300, both: 3600, panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
 const T = STORY.times
-// The moments a telling passes, in order: the three steps and the key
+// The moments a telling passes, in order: the three steps, all three told
 // (`LAST` of them), the pink leaving the two of them, the screen going to
 // sleep, and dark enough that the phone's light can go back to the night's
 // unseen (mutual.css, `wl-sleep` is 560ms).
@@ -151,7 +160,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
   const clock = useStoryClock(STORY, from, MARKS, still)
   const now = reduce ? heldAt(MARKS, T.done) : hold !== null ? heldAt(MARKS, hold) : clock
   const at = Math.min(LAST, now.i)
-  // the key, and the steps told, stay once a telling has reached them
+  // the steps told stay once a telling has reached them
   const told = reduce || now.n > 0 ? LAST : at
   // the pink has left the two of them on the glass, and the room takes it
   // up; asleep between two tellings, and then dark
@@ -189,8 +198,8 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
 
   // The same escape the intro has, for the same reason: a telling runs
   // seven seconds and the second person at a demo table has already seen
-  // it. A tap anywhere lands it on the mark, the steps told and the key up,
-  // and from there it goes on round.
+  // it. A tap anywhere lands it on the mark with the steps told, and from
+  // there it goes on round.
   useEffect(() => {
     if (still) return undefined
     const land = () => {
@@ -231,7 +240,7 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
 
         {/* The figure is a picture of the three steps beside it, and the steps
             are what a screen reader hears. The screen is the one lit thing on
-            this page until the key comes up under it. */}
+            this page but the key under it. */}
         <div
           className={`wl-join-fig${lit ? ' is-lit' : ''}${asleep ? ' is-asleep' : ''}${hold !== null ? ' is-held' : ''}`}
           style={fig} aria-hidden="true"
@@ -263,14 +272,14 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
           ))}
         </ol>
 
-        <div className={`wl-join-foot${told >= LAST ? ' is-in' : ''}`}>
+        <div className="wl-join-foot">
           {/* ── the hand-off ──
               This used to open /berkeley/orbit, a drawn stand-in for the core
               service, and then Main's /place by a real navigation out of this
               tree. It is the wall's own sheet now, so the key raises it over
               the wall in place (`place` above). */}
           <Pill tone="light" wide onClick={place}>
-            write one
+            send one privately
           </Pill>
         </div>
       </div>
