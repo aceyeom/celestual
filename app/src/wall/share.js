@@ -214,7 +214,7 @@ function press(g, w, h, s, q) {
 // softened that cover's type in the first place, and then the grain, off the
 // letter's own seed so the picture is the same picture every time. Nothing
 // is `ctx.filter`, which Safari does not draw.
-function square(cv, sw, sh, q, clip) {
+function square(cv, sw, sh, q, clip, topH, botH) {
   const g = cv.getContext('2d')
   // the words soft: down to two fifths and back, smoothed both ways, which
   // at this size is the page's blur of 0.18cqw
@@ -260,6 +260,15 @@ function square(cv, sw, sh, q, clip) {
   g.drawImage(light, 0, 0, sw, sh)
   g.globalCompositeOperation = 'source-over'
   g.drawImage(dark, 0, 0, sw, sh)
+  // and on the two near black bands the light specks lifted in screen, as
+  // the page lays them there, since dodging black leaves it black
+  g.beginPath()
+  g.rect(0, 0, sw, topH)
+  g.rect(0, sh - botH, sw, botH)
+  g.clip()
+  g.globalCompositeOperation = 'screen'
+  g.drawImage(light, 0, 0, sw, sh)
+  g.globalCompositeOperation = 'source-over'
   g.restore()
 }
 
@@ -318,12 +327,10 @@ function drawScreen(o, tile = null) {
   cv.width = sw
   cv.height = sh
   const g = cv.getContext('2d', { willReadFrequently: !!s.print })
-  // the square (looks.js, acid) is laid out as a print is, with no bands and
-  // no rule, and is never pulled through the press
+  // the square (looks.js, acid) is laid out as a print is, with no rule,
+  // and is never pulled through the press
   const brat = s.kind === 'brat'
   const flat = s.kind === 'poster' || s.kind === 'riso' || brat
-  // a print that keeps the phone's two bands of glass (looks.js `LIGHTS`)
-  const banded = s.light === 'bands'
   // how far in the status rows stand: on a print, clear of its rule
   const ex = flat ? 3.2 * u : 2.2 * u
 
@@ -377,19 +384,19 @@ function drawScreen(o, tile = null) {
     }
   }
 
-  // the bands
+  // the bands, which every screen has: a lit one's glass, a print's in one
+  // of its inks, acid's near black (looks.js, and every one keeps the
+  // phone's two bands)
   const topH = (q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
   const botH = 14 * u
-  if (!flat || banded) {
-    const tg = g.createLinearGradient(0, 0, 0, topH)
-    tg.addColorStop(0, s.top)
-    tg.addColorStop(1, s.top2)
-    g.fillStyle = tg
-    g.fillRect(0, 0, sw, topH)
-    g.fillStyle = s.bot
-    g.fillRect(0, sh - botH, sw, botH)
-  }
-  const lit = flat && !banded ? s.ink : s.lit
+  const tg = g.createLinearGradient(0, 0, 0, topH)
+  tg.addColorStop(0, s.top)
+  tg.addColorStop(1, s.top2)
+  g.fillStyle = tg
+  g.fillRect(0, 0, sw, topH)
+  g.fillStyle = s.bot
+  g.fillRect(0, sh - botH, sw, botH)
+  const lit = s.lit
   const bloom = flat ? 'transparent' : s.bloom
   const withBloom = (fn) => {
     g.save()
@@ -609,16 +616,17 @@ function drawScreen(o, tile = null) {
     g.lineWidth = 2.8 * u
     g.strokeRect(0, 0, sw, sh)
   }
-  // a keyline of the palest ink inside the rule, clear of it
+  // a keyline of the palest ink round the panel, clear of the rule and the
+  // bands (screen.css, the prints' lights)
   if (s.light === 'keyline') {
-    const k = 2.05 * u
+    const kx = 2.75 * u
     g.strokeStyle = '#FFF'
     g.lineWidth = 0.7 * u
-    g.strokeRect(k, k, sw - 2 * k, sh - 2 * k)
+    g.strokeRect(kx, topH + 1.35 * u, sw - 2 * kx, sh - topH - botH - 2.7 * u)
   }
   g.restore()
   if (s.print) press(g, sw, sh, s, q)
-  if (brat) square(cv, sw, sh, q, edge)
+  if (brat) square(cv, sw, sh, q, edge, topH, botH)
   return { cv, s, q, sw, sh }
 }
 
