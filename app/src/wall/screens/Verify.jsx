@@ -138,7 +138,7 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     say = <span className="wl-verify-wait"><Wait />{state === 'checking' ? 'checking the link' : 'putting your letter up'}</span>
   } else if (state === 'up') {
     title = <>verified. your<br />letter is up.</>
-    say = 'it’s on the wall with your school’s sticker, and nobody sees who wrote it.'
+    say = 'it’s on the wall marked from Berkeley, and nobody sees who wrote it.'
     act = <Pill tone="light" wide onClick={() => { if (toWall) toWall(); go('letter', id) }}>read it</Pill>
     quiet = <button type="button" className="wl-quiet" onClick={wall}>back to the wall</button>
   } else if (state === 'review') {
@@ -162,7 +162,7 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     act = <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
   } else if (state === 'failed') {
     title = <>verified, but it<br />didn&rsquo;t go up.</>
-    say = why === 'campus' ? 'that address is at another school, and only Berkeley posts to an @. your letter is still in the composer.'
+    say = why === 'campus' ? 'that address is at another school, so it can’t post marked from Berkeley. your letter is still in the composer, and it can go up read first.'
       : why === 'throttle' ? 'too many from this device today. your letter is still in the composer.'
       : 'your letter is still in the composer. open it and send it again.'
     act = <Pill tone="light" wide onClick={toLetter}>open your letter</Pill>

@@ -106,7 +106,7 @@ import {
 } from '../data.js'
 import { ownerRemove, ownerRestore } from '../../api/alerts.js'
 import { href } from '../router.js'
-import { mark, setAfterGate, getState, patch } from '../store.js'
+import { mark, getState, patch } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
 import { letterMarks } from '../schools.js'

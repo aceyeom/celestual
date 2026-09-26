@@ -117,7 +117,7 @@ export function Nudge({ nudge, onSignIn }) {
             <PixIcon name="env" scale={2} className="wl-signnote-env" />
             <div className="wl-signnote-text">
               <p className="wl-signnote-h" id="wl-signnote-h">hear if one is ever written to you.</p>
-              <p className="wl-signnote-why">sign in once, and you can heart the ones you like too. nobody sees who you are.</p>
+              <p className="wl-signnote-why">sign in once and we’ll tell you, and only you. nobody sees who you are.</p>
             </div>
           </div>
           <div className="wl-signnote-keys">

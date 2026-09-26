@@ -14,7 +14,7 @@
 //                                 name, and the note is read by the
 //                                 classifier (and, where it is unsure, by a
 //                                 person at the desk) before it goes up.
-//     post as a Berkeley student  public, with the Cal sticker on it, and up
+//     post as a Berkeley student  public, marked from Berkeley (CAL in its status row), and up
 //                                 at once. It asks "confirm you're at
 //                                 Berkeley", by a link to a berkeley.edu
 //                                 address, once per device. An @ only.
@@ -113,7 +113,7 @@ import { sendCampusCode, checkCampusCode, loadPending } from '../handoff.js'
 import { sendLink, linkStatus } from '../../api/eduverify.js'
 import { sessionToken } from '../../api/identity.js'
 import { signOut as dropProof } from '../../api/auth.js'
-import { myHandle, canPlace, place, forgetPings } from '../pings.js'
+import { myHandle, canPlace, readyToPlace, place, forgetPings } from '../pings.js'
 import { schoolOf, slugOfDomain } from '../schools.js'
 import { Sticker } from '../Sticker.jsx'
 import { useProve, ProveDoor } from './Ping.jsx'
@@ -607,6 +607,13 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
       return
     }
     if (canPlace()) { sendPrivately(); return }
+    // a person signed in a beat ago holds their @ already and its proof is
+    // on its way back (pings.js `readyToPlace`, 0065): wait for it rather
+    // than ask for a DM they have already sent once
+    if (myHandle()) {
+      readyToPlace().then((proof) => { if (proof) sendPrivately(); else setStep('ig') }, () => setStep('ig'))
+      return
+    }
     setStep('ig')
   }
 
@@ -894,7 +901,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                   <span className="wl-how-mark" aria-hidden="true"><Sticker school={BERKELEY} tilt={-7} label="" /></span>
                   <span className="wl-how-text">
                     <span className="wl-how-title">post as a Berkeley student</span>
-                    <span className="wl-how-why">public, with the Cal sticker on it. it goes up at once.</span>
+                    <span className="wl-how-why">public, marked from Berkeley. it goes up at once.</span>
                     <span className={`wl-how-asks ${calAsks.tone}`}>
                       {busyWith('edu') ? <><Wait />posting</> : <><PixIcon name={calAsks.glyph} scale={2} />{calAsks.text}</>}
                     </span>
@@ -944,11 +951,11 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 : <>confirm you&rsquo;re<br />at Berkeley.</>}
             </Display>
             <p className="wl-door-say">
-              {wrongSchool ? 'only a Berkeley address posts with the Cal sticker. it can still go up on the wall, read first.'
+              {wrongSchool ? 'only a Berkeley address posts marked from Berkeley. it can still go up on the wall, read first.'
                 : waiting ? (held.legacy
                   ? <>we mailed a code to <span className="wl-h">{held.email}</span>. type it here and your letter goes up.</>
                   : <>at <span className="wl-h">{held.email}</span>. tap the link and your letter goes up.</>)
-                : 'the Cal sticker is for Berkeley students. we email you one link, and your address never goes on the letter.'}
+                : 'the Berkeley mark is for Berkeley students. we email you one link, and your address never goes on the letter.'}
             </p>
           </div>
           <div className="wl-door-ways">
