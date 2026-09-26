@@ -234,13 +234,33 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
       },
       body: JSON.stringify({
         model,
-        // the answer is a verdict and a word or two: the output is the
-        // expensive half of a call, and this one is kept small
-        max_tokens: 60,
+        // the answer is a verdict and a word or two, but sixty tokens cut a
+        // few answers off mid-object; the schema below keeps it short anyway
+        max_tokens: 256,
         // The same letter gets the same answer: a screen that flips a coin on
         // a borderline letter is a screen somebody can retry their way past.
         temperature: 0,
         system: SYSTEM_PROMPT,
+        // Structured output: the answer is held to this schema by the API, so
+        // it always parses. Asked for in the prompt alone, about a third of
+        // the verdicts of 24 September came back as prose round the object or
+        // cut off, and went to the desk as `unparsed`; with a name note read
+        // before it goes up (docs/ONE-WALL.md), each of those would have held
+        // a clean note back for a person.
+        output_config: {
+          format: {
+            type: 'json_schema',
+            schema: {
+              type: 'object',
+              properties: {
+                verdict: { type: 'string', enum: ['pass', 'review', 'reject'] },
+                reasons: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['verdict', 'reasons'],
+              additionalProperties: false,
+            },
+          },
+        },
         messages: [{
           role: 'user',
           content: `<addressee>${addressee}</addressee>\n<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
@@ -253,9 +273,18 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
   if (!res.ok) return { verdict: 'review', reasons: ['classifier_error'], model }
 
   const data = await res.json()
-  const text = (data?.content?.[0]?.text || '').trim()
+  // A refusal, or an answer cut off, is not a verdict: a person reads it
+  if (data?.stop_reason === 'refusal') return { verdict: 'review', reasons: ['classifier_refused'], model }
+  if (data?.stop_reason === 'max_tokens') return { verdict: 'review', reasons: ['unparsed'], model }
+  const block = Array.isArray(data?.content) ? data.content.find((b: { type?: string }) => b?.type === 'text') : null
+  const text = String(block?.text || '').trim()
   try {
-    const out = JSON.parse(text.replace(/^```json\s*|\s*```$/g, ''))
+    // the schema makes this the whole text; the object is still found inside
+    // anything round it, so a model without structured output reads the same
+    const whole = text.replace(/^```json\s*|\s*```$/g, '')
+    const at = whole.indexOf('{')
+    const end = whole.lastIndexOf('}')
+    const out = JSON.parse(at >= 0 && end > at ? whole.slice(at, end + 1) : whole)
     const v = out.verdict === 'pass' || out.verdict === 'reject' ? out.verdict : 'review'
     return { verdict: v, reasons: Array.isArray(out.reasons) ? out.reasons.slice(0, 6).map(String) : [], model }
   } catch {
