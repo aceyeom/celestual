@@ -127,8 +127,11 @@ function faint(rgb, a = 0.07) {
 }
 
 // which ink wins a cell two drawings light at once: the near ink, then the
-// rose, then the far ink
-const RANK = [0, 3, 1, 2]
+// rose, then the mid, then the far ink
+const RANK = [0, 4, 1, 3, 2]
+// how much of the ink each is lit at: the near whole, the far at half, and
+// the mid (ink 4, the intro's faces, hands and her dress) between them
+const LIT = [1, 1, 0.5, 1, 0.72]
 
 // The fill of a lit cell: its ink, carried toward the rose by its heat, and
 // lit by its alpha. Heat and alpha are counted in sixteenths, so a frame has
@@ -142,7 +145,7 @@ function fillOf(s, ink, heat, alpha) {
   const base = ink === 3 ? ROSE_RGB : s.rgb
   const k = ink === 3 ? 0 : h / 16
   const c = base.map((v, i) => Math.round(v + (ROSE_RGB[i] - v) * k))
-  const lit = ink === 2 ? 0.5 : 1
+  const lit = LIT[ink] ?? 1
   f = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${((lit + (1 - lit) * k) * (a / 16)).toFixed(3)})`
   s.fills.set(key, f)
   return f
@@ -198,9 +201,10 @@ function pinkPanel(s, host, el, dpr) {
   const p = cv.getContext('2d')
   p.setTransform(1, 0, 0, ry / rx, cx, cy)
   const gr = p.createRadialGradient(0, 0, 0, 0, 0, rx)
-  gr.addColorStop(0, PANEL[0])
-  gr.addColorStop(0.52, PANEL[1])
-  gr.addColorStop(1, PANEL[2])
+  const pan = s.panel || PANEL
+  gr.addColorStop(0, pan[0])
+  gr.addColorStop(0.52, pan[1])
+  gr.addColorStop(1, pan[2])
   p.fillStyle = gr
   p.fillRect(-cx, (-cy * rx) / ry, s.W, (s.H * rx) / ry)
   s.pink = cv
@@ -226,7 +230,8 @@ function washOn(g, w, s) {
   const x = mx + (w.x + ox + 0.5) * cell
   const y = my + (w.y + oy + 0.5) * cell
   const R = Math.max(0.5, w.r) * cell
-  const E = 5 * cell
+  // how soft its front is, in cells (the intro's finer grid asks for more)
+  const E = (w.soft || 5) * cell
   const out = R + E
   const t = s.tmp.getContext('2d')
   t.globalCompositeOperation = 'source-over'
@@ -254,6 +259,69 @@ function washOn(g, w, s) {
   }
 }
 
+// The fine story's pink is worked out at a quarter of the canvas's size and
+// laid on it smoothly. It is a light, all gradient, with a front soft over a
+// dozen cells, and a gradient a quarter the size is the same gradient; the
+// sixteenth of the pixels is what lets a phone spread it sixty times a
+// second.
+const QW = 4
+function washFine(g, w, s) {
+  if (!s.pink) return
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.globalAlpha = Math.max(0, Math.min(1, w.level ?? 1))
+  if (w.r == null) {
+    g.drawImage(s.pink, 0, 0)
+    g.globalAlpha = 1
+    return
+  }
+  if (!s.pinkS) {
+    const sw = Math.ceil(s.W / QW)
+    const sh = Math.ceil(s.H / QW)
+    const a = document.createElement('canvas')
+    a.width = sw
+    a.height = sh
+    a.getContext('2d').drawImage(s.pink, 0, 0, sw * QW, sh * QW, 0, 0, sw, sh)
+    const b = document.createElement('canvas')
+    b.width = sw
+    b.height = sh
+    s.pinkS = a
+    s.tmpS = b
+  }
+  const { ox, oy, cell, mx, my } = s
+  const x = (mx + (w.x + ox + 0.5) * cell) / QW
+  const y = (my + (w.y + oy + 0.5) * cell) / QW
+  const R = (Math.max(0.5, w.r) * cell) / QW
+  const E = ((w.soft || 5) * cell) / QW
+  const out = R + E
+  const sw = s.tmpS.width
+  const sh = s.tmpS.height
+  const t = s.tmpS.getContext('2d')
+  t.globalCompositeOperation = 'source-over'
+  t.clearRect(0, 0, sw, sh)
+  t.drawImage(s.pinkS, 0, 0)
+  t.globalCompositeOperation = 'destination-in'
+  const m = t.createRadialGradient(x, y, 0, x, y, out)
+  m.addColorStop(0, 'rgba(0, 0, 0, 1)')
+  m.addColorStop(Math.max(0, (R - E) / out), 'rgba(0, 0, 0, 1)')
+  m.addColorStop(1, 'rgba(0, 0, 0, 0)')
+  t.fillStyle = m
+  t.fillRect(0, 0, sw, sh)
+  t.globalCompositeOperation = 'source-over'
+  const rim = Math.max(0, Math.min(1, w.rim ?? 0))
+  if (rim > 0.01) {
+    const r = t.createRadialGradient(x, y, 0, x, y, out)
+    r.addColorStop(0, `rgba(${FRONT_RGB}, 0)`)
+    r.addColorStop(Math.max(0, (R - 1.6 * E) / out), `rgba(${FRONT_RGB}, 0)`)
+    r.addColorStop(Math.max(0, (R - 0.4 * E) / out), `rgba(${FRONT_RGB}, ${(0.42 * rim).toFixed(3)})`)
+    r.addColorStop(1, `rgba(${FRONT_RGB}, 0)`)
+    t.fillStyle = r
+    t.fillRect(0, 0, sw, sh)
+  }
+  g.imageSmoothingEnabled = true
+  g.drawImage(s.tmpS, 0, 0, sw, sh, 0, 0, sw * QW, sh * QW)
+  g.globalAlpha = 1
+}
+
 // The whole body of the screen is the panel: `pc` by `pr` cells, the story's
 // own grid centred in it at (`ox`, `oy`), so the unlit dots run edge to edge
 // and there is no second rectangle standing inside the glass. The canvas is
@@ -263,6 +331,14 @@ function paint(g, f, s) {
   const { pc, pr, ox, oy, cell, gap, W, H, mx, my } = s
   g.setTransform(1, 0, 0, 1, 0, 0)
   g.clearRect(0, 0, W, H)
+  // a story may carry its own ink from frame to frame (the intro's goes from
+  // the night's to the rose's with the pink)
+  if (f.ink && f.ink !== s.inkNow) {
+    s.inkNow = f.ink
+    s.rgb = rgbOf(f.ink)
+    s.ghost = faint(s.rgb)
+    s.fills.clear()
+  }
   // one ink per cell, by rank, so a cell two pixels pass through on the
   // same frame is drawn once; the warmer of two of the same ink
   const n = pc * pr
@@ -288,6 +364,16 @@ function paint(g, f, s) {
   }
   const d = cell - gap
   const at = (i) => [(i % pc) * cell, Math.floor(i / pc) * cell]
+  // the unlit dot under a cell on its way somewhere is not drawn: a body
+  // sliding between the panel's cells covers the dots it is mostly over, so
+  // the faint grid does not show through it at another pitch (and only
+  // those, or a ring of missing dots goes round it as a light)
+  const under = free.length ? new Uint8Array(n) : null
+  for (const c of free) {
+    const x = Math.round(c[0] + ox)
+    const y = Math.round(c[1] + oy)
+    if (x >= 0 && y >= 0 && x < pc && y < pr) under[y * pc + x] = 1
+  }
   // The frame they touched used to be the whole panel in ink with the cells
   // cut out of it, the way a phone's screen flashed when something came in.
   // It read as a collision, and it went with the collision (pixmark.js
@@ -320,7 +406,7 @@ function paint(g, f, s) {
   // the panel's own dots, unlit
   g.fillStyle = s.ghost
   for (let i = 0; i < n; i++) {
-    if (ink[i]) continue
+    if (ink[i] || (under && under[i])) continue
     const [x, y] = at(i)
     g.fillRect(x, y, d, d)
   }
@@ -338,6 +424,88 @@ function paint(g, f, s) {
     const fs = fillOf(s, c[2], c[3] || 0, c[4] ?? 1)
     if (fs !== last) { g.fillStyle = fs; last = fs }
     g.fillRect(Math.round((c[0] + ox) * cell), Math.round((c[1] + oy) * cell), d, d)
+  }
+}
+
+// ── the fine grid ──
+// The intro is drawn on a grid nearly twice as fine as the door's, at the
+// pitch every letter is lit at, and afresh on every frame of the display
+// while the two of them run: nine thousand dots a frame, laid one by one, is
+// more than a phone can paint sixty times a second. So on a story that asks
+// for it (`fine`) the panel's unlit dots are drawn once, for this size and
+// this ink, onto a canvas of their own, and laid down whole; and the lit
+// cells are drawn by their light, every cell of one strength in one path,
+// so a frame sets a few dozen fills and not a few thousand. The one thing
+// given up is the dot left out under a pixel between cells: on this grid a
+// pixel on its way somewhere is small enough that the dot under it is lost
+// in it.
+function ghostGrid(s) {
+  const cv = document.createElement('canvas')
+  cv.width = s.W
+  cv.height = s.H
+  const g = cv.getContext('2d')
+  const d = s.cell - s.gap
+  g.fillStyle = s.ghost
+  g.beginPath()
+  for (let y = 0; y < s.pr; y++) for (let x = 0; x < s.pc; x++) g.rect(s.mx + x * s.cell, s.my + y * s.cell, d, d)
+  g.fill()
+  s.grid = cv
+}
+function paintFine(g, f, s) {
+  const { pc, pr, ox, oy, cell, gap, W, H, mx, my } = s
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.clearRect(0, 0, W, H)
+  if (f.ink && f.ink !== s.inkNow) {
+    s.inkNow = f.ink
+    s.rgb = rgbOf(f.ink)
+    s.ghost = faint(s.rgb)
+    s.fills.clear()
+  }
+  // (the unlit dots are a few per cent of the ink, and are not drawn again
+  // for each step of the ink toward the rose's: at that strength the two
+  // inks are one grey)
+  if (!s.grid) ghostGrid(s)
+  if (f.wash) washFine(g, f.wash, s)
+  if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
+  g.drawImage(s.grid, 0, 0)
+  // the lit cells, by their fill; a cell lit twice keeps the stronger
+  const d = cell - gap
+  const seen = s.seen && s.seen.length === pc * pr ? s.seen : (s.seen = new Float32Array(pc * pr))
+  seen.fill(0)
+  const by = s.by || (s.by = new Map())
+  for (const list of by.values()) list.length = 0
+  const add = (fs, x, y) => {
+    let list = by.get(fs)
+    if (!list) { list = []; by.set(fs, list) }
+    list.push(x, y)
+  }
+  const on = []
+  for (const c of f.cells) {
+    const x = c[0] + ox
+    const y = c[1] + oy
+    if (!Number.isInteger(x) || !Number.isInteger(y)) {
+      add(fillOf(s, c[2], c[3] || 0, c[4] ?? 1), mx + Math.round(x * cell), my + Math.round(y * cell))
+      continue
+    }
+    if (x < 0 || y < 0 || x >= pc || y >= pr) continue
+    const i = y * pc + x
+    const a = (LIT[c[2]] ?? 1) * (c[4] ?? 1)
+    if (a <= seen[i]) continue
+    if (!seen[i]) on.push(i)
+    seen[i] = a
+    s.cellOf = s.cellOf || new Array(pc * pr)
+    s.cellOf[i] = c
+  }
+  for (const i of on) {
+    const c = s.cellOf[i]
+    add(fillOf(s, c[2], c[3] || 0, c[4] ?? 1), mx + (i % pc) * cell, my + Math.floor(i / pc) * cell)
+  }
+  for (const [fs, list] of by) {
+    if (!list.length) continue
+    g.fillStyle = fs
+    g.beginPath()
+    for (let k = 0; k < list.length; k += 2) g.rect(list[k], list[k + 1], d, d)
+    g.fill()
   }
 }
 
@@ -375,8 +543,8 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       s = {
         pc, pr, ox: (pc - story.cols) >> 1, oy: (pr - story.rows) >> 1, cell, mode,
         gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
-        ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(),
-        face: cs.fontFamily || 'monospace',
+        ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
+        face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
       }
       s.ghost = faint(s.rgb)
       s.W = Math.round(w * dpr)
@@ -396,7 +564,8 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       last = f
       if (!s || f.key === key) return
       key = f.key
-      paint(g, f, s)
+      if (s.fine) paintFine(g, f, s)
+      else paint(g, f, s)
     }
     const now = () => (at != null ? at : performance.now() - t0)
     const stop = () => {
