@@ -1554,7 +1554,7 @@ export default function Letter({
 
         {/* the thread under an open letter (Replies.jsx, 0068), keyed by the
             letter so a turn of the deck is a thread of its own */}
-        {open ? <Replies key={one.id} letter={one} reduce={reduce} /> : null}
+        {open ? <Replies key={one.id} letter={one} reduce={reduce} go={go} /> : null}
       </div>
     </Sheet>
   )

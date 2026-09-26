@@ -286,6 +286,12 @@
 .wl-rp-fault { margin: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--accent); }
 .wl-rp-wait { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--t-meta); color: var(--ash); }
 .wl-rp-again { align-self: flex-start; padding: 2px 0; }
+/* The number and the way to ask again are the composer's own (post.css
+   `.wl-edu-match`, wall.css `.wl-resend`), sat on the thread's left edge
+   rather than centred on a door. */
+.wl-rp-school :is(.wl-resend, .wl-resend-go) { align-self: flex-start; padding: 2px 0; }
+/* the one person who answers with no school, pointed to their own door */
+.wl-rp-school .wl-rp-theirs { align-self: flex-start; padding: 2px 0; text-align: left; text-wrap: pretty; }
 
 /* ── the recipient's own row ──
    Neutral glass, a step lighter than the thread's, with the brighter bezel:

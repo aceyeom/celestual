@@ -661,6 +661,24 @@ begin
 end;
 $$;
 
+-- The terms, agreed with a send, kept on their own. celestual-wall-reply
+-- calls this before the list reads the reply, because a reply the list
+-- catches is never written, and the agreement that came with it was lost
+-- with it: the person who had just agreed was asked to again. The write
+-- still keeps the agreement itself (below), so a send that reaches it
+-- without this having run loses nothing. Service role.
+create or replace function wall_reply_agree(p_token text)
+returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_me uuid := celestual_session_user(p_token);
+begin
+  if v_me is null then return jsonb_build_object('ok', false, 'error', 'no_session'); end if;
+  insert into wall_reply_terms (user_id) values (v_me) on conflict (user_id) do nothing;
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
 -- The answer a write gives about a reply, in one place, so a replay says
 -- exactly what the first send said.
 create or replace function wall_reply_answer(p_reply uuid)
@@ -880,6 +898,7 @@ revoke all on function wall_reply_like(text, uuid, boolean)           from publi
 revoke all on function wall_reply_report(text, uuid, boolean)         from public;
 revoke all on function wall_reply_thread_set(text, uuid, text)        from public;
 revoke all on function wall_reply_can(text, uuid)                     from public, anon, authenticated;
+revoke all on function wall_reply_agree(text)                         from public, anon, authenticated;
 revoke all on function wall_reply_answer(uuid)                        from public, anon, authenticated;
 revoke all on function wall_reply_replay(text, text)                  from public, anon, authenticated;
 revoke all on function wall_reply_write(text, uuid, text, text, jsonb, text, boolean) from public, anon, authenticated;
@@ -892,6 +911,7 @@ grant execute on function wall_reply_report(text, uuid, boolean)  to anon, authe
 grant execute on function wall_reply_thread_set(text, uuid, text) to anon, authenticated;
 grant execute on function wall_reply_caught(text)                 to service_role;
 grant execute on function wall_reply_can(text, uuid)              to service_role;
+grant execute on function wall_reply_agree(text)                  to service_role;
 grant execute on function wall_reply_replay(text, text)           to service_role;
 grant execute on function wall_reply_write(text, uuid, text, text, jsonb, text, boolean) to service_role;
 grant execute on function celestual_desk_replies(text, integer, integer) to service_role;

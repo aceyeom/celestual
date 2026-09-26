@@ -17,9 +17,17 @@
 // land there on their own again: a name-only note always goes through the
 // classifier, and one it sends to review, or one written while no classifier
 // is configured, waits off the wall for this desk. So the tab says what it
-// is, "waiting for review", each row says why it is waiting, and the two
-// answers are on the row itself: approve puts it on the wall, reject keeps it
-// off.
+// is, "held", each row says why it is waiting, and the two answers are on the
+// row itself: approve puts it on the wall, reject keeps it off.
+//
+// ── ONE SET OF WORDS ────────────────────────────────────────────────────────
+// This screen and the replies' (Replies.jsx) sit side by side on the rail and
+// name the same states, so they name them the same way: live, held, down,
+// rejected. The tab said "waiting for review" and the replies said "held" for
+// the same thing, off the wall until a person decides, and the overview and
+// the guide had always said held. And whatever read the words is "the
+// reading" on both, where this one said "the screen" and "the classifier",
+// with its reasons in words rather than the codes it returns (`reasonWords`).
 //
 // ── AND WHY THE REJECTED ONES ARE HERE AT ALL ───────────────────────────────
 // Spec section 9: rejected content is stored with a rejection reason so it
@@ -33,33 +41,61 @@ import { Search, useDebounced, Tabs, Paging, Empty, Fault, When, State, Btn, Arm
 const LIMIT = 50
 const TABS = [
   { value: 'flagged', label: 'flagged' },
-  { value: 'pending', label: 'waiting for review' },
+  { value: 'pending', label: 'held' },
   { value: 'live', label: 'live' },
   { value: 'rejected', label: 'rejected' },
   { value: 'removed', label: 'down' },
   { value: '', label: 'all' },
 ]
 
-// What the classifier's own reason words mean, for the ones that are about
-// the classifier rather than about the letter.
+// the word the state column draws for each, the replies' words too
+export const STATE_WORDS = { live: 'live', pending: 'held', held: 'held', removed: 'down', rejected: 'rejected' }
+
+// What the reading's own reason words mean, for the ones that are about the
+// reading rather than about the words it read.
 const REASON_WORDS = {
-  unconfigured: 'no classifier is set up, so every name note waits here',
-  classifier_timeout: 'the classifier did not answer in time',
-  classifier_error: 'the classifier failed',
-  unparsed: 'the classifier answered in a way that could not be read',
-  unreachable: 'the classifier could not be reached',
+  unconfigured: 'no reading is set up, so everything it would read waits here',
+  classifier_timeout: 'the reading did not answer in time',
+  classifier_error: 'the reading failed',
+  classifier_refused: 'the reading would not read it',
+  unparsed: 'the reading answered in a way that could not be understood',
+  unreachable: 'the reading could not be reached',
 }
-function reasonWords(rs) {
+// And the ones about the words: the reading's categories (celestual-wall-
+// moderate, celestual-wall-reply) and the list's (layer 1, and the replies'
+// rule that a reply names nobody else), in the desk's words, so nobody has
+// to know what `locate` or `pile` stands for before deciding.
+const WHY_WORDS = {
+  threat: 'a threat',
+  locate: 'says where someone can be found',
+  sexual: 'sexual about a person',
+  minor: 'about someone under 18',
+  expose: 'shares something private about a person',
+  hate: 'hateful about a group',
+  contact: 'contact details',
+  third: 'names someone else',
+  pile: 'piling on the person it is to',
+  slur: 'a slur',
+  url: 'a link',
+  email: 'an email address',
+  phone: 'a phone number',
+  address: 'a street address',
+  room: 'a room number',
+  tag: 'tags someone',
+  name: 'someone’s full name',
+}
+export function reasonWords(rs) {
   return (rs || []).map((r) => {
     const k = String(r)
     if (REASON_WORDS[k]) return REASON_WORDS[k]
+    if (WHY_WORDS[k]) return WHY_WORDS[k]
     if (k.startsWith('lex:')) return `the word list caught "${k.slice(4)}"`
     return k
   })
 }
 
 // Why a letter is waiting, in one line: the desk's own hold, or the
-// classifier's verdict and its reasons, or whatever reason the row carries.
+// reading's verdict and its reasons, or whatever reason the row carries.
 function heldWhy(l) {
   const m = l.moderation && typeof l.moderation === 'object' ? l.moderation : {}
   const desk = m.desk && typeof m.desk === 'object' ? m.desk : null
@@ -68,8 +104,8 @@ function heldWhy(l) {
   // no classifier ran, or it failed: that is the reason, and nothing asked
   const system = (m.reasons || []).some((r) => REASON_WORDS[String(r)])
   if (system) return said.join(', ')
-  if (m.verdict === 'review') return said.length ? `the classifier asked for a person: ${said.join(', ')}` : 'the classifier asked for a person'
-  if (m.verdict === 'reject') return said.length ? `the classifier said no: ${said.join(', ')}` : 'the classifier said no'
+  if (m.verdict === 'review') return said.length ? `the reading asked for a person: ${said.join(', ')}` : 'the reading asked for a person'
+  if (m.verdict === 'reject') return said.length ? `the reading said no: ${said.join(', ')}` : 'the reading said no'
   if (m.reason) return String(m.reason)
   if (said.length) return said.join(', ')
   return 'no reason was recorded'
@@ -152,7 +188,7 @@ export default function Letters({ password, initialStatus = 'flagged', onChanged
       {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>
           {status === 'flagged' ? 'nothing is waiting to be read.'
-            : status === 'pending' ? 'nothing is waiting for review.'
+            : status === 'pending' ? 'nothing is held.'
             : q ? 'nothing matches that.'
               : 'nothing here yet.'}
         </Empty>
@@ -202,7 +238,7 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
   return (
     <>
       <tr className={open ? 'is-open' : ''}>
-        <td><State tone={waiting ? 'is-hold' : undefined}>{l.flagged ? 'flagged' : waiting ? 'waiting' : l.status}</State></td>
+        <td><State tone={waiting ? 'is-hold' : undefined}>{l.flagged ? 'flagged' : STATE_WORDS[l.status] || l.status}</State></td>
         {/* a first name (0053) prints as written, with no @; the paper the
             letter chose (0055) stands under it, as its slugs */}
         <td>
@@ -217,7 +253,7 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
           {waiting ? (
             <div className="ad-head-note ad-meta">why it is waiting: {heldWhy(l)}</div>
           ) : reasons.length ? (
-            <div className="ad-head-note ad-meta">the screen said: {reasonWords(reasons).join(', ')}</div>
+            <div className="ad-head-note ad-meta">the reading said: {reasonWords(reasons).join(', ')}</div>
           ) : null}
         </td>
         <td>
@@ -254,7 +290,7 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
 
               <div>
                 <label className="wl-label" htmlFor={`n-${l.id}`} style={{ marginBottom: 6 }}>
-                  why, in your words. it is kept beside what the screen said.
+                  why, in your words. it is kept beside what the reading said.
                 </label>
                 <textarea
                   id={`n-${l.id}`}

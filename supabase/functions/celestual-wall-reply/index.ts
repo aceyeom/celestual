@@ -19,7 +19,8 @@
 //             nonce) answers the first send's answer and writes nothing new
 //     accept  the person accepting the terms for replying with this send.
 //             Needed once; without it a person who has not accepted is
-//             answered `terms` and nothing is read
+//             answered `terms` and nothing is read. With it, the agreement
+//             is kept before the reply is read, whatever the reading says
 //   { ok: true, id, status: 'live'|'held'|'rejected', recipient, say?, reasons?, replay? }
 //   { ok: false, error: 'edu'|'locked'|'closed'|'gone'|'terms'|'throttle'
 //                      |'caught'|'empty'|'long'|'nonce'|'no_session'|'write', reasons? }
@@ -241,7 +242,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // What the writer is told, in the product's words (design/VOICE.md).
 function said(status: string): string | undefined {
-  if (status === 'held') return `it's being read. it shows here once it passes.`
+  // The held reply is already in the thread, marked for its writer alone
+  // (app/src/wall/Replies.jsx); what waits on the reading is everybody else.
+  if (status === 'held') return `it's being read. others see it once it passes.`
   if (status === 'rejected') return `it can't go up as it's written.`
   return undefined
 }
@@ -302,6 +305,16 @@ Deno.serve(async (req: Request) => {
   }
   if (!can?.ok) return json({ ok: false, error: String(can?.error || 'write') })
   if (!can.terms && !accept) return json({ ok: false, error: 'terms' })
+
+  // ── the terms, agreed with this send ──
+  // Kept now, before the list reads the reply. The write keeps them too, but
+  // a reply the list catches is never written, and its writer, who agreed a
+  // moment ago, was asked to agree again on the next send. A failure here is
+  // not the reply's: the write asks for the agreement again and keeps it.
+  if (!can.terms && accept) {
+    const { error: agreeErr } = await supabase.rpc('wall_reply_agree', { p_token: token })
+    if (agreeErr) console.error('wall_reply_agree failed', agreeErr.message)
+  }
 
   // ── layer 1: the list, and nobody else ──
   const caught = [...deterministic(body), ...thirdParty(body)]

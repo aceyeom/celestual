@@ -21,23 +21,38 @@
 //
 // The tabs read the same table: waiting (the default, oldest first), then
 // every state on its own, newest first.
+//
+// ── the letters' words ──────────────────────────────────────────────────────
+// This screen sits beside the letters' on the rail, so a state has one name
+// on both (Letters.jsx `STATE_WORDS`): live, held, down, rejected, and
+// `reported` for the one only a reply has. The reading's reasons are said in
+// the same words the letters' are (`reasonWords`), not as the codes it
+// returns: `pile` is "piling on the person it is to".
+//
+// ── on a phone ──────────────────────────────────────────────────────────────
+// The table scrolls sideways at 390 pixels, and `decide` is its last column,
+// so the drawer used to open under a table scrolled to its right edge, with
+// the letter, the note and the two keys cut off on the left. The drawer holds
+// to the left edge of what is in view now (desk.css `.ad-drawer-in`), and the
+// letters' and the reports' drawers with it.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskReplies, deskReplySet } from './replies-api.js'
 import { Tabs, Paging, Empty, Fault, When, State, None, Btn, Arm, Ledger, Figure, Note, clampOffset, failWord } from './parts.jsx'
+import { STATE_WORDS, reasonWords } from './Letters.jsx'
 
 const LIMIT = 50
 const TABS = [
   { value: 'waiting', label: 'waiting' },
   { value: 'held', label: 'held' },
   { value: 'hidden', label: 'reported' },
-  { value: 'live', label: 'up' },
+  { value: 'live', label: 'live' },
   { value: 'removed', label: 'down' },
-  { value: 'rejected', label: 'refused' },
+  { value: 'rejected', label: 'rejected' },
   { value: 'all', label: 'all' },
 ]
 
 // the word the desk's state column draws for each (parts.jsx `State`)
-const SAY = { live: 'up', held: 'held', hidden: 'reported', removed: 'down', rejected: 'refused' }
+const SAY = { ...STATE_WORDS, hidden: 'reported' }
 
 // The number the rail carries: what is waiting on a person. Read on its own,
 // since the desk's overview is a different function's and does not know the
@@ -162,8 +177,8 @@ export default function Replies({ password, go, onChanged, onLock }) {
 
       <Note>
         a reply is read before it goes up: the list, the rule that it names nobody else, and the
-        classifier. a pass goes up, an unsure reading is held here, and a refusal is kept under
-        refused. three reports from three devices put a reply out of sight until it is decided here.
+        reading. a pass goes up, an unsure one is held here, and a refusal is kept under
+        rejected. three reports from three devices put a reply out of sight until it is decided here.
         putting one back clears the reports that hid it. taking one down tells its writer, in the
         thread, that it went against the terms for replying.
       </Note>
@@ -184,11 +199,11 @@ function Row({ r, go, open, note, setNote, acting, onOpen, onUp, onDown }) {
           <div className="ad-head-note ad-meta">
             under the letter to <span className="ad-id is-dim">{to}</span>
             {r.recipient ? <>, by the recipient</> : null}
-            {r.thread_state && r.thread_state !== 'open' ? <>, the thread is {r.thread_state === 'locked' ? 'shut' : 'put away'}</> : null}
+            {r.thread_state && r.thread_state !== 'open' ? <>, and the recipient {r.thread_state === 'locked' ? 'stopped new replies' : 'hid the replies'}</> : null}
           </div>
           <p className="ad-body-text is-quote" style={{ margin: 0 }}>{r.body}</p>
           {reasons.length ? (
-            <div className="ad-head-note ad-meta">the reading said {reasons.join(', ')}</div>
+            <div className="ad-head-note ad-meta">the reading said: {reasonWords(reasons).join(', ')}</div>
           ) : null}
         </td>
         <td className="is-mid">

@@ -328,7 +328,7 @@
    A table element, because it is a table: a screen reader announces the row
    and the column, a browser keeps the columns aligned across a body of four
    hundred rows, and neither is true of a stack of divs pretending. */
-.ad-scroll { overflow-x: auto; margin: 0 -24px; padding: 0 24px; }
+.ad-scroll { overflow-x: auto; margin: 0 -24px; padding: 0 24px; container-type: inline-size; }
 @media (max-width: 900px) { .ad-scroll { margin: 0 -16px; padding: 0 16px; } }
 
 .ad-table { width: 100%; border-collapse: collapse; font-family: var(--f-util); font-size: var(--t-ctrl); }
@@ -618,6 +618,15 @@ button.ad-uuid { text-align: left; transition: color 160ms var(--ease); }
    write". */
 .ad-drawer td { background: var(--void-1); border-bottom: 1px solid var(--hair); }
 .ad-drawer-in { padding: 4px 0 16px; display: grid; gap: 16px; }
+/* Held to the left edge of what is in view, and as wide as it. A table wider
+   than a phone scrolls sideways inside .ad-scroll, and the key that opens a
+   drawer is in its last column, so the drawer opened under a table scrolled
+   to its right edge: the words being decided on, the note and the keys all
+   began off the left of the screen. Sticky inside the one cell that spans
+   the row, it moves with the scroll, and at the container's own width (a
+   query container, so `cqw` is the width in view) it never runs off the
+   right either. A browser without container units draws it as it was. */
+.ad-drawer-in { position: sticky; left: 0; width: min(100%, 100cqw); box-sizing: border-box; }
 .ad-def { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 12px 22px; }
 .ad-def div { min-width: 0; }
 .ad-def dt { font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--ash-dim); margin: 0 0 3px; }

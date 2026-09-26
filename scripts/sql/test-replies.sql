@@ -131,6 +131,17 @@ select rp_ok('the same send again is the first answer, and one reply',
   and (select count(*) from wall_replies) = 1);
 select rp_ok('a second reply needs no second yes',
   rp_write('rp-token-school-0000000', rp_letter(1), 'same, honestly', 'live', false)->>'status' = 'live');
+-- the edge function keeps a yes before the list reads the reply, since a
+-- reply the list catches is never written and its yes went with it
+select rp_ok('a yes is kept on its own',
+  (wall_reply_agree('rp-token-plain-00000000')->>'ok')::boolean);
+select rp_ok('and twice is once',
+  (wall_reply_agree('rp-token-plain-00000000')->>'ok')::boolean);
+select rp_ok('one row for the person',
+  (select count(*) from wall_reply_terms where user_id = rp_user('rp-token-plain-00000000')) = 1);
+select rp_ok('and a device with no session agrees to nothing',
+  wall_reply_agree('rp-token-nobody-00000000')->>'error' = 'no_session'
+  and rp_user('rp-token-nobody-00000000') is null);
 select rp_ok('an empty reply is refused',
   rp_write('rp-token-school-0000000', rp_letter(1), '   ')->>'error' = 'empty');
 select rp_ok('and a long one',
@@ -329,6 +340,8 @@ select rp_ok('and it cannot write, or ask what the edge function asks',
   not has_function_privilege('anon', 'wall_reply_write(text, uuid, text, text, jsonb, text, boolean)', 'EXECUTE')
   and not has_function_privilege('authenticated', 'wall_reply_write(text, uuid, text, text, jsonb, text, boolean)', 'EXECUTE')
   and not has_function_privilege('anon', 'wall_reply_can(text, uuid)', 'EXECUTE')
+  and not has_function_privilege('anon', 'wall_reply_agree(text)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'wall_reply_agree(text)', 'EXECUTE')
   and not has_function_privilege('anon', 'wall_reply_who(uuid, uuid)', 'EXECUTE')
   and not has_function_privilege('anon', 'celestual_desk_replies(text, integer, integer)', 'EXECUTE')
   and not has_function_privilege('anon', 'celestual_desk_reply_set(uuid, text, text)', 'EXECUTE'));

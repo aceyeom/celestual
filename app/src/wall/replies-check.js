@@ -39,9 +39,18 @@ const HANDLE = /^[a-z0-9]{2,}([._][a-z0-9]{2,})+$/i
 // Somebody else, named or tagged: { id: 'tag' | 'name', hit } or null. `hit`
 // is the words as the writer typed them, so the line under the field can
 // quote them back.
+//
+// A tag is quoted whole, `@` and handle together. It used to be the `@` on
+// its own ("take the @ out"), and a writer who did exactly that was left
+// with `jules.kim`, which is a handle, and caught a second time. A bare `@`
+// with nothing after it is still just the `@`.
 export function third(text) {
   const t = String(text || '')
-  if (t.includes('@')) return { id: 'tag', hit: '@' }
+  if (t.includes('@')) {
+    const m = t.match(/@[^\s]*/)
+    const hit = m ? m[0].replace(/[^A-Za-z0-9_.@]+$/, '').replace(/\.+$/, '') : '@'
+    return { id: 'tag', hit: hit || '@' }
+  }
   const words = t.trim().split(/\s+/).filter(Boolean)
   for (const raw of words) {
     const w = raw.replace(/^[^A-Za-z0-9_.]+|[^A-Za-z0-9_.]+$/g, '').replace(/\.+$/, '')
