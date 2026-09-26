@@ -934,22 +934,153 @@ function morphOf(pair, dashes) {
 // them are drawn in the ink at many strengths, their outlines half lit, and
 // a pixel travels at the strength it left with and is lit whole as it lands.
 // The ground goes to the ring and the two of them to the star, as before;
-// the star opens from its middle out and the ring from the left, and every
-// pixel is between the cells while it travels and on one when it lands.
+// the star gathers out from where they hold each other and the ring from
+// the left, and every pixel is between the cells while it travels and on
+// one when it lands.
 const I_RING_SPREAD = 240
 const I_RING_FLIGHT = 560
 const I_STAR_AT = 90
 const I_STAR_SPREAD = 170
-const I_STAR_JITTER = 18
 const I_STAR_FLIGHT = 560
 const I_BEND = 3
-export const I_MORPH_MS = Math.max(I_RING_SPREAD + 60 + I_RING_FLIGHT, I_STAR_AT + I_STAR_SPREAD + I_STAR_JITTER + I_STAR_FLIGHT)
+export const I_MORPH_MS = Math.max(I_RING_SPREAD + 60 + I_RING_FLIGHT, I_STAR_AT + I_STAR_SPREAD + I_STAR_FLIGHT)
 // the intro's mark is cut as the seal is, sampled six to a cell's side and
 // not eight: on seventy seven cells that is the same drawing, in half the time
 const I_CUT = { ...MARK_CUT, ss: 6 }
-function glideOf(pair, dashes, n, ox, oy, cols) {
+
+// Which of `to` each of `from` goes to, the two lists the same length and
+// each of `to` taken once: so that together they travel about as little as
+// they can, which is also what keeps any two ways from crossing (an optimal
+// transport, near enough). It is found the sliced way. Every pixel has a
+// stand-in, starting where it is; in each of a few dozen directions in
+// turn, the stand-ins and `to` are both put in order along it, and every
+// stand-in moves along it to where the one of `to` of its rank stands.
+// Direction after direction the stand-ins take on the shape of `to`, each
+// staying among its neighbours. Then every pixel takes the free cell of
+// `to` nearest its stand-in, the surest first, and last any two pixels
+// near each other swap where they go if that is less travelling for the
+// two of them, until none would. It is worked out in steps (it yields
+// between them), so that it can be done a few milliseconds a frame.
+const GOLDEN = Math.PI * (3 - Math.sqrt(5))
+// a cell as one number (the grid is never 4096 wide)
+const cellKey = (x, y) => y * 4096 + x
+function* transport(from, to, rounds = 24) {
+  const n = from.length
+  const px = Float64Array.from(from, (p) => p[0])
+  const py = Float64Array.from(from, (p) => p[1])
+  const tx = Float64Array.from(to, (p) => p[0])
+  const ty = Float64Array.from(to, (p) => p[1])
+  const kp = new Float64Array(n)
+  const kt = new Float64Array(n)
+  yield
+  // the order along a direction: where each stands along it, to a 256th of
+  // a cell, with its index in the low digits, sorted as plain numbers
+  const along = (k, xs, ys, c, s) => {
+    for (let i = 0; i < n; i++) k[i] = Math.round((xs[i] * c + ys[i] * s + 1024) * 256) * 4096 + i
+    k.sort()
+  }
+  for (let r = 0; r < rounds; r++) {
+    const c = Math.cos(r * GOLDEN)
+    const s = Math.sin(r * GOLDEN)
+    along(kp, px, py, c, s)
+    along(kt, tx, ty, c, s)
+    for (let j = 0; j < n; j++) {
+      const i = kp[j] % 4096
+      const o = kt[j] % 4096
+      const d = (tx[o] - px[i]) * c + (ty[o] - py[i]) * s
+      px[i] += d * c
+      py[i] += d * s
+    }
+    yield
+  }
+  // the cells of `to`, and which of each are still free
+  const free = new Map()
+  for (let i = 0; i < n; i++) {
+    const k = cellKey(Math.round(tx[i]), Math.round(ty[i]))
+    const at = free.get(k)
+    if (at) at.push(i)
+    else free.set(k, [i])
+  }
+  // the free cell nearest (x, y): out ring by ring from its own cell, until
+  // no nearer one could be further out
+  const nearest = (x, y) => {
+    const cx = Math.round(x)
+    const cy = Math.round(y)
+    let best = -1
+    let bd = Infinity
+    for (let r = 0; r < 256 && (best < 0 || r - 1 <= Math.sqrt(bd)); r++) {
+      for (let v = cy - r; v <= cy + r; v++) {
+        const edge = v === cy - r || v === cy + r
+        for (let u = cx - r; u <= cx + r; u += edge ? 1 : 2 * r) {
+          const at = free.get(cellKey(u, v))
+          if (!at || !at.length) continue
+          const d = (u - x) ** 2 + (v - y) ** 2
+          if (d < bd) { bd = d; best = cellKey(u, v) }
+        }
+      }
+    }
+    return [best, bd]
+  }
+  const sure = []
+  for (let i = 0; i < n; i++) {
+    sure.push([nearest(px[i], py[i])[1], i])
+    if (i % 64 === 63) yield
+  }
+  sure.sort((a, b) => a[0] - b[0])
+  const out = new Int32Array(n)
+  for (let q = 0; q < n; q++) {
+    const i = sure[q][1]
+    const [k] = nearest(px[i], py[i])
+    // (a stand-in lost off the grid takes any that is left)
+    out[i] = (k >= 0 ? free.get(k) : [...free.values()].find((at) => at.length)).pop()
+    if (q % 64 === 63) yield
+  }
+  // and neighbours swap, while it shortens the two ways
+  const fx = Float64Array.from(from, (p) => p[0])
+  const fy = Float64Array.from(from, (p) => p[1])
+  const near = new Map()
+  for (let i = 0; i < n; i++) {
+    const k = cellKey(Math.round(fx[i]), Math.round(fy[i]))
+    const at = near.get(k)
+    if (at) at.push(i)
+    else near.set(k, [i])
+  }
+  const two = []
+  for (let i = 0; i < n; i++) {
+    const cx = Math.round(fx[i])
+    const cy = Math.round(fy[i])
+    for (let v = cy - 2; v <= cy + 2; v++) {
+      for (let u = cx - 2; u <= cx + 2; u++) {
+        const at = near.get(cellKey(u, v))
+        if (at) for (const j of at) if (j > i) two.push(i, j)
+      }
+    }
+    if (i % 128 === 127) yield
+  }
+  const cost = (i, o) => (tx[o] - fx[i]) ** 2 + (ty[o] - fy[i]) ** 2
+  for (let pass = 0; pass < 16; pass++) {
+    let swaps = 0
+    for (let q = 0; q < two.length; q += 2) {
+      const i = two[q]
+      const j = two[q + 1]
+      const a = out[i]
+      const b = out[j]
+      if (cost(i, b) + cost(j, a) < cost(i, a) + cost(j, b) - 1e-6) {
+        out[i] = b
+        out[j] = a
+        swaps++
+      }
+    }
+    if (!swaps) break
+    yield
+  }
+  return out
+}
+// the whole glide, worked out in steps as `transport` is: the mark
+// rasterised in the first
+function* glideOf(pair, dashes, n, ox, oy, cols, hold) {
   const m = markOn(n, ox, oy, I_CUT)
-  const maxR = Math.max(...m.star.map((p) => p.r))
+  yield
   const bits = []
   const bit = (s, dx, dy, delay, flight) => {
     const b = bitOf(s[0], s[1], dx, dy, 1, delay, flight)
@@ -965,20 +1096,34 @@ function glideOf(pair, dashes, n, ox, oy, cols) {
     const arc = m.ring.filter((p) => p.near === near).sort((p, q) => p.u - q.u)
     for (const [s, d] of pairs(line, arc)) bits.push(bit(s, d.x, d.y, (s[0] / cols) * I_RING_SPREAD + (near ? 0 : 60), I_RING_FLIGHT))
   }
+  yield
   // the faintest of their outline cells are let go of first: they are the
   // soft edge of a drawing and not pixels of it
   const body = pair.filter((c) => (c[4] ?? 1) >= 0.2)
   // The two of them become the star as one shape and not as a spray: each
-  // of their cells goes to the cell of the star that stands where it stands
-  // in the reading order, row by row, so their heads rise into the star's
-  // upper arm and their feet run down into the lower, and the cells beside
-  // each other on the way stay beside each other. It starts where they hold
-  // each other, the middle of the star, and runs out to its points.
+  // of their cells goes to a cell of the star so that all of them together
+  // travel as little as they can and no two of their ways cross
+  // (`transport`), so their heads rise into the star's upper arm and their
+  // feet run down into the lower, what already stands where the star does
+  // barely moves, and the cells beside each other stay beside each other
+  // all the way: the drawing changes shape, the two of them still to be
+  // seen in it half way. The smaller of the two is spread over the larger,
+  // evenly in the reading order, so a cell of the star may take two of
+  // theirs. It starts where they hold each other and runs out to their
+  // heads and their feet, each pixel leaving as long after the first as it
+  // stands far from there, and all of them on the one clock (no pixel's
+  // own jitter), so neighbours go together.
   const order = (a, b) => (a[1] - b[1]) || (a[0] - b[0])
   const src = [...body].sort(order)
-  const dst = [...m.star].map((p) => [p.x, p.y, p.r]).sort(order)
-  pairs(src, dst).forEach(([s, d], i) => {
-    bits.push(bit(s, d[0], d[1], I_STAR_AT + (d[2] / maxR) * I_STAR_SPREAD + hash(i, 7) * I_STAR_JITTER, I_STAR_FLIGHT))
+  const dst = [...m.star].map((p) => [p.x, p.y]).sort(order)
+  const both = pairs(src, dst)
+  yield
+  const to = yield* transport(both.map(([s]) => s), both.map(([, d]) => d))
+  const from = (s) => Math.hypot(s[0] - hold.x, s[1] - hold.y)
+  const far = Math.max(...src.map(from))
+  both.forEach(([s], i) => {
+    const d = both[to[i]][1]
+    bits.push(bit(s, d[0], d[1], I_STAR_AT + (from(s) / far) * I_STAR_SPREAD, I_STAR_FLIGHT))
   })
   const faint = pair.filter((c) => (c[4] ?? 1) < 0.2)
   return { bits, faint, done: m.all }
@@ -1211,6 +1356,8 @@ const I_MARK = 77
 const I_WASH_AT = -80
 const I_WASH_MS = 760
 const I_GLIDE_AT = 600
+// how long a frame of the run may spend working out the glide ahead
+const I_PREP_MS = 3
 // the ground, dashed, three lit and one dark, in the far ink
 function groundAt(row, cols) {
   const out = []
@@ -1248,12 +1395,28 @@ export function introStory(start = 0, { panel = PANEL, ink = null } = {}) {
     const k = Math.max(0, Math.min(1, u / (I_WASH_MS * 0.7)))
     return k <= 0 ? ink[0] : k >= 1 ? ink[1] : mixHex(ink[0], ink[1], Math.round(k * 8) / 8)
   }
-  // The glide is worked out on the first frame asked for (it rasterises the
-  // mark and draws the hold), which is while the screen is still dark, so
-  // the frame the glide starts on is not the one that pays for it.
-  const warm = () => { if (!morph) morph = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS) }
+  // The glide is worked out ahead, and a little at a time: on the first
+  // frame asked for the mark is rasterised and the hold drawn, while the
+  // screen is still dark, and then which of the star's cells each of their
+  // pixels goes to a few milliseconds a frame while they run, so that no
+  // frame pays for all of it and the frame the glide starts on pays for
+  // none. A frame that needs it sooner (a held clock, a skip) works out
+  // the rest there and then.
+  let prep = null
+  const warm = (budget) => {
+    if (morph) return
+    if (!prep) prep = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS, folk.heart)
+    const t0 = performance.now()
+    do {
+      const r = prep.next()
+      if (r.done) {
+        morph = r.value
+        return
+      }
+    } while (performance.now() - t0 < budget)
+  }
   const frame = (t) => {
-    warm()
+    warm(t >= morphs ? Infinity : I_PREP_MS)
     const u = t - washAt
     const wash = washFrom(u, folk.heart.x, folk.heart.y)
     const wk = !wash ? '' : wash.r == null ? 'W' : `w${Math.round(u)}`
