@@ -10,6 +10,12 @@ major_version = 15
 
 # Edge functions are invoked by anonymous visitors (with the project's anon key),
 # so JWT verification is disabled; each function enforces its own checks.
+#
+# celestual-notify drains celestual_mail_outbox (migration 0064). It is called
+# by pg_net the moment a row is queued and by pg_cron every five minutes, and
+# neither carries a JWT; and a mail client's one click unsubscribe (RFC 8058)
+# POSTs to it with no credential at all. It takes only rows the database says
+# are owed and answers counts, the same posture celestual-mutual-dm has.
 [functions.celestual-notify]
 verify_jwt = false
 
@@ -38,19 +44,6 @@ verify_jwt = false
 # key) from the join sheet, so JWT verification is off; the function enforces its
 # own domain check, per-address rate limit, and code-hash comparison instead.
 [functions.celestual-edu-verify]
-verify_jwt = false
-
-# Durable, DM-free re-login (the email magic link). Invoked by anonymous visitors
-# (with the anon key) from the sign-back-in flow and the /signin redeem, so JWT
-# verification is off; identity rests on the one-time emailed token + the
-# proof-gated binding, both enforced in service-role-only RPCs.
-[functions.celestual-relogin]
-verify_jwt = false
-
-# The First Light trial's front door (celestual.us/trial). Invoked by anonymous
-# visitors (with the anon key), so JWT verification is off; identity rests on
-# the emailed one-time code, checked server-side against its stored hash.
-[functions.celestual-trial]
 verify_jwt = false
 
 # The admin desk (celestual.us/admin). Invoked from the admin page with the anon
@@ -82,3 +75,10 @@ verify_jwt = false
 # instead, and answers only about a handle somebody already typed in full.
 [functions.celestual-resolve]
 verify_jwt = false
+
+# The screen the wall publishes through (celestual-wall-moderate). Called by the
+# browser through supabase.functions.invoke, which carries the anon key as its
+# JWT, and deployed with JWT verification ON, which this entry records. Every
+# write still goes through wall_write's own checks (service role inside).
+[functions.celestual-wall-moderate]
+verify_jwt = true
