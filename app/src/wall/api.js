@@ -12,18 +12,15 @@
 //   the index      public. A handle and a count. Anybody, no session, no
 //                  answering anything, because somebody who just scanned a code
 //                  off a flyer has to see the wall in four seconds.
-//   the letters    five to anybody, then the read gate. Every browser is handed
-//                  five whole letters before it is asked for anything (0045);
-//                  after that a body travels only to somebody this product has
-//                  proved, by a campus address OR a verified handle
-//                  (wall_read_gate, 0044), and everything else arrives with
-//                  `body` as null. The redaction happens in the database,
-//                  because a redaction the client performs is not a redaction,
-//                  and so does the counting, because a count the client keeps
-//                  is a count the reader owns.
-//   writing        a letter to an @ from a verified Berkeley address, and a
-//                  letter to a name from anybody, read before it goes up
-//                  (the one wall, docs/ONE-WALL.md).
+//   the letters    every one, whole, to anybody, as many as they read (0066).
+//                  It was eight to anybody and then the read gate, with the
+//                  words withheld by the database past the eighth (0045,
+//                  0049); nothing is withheld now, and what asks a reader to
+//                  sign in is a nudge that never covers a word (Nudge.jsx).
+//   writing        a letter to an @ or to a name from anybody, read before it
+//                  goes up; or a letter to an @ from a verified Berkeley
+//                  address, which carries the school's sticker and goes up at
+//                  once (the one wall, docs/ONE-WALL.md, and 0066).
 //   the seal       one function returns it, and only when the caller holds the
 //                  verified handle it is addressed to, asked, and the author
 //                  said yes.
@@ -301,16 +298,11 @@ export async function quota() {
 }
 
 // ── reading ──────────────────────────────────────────────────────────────────
-// Whether a body travels is a question per LETTER, not per reader (0045): a
-// browser gets five whole ones before it is asked for anything, so the first
-// five arrive with their words and the rest arrive redacted. `body === null` is
-// the only thing a screen should branch on.
-//
-// Two facts about the reader ride alongside, and they are what the meter draws
-// from. `gated` is whether this person is through wall_read_gate, in which case
-// the five are irrelevant; `free` is { limit, used, left }, counted AFTER the
-// read that answered it, which is the number a screen wants: somebody who has
-// just been handed one letter is told four, not five.
+// Every letter arrives with its words, whoever asks (0066). It used to be a
+// question per letter: the first eight a browser read came whole and the rest
+// came with `body` as null until a proof, and two facts about the reader rode
+// alongside for the seal to draw, `gated` and `free`. The seal is gone and so
+// are they.
 export async function lettersFor(handle) {
   const out = await call('wall_letters_for', {
     p_token: sessionToken(),
@@ -320,9 +312,6 @@ export async function lettersFor(handle) {
   learnFace(out, out.handle)
   return {
     ok: true,
-    open: !!out.open,
-    gated: !!out.gated,
-    free: shapeFree(out.free),
     handle: out.handle,
     // a first name's key, kind and spelling ride on the read (0053)
     kind: out.kind === 'name' ? 'name' : 'handle',
@@ -337,22 +326,7 @@ export async function letter(id) {
   learnFace(out, out.letter?.handle)
   return {
     ok: true,
-    open: !!out.open,
-    gated: !!out.gated,
-    free: shapeFree(out.free),
     letter: shapeLetter(out.letter),
-  }
-}
-
-// A count, a ceiling and what is left. Never a list: nothing anywhere says
-// WHICH letters a browser has read, and there is no function that could be
-// asked it about anybody else.
-function shapeFree(f) {
-  if (!f) return null
-  return {
-    limit: Number(f.limit) || 0,
-    used: Number(f.used) || 0,
-    left: Number(f.left) || 0,
   }
 }
 
@@ -380,14 +354,9 @@ function shapeLetter(l) {
     name: String(l.name || ''),
     // the paper the letter is on (0055), or null for the plain paper
     look: cleanLook(l.look),
-    // Null when the reader is outside the gate. Not an empty string: the screen
-    // has to be able to tell "withheld" from "somebody wrote nothing".
-    body: l.body ?? null,
-    // Sent whether or not the body is, so a redaction can be drawn at the right
-    // size. Two integers, and the individual word lengths are invented from the
-    // letter's id rather than sent, so no word-level shape leaks.
-    words: l.words ?? 0,
-    chars: l.chars ?? 0,
+    // The words, always (0066). Nothing is withheld from any reader now, so a
+    // body the read did not carry is drawn as nothing rather than as a seal.
+    body: l.body == null ? '' : String(l.body),
     hasSeal: !!l.has_seal,
     campus: l.campus,
     at: new Date(l.at).getTime(),
@@ -443,12 +412,20 @@ function shapeLetter(l) {
 //
 // ── version 2, the one wall (docs/ONE-WALL.md) ──
 // Every write carries `v: 2`, and the function answers under the rules of
-// 25 September: an @-note goes up from a verified school address or is
-// answered `edu` (not verified) or `campus` (verified at a school that does
-// not post to an @); a name note needs no proof, is read before it goes up,
-// and can answer `pending` (up once a person at the desk has read it). The
-// answer carries the letter's `campus`, `school`, `verified` and
-// `salutation` as they went up.
+// 25 September and 26 September (0066). An @-note goes one of two ways, and
+// `proof` says which:
+//
+//   'edu'   as a Berkeley student: from a verified school address, up at once
+//           with the school's sticker, or answered `edu` (not verified) or
+//           `campus` (verified at a school that does not post to an @)
+//   'none'  from anybody, with no proof, read before it goes up, as a name
+//           note is, and never carrying a school
+//
+// A name note needs no proof and is always read before it goes up. Either
+// read-first note can answer `pending` (up once a person at the desk has read
+// it). The answer carries the letter's `campus`, `school`, `verified` and
+// `salutation` as they went up. A function from before 0066 reads no `proof`
+// and treats every @-note as the first kind.
 //
 //   salutation  the writer's own "dear" line, or null for "dear" and the name
 //   campus      for a name note only: the school the writer tagged it with,
@@ -463,7 +440,7 @@ function shapeLetter(l) {
 // A function from before version 2 reads none of the new fields and writes
 // the letter the old way, so a deploy that lands before the function does
 // still posts.
-export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus: school = null, nonce = '' }) {
+export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus: school = null, nonce = '', proof = 'none' }) {
   if (!hasSupabase) return OFFLINE
   const named = kind === 'name'
   try {
@@ -476,7 +453,7 @@ export async function write({ to, body, source, kind = 'handle', name = '', look
         name: named ? String(name || '') : null,
         salutation: salutation ? String(salutation).slice(0, 40) : null,
         look: cleanLook(look),
-        ...(named ? { campus: school ? String(school) : null } : {}),
+        ...(named ? { campus: school ? String(school) : null } : { proof: proof === 'edu' ? 'edu' : 'none' }),
         nonce: String(nonce || ''),
         source: source ? String(source) : null,
         body: String(body || ''),

@@ -25,17 +25,13 @@
 //
 // That is the guarantee the printed card makes.
 //
-// ── body can be null, and null is not empty ─────────────────────────────────
-// A letter this browser may not read comes back with `body: null`. That is the
-// redaction, it is performed by the database rather than here, and it is
-// deliberately distinct from `''`: the screen has to be able to tell "there are
-// words and you may not read them" from "somebody wrote nothing".
-//
-// Which letters those are is the server's arithmetic too. Every browser is
-// handed five whole ones before it is asked for anything (0045) and the rest
-// go through the read gate (0044), so openness is per LETTER and `body` is the
-// only thing a screen should branch on. `gated()` and `freeReads()` below are
-// what the meter draws, and neither of them decides anything.
+// ── every letter arrives whole ──────────────────────────────────────────────
+// A letter's `body` is its words, for every reader, always (0066). It used to
+// be null past the eighth letter a browser read, until a proof: the redaction,
+// performed by the database, with the count it kept beside it (0045, 0049).
+// Nothing is withheld now, and nothing here counts on the server's behalf.
+// What asks a reader to sign in is the nudge under the letter (Nudge.jsx),
+// which counts in this browser because it gates nothing.
 
 import * as api from './api.js'
 import { learnHandle, warmFaces, isNameKey } from '../api/handles.js'
@@ -162,8 +158,7 @@ export function rand(key, channel = 0) {
 //
 //   TILES     the public index. One request, no session, and it is what the
 //             wall of names is drawn from.
-//   BY_HANDLE the letters for one handle, redacted or whole depending on the
-//             gate. Filled when somebody opens a name.
+//   BY_HANDLE the letters for one handle. Filled when somebody opens a name.
 //   BY_ID     one letter. Filled when somebody opens a letter directly, which
 //             is what a link off a card does.
 //
@@ -183,20 +178,6 @@ export function wallError() { return TILES.length ? null : TILES_ERROR }
 export function wallLoaded() { return TILES_AT > 0 || !!TILES_ERROR }
 const BY_HANDLE = new Map()
 const BY_ID = new Map()
-
-// ── the five ────────────────────────────────────────────────────────────────
-// Every browser reads five whole letters before it is asked for anything
-// (migration 0045). These two are the server's last word on that, updated by
-// every read: `GATED` is whether the reader is through the gate, in which case
-// the five stop applying, and `FREE` is { limit, used, left } counted after
-// that read. `null` before anything has been asked.
-//
-// Nothing here decides anything. The body is withheld by the database and the
-// count is kept by the database; this is what the meter draws.
-let GATED = null
-let FREE = null
-export function gated() { return GATED }
-export function freeReads() { return FREE }
 
 // ── the allowance ───────────────────────────────────────────────────────────
 // Three letters in any five days (migrations 0044 and 0051), unless the desk
@@ -219,10 +200,11 @@ export function allowance() { return QUOTA }
 let MINE = null
 export function mine() { return MINE }
 
-// Everything read about the letters, dropped. Called when the gate opens or
-// closes, because every cached letter was read with the gate the way it was:
-// signing in over a cache of redacted bodies is a wall that stays shut, and
-// signing out over a cache of open ones is a wall that stays open.
+// Everything read about the letters, dropped. Called when somebody signs in
+// or out, because a cached letter was read AS somebody: whether this person
+// hearted it, and whether it is written to the @ they hold (`mine`, which is
+// what puts "remove this letter" on its menu). Signing in over that cache is
+// a menu that does not know whose letter it is.
 //
 // The allowance goes with them, for the same reason: it is a fact about a
 // person, and the person at this browser has just changed. So do the person's
@@ -232,8 +214,6 @@ export function forgetLetters() {
   BY_ID.clear()
   ORDERED.clear()
   PRESSED.clear()
-  GATED = null
-  FREE = null
   QUOTA = null
   MINE = null
   bump()
@@ -414,8 +394,6 @@ export function loadHandle(raw, force = false) {
     const asked = Date.now()
     const out = await api.lettersFor(h)
     if (!out.ok) return
-    GATED = out.gated
-    if (out.free) FREE = out.free
     if (out.kind === 'name') learnName(h, out.name)
     if (out.letters.length) learnLook(h, out.letters[0].look)
     const letters = out.letters.map((l) => held(l, asked))
@@ -439,8 +417,6 @@ export function loadLetter(id, force = false) {
       if (out.error === 'gone') { BY_ID.set(id, null); bump() }
       return
     }
-    GATED = out.gated
-    if (out.free) FREE = out.free
     if (out.letter?.kind === 'name') learnName(out.letter.to, out.letter.name)
     BY_ID.set(id, held(out.letter, asked))
     bump()
@@ -762,12 +738,14 @@ export async function search(query) {
 // the disc the wall lights is already on that paper.
 //
 // Version 2 (the one wall, docs/ONE-WALL.md) adds the salutation, a name
-// note's school, and the draft's nonce, and a third answer: `pending`, a name
-// note read by the classifier and waiting on the desk. It is not on the wall
-// yet, so nothing on the wall moves for it; this device's own letters are
-// read again, where it is listed as waiting.
-export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus = null, nonce = '' }) {
-  const out = await api.write({ to, body, source, kind, name, look, salutation, campus, nonce })
+// note's school, and the draft's nonce, and a third answer: `pending`, a note
+// read by the classifier and waiting on the desk. It is not on the wall yet,
+// so nothing on the wall moves for it; this device's own letters are read
+// again, where it is listed as waiting. And since 0066 `proof`, for a letter
+// to an @: 'edu' posts it as a Berkeley student, verified and up at once,
+// and 'none' posts it from anybody, read first, the way a name note goes.
+export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus = null, nonce = '', proof = 'none' }) {
+  const out = await api.write({ to, body, source, kind, name, look, salutation, campus, nonce, proof })
   if (out?.ok && out.status === 'live') {
     const h = out.handle || (kind === 'name' ? nameKey(name) : normHandle(to))
     if (kind === 'name') learnName(h, out.name || cleanName(name))
@@ -802,6 +780,9 @@ export async function write({ to, body, source, kind = 'handle', name = '', look
 //   greet   the "dear" line as the writer edited it, or null while it
 //           follows the name
 //   school  a name note's school, a campus slug, or '' for none
+//   proof   how a letter to an @ goes up: 'edu', as a Berkeley student, with
+//           the sticker and at once; or 'none', from anybody, read first
+//           (0066). A name note is always 'none'
 //   nonce   made once per draft (`newNonce`), so the same draft posted twice
 //           is one letter (docs/ONE-WALL.md)
 //   held    the Berkeley link it is waiting on, once one is out:
@@ -837,6 +818,9 @@ export function draftPost(d) {
     // which is not the line the letter would say by itself
     salutation: greet || (viaAt && nm ? `dear ${nm}` : null),
     campus: kind === 'name' && d.school ? String(d.school) : null,
+    // a draft kept from before 0066 carries no `proof`, and one of those
+    // waiting on the Berkeley link was always the Berkeley kind
+    proof: kind === 'handle' && (d.proof === 'edu' || (d.proof == null && !!d.held)) ? 'edu' : 'none',
   }
 }
 
@@ -862,7 +846,7 @@ export async function postDraft(d) {
   if (p.kind === 'name') learnName(p.key, p.name)
   const out = await write({
     to: p.handle, body: p.body, source: getState().source || null, kind: p.kind, name: p.name,
-    look: p.look, salutation: p.salutation, campus: p.campus, nonce: d.nonce || '',
+    look: p.look, salutation: p.salutation, campus: p.campus, nonce: d.nonce || '', proof: p.proof,
   })
   if (out?.ok && (out.status === 'live' || out.status === 'pending')) landLetter(out, p)
   return out || { ok: false, error: 'network' }

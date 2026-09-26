@@ -250,6 +250,10 @@ let CANARY = 'ok'
 // Whether no letter on the wall went up from a verified Berkeley address
 // (0067), so the Berkeley filter lets nothing through.
 let NOCAL = false
+// Whether a note read before it goes up (a name, or an @ with no proof,
+// 0066) is held for the desk rather than passed, so the composer's
+// "checking" screen is drawn.
+let HELD = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -771,19 +775,20 @@ const RPC = {
     names: INDEX.length, letters: INDEX.reduce((n, r) => n + r.letters, 0),
     last_at: INDEX[0] ? INDEX[0].last_at : null,
   }),
+  // 0066: every letter whole, to anybody, whatever the reader has proved
   wall_letters_for: (b) => {
     const key = String(b.p_handle || '').replace(/^@/, '')
     const row = INDEX.find((r) => r.target_handle === key)
     return {
-      ok: true, open: OPEN, handle: key,
+      ok: true, open: true, handle: key,
       kind: row ? row.kind : 'handle', name: row ? row.name : null,
-      letters: lettersFor(key, OPEN),
+      letters: lettersFor(key, true),
       ...faceOf(key),
     }
   },
   wall_letter: () => ({
-    ok: true, open: OPEN,
-    letter: { ...lettersFor('pilar.echevarria', OPEN)[0], mine: VERIFIED },
+    ok: true, open: true,
+    letter: { ...lettersFor('pilar.echevarria', true)[0], mine: VERIFIED },
     ...faceOf('pilar.echevarria'),
   }),
   // 0042: a heart on, or off, and the count back
@@ -924,9 +929,11 @@ async function fulfil(route) {
         kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null }
       INDEX.unshift(row)
     }
+    const open = named || b.proof !== 'edu'
     return route.fulfill({ json: {
-      ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000',
+      ok: true, status: HELD && open ? 'pending' : 'live', id: 'dddd0111-2222-4333-8444-555566660000',
       handle: key, kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null,
+      campus: open ? (named ? b.campus || 'global' : 'global') : 'berkeley', verified: !open,
     } })
   }
 
@@ -975,6 +982,10 @@ async function fulfil(route) {
 
   return route.fulfill({ status: 404, body: '' })
 }
+
+// `n` letters this browser has opened (store.js `opened`), for the nudge
+// under a letter (Nudge.jsx), which counts them
+const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`opened-${i}`, true]))
 
 // ── the routes ──────────────────────────────────────────────────────────────
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
@@ -1275,7 +1286,16 @@ const ROUTES = [
   { label: 'letter-report-back', path: '/berkeley/letter/pilar.echevarria',
     acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 600], ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900],
            ['click', '.wl-close'], ['wait', 900]], settle: 600 },
-  { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
+  // 0066: nothing is sealed. A reader signed in to nothing reads the letter
+  // whole, and once they have read a few (`store.opened`, eight of them
+  // here) the nudge stands under the card; then the same after `not now`
+  { label: 'letter-anon',   path: '/letter/pilar.echevarria', anon: true },
+  { label: 'letter-nudge',  path: '/letter/pilar.echevarria', anon: true, store: { opened: OPENED(8) }, settle: 3200 },
+  { label: 'letter-nudge-no', path: '/letter/pilar.echevarria', anon: true, store: { opened: OPENED(8) },
+    acts: [['wait', 2200], ['click', '.wl-signnote-no']], settle: 900 },
+  { label: 'letter-nudge-cold', path: '/letter/11110111-2222-4333-8444-555566660000', anon: true, store: { opened: OPENED(8) }, settle: 3200 },
+  // a letter to an @ the resolver has no name for: "dear you", and no @
+  { label: 'letter-noname', path: '/letter/ace03d.nobody', anon: true },
   // `write to` in the screen's options opens the composer on the name, and
   // the composer's mark comes back to the letter it was opened from
   // (index.jsx `up`)
@@ -1284,6 +1304,25 @@ const ROUTES = [
   { label: 'letter-pen-back', path: '/berkeley/letter/pilar.echevarria',
     acts: [['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
+  // 0066: the one decision, for a letter to an @: the wall (anybody, read
+  // first), as a Berkeley student (the sticker, at once) and privately;
+  // from a device confirmed at Berkeley, and from one signed in to nothing;
+  // for a letter to a name; the Berkeley link asked for; and a note held
+  // for the desk
+  { label: 'write-how',     path: '/write/sofiaaa.reyes',
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'write-how-anon', path: '/write/sofiaaa.reyes', anon: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'write-how-name', path: '/write', anon: true,
+    draftOf: { kind: 'name', name: 'the girl on the 51B', to: '' },
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'write-how-edu', path: '/write/sofiaaa.reyes', anon: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-cal .wl-how-go']], settle: 900 },
+  { label: 'write-held',    path: '/write/sofiaaa.reyes', anon: true, held: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go']], settle: 1200 },
+  // the draft to an @ the resolver has no name for: "dear you", and the
+  // line under the card asking for their name
+  { label: 'write-noname',  path: '/write/ace03d.nobody', anon: true },
   // 0055: the first question with its two answers on one rail, the handle
   // on; then the other answer on, with a name that is not a first name in it
   { label: 'write-who',     path: '/berkeley/write', draft: null },
@@ -1316,9 +1355,6 @@ const ROUTES = [
   { label: 'letter-edu-lilac', path: '/berkeley/letter/jules.k' },
   { label: 'letter-edu-acid', path: '/berkeley/letter/thom.iversen' },
   { label: 'letter-edu-print', path: '/berkeley/letter/elias.brandt' },
-  { label: 'write-how', path: '/berkeley/write/sofiaaa.reyes',
-    acts: [['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 900 },
-  { label: 'letter-look-sealed', path: '/berkeley/letter/m.okonkwo', open: false },
   // the week spent: the act dark, and the one line the foot says about it
   { label: 'write-spent',   path: '/berkeley/write/sofiaaa.reyes', spent: true },
   { label: 'write-name',    path: '/berkeley/write', type: { into: ".wl-field input", text: 'pilar.echevarria' }, draft: null },
@@ -1424,6 +1460,7 @@ for (const r of list) {
   CONFIRM = r.confirm || null
   TAPS = r.taps === true
   TAPPED = false
+  HELD = r.held === true
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
@@ -1453,7 +1490,7 @@ for (const r of list) {
     // rather than typed; a route can bring its own words (`write-caught`).
     const DRAFT = r.draft === null
       ? null
-      : { to: 'sofiaaa.reyes', body: r.body || 'you sat two rows ahead all semester and i never once said anything.' }
+      : { to: 'sofiaaa.reyes', body: r.body || 'you sat two rows ahead all semester and i never once said anything.', ...(r.draftOf || {}) }
     // The desk holds its password in sessionStorage and the server re-checks it
     // on every call. Seeding it here is what puts the screenshot behind the
     // door rather than on it; `admin-gate` deliberately does not, because the
@@ -1474,7 +1511,7 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
           member: ANON || GOOGLE || EMAIL ? null : 'someone@berkeley.edu',
@@ -1484,6 +1521,8 @@ for (const r of list) {
           written: WRITTEN,
           proof: 'a'.repeat(64),
           draft: DRAFT,
+          // anything else a route needs in the blob (`store`)
+          ...STORE,
         }))
         localStorage.setItem('celestual.session.v1', 'b'.repeat(64))
         // The DM flow's own session (api/auth.js), which is what `heldProof`
@@ -1499,7 +1538,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE: r.store || {} })
     // The letter's deck leans toward the next letter the first times a
     // device opens it (screens/Letter.jsx `nudge`), which would catch a shot
     // part way through. Every device here has turned it, but the one the

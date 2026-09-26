@@ -755,17 +755,19 @@ export async function renderLetter(o) {
   return new Promise((done) => cv.toBlob((b) => done(b), 'image/jpeg', 0.92))
 }
 
-// What the picture says, off a letter: the same rows the screen shows.
-export function letterFace(l, { name, handle }) {
-  const open = l.body !== null && l.body !== undefined
-  const text = open ? l.body : starred(l.words, l.chars, l.id)
+// What the picture says, off a letter: the same rows the screen shows. The
+// name, and never the @ (screens/Letter.jsx says why): a letter to an @ is
+// filed under its handle, and the picture of it passed round says "dear" and
+// the name. And never a seal, since no letter is shut to anybody (0066).
+export function letterFace(l, { name }) {
+  const text = l.body || ''
   // the greeting the writer set, the school's sticker on a verified
   // letter, and a name note's school (schools.js `letterMarks`)
   const marks = letterMarks(l)
   return {
-    look: l.look, seed: l.id, text, sealed: !open,
-    name, handle,
-    icon: open ? 'pen' : 'lock', dear: true,
+    look: l.look, seed: l.id, text,
+    name,
+    icon: 'pen', dear: true,
     salutation: marks.salutation, sticker: marks.sticker, tag: marks.tag,
     // the day it went up, between the aerial and the battery, and no
     // second date
@@ -773,23 +775,6 @@ export function letterFace(l, { name, handle }) {
     hearts: l.hearts || 0, hearted: !!l.hearted,
     left: 'options', right: 'share',
   }
-}
-
-// A shut letter, as the phone drew a hidden one: a star for every letter of
-// every word, the lengths invented from the letter's id, so nothing of the
-// words is in the page (parts.jsx `Redacted` says why).
-export function starred(words = 0, chars = 0, seed = '') {
-  const n = Math.max(1, Math.min(120, words | 0))
-  // the letters, not the letters and the space after each word
-  const mean = Math.max(2, Math.min(12, Math.round(((chars || n * 5) - (n - 1)) / n)))
-  const out = []
-  for (let i = 0; i < n; i++) {
-    let h = 0x9e3779b9
-    const s = `${seed}#${i}`
-    for (let j = 0; j < s.length; j++) h = Math.imul(h ^ s.charCodeAt(j), 0x27d4eb2d) >>> 0
-    out.push('*'.repeat(Math.max(2, Math.min(14, mean - 2 + (h % 5)))))
-  }
-  return out.join(' ')
 }
 
 // ── the three ways out ──────────────────────────────────────────────────────

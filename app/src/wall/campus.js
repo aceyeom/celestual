@@ -58,8 +58,3 @@ export function configure() {
 // The wall this tree is drawn for.
 export function campus() { return WALL }
 
-// Whether writing here needs a campus address. It never does now: an @-note
-// asks for a Berkeley address at the moment it is posted, and a name note
-// asks for nothing (screens/Write.jsx). Kept, answering no, for the screens
-// that still ask it (screens/Letter.jsx `sealSay`).
-export function needsCampus() { return false }

@@ -5,26 +5,31 @@
 //     step 1   Someone you can't forget.      ← who
 //     step 2   And what makes them so.        ← the letter
 //
-// and then one decision, at the send, about how public it is (the rulings of
-// 25 September, docs/ONE-WALL.md):
+// and then one decision, at the send, about how public it is and who it is
+// signed by (the rulings of 25 and 26 September, docs/ONE-WALL.md, migration
+// 0066):
 //
-//     post on the Berkeley wall   public. anyone can read it, and nobody sees
-//                                 who wrote it. It asks "confirm you're at
+//     post on the wall            public, and nobody sees who wrote it. Asks
+//                                 nothing: anybody can write to an @ or to a
+//                                 name, and the note is read by the
+//                                 classifier (and, where it is unsure, by a
+//                                 person at the desk) before it goes up.
+//     post as a Berkeley student  public, with the Cal sticker on it, and up
+//                                 at once. It asks "confirm you're at
 //                                 Berkeley", by a link to a berkeley.edu
-//                                 address, once per device.
+//                                 address, once per device. An @ only.
 //     send privately              only they'll ever know, and only if it's
 //                                 mutual. It asks "confirm this is your
-//                                 Instagram", the one DM, and goes to them as a
-//                                 ping with the note as its line.
+//                                 Instagram", the one DM, and goes to them as
+//                                 a ping with the note as its line. An @ only.
 //
-// A person choosing between those two is choosing how public their note is,
-// which everybody understands, and they never have to learn which proof goes
-// with which act: the option says what it asks, and asks it after the
-// choice. A letter to a NAME (anything that is not an @) posts on the wall
-// with no proof at all, read by the classifier and, where it is unsure, by a
-// person at the desk before it goes up; it can carry a school, or none. It
-// cannot be sent privately, since a ping needs an @, and the option says so
-// and takes the writer to the one field that fixes it.
+// Three rows, each a title, what it does in one line, and what it asks, said
+// on its face and asked after the choice, so nobody has to learn which proof
+// goes with which act. The first is the one anybody can take, and it is
+// first; the Berkeley one is the one the wall marks, and it says so with the
+// sticker it puts on the letter. A letter to a NAME (anything that is not an
+// @) is offered the wall, with a school to tag or none, and the private note,
+// dimmed with the one line that fixes it: a ping needs an @.
 //
 // The brief is still the reason the wall fills up. An earlier build asked
 // "what did you never say?", which is a question about the writer: it asks
@@ -55,9 +60,17 @@
 // `Segmented`): "instagram", open when the composer opens, and "custom
 // name", whatever the writer calls the person. Under a name, one quiet field
 // more: their @, optional, with an (i) that says why somebody might add it
-// (it reaches them) and what it costs (one check at the send). With it the
-// letter goes to the @ with the name as its greeting ("dear sofia"), and
-// follows everything an @-note follows.
+// (it reaches them) and that the @ is never printed. With it the letter goes
+// to the @ with the name as its greeting ("dear sofia"), and follows
+// everything an @-note follows.
+//
+// ── and the @ is never on the letter (0066) ─────────────────────────────────
+// The @ is what the letter is filed under and found by, and it is not printed
+// on the letter's face, so it is not printed on the draft either, which is
+// the letter as it will go up. The line across the top says "dear" and the
+// resolver's first name for the @, or, where the resolver has none, "dear
+// you", with one line under the card asking for their name, which is the
+// writer's to put in the greeting.
 //
 // ── and three of them in any five days ─────────────────────────────────────
 // The allowance is the server's (`wall_quota`, 0044 and 0051) and is drawn as
@@ -148,6 +161,10 @@ const PING_SAY = {
   night: 'it did not go through. try again.',
 }
 
+// The greeting's name where the resolver has none for the @: the letter is
+// to "you" until the writer says who (screens/Letter.jsx says the same).
+const NO_NAME = 'you'
+
 // What the send says when the wall says no (celestual-wall-moderate, v2).
 const WALL_SAY = {
   throttle: 'too many from this device today. try again tomorrow.',
@@ -236,6 +253,13 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   const [greet, setGreet] = useState(() => (typeof d0.greet === 'string' ? d0.greet : null))
   // a name note's school: a slug, '' for none, or null before one is chosen
   const [school, setSchool] = useState(() => (typeof d0.school === 'string' ? d0.school : null))
+  // how a letter to an @ goes up (data.js `draftPost`): 'none', from
+  // anybody, read first; or 'edu', as a Berkeley student. Kept with the
+  // draft, so a draft waiting on the Berkeley link posts as one wherever the
+  // link is opened (screens/Verify.jsx). A draft kept from before this
+  // carries none, and one of those waiting on the link was always the
+  // Berkeley kind
+  const [postAs, setPostAs] = useState(() => (d0.proof === 'edu' || (d0.proof == null && live(d0.held)) ? 'edu' : 'none'))
   // one per draft, kept with it
   const [nonce, setNonce] = useState(() => d0.nonce || newNonce())
   const renonce = useCallback(() => setNonce(newNonce()), [])
@@ -289,19 +313,22 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   // a keystroke in the letter or its greeting takes it off.
   const words = useRef(`${body}\u0000${greet}`)
   useEffect(() => {
-    patch({ draft: { to: h, body, kind, name, at, look, greet, school, nonce, held } })
+    patch({ draft: { to: h, body, kind, name, at, look, greet, school, proof: postAs, nonce, held } })
     const now = `${body}\u0000${greet}`
     if (now !== words.current) { words.current = now; setSaid('') }
-  }, [h, body, kind, name, at, look, greet, school, nonce, held])
+  }, [h, body, kind, name, at, look, greet, school, postAs, nonce, held])
 
   const them = useResolver(kind === 'name' ? '' : to)
   const prof = useProfile(kind === 'name' ? '' : h)
   const profFirst = prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : ''
-  // the name the greeting is made of, and the @ beside it on the screen
-  const toFirst = kind === 'name' ? nm : (profFirst || atHandle(h))
-  const toHandle = kind === 'name' ? (toAt ? atHandle(nudge) : '') : (profFirst ? atHandle(h) : '')
-  const defaultGreet = toFirst ? `dear ${toFirst}` : 'dear'
+  // the name the greeting is made of: the name, or the resolver's first
+  // name for the @, and never the @ (the head of this file says why)
+  const toFirst = kind === 'name' ? nm : profFirst
+  const defaultGreet = `dear ${toFirst || NO_NAME}`
   const greeting = greet === null ? defaultGreet : greet
+  // an @ the resolver has no name for, and a greeting nobody has changed:
+  // the line under the card asks for their name
+  const askName = kind === 'handle' && !profFirst && greet === null
   // the hint over the greeting, the first time: shown until it is tapped once
   const [hint, setHint] = useState(() => !getState().greetSeen)
   const seenHint = useCallback(() => { setHint(false); patch({ greetSeen: true }) }, [])
@@ -336,7 +363,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
   }, [reduce])
 
   // the draft as it stands, for the post
-  const draftNow = () => ({ to: h, body, kind, name, at, look, greet, school: schoolPicked(), nonce, held })
+  const draftNow = () => ({ to: h, body, kind, name, at, look, greet, school: schoolPicked(), proof: postAs, nonce, held })
 
   // ── a name note's school ──
   // The open campuses (api.js `campuses`), and none. It starts on the
@@ -489,20 +516,17 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
     confirmed()
   }
 
-  // ── not at Berkeley: the same letter, to their name ──
-  // The note goes up the name way: to the name the writer gave, or the
-  // first name the resolver has for the @, or, with neither, the name field
-  // asks for one. The @ comes off it, since an @ is what asked for Berkeley.
-  const toName = () => {
-    const n = kind === 'name' ? nm : cleanName(profFirst)
+  // ── not at Berkeley: the same letter, on the wall ──
+  // It used to go to their name instead, with the @ taken off, since an @
+  // was what asked for Berkeley. Anybody writes to an @ now (0066): the same
+  // letter, to the same @, goes up the way anybody's does, read first and
+  // without the sticker.
+  const toOpen = () => {
     setHeld(null)
     setWrongSchool(false)
     setSaid('')
-    setAt('')
-    setKind('name')
-    if (n) { setName(n); setStep('how'); return }
-    setStep(0)
-    setSaid('a name for them, and it posts to that.')
+    setPostAs('none')
+    postWall({ proof: 'none' })
   }
 
   // ── sending it privately ──
@@ -553,12 +577,22 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
     setStep('done')
   }
 
-  // ── the two choices ──
+  // ── the three choices ──
+  // The wall, from anybody: posted as it is, and read before it goes up.
   const chooseWall = () => {
     if (sending || spent) return
     setSaid('')
-    if (!toAt) { postWall(); return }
-    if (eduBerkeley()) { postWall(); return }
+    setPostAs('none')
+    postWall({ proof: 'none' })
+  }
+  // As a Berkeley student, which is a letter to an @ (the row stands for
+  // nothing else): posted at once from a device already confirmed, and
+  // otherwise the link first, with the draft kept waiting on it.
+  const chooseCal = () => {
+    if (sending || spent || !toAt) return
+    setSaid('')
+    setPostAs('edu')
+    if (eduBerkeley()) { postWall({ proof: 'edu' }); return }
     setWrongSchool(false)
     setStep('edu')
   }
@@ -705,8 +739,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
               {info ? (
                 <p id="wl-nudge-pop" className="wl-nudge-pop" role="note">
                   add their @ so it reaches them. without it, there&rsquo;s a lower chance they end up
-                  reading it. with it, sending asks for one quick check: your Berkeley email, or your
-                  Instagram.
+                  reading it. the @ is never shown on the letter, only the name.
                 </p>
               ) : null}
               <HandleField
@@ -751,13 +784,13 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
             <Screen
               look={look} seed={seed} live
               top={fin ? {
-                salutation: greeting, handle: toHandle, icon: 'pen', stamp: stampOf(Date.now()),
+                salutation: greeting, icon: 'pen', stamp: stampOf(Date.now()),
               } : {
                 greet: {
                   value: greeting, onChange: onGreet, max: MAX_GREET, placeholder: defaultGreet,
                   label: 'the greeting. tap to change it', inputRef: greetRef, onFocus: seenHint,
                 },
-                handle: toHandle, icon: 'pen',
+                icon: 'pen',
                 counter: `${MAX_BODY - body.length}/1`,
               }}
               keys={fin ? {} : {
@@ -782,6 +815,7 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
             </Screen>
             <div className="wl-write-floor" aria-live="polite">
               {floor ? <Label className="wl-write-caught">{floor}</Label>
+                : !fin && askName ? <Label tone="dim" className="wl-write-hint">tap the greeting to put their name in</Label>
                 : !fin && hint ? <Label tone="dim" className="wl-write-hint">tap the greeting to change it</Label>
                 : null}
             </div>
@@ -797,19 +831,22 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
     )
   } else if (step === 'how') {
     // ── ONE DECISION ──
-    // Two options, each a title, why, and what it asks. The wall's asks for
-    // a Berkeley address to an @ (none for a name), and the private one for
-    // the writer's own Instagram; each says so on its face, and what it
-    // asks is skipped where this device has already answered it.
-    const wallAsks = spent ? { tone: 'is-warn', glyph: 'wait', text: waitLine(left && left.resets) }
-      : !toAt ? null
-      : eduBerkeley() ? { tone: 'is-done', glyph: 'check', text: 'you’re confirmed at Berkeley' }
-      : { tone: '', glyph: 'key', text: 'asks you to confirm you’re at Berkeley' }
+    // Three rows for a letter to an @, two for a letter to a name (the head
+    // of this file). Each is a title, what it does, and what it asks, and
+    // what it asks is skipped where this device has already answered it.
+    // The week's allowance, when the desk has it on and it is spent, closes
+    // both of the wall's rows and says when; the private one stays open.
+    const waiting = spent ? { tone: 'is-warn', glyph: 'wait', text: waitLine(left && left.resets) } : null
+    const wallAsks = waiting || { tone: '', glyph: 'wait', text: 'read before it goes up' }
+    const calAsks = waiting
+      || (eduBerkeley() ? { tone: 'is-done', glyph: 'check', text: 'you’re confirmed at Berkeley' }
+        : { tone: '', glyph: 'key', text: 'asks you to confirm you’re at Berkeley' })
     const mine = myHandle()
     const privAsks = !toAt ? { tone: 'is-off', glyph: 'arrow', text: 'add their @ to send privately' }
       : canPlace() && mine ? { tone: 'is-done', glyph: 'check', text: `sent as ${atHandle(mine)}` }
       : { tone: '', glyph: 'key', text: 'asks you to confirm this is your Instagram' }
     const picked = schoolPicked()
+    const busyWith = (which) => sending && postAs === which
     body_ = (
       <>
         <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">how public<br />is it?</Display>
@@ -821,21 +858,15 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
             <div className={`wl-how-opt is-wall${spent ? ' is-off' : ''}`}>
               <button
                 type="button" className="wl-how-go" onClick={chooseWall} disabled={spent}
-                aria-busy={(sending && step === 'how') || undefined}
+                aria-busy={busyWith('none') || undefined}
               >
-                <span className="wl-how-mark" aria-hidden="true">
-                  {toAt ? <Sticker school={BERKELEY} tilt={-7} label="" /> : <PixIcon name="env" scale={3} />}
-                </span>
+                <span className="wl-how-mark" aria-hidden="true"><PixIcon name="env" scale={3} /></span>
                 <span className="wl-how-text">
-                  <span className="wl-how-title">{toAt ? <>post on the Berkeley wall</> : <>post on the wall</>}</span>
-                  <span className="wl-how-why">
-                    {toAt ? 'public. anyone can read it, and nobody sees who wrote it.' : 'public. it’s checked before it goes up.'}
+                  <span className="wl-how-title">post on the wall</span>
+                  <span className="wl-how-why">public, and nobody sees who wrote it.</span>
+                  <span className={`wl-how-asks ${wallAsks.tone}`}>
+                    {busyWith('none') ? <><Wait />posting</> : <><PixIcon name={wallAsks.glyph} scale={2} />{wallAsks.text}</>}
                   </span>
-                  {wallAsks ? (
-                    <span className={`wl-how-asks ${wallAsks.tone}`}>
-                      <PixIcon name={wallAsks.glyph} scale={2} />{sending ? 'posting' : wallAsks.text}
-                    </span>
-                  ) : sending ? <span className="wl-how-asks"><Wait />posting</span> : null}
                 </span>
                 <span className="wl-how-arrow" aria-hidden="true"><PixIcon name="arrow" scale={2} /></span>
               </button>
@@ -854,6 +885,24 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 </div>
               ) : null}
             </div>
+            {toAt ? (
+              <div className={`wl-how-opt is-cal${spent ? ' is-off' : ''}`}>
+                <button
+                  type="button" className="wl-how-go" onClick={chooseCal} disabled={spent}
+                  aria-busy={busyWith('edu') || undefined}
+                >
+                  <span className="wl-how-mark" aria-hidden="true"><Sticker school={BERKELEY} tilt={-7} label="" /></span>
+                  <span className="wl-how-text">
+                    <span className="wl-how-title">post as a Berkeley student</span>
+                    <span className="wl-how-why">public, with the Cal sticker on it. it goes up at once.</span>
+                    <span className={`wl-how-asks ${calAsks.tone}`}>
+                      {busyWith('edu') ? <><Wait />posting</> : <><PixIcon name={calAsks.glyph} scale={2} />{calAsks.text}</>}
+                    </span>
+                  </span>
+                  <span className="wl-how-arrow" aria-hidden="true"><PixIcon name="arrow" scale={2} /></span>
+                </button>
+              </div>
+            ) : null}
             <div className={`wl-how-opt is-private${toAt ? '' : ' is-off'}`}>
               <button type="button" className="wl-how-go" onClick={choosePrivate} aria-describedby="wl-how-priv">
                 <span className="wl-how-mark" aria-hidden="true"><PixIcon name="lock" scale={3} /></span>
@@ -895,16 +944,16 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
                 : <>confirm you&rsquo;re<br />at Berkeley.</>}
             </Display>
             <p className="wl-door-say">
-              {wrongSchool ? 'only a Berkeley address posts to an @ on this wall. it can go up to their name instead.'
+              {wrongSchool ? 'only a Berkeley address posts with the Cal sticker. it can still go up on the wall, read first.'
                 : waiting ? (held.legacy
                   ? <>we mailed a code to <span className="wl-h">{held.email}</span>. type it here and your letter goes up.</>
                   : <>at <span className="wl-h">{held.email}</span>. tap the link and your letter goes up.</>)
-                : 'the Berkeley wall is for Berkeley students. we email you one link, and your address never goes on the letter.'}
+                : 'the Cal sticker is for Berkeley students. we email you one link, and your address never goes on the letter.'}
             </p>
           </div>
           <div className="wl-door-ways">
             {wrongSchool ? (
-              <Pill tone="light" wide onClick={toName}>post it to their name</Pill>
+              <Pill tone="light" wide onClick={toOpen} aria-busy={sending || undefined}>{sending ? 'posting' : 'post it on the wall'}</Pill>
             ) : waiting && held.legacy ? (
               <>
                 <CodeBox value={code} onChange={setCode} onSubmit={checkCode} autoFocus />
@@ -936,9 +985,9 @@ export default function Write({ to: prefill, go, back, up = back, upLabel = 'bac
             )}
           </div>
           <div className="wl-gate-fault" aria-live="polite">{said}</div>
-          {wrongSchool ? null : (
-            <button type="button" className="wl-quiet wl-edu-out" onClick={toName}>
-              not at Berkeley? post it to their name instead.
+          {wrongSchool || waiting ? null : (
+            <button type="button" className="wl-quiet wl-edu-out" onClick={toOpen}>
+              not at Berkeley? post it on the wall without the sticker.
             </button>
           )}
         </div>
