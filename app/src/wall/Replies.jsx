@@ -52,8 +52,9 @@ import {
   readThread, likeReply, reportReply, setThread, sendReply,
   sendSchoolLink, schoolLinkStatus, freshNonce,
 } from './replies-api.js'
-import { refresh as refreshMe } from './auth.js'
+import { refresh as refreshMe, eduDomain } from './auth.js'
 import { isNameKey } from './data.js'
+import { ResendLink } from './linkdoor.jsx'
 import './replies.css'
 
 const MAX = 280
@@ -188,7 +189,14 @@ function Reply({ r, letter, name, onLike, onReport, onUndo, reported, liking }) 
 // the letter's (parts.jsx `Sheet`), so the way out of it is not the way out
 // of the letter: Escape and the black round it take this down and nothing
 // under it.
-function Terms({ onAgree, onClose, busy, host }) {
+//
+// The person the letter is to reads a sheet of their own words at the same
+// moment. Their reply is not anonymous (it is lit and marked as theirs), it
+// comes from no school, and the school's line would be a threat about an
+// institution they never gave us, raised at the very moment the thread asks
+// them to answer. So for them the head says what their reply is, and what
+// abuse costs is what it can cost them: the reply, and replying.
+function Terms({ onAgree, onClose, busy, host, recipient = false }) {
   const agree = useRef(null)
   useEffect(() => {
     const was = document.activeElement
@@ -211,19 +219,34 @@ function Terms({ onAgree, onClose, busy, host }) {
       <div className="wl-rp-terms-sheet">
         <div className="wl-rp-terms-grip" aria-hidden="true"><span /></div>
         <p className="wl-rp-terms-kicker">before your first reply</p>
-        <h2 className="wl-rp-terms-h" id="wl-rp-terms-h">anonymous to others.<br />not to us.</h2>
-        <p className="wl-rp-terms-say">
-          nobody reading sees who wrote a reply. celestual can see who wrote what, and acts on abuse.
-        </p>
+        {recipient ? (
+          <>
+            <h2 className="wl-rp-terms-h" id="wl-rp-terms-h">your reply is marked<br />as the recipient&rsquo;s.</h2>
+            <p className="wl-rp-terms-say">
+              everybody reading sees it came from the person this letter is to, and nothing more. celestual acts on abuse.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="wl-rp-terms-h" id="wl-rp-terms-h">anonymous to others.<br />not to us.</h2>
+            <p className="wl-rp-terms-say">
+              nobody reading sees who wrote a reply. celestual can see who wrote what, and acts on abuse.
+            </p>
+          </>
+        )}
         <ul className="wl-rp-terms-list">
           <li>no naming or tagging anybody else. no @, no full names.</li>
           <li>nothing hateful or sexual about a person.</li>
           <li>no contact details, and nothing that says where somebody will be.</li>
         </ul>
-        <p className="wl-rp-terms-cost">
-          abuse has consequences: the reply comes down, you can lose replying and the wall, and where
-          the law or your school&rsquo;s rules require it, we tell the school.
-        </p>
+        {recipient ? (
+          <p className="wl-rp-terms-cost">abuse has consequences: the reply comes down and you can lose replying.</p>
+        ) : (
+          <p className="wl-rp-terms-cost">
+            abuse has consequences: the reply comes down, you can lose replying and the wall, and where
+            the law or your school&rsquo;s rules require it, we tell the school.
+          </p>
+        )}
         <a className="wl-rp-terms-link" href="/terms#replies" target="_blank" rel="noopener noreferrer">
           the terms for replying
           <PixIcon name="arrow" scale={2} />
@@ -242,15 +265,59 @@ function Terms({ onAgree, onClose, busy, host }) {
 
 // ── a school address, for somebody who has none on this device ──────────────
 // The composer's magic link (docs/ONE-WALL.md), inline, worded for a proof
-// with nothing waiting on it. The link is tapped wherever the mail is opened,
-// and this device is asked every few seconds whether it has been, and again
-// when it comes back to the front.
-function School({ onVerified }) {
+// with nothing waiting on it, and in the composer's words for the same act
+// (screens/Write.jsx, the Berkeley door): `send me the link`, the number,
+// `waiting for the link`, `send it again`, `use a different address`. The
+// link is tapped wherever the mail is opened, and this device is asked every
+// few seconds whether it has been, and again when it comes back to the front.
+//
+// ── the number ──────────────────────────────────────────────────────────────
+// Shown here and nowhere else. The mail does not print it: a link opened on
+// a device that is not this one asks for it (screens/Verify.jsx), so a link
+// somebody is sent without asking for it signs nobody in. So the number is
+// labelled as theirs, and the line says when they will need it.
+//
+// ── asked, and asked again ──────────────────────────────────────────────────
+// A second link is a second request with a number of its own, and this form
+// watches the newest. The first is still good for its half hour, and it is
+// usually the one that is tapped (it came late, which is why a second was
+// asked for). So each time the newest has not been tapped, this device's own
+// answer is asked for too (auth.js `refresh`): a school address on it now,
+// from any of the links this form sent, opens replying the same.
+//
+// A link that has run out, or that a wrong number spent on another device,
+// is said so, with the way to another.
+const RAN_OUT = new Set(['expired', 'used', 'burned', 'invalid'])
+const LINK_MS = 30 * 60000
+function ranOut(got, at) {
+  if (at && Date.now() - at > LINK_MS) return true
+  if (!got) return false
+  if (got.ok) return !!(got.expired || got.burned)
+  return RAN_OUT.has(got.error)
+}
+const SCHOOL_FAULT = {
+  domain: 'that address is not a school’s. replies take an address that ends in .edu.',
+  email: 'that does not look like an email address.',
+  rate: 'that is a lot of links for one hour. try again later.',
+  taken: 'that address belongs to another account.',
+  offline: 'there is no connection. try again in a moment.',
+}
+
+function School({ onVerified, onTheirs }) {
   const [email, setEmail] = useState('')
   const [step, setStep] = useState('ask')     // ask · sent
   const [busy, setBusy] = useState(false)
   const [fault, setFault] = useState('')
-  const [sent, setSent] = useState(null)      // { request, match, email }
+  const [sent, setSent] = useState(null)      // { request, match, email, at, again }
+  const [out, setOut] = useState(false)       // the newest link ran out, or was spent
+
+  // one link to one address; the fault said here when none went out
+  const mail = async (e) => {
+    const got = await sendSchoolLink(e)
+    if (got && got.ok) return got
+    setFault(SCHOOL_FAULT[got?.error] || 'the email did not send. try again in a moment.')
+    return null
+  }
 
   const send = async () => {
     const e = email.trim().toLowerCase()
@@ -258,24 +325,48 @@ function School({ onVerified }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)) { setFault('that does not look like an email address.'); return }
     setBusy(true)
     setFault('')
-    const out = await sendSchoolLink(e)
+    const got = await mail(e)
     setBusy(false)
-    if (out && out.ok) { setSent({ request: out.request, match: out.match, email: e }); setStep('sent'); return }
-    setFault({
-      domain: 'that address is not a school’s. replies take an address that ends in .edu.',
-      email: 'that does not look like an email address.',
-      rate: 'that is a lot of links for one hour. try again later.',
-      taken: 'that address belongs to another account.',
-      offline: 'there is no connection. try again in a moment.',
-    }[out?.error] || 'the email did not send. try again in a moment.')
+    if (!got) return
+    setSent({ request: got.request, match: got.match, email: e, at: Date.now(), again: false })
+    setOut(false)
+    setStep('sent')
+  }
+
+  // the same address again (linkdoor.jsx `ResendLink` asks, and waits before
+  // it offers); false when nothing went out, so its clock does not start
+  const again = async () => {
+    if (!sent) return false
+    setFault('')
+    const got = await mail(sent.email)
+    if (!got) return false
+    setSent({ request: got.request, match: got.match, email: sent.email, at: Date.now(), again: true })
+    setOut(false)
+    return true
   }
 
   useEffect(() => {
-    if (step !== 'sent' || !sent?.request) return undefined
+    if (step !== 'sent' || !sent?.request || out) return undefined
     let alive = true
+    let asking = false
+    // what this device already said about a school before the wait began:
+    // only a change counts, so an answer that was already there (and that
+    // the thread did not agree with) never ends a wait on its own
+    const had = !!eduDomain()
     const ask = async () => {
-      const out = await schoolLinkStatus(sent.request)
-      if (alive && out && out.ok && out.verified) { alive = false; onVerified() }
+      if (!alive || asking) return
+      asking = true
+      const got = await schoolLinkStatus(sent.request)
+      let yes = !!(got && got.ok && got.verified)
+      // any link this form sent, tapped: this device is at a school now
+      if (!yes && !had && alive) {
+        await refreshMe()
+        yes = !!eduDomain()
+      }
+      asking = false
+      if (!alive) return
+      if (yes) { alive = false; onVerified(); return }
+      if (ranOut(got, sent.at)) { alive = false; setOut(true) }
     }
     const tick = setInterval(ask, 4000)
     const back = () => { if (document.visibilityState === 'visible') ask() }
@@ -287,19 +378,38 @@ function School({ onVerified }) {
       document.removeEventListener('visibilitychange', back)
       window.removeEventListener('focus', back)
     }
-  }, [step, sent, onVerified])
+  }, [step, sent, out, onVerified])
 
   if (step === 'sent' && sent) {
+    const n = sent.match
     return (
       <div className="wl-rp-school is-sent">
-        <p className="wl-rp-school-say">
-          a link is on its way to <span className="wl-h">{sent.email}</span>.
-          {sent.match ? <> the mail says <span className="wl-h">{sent.match}</span>.</> : null}
-          {' '}tap it on any device, and replying opens here.
-        </p>
-        <p className="wl-rp-wait"><Wait scale={2} /> waiting for the link</p>
-        <button type="button" className="wl-quiet wl-rp-again" onClick={() => { setStep('ask'); setSent(null) }}>
-          use another address
+        {out ? (
+          <p className="wl-rp-school-say" role="status">that link has run out. send another.</p>
+        ) : (
+          <>
+            <p className="wl-rp-school-say">
+              a link is on its way to <span className="wl-h">{sent.email}</span>.{' '}
+              {sent.again ? 'tap the link in the newest mail.' : 'tap the link in the mail.'}
+              {n != null ? ' on another phone or computer, it asks for this number.' : ''}
+            </p>
+            {n != null ? (
+              <div className="wl-edu-match" role="group" aria-label={`your number is ${n}`}>
+                <span className="wl-edu-match-lab" aria-hidden="true">your number</span>
+                <span className="wl-edu-match-n" aria-hidden="true">{n}</span>
+              </div>
+            ) : null}
+            <p className="wl-rp-wait" role="status"><Wait scale={2} /> waiting for the link</p>
+          </>
+        )}
+        {fault ? <p className="wl-rp-fault" role="alert">{fault}</p> : null}
+        {/* at once when the link has run out: there is nothing to wait for */}
+        <ResendLink key={out ? 'out' : 'wait'} onSend={again} wait={out ? 0 : 30} />
+        <button
+          type="button" className="wl-quiet wl-rp-again"
+          onClick={() => { setStep('ask'); setSent(null); setOut(false); setFault('') }}
+        >
+          use a different address
         </button>
       </div>
     )
@@ -315,42 +425,66 @@ function School({ onVerified }) {
       />
       {fault ? <p className="wl-rp-fault" role="alert">{fault}</p> : null}
       <Pill tone="light" wide onClick={send} disabled={busy || !email.trim()} aria-busy={busy || undefined}>
-        {busy ? 'sending' : 'send the link'}
+        {busy ? 'sending' : 'send me the link'}
       </Pill>
+      {/* The one person who replies with no school: the person the letter is
+          to, once their Instagram is confirmed (terms.html#replies). Nothing
+          else in the thread says so, and without it a recipient with no .edu
+          reads that they cannot answer their own letter. */}
+      {onTheirs ? (
+        <button type="button" className="wl-quiet wl-rp-theirs" onClick={onTheirs}>
+          is this letter to you? confirm your Instagram to answer as the recipient.
+        </button>
+      ) : null}
     </div>
   )
 }
 
 // ── the field a reply is written in ─────────────────────────────────────────
+// A refusal (the reading's, or the list's on the server) is about these
+// words, so the key waits for them to change: pressed again on the same
+// words it would only be refused again, and a refusal counts against the
+// throttle. The first edit clears the line, and the key with it. A send that
+// did not go through is not a refusal, and says to send it again.
+//
+// The terms are agreed once, in the sheet, and this field remembers it. The
+// server keeps the agreement with the first reply it stores, a refused one
+// included, and with the first reply the list catches (celestual-wall-reply),
+// but the thread's `me.terms` is only read again when a reply goes up. So a
+// first reply that was refused, edited and sent again carries the agreement
+// with it rather than raising the same sheet a second time.
 function Compose({ me, letter, name, onSent, onTerms, inputRef }) {
   const phone = usePhone()
   const [body, setBody] = useState('')
   const [busy, setBusy] = useState(false)
-  const [said, setSaid] = useState(null)   // { tone: 'ok'|'hold'|'no', text }
+  const [said, setSaid] = useState(null)   // { tone: 'ok'|'hold'|'no', text, refused? }
   const nonce = useRef(freshNonce())
+  const agreed = useRef(false)
   const fault = replyFault(body)
   const left = MAX - body.length
   const empty = !body.trim()
 
   const send = async (accept = false) => {
     if (busy || empty) return
-    if (fault) return
-    if (!me.terms && !accept) { onTerms(() => send(true)); return }
+    if (fault || said?.refused) return
+    if (accept) agreed.current = true
+    const yes = accept || agreed.current
+    if (!me.terms && !yes) { onTerms(() => send(true)); return }
     setBusy(true)
     setSaid(null)
-    const out = await sendReply({ letter: letter.id, body, nonce: nonce.current, accept })
+    const out = await sendReply({ letter: letter.id, body, nonce: nonce.current, accept: yes })
     setBusy(false)
     if (out && out.ok) {
       // a fresh draft either way; a refused one keeps its words to be changed
       nonce.current = freshNonce()
       if (out.status === 'rejected') {
-        setSaid({ tone: 'no', text: `it can’t go up as it’s written. ${whyRefused(out.reasons)}` })
+        setSaid({ tone: 'no', refused: true, text: `it can’t go up as it’s written. ${whyRefused(out.reasons)}` })
         return out
       }
       setBody('')
       setSaid(out.status === 'live'
         ? { tone: 'ok', text: 'it’s up.' }
-        : { tone: 'hold', text: out.say || 'it’s being read. it shows here once it passes.' })
+        : { tone: 'hold', text: out.say || 'it’s being read. others see it once it passes.' })
       onSent(out)
       return out
     }
@@ -358,7 +492,7 @@ function Compose({ me, letter, name, onSent, onTerms, inputRef }) {
     if (e === 'terms') { onTerms(() => send(true)); return out }
     if (e === 'caught') {
       nonce.current = freshNonce()
-      setSaid({ tone: 'no', text: `it can’t go up as it’s written. ${whyRefused(out.reasons)}` })
+      setSaid({ tone: 'no', refused: true, text: `it can’t go up as it’s written. ${whyRefused(out.reasons)}` })
       return out
     }
     if (e === 'throttle') { setSaid({ tone: 'no', text: 'that is a lot of replies. give it a few minutes.' }); return out }
@@ -409,7 +543,7 @@ function Compose({ me, letter, name, onSent, onTerms, inputRef }) {
       <div className="wl-rp-send">
         {line}
         <Pill
-          tone="light" onClick={() => send()} disabled={busy || empty || !!fault}
+          tone="light" onClick={() => send()} disabled={busy || empty || !!fault || !!said?.refused}
           aria-busy={busy || undefined} className="wl-rp-go"
         >
           {busy ? 'sending' : 'reply'}
@@ -423,6 +557,12 @@ function Compose({ me, letter, name, onSent, onTerms, inputRef }) {
 // The feature this is for. The person the letter is to is told so, asked to
 // answer, and given the two say-sos over the thread, each one tap and each
 // undone by the same key.
+//
+// Each key says what it does, not what the state is called: `shut` and `put
+// away` were near synonyms on two keys that looked alike, and what set them
+// apart (no new replies, against nobody else seeing any) was only said after
+// one was pressed. While the replies are out of sight there are no replies to
+// stop, so the first key is not drawn at all rather than drawn dead.
 function Owner({ state, onReply, onSet, busy, letter }) {
   const shut = state === 'locked'
   const away = state === 'closed'
@@ -431,22 +571,24 @@ function Owner({ state, onReply, onSet, busy, letter }) {
       <p className="wl-rp-owner-say">
         <span className="wl-rp-owner-h">this letter is to you.</span>{' '}
         {away
-          ? 'the replies are put away. nobody else can see them.'
+          ? 'only you can see the replies now.'
           : shut
-            ? 'the replies are shut. only you can add one, and the ones here stay.'
+            ? 'only you can reply now, and the ones here stay.'
             : 'answer it here, and your reply is marked as the recipient’s. nobody sees more than that.'}
       </p>
       <div className="wl-rp-owner-keys">
         {away ? null : (
           <Pill tone="light" onClick={onReply} className="wl-rp-owner-go">reply as the recipient</Pill>
         )}
-        <button type="button" className="wl-rp-key" disabled={busy || away} onClick={() => onSet(shut ? 'open' : 'locked')}>
-          <PixIcon name="lock" scale={2} />
-          <span>{shut ? 'open the replies' : 'shut the replies'}</span>
-        </button>
+        {away ? null : (
+          <button type="button" className="wl-rp-key" disabled={busy} onClick={() => onSet(shut ? 'open' : 'locked')}>
+            <PixIcon name="lock" scale={2} />
+            <span>{shut ? 'let people reply again' : 'stop new replies'}</span>
+          </button>
+        )}
         <button type="button" className="wl-rp-key" disabled={busy} onClick={() => onSet(away ? 'open' : 'closed')}>
           <PixIcon name={away ? 'down' : 'close'} scale={2} />
-          <span>{away ? 'bring them back' : 'put them away'}</span>
+          <span>{away ? 'show the replies' : 'hide all replies'}</span>
         </button>
       </div>
     </div>
@@ -454,7 +596,7 @@ function Owner({ state, onReply, onSet, busy, letter }) {
 }
 
 // ── the thread ──────────────────────────────────────────────────────────────
-export default function Replies({ letter, reduce = false }) {
+export default function Replies({ letter, reduce = false, go = null }) {
   const id = letter.id
   const [t, setT] = useState(null)
   const [likes, setLikes] = useState({})       // id -> { liked, likes }, drawn at once
@@ -538,14 +680,15 @@ export default function Replies({ letter, reduce = false }) {
   // ── the recipient's say ──
   const set = async (state) => {
     if (setting) return
+    const was = t?.state
     setSetting(true)
     const out = await setThread(id, state)
     if (!alive.current) return
     setSetting(false)
     if (out && out.ok) {
-      setNote(state === 'locked' ? 'shut. nobody else can reply now.'
-        : state === 'closed' ? 'put away. nobody else can see the replies.'
-          : 'open again.')
+      setNote(state === 'locked' ? 'nobody else can reply now. the ones here stay.'
+        : state === 'closed' ? 'nobody else can see the replies now.'
+          : was === 'closed' ? 'everybody can see the replies again.' : 'people can reply again.')
       await load()
     } else setNote('that did not go through. try again')
   }
@@ -687,7 +830,10 @@ export default function Replies({ letter, reduce = false }) {
           onSent={sent} onTerms={askTerms} inputRef={input}
         />
       ) : me.why === 'edu' ? (
-        <School onVerified={verified} />
+        <School
+          onVerified={verified}
+          onTheirs={toAt && !me.recipient && go ? () => go('claim', letter.to) : null}
+        />
       ) : me.why === 'locked' ? (
         <div className="wl-rp-note">
           <PixIcon name="lock" scale={2} />
@@ -695,7 +841,9 @@ export default function Replies({ letter, reduce = false }) {
         </div>
       ) : null}
 
-      {terms ? <Terms onAgree={agree} onClose={() => setTerms(null)} busy={termsBusy} host={host} /> : null}
+      {terms ? (
+        <Terms onAgree={agree} onClose={() => setTerms(null)} busy={termsBusy} host={host} recipient={!!me.recipient} />
+      ) : null}
     </section>
   )
 }

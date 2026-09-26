@@ -25,7 +25,7 @@
 //               verification    the DM records, and the six handle actions
 //               pings           standing, mutual, lapsing. Never who a ping is on
 //   the wall    letters         submissions and the moderation queue, one table two ways
-//               reports         user-flagged content, and the path from a report to a removal
+//               reports         what readers filed, and the path from a report to a removal
 //               waiting         names looked for and not found, and which flyer
 //               the cards       the five printed cards, and how far each one
 //                               carried somebody
@@ -73,7 +73,9 @@ const GROUPS = [
   ] },
   { word: 'the wall', items: [
     { id: 'wall', word: 'letters', say: 'flagged, live, down', count: 'letters_flagged', live: true },
-    { id: 'reports', word: 'reports', say: 'flagged letters', count: 'reports_open', live: true },
+    // what readers filed. `flagged` is the letters' word for what the
+    // reading was unsure of, a tab away, and this is not that
+    { id: 'reports', word: 'reports', say: 'filed by readers', count: 'reports_open', live: true },
     { id: 'replies', word: 'replies', say: 'held and reported', count: 'replies_waiting', live: true },
     { id: 'waitlist', word: 'waiting', say: 'names looked for', count: 'waitlist' },
     { id: 'cards', word: 'the cards', say: 'which paper worked' },
