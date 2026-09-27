@@ -69,6 +69,7 @@ import Verify from './screens/Verify.jsx'
 import Claim from './screens/Claim.jsx'
 import Unwrite from './screens/Unwrite.jsx'
 import Alerts from './screens/Alerts.jsx'
+import Pings from './screens/Pings.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -457,6 +458,8 @@ export default function WallApp() {
   if (route.name === 'claim') sheet = <Claim handle={route.id} {...shared} />
   if (route.name === 'r') sheet = <Unwrite {...shared} />
   if (route.name === 'alerts') sheet = <Alerts {...shared} />
+  if (route.name === 'pings') sheet = <Pings {...shared} />
+  if (route.name === 'paid') sheet = <Pings paid {...shared} />
 
   let base
   switch (route.name) {

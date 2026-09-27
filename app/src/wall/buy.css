@@ -1,0 +1,46 @@
+/* ═══ MORE PINGS ══════════════════════════════════════════════════════════════
+   screens/Pings.jsx, docs/PINGS-BY-THE-WEEK.md. The composer's own sheet and
+   the composer's own screen, lit in rose, with the count on the glass and the
+   phone's two soft keys as the stepper. Everything the sheet is made of is
+   the composer's (wall.css `.wl-write*`); this is the count, the line under
+   the screen, and the fine print under that. */
+
+/* ── the count ──
+   The number in the screen's large figures, a line under it saying what it
+   is, and what it comes to, centred on the glass as the phone set a number
+   it was asking for. Every change rolls the figure up from under the last
+   (`key={n}` in Pings.jsx draws it anew). */
+.wl-buy-count {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6cqw;
+  color: var(--s-ink); text-align: center; font-family: var(--f-s40); font-weight: 400;
+  text-shadow: 0 0 0.35cqw var(--s-soft);
+}
+.wl-buy-n {
+  display: block; font-size: 44cqw; line-height: 0.78; font-variant-numeric: tabular-nums;
+  animation: wl-buy-roll 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes wl-buy-roll {
+  from { opacity: 0; transform: translate3d(0, 5cqw, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.wl-buy-what { display: block; font-size: 9.4cqw; line-height: 1; }
+/* the price struck out of the ink, the one figure a buyer checks twice */
+.wl-buy-cost {
+  display: inline-block; margin-top: 1.4cqw; padding: 1.2cqw 2.6cqw 0.8cqw; border-radius: 0.8cqw;
+  font-size: 9.4cqw; line-height: 1; font-variant-numeric: tabular-nums;
+  background: var(--s-ink); color: var(--s-mid); text-shadow: none;
+}
+
+/* ── under the screen ── */
+.wl-buy-say { text-align: center; text-wrap: balance; }
+.wl-buy-fine {
+  max-width: 34ch; margin: 14px auto 0; padding: 0 8px;
+  font-size: var(--t-small); line-height: 1.4; color: var(--ash); text-align: center; text-wrap: pretty;
+}
+
+/* the composer's line step, saying which ping a note spends */
+.wl-ping-which { text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-buy-n { animation: none; }
+}

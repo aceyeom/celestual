@@ -11,7 +11,8 @@
 // the cap, the window, the suppression list and the matching live, and this
 // shapes what they answer into what the two sheets draw. It does not
 // reimplement any of it.
-import { placePing, fetchMyPings, renewPing, retirePing, normHandle, PING_DAYS, SLOT_CAP } from '../api/celestual.js'
+import { placePing, fetchMyPings, fetchAllowance, renewPing, retirePing, normHandle, PING_DAYS, SLOT_CAP } from '../api/celestual.js'
+import { PING_CENTS, MAX_BUY } from '../api/billing.js'
 import { getSession } from '../api/auth.js'
 import { learnHandle, avatarUrl } from '../api/handles.js'
 import { heldProof, verified, proofFor, renewProof } from './auth.js'
@@ -86,7 +87,8 @@ export async function myPings({ handle, proof }) {
       return { ok: false, error: out?.error || 'network', pings: [], mutuals: [] }
     }
     const pings = (Array.isArray(out.pings) ? out.pings : []).map(shapePing)
-    const answer = { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual') }
+    const allowance = learnAllowance(h, out.allowance)
+    const answer = { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual'), allowance }
     HELD.set(h, { at: Date.now(), answer })
     keepSpans(pings)
     return answer
@@ -119,6 +121,104 @@ export function heldPings(handle) {
 
 export function forgetPings() {
   HELD.clear()
+}
+
+// ── this week's pings ───────────────────────────────────────────────────────
+// One free ping for every reveal, and any bought on top (0071,
+// docs/PINGS-BY-THE-WEEK.md). The server says it on every answer about the
+// notes (the list, a placement, a keep, and its own read), in one shape, and
+// this is that shape made plain:
+//
+//   revealAt   the reveal a note sent now runs to
+//   freeLeft   whether its free ping is still unspent (1 or 0)
+//   credits    pings bought and not spent, which never lapse
+//   sent       pings spent on that reveal
+//   left       what can still be sent to it: the free one and the bought
+//              ones, up to the ceiling of ten a reveal
+//   next       the reveal after it, where a note kept for next week goes
+//
+// Kept on this device between answers (store.js `allowance`), so a sheet
+// draws the week on its first frame, and nobody else's: it goes with the
+// person on sign out, like the list.
+export function shapeAllowance(a) {
+  if (!a || typeof a !== 'object') return null
+  const n = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
+  const ceiling = n(a.ceiling, MAX_BUY)
+  const sent = n(a.sent)
+  const freeLeft = n(a.free_left, 1) > 0 ? 1 : 0
+  const credits = Math.max(0, n(a.credits))
+  const next = a.next && typeof a.next === 'object' ? {
+    revealAt: Date.parse(a.next.reveal_at || 0) || 0,
+    freeLeft: n(a.next.free_left, 1) > 0 ? 1 : 0,
+    sent: n(a.next.sent),
+  } : null
+  return {
+    revealAt: Date.parse(a.reveal_at || 0) || 0,
+    free: n(a.free, 1),
+    freeLeft,
+    credits,
+    sent,
+    ceiling,
+    left: Math.max(0, Math.min(freeLeft + credits, ceiling - sent)),
+    priceCents: n(a.price_cents, PING_CENTS) || PING_CENTS,
+    next,
+  }
+}
+function learnAllowance(h, raw) {
+  const a = shapeAllowance(raw)
+  if (a && h) patch({ allowance: { h, at: Date.now(), a } })
+  return a
+}
+// the last one this device was told, for this person, while it can still be
+// the week's: one said before the reveal it was about is last week's
+export function heldAllowance(handle = myHandle()) {
+  const h = normHandle(handle)
+  const got = getState().allowance
+  if (!h || !got || got.h !== h || !got.a) return null
+  if (got.a.revealAt && got.a.revealAt < Date.now()) return null
+  return got.a
+}
+export async function loadAllowance(handle = myHandle()) {
+  const h = normHandle(handle)
+  if (!h) return null
+  const key = await proofFor(h)
+  if (!key) return null
+  const out = await fetchAllowance({ handle: h, proof: key })
+  return out.ok ? learnAllowance(h, out.allowance) : heldAllowance(h)
+}
+
+// Which ping a note sent now would be, in the words the composer says it:
+// the week's free one, or one of those bought, or none left.
+export function pingWords(a) {
+  if (!a) return ''
+  if (a.left <= 0) return a.sent >= a.ceiling ? 'ten this week, which is the most' : 'no pings left this week'
+  if (a.freeLeft) return 'your free ping this week'
+  return a.credits === 1 ? 'your last ping' : `1 of your ${a.credits} pings`
+}
+
+// ── a note waiting on pings ─────────────────────────────────────────────────
+// A note that could not be paid for is kept while its person buys pings: the
+// paywall is a trip to Stripe's page and back, and the page may be reloaded
+// or evicted on the way, so it is kept on this device (store.js `waiting`)
+// rather than in memory, for two hours, and sent the moment the pings land
+// (screens/Pings.jsx). What it is: a note to send, with its words, a lapsed
+// one to send again, or a running one to keep for next week.
+const WAIT_MS = 2 * 3600000
+export function waitForPings(action) {
+  if (!action || !action.to) return
+  patch({ waiting: { kind: action.kind || 'send', to: normHandle(action.to), line: action.line ?? null, at: Date.now() } })
+}
+export function waitingNote() {
+  const w = getState().waiting
+  if (!w || !w.to || Date.now() - (w.at || 0) > WAIT_MS) return null
+  return w
+}
+export function dropWaiting() {
+  patch({ waiting: null })
+}
+// and both, with the person, on sign out: they are theirs and nobody's after
+export function forgetWeek() {
+  patch({ allowance: null, waiting: null })
 }
 
 function shapePing(p) {
@@ -202,11 +302,12 @@ export async function place({ me: mineNow, them, email, proof, words }) {
     }
     const cap = Number(out?.slots?.cap)
     if (cap > 0) patch({ pingCap: cap })
+    const allowance = learnAllowance(mineNow, out?.allowance)
     if (!out || out.recorded === false || out.ok === false) {
-      return { ok: false, error: out?.error || 'failed', slots: out?.slots || null }
+      return { ok: false, error: out?.error || 'failed', slots: out?.slots || null, allowance }
     }
     noteSpan(Date.parse(out.expires_at || 0))
-    return { ok: true, ...out }
+    return { ok: true, ...out, allowance }
   } catch (e) {
     const msg = String(e?.message || '')
     if (/same handle/i.test(msg)) return { ok: false, error: 'self' }
@@ -229,8 +330,9 @@ export async function place({ me: mineNow, them, email, proof, words }) {
 export async function renew({ me: mineNow, them }) {
   try {
     const out = await renewPing({ me: mineNow, them, proof: await proofFor(mineNow) })
-    if (out?.ok !== true) return { ok: false, error: out?.error || 'network' }
-    return { ok: true, expires: Date.parse(out.expires_at || 0) || 0 }
+    const allowance = learnAllowance(mineNow, out?.allowance)
+    if (out?.ok !== true) return { ok: false, error: out?.error || 'network', allowance }
+    return { ok: true, expires: Date.parse(out.expires_at || 0) || 0, allowance }
   } catch {
     return { ok: false, error: 'network' }
   }
@@ -445,9 +547,22 @@ export function daysLeftWords(expires) {
 // is mutual, that it was not this time, or when its reveal is.
 export function stateWords(p) {
   if (!p) return ''
-  if (p.state === 'mutual') return 'it’s mutual'
+  if (p.state === 'mutual') return mutualWords(p)
   if (p.state === 'lapsed') return 'not this time'
   return keptAhead(p) ? `kept to ${endsWords(p.expires)}` : `reveals ${endsWords(p.expires)}`
+}
+
+// A mutual never lapses and never spends a ping again: the week it was told
+// on is the last thing that happens to it here, and the rest is theirs. So
+// its row says when that was, the night itself while it is recent, and the
+// day after that: it's mutual · last night, mutual since sep 19. A pair from
+// before the weekly reveal has no night, and says only that it is.
+export function mutualWords(p, at = Date.now()) {
+  const t = p && p.revealedAt
+  if (!t) return 'it’s mutual'
+  if (at - t < 6 * DAY_MS) return `it’s mutual · ${endedWords(t, at)}`
+  const w = wallOf(t)
+  return `mutual since ${MONTHS[w.m - 1]} ${w.d}`
 }
 
 // The time left to a moment, as the phone's clock counted it: days and hours

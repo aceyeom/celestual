@@ -137,7 +137,7 @@ quantity }`) opens a Stripe Checkout Session for `STRIPE_PRICE_PING` (a one
 time $2.99 price; `STRIPE_PRICE_SLOT` is read when it is not set, since it is
 the same product) with `quantity` as the line item's quantity, fixed on
 Stripe's page so the purchase row and the charge always agree. The buyer comes
-back to `/paid?s={CHECKOUT_SESSION_ID}`, or `/paid?c=1` if they did not pay,
+back to `/paid?session={CHECKOUT_SESSION_ID}` (never `?s=`, which is a flyer scan on the wall), or `/paid?c=1` if they did not pay,
 and the wall confirms it (`{ action: 'confirm', session_id }`), which answers
 `{ ok, paid, applied, kind, quantity, credits }`.
 
