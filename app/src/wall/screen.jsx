@@ -521,19 +521,31 @@ export function Screen({
   // a line the writer set is set smaller when it is long (`lineSize`); the
   // name the screen makes itself keeps its size and its cut, as it always did
   const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '') : salutation ? lineSize(salutation) : undefined
+  // A key can carry a count, set small at its shoulder the way the phone
+  // counted what was waiting behind a key (`badge`), and the message light
+  // under it (`dot`); and a key that opens something stays struck out of
+  // its band while that is open (`open`), as the phone lit the tab it was on.
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
     return (
       <button
-        type="button" className={`wl-sk ${cls}${d.on ? ' is-on' : ''}`}
+        type="button" id={live ? d.id : undefined}
+        className={`wl-sk ${cls}${d.on ? ' is-on' : ''}${d.open ? ' is-open' : ''}${d.cls ? ` ${d.cls}` : ''}`}
         onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
         onMouseDown={live && d.keepFocus ? (e) => e.preventDefault() : undefined}
         aria-label={d.aria || undefined} aria-pressed={d.pressed}
+        aria-expanded={d.expanded} aria-controls={live ? d.controls : undefined}
         tabIndex={live ? undefined : -1}
       >
         {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
         {d.label ? <span className="wl-lit">{d.label}</span> : null}
+        {d.badge || d.dot ? (
+          <span className="wl-sk-n" aria-hidden="true">
+            {d.dot ? <i className="wl-sk-dot" /> : null}
+            {d.badge ? <b>{d.badge}</b> : null}
+          </span>
+        ) : null}
       </button>
     )
   }

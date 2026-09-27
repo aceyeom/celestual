@@ -45,7 +45,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const wall = (f) => pathToFileURL(join(root, 'app/src/wall', f)).href
 const { introFolk, drawBody, cellsOf, sheet } = await import(wall('folk.js'))
 const {
-  joinStory, introStory, revealStory, I_COLS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, R_EMPTY,
+  joinStory, introStory, revealStory, I_COLS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, I_QUICK, R_EMPTY,
   ENTER, shiftFor,
 } = await import(wall('pixmark.js'))
 
@@ -142,8 +142,8 @@ function entriesOf(story, from, until, panels) {
 }
 const tellings = [
   // the intro's clock starts on the black; its screen is on at the end of
-  // its wake
-  ['the intro', introStory(I_RUN_AT - I_ENTER), 0, I_WAKE_AT + I_WAKE_MS, I_RUN_AT + 400],
+  // its wake. At its own pace, as Intro.jsx tells it
+  ['the intro', introStory(I_RUN_AT - I_ENTER, { pace: I_QUICK }), 0, I_WAKE_AT + I_WAKE_MS, I_RUN_AT + 400],
   // the mutual's clock starts once its screen is on (Reveal.jsx), and every
   // telling after the first starts from the glass the last one ended on
   ['the mutual', revealStory(), 0, 0, R_EMPTY + 400],

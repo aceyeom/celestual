@@ -27,7 +27,7 @@
 //             once, anywhere, and is signed in here by any proof, never sees
 //             it: the proof comes back to this device from the server
 //             (auth.js `restoreProof`, migration 0065).
-//     done    "it's out." and the sixty days, and nothing else.
+//     done    "it's out." and the saturday it reveals on, and nothing else.
 //
 // ── what this sheet never does ──────────────────────────────────────────────
 // It does not say whether the person is on celestual. It does not say whether
@@ -55,7 +55,7 @@ import { startHandoff, pollHandoff, savePending, loadPending, clearPending } fro
 import { signOut as dropProof } from '../../api/auth.js'
 import { cardStep } from '../seed.js'
 import {
-  myHandle, canPlace, readyToPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords,
+  myHandle, canPlace, readyToPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords, endsWords, nextReveal,
 } from '../pings.js'
 
 // The card's own ceilings, which are the server's (celestual_card_clean):
@@ -114,6 +114,23 @@ function clearOurs(use) {
 // A live code is resumed only for the ping it was minted for: somebody who
 // follows a link to another person while an old code is still out is placing
 // a different ping, and the address they arrived at wins.
+// ── changing the words ──────────────────────────────────────────────────────
+// A note's own screen on the account (screens/You.jsx) offers to change what
+// it says until its reveal, and opens this sheet on that person with the
+// words it has, to be edited and sent again in place: the same pair, the
+// same week, the new words (0069 keeps them until the reveal and not after).
+// Held for the one mount it is for.
+let EDIT = null
+export function editNote(go, to, line) {
+  EDIT = { to: normHandle(to), line: String(line || '') }
+  go('ping', to)
+}
+function takeEdit(prefill) {
+  const e = EDIT
+  EDIT = null
+  return e && e.to === normHandle(prefill) ? e : null
+}
+
 function resume(prefill) {
   const p = pending('ping')
   if (!p || !p.to) return null
@@ -282,8 +299,8 @@ export function ProveDoor({ p, headId, title, say, onAsk }) {
 // list that stands under an empty field and the one that replaces it as a
 // name is typed are one object. Each row is one press: a person with nothing
 // out goes straight to their screen; a mutual opens the reveal; a ping that
-// is standing opens its screen again, since placing it again keeps it
-// standing another sixty days and takes a new line if one is written.
+// is standing opens its screen again, since placing it again keeps it to
+// its reveal and takes a new line if one is written.
 function Written({ people, pingOf, onPick }) {
   const [more, setMore] = useState(false)
   const [lit, setLit] = useState(-1)
@@ -320,8 +337,15 @@ export default function Ping({
   const pre = normHandle(prefill)
   const own = myHandle()
   const [held] = useState(() => resume(pre))
+  const [edit] = useState(() => takeEdit(pre))
   const [to, setTo] = useState(() => held?.to || pre)
-  const [line, setLine] = useState(() => held?.line || '')
+  const [line, setLine] = useState(() => held?.line || edit?.line || '')
+  // whose note had its words put on the screen (`editNote`, or a name chosen
+  // with a note out on it): a line cleared of them takes them off the note.
+  // A line that was only ever empty sends no words, and keeps what was there
+  const shown = useRef(edit?.line ? edit.to : '')
+  // when the note that just went out reveals (0069), off the placement's answer
+  const [ends, setEnds] = useState(0)
   // who · line · proof · done. A link with a person in it opens on that
   // person's screen, and one with this person's own @ in it on the field.
   const [step, setStep] = useState(() => (held ? 'proof' : validHandle(pre) && pre !== own ? 'line' : 'who'))
@@ -417,7 +441,7 @@ export default function Ping({
     if (p && p.state === 'mutual') { go('reveal', k); return }
     setTo(k)
     setSaid('')
-    if (p && p.line && !line.trim()) setLine(p.line)
+    if (p && p.line && !line.trim()) { setLine(p.line); shown.current = k }
     setStep('line')
   }
 
@@ -452,7 +476,7 @@ export default function Ping({
     if (placing) return
     setPlacing(true)
     setSaid('')
-    const out = await place({ me, them: h, proof: spent || heldProof(me), words: line.trim() })
+    const out = await place({ me, them: h, proof: spent || heldProof(me), words: line.trim() || (shown.current === h ? '' : undefined) })
     if (!alive.current) return
     setPlacing(false)
     if (!out.ok) {
@@ -478,6 +502,7 @@ export default function Ping({
     clearOurs('ping')
     forgetPings()
     setAdopted(null)
+    setEnds(out.expires_at ? Date.parse(out.expires_at) || nextReveal() : nextReveal())
     setStep('done')
     if (!reduce) setDip('dip')
   }
@@ -650,8 +675,8 @@ export default function Ping({
               }}
             >
               {done ? (
-                <ScreenNote glyph="check" title="sixty days">
-                  if they send you one in that time, you both find out.
+                <ScreenNote glyph="check" title={`till ${endsWords(ends) || 'saturday'}`}>
+                  if they send you one by then, you both find out at 9pm pacific.
                 </ScreenNote>
               ) : (
                 <ScreenDraft

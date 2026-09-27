@@ -7,15 +7,20 @@
 //
 // Five actions on one endpoint. The first two are the six digit code, kept for
 // a tab on the old build; the last three are the magic link the one wall asks
-// for (docs/ONE-WALL.md, docs/EDU-VERIFICATION.md, migrations 0064, 0065):
-//   { action:'link', email, session, purpose:'edu'|'alerts'|'login', campus?, draft? }
-//        → { ok:true, request, match, domain, campus, school }
+// for (docs/ONE-WALL.md, docs/EDU-VERIFICATION.md, migrations 0064, 0065, 0070):
+//   { action:'link', email, session, purpose:'edu'|'alerts'|'login', campus?, draft?, carry? }
+//        → { ok:true, request, domain, campus, school }
 //        | { ok:false, error:'email'|'domain'|'rate'|'send'|'taken'|'session' }
-//   { action:'confirm', token, session, match? }
-//        → { ok:true, purpose, request, campus, school, same_device }
-//        | { ok:false, error:'invalid'|'expired'|'used'|'taken'|'match'|'mismatch', purpose? }
+//   { action:'confirm', token, session, match? (the old page's, never read) }
+//        → { ok:true, purpose, request, campus, school, same_device, carry }
+//        | { ok:false, error:'invalid'|'expired'|'used'|'taken', purpose? }
 //   { action:'status', request, session }
-//        → { ok:true, verified, purpose, campus, school, expired } | { ok:false, error:'invalid' }
+//        → { ok:true, verified, elsewhere, purpose, campus, school, expired }
+//        | { ok:false, error:'invalid' }
+//
+// Since 0070 the link is enough: opened in any browser it confirms at once
+// for that browser, and signs in the one that asked only when that is the
+// same one. No number is asked for or shown.
 //
 // The code actions:
 //   { action:'send',   email, slug, demo? }  → validate the address is at the
@@ -151,12 +156,60 @@ function linkToken(): string {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// The number the asking screen shows, 10 to 99, and nothing else does
-// (0065 section 3). The mail never prints it: a link opened on a device that
-// did not ask for it confirms only once this is typed there, so a person sent
-// a link they never asked for has nothing to type.
+// The number 0065 put on the asking screen, 10 to 99. Nothing asks for it
+// since 0070. It is minted only for a database from before that, whose open
+// still wants one, and answered only then, for the page from before that,
+// which asks for it on another device.
 function matchNumber(): number {
   return 10 + (crypto.getRandomValues(new Uint32Array(1))[0] % 90);
+}
+
+// What a campus link carries to the browser that opens it (0070): the draft
+// waiting on the link, or the letter a reply waits under. Only the fields
+// the posting path reads (app/src/wall/data.js `draftPost`), each held to
+// its own shape, and nothing else: it is somebody's words handed to whoever
+// reads the inbox, and the database holds it to 4 kB besides.
+function carryOf(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const c = raw as Record<string, unknown>;
+  const str = (v: unknown, n: number) => (typeof v === 'string' ? v.slice(0, n) : '');
+  if (c.letter && typeof c.letter === 'object' && !Array.isArray(c.letter)) {
+    const d = c.letter as Record<string, unknown>;
+    const body = str(d.body, 280);
+    const nonce = str(d.nonce, 64);
+    if (!body.trim() || !/^[A-Za-z0-9_-]{8,64}$/.test(nonce)) return null;
+    const look = d.look && typeof d.look === 'object' && !Array.isArray(d.look)
+      ? Object.fromEntries(
+        Object.entries(d.look as Record<string, unknown>)
+          .filter(([k, v]) => /^[a-z]{1,16}$/.test(k) && typeof v === 'string' && v.length <= 40)
+          .slice(0, 6),
+      )
+      : null;
+    return {
+      letter: {
+        kind: d.kind === 'name' ? 'name' : 'handle',
+        to: str(d.to, 40),
+        name: str(d.name, 40),
+        at: str(d.at, 40),
+        body,
+        look,
+        greet: typeof d.greet === 'string' ? d.greet.slice(0, 40) : null,
+        school: typeof d.school === 'string' ? d.school.slice(0, 40) : null,
+        proof: d.proof === 'none' ? 'none' : 'edu',
+        nonce,
+      },
+    };
+  }
+  if (c.reply && typeof c.reply === 'object' && !Array.isArray(c.reply)) {
+    const letter = str((c.reply as Record<string, unknown>).letter, 64);
+    return /^[A-Za-z0-9-]{8,64}$/.test(letter) ? { reply: { letter } } : null;
+  }
+  return null;
+}
+
+// PostgREST's word for a function the database does not have (yet).
+function missingFn(e: { code?: string; message?: string } | null): boolean {
+  return !!e && (e.code === 'PGRST202' || /could not find the function/i.test(String(e.message || '')));
 }
 
 function clientIp(req: Request): string | null {
@@ -356,15 +409,16 @@ Deno.serve(async (req) => {
   //           on the pass list
   //   alerts  any address
   //   login   any address (0065): the door's "continue with email". It signs
-  //           the device in as the person who holds the address, and a .edu
-  //           address opens its campus as well, so the answer names the
-  //           campus the way an `edu` link's does
-  // The token goes in the email and nowhere else; the database keeps its hash,
-  // the number and the asking session's hash (celestual_edu_link_open, which
-  // also holds the limits: five an address and fifteen a network address an
-  // hour, codes and links together). `draft: false` words the mail for a
-  // proof with no letter waiting on it. The number goes back to the asking
-  // screen in the answer, and into the mail not at all.
+  //           the browser that opens it in as the person who holds the
+  //           address (0070), and a .edu address opens its campus as well,
+  //           so the answer names the campus the way an `edu` link's does
+  // The token goes in the email and nowhere else; the database keeps its hash
+  // and the asking session's hash (celestual_edu_link_open, which also holds
+  // the limits: five an address and fifteen a network address an hour, codes
+  // and links together). `draft: false` words the mail for a proof with no
+  // letter waiting on it. `carry` (0070, a campus link's) is the draft, or the
+  // letter a reply waits under, handed to the browser that opens the link
+  // when that is not the one that asked.
   if (action === 'link') {
     const email = String(body.email || '').trim().toLowerCase();
     const session = String(body.session || '');
@@ -421,16 +475,25 @@ Deno.serve(async (req) => {
     }
 
     const token = linkToken();
-    const match = matchNumber();
-    const { data: opened, error: openErr } = await supabase.rpc('celestual_edu_link_open', {
+    const args = {
       p_email: email,
       p_session: session,
       p_purpose: purpose,
       p_campus: purpose === 'login' ? null : (campusRaw || null),
       p_ip: clientIp(req),
       p_link_hash: await sha256Hex(token),
-      p_match: match,
+    };
+    // The open that carries (0070), and on a database from before it the
+    // open that wants a number, which the page from before 0070 then shows.
+    let match: number | null = null;
+    let { data: opened, error: openErr } = await supabase.rpc('celestual_edu_link_open', {
+      ...args,
+      p_carry: purpose === 'edu' ? carryOf(body.carry) : null,
     });
+    if (missingFn(openErr)) {
+      match = matchNumber();
+      ({ data: opened, error: openErr } = await supabase.rpc('celestual_edu_link_open', { ...args, p_match: match }));
+    }
     if (openErr) {
       console.error('edu link open failed', openErr.message);
       return json({ ok: false, error: 'send' });
@@ -443,26 +506,27 @@ Deno.serve(async (req) => {
       console.error('edu link email failed', String(e));
       return json({ ok: false, error: 'send' });
     }
-    // the number the database kept: a resend from the same screen carries the
-    // first link's (0065), so the screen's number stays the one to type
-    const shown = Number(opened.match) || match;
-    return json({ ok: true, request: opened.request, match: shown, domain, campus, school });
+    return json({
+      ok: true, request: opened.request, domain, campus, school,
+      ...(match == null ? {} : { match: Number(opened.match) || match }),
+    });
   }
 
   // ── CONFIRM ─────────────────────────────────────────────────────────────
-  // The link, opened. `session` is the device that opened it. The binding is
-  // the database's (celestual_edu_link_confirm): the address to the asking
-  // session's person and to this one, the campus opened, the alert address
-  // filled; for a login, both devices signed in as whoever holds the address
-  // (celestual_user_bind_email_hash, 0065); or, for alerts, the asking
-  // person's alert address confirmed.
+  // The link, opened. `session` is the browser that opened it, and since 0070
+  // it is the one the link signs in, whichever browser asked
+  // (celestual_edu_link_confirm): a campus proved on it, or a login signed in
+  // on it as whoever holds the address (celestual_user_bind_email_hash,
+  // 0065); or, for alerts, the asking person's alert address confirmed. The
+  // asking browser is signed in only when it is this one. `carry` comes back
+  // to a browser that is not the one that asked.
   //
-  // `match` is the number the page asked for, typed off the asking screen,
-  // when the device that opened the link is not the one that asked. Anything
-  // that is not two digits goes as no number at all, which asks again and
-  // spends nothing: only a real guess can burn the link, and it does
-  // ('mismatch'). The database decides which device asked; this passes on
-  // what was typed and nothing else.
+  // The page from before 0070 may still send `match`, the number typed off
+  // an asking screen. It is passed on as two digits or not at all, and 0070
+  // never reads it; it is only for a database from before 0070, which asks
+  // for it on another browser and which the page from before then shows.
+  // The page after 0070 sends none, and on that database is answered
+  // 'match', and says to open the link where it was asked for.
   if (action === 'confirm') {
     const token = String(body.token || '');
     const session = String(body.session || '');
@@ -483,7 +547,8 @@ Deno.serve(async (req) => {
   // ── STATUS ──────────────────────────────────────────────────────────────
   // Whether the link was opened, answered to the session that asked for it and
   // to nobody else: the asking screen polls this while the person is in their
-  // inbox, and moves on the moment it is true.
+  // inbox, and moves on the moment it is `verified`, or says the link was
+  // opened in another browser the moment it is `elsewhere` (0070).
   if (action === 'status') {
     const request = String(body.request || '');
     const session = String(body.session || '');

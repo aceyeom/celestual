@@ -1,8 +1,9 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- test-mail.sql: exercises 0064_mail_links_and_alerts.sql.
 --
--- The magic link proves an address once, for the device that asked and the
--- device that opened it, and answers its status to the asker alone; a proved
+-- The magic link proves an address once, for the browser that opened it
+-- (since 0070: not the one that asked, when that is another), and answers its
+-- status to the asker alone; a proved
 -- campus address becomes the alert address; a letter to a claimed @ queues
 -- one mail when the screen has read it, three a day, never to its own writer;
 -- a match queues the mutual mail once, whichever way it is made; the drain
@@ -90,8 +91,8 @@ create temp table ml_req as
                                  ml_hash('link-token-aaaaaaaaaaaaaaaaaaaa'), 47) as r;
 select ml_ok('a campus address is asked for',
   ((select r from ml_req)->>'ok')::boolean and ((select r from ml_req)->>'request') is not null);
-select ml_ok('the row keeps the hashes and the number, never the token',
-  (select kind = 'link' and purpose = 'edu' and match = 47 and code_hash is null
+select ml_ok('the row keeps the hashes, never the token, and no number (0070)',
+  (select kind = 'link' and purpose = 'edu' and match is null and code_hash is null
           and email = 'mlnew@berkeley.edu'
           and session_hash = ml_hash('token-ml-dev-a-00000000')
           and link_hash = ml_hash('link-token-aaaaaaaaaaaaaaaaaaaa')
@@ -106,21 +107,16 @@ select ml_ok('and nobody else',
 select ml_ok('a campus link needs a .edu or a pass',
   (celestual_edu_link_open('someone@gmail.com', 'token-ml-dev-a-00000000', 'edu', null, null,
                            ml_hash('link-token-gmail-aaaaaaaaaaa'), 50)->>'error') = 'domain');
-select ml_ok('a number that is not two digits is refused',
+select ml_ok('a link hash that is not one is refused',
   (celestual_edu_link_open('mlnew2@berkeley.edu', 'token-ml-dev-a-00000000', 'edu', null, null,
-                           ml_hash('link-token-bad-number-aaaaa'), 9)->>'error') = 'invalid'
-  and (celestual_edu_link_open('mlnew2@berkeley.edu', 'token-ml-dev-a-00000000', 'edu', null, null,
-                           ml_hash('link-token-bad-number-aaaaa'), null)->>'error') = 'invalid');
+                           'not-a-hash', 30)->>'error') = 'invalid');
 select ml_ok('a token nobody minted confirms nothing',
   (celestual_edu_link_confirm('link-token-nobody-minted-this', 'token-ml-dev-b-00000000')->>'error') = 'invalid');
 
--- another device is asked for the number on the asking screen (0065), and
--- nothing happens until it is typed
-select ml_ok('opened on another device, the link asks for the number first',
-  (celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-b-00000000')->>'error') = 'match'
-  and (select status = 'pending' from celestual_edu_verifications where token = (select r from ml_req)->>'request'));
+-- opened on another device, it confirms there at once, with nothing typed,
+-- and proves that device and not the one that asked (0070)
 create temp table ml_conf as
-  select celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-b-00000000', 47) as r;
+  select celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-b-00000000') as r;
 select ml_ok('the link confirms on the device that opened it',
   ((select r from ml_conf)->>'ok')::boolean
   and ((select r from ml_conf)->>'purpose') = 'edu'
@@ -128,17 +124,18 @@ select ml_ok('the link confirms on the device that opened it',
   and ((select r from ml_conf)->>'school') = 'UC Berkeley'
   and not ((select r from ml_conf)->>'same_device')::boolean
   and ((select r from ml_conf)->>'request') = ((select r from ml_req)->>'request'));
-select ml_ok('the device that asked is proved at the address',
+select ml_ok('the device that opened it is proved at the address',
   (select edu_email = 'mlnew@berkeley.edu' and edu_verified_at is not null
-     from celestual_users where id = ml_user('token-ml-dev-a-00000000')));
-select ml_ok('and the device that opened it is the same person',
-  ml_user('token-ml-dev-b-00000000') = ml_user('token-ml-dev-a-00000000'));
+     from celestual_users where id = ml_user('token-ml-dev-b-00000000')));
+select ml_ok('and the device that asked is not',
+  ml_user('token-ml-dev-a-00000000') is null);
 select ml_ok('whose alert address is now the one they proved',
   (select alert_email = 'mlnew@berkeley.edu' and alert_email_verified_at is not null
           and not alerts_wrote and alerts_mutual
-     from celestual_users where id = ml_user('token-ml-dev-a-00000000')));
-select ml_ok('the status says so',
-  (celestual_edu_link_status((select r from ml_req)->>'request', 'token-ml-dev-a-00000000')->>'verified')::boolean);
+     from celestual_users where id = ml_user('token-ml-dev-b-00000000')));
+select ml_ok('the status tells the device that asked it was opened elsewhere',
+  (select not (st->>'verified')::boolean and (st->>'elsewhere')::boolean and (st->>'expired')::boolean
+     from (select celestual_edu_link_status((select r from ml_req)->>'request', 'token-ml-dev-a-00000000') as st) s));
 select ml_ok('the link works once',
   (celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', 'token-ml-dev-c-00000000')->>'error') = 'used'
   and (celestual_edu_link_confirm('link-token-aaaaaaaaaaaaaaaaaaaa', null)->>'error') = 'used');
@@ -152,7 +149,7 @@ select ml_ok('after thirty minutes it is expired',
   (celestual_edu_link_confirm('link-token-late-aaaaaaaaaaaa', 'token-ml-dev-d-00000000')->>'error') = 'expired');
 
 select ml_ok('a device proved at one address is told another is taken',
-  (celestual_edu_link_open('someoneelse@berkeley.edu', 'token-ml-dev-a-00000000', 'edu', null, null,
+  (celestual_edu_link_open('someoneelse@berkeley.edu', 'token-ml-dev-b-00000000', 'edu', null, null,
                            ml_hash('link-token-taken-aaaaaaaaaaa'), 33)->>'error') = 'taken');
 
 select ml_ok('five an address an hour, as the code has',
@@ -387,8 +384,15 @@ select ml_proof('ml_pb', 'proof-ml-pb');
 select ml_proof('ml_pc', 'proof-ml-pc');
 
 select celestual_submit('ml_pa', 'ml_pb', null, 'proof-ml-pa', '{"words":"you first"}'::jsonb);
-select ml_ok('the ping resolves mutual',
-  (celestual_submit('ml_pb', 'ml_pa', 'PB@Example.com', 'proof-ml-pb', null)->>'mutual')::boolean);
+-- since 0069 a pair is sealed until its reveal and told then; the reveal is
+-- brought forward here rather than waited for
+select ml_ok('the pair is sealed, not told, when the second note is placed',
+  not (celestual_submit('ml_pb', 'ml_pa', 'PB@Example.com', 'proof-ml-pb', null)->>'mutual')::boolean
+  and not exists (select 1 from celestual_mail_outbox where kind = 'mutual' and handle in ('ml_pa', 'ml_pb')));
+update celestual_entries set reveal_at = now() - interval '1 second' where sealed_with is not null;
+select celestual_reveal_due();
+select ml_ok('and at the reveal it resolves mutual',
+  exists (select 1 from celestual_matches where handle_a = 'ml_pa' and handle_b = 'ml_pb'));
 select ml_ok('the side with a confirmed address is queued from the match itself',
   (select count(*) = 1 and bool_and(to_email = 'pa@berkeley.edu' and other_handle = 'ml_pb' and not has_card)
      from celestual_mail_outbox where kind = 'mutual' and handle = 'ml_pa'));
@@ -402,6 +406,8 @@ select ml_ok('the old queue''s row is stamped, so the old drain never sends it t
 
 select celestual_submit('ml_pc', 'ml_pa', 'pc-ping@example.com', 'proof-ml-pc', null);
 select celestual_submit('ml_pa', 'ml_pc', null, 'proof-ml-pa', null);
+update celestual_entries set reveal_at = now() - interval '1 second' where sealed_with is not null;
+select celestual_reveal_due();
 select ml_ok('a person who turned the mutual alert off is not mailed',
   not exists (select 1 from celestual_mail_outbox where kind = 'mutual' and handle = 'ml_pc')
   and (select bool_and(last_error = 'alerts_off') from celestual_notifications where self_handle = 'ml_pc'));

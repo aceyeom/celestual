@@ -34,10 +34,13 @@ writer's greeting, or the first name the resolver has for the handle, or
 `dear you`, and the handle stays the key it is filed and found under.
 
 Every letter is a slider phone, and its thread of replies (migration 0068) is
-the phone's lower half, slid out from under the chin that carries its count:
-anonymous to everybody reading, each writer a small creature with one old word
-for a name (`kairos`, `aporia`), written from a proved school address or by the person the
-letter is to, whose replies are lit in the letter's own colour, and read before
+the phone's lower half, slid out from under the screen by its right soft key,
+`replies`, which carries the count (sharing is the first row of the options),
+and lit on the same glass in the letter's own colours: anonymous to everybody
+reading, each writer a small creature drawn in the panel's ink with one old
+word for a name (`kairos`, `aporia`), written from a proved school address or
+by the person the letter is to, whose replies are struck out of the ink, and
+read before
 they go up (`supabase/functions/celestual-wall-reply`). A heart on a letter,
 and a like on a reply, is anybody's. The field of names can be looked at four
 ways, all, newest, most liked and Berkeley, from a key at the end of its search
@@ -83,14 +86,17 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0068, in order. 0029 onward is the rebuild; 0038 is
+  migrations/       0001 to 0070, in order. 0029 onward is the rebuild; 0038 is
                     the audit; 0057 is the wall at the root and the login;
                     0058 gives every letter a colour of the screens; 0063 is
                     the one wall; 0065 is the login by our own mailed link,
-                    the number that is typed and not printed, and the @ that
-                    comes back with the person; 0066 opens every letter and
-                    lets anybody write to an @; 0067 sorts the wall; 0068 is
-                    the replies, and the heart open to anybody
+                    and the @ that comes back with the person; 0066 opens
+                    every letter and lets anybody write to an @; 0067 sorts
+                    the wall; 0068 is the replies, and the heart open to
+                    anybody; 0069 is the weekly reveal, private notes that
+                    run to Saturday at 9pm Pacific and pairs sealed until
+                    then; 0070 makes the link enough, with no number, by
+                    signing in only the browser that opens it
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -wall-reply, -edu-verify, -ig-webhook,
                     -manychat, -mutual-dm, -notify, -remind, -stripe,
@@ -133,7 +139,10 @@ node scripts/check-stories.mjs         the stories on the glass, checked on
 node scripts/shots.mjs /terms          screenshot one address or one file
 node scripts/export-mark.mjs           the logo, out of the code that draws it
 node scripts/export-liquid.mjs         the liquid metal mask, from the same geometry
-node scripts/export-og.mjs             the share card, from the same source
+node scripts/export-og.mjs             the share card and the Instagram post and
+                                       story, photographed off the real screen
+node scripts/export-mail.mjs           the mails' screens (GIFs), keys and lockup,
+                                       the same way; both need npm --prefix app install
 ```
 
 ---
@@ -170,7 +179,7 @@ order to apply what is left.
 | [design/components.html](./design/components.html) | The system rendered: every component, colour, type size and state |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy model: hashed targets, the slot rule, the purge, the opt out |
 | [docs/HANDLE-RESOLVER.md](./docs/HANDLE-RESOLVER.md) | The resolver: Apify, the permanent cache, the three caps, the stored face |
-| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | The mailed link: a campus address, an alert address and signing in by email, and the number that is typed rather than printed |
+| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | The mailed link: a campus address, an alert address and signing in by email, and why it needs no number (it signs in only the browser that opens it) |
 | [docs/GOOGLE-AUTH-SETUP.md](./docs/GOOGLE-AUTH-SETUP.md) | Google sign in, step by step, for a first time. Its mailed code went with migration 0065 |
 | [docs/ONE-WALL.md](./docs/ONE-WALL.md) | The rulings of 25 and 26 September, and the contract the front end, the functions and the database agree on |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
@@ -197,7 +206,7 @@ order to apply what is left.
 | `/sky` | what you have out |
 | `/reveal/<handle>` | a mutual, opened |
 | `/berkeley`, `/beta` | the wall's printed addresses. They were the wall at Berkeley, with its own sheets under it; since 25 September they redirect to `/`, keeping what follows them (`/berkeley/letter/<id>` is `/letter/<id>`, docs/ONE-WALL.md) |
-| `/verify#t=` | the link every mail that proves an address carries: a login, a school address or an alert address. Opened on the device that asked, it confirms at once; opened anywhere else, it asks for the number on the asking screen (migration 0065) |
+| `/verify#t=` | the link every mail that proves an address carries: a login, a school address or an alert address. It confirms at once for the browser that opened it, with nothing typed, and signs in the browser that asked only when that is the same one; opened elsewhere, it carries the waiting letter there, to post with one key (migration 0070) |
 | `/c/<code>` | what the five printed cards carry in their QR. Logs the scan, then hands the visitor to wherever that card is pointed |
 | `/optout` | take a handle off, permanently, proved with one DM, no account |
 | `/signin` | the link a mail sends somebody to |

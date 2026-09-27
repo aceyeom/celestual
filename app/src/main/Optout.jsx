@@ -194,8 +194,9 @@ export default function Optout({ go, who, refreshWho }) {
         <Label>what this product does</Label>
         <Prose className="mn-copy">
           the person a private note is sent to is never told. the only thing that ever
-          surfaces is a pair who both sent one, shown to those two at once. a handle is
-          kept as a salted one way hash, and a private note lapses after sixty days.
+          surfaces is a pair who both sent one, shown to those two at once, at the weekly
+          reveal on saturday night. a handle is kept as a salted one way hash, and a
+          private note that is not mutual lapses at its reveal and is deleted a week after.
         </Prose>
         <Prose className="mn-copy mn-links">
           <a className="wl-quiet" href="/privacy">privacy</a>

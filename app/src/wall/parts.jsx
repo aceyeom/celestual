@@ -19,6 +19,7 @@ import { Caret } from './caret.jsx'
 import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
 import { setAfterGate } from './store.js'
+import { revealWaiting } from './pings.js'
 import { href } from './router.js'
 // the owner's parts at the foot of this file (the toast, the switch, the
 // address field), and the sheets built from them
@@ -419,6 +420,10 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
   // the chevron. A wall mounted under a base of its own (there has been one,
   // at /berkeley, campus.js) would send it to the root instead.
   const home = onWall && !!campus().base
+  // A reveal this person had a note in and has not opened yet (pings.js
+  // `revealWaiting`): the key carries a light, and hops once as the bar
+  // arrives, the one thing on the wall that says the night came.
+  const news = (who || reads || mine) ? revealWaiting() : false
   return (
     <header className="wl-top" inert={inert || undefined}>
       <Brand
@@ -452,22 +457,23 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
             anybody (migration 0066). */}
         <button
           type="button"
-          className={`wl-iconbtn wl-memberbtn${at === 'gate' || at === 'you' ? ' is-on' : ''}`}
+          className={`wl-iconbtn wl-memberbtn${at === 'gate' || at === 'you' ? ' is-on' : ''}${news ? ' has-news' : ''}`}
           onClick={() => {
             if (who || reads || mine) { go('you'); return }
             setAfterGate({ name: 'you' })
             go('gate')
           }}
-          aria-label={who ? `signed in as ${who}`
+          aria-label={`${who ? `signed in as ${who}`
             : mine ? `signed in as ${atHandle(mine)}`
             : reads ? 'your account'
-            : 'sign in'}
+            : 'sign in'}${news ? '. the reveal is in' : ''}`}
           title={who || (mine ? atHandle(mine) : reads ? 'your account' : 'sign in')}
           aria-current={at === 'gate' || at === 'you' ? 'page' : undefined}
         >
           {who || reads
             ? <Face handle={mine} size={30} resolve={!who && !!mine} />
             : <Icon name="key" size={22} />}
+          {news ? <i className="wl-memberbtn-news" aria-hidden="true" /> : null}
         </button>
       </nav>
       )}

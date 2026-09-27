@@ -54,6 +54,10 @@ const files = [
   ...dir('app/src/wall/screens'),
   ...dir('app/src/main'),
   ...dir('app/src/admin'),
+  // The mails are the product's words too, and the ones most often read
+  // away from it: every subject, sentence and alt text is in these two.
+  join(root, 'supabase/functions/_shared/mail.ts'),
+  join(root, 'supabase/functions/_shared/mails.ts'),
   ...readdirSync(join(root, 'app/public'))
     .filter((f) => f.endsWith('.html') && !EXEMPT.has(f))
     .map((f) => join(root, 'app/public', f)),

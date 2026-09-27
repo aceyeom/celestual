@@ -38,15 +38,29 @@
 // The private notes stand in a frame nothing else on the wall wears: a panel
 // with the phone's double rule round it, a title strip with the sealed
 // envelope and the slots as pixel cells, the way a phone's own inbox of
-// messages you kept was a box inside the box. The mutuals first, set apart
-// under their own seam because they are the only news on the sheet, with the
-// signal full. A standing note is live and waiting, so its signal is
-// searching: the bars climb one, two, three and fall back, and never reach
-// four, since four is what a mutual has. It is opacity on four small spans,
-// the compositor's cheapest thing, and under reduced motion two bars stand
-// still. A mutual opens the reveal. A standing one opens its own screen, with
-// the two things that can be done to it on the screen's own menu.
+// messages you kept was a box inside the box. Each row ends in the aerial
+// from the phone's status row, and only the aerial (the owner asked for the
+// Y alone), in one of four states: searching while its week runs (the waves
+// going out from it), the same with the waves held once it is kept for the
+// week after, lit in rose with both waves out on a mutual, and dark with the
+// phone's small cross on one that was not this time. A mutual opens the
+// reveal; any other opens its own screen, with what can be done to it on the
+// screen's own menu.
 //
+// ── and they run for a week ─────────────────────────────────────────────────
+// A note ends at Saturday's reveal, nine at night in California, and that
+// night everybody finds out, together (migration 0069). So the tab opens on
+// the reveal itself: a small screen lit in rose, the one lit thing on the
+// sheet, counting down to the night with the week draining out of its
+// battery, the day of it stamped where a letter's day is, and one soft key,
+// `info`, to the drawing of how it works (screens/Join.jsx). After a reveal
+// this person had a note in, and until they have seen it, the key in the bar
+// carries a light (parts.jsx `TopBar`), and this screen wakes on "the reveal
+// is in" with what it said, while the rows under it search once more and
+// land on what they are. A note that was not this time stays a week, to be
+// sent again; one that is still running can be kept for the week after, so
+// a person who will not look on Saturday says so on Wednesday.
+
 // ── and only ever their own ─────────────────────────────────────────────────
 // Nothing here is about anybody else. A standing ping says who and how long
 // it has left, and nothing about whether they have seen it, whether they are
@@ -99,13 +113,14 @@ import {
   labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
 } from '../data.js'
 import { stampOf } from '../looks.js'
-import { getState } from '../store.js'
+import { getState, patch } from '../store.js'
 import { member, memberLabel, isReader, signOut, refresh, toWrite, heldProof } from '../auth.js'
 import { loadPending } from '../handoff.js'
 import {
-  myHandle, myPings, heldPings, forgetPings, renew, release, daysLeft, daysLeftWords, stateWords, slotCap, PING_DAYS,
+  myHandle, myPings, heldPings, forgetPings, renew, release, sendAgain, stateWords, slotCap,
+  nextReveal, lastReveal, revealStamp, countdown, endsWords, endedWords, keptAhead, revealWaiting, sawReveal,
 } from '../pings.js'
-import { useProve, ProveDoor } from './Ping.jsx'
+import { useProve, ProveDoor, editNote } from './Ping.jsx'
 import { useAlertLink, AlertEmail } from './Alerts.jsx'
 import Gate from './Gate.jsx'
 import { alertsGet, alertsSet } from '../../api/alerts.js'
@@ -163,16 +178,159 @@ function Seal({ scale = 2 }) {
   )
 }
 
-// The signal a note is standing on, as the phone drew its own in the status
-// row: the aerial and four bars. `full` is a mutual, every bar lit and still.
-// Otherwise it is searching, the bars climbing and falling back (the head of
-// this file says why they never reach four), all of it in profile.css.
-function Signal({ full = false }) {
+// ── the aerial ──────────────────────────────────────────────────────────────
+// The Y from the phone's status row (looks.js `PIX.ant`), alone, with the two
+// waves a phone drew off it when it was sending, on one grid of twenty one
+// cells by ten. Four states, all in profile.css: `seek` (the waves going out,
+// inner then outer, on the phone's half beat), `kept` (the same, the waves
+// held a step dimmer), `full` (lit in rose, both waves out and still) and
+// `none` (dark, the waves gone, the phone's small cross at its foot). On the
+// night itself a row `lands`: it searches once more and then shows what it
+// is, a beat after the one above it.
+const Y = ['XXXXXXXXX', 'XX..X..XX', '.X..X..X.', '.XX.X.XX.', '..XXXXX..', '...XXX...', '...XXX...', '...XXX...', '...XXX...', '...XXX...']
+const cells = (pts) => pts.map(([x, y]) => `M${x} ${y}h1v1h-1z`).join('')
+const Y_D = cells(Y.flatMap((row, y) => [...row].map((c, x) => (c === 'X' ? [x + 6, y] : null)).filter(Boolean)))
+const IN = [[16, 1], [17, 2], [17, 3], [16, 4]]
+const OUT = [[18, 0], [19, 1], [20, 2], [20, 3], [19, 4], [18, 5]]
+const mirror = (pts) => pts.map(([x, y]) => [20 - x, y])
+const IN_D = cells([...IN, ...mirror(IN)])
+const OUT_D = cells([...OUT, ...mirror(OUT)])
+const X_D = cells([[16, 7], [18, 7], [17, 8], [16, 9], [18, 9]])
+function Aerial({ state = 'seek', land = false }) {
   return (
-    <span className={`wl-signal${full ? ' is-full' : ' is-seeking'}`} aria-hidden="true">
-      <PixIcon name="ant" scale={2} className="wl-signal-ant" />
-      <span className="wl-signal-bars"><i /><i /><i /><i /></span>
-    </span>
+    <svg
+      className={`wl-aerial is-${state}${land ? ' is-landing' : ''}`} viewBox="0 0 21 10" width={42} height={20}
+      shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false"
+    >
+      <path className="wl-aerial-y" d={Y_D} />
+      <path className="wl-aerial-in" d={IN_D} />
+      <path className="wl-aerial-out" d={OUT_D} />
+      <path className="wl-aerial-x" d={X_D} />
+    </svg>
+  )
+}
+const aerialOf = (p) => (p.state === 'mutual' ? 'full' : p.state === 'lapsed' ? 'none' : keptAhead(p) ? 'kept' : 'seek')
+
+// A row lands where it is seen. One under the sheet's sticky foot, or past
+// the end of a short window, landed where nobody was looking, so each starts
+// its landing as it comes into sight above the foot, a beat after the ones
+// that came with it, and searches until then (profile.css `.is-seen`). The
+// answer is when each row's landing starts, by its handle.
+function useSeen(on, scroller, rows) {
+  const [seen, setSeen] = useState(() => new Map())
+  useEffect(() => {
+    if (!on || !scroller) return undefined
+    const all = [...scroller.querySelectorAll('.wl-vault-row.is-landing:not(.is-seen)')]
+    const mark = (els) => setSeen((m) => {
+      const next = new Map(m)
+      let i = 0
+      for (const el of els) if (!next.has(el.dataset.to)) next.set(el.dataset.to, (m.size ? 260 : 700) + (i++) * 260)
+      return next
+    })
+    if (typeof IntersectionObserver === 'undefined') { mark(all); return undefined }
+    const foot = scroller.querySelector(':scope > .wl-foot')
+    const io = new IntersectionObserver((entries) => {
+      const came = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+      came.forEach((e) => io.unobserve(e.target))
+      if (came.length) mark(came.map((e) => e.target))
+    }, { root: scroller, rootMargin: `0px 0px -${foot ? foot.offsetHeight : 0}px 0px`, threshold: 0.6 })
+    all.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [on, scroller, rows])
+  return seen
+}
+
+
+// ── the week ────────────────────────────────────────────────────────────────
+// The countdown to the night, drawn inside the frame and in its language
+// rather than stood over it: a band under the title strip, on the panel's
+// own pixel grid, with the one colour the frame carries, rose, as a faint
+// backlight at its end. A line saying what it is counting to and when, the
+// time left in the face's large figures, and the week itself as seven cells,
+// Sunday to Saturday, the way the frame already draws its slots: the days
+// gone filled, today's lit rose and breathing, and Saturday's cell ringed,
+// since it is the night. A rose screen stood here for an hour, a letter's
+// phone laid on top of the account, and the owner read it as something
+// slapped on; the frame is the one thing on the sheet that is sealed, and
+// the week belongs inside it.
+//
+// It re-reads the list once the night it is counting to has come (the
+// server opens the pairs on the first read after it), from the second's own
+// tick, so the night it was waiting for is never dropped for the next one.
+// After a reveal this person had a note in, and until they have seen it
+// The night, a beat after its moment, for a screen that is up across it. The
+// moment is held apart from the count on the glass: the count rolls over to
+// next week on the tick after the reveal, and a timer keyed on it was put out
+// by that tick every time. Asked each second, so a tab that slept through the
+// night hears it as it wakes.
+function useNight(onNight) {
+  const night = useRef(onNight)
+  night.current = onNight
+  useEffect(() => {
+    let due = nextReveal()
+    const t = setInterval(() => {
+      const at = Date.now()
+      if (at < due + 2500) return
+      due = nextReveal(at)
+      if (night.current) night.current()
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+}
+
+// (`fresh`), the band tells the night instead: "the reveal is in", what it
+// said, and all seven cells lit.
+const WEEK = 7 * DAY
+// how close to a reveal a note's end or a mutual's telling is counted as that reveal's
+const NEAR_MS = 2 * 3600000
+const DAYS = ['s', 'm', 't', 'w', 't', 'f', 's']
+function RevealWeek({ fresh, told }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  const next = nextReveal(now)
+  const last = lastReveal(now)
+  // which of the week's seven days this is, counted back from the night:
+  // the week runs from one Saturday's reveal to the next
+  const day = Math.max(0, Math.min(6, 6 - Math.floor((next - now) / DAY)))
+  const tell = fresh && told.total > 0
+  const c = countdown(next, now)
+  const words = c.d ? `${c.d} ${c.d === 1 ? 'day' : 'days'} and ${c.h} ${c.h === 1 ? 'hour' : 'hours'}` : `${c.h} hours and ${c.m} minutes`
+  return (
+    <div className={`wl-week${tell ? ' is-told' : ''}`}>
+      <div className="wl-week-row">
+        <span className="wl-week-lab">{tell ? 'the reveal is in' : 'the reveal'}</span>
+        <span className="wl-week-when">{tell ? `saturday ${revealStamp(last)}` : 'saturday · 9pm pt'}</span>
+      </div>
+      {tell ? (
+        <p className="wl-week-told">
+          <b>{told.mutual ? (told.mutual === 1 ? 'it’s mutual.' : `${told.mutual} are mutual.`) : 'not this time.'}</b>
+          <span>
+            {told.mutual
+              ? told.missed ? ` and ${told.missed} not this time.` : ' open it below.'
+              : ' nobody was told a thing. send it again, or let it go.'}
+          </span>
+        </p>
+      ) : (
+        <p className="wl-week-left">
+          <span aria-hidden="true">
+            {c.d ? <><b>{c.d}</b><i>d</i> </> : null}
+            <b>{String(c.h).padStart(2, '0')}</b><i>:</i><b>{String(c.m).padStart(2, '0')}</b><i>:</i><b>{String(c.s).padStart(2, '0')}</b>
+          </span>
+          <span className="wl-sr">the reveal is saturday at 9pm pacific time, in {words}.</span>
+        </p>
+      )}
+      <ol className="wl-week-days" aria-hidden="true">
+        {DAYS.map((d, i) => (
+          <li key={i} className={tell || i < day ? 'is-gone' : i === day ? 'is-now' : ''}>
+            <i />
+            <span>{d}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
 
@@ -206,10 +364,16 @@ function Slots({ used, cap }) {
 // count reads the same rows as the list, so the two never disagree.
 const SHOWN = 4
 
+// A letter that came down is listed until it has been seen once, here or
+// in the notice at the foot of the wall, and then it is gone from both
+// (store.js `noticed`): the owner asked for it, and a list that carries a
+// takedown for thirty days is a list that keeps saying so.
+const isDown = (l) => !!l.downBy && l.downBy !== 'held'
 function wroteRows() {
   const own = mine()
+  const read = getState().noticed || {}
   return own && own.length
-    ? own.map((l) => ({
+    ? own.filter((l) => !(isDown(l) && read[l.id])).map((l) => ({
       id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
       held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
     }))
@@ -222,9 +386,18 @@ function wroteRows() {
 // it, and not opened, since it is not on the wall yet to open.
 function Wrote({ go, rows }) {
   const [more, setMore] = useState(false)
-  if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const cut = !more && rows.length > SHOWN
   const shown = cut ? rows.slice(0, SHOWN) : rows
+  // the ones that came down and were drawn on the list while it was open
+  // are read once it is left: the tab changed, or the sheet shut. One still
+  // behind "see more" was not seen, and stays until it is
+  const shownDown = useRef(new Set())
+  useEffect(() => { shown.forEach((r) => { if (r.down && r.id) shownDown.current.add(r.id) }) })
+  useEffect(() => () => {
+    if (!shownDown.current.size) return
+    patch({ noticed: { ...(getState().noticed || {}), ...Object.fromEntries([...shownDown.current].map((id) => [id, true])) } })
+  }, [])
+  if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const open = (r) => {
     if (!r.live) return
     go('letter', r.id || r.to)
@@ -262,49 +435,94 @@ function Wrote({ go, rows }) {
   )
 }
 
-// ── a ping's own screen ─────────────────────────────────────────────────────
-// A standing ping, opened: the screen it was placed on, lit in the colour its
-// name picks, with the line on it and the day it was placed by the battery,
-// as a letter that is up carries its day (screen.jsx `stamp`), and the
-// battery running down with the sixty days, the way the phone's did. Its left key is the phone's own options, and the two things that can
-// be done to a ping are the menu's two rows: sixty more days, which is free
-// and undoes nothing, and letting it go, which frees the slot and asks once,
-// on the screen, in the words the product always asks it in.
+// ── a note's own screen ─────────────────────────────────────────────────────
+// A note, opened: the screen it was placed on, lit in the colour its name
+// picks, with the line on it, the day it was placed by the battery as a
+// letter that is up carries its day (screen.jsx `stamp`), and the battery
+// running down with its week, the way the phone's did. Its left key is the
+// phone's own options, and what can be done to a note is the menu's rows:
+//
+//   running      keep it for next week, change the words, let it go
+//   not this     send it again, send it with new words, let it go
+//   time
+//
+// Keeping it is free and undoes nothing; it runs a week further, once ahead,
+// and a mutual is still told on the night it is found. Changing the words
+// opens the note's sheet on them (screens/Ping.jsx `editNote`), and they
+// change until the reveal. Sending it again takes a slot, like any note going
+// out, with the words it had or new ones. Letting it go frees the slot and
+// asks once, on the screen, in the words the product always asks it in.
+//
+// The screen can be up across a reveal, and is read again at its moment as
+// the card is (`useNight`): a note that was not this time turns into one on
+// the glass, and one that went mutual leaves for the card, where the night
+// is told. A key pressed on the stale screen is answered the same way.
 function batOf(expires) {
-  return Math.max(0, Math.min(4, Math.ceil(daysLeft(expires) / (PING_DAYS / 4))))
+  return Math.max(0, Math.min(4, Math.ceil((expires - Date.now()) / (WEEK / 4))))
 }
 
-function PingScreen({ p, me, onBack, onChange }) {
-  // line · menu · ask · kept
+const AGAIN_SAYS = {
+  no_slots: 'every slot is in use. let one go first.',
+  cap: 'every slot is in use. let one go first.',
+  rate_limited: 'that is a lot of notes for now. try again later.',
+  suppressed: 'this @ has asked not to be sent notes.',
+}
+
+function PingScreen({ p, me, go, onBack, onChange }) {
+  // line · menu · ask · kept · sent
   const [mode, setMode] = useState('line')
   const [at, setAt] = useState(0)
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')
   const [expires, setExpires] = useState(p.expires)
+  const [gone, setGone] = useState(p.state === 'lapsed')
+  useEffect(() => { if (p.state === 'lapsed') setGone(true) }, [p.state])
+  useNight(onChange)
   const prof = useProfile(p.to)
   const first = prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : ''
+  const ahead = !gone && keptAhead({ ...p, state: 'standing', expires })
 
   const keep = async () => {
     setBusy(true)
-    const ok = await renew({ me, them: p.to })
+    const out = await renew({ me, them: p.to })
     setBusy(false)
-    if (!ok) { setSaid('it did not go through. try again.'); setMode('line'); return }
-    setExpires(Date.now() + PING_DAYS * DAY)
+    setMode('line')
+    if (!out.ok) {
+      // its reveal came while the screen was up: not this time, or mutual
+      // (or let go elsewhere), which the list read again says
+      if (out.error === 'lapsed') { setGone(true); onChange(); return }
+      if (out.error === 'none') { onChange(); onBack(); return }
+      setSaid('it did not go through. try again.')
+      return
+    }
+    setExpires(out.expires || nextReveal(nextReveal()))
     setMode('kept')
+    onChange()
+  }
+  const again = async () => {
+    setBusy(true)
+    const out = await sendAgain({ me, them: p.to })
+    setBusy(false)
+    if (!out.ok) { setSaid(AGAIN_SAYS[out.error] || 'it did not go through. try again.'); setMode('line'); return }
+    setExpires(Date.parse(out.expires_at || 0) || nextReveal())
+    setGone(false)
+    setMode('sent')
     onChange()
   }
   const drop = async () => {
     setBusy(true)
-    const ok = await release({ me, them: p.to })
+    const out = await release({ me, them: p.to })
     setBusy(false)
-    if (!ok) { setSaid('it did not go through. try again.'); setMode('line'); return }
+    // one that went mutual as it was let go is not let go (0069): the card
+    // tells it
+    if (!out.ok && out.error !== 'mutual') { setSaid('it did not go through. try again.'); setMode('line'); return }
     onChange()
     onBack()
   }
 
-  // A ping with all sixty of its days has nothing to renew.
   const items = [
-    ...(daysLeft(expires) < PING_DAYS ? [{ t: 'sixty more days', run: keep }] : []),
+    ...(gone ? [{ t: 'send it again', run: again }] : ahead ? [] : [{ t: 'keep it for next week', run: keep }]),
+    { t: gone ? 'send it with new words' : 'change the words', run: () => editNote(go, p.to, p.line) },
     { t: 'let it go', run: () => setMode('ask') },
   ]
   const sel = Math.min(at, items.length - 1)
@@ -312,7 +530,7 @@ function PingScreen({ p, me, onBack, onChange }) {
 
   // the day it was placed by the battery, as a letter that is up carries
   // its own, and the same row under the menu so nothing moves when it opens
-  const dated = { stamp: stampOf(p.at), bat: batOf(expires) }
+  const dated = { stamp: stampOf(p.at), bat: gone ? 0 : batOf(expires) }
   let top = { ...dated, name: first || atHandle(p.to), handle: first ? atHandle(p.to) : '', dear: true, icon: 'pen' }
   let body
   let keys
@@ -326,34 +544,42 @@ function PingScreen({ p, me, onBack, onChange }) {
     )
     keys = {
       l: { label: 'select', onClick: () => pick(sel), aria: `select ${items[sel]?.t || ''}` },
-      r: { label: 'back', onClick: () => setMode('line'), aria: 'back to the ping' },
+      r: { label: 'back', onClick: () => setMode('line'), aria: 'back to the note' },
     }
   } else if (mode === 'ask') {
     body = <ScreenNote title="let it go?">this frees the slot. they never find out you sent it.</ScreenNote>
     keys = {
       l: { label: 'let it go', onClick: drop, disabled: busy, aria: 'let it go' },
-      r: { label: 'keep it', onClick: () => setMode('line'), aria: 'keep it standing' },
+      r: { label: 'keep it', onClick: () => setMode('line'), aria: 'keep it' },
     }
   } else if (mode === 'kept') {
-    body = <ScreenNote glyph="check" title="sixty more days" />
-    keys = { l: { label: 'ok', onClick: () => setMode('line'), aria: 'back to the ping' } }
+    body = <ScreenNote glyph="check" title="kept for next week">it runs to {endsWords(expires)}. if it’s mutual sooner, you find out sooner.</ScreenNote>
+    keys = { l: { label: 'ok', onClick: () => setMode('line'), aria: 'back to the note' } }
+  } else if (mode === 'sent') {
+    body = <ScreenNote glyph="check" title="sent again">it runs to {endsWords(expires)}.</ScreenNote>
+    keys = { l: { label: 'ok', onClick: () => setMode('line'), aria: 'back to the note' } }
   } else {
     body = p.line
       ? <ScreenText text={p.line} />
       : <ScreenNote>sent without a note.</ScreenNote>
     keys = {
-      l: { label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy, aria: 'options: sixty more days, or let it go' },
+      l: {
+        label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy,
+        aria: `options: ${items.map((x) => x.t).join(', ')}`,
+      },
       r: { label: 'back', onClick: onBack, aria: 'back to your private notes' },
     }
   }
 
   return (
     <div className="wl-you-ping">
-      <Screen look={null} seed={`ping:${p.to}`} top={top} keys={keys} live nameId="wl-you-h">
+      <Screen look={null} seed={`ping:${p.to}`} top={top} keys={keys} live nameId="wl-you-h" state={gone ? 'dim' : ''}>
         {body}
       </Screen>
       <p className="wl-you-floor" aria-live="polite">
-        {said || `standing · ${daysLeftWords(expires)}`}
+        {said || (gone
+          ? `not this time · ${endedWords(expires)}`
+          : ahead ? `sealed · kept to ${endsWords(expires)}` : `sealed · reveals ${endsWords(expires)}`)}
       </p>
     </div>
   )
@@ -531,8 +757,16 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   useEffect(() => { FOR_ALERTS = false }, [])
   // null · 'prove' · 'settings' · the handle of the ping whose screen is up
   const [view, setView] = useState(() => (held || want ? 'prove' : null))
-  // 'notes' · 'letters', the two tabs under the person
-  const [tab, setTab] = useState(readTab)
+  // 'notes' · 'letters', the two tabs under the person. A reveal waiting to
+  // be seen opens the notes, whichever was open last. It is asked again as
+  // each read of the list lands, since the read is what learns of a note sent
+  // on another device, or a reveal that came while the sheet was up
+  const [fresh, setFresh] = useState(() => revealWaiting())
+  const [tab, setTab] = useState(() => (fresh ? 'notes' : readTab()))
+  // the rows land once a visit: back from a note, or from the letters, they
+  // are simply what they are
+  const [landed, setLanded] = useState(false)
+  const [scroller, setScroller] = useState(null)
   const tabs = useRef(null)
   const [rev, setRev] = useState(0)
   // loading · pings · error, where error is 'none' (no @ proved here),
@@ -558,10 +792,24 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
     let on = true
     setList((s) => ({ ...s, loading: true }))
     myPings({ handle: me, proof: heldProof(me) }).then((out) => {
-      if (on) setList({ loading: false, pings: out.pings, error: out.ok ? null : out.error })
+      if (!on) return
+      setList({ loading: false, pings: out.pings, error: out.ok ? null : out.error })
+      if (out.ok && revealWaiting()) setFresh(true)
     })
     return () => { on = false }
   }, [rev, handle])
+  // the night, heard by the whole sheet, whichever tab or page is up: the
+  // list is read again a beat after it, and that read tells it (`fresh`)
+  useNight(() => { forgetPings(); setRev((x) => x + 1) })
+
+  // The night is seen once the notes have been read with it on the glass;
+  // the bar's light goes with it, and the screen tells it until the sheet
+  // shuts (`fresh` is this visit's). On the card, that is: a note's own
+  // screen up across the night has told one note, not the night
+  const read = !list.loading && !list.error && tab === 'notes' && !!scroller
+  useEffect(() => { if (fresh && read) sawReveal() }, [fresh, read])
+  const landing = fresh && !landed
+  const seen = useSeen(landing && tab === 'notes', scroller, list.pings)
 
   // ── proving the @ ──
   // The same door the ping asks at, filed under its own use. Whoever DMs is
@@ -667,7 +915,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
         <div className="wl-sheet-in wl-you is-screen">
           <SheetHead onClose={up} label={upLabel} />
           <PingScreen
-            key={opened.to} p={opened} me={handle}
+            key={opened.to} p={opened} me={handle} go={go}
             onBack={() => setView(null)}
             onChange={() => { forgetPings(); setRev((n) => n + 1) }}
           />
@@ -678,9 +926,18 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
 
   // ── the card ──
   const mutuals = list.pings.filter((p) => p.state === 'mutual')
-  const standing = list.pings.filter((p) => p.state !== 'mutual')
+  const standing = list.pings.filter((p) => p.state === 'standing')
+  const lapsed = list.pings.filter((p) => p.state === 'lapsed')
   const settled = !list.loading && !list.error
-
+  // what the last reveal said, for the screen over the frame to tell: the
+  // mutuals told that night and the notes that ended on it
+  const last = lastReveal()
+  const near = (t) => NEAR_MS >= Math.abs(t - last)
+  const told = {
+    mutual: mutuals.filter((p) => near(p.revealedAt)).length,
+    missed: lapsed.filter((p) => near(p.expires)).length,
+  }
+  told.total = told.mutual + told.missed
   const d = getState().draft
   const letter = d && String(d.body || '').trim() ? { key: draftKey(d), name: d.kind === 'name' ? cleanName(d.name) : '' } : null
   const waiting = (() => { const r = loadPending(); return r && r.use === 'ping' && r.to ? normHandle(r.to) : '' })()
@@ -693,7 +950,9 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   const title = handle ? atHandle(handle) : who ? memberLabel(who) : 'signed in'
   const also = handle && who ? memberLabel(who) : ''
 
-  const pick = (t) => { setTab(t); keepTab(t) }
+  // leaving the notes, once they have landed
+  const leave = () => { if (fresh && tab === 'notes') setLanded(true) }
+  const pick = (t) => { if (t !== tab) leave(); setTab(t); keepTab(t) }
   // the arrow keys move between the two tabs, as a tab list's do
   const keys = (e) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
@@ -712,79 +971,93 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   )
 
   // ── the notes' frame ──
-  // The title strip, then whatever is true: the reason there is no list and
-  // the one thing to do about it, the wait, nothing yet, or the list, the
-  // mutuals first under their own seam. The ping still one DM from out stands
-  // at the end, drawn as not sent.
-  const notes = (
-    <div className="wl-vault" aria-labelledby="wl-vault-h">
-      <div className="wl-vault-bar">
-        <span className="wl-vault-title" id="wl-vault-h">
-          <Seal />
-          <span>sealed until it&rsquo;s mutual</span>
+  // The reveal over it, then the frame: the title strip, then whatever is
+  // true: the reason there is no list and the one thing to do about it, the
+  // wait, nothing yet, or the list: the mutuals first under their own seam,
+  // then what is running, then what was not this time, under a seam of its
+  // own. The ping still one DM from out stands at the end, drawn as not sent.
+  // On the night itself (`fresh`) each row lands a beat after the one above,
+  // the first time the rows are shown, as it comes into sight (`useSeen`).
+  const row = (p, cls, onClick, aria) => (
+    <button
+      type="button" key={p.to} data-to={p.to} onClick={onClick} aria-label={aria}
+      className={`wl-vault-row ${cls}${landing ? ' is-landing' : ''}${landing && seen.has(p.to) ? ' is-seen' : ''}`}
+      style={landing && seen.has(p.to) ? { '--land': `${seen.get(p.to)}ms` } : undefined}
+    >
+      <Face handle={p.to} size={30} />
+      <span className="wl-wrote-who">
+        <span className="wl-wrote-name">{atHandle(p.to)}</span>
+        <span className="wl-wrote-meta">
+          {landing ? <span className="wl-vault-seek" aria-hidden="true">searching…</span> : null}
+          <span className="wl-vault-said">{stateWords(p)}</span>
         </span>
-        {settled ? <Slots used={standing.length} cap={slotCap()} /> : null}
-      </div>
-      <div className="wl-vault-body">
-        {list.error === 'none' ? ask('confirm your Instagram to see the notes you sent privately.')
-          : list.error === 'unverified' ? ask('confirm your Instagram again to see them.')
-            : list.error ? (
-              <div className="wl-you-ask">
-                <p className="wl-you-say">your private notes did not load. nothing about them changed.</p>
-                <button type="button" className="wl-quiet" onClick={() => setRev((n) => n + 1)}>try again</button>
-              </div>
-            ) : list.loading && !list.pings.length ? (
-              <p className="wl-profile-none wl-you-wait" aria-label="reading your private notes"><Wait /></p>
-            ) : !list.pings.length && !waiting ? (
-              <p className="wl-profile-none wl-vault-none">none sent yet</p>
-            ) : null}
-        {mutuals.length ? (
-          <div className="wl-vault-news">
-            {mutuals.map((p) => (
-              <button
-                type="button" key={p.to} className="wl-vault-row is-mutual"
-                onClick={() => go('reveal', p.to)}
-                aria-label={`${atHandle(p.to)}, it’s mutual. open it`}
-              >
-                <Face handle={p.to} size={30} />
-                <span className="wl-wrote-who">
-                  <span className="wl-wrote-name">{atHandle(p.to)}</span>
-                  <span className="wl-wrote-meta">{stateWords(p)}</span>
-                </span>
-                <Signal full />
-              </button>
-            ))}
+      </span>
+      <Aerial state={aerialOf(p)} land={landing} />
+    </button>
+  )
+  const notes = (
+    <>
+      <div className="wl-vault" aria-labelledby="wl-vault-h">
+        <div className="wl-vault-bar">
+          <span className="wl-vault-title" id="wl-vault-h">
+            <Seal />
+            <span>sealed until saturday</span>
+          </span>
+          <button type="button" className="wl-vault-info" onClick={() => go('join')} aria-label="how the weekly reveal works">
+            <span aria-hidden="true">i</span>
+          </button>
+        </div>
+        {list.error ? null : (
+          <RevealWeek fresh={fresh} told={told} />
+        )}
+        <div className="wl-vault-body">
+          {list.error === 'none' ? ask('confirm your Instagram to see the notes you sent privately.')
+            : list.error === 'unverified' ? ask('confirm your Instagram again to see them.')
+              : list.error ? (
+                <div className="wl-you-ask">
+                  <p className="wl-you-say">your private notes did not load. nothing about them changed.</p>
+                  <button type="button" className="wl-quiet" onClick={() => setRev((x) => x + 1)}>try again</button>
+                </div>
+              ) : list.loading && !list.pings.length ? (
+                <p className="wl-profile-none wl-you-wait" aria-label="reading your private notes"><Wait /></p>
+              ) : !list.pings.length && !waiting ? (
+                <p className="wl-profile-none wl-vault-none">none sent yet. the next reveal is saturday at 9pm pacific.</p>
+              ) : null}
+          {mutuals.length ? (
+            <div className="wl-vault-news">
+              {mutuals.map((p) => row(p, 'is-mutual', () => go('reveal', p.to), `${atHandle(p.to)}, it’s mutual. open it`))}
+            </div>
+          ) : null}
+          {standing.length || waiting ? (
+            <div className="wl-vault-list">
+              {standing.map((p) => row(p, 'is-standing', () => { leave(); setView(p.to) },
+                `your private note to ${atHandle(p.to)}, sealed, ${stateWords(p)}`))}
+              {waiting ? (
+                <button type="button" className="wl-vault-row is-draft" onClick={() => go('ping', waiting)}>
+                  <Face handle={waiting} size={30} />
+                  <span className="wl-wrote-who">
+                    <span className="wl-wrote-name">{atHandle(waiting)}</span>
+                    <span className="wl-wrote-meta">not sent · waiting on one DM</span>
+                  </span>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {lapsed.length ? (
+            <div className="wl-vault-past">
+              <span className="wl-vault-past-h">{endedWords(Math.max(...lapsed.map((p) => p.expires)))}</span>
+              {lapsed.map((p) => row(p, 'is-lapsed', () => { leave(); setView(p.to) },
+                `your private note to ${atHandle(p.to)}, not this time. open it to send it again`))}
+            </div>
+          ) : null}
+        </div>
+        {settled ? (
+          <div className="wl-vault-foot">
+            <Slots used={standing.length} cap={slotCap()} />
           </div>
         ) : null}
-        {standing.length || waiting ? (
-          <div className="wl-vault-list">
-            {standing.map((p) => (
-              <button
-                type="button" key={p.to} className="wl-vault-row is-standing"
-                onClick={() => setView(p.to)}
-                aria-label={`your private note to ${atHandle(p.to)}, waiting, ${stateWords(p)}`}
-              >
-                <Face handle={p.to} size={30} />
-                <span className="wl-wrote-who">
-                  <span className="wl-wrote-name">{atHandle(p.to)}</span>
-                  <span className="wl-wrote-meta">waiting · {stateWords(p)}</span>
-                </span>
-                <Signal />
-              </button>
-            ))}
-            {waiting ? (
-              <button type="button" className="wl-vault-row is-draft" onClick={() => go('ping', waiting)}>
-                <Face handle={waiting} size={30} />
-                <span className="wl-wrote-who">
-                  <span className="wl-wrote-name">{atHandle(waiting)}</span>
-                  <span className="wl-wrote-meta">not sent · waiting on one DM</span>
-                </span>
-              </button>
-            ) : null}
-          </div>
-        ) : null}
       </div>
-    </div>
+    </>
   )
 
   // ── the letters ──
@@ -813,7 +1086,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
 
   return (
     <Sheet onClose={up} labelledBy="wl-you-h" className="is-you">
-      <div className="wl-sheet-in wl-you is-card">
+      <div className="wl-sheet-in wl-you is-card" ref={setScroller}>
         <SheetHead onClose={up} label={upLabel} />
 
         {/* ── the person ── */}
@@ -823,7 +1096,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
             <p className="wl-profile-addr" id="wl-you-h">{title}</p>
             {also ? <p className="wl-you-also">{also}</p> : null}
           </div>
-          <button type="button" className="wl-you-set" onClick={() => setView('settings')} aria-label="settings: your @, email alerts and sign out">
+          <button type="button" className="wl-you-set" onClick={() => { leave(); setView('settings') }} aria-label="settings: your @, email alerts and sign out">
             settings
           </button>
         </header>
@@ -837,8 +1110,8 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           >
             <span>private notes</span>
             {settled ? count(list.pings.length + (waiting ? 1 : 0)) : null}
-            {tab !== 'notes' && mutuals.length ? (
-              <><i className="wl-you-tab-pip" aria-hidden="true" /><span className="wl-sr">, it&rsquo;s mutual</span></>
+            {tab !== 'notes' && (mutuals.length || fresh) ? (
+              <><i className="wl-you-tab-pip" aria-hidden="true" /><span className="wl-sr">{fresh ? ', the reveal is in' : ', it’s mutual'}</span></>
             ) : null}
           </button>
           <button

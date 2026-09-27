@@ -64,6 +64,11 @@
 // each turning on its own step (`spreadMap`, `spreadOn`), and never a soft
 // front. It is drawn first, under the dots.
 //
+// The intro's pink is not always pink: it is whichever letter's light the
+// intro drew for this load (Intro.jsx `TINTS`), and now and then all of
+// them at once, round the wheel from where they hold each other out to the
+// corners (a story's `spectrum`, `pinkOf`).
+//
 // A frame may carry a `glow` as well: a soft ring of light round a point,
 // brighter at its edge, for the mutual's breath behind the mark.
 //
@@ -245,7 +250,8 @@ const ROSE_RGB = rgbOf(ROSE)
 const BLUSH_RGB = rgbOf(BLUSH).join(', ')
 // the breath on a pink panel is the pink going nearly white, and a block of
 // the panel that has just turned a pink a step lighter than the panel
-// behind it
+// behind it (or the story's own lighter step, `front`, for a panel that is
+// not pink)
 const LIGHT_RGB = '255, 246, 250'
 const FRONT_RGB = '255, 214, 230'
 
@@ -323,6 +329,9 @@ function pinkPanel(s, host, el, dpr) {
   const cy = ((sr.top - hr.top) + hy * sr.height) * k * dpr
   const rx = Math.max(1, 1.2 * sr.width * k * dpr)
   const ry = Math.max(1, 0.95 * sr.height * k * dpr)
+  // (the backlight's ellipse, kept for a spectrum, which is lit round the
+  // same hot spot block by block)
+  s.lamp = { cx, cy, rx, ry }
   const cv = document.createElement('canvas')
   cv.width = s.W
   cv.height = s.H
@@ -383,6 +392,9 @@ function spreadMap(s, w) {
   const bw = Math.ceil(s.pc / SPREAD)
   const bh = Math.ceil(s.pr / SPREAD)
   const th = new Float32Array(bw * bh)
+  // and for a spectrum, the same lobes without the jitter, so the colours
+  // lie in bands that follow the front and have no speckle between them
+  const field = s.spectrum ? new Float32Array(bw * bh) : null
   let lo = Infinity
   let hi = -Infinity
   for (let j = 0; j < bh; j++) {
@@ -390,18 +402,79 @@ function spreadMap(s, w) {
       // the block's middle, in the story's cells
       const x = (i + 0.5) * SPREAD - s.ox
       const y = (j + 0.5) * SPREAD - s.oy
-      const v = Math.hypot(x - w.x - 0.5, y - w.y - 0.5)
-        + 7 * noise(x, y, 19, 1) + 2.6 * noise(x, y, 7, 2) + 3.4 * (hash3(i, j, 3) - 0.5)
+      const smooth = Math.hypot(x - w.x - 0.5, y - w.y - 0.5) + 7 * noise(x, y, 19, 1) + 2.6 * noise(x, y, 7, 2)
+      const v = smooth + 3.4 * (hash3(i, j, 3) - 0.5)
       th[j * bw + i] = v
+      if (field) field[j * bw + i] = smooth
       if (v < lo) lo = v
       if (v > hi) hi = v
     }
   }
   for (let k = 0; k < th.length; k++) th[k] = (th[k] - lo) / (hi - lo || 1)
-  const out = { key, th, bw, bh }
+  if (field) {
+    let a = Infinity
+    let b = -Infinity
+    for (const v of field) { a = Math.min(a, v); b = Math.max(b, v) }
+    for (let k = 0; k < field.length; k++) field[k] = (field[k] - a) / (b - a || 1)
+  }
+  const out = { key, th, bw, bh, field }
   s.spreads = s.spreads || new Map()
   s.spreads.set(key, out)
   return out
+}
+
+// ── every colour at once ──
+// A story whose pink is a `spectrum` is lit in each of its panels in turn,
+// the first where the pink leaves from and the last in the far corners,
+// each melting into the next along the lobes the front grows in (`field`),
+// so the colour a block turns is the one the front has reached, and the
+// pink goes round the wheel as it goes out. Each block is lit as a panel
+// is, its hi, mid and lo round the backlight's hot spot, and the blocks are
+// laid down smoothed, so the colours are a light and not a mosaic. Made
+// once for a size and a place it leaves from; any other story's pink is the
+// one panel (`pinkPanel`).
+function pinkOf(s, w) {
+  if (!s.spectrum) return s.pink
+  const m = spreadMap(s, w)
+  if (m.pink) return m.pink
+  const { bw, bh, field } = m
+  const stops = s.spectrum.map((pan) => pan.map(rgbOf))
+  const n = stops.length - 1
+  const small = document.createElement('canvas')
+  small.width = bw
+  small.height = bh
+  const img = small.getContext('2d').createImageData(bw, bh)
+  const px = SPREAD * s.cell
+  const { cx, cy, rx, ry } = s.lamp
+  for (let j = 0; j < bh; j++) {
+    for (let i = 0; i < bw; i++) {
+      const k = j * bw + i
+      const u = field[k] * n
+      const a = Math.min(n, Math.floor(u))
+      const b = Math.min(n, a + 1)
+      const f = u - a
+      // how far out from the hot spot, as the panel's gradient measures it:
+      // its hi there, its mid at 0.52 and its lo at the edge
+      const r = Math.min(1, Math.hypot((s.mx + (i + 0.5) * px - cx) / rx, (s.my + (j + 0.5) * px - cy) / ry))
+      const [c0, c1, e] = r < 0.52 ? [0, 1, r / 0.52] : [1, 2, (r - 0.52) / 0.48]
+      for (let ch = 0; ch < 3; ch++) {
+        const A = stops[a][c0][ch] + (stops[a][c1][ch] - stops[a][c0][ch]) * e
+        const B = stops[b][c0][ch] + (stops[b][c1][ch] - stops[b][c0][ch]) * e
+        img.data[k * 4 + ch] = Math.round(A + (B - A) * f)
+      }
+      img.data[k * 4 + 3] = 255
+    }
+  }
+  small.getContext('2d').putImageData(img, 0, 0)
+  const cv = document.createElement('canvas')
+  cv.width = s.W
+  cv.height = s.H
+  const g = cv.getContext('2d')
+  g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(small, 0, 0, s.W, s.H)
+  m.pink = cv
+  return cv
 }
 
 // The pink through the blocks that have turned; and over the ones that
@@ -420,9 +493,10 @@ function spreadOn(g, w, s) {
   if (!s.pink) return
   g.setTransform(1, 0, 0, 1, 0, 0)
   const level = Math.max(0, Math.min(1, w.level ?? 1))
+  const pink = pinkOf(s, w)
   if (w.p == null) {
     g.globalAlpha = level
-    g.drawImage(s.pink, 0, 0)
+    g.drawImage(pink, 0, 0)
     g.globalAlpha = 1
     return
   }
@@ -471,7 +545,7 @@ function spreadOn(g, w, s) {
     }
     t.fill()
     t.globalCompositeOperation = 'source-in'
-    t.drawImage(s.pink, 0, 0)
+    t.drawImage(pink, 0, 0)
     t.globalCompositeOperation = 'source-over'
     s.spreadAt = at
     s.fresh = back ? [] : [[now, 0.55], [then, 0.22]]
@@ -481,10 +555,22 @@ function spreadOn(g, w, s) {
   g.drawImage(s.tmp, 0, 0)
   for (const [list, a] of s.fresh) {
     if (!list.length) continue
-    g.fillStyle = `rgba(${FRONT_RGB}, ${a})`
     g.beginPath()
     for (let k = 0; k < list.length; k += 4) g.rect(list[k], list[k + 1], list[k + 2], list[k + 3])
-    g.fill()
+    if (s.front) {
+      g.fillStyle = `rgba(${s.front}, ${a})`
+      g.fill()
+      continue
+    }
+    // a spectrum has no one lighter step: each block is its own colour laid
+    // over itself, screened, which is that colour a step lighter; at half
+    // the strength, since a pale colour screened on itself is nearly white
+    g.save()
+    g.clip()
+    g.globalCompositeOperation = 'screen'
+    g.globalAlpha = 0.5 * a * level
+    g.drawImage(pink, 0, 0)
+    g.restore()
   }
   // the pink still in the blocks just left, the panel's own pink through them
   for (const [list, a] of s.ghosts) {
@@ -494,7 +580,7 @@ function spreadOn(g, w, s) {
     for (let k = 0; k < list.length; k += 4) g.rect(list[k], list[k + 1], list[k + 2], list[k + 3])
     g.clip()
     g.globalAlpha = a * level
-    g.drawImage(s.pink, 0, 0)
+    g.drawImage(pink, 0, 0)
     g.restore()
   }
   g.globalAlpha = 1
@@ -764,6 +850,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         pc, pr, ox: (pc - story.cols) >> 1, oy: (pr - story.rows) >> 1, cell, mode,
         gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
         ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
+        spectrum: story.spectrum || null, front: story.spectrum ? null : story.front || FRONT_RGB,
         face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
       }
       s.ghost = faint(s.rgb)
@@ -779,6 +866,12 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       el.style.width = `${w}px`
       el.style.height = `${h}px`
       pinkPanel(s, host, el, dpr)
+      // a spectrum is painted now, from where the pink will leave, while the
+      // glass is still dark, and not on the frame the pink starts
+      if (s.spectrum && story.times) {
+        const w = story.frame(story.times.glow, s.edge).wash
+        if (w) pinkOf(s, w)
+      }
       onCells(el, host, s, dpr)
       key = null
       return true

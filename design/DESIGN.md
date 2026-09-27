@@ -473,6 +473,29 @@ that belonged to neither of them.
 `design/components.html` draws the phone under its own heading, beside the
 system it remaps.
 
+### 2.7 The phone, sent out
+
+What leaves the product is the phone too: every mail, the card a link unfurls
+into, and the posts on Instagram. Each is a photograph of the intro's phone
+(`quirks('intro')`), held square, lit in the black room, and none of it is drawn
+by hand: `scripts/darkroom.mjs` renders the real `Screen` and `PixelStory`
+through the app's own Vite and photographs them, so a screen that changes in
+the product changes in every picture the next time they are made.
+
+| Where | What |
+| --- | --- |
+| a mail (`supabase/functions/_shared/mail.ts`) | the night screen with the mark standing at the top of its glass and one line typed under it with the phone's cursor, where the mutual's says "it's mutual." (`tap to sign in.`, `tap to confirm.`, `a letter to you.`, `still feel it?`, `your code.`); for the mutual, that screen itself, rose, the mark alive. Under the phone the sentences, in the mail's own Helvetica and centred on its axis, one lit key as wide as the phone, the bezel key beside it when a mail offers a second thing, and the lockup signing the foot over the colophon |
+| the card (`app/public/og.png`) | the frame the intro ends on, the mark on the rose letter, with the lockup beside it |
+| Instagram (`design/instagram/`) | the same frame, larger, with the lockup signed under it as the shared picture is: a post and a story |
+
+A mail client runs no stylesheet and loads no web font, so everything in a mail
+that is the phone is a picture (`scripts/export-mail.mjs`): the screens are
+animated GIFs whose first frame is the whole picture, since Outlook shows no
+other, and the cursor blinks on the phone's beat and the light goes round the
+mutual's ring on the rest; the keys and the lockup are PNGs. Each picture's
+words are its alt text, and every sentence is text, so a mail with its
+pictures blocked still says all of it.
+
 ---
 
 ## 3. The mark
@@ -889,7 +912,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
-| the intro (`.hi`) | the same three seconds at `/` and at `/berkeley`, once per tab: a letter's night screen on black, and the story on it. Black for 120ms, then the screen wakes (`wl-wake`) and throws its light on the black; the two run in at 300, meet at 1180, and the mark stands whole at 2470. The lift at 2870, which waits on the page being ready: the screen goes to sleep (`wl-sleep`, 560ms), the phone rises 18px and dissolves, and the black goes over 720ms, gone at 3590. The status row carries the aerial and the battery and nothing that would say a message had come in. Skippable on any tap or key, which lands the mark and lifts at once. Under reduced motion it draws the mark and lifts after 560ms. `?beat=` and `?t=` hold it for the screenshot loop in development, and `?intro=ascii` and `?tint=green` draw it typed or on the classic green, for comparison |
+| the intro (`.hi`) | the same four seconds at `/` and at `/berkeley`, once per tab: a letter's night screen on black, and the story on it. Black, then at 40ms the screen wakes (`wl-wake`, 500ms) and throws its light on the black; the two run in at 780 and meet at 1690. At 2110 the backlight turns from where they hold each other, and at 2190, in the same movement, they and the ground glide into the mark, whole at 2780 while the last corners turn. The colour is drawn on every load and never twice running: the rose, lilac, ice, green or amber letter's, and about one load in nine all five round the wheel, with a slow wheel of their light on the black. The lift at 3780, which waits on the page being ready: the screen goes to sleep (`wl-sleep`, 560ms), the phone rises 18px and dissolves, and the black goes over 610ms, gone at 4390. The status row carries the aerial and the battery and nothing that would say a message had come in. Skippable on any tap or key, which lands the mark and lifts at once. Under reduced motion it draws the mark and lifts after 1200ms. `?beat=` and `?t=` hold it in the rose for the screenshot loop in development, `?tint=` in any lit colour or `rainbow`, and `?intro=ascii` and `?screen=green` draw it typed or on the classic green, for comparison |
 | the door (`.wl-join-scr`) | the mechanic, on the same screen: @you runs in at 800, once the screen is on, and stands; @them at 1700 and stands, each lit in the status row as they arrive; at 2600 both set off on the same frame and meet, and the mark forms. The three lines arrive on those beats and the key as they touch |
 | the mutual (`.is-reveal`) | a sheet in the black room: the story with both handles in the status row, `it's mutual.` typed from the frame they touch at 70ms a character with the caret after it, the two lines on unlit panels rising together once the mark is whole, and the key 360ms after. A tap that is not on a control lands all of it. A tab opened on it does not play the intro first: it is the same story, and the second telling would be the one waited through |
 
@@ -1263,6 +1286,10 @@ every route shoots an empty wall reading `not connected here`.
 | `scripts/export-liquid.mjs` | writes `app/public/liquid-mark.png`, the shader's mask, from the same geometry |
 | `scripts/fetch-faces.mjs` | writes `app/public/fonts/` |
 | `scripts/shots.mjs` | the screenshot loop |
+| `scripts/darkroom.mjs` | photographs the real screen for everything sent out of the product (2.7) |
+| `scripts/export-mail.mjs` | writes `app/public/mail/`, the mails' screens, keys and lockup |
+| `scripts/export-og.mjs` | writes `app/public/og.png` and `design/instagram/` |
+| `scripts/mail-preview.mjs` | the screenshot loop, for every mail |
 
 ### The one that is not here
 

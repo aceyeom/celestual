@@ -19,7 +19,6 @@ import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, CloseQuiet, Prose, EmailField,
 } from '../parts.jsx'
 import { Wait } from '../screen.jsx'
-import { LinkMatch } from '../linkdoor.jsx'
 import { alertsOffByToken, sendAlertLink, linkStatus, linkFault, looksLikeEmail } from '../../api/alerts.js'
 
 // ── the token, off the address ──────────────────────────────────────────────
@@ -49,7 +48,7 @@ export function takeHash(name) {
 // told once, with the address that was confirmed.
 export function useAlertLink({ onConfirmed }) {
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(null)      // { request, match, email }
+  const [sent, setSent] = useState(null)      // { request, email }
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')
   const alive = useRef(true)
@@ -66,7 +65,7 @@ export function useAlertLink({ onConfirmed }) {
     if (!alive.current) return
     setBusy(false)
     if (!out?.ok) { setSaid(linkFault(out?.error)); return }
-    setSent({ request: out.request, match: out.match, email: String(email).trim().toLowerCase() })
+    setSent({ request: out.request, email: String(email).trim().toLowerCase() })
   }
 
   useEffect(() => {
@@ -86,9 +85,11 @@ export function useAlertLink({ onConfirmed }) {
         if (done.current) done.current(sent.email)
         return
       }
-      // run out: thirty minutes, or a wrong number typed where the link was
-      // opened (0065), which the status answers as `expired` on an answer
-      // that is otherwise ok, and this used to wait through for ever
+      // run out: thirty minutes, or a link a wrong number burned under 0065,
+      // which the status answers as `expired` on an answer that is otherwise
+      // ok, and this used to wait through for ever. An alerts link opened in
+      // any browser confirms this account's address (0070), so it is never
+      // answered as opened elsewhere.
       if ((out?.ok && out.expired) || out?.error === 'expired' || out?.error === 'invalid') {
         setSent(null)
         setSaid('that link has lapsed. send a new one.')
@@ -114,22 +115,19 @@ export function useAlertLink({ onConfirmed }) {
 }
 
 // The form for it, in two states: the field and its key, then the inbox it
-// went to, your number, and the wait. `compact` is the account, where it
-// stands inside a section rather than filling a door.
+// went to, and the wait. `compact` is the account, where it stands inside a
+// section rather than filling a door.
 //
-// The number is this screen's and not the mail's (migration 0065 section 3):
-// the link tapped on this phone confirms at once, and tapped on another phone
-// or computer it asks for the number here first. It said "it shows the
-// number 47", about a mail that no longer shows it.
+// The link tapped anywhere confirms the address for this account, with
+// nothing to type (migration 0070). It asked for a number on another phone
+// or computer (0065), shown here; nothing asks for one now.
 export function AlertEmail({ link, compact = false, autoFocus = false }) {
   if (link.sent) {
     return (
       <div className={`wl-owner-sent${compact ? ' is-compact' : ''}`} aria-live="polite">
         <p className="wl-owner-say">
           we sent a link to <span className="wl-h">{link.sent.email}</span>. tap the link in the mail.
-          {link.sent.match ? ' on another phone or computer, it asks for this number.' : null}
         </p>
-        <LinkMatch n={link.sent.match} />
         <p className="wl-owner-wait"><Wait /><span>waiting for you to open it</span></p>
         <button type="button" className="wl-quiet" onClick={link.reset}>use another address</button>
       </div>

@@ -21,38 +21,41 @@
 //                what was caught while it is typed (replies-check.js)
 //
 // ── where it lives, and why there ───────────────────────────────────────────
-// In the phone. Every letter on the sheet is a slider phone: the screen, and
-// fixed to its foot an unlit chin with the thumb ridges on it (`Chin`), which
-// carries what the thread's head used to (the count, who answered, and a
-// light in the letter's own colour when the person it is to has). The thread
-// is the phone's lower half (`Slide`). It sits behind the screen, and a press
-// on the chin, or the screen pushed up, slides it out from under the chin:
-// the same glass, the same width, in the same plane, ending in a band of its
-// own soft keys, `reply` on the left and `back` on the right. Closed, the
-// phone is the letter with a lip; open, it is one tall handset, and nothing
-// else stands under it. Screens/Letter.jsx moves it (the handset, and what a
-// turn of the deck does to an open one); this file draws it and holds the
-// thread's state.
+// In the phone, and on its glass. Every letter on the sheet is a slider
+// phone: the screen, and behind it the thread, the phone's lower half
+// (`Slide`). The letter's right soft key, `replies` (`threadKey`), or the
+// screen pushed up, slides it out from under the screen's own key band: the
+// same width, in the same plane, ending in a band of soft keys, `reply` on
+// the left and `back` on the right. Closed, the phone is the letter and
+// nothing else; open, it is one tall handset whose key band runs across its
+// middle like the tab it is. Screens/Letter.jsx moves it (the handset, and
+// what a turn of the deck does to an open one); this file draws it and holds
+// the thread's state.
 //
-// It was a separate unlit panel eighteen pixels under the letter, a web page
-// under a photographed phone, and the whole sheet scrolled to reach it: the
-// deck turned sideways with a vertical tail hanging off it, and the owner
-// read that as geometrically messy and unsmooth. A thread folded into the
-// letter's own glass was weighed too, and it is a letter that scrolls, with
+// ── and the same glass as the letter ────────────────────────────────────────
+// It was an unlit panel under a lit one: a dark strip with thumb ridges on
+// it fixed to the screen's foot (the chin), and under it a dark thread in
+// the chrome's greys, in type a size smaller than the screen's and on keys
+// of its own. The owner read it as a different design attached to the
+// letter, and it was one. So the lower half is lit by the letter's own
+// backlight now, in the letter's own colours (looks.js `skinVars`, handed
+// down by Letter.jsx `Handset`): its panel, its ink, its pixel grid and its
+// glass, the words in the screen's one face measured off the phone's width
+// as the screen's are, and its keys the screen's keys, the same band, the
+// same size, the same bloom. A writer's creature is a sprite drawn in the
+// panel's ink, as the phone drew every picture it had. The recipient's reply
+// is the one row struck out of the ink, as a menu's chosen row is: the letter
+// answering, in the letter's colours, turned over. A thread folded into the
+// letter's own screen was weighed too, and it is a letter that scrolls, with
 // the words somebody wrote pushed off their own screen by the answers.
-//
-// Only three things in it are lit: the letter's screen above it, a writer's
-// creature (avatars.js), which is a small screen as a face is, and the
-// recipient's reply, lit in the letter's own colour, because it is the letter
-// answering. The chin's light is that reply's light, seen shut.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Face, EmailField, Pill, usePhone } from './parts.jsx'
 import { PixIcon, Wait } from './screen.jsx'
 import { Caret } from './caret.jsx'
-import { colourOf, stampOf } from './looks.js'
-import { creatureOf, namesFor, inksOf } from './avatars.js'
+import { stampOf } from './looks.js'
+import { creatureOf, namesFor } from './avatars.js'
 import { replyFault, whyRefused } from './replies-check.js'
 import {
   readThread, likeReply, reportReply, setThread, sendReply,
@@ -60,6 +63,7 @@ import {
 } from './replies-api.js'
 import { refresh as refreshMe, eduDomain } from './auth.js'
 import { isNameKey } from './data.js'
+import { getState, patch } from './store.js'
 import { ResendLink } from './linkdoor.jsx'
 import './replies.css'
 
@@ -97,8 +101,10 @@ function when(at) {
 // ── a creature, on its small screen ─────────────────────────────────────────
 // Thirteen cells a side: the eleven by ten drawing and a cell of panel round
 // it, drawn a whole number of the page's pixels to each cell, so every cell
-// is square and every edge is sharp.
-export function Creature({ who, size = 39, className = '' }) {
+// is square and every edge is sharp. `mono` draws it as a sprite on the
+// letter's glass instead: the drawing in the panel's ink and its half tones
+// at half the ink, with no panel of its own (replies.css `.is-mono`).
+export function Creature({ who, size = 39, className = '', mono = false }) {
   const c = creatureOf(who)
   const px = Math.max(1, Math.round(size / 13))
   const s = px * 13
@@ -115,27 +121,30 @@ export function Creature({ who, size = 39, className = '' }) {
   }, [c])
   return (
     <span
-      className={`wl-rp-av ${className}`}
-      style={{ '--s': `${s}px`, '--av-panel': c.inks.panel, '--av-hi': c.inks.hi }}
+      className={`wl-rp-av${mono ? ' is-mono' : ''} ${className}`}
+      style={mono ? { '--s': `${s}px` } : { '--s': `${s}px`, '--av-panel': c.inks.panel, '--av-hi': c.inks.hi }}
       aria-hidden="true"
     >
       <svg viewBox="0 0 13 13" width={s} height={s} shapeRendering="crispEdges" focusable="false">
-        {mid ? <path d={mid} fill={c.inks.mid} /> : null}
-        <path d={ink} fill={c.inks.ink} />
+        {mid ? <path d={mid} fill={mono ? 'currentColor' : c.inks.mid} opacity={mono ? 0.42 : undefined} /> : null}
+        <path d={ink} fill={mono ? 'currentColor' : c.inks.ink} />
       </svg>
     </span>
   )
 }
 
-// The letter's own inks, for what is lit in its colour: the recipient's
-// reply, their row, and the light on the chin that says they answered.
-function litVars(letter) {
-  const k = inksOf(colourOf(letter.look, letter.id))
-  return {
-    '--rp-panel': k.panel, '--rp-hi': k.hi, '--rp-ink': k.ink, '--rp-mid': k.mid,
-    // a dark panel (the negative) is edged and lit by its words' light
-    ...(k.dark ? { '--rp-edge': 'rgba(237, 237, 237, 0.34)', '--rp-glow': k.glow } : null),
-  }
+// ── a reply of theirs that came down, said once ─────────────────────────────
+// A writer sees their own reply that was taken down, struck through, with
+// why. Once they have seen it and shut the phone it is not drawn again
+// (`Slide` remembers it on the way out, store.js `goneSeen`): a notice that
+// stands in the thread every time it is opened is a telling off, not a note.
+function goneSeen(r) {
+  return !!(r.mine && r.status === 'removed' && (getState().goneSeen || {})[r.id])
+}
+function markGone(ids) {
+  if (!ids.length) return
+  const had = getState().goneSeen || {}
+  patch({ goneSeen: { ...had, ...Object.fromEntries(ids.map((id) => [id, 1])) } })
 }
 
 // ── the thread ──────────────────────────────────────────────────────────────
@@ -251,7 +260,7 @@ export function useThread(letter) {
   const state = (ok && t.state) || 'open'
   const away = state === 'closed'
   const shut = state === 'locked'
-  const rows = ok ? (t.replies || []).map((r) => (likes[r.id] ? { ...r, ...likes[r.id] } : r)) : []
+  const rows = ok ? (t.replies || []).filter((r) => !goneSeen(r)).map((r) => (likes[r.id] ? { ...r, ...likes[r.id] } : r)) : []
   const names = namesFor([...rows.filter((r) => !r.recipient).map((r) => r.who), me.who].filter(Boolean))
   const hiddenFromMe = away && !me.recipient
   // who answered, for the chin: the recipient first when they have, then the
@@ -274,68 +283,54 @@ export function useThread(letter) {
   }
 }
 
-// ── the chin ────────────────────────────────────────────────────────────────
-// The unlit strip fixed to the screen's foot, where a thumb pushes a slider
-// phone open: three ridges in the middle, the count on the left, and on the
-// right who answered, the recipient's face first, with the phone's message
-// light beside them, lit steady in the letter's colour once the person it is
-// to has answered. It does not blink: a blink would be urgency.
+// ── the key ─────────────────────────────────────────────────────────────────
+// The thread is opened by the letter's own right soft key, `replies`, where
+// `share` stood; sharing is the first row of the letter's options now. It
+// used to be a chin: an unlit strip fixed under the screen with thumb ridges
+// on it, the count on its left and who answered on its right. The owner read
+// it, and the dark thread it opened, as another product glued under the
+// letter. A phone has its soft keys and nothing under them, so the count is
+// the key's own, set small at its shoulder, and the light that says the
+// person the letter is to has answered stands under it, lit steady (a blink
+// would be urgency). While the thread is open the key stays struck out of its
+// band, as the phone lit the tab it was on, and a second press shuts it.
 //
-// Every screen on the strip has one, the neighbours asleep with only their
-// ridges, and a letter with no thread behind it (a deploy without the
-// replies, or no connection) has only the ridges too, so the phone is one
-// height whatever the thread answers. It is the thread's one count: the
-// lower half has no head, because the chin is its head.
-export function Chin({ letter, th = null, open = false, onToggle, id }) {
-  const grip = <span className="wl-chin-grip" aria-hidden="true"><i /><i /><i /></span>
-  if (!letter || !th || !th.on) return <div className="wl-chin is-bare" aria-hidden="true">{grip}</div>
-  const t = th.t
-  let say
-  let aria
-  if (!t) {
-    say = <Wait scale={2} className="wl-chin-wait" />
-    aria = 'replies'
-  } else if (!t.ok) {
-    say = 'replies'
-    aria = 'replies'
-  } else if (th.hiddenFromMe) {
-    say = <><PixIcon name="lock" scale={2} className="wl-chin-lock" />replies</>
-    aria = 'replies, put away'
-  } else {
-    const n = th.count
-    say = n ? `${n} ${n === 1 ? 'reply' : 'replies'}` : th.canWrite ? 'reply' : 'replies'
-    aria = `${n ? `${n} ${n === 1 ? 'reply' : 'replies'}` : 'replies'}${th.answered ? ', the recipient replied' : ''}${th.shut ? ', shut' : ''}`
+// Every screen on the strip draws the key, the neighbours asleep with no
+// count, so a turn onto a letter changes nothing but the number, and past
+// ninety nine the badge says `99+`, as a phone's did, so it keeps to the
+// key. A letter with no thread behind it (a deploy without the replies, or
+// no connection) has `share` there instead, as it always did.
+function shown(th) {
+  return th.t && th.t.ok && !th.hiddenFromMe ? th.count : 0
+}
+// what the thread is called, by the key and by the lower half it opens:
+// the count and who has answered, and whether it is shut or put away
+function threadName(th) {
+  const n = shown(th)
+  return `${n ? `${n} ${n === 1 ? 'reply' : 'replies'}` : 'replies'}${th.answered ? ', the recipient replied' : ''}${th.shut ? ', shut' : ''}${th.hiddenFromMe ? ', put away' : ''}`
+}
+export function threadKey(th, { open = false, onToggle, id, letter } = {}) {
+  if (th && letter && !th.on) return null
+  const n = th ? shown(th) : 0
+  const aria = th ? threadName(th) : 'replies'
+  return {
+    label: 'replies', cls: 'is-thread', open, badge: n > 99 ? '99+' : n ? String(n) : '', dot: !!(th && th.answered),
+    onClick: onToggle, id, expanded: th ? open : undefined,
+    controls: letter ? `wl-low-${letter.id}` : undefined,
+    aria: open ? `${aria}. shut them` : aria,
   }
-  const lit = th.answered
-  return (
-    <button
-      type="button" className={`wl-chin${open ? ' is-open' : ''}${lit ? ' is-lit' : ''}`}
-      id={id} aria-expanded={open} aria-controls={`wl-low-${letter.id}`} aria-label={aria}
-      onClick={onToggle} style={lit ? litVars(letter) : undefined}
-    >
-      <span className="wl-chin-n" aria-hidden="true">{say}</span>
-      {grip}
-      <span className="wl-chin-end" aria-hidden="true">
-        {t && t.ok && !th.hiddenFromMe && th.stack.length ? (
-          <span className="wl-rp-stack">
-            {th.stack.map((s) => (s.r.recipient
-              ? <Face key="@" handle={letter.to} size={26} className="wl-rp-stack-face" />
-              : <Creature key={s.k} who={s.r.who} size={26} />))}
-          </span>
-        ) : null}
-        {th.shut && !th.hiddenFromMe ? <PixIcon name="lock" scale={2} className="wl-chin-lock" /> : null}
-        {lit ? <span className="wl-chin-led" /> : null}
-      </span>
-    </button>
-  )
 }
 
 // ── one reply ───────────────────────────────────────────────────────────────
 // Its picture, and beside it one meta row (the name, `you`, when, and at the
 // row's end its like and its flag), then the words. The acts ride the meta
 // row so a reply is two lines and not three, and two and a half of them
-// stand in the lower half of a phone at once.
-function Reply({ r, letter, name, onLike, onReport, onUndo, reported, liking }) {
+// stand in the lower half of a phone at once. A reply of your own has no
+// flag, and a flag's room in its place, so every like down the thread
+// stands in the one column. `fresh` is a reply that came while the phone
+// was open (`Slide`), which arrives on its own rather than in the opening's
+// stagger.
+function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, liking, fresh = false }) {
   const rec = r.recipient
   const live = r.status === 'live'
   const down = reported && live
@@ -343,7 +338,7 @@ function Reply({ r, letter, name, onLike, onReport, onUndo, reported, liking }) 
     // reported by this device: folded away, in the letter report's words,
     // with the way back
     return (
-      <li className="wl-rp-item is-folded">
+      <li className="wl-rp-item is-folded" style={{ '--i': Math.min(i, 6) }}>
         <PixIcon name="flag" scale={2} className="wl-rp-fold-g" />
         <span className="wl-rp-fold-say">reported. a person will review it.</span>
         <button type="button" className="wl-rp-undo" onClick={() => onUndo(r)} disabled={reported === 'busy'}>undo</button>
@@ -353,11 +348,11 @@ function Reply({ r, letter, name, onLike, onReport, onUndo, reported, liking }) 
   const likes = r.likes || 0
   return (
     <li
-      className={`wl-rp-item${rec ? ' is-recipient' : ''}${r.mine ? ' is-mine' : ''}${live ? '' : ` is-${r.status}`}`}
-      style={rec ? litVars(letter) : undefined}
+      className={`wl-rp-item${rec ? ' is-recipient' : ''}${r.mine ? ' is-mine' : ''}${live ? '' : ` is-${r.status}`}${fresh ? ' is-new' : ''}`}
+      style={{ '--i': Math.min(i, 6) }} data-id={r.id}
     >
       <span className="wl-rp-pic">
-        {rec ? <Face handle={letter.to} size={39} /> : <Creature who={r.who} size={39} />}
+        {rec ? <Face handle={letter.to} size={39} /> : <Creature who={r.who} size={39} mono />}
       </span>
       <div className="wl-rp-main">
         <div className="wl-rp-meta">
@@ -374,7 +369,9 @@ function Reply({ r, letter, name, onLike, onReport, onUndo, reported, liking }) 
                 <PixIcon name={r.liked ? 'heart' : 'heartO'} scale={2} />
                 <span className="wl-rp-n">{likes ? likes : ''}</span>
               </button>
-              {r.mine ? null : (
+              {r.mine ? (
+                <span className="wl-rp-flag is-void" aria-hidden="true"><PixIcon name="flag" scale={2} /></span>
+              ) : (
                 <button type="button" className="wl-rp-flag" onClick={() => onReport(r)} aria-label="report this reply">
                   <PixIcon name="flag" scale={2} />
                 </button>
@@ -453,16 +450,19 @@ function TermsBody({ recipient = false, headRef }) {
 // The composer's magic link (docs/ONE-WALL.md), in the lower half in place of
 // the thread, worded for a proof with nothing waiting on it, and in the
 // composer's words for the same act (screens/Write.jsx, the Berkeley door):
-// `send me the link`, the number, `waiting for the link`, `send it again`,
-// `use a different address`. The link is tapped wherever the mail is opened,
-// and this device is asked every few seconds whether it has been, and again
+// `send me the link`, `waiting for the link`, `send it again`, `use a
+// different address`. The link is tapped wherever the mail is opened, and
+// this device is asked every few seconds whether it has been, and again
 // when it comes back to the front.
 //
-// ── the number ──────────────────────────────────────────────────────────────
-// Shown here and nowhere else. The mail does not print it: a link opened on
-// a device that is not this one asks for it (screens/Verify.jsx), so a link
-// somebody is sent without asking for it signs nobody in. So the number is
-// labelled as theirs, and the line says when they will need it.
+// ── opened somewhere else ───────────────────────────────────────────────────
+// A link confirms the browser that opens it and no other (migration 0070),
+// so a link somebody is sent without asking for it confirms nobody here.
+// Opened in another browser (the mail read in Safari, the wall open in
+// Instagram's), that browser can reply and this one cannot, and the form
+// says so, with a new link to open here. The link carries the letter, so the
+// page it opens there leads back to it (screens/Verify.jsx). It used to show
+// a number here, to be typed there (0065).
 //
 // ── asked, and asked again ──────────────────────────────────────────────────
 // A second link is a second request with a number of its own, and this form
@@ -472,8 +472,7 @@ function TermsBody({ recipient = false, headRef }) {
 // answer is asked for too (auth.js `refresh`): a school address on it now,
 // from any of the links this form sent, opens replying the same.
 //
-// A link that has run out, or that a wrong number spent on another device,
-// is said so, with the way to another.
+// A link that has run out is said so, with the way to another.
 const RAN_OUT = new Set(['expired', 'used', 'burned', 'invalid'])
 const LINK_MS = 30 * 60000
 function ranOut(got, at) {
@@ -490,17 +489,18 @@ const SCHOOL_FAULT = {
   offline: 'there is no connection. try again in a moment.',
 }
 
-function School({ onVerified, onTheirs }) {
+function School({ letter, onVerified, onTheirs }) {
   const [email, setEmail] = useState('')
   const [step, setStep] = useState('ask')     // ask · sent
   const [busy, setBusy] = useState(false)
   const [fault, setFault] = useState('')
-  const [sent, setSent] = useState(null)      // { request, match, email, at, again }
+  const [sent, setSent] = useState(null)      // { request, email, at, again }
   const [out, setOut] = useState(false)       // the newest link ran out, or was spent
+  const [away, setAway] = useState(false)     // or was opened in another browser
 
   // one link to one address; the fault said here when none went out
   const mail = async (e) => {
-    const got = await sendSchoolLink(e)
+    const got = await sendSchoolLink(e, letter)
     if (got && got.ok) return got
     setFault(SCHOOL_FAULT[got?.error] || 'the email did not send. try again in a moment.')
     return null
@@ -515,8 +515,9 @@ function School({ onVerified, onTheirs }) {
     const got = await mail(e)
     setBusy(false)
     if (!got) return
-    setSent({ request: got.request, match: got.match, email: e, at: Date.now(), again: false })
+    setSent({ request: got.request, email: e, at: Date.now(), again: false })
     setOut(false)
+    setAway(false)
     setStep('sent')
   }
 
@@ -527,13 +528,14 @@ function School({ onVerified, onTheirs }) {
     setFault('')
     const got = await mail(sent.email)
     if (!got) return false
-    setSent({ request: got.request, match: got.match, email: sent.email, at: Date.now(), again: true })
+    setSent({ request: got.request, email: sent.email, at: Date.now(), again: true })
     setOut(false)
+    setAway(false)
     return true
   }
 
   useEffect(() => {
-    if (step !== 'sent' || !sent?.request || out) return undefined
+    if (step !== 'sent' || !sent?.request || out || away) return undefined
     let alive = true
     let asking = false
     // what this device already said about a school before the wait began:
@@ -553,6 +555,9 @@ function School({ onVerified, onTheirs }) {
       asking = false
       if (!alive) return
       if (yes) { alive = false; onVerified(); return }
+      // confirmed in another browser and not this one (0070); the function
+      // calls that `expired` as well, for a form from before
+      if (got && got.ok && got.elsewhere) { alive = false; setAway(true); return }
       if (ranOut(got, sent.at)) { alive = false; setOut(true) }
     }
     const tick = setInterval(ask, 4000)
@@ -565,36 +570,33 @@ function School({ onVerified, onTheirs }) {
       document.removeEventListener('visibilitychange', back)
       window.removeEventListener('focus', back)
     }
-  }, [step, sent, out, onVerified])
+  }, [step, sent, out, away, onVerified])
 
   if (step === 'sent' && sent) {
-    const n = sent.match
     return (
       <div className="wl-rp-school is-sent">
-        {out ? (
+        {away ? (
+          <p className="wl-rp-school-say" role="status">
+            you opened the link somewhere else, so you can reply there. to reply here, send a new link and open it here.
+          </p>
+        ) : out ? (
           <p className="wl-rp-school-say" role="status">that link has run out. send another.</p>
         ) : (
           <>
             <p className="wl-rp-school-say">
               a link is on its way to <span className="wl-h">{sent.email}</span>.{' '}
               tap the link in the mail.
-              {n != null ? ' on another phone or computer, it asks for this number.' : ''}
             </p>
-            {n != null ? (
-              <div className="wl-edu-match" role="group" aria-label={`your number is ${n}`}>
-                <span className="wl-edu-match-lab" aria-hidden="true">your number</span>
-                <span className="wl-edu-match-n" aria-hidden="true">{n}</span>
-              </div>
-            ) : null}
             <p className="wl-rp-wait" role="status"><Wait scale={2} /> waiting for the link</p>
           </>
         )}
         {fault ? <p className="wl-rp-fault" role="alert">{fault}</p> : null}
-        {/* at once when the link has run out: there is nothing to wait for */}
-        <ResendLink key={out ? 'out' : 'wait'} onSend={again} wait={out ? 0 : 30} />
+        {/* at once when the link has run out or went elsewhere: there is
+            nothing to wait for */}
+        <ResendLink key={out || away ? 'out' : 'wait'} onSend={again} wait={out || away ? 0 : 30} />
         <button
           type="button" className="wl-quiet wl-rp-again"
-          onClick={() => { setStep('ask'); setSent(null); setOut(false); setFault('') }}
+          onClick={() => { setStep('ask'); setSent(null); setOut(false); setAway(false); setFault('') }}
         >
           use a different address
         </button>
@@ -637,11 +639,11 @@ function School({ onVerified, onTheirs }) {
 // apart (no new replies, against nobody else seeing any) was only said after
 // one was pressed. While the replies are out of sight there are no replies to
 // stop, so the first key is not drawn at all rather than drawn dead.
-function Owner({ state, onReply, onSet, busy, letter }) {
+function Owner({ state, onReply, onSet, busy }) {
   const shut = state === 'locked'
   const away = state === 'closed'
   return (
-    <div className="wl-rp-owner" style={litVars(letter)}>
+    <div className="wl-rp-owner">
       <p className="wl-rp-owner-say">
         <span className="wl-rp-owner-h">this letter is to you.</span>{' '}
         {away
@@ -670,17 +672,18 @@ function Owner({ state, onReply, onSet, busy, letter }) {
 }
 
 // ── a soft key of the lower half ──
-// The phone's own, on its unlit band: the word in the one face, lit behind
-// under a mouse and dimmed under a finger as the screen's keys are, with the
-// hourglass in the word's place while what it asked for is out.
+// The screen's own (screen.css `.wl-sk`), on a band drawn as the screen's
+// is: the word in the one face at the one size, blooming, lit behind under a
+// mouse and dimmed under a finger, with the hourglass in the word's place
+// while what it asked for is out.
 function Key({ side, k }) {
-  if (!k) return <span className={`wl-low-sk is-${side} is-empty`} aria-hidden="true" />
+  if (!k) return <span className={`wl-sk wl-low-sk is-${side} is-empty`} aria-hidden="true" />
   return (
     <button
-      type="button" className={`wl-low-sk is-${side}`} onClick={k.onClick}
+      type="button" className={`wl-sk wl-low-sk is-${side}`} onClick={k.onClick}
       disabled={k.disabled || k.busy} aria-label={k.aria || undefined} aria-busy={k.busy || undefined}
     >
-      {k.busy ? <Wait scale={2} /> : k.label}
+      {k.busy ? <Wait scale={2} className="wl-lit-g" /> : <span className="wl-lit">{k.label}</span>}
     </button>
   )
 }
@@ -699,17 +702,46 @@ function Key({ side, k }) {
 // `back` while reading shuts the phone; anywhere else it goes back to
 // reading, the words kept. Letter.jsx owns open and shut (`onClose`), and
 // every time the phone is opened it opens on the thread.
-export function Slide({ letter, th, open = false, reduce = false, go = null, onClose, labelId }) {
+export function Slide({ letter, th, open = false, reduce = false, go = null, onClose }) {
   const phone = usePhone()
   const [mode, setMode] = useState('read')
   const [wasOpen, setWasOpen] = useState(open)
+  // the replies the phone opened on, which come up in the opening's stagger;
+  // one that comes after them while it is open arrives on its own (`fresh`)
+  const [first, setFirst] = useState(null)
   if (open !== wasOpen) {
     setWasOpen(open)
     if (open) setMode('read')
+    else setFirst(null)
   }
+  if (open && first === null && th.ok) setFirst(new Set(th.rows.map((r) => r.id)))
+  const low = useRef(null)
   const list = useRef(null)
   const field = useRef(null)
   const head = useRef(null)
+
+  // the removed replies of theirs that were on the glass while it was open,
+  // remembered as read once it shuts (`goneSeen`, above). On the glass means
+  // in the list's view, most of the row or as much of the list as it fills:
+  // the thread opens at its top, oldest first, and a reply taken down is
+  // usually further down than a glance goes
+  const gone = useRef(new Set())
+  const goneIds = th.rows.filter((r) => r.mine && r.status === 'removed').map((r) => r.id).join(' ')
+  useEffect(() => {
+    const el = list.current
+    if (!open || !goneIds || (mode !== 'read' && mode !== 'write') || !el || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      const need = Math.min(e.boundingClientRect.height, e.rootBounds ? e.rootBounds.height : Infinity) * 0.6
+      if (e.isIntersecting && e.intersectionRect.height >= need) gone.current.add(e.target.dataset.id)
+    }), { root: el, threshold: [0, 0.25, 0.5, 0.75, 1] })
+    el.querySelectorAll('.wl-rp-item.is-mine.is-removed[data-id]').forEach((row) => io.observe(row))
+    return () => io.disconnect()
+  }, [open, mode, goneIds])
+  useEffect(() => {
+    if (!open) return undefined
+    const seen = gone.current
+    return () => { markGone([...seen]); seen.clear() }
+  }, [open])
 
   // ── the words ──
   // A refusal (the reading's, or the list's on the server) is about these
@@ -753,9 +785,23 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
     if (field.current) field.current.focus({ preventScroll: true })
     toEnd()
   }
+  // A step back inside the lower half takes away what had the focus when it
+  // was taken by a key on the keyboard (Escape in the field, or out of the
+  // terms), and the focus would fall to the page, out of the phone and out
+  // of the sheet. So it is kept in the lower half: on the field when the
+  // step is to the words, and on the list when it is to the thread, where a
+  // second Escape shuts the phone and hands the focus to its key.
+  const hadFocus = useRef(false)
+  const keepFocus = () => { hadFocus.current = !!(low.current && low.current.contains(document.activeElement)) }
   useEffect(() => {
     if (mode === 'terms' && head.current) head.current.focus({ preventScroll: true })
     if (mode === 'terms' || mode === 'school') { if (list.current) list.current.scrollTop = 0 }
+    if (hadFocus.current) {
+      hadFocus.current = false
+      const a = document.activeElement
+      const to = mode === 'write' ? field.current : list.current
+      if ((!a || a === document.body) && to) to.focus({ preventScroll: true })
+    }
   }, [mode])
 
   const send = async (accept = false) => {
@@ -813,6 +859,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
   } else if (mode === 'school') {
     inside = (
       <School
+        letter={letter.id}
         onVerified={verified}
         onTheirs={th.toAt && !me.recipient && go ? () => go('claim', letter.to) : null}
       />
@@ -825,7 +872,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
     inside = (
       <>
         {me.recipient && th.toAt ? (
-          <Owner state={th.state} onReply={write} onSet={th.set} busy={th.setting} letter={letter} />
+          <Owner state={th.state} onReply={write} onSet={th.set} busy={th.setting} />
         ) : null}
         {th.hiddenFromMe ? (
           <div className="wl-rp-note is-away">
@@ -834,16 +881,18 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
           </div>
         ) : rows.length ? (
           <ol className="wl-rp-list">
-            {rows.map((r) => (
+            {rows.map((r, i) => (
               <Reply
-                key={r.id} r={r} letter={letter} name={th.names.get(r.who) || ''}
+                key={r.id} r={r} i={i} letter={letter} name={th.names.get(r.who) || ''}
                 onLike={th.like} onReport={th.report} onUndo={th.undo}
                 reported={th.reports[r.id] || (r.reported ? 'on' : '')} liking={!!th.liking[r.id]}
+                fresh={!!first && !first.has(r.id)}
               />
             ))}
           </ol>
         ) : (
           <div className="wl-rp-empty">
+            <PixIcon name="env" scale={3} className="wl-rp-empty-g" />
             <span className="wl-rp-empty-h">no replies yet.</span>
             <span className="wl-rp-empty-say">{canWrite ? 'be the first to reply.' : 'the first one will be here.'}</span>
           </div>
@@ -860,7 +909,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
 
   // ── the keys, by mode ──
   const shutIt = () => onClose && onClose()
-  const toRead = () => { setMode('read'); if (said && said.tone !== 'no') setSaid(null) }
+  const toRead = () => { keepFocus(); setMode('read'); if (said && said.tone !== 'no') setSaid(null) }
   let keys
   if (mode === 'write') {
     keys = {
@@ -870,7 +919,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
   } else if (mode === 'terms') {
     keys = {
       l: { label: 'agree', onClick: () => send(true), busy, aria: 'agree to the terms for replying, and send' },
-      r: { label: 'not now', onClick: () => setMode('write'), aria: 'not now, back to the words' },
+      r: { label: 'not now', onClick: () => { keepFocus(); setMode('write') }, aria: 'not now, back to the words' },
     }
   } else if (mode === 'school') {
     keys = { r: { label: 'back', onClick: toRead, aria: 'back to the replies' } }
@@ -891,14 +940,17 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
 
   return (
     <div
-      className={`wl-low is-${mode}`} id={`wl-low-${letter.id}`}
+      className={`wl-low is-${mode}`} id={`wl-low-${letter.id}`} ref={low}
       inert={open ? undefined : true} aria-hidden={open ? undefined : 'true'}
     >
       <div className="wl-low-in">
+        <span className="wl-low-bg" aria-hidden="true" />
+        {/* named for what it holds, and not by the key that opens it: the
+            key's name ends in what pressing it does, and while the options
+            are up the key is `back` and not there to name anything */}
         <div
           className="wl-low-list" ref={list} tabIndex={-1} role="region"
-          aria-labelledby={mode === 'read' ? labelId : undefined}
-          aria-label={mode === 'terms' ? 'the terms for replying' : mode === 'school' ? 'your school' : undefined}
+          aria-label={mode === 'terms' ? 'the terms for replying' : mode === 'school' ? 'your school' : threadName(th)}
         >
           {inside}
         </div>
@@ -909,11 +961,11 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
               {me.recipient ? (
                 <>
                   <Face handle={letter.to} size={26} />
-                  <span>as <span className="wl-rp-as-badge" style={litVars(letter)}>the recipient</span></span>
+                  <span>as <span className="wl-rp-as-badge">the recipient</span></span>
                 </>
               ) : me.who ? (
                 <>
-                  <Creature who={me.who} size={26} />
+                  <Creature who={me.who} size={26} mono />
                   <span>as <span className="wl-h">{name}</span></span>
                 </>
               ) : <span />}
@@ -944,6 +996,12 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
           <Key side="l" k={keys.l} />
           <Key side="r" k={keys.r} />
         </div>
+        {/* the LCD over all of it, as over the screen: its pixels, the
+            moire a camera makes of them, the glare and the sensor's grain */}
+        <span className="wl-scr-fx is-grid" aria-hidden="true" />
+        <span className="wl-scr-fx is-moire" aria-hidden="true" />
+        <span className="wl-scr-fx is-glare" aria-hidden="true" />
+        <span className="wl-scr-fx is-shine" aria-hidden="true" />
       </div>
     </div>
   )

@@ -71,8 +71,9 @@ characters, stored as `salutation`. With none stored, the line is
 **.edu verification.** A magic link, never a code. Verified once per device,
 and the device's session is kept: sessions slide to a year on use. The
 address becomes the alert email automatically. *Since 26 September* the same
-link signs a person in by email (purpose `login`), and a link opened on a
-device that did not ask for it asks for the number on the asking screen
+link signs a person in by email (purpose `login`). *Since 27 September*
+(0070) a link confirms at once for the browser that opened it, with nothing
+typed, and signs in the browser that asked only when that is the same one
 (the contract, below).
 
 **Instagram verification is ownership only.** It claims your own @. With it you
@@ -243,7 +244,7 @@ person who holds it, whoever proved it before by a login, a campus proof or a
 google account. The Supabase template is deleted and the app no longer calls
 Supabase Auth for email (Google still signs in through it).
 
-**The number is typed, not printed.** 0064 showed a number from 10 to 99 on
+**The number is typed, not printed** (0065; gone since 0070, below). 0064 showed a number from 10 to 99 on
 the asking screen and printed the same number in the mail, so a careful reader
 could tell their own request from somebody else's. That defended the careful
 reader and nobody else, and a link confirms on whatever device opens it, so
@@ -255,6 +256,17 @@ the device that asked confirms at once, as before; opened anywhere else, it
 confirms nothing until the number on the asking screen is typed into the page
 it opened, and a wrong number burns the link. A person who never asked has no
 screen to read a number off, and the page tells them to close it.
+
+**The link is enough (0070, 27 September).** The owner: "i don't see why i
+need the number, just clicking on link would be fine no?" Nearly everybody
+arrives from Instagram, in its own browser, and reads the mail in another, so
+nearly everybody met the number. Now a link confirms at once for the browser
+that opened it, and that browser, not the one that asked, is the one signed
+in or proved: the victim of the attack above signs in their own browser, as
+themselves, and the stranger's is told the link was opened elsewhere and
+holds nothing. A campus link carries the waiting letter to the browser that
+opens it, where it is shown with one key to post it (never posted on the tap),
+with its own nonce, so it is one letter wherever it goes up from.
 
 **The @ comes back with the person.** A private note is read, placed and kept
 with the DM flow's proof, which was minted in one browser and lived thirty
@@ -316,6 +328,10 @@ status   { action: 'status', request, session }
 ```
 
 - The link is `${SITE}/verify#t=<token>`. It works once and lasts 30 minutes.
+- **Since 0070 there is no number**, and a link confirms for the browser
+  that opened it (docs/EDU-VERIFICATION.md). The two bullets under this one
+  are 0065's, kept for the record: the confirm still takes `match` from a
+  page before 0070 and never reads it.
 - `match` is a number from 10 to 99, shown on the device that asked and
   nowhere else. It used to be printed in the email as well (0064), so a person
   could tell their own request from somebody else's before they tapped; that
@@ -485,7 +501,7 @@ held reply up or a hidden one back and clears its reports.
 
 | | |
 | --- | --- |
-| `/verify#t=` | the magic link: confirms, then posts the held draft if it is on this device. Since 0065 it also signs a person in (`you're in.`, with the way to the wall and to the private notes), and on a device that did not ask for the link it asks first for the number on the asking screen, two digits, and says `that number didn't match.` when it is wrong |
+| `/verify#t=` | the magic link: confirms, then posts the held draft if it is on this device. Since 0065 it also signs a person in (`you're in.`, with the way to the wall and to the private notes), and since 0070 it confirms for whatever browser opened it, with nothing typed: in another browser than the one that asked, it shows the letter the link carried with one key, `post it` (or, for a reply, the way back to the letter) |
 | `/r#t=` | the email's one-tap removal: takes the letter down on load, with an undo for a day |
 | `/alerts#off=` | the email's stop link |
 
@@ -539,8 +555,8 @@ did. Nothing here removes or renames anything above.
 - `status` also answers `expired`. Since 0065 a link burned by a wrong number
   (`refused` on the row) reads as `expired` too, so the asking screen says the
   link ran out and offers another.
-- Since 0065 `link` answers the number the database kept, which on a resend
-  from the same screen is the first link's (the contract, above).
+- Since 0065 `link` answered the number the database kept; since 0070 it
+  answers none (only on a database before 0070, for the page before it).
 
 ### Database
 

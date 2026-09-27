@@ -5,43 +5,49 @@
 // link lands: `/verify#t=<token>`, the token in the hash so it never reaches
 // a server's logs, read once and taken out of the address bar at once.
 //
-// What happens next depends on which device tapped it:
+// Nothing is typed here. Since migration 0070 a link confirms for the browser
+// that opened it, at once, and what happens next depends on which browser
+// that is:
 //
 //   the one that wrote the letter
-//       The draft is on this device, waiting on the link (store.js `draft`,
+//       The draft is in this browser, waiting on the link (store.js `draft`,
 //       with `held`). It goes up here, and the letter opens: "confirmed.
 //       your letter is up." The composer in the other tab, polling the same
 //       request, posts the same draft with the same nonce, and the function
 //       answers it with this letter rather than writing a second one.
-//   another one (the mail opened on a laptop, the letter written on a phone)
-//       It asks for the number first (below). Then "confirmed. go back to
-//       where you asked for the link. it carries on there.", which is true
-//       of a letter waiting in a composer and of a reply waiting under a
-//       letter (Replies.jsx asks for the same link with no draft behind it,
-//       and "it's going up there" was a promise about a letter nobody wrote).
+//   another one (the mail read in Safari, the letter written in Instagram's
+//       browser, which is nearly everybody)
+//       This browser is the one confirmed, and not the one that asked. The
+//       letter came with the link (Write.jsx sends it as `carry`), and it is
+//       shown here on the screen it will go up on, with one key: "post it".
+//       Shown first, because whoever opens a link is not always who asked for
+//       it, and a stranger's letter must never go up under the address of
+//       somebody who only tapped. It posts with the draft's own nonce, so it
+//       is one letter wherever it goes up from. A link asked for under a
+//       letter's replies (Replies.jsx) carries that letter instead: "you can
+//       reply from here", and the way back to it. The screen that asked is
+//       told the link was opened somewhere else, and says so.
 //   for the alerts
-//       The alert address is confirmed: "your alerts are on."
+//       The alert address is confirmed for the account that asked, from any
+//       browser: "your alerts are on."
 //   for signing in (migration 0065, the door's "continue with email")
-//       This device is signed in as whoever holds the address, and so is the
-//       one that asked, if it is another: "you're in." The door that asked is
-//       waiting on the same request and moves on by itself. The pings come
-//       back with the person (auth.js `restoreProof`), so the one quiet line
-//       under the key opens them.
+//       This browser is signed in as whoever holds the address: "you're in."
+//       The door that asked is signed in only if it is this browser; if not,
+//       it says the link was opened somewhere else. The pings come back with
+//       the person (auth.js `restoreProof`), so the one quiet line under the
+//       key opens them.
 //
-// ── the number, on another device ───────────────────────────────────────────
-// The asking screen shows two digits, and since 0065 (section 3) the mail
-// does not. Tapped on the device that asked, the link confirms at once. Tapped
-// anywhere else, the server answers `match` and spends nothing, and this page
-// asks for the number on the screen where the link was asked for. The right
-// number confirms; a wrong one burns the link (`mismatch`), and the asking
-// screen, polling, sees it run out and offers another. Before this, a link
-// confirmed on whatever opened it, so anybody who typed somebody's address
-// into the door and got them to tap the mail was signed in as them on the
-// device that asked. A person who never asked for a link has no screen to
-// read a number off, and the page tells them to close it.
+// ── the number, gone ────────────────────────────────────────────────────────
+// 0065 made a link opened in another browser wait here for two digits typed
+// off the asking screen, since a link used to sign in the browser that ASKED,
+// and a stranger who typed somebody's address was one tap from their private
+// notes. 0070 signs in this browser instead, the one in the hands of whoever
+// reads the inbox, and the number went. A function from before 0070 still
+// answers `match` for a link opened elsewhere, and nothing shows a number
+// now, so the page says to open the link where it was asked for.
 //
 // A link works once and lasts thirty minutes, and one that has been used or
-// has run out says so, with the next step: back to the letter this device is
+// has run out says so, with the next step: back to the letter this browser is
 // holding, to the account for an alerts link, or the door again for a
 // sign in.
 //
@@ -49,13 +55,14 @@
 // the door's shape (parts.jsx `DoorHead`), since it is the end of a door.
 
 import { useEffect, useRef, useState } from 'react'
-import { Sheet, SheetHead, Pill, DoorHead, Display, CodeBox } from '../parts.jsx'
-import { Wait } from '../screen.jsx'
+import { Sheet, SheetHead, Pill, DoorHead, Display, useProfile } from '../parts.jsx'
+import { Wait, Screen, ScreenText } from '../screen.jsx'
 import { confirmLink } from '../../api/eduverify.js'
 import { sessionToken } from '../../api/identity.js'
 import { refresh, isReader } from '../auth.js'
-import { getState, setAfterGate } from '../store.js'
-import { postDraft } from '../data.js'
+import { getState, patch, setAfterGate } from '../store.js'
+import { postDraft, draftPost, atHandle } from '../data.js'
+import { normaliseLook } from '../looks.js'
 import { schoolOf } from '../schools.js'
 import { Sticker } from '../Sticker.jsx'
 import '../post.css'
@@ -73,34 +80,62 @@ function readToken() {
 
 // One confirmation per token for the life of the page: the shell's
 // development mode mounts every screen twice, and a link spent by the first
-// mount would answer `used` to the second. The number, when one is asked
-// for, is a second call and never cached: each is a guess of its own.
+// mount would answer `used` to the second. The letter it carried comes back
+// with the first answer only, so it is kept with it.
 const SPENT = new Map()
 function spend(token) {
   if (!SPENT.has(token)) SPENT.set(token, confirmLink({ token, session: sessionToken() }))
   return SPENT.get(token)
 }
 
-// The draft this device is holding for the link, if it is one.
+// The draft this browser is holding for the link, if it is one.
 function heldDraft() {
   const d = getState().draft
   return d && d.held && String(d.body || '').trim() ? d : null
 }
 
+// A letter the link carried here, as a draft this browser can post, or null.
+// It waits on nothing here: `held` is this browser's own and it has none.
+function carriedDraft(carry) {
+  const d = carry && carry.letter
+  if (!d || !draftPost(d)) return null
+  return { ...d, held: null }
+}
+
+// The letter as it will go up, on the screen the wall draws it on, still: the
+// line across its top the writer set, or "dear" and the name for the @, and
+// never the @ itself (Write.jsx says why).
+function Carried({ d }) {
+  const p = draftPost(d)
+  const prof = useProfile(p && p.kind === 'handle' ? p.handle : '')
+  if (!p) return null
+  const first = prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : ''
+  const greeting = p.salutation || `dear ${p.kind === 'name' ? p.name : first || 'you'}`
+  return (
+    <div className="wl-verify-letter">
+      <Screen look={normaliseLook(p.look)} seed={`draft:${p.key}`} live={false} top={{ salutation: greeting, icon: 'pen' }}>
+        <ScreenText text={p.body} />
+      </Screen>
+    </div>
+  )
+}
+
 export default function Verify({ go, up, upLabel = 'back to the wall', toWall = null }) {
   const [token] = useState(readToken)
-  // checking · number · posting · up · review · elsewhere · alerts · in · failed · bad
+  // checking · posting · up · review · onward · carried · reply · here ·
+  // alerts · in · failed · bad
   const [state, setState] = useState(token ? 'checking' : 'bad')
   const [why, setWhy] = useState(token ? '' : 'invalid')
   // what the link was for, when the server said: where to ask again
   const [purpose, setPurpose] = useState('')
   const [id, setId] = useState('')
   const [school, setSchool] = useState(() => schoolOf('berkeley'))
-  // a login: whether the device that asked for the link is this one
-  const [here, setHere] = useState(true)
-  // the number typed off the asking screen, and whether it is being checked
-  const [n, setN] = useState('')
-  const [trying, setTrying] = useState(false)
+  // a login: whether the browser that asked for the link is this one
+  const [same, setSame] = useState(true)
+  // what the link carried here from the browser that asked: a letter's
+  // draft, or the letter a reply was going to be written under
+  const [carried, setCarried] = useState(null)
+  const [replyTo, setReplyTo] = useState('')
   const alive = useRef(true)
   useEffect(() => {
     alive.current = true
@@ -113,13 +148,37 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     try { window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search) } catch { /* a sandbox */ }
   }, [])
 
-  // What the server answered, first time or after the number: the page it
-  // lands on, and for a letter this device is holding, the letter put up.
+  // A draft, posted: the one this browser held, or the one the link carried.
+  // A carried one is not this browser's own draft, so whatever this browser
+  // was keeping in the composer is put back once it has gone (data.js
+  // `landLetter` empties the slot); if it did not go, it waits in the
+  // composer for another try, unless the composer is holding other words.
+  const post = async (d, carriedHere) => {
+    const mine = getState().draft
+    setState('posting')
+    const posted = await postDraft(d)
+    const went = posted && posted.ok && (posted.status === 'live' || posted.status === 'pending')
+    if (carriedHere) {
+      const own = mine && String(mine.body || '').trim() && mine.nonce !== d.nonce
+      if (own) patch({ draft: mine })
+      else if (!went) patch({ draft: d })
+    }
+    if (!alive.current) return
+    if (went) {
+      setId(posted.id || '')
+      setState(posted.status === 'live' ? 'up' : 'review')
+      return
+    }
+    setWhy(posted && posted.error ? String(posted.error) : 'network')
+    setState('failed')
+  }
+
+  // What the server answered: the page it lands on, and for a letter this
+  // browser is holding, the letter put up.
   const settle = async (out) => {
     if (!alive.current) return
     if (!out.ok) {
       setPurpose(out.purpose || '')
-      if (out.error === 'match') { setState('number'); return }
       setWhy(out.error)
       setState('bad')
       return
@@ -129,38 +188,27 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     await refresh()
     if (!alive.current) return
     if (out.purpose === 'alerts') { setState('alerts'); return }
-    if (out.purpose === 'login') { setHere(out.sameDevice); setState('in'); return }
-    const d = heldDraft()
-    if (!d) { setState('elsewhere'); return }
-    setState('posting')
-    const posted = await postDraft(d)
-    if (!alive.current) return
-    if (posted && posted.ok && (posted.status === 'live' || posted.status === 'pending')) {
-      setId(posted.id || '')
-      setState(posted.status === 'live' ? 'up' : 'review')
+    if (out.purpose === 'login') { setSame(out.sameDevice); setState('in'); return }
+    if (!out.sameDevice) {
+      const d = carriedDraft(out.carry)
+      if (d) { setCarried(d); setState('carried'); return }
+      if (out.carry && out.carry.reply) { setReplyTo(out.carry.reply.letter); setState('reply'); return }
+      setState('here')
       return
     }
-    setWhy(posted && posted.error ? String(posted.error) : 'network')
-    setState('failed')
+    const d = heldDraft()
+    if (!d) { setState('onward'); return }
+    post(d, false)
   }
 
+  // once per token: the answer is spent (`spend`), and `settle` is this
+  // render's, which is the one that asked
   useEffect(() => {
     if (!token) return undefined
     let on = true
     spend(token).then((out) => { if (on) settle(out) })
     return () => { on = false }
-  }, [token])
-
-  // The number, typed. Two digits or nothing is sent: the key waits for the
-  // second, so a slip of one digit is never a guess that burns the link.
-  const check = async () => {
-    if (trying || n.length !== 2) return
-    setTrying(true)
-    const out = await confirmLink({ token, session: sessionToken(), match: n })
-    if (!alive.current) return
-    setTrying(false)
-    settle(out)
-  }
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // the letter, opened, a beat after it is said to be up
   useEffect(() => {
@@ -171,6 +219,14 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
 
   const wall = () => { if (toWall) toWall(); go('wall') }
   const toLetter = () => { if (toWall) toWall(); go('write') }
+  // The carried letter, into this browser's composer to be changed before
+  // it goes, on the person it is to.
+  const change = () => {
+    const p = draftPost(carried)
+    patch({ draft: carried })
+    if (toWall) toWall()
+    go('write', p ? p.key : undefined)
+  }
   // A sign in link that did not work, and the door again, which lands on
   // the wall once it opens rather than back on this page.
   const again = () => { setAfterGate({ name: 'wall' }); go('gate') }
@@ -183,21 +239,6 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
   if (state === 'checking' || state === 'posting') {
     title = <>one moment.</>
     say = <span className="wl-verify-wait"><Wait />{state === 'checking' ? 'checking the link' : 'putting your letter up'}</span>
-  } else if (state === 'number') {
-    title = <>type your<br />number.</>
-    say = 'type the number on the screen where you asked for this link. if you didn’t ask for one, close this page.'
-    ways = (
-      <CodeBox
-        value={n} onChange={setN} onSubmit={check} length={2} autoFocus
-        label="the number on the screen where you asked"
-      />
-    )
-    act = (
-      <Pill tone="light" wide onClick={check} disabled={trying || n.length !== 2} aria-busy={trying || undefined}>
-        {trying ? 'checking' : 'confirm'}
-      </Pill>
-    )
-    quiet = <button type="button" className="wl-quiet" onClick={up}>close</button>
   } else if (state === 'up') {
     title = <>confirmed. your<br />letter is up.</>
     say = 'it’s on the wall marked from Berkeley, and nobody sees who wrote it.'
@@ -207,15 +248,29 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     title = <>confirmed. it&rsquo;s<br />being read.</>
     say = 'it goes up once it passes.'
     act = <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
-  } else if (state === 'elsewhere') {
+  } else if (state === 'carried') {
+    const p = draftPost(carried)
+    title = <>confirmed. here&rsquo;s<br />your letter.</>
+    say = `${p && p.kind === 'handle' ? `to ${atHandle(p.handle)}. ` : ''}it goes up ${p && p.proof === 'edu' ? 'marked from Berkeley' : 'on the wall'}, and nobody sees who wrote it.`
+    ways = <Carried d={carried} />
+    act = <Pill tone="light" wide onClick={() => post(carried, true)}>post it</Pill>
+    quiet = <button type="button" className="wl-quiet" onClick={change}>change it first</button>
+  } else if (state === 'reply') {
+    title = <>confirmed. you can<br />reply from here.</>
+    say = 'your school address is confirmed on this phone or computer.'
+    act = <Pill tone="light" wide onClick={() => { if (toWall) toWall(); go('letter', replyTo) }}>open the letter</Pill>
+    quiet = <button type="button" className="wl-quiet" onClick={wall}>back to the wall</button>
+  } else if (state === 'here') {
+    title = <>confirmed here.</>
+    say = 'you’re confirmed on this phone or computer, not on the one where you asked for the link.'
+    act = <Pill tone="light" wide onClick={wall}>go to the wall</Pill>
+  } else if (state === 'onward') {
     title = <>confirmed.</>
     say = 'go back to where you asked for the link. it carries on there.'
     act = <Pill tone="light" wide onClick={wall}>go to the wall</Pill>
   } else if (state === 'in') {
     title = <>you&rsquo;re in.</>
-    say = here
-      ? 'you’re signed in on this device.'
-      : 'you’re signed in here, and on the screen where you asked for the link.'
+    say = same ? 'you’re signed in on this device.' : 'you’re signed in here, on this phone or computer.'
     act = <Pill tone="light" wide onClick={wall}>go to the wall</Pill>
     quiet = <button type="button" className="wl-quiet" onClick={() => { if (toWall) toWall(); go('you') }}>your private notes</button>
   } else if (state === 'alerts') {
@@ -233,20 +288,22 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     const held = heldDraft()
     title = why === 'used' ? <>that link has<br />been used.</>
       : why === 'expired' ? <>that link has<br />run out.</>
-      : why === 'mismatch' ? <>that number<br />didn&rsquo;t match.</>
+      : why === 'match' ? <>open it where<br />you asked.</>
       : why === 'offline' ? <>we couldn&rsquo;t<br />check it.</>
       : why === 'taken' ? <>that address is<br />already in use.</>
       : <>that link<br />doesn&rsquo;t work.</>
     const next = held ? 'ask for a new one where you wrote your letter.'
       : purpose === 'alerts' ? 'ask for a new one from your account.'
       : 'ask for a new one where you asked for this one.'
+    // 'match' is a function from before 0070, which confirms a link opened
+    // in another browser only with a number nothing shows any more
     say = why === 'offline' ? 'we could not reach the server. try the link again in a moment.'
       : why === 'taken' ? 'that school email is already confirmed on another account. sign in there, or use a different address.'
-      : why === 'mismatch' ? `so the link has stopped working, and nobody can try another. ${next}`
+      : why === 'match' ? 'this link works in the browser where you asked for it. open the mail there, or ask for a new link here.'
       : `a link works once, for thirty minutes. ${next}`
-    // The one next step, lit: the letter this device is holding; the
+    // The one next step, lit: the letter this browser is holding; the
     // account, for an alerts link; the door again, for a sign in (or a
-    // link the server could not name), unless this device is already in.
+    // link the server could not name), unless this browser is already in.
     // The wall stays under it, quiet.
     if (held) {
       act = <Pill tone="light" wide onClick={toLetter}>back to your letter</Pill>
@@ -259,7 +316,7 @@ export default function Verify({ go, up, upLabel = 'back to the wall', toWall = 
     if (!act) act = <Pill tone="light" wide onClick={wall}>back to the wall</Pill>
   }
 
-  const won = state === 'up' || state === 'review' || state === 'elsewhere'
+  const won = state === 'up' || state === 'review' || state === 'onward' || state === 'reply' || state === 'here'
   return (
     <Sheet onClose={up} tall labelledBy="wl-verify-h">
       <div className="wl-sheet-in wl-gate is-door wl-verify">

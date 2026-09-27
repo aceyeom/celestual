@@ -197,39 +197,40 @@ campus link, Google, the login link), so a thirty-day proof minted from it
 gives nothing the session did not already hold. `celestual_user_bind_handle`,
 the one writer of `handle_verified_at`, is untouched.
 
-### §link — The mailed link, and the number that is typed (0064, 0065)
+### §link — The mailed link, which signs in only the browser that opens it (0064, 0065, 0070)
 Three things are proved by one mailed link (`celestual-edu-verify`,
 docs/EDU-VERIFICATION.md): a campus address, an alert address, and since 0065
-a login, for any address, which signs the device in as whoever holds the
+a login, for any address, which signs a browser in as whoever holds the
 address. The token is 32 random bytes, in the URL's fragment, stored only as
 its SHA-256, single-use and thirty minutes long, and the sessions on either
 end are stored as hashes. What a link can do is what the address can do, and
 with `login` on every address that is every account.
 
-**The number is the defence against a link somebody did not ask for.** The
-attack is plain: type somebody's address into the door on your own phone, get
-them to tap the link that arrives ("is this you?"), and your phone is signed in
-as them, with their @, their private notes and their alerts. It used to be
-answered by a number from 10 to 99 shown on the asking screen and printed in
-the mail, so a careful person could see that the mail's number was not on
-their screen and ignore it. That protected the careful and nobody else. Since
-0065 the number is on the asking screen and nowhere else, and the mail says
-only that on another device the link will ask for it. A link opened on the
-device that asked (the same session hash) confirms at once. Opened on any
-other, it confirms nothing until the number is typed there: none answers
-`match` and spends nothing, a wrong one marks the link `refused` and runs it
-out for good. The person the attack depends on never asked, has no screen to
-read a number off, and is told by the page to close it; a number typed anyway
-has one chance in ninety, once a link, five links an address an hour. What it
-does not stop is a person talked into typing a number somebody sent them with
-the link, which is why the page says in so many words to close it if they did
-not ask for one. A resend from the
-same screen carries the pending link's number, so the person who did ask is
-never made to burn their own link by typing the number the screen shows into
-the older mail. The function deployed before 0065 calls a two-argument
-confirm that is the same check with no number, so it fails closed: across
-devices it asks, and never confirms, until the function that passes the
-number ships.
+**The link signs in the browser that opened it, and no other.** The attack is
+plain: type somebody's address into the door on your own phone, get them to
+tap the link that arrives ("is this you?"), and, if the link signs in the
+browser that ASKED, your phone is signed in as them, with their @, their
+private notes and their alerts. 0064 answered it with a number printed in the
+mail and on the asking screen, which protected the careful and nobody else.
+0065 kept the number on the asking screen only and made a link opened on any
+other device wait for it to be typed there; nearly everybody arrives from
+Instagram's in-app browser and reads the mail in another, so nearly everybody
+was asked. Since 0070 there is no number: a link confirms at once for the
+browser that opened it (`confirmed_session_hash`), and the asking browser is
+signed in only when it is that same browser. The victim's tap signs in the
+victim's own browser, as themselves; the stranger's browser is told
+`elsewhere` and holds nothing. An alerts link still confirms the asking
+account's address wherever it is opened: the most a stranger gets from that
+is their own alerts mailed to an inbox that can stop them in one tap.
+
+**A carried letter is shown, never posted, on the tap.** A campus link can
+carry the waiting draft to the browser that opens it (0070 `carry`), since
+that browser, not the one that asked, is the one proved. It is handed over
+once, cleared when used or run out, service role only on the row, and it goes
+up only on a press of `post it` on /verify, after it is shown: somebody who
+only tapped a link they never asked for never has a stranger's letter posted
+under their address. It posts with the draft's own nonce, so it is one letter
+wherever it goes up from.
 
 ### §ident — Multi-account identity
 A person can link up to 3 of their own @s (`celestual_link`); matching and the
@@ -374,7 +375,8 @@ load-bearing legally (FTC v. NGL) and is pre-committed here in writing. The
 transactional mails — the `.edu` join code and the sign-back-in magic link —
 speak only to the recipient about their own action and name no one else. So
 does the one mailed link that has replaced them (§link: a campus address, an
-alert address, a login), which since 0065 carries no number either.
+alert address, a login), which since 0065 carries no number either, and since
+0070 asks for none.
 
 ### §age — Adults
 The landing states the 18+ condition on the primary action; marketing is
@@ -448,9 +450,8 @@ pages. If the doc viewer is ever removed, put this back to `'none'`.
   Google account, and gets their @'s proof back from the session (§verify).
   This is the same magic-link tradeoff, now on every account rather than on a
   recovery path. What bounds it is §link: the link is single-use, thirty
-  minutes, hash-only at rest, and confirms on another device only with the
-  number off the asking screen, so a link its owner never asked for signs
-  nobody in.
+  minutes, hash-only at rest, and signs in only the browser that opened it
+  (0070), so a link its owner never asked for signs in nobody but its owner.
 - **The identity router answers "is this @ registered?" (0015)** —
   `celestual_handle_route` tells the caller whether a handle is known, which is
   how the sign-in screen stopped hedging in print. This discloses nothing new:

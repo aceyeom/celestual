@@ -2,8 +2,9 @@
 //
 // The mechanism: placePing records a one-way ping at @them. It resolves ONLY
 // if they independently ping you back, and then both of you learn at the same
-// instant. Two standing pings; each stands sixty days unless renewed; letting
-// one go frees the slot. Matching and suppression run on salted hashes, and
+// moment: the weekly reveal, Saturday at nine at night in California (0069).
+// Two standing pings; each runs to its week's reveal and can be kept for the
+// next; letting one go frees the slot. Matching and suppression run on salted hashes, and
 // since migration 0010 the server also keeps the normalised target so the
 // owner's pings restore BY NAME on any device they verify on.
 //
@@ -26,7 +27,9 @@ export function normHandle(h) {
 }
 
 export const SLOT_CAP = 2;
-export const PING_DAYS = 60;
+// A week: a note runs to its week's reveal (0069). What stands in for the
+// server's end when there is no backend is a week out, near enough.
+export const PING_DAYS = 7;
 
 const iso = (ms) => new Date(ms).toISOString();
 
@@ -84,6 +87,10 @@ export async function fetchMyPings({ handle, proof } = {}) {
         time: Number(p.time) || Date.now(),
         expires_at: p.expires_at || null,
         mutual: !!p.mutual,
+        // since 0069: a note that lapsed at a reveal, listed for a week after
+        // it, and the night a mutual was told
+        lapsed: !!p.lapsed,
+        revealed_at: p.revealed_at || null,
         card: p.card || null,
         theirCard: p.their_card || null,
         // The resolver's answer for the handle, when it has one (0042), so
@@ -99,9 +106,10 @@ export async function fetchMyPings({ handle, proof } = {}) {
   }
 }
 
-// One tap keeps a ping standing another sixty days. Free, unlimited. Answers
-// { ok, expires_at }; `ok` is the row count, and a ping that just went mutual
-// or was let go elsewhere answers ok:false.
+// One tap keeps a note for the week after its own, once ahead (0069). Free.
+// Answers { ok, expires_at }, or { ok:false, error } where 'lapsed' is a
+// note whose reveal has passed (it is sent again instead, placePing) and
+// 'none' is one that went mutual or was let go elsewhere.
 export async function renewPing({ me, them, proof }) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
@@ -117,8 +125,9 @@ export async function renewPing({ me, them, proof }) {
 }
 
 // "Let it go" — retire a ping. This frees the slot; nothing was ever revealed.
-// Owner-gated by the DM proof since 0036, and since 0038 the other side of a
-// mutual goes back to standing rather than staying matched to nobody.
+// Owner-gated by the DM proof since 0036. Since 0069 a mutual is not let go
+// at all: it has been told to both at its reveal, and the answer is
+// { withdrawn:false, error:'mutual' }, with nothing changed.
 export async function retirePing({ me, them, proof }) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));

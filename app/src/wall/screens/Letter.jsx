@@ -111,13 +111,13 @@
 // line, or the resolver's first name for the @, or, with neither, "dear you",
 // which is who a letter is to.
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
   Sheet, SheetFoot, Close, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
-import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf, quirks } from '../looks.js'
+import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf, skinVars, quirks } from '../looks.js'
 import { stripMoving, idle, unidle } from '../strip.js'
 import { shareLetter, prepareLetter, letterFace, canShare, isReady } from '../share.js'
 import {
@@ -132,7 +132,7 @@ import { isReader, toWrite } from '../auth.js'
 import { letterMarks } from '../schools.js'
 import { Nudge, useNudge } from '../Nudge.jsx'
 import { openForAlerts } from './You.jsx'
-import { useThread, Chin, Slide } from '../Replies.jsx'
+import { useThread, threadKey, Slide } from '../Replies.jsx'
 
 // ── the name on the screen ──────────────────────────────────────────────────
 // The top row carries who the letter is for the way a phone carried the
@@ -340,32 +340,46 @@ function Cell({ side = 0, fresh = false, arrived = false, reduce = false, childr
 
 // ── one phone ───────────────────────────────────────────────────────────────
 // Every screen on the strip is a slider phone (`.wl-set`): the upper half,
-// which is the screen and the unlit chin fixed to its foot, and on the card
-// the lower half, the thread, tucked behind the upper until it is slid out
-// (Replies.jsx `Chin`, `Slide`). The phone lies on the table at its own
-// angle, and the whole of it turns as one body: the angle is on this box and
-// not on the screen, so the chin and the thread are in the screen's plane
-// by construction and nothing between them ever opens into a wedge. The
-// neighbours are the same phone with only their ridges on the chin, and the
-// thread is asked for by the card alone (`useThread` is given no letter
-// anywhere else). Kept the same element whichever side it stands on, so the
-// neighbour that lands IS the card, and its thread is read as it lands.
+// which is the screen, and on the card the lower half, the thread, tucked
+// behind the upper until it is slid out (Replies.jsx `Slide`) by the
+// screen's own right soft key (Replies.jsx `threadKey`, handed to the screen
+// through `ThreadKey`). The phone lies on the table at its own angle, and
+// the whole of it turns as one body: the angle is on this box and not on
+// the screen, so the thread is in the screen's plane by construction and
+// nothing between them ever opens into a wedge. The lower half is lit in the
+// letter's own colours (looks.js `skinVars`, set here so both halves read
+// the same ones), the same glass as the screen above it. The neighbours are
+// the same phone with no count on the key, and the thread is asked for by
+// the card alone (`useThread` is given no letter anywhere else). Kept the
+// same element whichever side it stands on, so the neighbour that lands IS
+// the card, and its thread is read as it lands.
+const ThreadKey = createContext(null)
 function Handset({ l, seed, live = false, open = false, onToggle, onClose, reduce = false, go, children }) {
   const q = quirks(seed)
   const th = useThread(live && l && l.body != null ? l : null)
   const on = live && !!l && th.on
-  const chin = live && l ? `wl-chin-${l.id}` : undefined
+  const keyId = live && l ? `wl-thread-${l.id}` : undefined
   const rad = parseFloat(q.vars['--q-rad']) || 1.2
+  const look = l ? l.look : null
+  const skin = useMemo(() => {
+    if (!on) return null
+    const colour = colourOf(look, seed)
+    const s = skinOf(colour)
+    return { kind: s.kind, vars: { ...skinVars(colour, !!s.print), '--q-pitch': q.vars['--q-pitch'], '--q-hx': q.vars['--q-hx'] } }
+  }, [on, look, seed]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ctx = useMemo(
+    () => ({ th: live ? th : null, open, onToggle, keyId, letter: live ? l : null }),
+    [live, th, open, onToggle, keyId, l],
+  )
   return (
     <div
-      className={`wl-set${on ? ' has-thread' : ''}`}
-      style={{ '--q-rz': q.vars['--q-rz'], '--set-rad': `calc(var(--scene-w) * ${(rad / 100).toFixed(4)})` }}
+      className={`wl-set${on ? ' has-thread' : ''}`} data-kind={skin ? skin.kind : undefined}
+      style={{ '--q-rz': q.vars['--q-rz'], '--set-rad': `calc(var(--scene-w) * ${(rad / 100).toFixed(4)})`, ...(skin ? skin.vars : null) }}
     >
       <div className="wl-set-up">
-        {children}
-        <Chin letter={live ? l : null} th={live ? th : null} open={open} onToggle={onToggle} id={chin} />
+        <ThreadKey.Provider value={ctx}>{children}</ThreadKey.Provider>
       </div>
-      {on ? <Slide letter={l} th={th} open={open} reduce={reduce} go={go} onClose={onClose} labelId={chin} /> : null}
+      {on ? <Slide letter={l} th={th} open={open} reduce={reduce} go={go} onClose={onClose} /> : null}
     </div>
   )
 }
@@ -441,6 +455,7 @@ function removedFace(r) {
 function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, woke = '', onRemove = null }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
+  const hs = useContext(ThreadKey)
   const [busy, setBusy] = useState(false)
   const [, drawn] = useState(0)
   const at = view || { kind: 'letter' }
@@ -478,6 +493,11 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
 
   const text = l.body || ''
   const hearts = l.hearts || 0
+  // the count on the key, in whole thousands past a thousand, as a phone
+  // counted, so it is never more than three figures, and three set a step
+  // smaller (screen.css `.is-long`): it keeps to the middle of the band
+  // between `options` and `replies`. "9.9k" was four, and ran into the word
+  const heartsSaid = hearts < 1000 ? String(hearts) : `${Math.min(999, Math.floor(hearts / 1000))}k`
 
   // Anybody's since 0068 (likes are open to everybody): the press goes
   // straight to the server, which keeps one heart per device, and never to
@@ -503,15 +523,21 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
      rows, "this is about me" beside "take my name off", a claim beside a DM
      that ends in something permanent. */
   const toAt = !isNameKey(l.to)
-  const optionItems = l.mine && onRemove ? [
+  // The right key is the thread's (Replies.jsx `threadKey`), and sharing is
+  // the first row of the options, where a phone put what it did with the
+  // thing on its screen. A letter whose thread cannot be read keeps `share`
+  // on the key, as every letter had it, and the options without it.
+  const tk = hs ? threadKey(hs.th, { open: hs.open, onToggle: hs.onToggle, id: hs.keyId, letter: hs.letter }) : null
+  const face = () => letterFace(l, { name: toName })
+  const openShare = () => { prepareLetter(face()); onView({ kind: 'share', at: 0 }) }
+  const optionItems = [...(tk ? [{ t: 'share', run: openShare }] : []), ...(l.mine && onRemove ? [
     { t: 'remove this letter', run: () => onRemove(l) },
     ...(toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
   ] : [
     { t: `write to ${first || 'them'}`, run: () => toWrite(go, l.to) },
     { t: 'report this letter', run: () => go('report', l.id) },
     ...(toAt ? [{ t: 'this is about me', run: () => go('claim', l.to) }] : []),
-  ]
-  const face = () => letterFace(l, { name: toName })
+  ])]
   // Under a menu titled `share`, the row that opens the phone's own share
   // sheet says where it goes rather than `share` a second time
   const shareItems = [
@@ -611,12 +637,13 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
          (data.js `heart`), and a key that dimmed until the server answered
          read as a press that had not taken, and let go of the focus */
       c: {
-        glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? String(hearts) : '',
+        glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? heartsSaid : '',
+        cls: heartsSaid.length > 2 ? 'is-long' : undefined,
         onClick: pressHeart, on: l.hearted,
         pressed: !!l.hearted,
         aria: `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
       },
-      r: { label: 'share', onClick: () => { prepareLetter(face()); onView({ kind: 'share', at: 0 }) }, aria: 'share this letter, save its picture, or copy its link' },
+      r: tk || { label: 'share', onClick: openShare, aria: 'share this letter, save its picture, or copy its link' },
     }
   }
   return (
@@ -1504,8 +1531,8 @@ export default function Letter({
     const set = liveSet()
     const a = document.activeElement
     if (set && a && a.closest && a.closest('.wl-low')) {
-      const chin = set.querySelector('.wl-chin')
-      if (chin && chin.focus) chin.focus({ preventScroll: true })
+      const key = set.querySelector('.wl-sk.is-thread')
+      if (key && key.focus) key.focus({ preventScroll: true })
       else if (a.blur) a.blur()
     }
     if (!canSlide()) { flushSync(() => setThread(false)); threadRef.current = false; return }
@@ -1521,13 +1548,18 @@ export default function Letter({
     else openThread('press')
   }
   // Escape shuts the phone before it closes the sheet, and inside the
-  // lower half it goes back a step first (the terms, the school's door)
+  // lower half it goes back a step first (the terms, the school's door).
+  // Shut from the keyboard, the focus goes to the key even when what had it
+  // has already gone from the page (a reply reported, folded under its flag)
   const onEscape = () => {
     if (!threadRef.current) return false
     const set = liveSet()
     const back = set && set.querySelector(':scope > .wl-low:not(.is-read) .wl-low-sk.is-r')
-    if (back) back.click()
-    else shutThread()
+    if (back) { back.click(); return true }
+    const a = document.activeElement
+    const key = set && (!a || a === document.body) ? set.querySelector('.wl-sk.is-thread') : null
+    if (key) key.focus({ preventScroll: true })
+    shutThread()
     return true
   }
   // While it is open the window can change under it (a phone turned, a

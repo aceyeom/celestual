@@ -304,13 +304,27 @@ function bitAt(b, t) {
 // the star gathers out from where they hold each other and the ring from
 // the left, and every pixel is between the cells while it travels and on
 // one when it lands.
-const I_RING_SPREAD = 240
-const I_RING_FLIGHT = 560
-const I_STAR_AT = 90
-const I_STAR_SPREAD = 170
-const I_STAR_FLIGHT = 560
+//
+// ── the pace ──
+// How long the pink takes to reach the last corner (`wash`), how far into
+// it the two of them start to glide (`glide`), and the glide's own moments:
+// the ground leaving over `ring` from left to right, its far half `lag`
+// after its near half, and the star opening from `starAt`, over `star`, out
+// from where they hold each other; each pixel `flight` on its way. `TOLD`
+// is the door's and the mutual's, where the pink goes most of the way out
+// before the mark begins to gather. The intro has its own (`I_QUICK`).
+const TOLD = { wash: 1500, glide: 950, ring: 240, lag: 60, starAt: 90, star: 170, flight: 560 }
+const morphMs = (p) => Math.max(p.ring + p.lag + p.flight, p.starAt + p.star + p.flight)
+export const I_MORPH_MS = morphMs(TOLD)
+// The intro's: the glide starts on the frame they hold each other, while the
+// pink is still leaving them, and is two thirds of the time, so the two of
+// them going into the star and the pink going out from them are one
+// movement. The owner saw the pink reach the edges, then a pause, then the
+// mark begin to form, and asked for the two at once and the morph faster.
+// The pink is a little quicker as well, so it reaches the last corner while
+// the mark is still settling, and not a second after it.
+export const I_QUICK = { wash: 1100, glide: 80, ring: 150, lag: 40, starAt: 40, star: 110, flight: 400 }
 const I_BEND = 3
-export const I_MORPH_MS = Math.max(I_RING_SPREAD + 60 + I_RING_FLIGHT, I_STAR_AT + I_STAR_SPREAD + I_STAR_FLIGHT)
 // the intro's mark is cut as the seal is, sampled six to a cell's side and
 // not eight: on seventy seven cells that is the same drawing, in half the time
 const I_CUT = { ...MARK_CUT, ss: 6 }
@@ -444,8 +458,8 @@ function* transport(from, to, rounds = 24) {
   return out
 }
 // the whole glide, worked out in steps as `transport` is: the mark
-// rasterised in the first
-function* glideOf(pair, dashes, n, ox, oy, cols, hug) {
+// rasterised in the first. `pace` is the glide's moments (`TOLD`, `I_QUICK`)
+function* glideOf(pair, dashes, n, ox, oy, cols, hug, pace = TOLD) {
   const m = markOn(n, ox, oy, I_CUT)
   yield
   const bits = []
@@ -461,7 +475,7 @@ function* glideOf(pair, dashes, n, ox, oy, cols, hug) {
   const line = [...dashes].sort((p, q) => p[0] - q[0])
   for (const near of [true, false]) {
     const arc = m.ring.filter((p) => p.near === near).sort((p, q) => p.u - q.u)
-    for (const [s, d] of pairs(line, arc)) bits.push(bit(s, d.x, d.y, (s[0] / cols) * I_RING_SPREAD + (near ? 0 : 60), I_RING_FLIGHT))
+    for (const [s, d] of pairs(line, arc)) bits.push(bit(s, d.x, d.y, (s[0] / cols) * pace.ring + (near ? 0 : pace.lag), pace.flight))
   }
   yield
   // the faintest of their outline cells are let go of first: they are the
@@ -490,18 +504,18 @@ function* glideOf(pair, dashes, n, ox, oy, cols, hug) {
   const far = Math.max(...src.map(from))
   both.forEach(([s], i) => {
     const d = both[to[i]][1]
-    const b = bit(s, d[0], d[1], I_STAR_AT + (from(s) / far) * I_STAR_SPREAD, I_STAR_FLIGHT)
+    const b = bit(s, d[0], d[1], pace.starAt + (from(s) / far) * pace.star, pace.flight)
     // (theirs, and not the ground's: set along with them, `shiftFor`)
     b.pair = true
     bits.push(b)
   })
   const faint = pair.filter((c) => (c[4] ?? 1) < 0.2)
-  return { bits, faint, done: m.all }
+  return { bits, faint, done: m.all, ms: morphMs(pace) }
 }
 // the glide at `t`, the two of them leaving from `dx` cells along (and
 // landing where the mark is, wherever they left from)
 function glideAt(m, t, dx = 0) {
-  if (t >= I_MORPH_MS) return m.done
+  if (t >= m.ms) return m.done
   const out = []
   for (const b of m.bits) {
     const k = (t - b.delay) / b.flight
@@ -544,6 +558,11 @@ function glideAt(m, t, dx = 0) {
 //   2310   THE MARK: the two of them into the star and the ground into the
 //          ring, gliding, while the last of the glass turns; whole at 3170
 //
+// That is the door's and the mutual's pace (`TOLD`). The intro's is quicker
+// (`I_QUICK`): the glide starts at 1440, on the frame they hold each other,
+// as the pink leaves them, and is whole at 2030, with the pink at the last
+// corner at 2460.
+//
 // They used to be on the glass from the story's first frame, and a screen
 // that was still coming on had them on it before it was lit: nobody saw
 // them come in. The owner asked for both of them to start out of the frame
@@ -552,7 +571,14 @@ function glideAt(m, t, dx = 0) {
 // mutual's `R_EMPTY`).
 //
 // `panel` is the rose letter's three panel colours and `ink` the night's
-// ink and the rose's, which the pink carries the one to the other.
+// ink and the rose's, which the pink carries the one to the other; the
+// intro hands in another letter's for the pink, the one it drew for this
+// load (Intro.jsx `TINTS`). `front` is the lighter colour a block of the
+// panel flashes as it turns, as the three numbers of an rgb, and
+// `spectrum` is a list of panels, from where they hold each other out to
+// the farthest corner, for a pink that is every colour at once
+// (PixelStory.jsx `pinkOf`). `pace` is the pink's and the glide's
+// (`TOLD`, `I_QUICK`).
 //
 // ── the intro's own clock ──
 // Nought is the first frame the page can paint (Intro.jsx): the screen
@@ -652,8 +678,6 @@ const I_GROUND = 67
 // grid's first and last rows
 const I_MARK = 77
 const I_WASH_AT = -80
-const I_WASH_MS = 1500
-const I_GLIDE_AT = 950
 // how long a frame of the run may spend working out the glide ahead, and a
 // frame of the empty glass, where nothing on it moves
 const I_PREP_MS = 3
@@ -677,7 +701,8 @@ function groundAt(row, cols) {
 // lobes, with blocks going over ahead of it and islands left behind for a
 // moment, and never as a circle. It steps, twenty five times a second, the
 // way a phone's panel redrew, and it takes its time: a second and a half to
-// the last corner, quick where it starts and slowing as it fills.
+// the last corner on the door and the mutual, a little over one on the
+// intro (`pace.wash`), quick where it starts and slowing as it fills.
 //
 // A frame's `wash` is where it leaves from and `p`, how far the front is
 // through the glass, 0 to 1, with the fronts of the two steps before
@@ -686,13 +711,14 @@ function groundAt(row, cols) {
 const WASH_STEP = 40
 const WASH_EASE = 1.6
 const washP = (k) => 1 - (1 - Math.max(0, Math.min(1, k))) ** WASH_EASE
-// the moment the front is `f` through the glass, on the wash's own clock
-const washAtP = (f) => I_WASH_MS * (1 - (1 - f) ** (1 / WASH_EASE))
-function washFrom(u, x, y) {
+// the moment the front is `f` through the glass, on the wash's own clock,
+// for a wash `ms` long
+const washAtP = (f, ms = TOLD.wash) => ms * (1 - (1 - f) ** (1 / WASH_EASE))
+function washFrom(u, x, y, ms = TOLD.wash) {
   if (u < 0) return null
-  if (u >= I_WASH_MS) return { x, y, p: null }
+  if (u >= ms) return { x, y, p: null }
   const i = Math.floor(u / WASH_STEP)
-  const at = (n) => washP((n * WASH_STEP) / I_WASH_MS)
+  const at = (n) => washP((n * WASH_STEP) / ms)
   return { x, y, p: at(i + 1), p1: at(i), p2: at(i - 1), step: i }
 }
 // How far through the glass the front is when it reaches the top band and
@@ -707,23 +733,23 @@ function mixHex(a, b, k) {
   const B = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16))
   return `#${A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
 }
-export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null } = {}) {
+export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null, pace = TOLD, front = null, spectrum = null } = {}) {
   // the two of them: the intro's run, or a story's own way to the same hold
   // (the door's, `joinStory`), which answers the same `at`, `times`, `pair`
   // and `hug`
   const folk = given || introFolk({ ground: I_GROUND, mid: (I_COLS - 1) >> 1 })
   const floor = groundAt(I_GROUND, I_COLS)
   const washAt = start + folk.times.hold + I_WASH_AT
-  const morphs = washAt + I_GLIDE_AT
-  const done = morphs + I_MORPH_MS
-  const end = Math.max(done, washAt + I_WASH_MS)
+  const morphs = washAt + pace.glide
+  const done = morphs + morphMs(pace)
+  const end = Math.max(done, washAt + pace.wash)
   const MX = (I_COLS - I_MARK) >> 1
   const MY = (I_ROWS - I_MARK) >> 1
   let morph = null
   // the ink, from the night's to the rose's as the pink goes out
   const inkAt = (u) => {
     if (!ink) return null
-    const k = Math.max(0, Math.min(1, u / (I_WASH_MS * 0.6)))
+    const k = Math.max(0, Math.min(1, u / (pace.wash * 0.6)))
     return k <= 0 ? ink[0] : k >= 1 ? ink[1] : mixHex(ink[0], ink[1], Math.round(k * 8) / 8)
   }
   // The glide is worked out ahead, and a little at a time. The heavy start
@@ -739,7 +765,7 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
     // (read in node, by the frame checks, there is no canvas to rasterise
     // the mark on, and nothing they ask for before the glide needs it)
     if (morph || typeof document === 'undefined') return
-    if (!prep) prep = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS, folk.hug)
+    if (!prep) prep = glideOf(folk.pair, floor, I_MARK, MX, MY, I_COLS, folk.hug, pace)
     const t0 = performance.now()
     do {
       const r = prep.next()
@@ -772,11 +798,11 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
     warm(t >= morphs ? Infinity : I_PREP_MS)
     const dx = shiftOf(edge)
     const u = t - washAt
-    const wash = washFrom(u, folk.hug.x + dx, folk.hug.y)
+    const wash = washFrom(u, folk.hug.x + dx, folk.hug.y, pace.wash)
     const wk = !wash ? '' : wash.p == null ? 'W' : `w${wash.step}`
     if (t >= morphs) {
       const mt = t - morphs
-      return { key: `m${mt >= I_MORPH_MS ? 'done' : `${Math.round(mt)}|${dx}`}|${wk}`, cells: glideAt(morph, mt, dx), wash, ink: inkAt(u) }
+      return { key: `m${mt >= morph.ms ? 'done' : `${Math.round(mt)}|${dx}`}|${wk}`, cells: glideAt(morph, mt, dx), wash, ink: inkAt(u) }
     }
     const f = folk.at(t - start)
     const them = dx ? f.cells.map((c) => [c[0] + dx, c[1], c[2], c[3], c[4]]) : f.cells
@@ -784,7 +810,7 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
   }
   const T = folk.times
   return {
-    cols: I_COLS, rows: I_ROWS, end, panel, fine: true,
+    cols: I_COLS, rows: I_ROWS, end, panel, front, spectrum, fine: true,
     times: {
       run: start + T.run, slow: start + T.slow, stop: start + T.stop, meet: start + T.meet, hold: start + T.hold,
       // the frame they come over the edges of a phone's glass
@@ -792,9 +818,9 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
       catch: start + T.meet, glow: washAt, morphs, done, end,
       // the front at the top band and at the bottom band, and the panel
       // all pink, for the phone's glass to turn with it
-      top: Math.round(washAt + washAtP(REACH.top)),
-      bottom: Math.round(washAt + washAtP(REACH.bottom)),
-      covered: washAt + I_WASH_MS,
+      top: Math.round(washAt + washAtP(REACH.top, pace.wash)),
+      bottom: Math.round(washAt + washAtP(REACH.bottom, pace.wash)),
+      covered: washAt + pace.wash,
     },
     frame,
     empty,

@@ -458,9 +458,12 @@ select ow_ok('a note of a letter''s length is placed',
          jsonb_build_object('words', (select words from ow_note)))->>'recorded')::boolean);
 create temp table ow_match as
   select celestual_submit('ow_ping_b', 'ow_ping_a', null, 'proof-ow-b', null) as r;
-select ow_ok('the other side hears it whole on the mutual',
-  ((select r from ow_match)->>'mutual')::boolean
-  and ((select r from ow_match)->'match_card'->>'words') = (select words from ow_note));
+-- since 0069 the pair is sealed until its reveal, which is brought forward
+select ow_ok('the pair is sealed, and the placement says nothing of it',
+  not ((select r from ow_match)->>'mutual')::boolean
+  and (select r from ow_match)->'match_card' = 'null'::jsonb);
+update celestual_entries set reveal_at = now() - interval '1 second' where sealed_with is not null;
+select celestual_reveal_due();
 select ow_ok('and reads it whole on their sky',
   exists (select 1 from jsonb_array_elements(celestual_my_pings('ow_ping_b', 'proof-ow-b')->'pings') x
            where x->>'handle' = 'ow_ping_a' and x->'their_card'->>'words' = (select words from ow_note)));

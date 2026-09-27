@@ -36,6 +36,61 @@ tier has no point in time recovery.
 
 ---
 
+## The weekly reveal: the deploy (migration 0069)
+
+The owner, 27 September: private notes expire every week, on Saturday night,
+California time, and that night everybody finds out whether theirs was
+mutual. A pair found during the week is sealed, and to both people it answers
+exactly as two unanswered notes would until the reveal
+(`supabase/migrations/0069_the_weekly_reveal.sql` says how, rule by rule).
+
+1. [ ] **Apply `0069_the_weekly_reveal.sql`.** Re-runnable. From this moment
+       a new note ends at the first Saturday 9pm Pacific a day or more away,
+       and a pair found is sealed until its reveal. Every note already out is
+       moved onto a Saturday end: the reveal at or after the end it had, and
+       no later than the second reveal from now, so an old sixty day note
+       ends within a fortnight; pairs already mutual stay mutual. Where pg_cron runs
+       it schedules `celestual-reveal` every five minutes, so the mutual mail
+       and DM go at 9pm; without it the reveal still happens, on the first
+       read after 9pm, and the mail goes then.
+2. [ ] **Ship the front end.** The countdown inside the private notes frame,
+       the aerial's states, the light on the account key after a reveal,
+       keeping a note for next week, changing its words and sending one again.
+3. [ ] **`supabase functions deploy celestual-remind`**, only if it is ever
+       scheduled: its lapse note speaks of the week now. It has never been
+       deployed (docs/deletions.md group D).
+
+Check: place two notes on each other from two accounts. Both lists say
+"reveals this saturday" and nothing more. In a SQL editor, bring the night
+forward (`update celestual_entries set reveal_at = now() where sealed_with is
+not null`) and read either list: it is mutual, and the mutual mail is queued.
+
+## The link is enough: the deploy (migration 0070)
+
+The owner, 27 September: no number on a mailed link. A link confirms at once
+for the browser that opened it, and signs in the browser that asked only when
+it is the same one (docs/EDU-VERIFICATION.md). One migration, one function,
+the front end. Any order works and none of them breaks a tab on the other two;
+this order has the fewest odd moments.
+
+1. [ ] **Apply `0070_the_link_is_enough.sql`.** Re-runnable. From this moment
+       every link confirms for the browser that opened it, whatever function
+       or page is live, and the asking screen of a live build that is not
+       the one that opened it reads the link as run out and offers another.
+       Where pg_cron runs it schedules `celestual-link-carry`, every ten
+       minutes.
+2. [ ] **`supabase functions deploy celestual-edu-verify`.** The carry, no
+       number, and the mail that says the link works wherever it is opened.
+       On a database before 0070 it falls back to the open with a number.
+3. [ ] **Ship the front end.** No number on any asking screen or on
+       `/verify`; `you opened it somewhere else.` on the asking screens; the
+       carried letter on `/verify` with `post it`.
+
+Check: ask for a sign in link in one browser and open it in another. The
+second is signed in; the first says it was opened somewhere else and is not.
+Write a letter, choose Berkeley, open the link in another browser: the letter
+is shown there, and `post it` puts it up once.
+
 ## The rulings of 26 September: the deploy (migrations 0065 to 0068)
 
 The owner's batch of 26 September (docs/ONE-WALL.md, "The rulings of 26
@@ -175,7 +230,7 @@ database goes first and the new front end ships last.
       | secret | value | why |
       | --- | --- | --- |
       | `CELESTUAL_FROM_EMAIL` | `celestual <hello@celestual.us>` | unset today, so every mail goes out from Resend's sandbox. The code's default is now this address too |
-      | `CELESTUAL_SITE_URL` | `https://celestual.us` | every link, the header image and the pixel face in a mail point here |
+      | `CELESTUAL_SITE_URL` | `https://celestual.us` | every link and every picture in a mail point here |
       | `RESEND_API_KEY` | the Resend key | confirm it is set |
       | `MODERATION_API_KEY` | an Anthropic key | **without it every name note waits for the desk** (`pending`, reason `unconfigured`): a name note is read before it is written. @-notes go up either way |
       | `CELESTUAL_UNSUB_MAILTO` | optional, default `hello@celestual.us` | where a mailto unsubscribe lands |
@@ -184,10 +239,18 @@ database goes first and the new front end ships last.
       DMARC record are still green in the Resend dashboard, and that
       `hello@celestual.us` receives mail: it is the From, the reply address and
       the mailto unsubscribe.
-- [ ] **The header image.** Every mail draws `https://celestual.us/mail/head.png`
-      (builder E, `app/public/mail/head.png`, 600px wide at 2x). It must be live
-      before the first alert goes, or the head of every mail is a broken image
-      with the word `celestual.` as its alt text.
+- [ ] **The mails' pictures.** Every mail is the phone (design/DESIGN.md 2.7):
+      it opens on a screen, `https://celestual.us/mail/<name>.gif`, and carries
+      its key and the lockup as pictures from the same folder
+      (`app/public/mail/`, made by `node scripts/export-mail.mjs`). They go
+      live with the site, and they must be live before the redeployed
+      functions send a mail, or every mail is its alt text: the line, the key's
+      word and the name, round the sentences. Then redeploy the three
+      functions that send mail, so they carry the new design:
+      `celestual-edu-verify`, `celestual-notify` (with `--no-verify-jwt`, as
+      always) and, if it is ever deployed, `celestual-remind`. `head.png`, the
+      strip the mails opened on before, stays in the folder for the mails
+      already in people's inboxes.
 
 ### The order
 

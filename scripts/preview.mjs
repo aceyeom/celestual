@@ -41,6 +41,22 @@ const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
 
 const DAY = 86400000
 const now = Date.now()
+// the next Saturday at nine at night in California, as the app works it out
+// (pings.js `nextReveal`): a winter guess, corrected by the clock there
+const NEXT_REVEAL = (() => {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23', weekday: 'short' })
+  const wall = (t) => Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, x.value]))
+  const w = wall(now)
+  const k = (6 - ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(w.weekday) + 7) % 7
+  const at = (d) => {
+    let t = Date.UTC(+w.year, +w.month - 1, d, 21 + 8)
+    const h = +wall(t).hour % 24
+    if (h !== 21) t -= (h - 21) * 3600000
+    return t
+  }
+  const t = at(+w.day + k)
+  return t > now ? t : at(+w.day + k + 7)
+})()
 
 // ── the fixtures ────────────────────────────────────────────────────────────
 // Names and lines invented; every field name is the one the schema carries.
@@ -240,6 +256,8 @@ let EMAIL = false
 // is waiting on has been tapped, and, for /verify, what `confirm` says.
 let LINKED = false
 let CONFIRM = null
+// whether the link the door is waiting on was opened in another browser (0070)
+let AWAY = false
 // A door that is anonymous until its link is tapped, and then the person
 // signed in by it (`EMAIL`): the whole walk, from the address to the notes.
 let TAPS = false
@@ -872,12 +890,13 @@ const RPC = {
     : { status: 'pending', handle: null, note: NOTE || null }),
   // 0023: the ping, placed. Standing, never announced as mutual here, and the
   // slots the server holds this person to, which the account sheet counts
-  // against. Or refused, with every slot already standing.
+  // against. Or refused, with every slot already standing. It ends at the
+  // first reveal a day or more away (0069 `celestual_note_ends`)
   celestual_submit: () => (FULL
     ? { recorded: false, error: 'no_slots', slots: { standing: 2, cap: 2 } }
     : {
       recorded: true, mutual: false, match: null, match_card: null, reachable: false,
-      expires_at: new Date(now + 60 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
+      expires_at: new Date(NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
     }),
   // The front door's notice reads this.
   wall_pulse: () => ({
@@ -930,24 +949,37 @@ const RPC = {
     }] : [],
   }),
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
+  // the week (0069): a mutual told at the last reveal, a note running to the
+  // next, and one that was not this time at the last
   celestual_my_pings: () => ({
     ok: true,
+    next_reveal: new Date(NEXT_REVEAL).toISOString(),
+    last_reveal: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
     pings: [
       {
         handle: 'jules.k',
-        time: now - 14 * DAY,
-        expires_at: new Date(now + 46 * DAY).toISOString(),
+        time: now - 9 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
         mutual: true,
+        revealed_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
         card: { words: 'i have wanted to say this since the second week of term.' },
         their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
         ...faceOf('jules.k'),
       },
       {
         handle: 'ren.tanaka',
-        time: now - 6 * DAY,
-        expires_at: new Date(now + 54 * DAY).toISOString(),
+        time: now - 2 * DAY,
+        expires_at: new Date(NEXT_REVEAL).toISOString(),
         mutual: false,
         card: { words: 'you were the one singing on the 51B that night.' },
+      },
+      {
+        handle: 'maya.okafor',
+        time: now - 11 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        mutual: false,
+        lapsed: true,
+        card: { words: 'the library steps, the day it hailed.' },
       },
     ],
   }),
@@ -1069,27 +1101,31 @@ async function fulfil(route) {
       ...(status === 'rejected' ? { say: "it can't go up as it's written.", reasons: ['pile'] } : {}),
     } })
   }
-  // The links (0064, 0065): mailed with the number the door shows, waited on
-  // until a route says the link was tapped, and confirmed on /verify with
-  // whatever the route says the confirm answered.
+  // The links (0064, 0065, 0070): mailed with no number since 0070, waited on
+  // until a route says the link was tapped here, or opened in another
+  // browser (`away`), and confirmed on /verify with whatever the route says
+  // the confirm answered, a carried letter included.
   if (url.includes('/functions/v1/celestual-edu-verify')) {
     const b = req.postData() ? JSON.parse(req.postData()) : {}
     const edu = /\.edu$/.test(String(b.email || ''))
     if (b.action === 'link') {
       return route.fulfill({ json: {
-        ok: true, request: 'preview-request', match: 47,
+        ok: true, request: 'preview-request',
         domain: edu ? 'berkeley.edu' : null, campus: edu ? 'berkeley' : null, school: edu ? 'UC Berkeley' : null,
       } })
     }
     if (b.action === 'status') {
       if (LINKED) TAPPED = true
-      return route.fulfill({ json: { ok: true, verified: LINKED, purpose: 'login', campus: null, school: null, expired: false } })
+      return route.fulfill({ json: {
+        ok: true, verified: LINKED && !AWAY, elsewhere: AWAY, purpose: 'login', campus: null, school: null, expired: AWAY,
+      } })
     }
     if (b.action === 'confirm') {
       const c = CONFIRM || { purpose: 'login', same: true }
       return route.fulfill({ json: {
         ok: c.ok !== false, error: c.error, purpose: c.purpose, request: 'preview-request',
         campus: c.campus || null, school: c.campus ? 'UC Berkeley' : null, same_device: !!c.same,
+        carry: c.carry || null,
       } })
     }
     return route.fulfill({ json: { ok: false, error: 'bad_input' } })
@@ -1123,12 +1159,16 @@ const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`o
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
 const ROUTES = [
-  // The intro, held on its last beat: the phone, and the mark in its pixels.
-  // Then held on the run and on the hug by the clock (Intro.jsx `?t=`), and
-  // the same last beat typed, for setting beside it (`?intro=ascii`).
+  // The intro, held on its last beat: the phone, and the mark in its pixels,
+  // in the rose, as a held frame always is. Then held on the run, on the hug
+  // and on the glide by the clock (Intro.jsx `?t=`), the last beat in the
+  // wheel the intro turns one load in nine (`?tint=rainbow`), and the same
+  // last beat typed, for setting beside it (`?intro=ascii`).
   { label: 'intro',         path: '/?beat=3' },
   { label: 'intro-run',     path: '/?t=1400' },
-  { label: 'intro-hug',     path: '/?t=2300' },
+  { label: 'intro-hug',     path: '/?t=2100' },
+  { label: 'intro-glide',   path: '/?t=2450' },
+  { label: 'intro-rainbow', path: '/?beat=3&tint=rainbow' },
   { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
   // ── the ping, on the wall ──
   // Raised over the Berkeley wall, from the tab, the bar and the foot, and
@@ -1186,11 +1226,11 @@ const ROUTES = [
   // nobody at all, which is the door.
   { label: 'you',           path: '/berkeley/you' },
   { label: 'you-bar',       path: '/berkeley', acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-memberbtn']], settle: 1400 },
-  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing']], settle: 1200 },
+  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing']], settle: 1200 },
   { label: 'you-options',   path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
   { label: 'you-let-go',    path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'you-unproved',  path: '/berkeley/you', verified: false },
   { label: 'you-door',      path: '/berkeley/you', anon: true },
@@ -1200,6 +1240,18 @@ const ROUTES = [
   { label: 'ping-done-still', path: '/berkeley/ping/pilar.echevarria', still: true,
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
   { label: 'you-still',     path: '/berkeley/you', still: true, settle: 900 },
+  // the night (0069): a reveal this device had notes in and has not seen,
+  // the bar's light, and the tab waking on it with the rows landing
+  { label: 'you-reveal-bar', path: '/', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, acts: [['click', '.wl-mast-go'], ['wait', 3400]], settle: 1600 },
+  { label: 'you-reveal',    path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
+  { label: 'you-revealed',  path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
+  { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed']], settle: 900 },
+  // the mutual under the pointer, on any visit and after the night has
+  // landed: the phone's inversion, chalk with everything on it black
+  { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+  { label: 'you-revealed-hover', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] },
+    acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+
   // the addresses Main used to draw, landing on the wall
   { label: 'legacy-sky',    path: '/sky' },
   { label: 'legacy-place',  path: '/place' },
@@ -1235,9 +1287,20 @@ const ROUTES = [
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
-  // the link tapped on another device while the door waits: it lands on the
+  // the link tapped in this browser while the door waits: it lands on the
   // person, with their @ and their private notes, and no DM asked for
   { label: 'home-gate-link-in', path: '/gate', anon: true, taps: true, linked: true, settle: 1600, acts: [
+    ['click', '[data-way="email"]'],
+    ['fill', '.wl-addr-in', 'ace@gmail.com'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
+    ['wait', 4500],
+    ['click', '.wl-mast-go'],
+    ['wait', 3400],
+    ['click', '.wl-memberbtn'],
+  ] },
+  // 0070: the link opened in another browser while the door waits: that
+  // browser is signed in, this one is not, and the door says so
+  { label: 'home-gate-link-away', path: '/gate', anon: true, taps: true, away: true, settle: 1600, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'ace@gmail.com'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
@@ -1253,6 +1316,12 @@ const ROUTES = [
   // the link, landed: on the device that asked, and on another one
   { label: 'verify-login',      path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: true } },
   { label: 'verify-login-away', path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: false } },
+  // 0070: a campus link opened in another browser, carrying the letter that
+  // was waiting on it, shown before it goes up
+  { label: 'verify-carry', path: '/verify#t=preview-token-preview-token', anon: true, confirm: {
+    purpose: 'edu', same: false, campus: 'berkeley',
+    carry: { letter: { kind: 'handle', to: 'sofiaaa.reyes', name: '', at: '', body: 'you held the door at moffitt and said good luck on the final. i did pass.', look: null, greet: null, school: 'berkeley', proof: 'edu', nonce: 'preview-nonce-0001' } },
+  } },
   { label: 'verify-login-used', path: '/verify#t=preview-token-preview-token', anon: true, confirm: { ok: false, error: 'used' } },
   // signed in by a mailed link on a device that never did the DM: the @ and
   // its private notes are back, and nothing asks for Instagram
@@ -1529,66 +1598,66 @@ const ROUTES = [
   // hand, and the desk's queue.
   { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
   { label: 'replies-opening',  path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 170]], settle: 0 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 170]], settle: 0 },
   { label: 'replies-open',     path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
   { label: 'replies-write',    path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
   { label: 'replies-empty',    path: '/letter/pilar.echevarria', thread: 'empty',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-recipient', path: '/letter/pilar.echevarria', thread: 'recipient-new',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-recipient-open', path: '/letter/pilar.echevarria', thread: 'recipient',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-locked',   path: '/letter/pilar.echevarria', thread: 'locked',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
   { label: 'replies-locked-owner', path: '/letter/pilar.echevarria', thread: 'locked-owner',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-closed',   path: '/letter/pilar.echevarria', thread: 'closed', settle: 1800 },
   { label: 'replies-closed-owner', path: '/letter/pilar.echevarria', thread: 'closed-owner',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-school-open', path: '/letter/pilar.echevarria', thread: 'school',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500]], settle: 500 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500]], settle: 500 },
   { label: 'replies-school-sent', path: '/letter/pilar.echevarria', thread: 'empty-school',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
            ['fill', '.wl-rp-school .wl-addr-in', 'you@berkeley.edu'], ['click', '.wl-rp-school .wl-pill.is-light']], settle: 600 },
   { label: 'replies-terms',    path: '/letter/pilar.echevarria', thread: 'terms',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week'], ['click', '.wl-low-sk.is-l']], settle: 700 },
   { label: 'replies-caught',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
            ['fill', '.wl-rp-field textarea', 'i bet Maria Delgado wrote this']], settle: 500 },
   { label: 'replies-held',     path: '/letter/pilar.echevarria', thread: 'held',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
            ['fill', '.wl-rp-field textarea', 'wait until they see this'], ['click', '.wl-low-sk.is-l']], settle: 900 },
   { label: 'replies-refused',  path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
            ['fill', '.wl-rp-field textarea', 'refuse this one please'], ['click', '.wl-low-sk.is-l']], settle: 900 },
   { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
   // a shut phone taken sideways and held, the chins in a line across the gap
   { label: 'replies-drag',     path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['swipe', '.wl-letter-card .wl-scr', -120, 'hold']], settle: 200 },
   // an open phone taken sideways and held: half shut under the hand, the
   // neighbour coming up out of the dark
   { label: 'replies-carry',    path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['swipe', '.wl-letter-card .wl-scr', -90, 'hold']], settle: 200 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['swipe', '.wl-letter-card .wl-scr', -90, 'hold']], settle: 200 },
   // the recipient's reply lit in the letter's own colour, one of each kind
   { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-acid',     path: '/letter/thom.iversen', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-lilac',    path: '/letter/jules.k', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-teal',     path: '/letter/elias.brandt', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-open-still', path: '/letter/pilar.echevarria', thread: 'full', still: true,
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 400]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 400]], settle: 400 },
   { label: 'admin-replies',    path: '/admin', desk: true, click: 'replies' },
 
   // Phase 7. The desk, and the states worth looking at: what it opens on, the
@@ -1662,6 +1731,7 @@ for (const r of list) {
   EMAIL = r.email === true
   LINKED = r.linked === true
   CONFIRM = r.confirm || null
+  AWAY = r.away === true
   TAPS = r.taps === true
   TAPPED = false
   HELD = r.held === true
@@ -1759,7 +1829,7 @@ for (const r of list) {
 
     await page.goto(BASE + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
-    // The intro plays on every cold address but the reveal, and it is three
+    // The intro plays on every cold address but the reveal, and it is four
     // and a half seconds to a bare page now, longer than a route's settle.
     // So the shot waits for it to have gone, unless the route holds it on a
     // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes,
@@ -1846,8 +1916,16 @@ for (const r of list) {
       // after it instead of the beat below: the way to catch a frame in the
       // middle of a movement the click started
       // forced, because a disc on the wall never stands still and a click
-      // that waits for a still target waits forever
+      // that waits for a still target waits forever. A forced click lands on
+      // whatever is on top at the target's middle, so a target a sheet's
+      // sticky foot covers there (a row scrolled under it) is brought to the
+      // middle of its scroller first
       if (act === 'click') {
+        await page.$eval(sel, (el) => {
+          const b = el.getBoundingClientRect()
+          const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)
+          if (top && !el.contains(top) && top.closest('.wl-foot')) el.scrollIntoView({ block: 'center' })
+        }).catch(() => {})
         await page.click(sel, { timeout: 4000, force: true }).catch(() => {})
         if (typeof more === 'number') { await page.waitForTimeout(more); continue }
       }
