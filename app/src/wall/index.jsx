@@ -99,7 +99,7 @@ const FIELD = {
 let BOOTED = false
 
 // The longest the intro is held for the index and the first faces, measured
-// from the shell mounting. The intro's own lift is at 4330ms, so on any
+// from the shell mounting. The intro's own lift is at 4920ms, so on any
 // ordinary connection this never applies; on a bad one the wall arrives with
 // its monograms, which is a designed state, and the pictures fill in.
 const READY_CEILING_MS = 5600

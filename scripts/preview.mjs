@@ -1127,8 +1127,8 @@ const ROUTES = [
   // Then held on the run and on the hug by the clock (Intro.jsx `?t=`), and
   // the same last beat typed, for setting beside it (`?intro=ascii`).
   { label: 'intro',         path: '/?beat=3' },
-  { label: 'intro-run',     path: '/?t=900' },
-  { label: 'intro-hug',     path: '/?t=1500' },
+  { label: 'intro-run',     path: '/?t=1400' },
+  { label: 'intro-hug',     path: '/?t=2300' },
   { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
   // ── the ping, on the wall ──
   // Raised over the Berkeley wall, from the tab, the bar and the foot, and
