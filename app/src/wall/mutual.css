@@ -169,8 +169,16 @@
    that has already said what it had to. */
 .wl-mutual-fig { position: relative; display: grid; place-items: center; padding: 6px 0 4px; }
 .wl-mutual-scr { width: min(100%, 300px, max(210px, calc((100svh - 480px) / 1.16))); }
-.wl-mutual-scr .wl-scene-halo,
-.wl-mutual-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+/* Dark until the first frame the page can paint (Reveal.jsx, PixelStory.jsx
+   `useFirstFrame`), as the wake's own first frame has it, and then it comes
+   on, once, a letter's whole wake, onto the empty glass the first telling
+   opens on; the light it throws comes on with it. Both are set on the
+   clock's nought, and the telling starts once they are done. */
+.wl-mutual-scr .wl-scr.is-dark { filter: blur(9px) brightness(0); }
+.wl-mutual-scr:has(.wl-scr.is-dark) :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0; }
+.wl-mutual-scr:has(.wl-scr.is-waking) :is(.wl-scene-halo, .wl-scene-halo-2) {
+  animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 
 /* The phone's light (turn.js, and `PHONE` in Reveal.jsx and Join.jsx): the
    night's, turned to the rose by two numbers as the pink spreads over the
@@ -179,10 +187,14 @@
    glass; `--mu-pan` the panel itself under the pink, once the pink has
    covered all of it, so the grey is only ever seen to go over a block of
    cells at a time (PixelStory.jsx `underPink`). The moments are the story's
-   (`--mu-turn-at`, `--mu-pan-at`, set by the page from pixmark.js). Between
-   two tellings, with the screen asleep and dark, the two go back to the
-   night's, and the next telling turns them again. A tap lands it in a
-   quarter of a second, and reduced motion draws it lit. */
+   (`--mu-turn-at`, `--mu-pan-at`, set by the page from pixmark.js). The
+   mutual takes them back the same way round when its telling is taken back
+   (`is-going`): the panel at once, under the pink come back whole over it,
+   where it is not seen, and the bands and the light as the pink leaves the
+   top of the glass (`--mu-back-at`), so the next telling starts on the
+   night's as the first did. The door's go back while its screen is asleep
+   between two tellings (below). A tap lands it in a quarter of a second,
+   and reduced motion draws it lit. */
 @property --mu-turn { syntax: '<number>'; inherits: true; initial-value: 0; }
 @property --mu-pan { syntax: '<number>'; inherits: true; initial-value: 0; }
 :is(.wl-mutual-scr, .wl-join-scr) {
@@ -195,6 +207,11 @@
     wl-mutual-turn 460ms var(--ease) var(--mu-turn-at, 400ms) both,
     wl-mutual-pan 160ms linear var(--mu-pan-at, 1500ms) both;
 }
+.wl-mutual.is-going .wl-mutual-scr {
+  animation:
+    wl-mutual-unpan 160ms linear both,
+    wl-mutual-unturn 460ms var(--ease) var(--mu-back-at, 800ms) both;
+}
 .wl-mutual:is(.is-skip, .is-still) .wl-mutual-scr,
 .wl-join:is(.is-landed, .is-still) .wl-join-scr { animation: none; --mu-turn: 1; --mu-pan: 1; }
 /* a frame held for the screenshot loop holds the light where it is then */
@@ -203,24 +220,29 @@
 }
 @keyframes wl-mutual-turn { from { --mu-turn: 0; } to { --mu-turn: 1; } }
 @keyframes wl-mutual-pan { from { --mu-pan: 0; } to { --mu-pan: 1; } }
+@keyframes wl-mutual-unturn { from { --mu-turn: 1; } to { --mu-turn: 0; } }
+@keyframes wl-mutual-unpan { from { --mu-pan: 1; } to { --mu-pan: 0; } }
 
-/* ── between two tellings ──
-   The door and the mutual are told again for as long as they are open
-   (pixmark.js `loop`). Between the two the screen goes to sleep the way a
-   letter's does when it is put away (screen.css `wl-sleep`), its light on
-   the room with it, stays dark a moment, and wakes on the first frame of
-   the next telling, flickering on as it first did: the one change of frame
-   that is never seen happen. */
-:is(.wl-join-scr, .wl-mutual-scr) .wl-scr.is-asleep { animation: wl-sleep 560ms cubic-bezier(0.4, 0, 1, 1) both; }
-:is(.wl-join-scr, .wl-mutual-scr):has(.wl-scr.is-asleep) :is(.wl-scene-halo, .wl-scene-halo-2),
+/* ── between two tellings, on the door ──
+   The door is told again for as long as it is open (pixmark.js `loop`).
+   Between the two its screen goes to sleep the way a letter's does when it
+   is put away (screen.css `wl-sleep`), its light on the room with it, stays
+   dark a moment, and wakes on the first frame of the next telling,
+   flickering on as it first did. The mutual used to do the same, and it read
+   as starting over; it takes its telling back instead, on the glass, and
+   never sleeps (pixmark.js `revealStory`). */
+.wl-join-scr .wl-scr.is-asleep { animation: wl-sleep 560ms cubic-bezier(0.4, 0, 1, 1) both; }
+.wl-join-scr:has(.wl-scr.is-asleep) :is(.wl-scene-halo, .wl-scene-halo-2),
 .wl-join-fig.is-asleep .wl-join-light {
   animation: none; opacity: 0; transition: opacity 420ms var(--ease-out);
 }
 
 /* The sentence, on the glass, under the mark: in the phone's face and its
    ink, the size of a letter's words on a small screen, set whole from the
-   first frame and typed over itself, the characters not yet in there and
-   invisible, and the letter's own cursor after the last one in. */
+   first frame and typed over itself, the characters not yet in there, or
+   taken off again, invisible, and the letter's own cursor after the last
+   one in: standing still while the characters come and go, as the phone's
+   did under a thumb, and blinking once they have stopped. */
 .wl-mutual-say {
   position: absolute; left: 0; right: 0; bottom: 5.5%; z-index: 1;
   margin: 0; padding: 0 4cqw;
@@ -230,6 +252,7 @@
 }
 .wl-mutual-rest { visibility: hidden; }
 .wl-mutual-say .wl-scr-cur { margin-right: -0.214em; }
+.wl-mutual-say.is-typing .wl-scr-cur { animation: none; }
 
 /* No dead pixel on this glass. Every screen is seeded with its own small
    faults (looks.js `quirks`), and about one in five has a pixel stuck lit on
@@ -242,13 +265,16 @@
 
 /* ── alive ──
    The glass is alive on its own (pixmark.js `revealStory`); round it, the
-   phone rises and settles a few pixels, slowly, and its light in the room
-   breathes in the story's pink with it, once every 4.2 seconds. The light
-   comes up as the pink on the glass reaches its edge (`--mu-turn-at`, on
-   each telling) and goes out as the screen sleeps between two; the phone
-   starts to move once the mark is whole, 2.7s in, and goes on moving.
-   Transform and opacity, on a radial gradient already painted, and paused
-   with the tab. */
+   phone rises and settles a few pixels, slowly, while the mark is whole,
+   and its light in the room comes up as the pink on the glass reaches its
+   edge, breathes in the story's pink, and goes out again as the telling is
+   taken back. Both are laid on the story's own clock by the page
+   (Reveal.jsx `HALO`, `FLOAT`, from pixmark.js `phone`): a telling long,
+   every breath and every rise a whole one, so each telling ends with them
+   where the next begins. They used to run on clocks of their own from when
+   the sheet opened, and a telling found them wherever they had got to.
+   Transform and opacity, on a radial gradient already painted; what is here
+   is only where they stand before the clock starts. */
 .wl-mutual-halo {
   position: absolute; left: 50%; top: 50%; z-index: -1;
   width: min(150vw, 720px); aspect-ratio: 1; pointer-events: none;
@@ -257,35 +283,14 @@
     rgba(var(--story-glow-rgb), 0.26) 34%,
     rgba(var(--story-glow-rgb), 0.09) 62%,
     rgba(var(--story-glow-rgb), 0) 100%);
-  transform: translate3d(-50%, -50%, 0);
+  transform: translate3d(-50%, -50%, 0) scale(0.96);
   opacity: 0;
   will-change: transform, opacity;
 }
-.wl-mutual.is-glow .wl-mutual-halo {
-  animation:
-    wl-mutual-light 1100ms var(--ease-out) var(--mu-turn-at, 400ms) both,
-    wl-mutual-breathe 4200ms ease-in-out calc(var(--mu-turn-at, 400ms) + 1100ms) infinite;
-}
 .wl-mutual-float {
   position: relative; width: 100%; display: grid; place-items: center;
-  animation: wl-mutual-float 4200ms ease-in-out 2700ms infinite;
   will-change: transform;
 }
-@keyframes wl-mutual-light { from { opacity: 0; } to { opacity: 0.75; } }
-@keyframes wl-mutual-breathe {
-  0%, 100% { opacity: 0.75; transform: translate3d(-50%, -50%, 0) scale(0.96); }
-  50%      { opacity: 1;    transform: translate3d(-50%, -50%, 0) scale(1.04); }
-}
-@keyframes wl-mutual-float {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50%      { transform: translate3d(0, -6px, 0); }
-}
-/* landed by a tap: alive at once */
-.wl-mutual.is-skip .wl-mutual-halo { animation: wl-mutual-breathe 4200ms ease-in-out infinite; }
-.wl-mutual.is-landed .wl-mutual-float { animation-delay: 0ms; }
-/* and out with the screen, between two tellings */
-.wl-mutual.is-asleep .wl-mutual-halo { animation: none; opacity: 0; transition: opacity 420ms var(--ease-out); }
-.wl-mutual.is-hidden :is(.wl-mutual-halo, .wl-mutual-float) { animation-play-state: paused; }
 
 /* ── the two of them ──
    One row, the same size, a face and an @ each, and the name under it when

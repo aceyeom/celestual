@@ -3,18 +3,19 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // A phone, on black, once per tab, before the page exists. Its screen comes
-// on grey, the night screen every letter is lit in unless its writer chose;
-// a boy and a girl run in from either edge of it, onto the glass together;
-// he slows and opens his arms, and she runs into them, her own run carrying
-// her on into him, and is held. From where they hold each other the
-// backlight turns pink, the panel's own cells going over a few at a time,
-// out to the edges of the glass, and as it reaches them the phone's own
-// glass turns with it, its bands, its status and the light it throws, until
-// the whole phone is a letter lit in rose (looks.js `skinOf`). What they
-// were holding on to glides together as the mark, on the rose screen, and
-// the mark stands there a second. Then the screen goes out and the page is
-// there. It plays over the wall at `/` and at `/berkeley`, and it is the
-// same five seconds on both.
+// on grey, the night screen every letter is lit in unless its writer chose,
+// with nothing on it but the ground, and stays lit and empty for a beat.
+// Then a boy and a girl run in from out past either edge of it, onto the
+// glass on the same frame; he slows and opens his arms, and she runs into
+// them, her own run carrying her on into him, and is held. From where they
+// hold each other the backlight turns pink, the panel's own cells going
+// over a few at a time, out to the edges of the glass, and as it reaches
+// them the phone's own glass turns with it, its bands, its status and the
+// light it throws, until the whole phone is a letter lit in rose (looks.js
+// `skinOf`). What they were holding on to glides together as the mark, on
+// the rose screen, and the mark stands there a second. Then the screen goes
+// out and the page is there. It plays over the wall at `/` and at
+// `/berkeley`, and it is the same five seconds on both.
 //
 // The story on the glass is the product's, told in the phone's own pixels
 // (pixmark.js, folk.js, PixelStory.jsx): two people, and the moment they
@@ -22,42 +23,53 @@
 // and the battery and nothing that would say a message had come in, because
 // nothing has; no name, because the name is in the bar of the page under it.
 //
-// ── the beats: 4330ms to the lift, 4940ms to a bare page ────────────────────
+// ── the beats: 4920ms to the lift, 5530ms to a bare page ────────────────────
 //
-//   0 ·    0ms   black. A held frame before anything moves. The screen
-//                comes on at 120, the phone's own flicker (screen.css
-//                `wl-wake`), and throws its grey light on the black round it.
-//   1 ·  100ms   THE RUN. He comes in from the left and she from the right,
-//                over the edges of the glass on the same frame, posed afresh
-//                at the display's own rate and sliding between the cells.
-//                From 580 he slows; at 960 he stands with his arms open.
-//   2 · 1040ms   THE CATCH. She lands in them and her run carries her on,
+//   0 ·    0ms   black: the first frame the page can paint, and not the
+//                render that made it (PixelStory.jsx `useFirstFrame`). The
+//                story's heavy start is done on the black before it.
+//         40ms   the screen comes on, the phone's own flicker and focus
+//                (screen.css `wl-wake`, 500ms here), and throws its grey
+//                light on the black round it. On the glass, the ground and
+//                nobody.
+//        540ms   the screen is on, lit and empty, and stays so for a beat.
+//   1 ·  780ms   THE RUN. He comes in from the left and she from the right,
+//                out of the frame and over the edges of the glass on the
+//                same frame (pixmark.js `I_RUN_AT`), posed afresh at the
+//                display's own rate and sliding between the cells. From
+//                1230 he slows; at 1610 he stands with his arms open.
+//   2 · 1690ms   THE CATCH. She lands in them and her run carries her on,
 //                leaning the way she ran, into him and behind him; her heel
 //                comes up, her hair and her hem swing past and settle. From
-//                1540 they hold each other, and breathe.
-//     · 1460ms   THE PINK, from where they hold each other: the backlight
+//                2190 they hold each other, and breathe.
+//     · 2110ms   THE PINK, from where they hold each other: the backlight
 //                turning, a few of the panel's cells at a time, in a ragged
 //                front that steps out to the last corner of the glass over a
 //                second and a half. As it reaches them it takes the phone's
-//                top band and its status (1870), its bottom band (2220) and
+//                top band and its status (2520), its bottom band (2874) and
 //                the light it throws on the black (intro.css, the rose), and
-//                once the whole panel has turned, the panel under it (2960),
+//                once the whole panel has turned, the panel under it (3610),
 //                so the phone becomes the rose letter. Nothing goes on out
 //                into the room: the light round the phone is a rose letter's
 //                own.
-//   3 · 3270ms   THE MARK. From 2410 the two of them glide into the star and
+//   3 · 3920ms   THE MARK. From 3060 the two of them glide into the star and
 //                the ground into the ring, every pixel between the cells as
 //                it travels and put on one as it lands. The mark stands whole
 //                on the rose screen, for a second.
-//   4 · 4330ms   THE LIFT. The screen goes to sleep, the phone rises a
+//   4 · 4920ms   THE LIFT. The screen goes to sleep, the phone rises a
 //                little and dissolves, and the black goes with it; the page
 //                is already rising underneath by the time the black is half
 //                gone.
-//     · 4940ms   the black is gone.
+//     · 5530ms   the black is gone.
 //
 // It was three and a half seconds, and the mark stood for a sixth of one
 // before the screen went out; the owner asked for the pink to take its time
-// and for the mark to be there long enough to be seen.
+// and for the mark to be there long enough to be seen. Then the two of them
+// were on the glass while it was still coming on, from a clock that started
+// before the glass could paint, and the owner asked for them to start out of
+// the frame and come in together: the wake is a little quicker, the empty
+// glass is held a beat, and the mark stands a second rather than a second
+// and a little more, so the whole of it is six tenths of a second longer.
 //
 // ── what it refuses to do ───────────────────────────────────────────────────
 // It plays once per tab: walking back to the wall from a letter does not
@@ -79,8 +91,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Screen } from './screen.jsx'
-import PixelStory, { SQUARE } from './PixelStory.jsx'
-import { introStory } from './pixmark.js'
+import PixelStory, { SQUARE, useFirstFrame } from './PixelStory.jsx'
+import { introStory, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS } from './pixmark.js'
 import { skinOf, skinVars } from './looks.js'
 import './intro.css'
 
@@ -90,13 +102,15 @@ import './intro.css'
 // the panel is the rose letter's own panel, and its ink the rose's ink.
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
-const STORY = introStory(100, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
+// the story, set so that the two of them come over the edges of the glass
+// at `I_RUN_AT`
+const STORY = introStory(I_RUN_AT - I_ENTER, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
 // how long the mark stands whole on the rose screen before the lift
-const MARK_HOLD = 1060
-//                 0    1                  2                   3                   4
-const BEATS = [0, STORY.times.run, STORY.times.catch, STORY.times.done, STORY.times.done + MARK_HOLD]
+const MARK_HOLD = 1000
+//                 0    1         2                   3                   4
+const BEATS = [0, I_RUN_AT, STORY.times.catch, STORY.times.done, STORY.times.done + MARK_HOLD]
 const LIFT = 4
-// How long the black takes to leave. 4330 + 610 = 4940.
+// How long the black takes to leave. 4920 + 610 = 5530.
 const OUT = 610
 // when the pink leaves them, which is when the phone's glass starts to turn
 const GLOW = STORY.times.glow
@@ -113,7 +127,8 @@ const STILL_HOLD = 1200
 // of the grey is seen to turn except a block of cells at a time. Handed to
 // `Screen` as its `style`, which is laid over its skin; the moments, from
 // the story (pixmark.js `introStory` times), as the delays of those four
-// animations (`TURN`).
+// animations (`TURN`), and the wake's own, from pixmark.js too, so that the
+// screen comes on and the empty glass is held on the clock the run is on.
 const N = skinVars('night')
 const R = skinVars('rose')
 const turn = (name, by) => `color-mix(in srgb, ${N[name]}, ${R[name]} calc(var(${by}) * 100%))`
@@ -132,6 +147,8 @@ const FRAME = {
   '--s-edge': turn('--s-edge', '--hi-glow'),
 }
 const TURN = {
+  '--hi-wake-at': `${I_WAKE_AT}ms`,
+  '--hi-wake-ms': `${I_WAKE_MS}ms`,
   '--hi-top-at': `${STORY.times.top - GLOW}ms`,
   '--hi-bot-at': `${STORY.times.bottom - GLOW}ms`,
   '--hi-pan-at': `${STORY.times.covered - GLOW}ms`,
@@ -144,10 +161,11 @@ const NO_KEYS = {}
 
 // ── the screenshot loop's holds ──
 // Development only; nothing in production reads the query string. `?beat=3`
-// holds the mark, as the loop's `intro` frame has always done; `?t=900`
-// holds the clock at 900ms, for a frame of the run or of the hold;
-// `?intro=ascii` draws the same story typed, and `?tint=green` lights it in
-// the classic Nokia colour, for the owner to set beside the shipped one.
+// holds the mark, as the loop's `intro` frame has always done; `?t=1500`
+// holds the clock at 1500ms, for a frame of the run or of the hold (the run
+// is 780 to 1690 now, the hold from 2190); `?intro=ascii` draws the same
+// story typed, and `?tint=green` lights it in the classic Nokia colour, for
+// the owner to set beside the shipped one.
 function dev() {
   if (!import.meta.env.DEV) return { beat: null, t: null, mode: 'pixel', look: LOOK }
   const q = new URLSearchParams(window.location.search)
@@ -163,6 +181,8 @@ function dev() {
 }
 // the beat a held clock is on
 const beatAt = (t) => BEATS.reduce((n, ms, i) => (i < LIFT && t >= ms ? i : n), 0)
+// the story's heavy start, before the clock starts
+const prime = () => STORY.prime()
 
 export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   const hold = useRef(dev()).current
@@ -171,13 +191,18 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   const [at, setAt] = useState(hold.t !== null ? beatAt(hold.t) : hold.beat ?? (reduce ? 3 : 0))
   // The clock has reached the lift. The lift itself waits on this AND on
   // `ready`, so a page that is slow to arrive holds the mark and a page that
-  // is quick changes nothing about the three and a half seconds.
+  // is quick changes nothing about the five seconds.
   const [due, setDue] = useState(false)
   // A skip freezes the glass on its last frame, the mark, and lifts.
   const [skipped, setSkipped] = useState(false)
   // the pink has left them, and the phone's glass turns with it
   const [lit, setLit] = useState(heldClock !== null && heldClock >= GLOW)
-  const t0 = useRef(performance.now()).current
+  // The clock's nought: the first frame the page can paint, after the
+  // story's heavy start, with the screen's wake set on it. Null until then,
+  // and the glass is held dark and empty.
+  const root = useRef(null)
+  const t0 = useFirstFrame(root, prime, held || reduce)
+  const waking = held || reduce || t0 !== null
   const timers = useRef([])
   const done = useRef(false)
 
@@ -191,11 +216,11 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   }
 
   useEffect(() => {
-    if (held) return undefined
-    // Each beat on the glass's own clock, from the first frame (`t0`), and
-    // not from now: the first frame is worked out before this runs, and a
-    // beat counted from here would come that much after the glass it goes
-    // with (the phone turning rose after the pink has reached its edges).
+    if (held || t0 === null) return undefined
+    // Each beat on the glass's own clock, from its nought (`t0`), and not
+    // from now: a beat counted from here would come after the glass it goes
+    // with by however long this took to run (the phone turning rose after
+    // the pink has reached its edges).
     const on = (ms) => Math.max(0, ms - (performance.now() - t0))
     if (reduce) {
       timers.current.push(setTimeout(() => setDue(true), on(STILL_HOLD)))
@@ -253,9 +278,10 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
     }
   }, [at, onReveal, onDone])
 
-  // The glass's clock: running from mount, or held on a frame. Under reduced
-  // motion, and after a skip, it is held on the last one.
-  const clock = heldClock !== null ? heldClock : reduce || skipped ? STORY.end : null
+  // The glass's clock: held on the empty glass until its nought, then
+  // running from it, or held on a frame. Under reduced motion, and after a
+  // skip, it is held on the last one.
+  const clock = heldClock !== null ? heldClock : reduce || skipped ? STORY.end : t0 === null ? 0 : null
   // A held clock holds the glass's turn on the same moment as the pink:
   // its animations paused that far in (intro.css `.hi.is-held`).
   const since = heldClock !== null && lit ? { ...TURN, '--hi-since': `${GLOW - heldClock}ms` } : TURN
@@ -263,14 +289,19 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   // skip, which lands the mark on the rose screen (whatever of the glass has
   // not yet turned turns in a quarter of a second as the screen goes out)
   const rose = reduce || skipped
-  const cls = ['hi', `is-at${at}`, held && 'is-held', lit && 'is-glow', rose && 'is-rose', reduce && 'is-still'].filter(Boolean).join(' ')
+  const cls = [
+    'hi', `is-at${at}`, waking && 'is-on', held && 'is-held', lit && 'is-glow', rose && 'is-rose', reduce && 'is-still',
+  ].filter(Boolean).join(' ')
 
   return (
-    <div className={cls} style={since} aria-hidden="true">
+    <div className={cls} style={since} aria-hidden="true" ref={root}>
       <div className="hi-veil" />
       <div className="hi-stage">
         {/* (a tint held for the owner, `?tint=`, is that colour throughout) */}
-        <Screen look={hold.look} seed="intro" keys={NO_KEYS} live={false} state="waking" className="hi-screen" style={hold.look === LOOK ? FRAME : SQUARE}>
+        <Screen
+          look={hold.look} seed="intro" keys={NO_KEYS} live={false} state={waking ? 'waking' : 'dark'}
+          className="hi-screen" style={hold.look === LOOK ? FRAME : SQUARE}
+        >
           <PixelStory story={STORY} at={clock} from={t0} mode={hold.mode} />
         </Screen>
       </div>
