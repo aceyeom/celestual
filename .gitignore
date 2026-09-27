@@ -17,3 +17,6 @@ design/shots/
 
 # supabase CLI local state (project ref, pooler url) — never commit
 supabase/.temp/
+
+# the git worktrees background agents work in (Claude Code), never content
+.claude/worktrees/
