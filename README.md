@@ -34,10 +34,13 @@ writer's greeting, or the first name the resolver has for the handle, or
 `dear you`, and the handle stays the key it is filed and found under.
 
 Every letter is a slider phone, and its thread of replies (migration 0068) is
-the phone's lower half, slid out from under the chin that carries its count:
-anonymous to everybody reading, each writer a small creature with one old word
-for a name (`kairos`, `aporia`), written from a proved school address or by the person the
-letter is to, whose replies are lit in the letter's own colour, and read before
+the phone's lower half, slid out from under the screen by its right soft key,
+`replies`, which carries the count (sharing is the first row of the options),
+and lit on the same glass in the letter's own colours: anonymous to everybody
+reading, each writer a small creature drawn in the panel's ink with one old
+word for a name (`kairos`, `aporia`), written from a proved school address or
+by the person the letter is to, whose replies are struck out of the ink, and
+read before
 they go up (`supabase/functions/celestual-wall-reply`). A heart on a letter,
 and a like on a reply, is anybody's. The field of names can be looked at four
 ways, all, newest, most liked and Berkeley, from a key at the end of its search

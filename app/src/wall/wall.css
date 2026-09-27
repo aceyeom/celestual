@@ -2733,12 +2733,13 @@ a.wl-lq { text-decoration: none; }
    screen in depth is drawn again on every frame the page draws, and a print
    beside the card was turned in its own plane only for that reason. No
    screen on the strip is in depth now, card or neighbour, lit or printed.
-   The screen's foot is square, where the chin is fixed to it. */
+   The screen's foot is square while its thread is out under it, and has
+   its corners back once the thread has gone in. */
 .wl-letter-track .wl-scr {
   aspect-ratio: 1 / 1.16;
   transform: none;
-  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
 }
+.wl-letter.is-thread .wl-letter-card .wl-scr { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 /* ── the slider ──
    Letter.jsx, the slider. The phone at rest, as the stylesheet draws it:
    shut, lying at its angle about its own middle; open, square to the eye,
@@ -2840,7 +2841,7 @@ a.wl-lq { text-decoration: none; }
   .wl-letter-stage.can-turn { -webkit-user-select: none; user-select: none; }
   .wl-letter-stage.can-turn .wl-letter-card,
   .wl-letter-stage.can-turn .wl-letter-card * { cursor: grab; }
-  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li, .wl-chin:is(button), .wl-chin:is(button) *) { cursor: pointer; }
+  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li) { cursor: pointer; }
   /* the thread is read and typed in, and is not picked up: it keeps the
      page's own hand, and its words can be selected */
   .wl-letter-stage.can-turn .wl-letter-card :is(.wl-low, .wl-low *) { cursor: auto; -webkit-user-select: text; user-select: text; }

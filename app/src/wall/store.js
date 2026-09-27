@@ -75,6 +75,15 @@ const EMPTY = {
                       // ("is being read"), put away under a key of its own so
                       // the verdict on the same letter still raises its
                       // notice (screens/Wall.jsx `heldKey`)
+                      // The account's letters list reads it too: a letter that
+                      // came down is listed there until it has been seen once,
+                      // here or there, and then it is gone (screens/You.jsx)
+  goneSeen: {},       // replyId -> 1: a reply of this device's that was taken
+                      // down, seen struck through in its thread once and not
+                      // drawn again (Replies.jsx `goneSeen`)
+  revealSeen: '',     // the weekly reveal this device has opened, by the
+                      // moment it fell (pings.js `lastReveal`): until it has
+                      // been, the account's key in the bar carries a light
   justPosted: '',     // the handle a letter was just put up to, so the wall can
                       // send one ripple out from that name on the way back
                       // from the posted screen. Taken once

@@ -1,83 +1,57 @@
 /* ═══ THE REPLIES ═══════════════════════════════════════════════════════════
    Replies.jsx, migration 0068. A letter's thread, drawn as the lower half
-   of a slider phone: the chin fixed to the screen's foot, with the thumb
-   ridges on it, and behind the screen the thread, which slides out from
-   under the chin on the same glass (DESIGN.md 2.6). Nothing on it is
-   backlit but the pictures, which are small screens as a face is, the
-   recipient's reply, which is lit in the letter's own colour because it is
-   the letter answering, and the chin's message light, which is that reply
-   seen shut.
+   of a slider phone, which slides out from under the screen's own key band
+   on the same glass (DESIGN.md 2.6), and IS the same glass: lit by the
+   letter's backlight, in the letter's colours (`--s-*`, looks.js
+   `skinVars`, put on the handset by Letter.jsx `Handset`), under the
+   screen's own pixel grid, moire and glare, in the screen's one face sized
+   off the phone's width, with the screen's own soft keys at its foot.
 
-   The phone's tokens (`--lcd`, `--lcd-edge`, `--r-lcd`) are the wall's own
-   (phone.css), and the thread is drawn on the wall and nowhere else. Where
-   the halves stand and how they move is wall.css (the slider) and
-   Letter.jsx; this is what they are made of. */
+   It used to be a second design under the first: an unlit chin with thumb
+   ridges fixed to the screen's foot, and under it a dark panel in the
+   chrome's greys, a size smaller, on keys of its own. Nothing in it is
+   chrome now. Where the thread stands and how it moves is wall.css (the
+   slider) and Letter.jsx; this is what it is made of. */
 
-/* ── the chin ──
-   The unlit strip under the screen's keys: a hair lighter than a panel,
-   the panel's pixel grid, the one pixel bezel, and along its top edge the
-   seam where the slide meets the screen, caught in the screen's light. Its
-   foot takes the screen's own corner (`--set-rad`, Letter.jsx `Handset`).
-   The count on the left, the ridges in the middle, who answered on the
-   right, sized off the screen as the screen's own type is. A press lights
-   the ridges and they fall back, as a soft key does, and the hit reaches
-   a little under the chin and never up into the keys over it. */
-.wl-chin {
-  position: relative; z-index: 1;
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px;
-  width: 100%; height: clamp(32px, calc(var(--scene-w, 342px) * 0.095), 44px);
-  margin: 0; padding: 0 calc(var(--scene-w, 342px) * 0.035);
-  border: 0; border-radius: 0 0 var(--set-rad, 3px) var(--set-rad, 3px);
-  background-color: #0D0D0D; background-image: var(--lcd-grid, none);
-  box-shadow:
-    inset 0 1px 0 rgba(244, 241, 234, 0.28),
-    inset 1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
-    inset -1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
-    inset 0 -1px 0 var(--lcd-edge, rgba(244, 241, 234, 0.16));
-  color: var(--chalk);
-  font-family: var(--f-util); font-size: clamp(16px, calc(var(--scene-w, 342px) * 0.042), 20px); line-height: 1;
-  text-align: left; -webkit-tap-highlight-color: transparent;
+/* ── the key that opens it ──
+   The letter's right soft key (Replies.jsx `threadKey`, screen.jsx): the
+   count at its shoulder, struck out of the band's light as a badge was on
+   the phone, and the message light before it once the person the letter is
+   to has answered, lit steady. While the thread is out the key is struck
+   out of its band, the tab the phone is on, and its badge turns back. */
+.wl-sk.is-thread { position: relative; overflow: visible; }
+.wl-root .wl-sk.is-thread:has(> .wl-sk-n) { padding-right: 5.6cqw; }
+.wl-sk-n {
+  position: absolute; top: 1.3cqw; right: 0.2cqw;
+  display: inline-flex; align-items: center; gap: 0.9cqw;
+  pointer-events: none;
 }
-button.wl-chin { cursor: pointer; }
-button.wl-chin::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 12px; }
-/* open, its foot is where the thread meets it, and square */
-.wl-letter.is-thread .wl-letter-card .wl-chin { border-radius: 0; }
-.wl-chin-n {
-  display: inline-flex; align-items: center; gap: 7px; min-width: 0;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  animation: wl-fade 160ms var(--ease, ease) both;
+.wl-sk-n b {
+  display: block; min-width: 4.6cqw; padding: 0.7cqw 1cqw 0.5cqw;
+  font: 400 5.6cqw/0.8 var(--f-s40); text-align: center; font-variant-numeric: tabular-nums;
+  background: var(--s-lit); color: var(--s-bot); border-radius: 0.5cqw;
+  text-shadow: none; box-shadow: 0 0 1.6cqw var(--s-bloom);
 }
-.wl-chin-n .wl-pxi, .wl-chin-wait { display: block; flex: 0 0 auto; color: var(--ash); }
-.wl-chin-grip { display: grid; gap: 3px; justify-self: center; grid-column: 2; }
-.wl-chin-grip i { display: block; width: 30px; height: 2px; background: var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); transition: background-color 140ms linear; }
-.wl-chin.is-bare .wl-chin-grip { grid-column: 2; }
-.wl-chin-end { display: inline-flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; grid-column: 3; }
-.wl-chin-lock { display: block; flex: 0 0 auto; color: var(--ash); }
-button.wl-chin:active .wl-chin-grip i { background-color: var(--chalk); transition-duration: 0ms; }
-button.wl-chin:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; }
-@media (hover: hover) and (pointer: fine) {
-  button.wl-chin:hover .wl-chin-grip i { background-color: rgba(244, 241, 234, 0.6); transition-duration: 200ms; }
+.wl-sk-dot {
+  display: block; width: 1.5cqw; height: 1.5cqw;
+  background: var(--s-lit); box-shadow: 0 0 1.4cqw var(--s-bloom), 0 0 0.3cqw var(--s-lit);
 }
-/* the phone's message light, in the letter's colour, steady */
-.wl-chin-led {
-  flex: 0 0 auto; width: 6px; height: 6px;
-  /* a dark panel (the negative) is lit by its words' light, as its
-     recipient's reply is */
-  background: var(--rp-glow, var(--rp-panel));
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 8px 1px var(--rp-glow, var(--rp-panel));
+.wl-root .wl-sk.is-thread.is-open {
+  background: var(--s-lit); color: var(--s-bot); border-radius: 1cqw;
+  transition: background-color 180ms var(--ease, ease), color 180ms var(--ease, ease);
 }
-/* who answered: the newest three, the recipient's face first */
-.wl-rp-stack { display: inline-flex; flex: 0 0 auto; }
-.wl-rp-stack > * { box-shadow: 0 0 0 2px #0D0D0D; }
-.wl-rp-stack > * + * { margin-left: -5px; }
+.wl-sk.is-thread.is-open .wl-lit { text-shadow: none; }
+.wl-sk.is-thread.is-open .wl-sk-n b { background: var(--s-bot); color: var(--s-lit); box-shadow: none; }
+.wl-sk.is-thread.is-open .wl-sk-dot { background: var(--s-bot); box-shadow: none; }
 
 /* ── the lower half ──
    Behind the upper half, the same width, laid out at the width it is read
    at and tucked all the way up under the screen while the phone is shut
-   (`--o-y0`, `--o-k0`), then out from under the chin with it (`--o-y1`),
-   the numbers Letter.jsx `fitSlider` measures. Its corners are the phone's
-   at the foot, and square where it meets the chin; no edge along its top,
-   since the chin's foot is that edge. */
+   (`--o-y0`, `--o-k0`), then out from under the key band with it
+   (`--o-y1`), the numbers Letter.jsx `fitSlider` measures. Its corners are
+   the phone's at the foot, and square where it meets the band. Everything in
+   it is measured off its own width (`cqw`), as a screen's is, so its keys
+   are the screen's keys to the pixel. */
 .wl-low {
   position: absolute; top: 100%; left: 50%; z-index: 0;
   width: var(--o-w, 100%); height: var(--o-b, 0px); margin-left: calc(var(--o-w, 100%) / -2);
@@ -87,131 +61,148 @@ button.wl-chin:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); out
 }
 .wl-letter.is-thread .wl-low { transform: translate3d(0, var(--o-y1, 0px), 0); visibility: visible; }
 .wl-low-in {
-  position: relative; isolation: isolate;
+  position: relative; isolation: isolate; container-type: inline-size;
   display: flex; flex-direction: column; height: 100%;
-  background-color: var(--lcd, #0B0B0B); background-image: var(--lcd-grid, none);
   border-radius: 0 0 var(--set-rad, 3px) var(--set-rad, 3px);
   overflow: hidden; overflow: clip;
-  color: var(--chalk); font-family: var(--f-util); text-align: left;
+  /* the ink, and the two steps down from it the phone drew with: a line
+     under a name, and a rule */
+  --lo-ink: var(--s-ink);
+  --lo-dim: color-mix(in srgb, var(--s-ink) 66%, transparent);
+  --lo-faint: color-mix(in srgb, var(--s-ink) 30%, transparent);
+  --lo-read: clamp(17px, 6.4cqw, 26px);
+  --lo-meta: clamp(14px, 5cqw, 20px);
+  --lo-pad: 4.2cqw;
+  color: var(--lo-ink); font-family: var(--f-s40); font-weight: 400; text-align: left;
+  text-shadow: 0 0 0.35cqw var(--s-soft);
+  filter: blur(0.25px);
+  box-shadow: 0 0 1.2cqw 0.2cqw var(--s-edge);
+  -webkit-font-smoothing: antialiased;
 }
-/* the bezel, over everything in it, so the field and the keys that stand on
-   their own glass inside it are edged the same */
-.wl-low-in::after {
-  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
-  border-radius: inherit;
-  box-shadow:
-    inset 1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
-    inset -1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
-    inset 0 -1px 0 var(--lcd-edge, rgba(244, 241, 234, 0.16));
+/* the backlight: brightest just under the band it comes out from, where
+   the screen's own hot spot would carry on, and falling to the panel's
+   dim corner at its foot */
+.wl-low-bg {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(130% 55% at var(--q-hx, 80%) 0%, color-mix(in srgb, var(--s-hi) 72%, transparent), transparent 72%),
+    linear-gradient(180deg, var(--s-mid) 0%, color-mix(in srgb, var(--s-mid) 55%, var(--s-lo)) 60%, var(--s-lo) 100%);
 }
+.wl-low-in > .wl-scr-fx { z-index: 3; }
 /* the list: the phone's own, scrolled inside the glass and never the page,
-   fading at its two edges so a row goes under the chin and the keys rather
-   than being cut */
+   its rows fading into the panel at its two edges rather than being cut */
 .wl-low-list {
-  position: relative; flex: 1 1 auto; min-height: 0;
+  position: relative; z-index: 1; flex: 1 1 auto; min-height: 0;
   overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
   scrollbar-width: none; outline: none;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
-  mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 3.6cqw, #000 calc(100% - 3.6cqw), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 3.6cqw, #000 calc(100% - 3.6cqw), transparent 100%);
 }
 .wl-low-list::-webkit-scrollbar { display: none; }
-.wl-low-list:focus-visible { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.4); }
+.wl-low-list:focus-visible { box-shadow: inset 0 0 0 0.5cqw var(--lo-faint); }
 .wl-low-still {
   display: flex; align-items: center; justify-content: center; min-height: 100%;
-  padding: 18px 14px; font-size: var(--t-read); line-height: 1.2; color: var(--ash); text-align: center;
+  padding: 5cqw var(--lo-pad); font-size: var(--lo-read); line-height: 1.1; color: var(--lo-dim); text-align: center;
 }
-/* a line about what just happened, over the keys, for a few seconds */
+.wl-low-still .wl-pxi, .wl-low-still .wl-px { color: var(--lo-ink); }
+/* a line about what just happened, over the keys, for a few seconds: the
+   phone's own status line, struck out of the ink */
 .wl-low-said {
-  flex: 0 0 auto; margin: 0; padding: 8px 14px 10px;
-  font-size: var(--t-meta); line-height: 1.2; color: var(--chalk);
-  animation: wl-fade 200ms var(--ease, ease) both;
+  position: relative; z-index: 1; flex: 0 0 auto; margin: 0 var(--lo-pad) 2cqw; padding: 1.4cqw 2.2cqw 1.1cqw;
+  font-size: var(--lo-meta); line-height: 1.15; background: var(--lo-ink); color: var(--s-mid);
+  text-shadow: none; border-radius: 0.6cqw;
+  animation: wl-low-said 220ms var(--ease, ease) both;
 }
-/* the band of soft keys at its foot: a step lighter than the thread, a
-   pixel of bezel over it, the act on the left and the way back on the right */
+@keyframes wl-low-said { from { opacity: 0; transform: translate3d(0, 1.6cqw, 0); } }
+/* the band of soft keys at its foot: the screen's own (screen.css
+   `.wl-scr-bot`), the act on the left and the way back on the right */
 .wl-low-foot {
-  position: relative; z-index: 1; flex: 0 0 46px;
-  display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
-  padding: 0 4px;
-  background: #121212;
-  box-shadow: inset 0 1px 0 var(--lcd-edge, rgba(244, 241, 234, 0.16));
+  position: relative; z-index: 1; flex: 0 0 auto; height: 14cqw; padding: 0 1.6cqw 0.6cqw;
+  display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+  background: var(--s-bot); color: var(--s-lit);
 }
-.wl-root .wl-low-sk {
-  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
-  margin: 0; padding: 0 12px; border: 0; border-radius: var(--r-lcd, 3px); background: none;
-  color: var(--chalk); font: 400 var(--t-read)/1 var(--f-util); white-space: nowrap;
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: opacity 140ms linear;
-}
-.wl-low-sk.is-l { justify-self: start; }
-.wl-low-sk.is-r { justify-self: end; }
-.wl-low-sk.is-empty { visibility: hidden; }
-.wl-low-sk .wl-pxi { display: block; color: var(--ash); }
-.wl-root .wl-low-sk:active { opacity: 0.45; transition-duration: 0ms; }
-.wl-root .wl-low-sk:disabled { opacity: 0.4; cursor: default; }
-.wl-low-sk:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -5px; }
-@media (hover: hover) and (pointer: fine) {
-  .wl-root .wl-low-sk:not(:disabled):hover { background: rgba(244, 241, 234, 0.08); }
+.wl-low-sk .wl-pxi { display: block; }
+
+/* ── the way it comes out ──
+   The glass slides out from under the band with the phone (Letter.jsx
+   `runQ`), and what is on it comes up a beat behind, row by row, the way
+   a phone drew a list it had just been asked for. Only on the opening, and
+   only the first rows: a thread read again under a finger does not dance. */
+.wl-letter.is-thread .wl-low-list > :not(.wl-rp-list) { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
+.wl-letter.is-thread .wl-rp-list > .wl-rp-item { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
+@keyframes wl-low-row {
+  from { opacity: 0; transform: translate3d(0, 3cqw, 0); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* ── writing ──
-   The field rises from behind the keys, over a dashed seam: who the reply
-   goes up as, and how much is left, then the field, then whatever the
-   reading caught while it was typed. */
+   The field rises from behind the keys, over a rule of the ink's pixels:
+   who the reply goes up as, and how much is left, then the field, then
+   whatever the reading caught while it was typed. The field is the
+   composer's, drawn on this glass: a well a step into the panel, the words
+   in the ink, and the phone's own caret (caret.jsx, `screen`). */
 .wl-low-write {
-  position: relative; z-index: 0; flex: 0 0 auto;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 12px 14px 12px;
-  background: var(--lcd, #0B0B0B);
+  position: relative; z-index: 1; flex: 0 0 auto;
+  display: flex; flex-direction: column; gap: 2.2cqw;
+  padding: 3.2cqw var(--lo-pad) 3cqw;
   animation: wl-low-write 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 .wl-low-write::before {
-  content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 2px;
-  background: repeating-linear-gradient(90deg, var(--lcd-edge, rgba(244, 241, 234, 0.16)) 0 2px, transparent 2px 6px);
+  content: ''; position: absolute; top: 0; left: var(--lo-pad); right: var(--lo-pad); height: 0.6cqw;
+  background: repeating-linear-gradient(90deg, var(--lo-faint) 0 0.6cqw, transparent 0.6cqw 1.8cqw);
 }
 @keyframes wl-low-write {
-  from { transform: translate3d(0, 100%, 0); }
-  to   { transform: none; }
+  from { opacity: 0; transform: translate3d(0, 40%, 0); }
+  to   { opacity: 1; transform: none; }
 }
 .wl-low-as {
-  display: flex; align-items: center; gap: 9px; min-height: 26px;
-  font-size: var(--t-meta); line-height: 1.1; color: var(--ash);
+  display: flex; align-items: center; gap: 2.4cqw; min-height: 7.6cqw;
+  font-size: var(--lo-meta); line-height: 1.1; color: var(--lo-dim);
 }
-.wl-low-as .wl-h { color: var(--chalk); }
-.wl-low-left { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ash-dim, rgba(244, 241, 234, 0.4)); }
-.wl-low-left.is-low { color: var(--chalk); }
+.wl-low-as .wl-h { color: var(--lo-ink); }
+.wl-low-left { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--lo-dim); }
+.wl-low-left.is-low { color: var(--lo-ink); }
 .wl-rp-field {
   position: relative;
-  padding: 10px 12px;
-  background: #070707;
-  border-radius: var(--r-lcd, 3px);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38));
+  padding: 2.6cqw 3cqw 2.2cqw;
+  background: color-mix(in srgb, var(--s-lo) 55%, transparent);
+  border-radius: 0.6cqw;
+  box-shadow: inset 0 0 0 0.5cqw var(--lo-faint);
 }
+.wl-rp-field:focus-within { box-shadow: inset 0 0 0 0.5cqw var(--lo-ink); }
+.wl-rp-field.is-caught { box-shadow: inset 0 0 0 0.5cqw var(--lo-ink); }
 .wl-rp-field textarea {
-  display: block; width: 100%; min-height: 24px; max-height: 72px;
+  display: block; width: 100%; min-height: 1.2em; max-height: 3.6em;
   margin: 0; padding: 0; border: 0; outline: 0; resize: none;
-  background: none; color: var(--chalk);
-  font-family: var(--f-util); font-size: var(--t-read); line-height: 1.2;
+  background: none; color: var(--lo-ink); caret-color: var(--lo-ink);
+  font-family: var(--f-s40); font-size: var(--lo-read); line-height: 1.12;
+  text-shadow: inherit;
   field-sizing: content;
 }
-/* the bezel is the field's focus, as on every field on the wall (phone.css) */
 .wl-root .wl-rp-field textarea:focus, .wl-root .wl-rp-field textarea:focus-visible { outline: none; }
-.wl-rp-field textarea::placeholder { color: rgba(244, 241, 234, 0.34); }
-.wl-rp-field textarea::selection { background: var(--chalk); color: #000; }
-.wl-rp-line { margin: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash); text-wrap: pretty; }
-.wl-rp-line.is-ok { color: var(--chalk); }
-.wl-rp-line.is-no { color: var(--accent); }
+.wl-rp-field textarea::placeholder { color: var(--lo-ink); opacity: 0.4; }
+.wl-rp-field textarea::selection { background: var(--lo-ink); color: var(--s-mid); }
+/* the caret on this glass is the screen's: the ink, with the letter it
+   stands on struck out of it in the panel's colour */
+.wl-low .wl-caret { background: var(--lo-ink); box-shadow: 0 0 0.35cqw var(--s-soft); }
+.wl-low .wl-caret > i { color: var(--s-mid); }
+.wl-rp-line { margin: 0; font-size: var(--lo-meta); line-height: 1.2; color: var(--lo-dim); text-wrap: pretty; }
+.wl-rp-line.is-ok { color: var(--lo-ink); }
+/* a refusal is the one line struck out of the ink, so it is not missed */
+.wl-rp-line.is-no {
+  align-self: flex-start; padding: 1cqw 1.8cqw 0.8cqw; border-radius: 0.5cqw;
+  background: var(--lo-ink); color: var(--s-mid); text-shadow: none;
+}
 .wl-rp-as-badge {
-  display: inline-block; padding: 3px 6px 2px; border-radius: 2px;
-  font-size: var(--t-meta); line-height: 1; white-space: nowrap;
-  background: var(--rp-panel); color: var(--rp-ink);
-  box-shadow: 0 0 0 1px var(--rp-edge, transparent), 0 0 16px -5px var(--rp-glow, var(--rp-panel));
+  display: inline-block; padding: 0.8cqw 1.6cqw 0.6cqw; border-radius: 0.5cqw;
+  font-size: var(--lo-meta); line-height: 1; white-space: nowrap;
+  background: var(--lo-ink); color: var(--s-mid); text-shadow: none;
 }
 
-/* the rule between the parts: a line of the phone's pixels, as `or` is
-   drawn on the wall (phone.css), inset to the panel's own margin */
+/* the rule between the parts: a line of the panel's pixels, in its ink */
 :is(.wl-rp-item, .wl-rp-empty, .wl-rp-note)::before {
-  content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 2px;
-  background: repeating-linear-gradient(90deg, var(--lcd-edge, rgba(244, 241, 234, 0.16)) 0 2px, transparent 2px 6px);
+  content: ''; position: absolute; top: 0; left: var(--lo-pad); right: var(--lo-pad); height: 0.6cqw;
+  background: repeating-linear-gradient(90deg, var(--lo-faint) 0 0.6cqw, transparent 0.6cqw 1.8cqw);
   pointer-events: none;
 }
 .wl-rp-list > .wl-rp-item::before { left: 0; right: 0; }
@@ -219,37 +210,38 @@ button.wl-chin:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); out
 
 /* ── one reply ──
    Its picture, one meta row carrying its like and its flag at the end, and
-   the words: two lines where it was three, so more of a thread stands in
-   the phone at once. */
-.wl-rp-list { list-style: none; margin: 0; padding: 4px 14px 8px; }
+   the words: two lines, so two and a half replies stand in the phone at
+   once. The name is the ink, what stands beside it a step down. */
+.wl-rp-list { list-style: none; margin: 0; padding: 1.2cqw var(--lo-pad) 2.4cqw; }
 .wl-rp-item {
   position: relative;
-  display: grid; grid-template-columns: 39px minmax(0, 1fr); gap: 12px;
-  padding: 12px 0 12px;
+  display: grid; grid-template-columns: 11.4cqw minmax(0, 1fr); gap: 3.2cqw;
+  padding: 3.4cqw 0 3.2cqw;
 }
-.wl-rp-pic { display: block; line-height: 0; padding-top: 2px; }
+.wl-rp-pic { display: block; line-height: 0; padding-top: 0.6cqw; }
+.wl-rp-pic > * { max-width: 100%; }
 .wl-rp-main { min-width: 0; }
 .wl-rp-meta {
-  display: flex; align-items: center; gap: 8px; min-height: 24px;
-  font-size: var(--t-meta); line-height: 1; color: var(--ash);
+  display: flex; align-items: center; gap: 2.2cqw; min-height: 7cqw;
+  font-size: var(--lo-meta); line-height: 1; color: var(--lo-dim);
 }
-.wl-rp-name { color: var(--chalk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wl-rp-name { color: var(--lo-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .wl-rp-you {
-  flex: 0 0 auto; padding: 2px 5px 1px; border-radius: 2px;
-  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); color: var(--ash);
+  flex: 0 0 auto; padding: 0.6cqw 1.4cqw 0.3cqw; border-radius: 0.5cqw;
+  box-shadow: inset 0 0 0 0.4cqw var(--lo-faint); color: var(--lo-dim);
 }
-.wl-rp-when { flex: 0 0 auto; color: var(--ash); }
+.wl-rp-when { flex: 0 0 auto; color: var(--lo-dim); }
 .wl-rp-words {
-  margin: 4px 0 0;
-  font-size: var(--t-read); line-height: 1.2; color: var(--chalk);
+  margin: 1cqw 0 0;
+  font-size: var(--lo-read); line-height: 1.12; color: var(--lo-ink);
   white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .wl-rp-state {
-  display: flex; align-items: center; gap: 8px;
-  margin: 6px 0 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash);
+  display: flex; align-items: center; gap: 2cqw;
+  margin: 1.6cqw 0 0; font-size: var(--lo-meta); line-height: 1.2; color: var(--lo-dim);
 }
-.wl-rp-item:is(.is-held, .is-hidden) .wl-rp-words { color: var(--ash); }
-.wl-rp-item.is-removed .wl-rp-words { color: var(--ash); text-decoration: line-through; text-decoration-thickness: 2px; }
+.wl-rp-item:is(.is-held, .is-hidden) .wl-rp-words { color: var(--lo-dim); }
+.wl-rp-item.is-removed .wl-rp-words { color: var(--lo-dim); text-decoration: line-through; text-decoration-thickness: 0.6cqw; }
 /* a reply sent from this phone arrives, it does not appear */
 .wl-rp-item.is-mine:last-child { animation: wl-rp-new 260ms var(--ease, ease) both; }
 @keyframes wl-rp-new {
@@ -259,154 +251,175 @@ button.wl-chin:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); out
 
 /* the reply's two keys, at the meta row's end: square keys with the
    phone's glyphs, their hit a thumb's size and their box the row's */
-.wl-rp-acts { display: inline-flex; align-items: center; margin: -7px -8px -7px auto; flex: 0 0 auto; }
+.wl-rp-acts { display: inline-flex; align-items: center; margin: -2cqw -2.4cqw -2cqw auto; flex: 0 0 auto; }
 .wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: 38px; min-width: 38px; padding: 0 8px;
-  border: 0; border-radius: var(--r-lcd, 3px); background: none;
-  color: var(--ash); font-family: var(--f-util); font-size: var(--t-meta); line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 1.6cqw;
+  min-height: 38px; min-width: 38px; padding: 0 2.2cqw;
+  border: 0; border-radius: 0.6cqw; background: none;
+  color: var(--lo-dim); font-family: var(--f-s40); font-size: var(--lo-meta); line-height: 1;
+  text-shadow: inherit;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .wl-rp-like .wl-pxi, .wl-rp-flag .wl-pxi, .wl-rp-key .wl-pxi { display: block; flex: 0 0 auto; }
-.wl-rp-like.is-on { color: var(--chalk); }
+.wl-rp-like.is-on { color: var(--lo-ink); }
 .wl-rp-like.is-on .wl-pxi { animation: wl-sk-heart 420ms var(--ease, ease); }
 .wl-rp-n { min-width: 1ch; }
 .wl-rp-like:not(:disabled):active, .wl-rp-flag:active, .wl-rp-undo:not(:disabled):active, .wl-rp-key:not(:disabled):active {
-  background: var(--chalk); color: #000; transition-duration: 0ms;
+  background: var(--lo-ink); color: var(--s-mid); text-shadow: none; transition-duration: 0ms;
 }
 .wl-rp-like:disabled { cursor: progress; }
-:is(.wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key):focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -2px; }
+:is(.wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key):focus-visible { outline: 0.5cqw solid var(--lo-ink); outline-offset: -0.5cqw; }
 @media (hover: hover) and (pointer: fine) {
-  .wl-rp-like:hover, .wl-rp-flag:hover { color: var(--chalk); }
+  .wl-rp-like:hover, .wl-rp-flag:hover { color: var(--lo-ink); background: color-mix(in srgb, var(--lo-ink) 10%, transparent); }
 }
 
 /* reported by this device: folded away, with the way back */
 .wl-rp-item.is-folded {
-  grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  padding: 10px 0;
-  font-size: var(--t-meta); line-height: 1.2; color: var(--ash);
+  grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2.6cqw;
+  padding: 2.6cqw 0;
+  font-size: var(--lo-meta); line-height: 1.2; color: var(--lo-dim);
 }
 .wl-rp-fold-g { display: block; }
-.wl-rp-undo {
-  padding: 0 12px; background: var(--lcd, #0B0B0B); color: var(--chalk);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
-}
+.wl-rp-undo { padding: 0 3cqw; color: var(--lo-ink); box-shadow: inset 0 0 0 0.5cqw var(--lo-faint); }
 
-/* ── the recipient's reply: lit in the letter's colour ──
-   The letter answering: a small screen in the letter's own inks, its
-   panel's hot corner, the pixel grid of an LCD over it and the light it
-   throws on the glass round it. `recipient` is struck out of the ink, where
-   a writer's creature and name would be, and the picture is the face of the
-   @ the letter is to. The one lit panel in the lower half. */
+/* ── the recipient's reply: the letter answering ──
+   The one row struck out of the ink, as the phone struck out a menu's
+   chosen row (screen.css `.wl-scr-menu li.is-on`): the panel's own colour
+   on a block of its ink, so it is the letter's colours turned over, the
+   letter answering. `recipient` is struck back out of that, where a
+   writer's creature and name would be, and the picture is the face of the
+   @ the letter is to. */
 .wl-rp-item.is-recipient {
-  margin: 8px -6px 10px; padding: 11px 12px 12px;
-  border-radius: var(--r-lcd, 3px);
-  background: radial-gradient(130% 120% at 16% 0%, var(--rp-hi), var(--rp-panel) 56%, color-mix(in srgb, var(--rp-panel) 80%, #000));
-  color: var(--rp-ink);
-  box-shadow:
-    0 0 0 1px var(--rp-edge, rgba(0, 0, 0, 0.45)),
-    0 0 34px -12px var(--rp-glow, var(--rp-panel));
+  margin: 2.2cqw -2.4cqw 2.6cqw; padding: 3cqw 2.4cqw 3.2cqw;
+  border-radius: 0.8cqw;
+  background: var(--lo-ink); color: var(--s-mid);
+  text-shadow: none;
+  box-shadow: 0 0 2.6cqw -0.4cqw var(--s-soft);
+  --lo-dim: color-mix(in srgb, var(--s-mid) 74%, transparent);
+  --lo-faint: color-mix(in srgb, var(--s-mid) 36%, transparent);
 }
-.wl-rp-list > .wl-rp-item.is-recipient::before {
-  /* the LCD's own pixels over the lit panel, felt rather than seen */
-  display: block;
-  top: 0; bottom: 0; left: 0; right: 0; height: auto; border-radius: inherit;
-  background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
-  mix-blend-mode: multiply;
-}
-.wl-rp-item.is-recipient + .wl-rp-item:not(.is-recipient)::before { display: none; }
-.wl-rp-item.is-recipient > * { position: relative; }
-.wl-rp-item.is-recipient .wl-rp-words { color: var(--rp-ink); }
-.wl-rp-item.is-recipient :is(.wl-rp-meta, .wl-rp-when, .wl-rp-state) { color: color-mix(in srgb, var(--rp-ink) 72%, transparent); }
-.wl-rp-item.is-recipient .wl-rp-you { color: var(--rp-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rp-ink) 50%, transparent); }
+.wl-rp-list > .wl-rp-item.is-recipient::before { display: none; }
+.wl-rp-item.is-recipient + .wl-rp-item::before { display: none; }
+.wl-rp-item.is-recipient :is(.wl-rp-words, .wl-rp-name) { color: var(--s-mid); }
+.wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag) { color: var(--lo-dim); }
+.wl-rp-item.is-recipient .wl-rp-like.is-on { color: var(--s-mid); }
+.wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag):not(:disabled):active { background: var(--s-mid); color: var(--lo-ink); }
+.wl-rp-item.is-recipient .wl-face { box-shadow: 0 0 0 0.5cqw var(--s-mid); }
 .wl-rp-badge {
   display: inline-block; flex: 0 1 auto; min-width: 0;
-  padding: 3px 6px 2px; border-radius: 2px;
-  font-size: var(--t-meta); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  background: var(--rp-ink); color: var(--rp-panel);
+  padding: 0.8cqw 1.6cqw 0.6cqw; border-radius: 0.5cqw;
+  font-size: var(--lo-meta); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--s-mid); color: var(--lo-ink);
 }
-.wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag) { color: color-mix(in srgb, var(--rp-ink) 78%, transparent); }
-.wl-rp-item.is-recipient .wl-rp-like.is-on { color: var(--rp-ink); }
-.wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag):not(:disabled):active { background: var(--rp-ink); color: var(--rp-panel); }
-.wl-rp-item.is-recipient .wl-face { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45); }
 @media (hover: hover) and (pointer: fine) {
-  .wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag):hover { color: var(--rp-ink); }
+  .wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag):hover { color: var(--s-mid); background: color-mix(in srgb, var(--s-mid) 14%, transparent); }
 }
 
-/* ── nothing yet ── */
+/* ── nothing yet ──
+   The phone's own empty screen: the envelope, a line in the large face and
+   one under it, in the middle of the glass. */
 .wl-rp-empty {
   position: relative;
-  display: flex; flex-direction: column; gap: 5px;
-  padding: 18px 14px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.4cqw;
+  min-height: 100%; padding: 7cqw var(--lo-pad); text-align: center;
 }
-.wl-rp-list + .wl-rp-empty, .wl-rp-owner + .wl-rp-empty { margin-top: 0; }
+.wl-rp-owner + .wl-rp-empty { min-height: 0; padding-top: 5cqw; }
 .wl-rp-empty::before { display: none; }
-.wl-rp-empty-h { font-size: var(--t-read); line-height: 1.1; color: var(--chalk); }
-.wl-rp-empty-say { font-size: var(--t-meta); line-height: 1.2; color: var(--ash); }
+.wl-rp-empty-g { display: block; color: var(--lo-ink); opacity: 0.8; }
+.wl-rp-empty-h { font-size: calc(var(--lo-read) * 1.2); line-height: 1; color: var(--lo-ink); }
+.wl-rp-empty-say { font-size: var(--lo-meta); line-height: 1.2; color: var(--lo-dim); }
 
 /* ── a line in place of what cannot be here ── */
 .wl-rp-note {
   position: relative;
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 16px 14px;
-  font-size: var(--t-meta); line-height: 1.24; color: var(--ash);
+  display: flex; align-items: center; gap: 2.6cqw; flex-wrap: wrap;
+  padding: 4cqw var(--lo-pad);
+  font-size: var(--lo-meta); line-height: 1.24; color: var(--lo-dim);
 }
 .wl-rp-note.is-away::before { display: none; }
-.wl-rp-note .wl-pxi { flex: 0 0 auto; display: block; }
+.wl-rp-note .wl-pxi { flex: 0 0 auto; display: block; color: var(--lo-ink); }
 .wl-rp-note > span { flex: 1 1 12ch; min-width: 0; }
 
 /* ── a school address ──
-   The composer's door, standing in the lower half in place of the thread. */
+   The composer's door, standing in the lower half in place of the thread,
+   drawn on its glass: the field a well in the panel with the ink's caret,
+   and the one bright control struck out of the ink. */
 .wl-rp-school {
   position: relative;
-  display: flex; flex-direction: column; align-items: stretch; gap: 12px;
-  padding: 16px 14px 16px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 3cqw;
+  padding: 4.4cqw var(--lo-pad) 4cqw;
 }
-.wl-rp-school-say { margin: 0; font-size: var(--t-read); line-height: 1.2; color: var(--chalk); text-wrap: pretty; }
-.wl-rp-school.is-sent .wl-rp-school-say { font-size: var(--t-meta); line-height: 1.3; color: var(--ash); }
-.wl-rp-school .wl-h { color: var(--chalk); overflow-wrap: anywhere; }
-.wl-rp-fault { margin: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--accent); }
-.wl-rp-wait { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--t-meta); color: var(--ash); }
+.wl-rp-school-say { margin: 0; font-size: var(--lo-read); line-height: 1.14; color: var(--lo-ink); text-wrap: pretty; }
+.wl-rp-school.is-sent .wl-rp-school-say { font-size: var(--lo-meta); line-height: 1.3; color: var(--lo-dim); }
+.wl-rp-school .wl-h { color: var(--lo-ink); overflow-wrap: anywhere; }
+.wl-rp-fault {
+  align-self: flex-start; margin: 0; padding: 1cqw 1.8cqw 0.8cqw; border-radius: 0.5cqw;
+  font-size: var(--lo-meta); line-height: 1.2; background: var(--lo-ink); color: var(--s-mid); text-shadow: none;
+}
+.wl-rp-wait { display: flex; align-items: center; gap: 2cqw; margin: 0; font-size: var(--lo-meta); color: var(--lo-dim); }
 .wl-rp-again { align-self: flex-start; padding: 2px 0; }
-/* The number and the way to ask again are the composer's own (post.css
-   `.wl-edu-match`, wall.css `.wl-resend`), sat on the thread's left edge
-   rather than centred on a door. */
 .wl-rp-school :is(.wl-resend, .wl-resend-go) { align-self: flex-start; padding: 2px 0; }
-/* the one person who answers with no school, pointed to their own door */
 .wl-rp-school .wl-rp-theirs { align-self: flex-start; padding: 2px 0; text-align: left; text-wrap: pretty; }
+/* the chrome's parts, on this glass: the field, the quiet lines and the
+   primary are the ink's and the panel's, never the room's chalk */
+.wl-root.is-room .wl-low .wl-addr {
+  position: relative; min-height: 12cqw; padding: 2.2cqw 3cqw 1.8cqw;
+  background: color-mix(in srgb, var(--s-lo) 55%, transparent);
+  border: 0; border-radius: 0.6cqw; box-shadow: inset 0 0 0 0.5cqw var(--lo-faint);
+}
+.wl-root.is-room .wl-low .wl-addr:focus-within { box-shadow: inset 0 0 0 0.5cqw var(--lo-ink); }
+.wl-root.is-room .wl-low .wl-addr-in {
+  width: 100%; padding: 0; background: none; color: var(--lo-ink); border: 0;
+  font: 400 var(--lo-read)/1.1 var(--f-s40); text-shadow: inherit; caret-color: var(--lo-ink);
+}
+.wl-root.is-room .wl-low .wl-addr-in:focus { outline: none; }
+.wl-root.is-room .wl-low .wl-addr-in::placeholder { color: var(--lo-ink); opacity: 0.4; }
+.wl-low .wl-field-line { display: none; }
+.wl-root .wl-low .wl-quiet { color: var(--lo-dim); text-shadow: inherit; }
+.wl-root .wl-low .wl-quiet:not(:disabled):hover { color: var(--lo-ink); }
+.wl-root.is-room .wl-low .wl-pill.is-key {
+  background: var(--lo-ink); color: var(--s-mid); box-shadow: none; text-shadow: none;
+  border-radius: 0.6cqw; font-family: var(--f-s40);
+}
+.wl-root.is-room .wl-low .wl-pill.is-key:disabled { background: var(--lo-faint); color: var(--s-mid); opacity: 1; }
+.wl-root.is-room .wl-low .wl-pill.is-key:not(:disabled):active { background: var(--lo-dim); color: var(--s-mid); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-root.is-room .wl-low .wl-pill.is-key:not(:disabled):hover { background: var(--lo-ink); filter: brightness(1.15); }
+}
+.wl-low .wl-pill .wl-pxi { color: currentColor; }
 
 /* ── the recipient's own row ──
-   Neutral glass, a step lighter than the thread's, with the brighter bezel:
-   the one row in the lower half that is about the person reading it, and
-   the first. */
+   The one row in the lower half that is about the person reading it, and
+   the first: framed in the ink's rule, as the phone boxed a message it
+   wanted read, with its keys drawn in the same rule. */
 .wl-rp-owner {
-  display: flex; flex-direction: column; gap: 12px;
-  margin: 12px 14px 4px; padding: 14px;
-  border-radius: var(--r-lcd, 3px);
-  background: var(--lcd-2, #161616);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38));
+  position: relative;
+  display: flex; flex-direction: column; gap: 3cqw;
+  margin: 3.4cqw var(--lo-pad) 1.2cqw; padding: 3.6cqw;
+  border-radius: 0.8cqw;
+  box-shadow: inset 0 0 0 0.5cqw var(--lo-ink);
 }
-.wl-rp-owner-say { margin: 0; font-size: var(--t-meta); line-height: 1.26; color: var(--ash); text-wrap: pretty; }
-.wl-rp-owner-h { display: block; margin-bottom: 5px; font-size: var(--t-read); line-height: 1.1; color: var(--chalk); }
-.wl-rp-owner-keys { display: flex; flex-wrap: wrap; gap: 8px; }
+.wl-rp-owner-say { margin: 0; font-size: var(--lo-meta); line-height: 1.26; color: var(--lo-dim); text-wrap: pretty; }
+.wl-rp-owner-h { display: block; margin-bottom: 1.4cqw; font-size: var(--lo-read); line-height: 1.05; color: var(--lo-ink); }
+.wl-rp-owner-keys { display: flex; flex-wrap: wrap; gap: 2cqw; }
 .wl-root.is-room .wl-rp-owner-go { flex: 1 1 100%; }
 .wl-rp-key {
-  flex: 1 1 0; min-width: max-content; padding: 0 12px; min-height: 38px;
-  background: var(--lcd, #0B0B0B); color: var(--chalk);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
+  flex: 1 1 0; min-width: max-content; padding: 0 3cqw; min-height: 38px;
+  color: var(--lo-ink);
+  box-shadow: inset 0 0 0 0.5cqw var(--lo-faint);
 }
-.wl-rp-key:disabled { color: var(--ash-dim); cursor: default; }
+.wl-rp-key:disabled { color: var(--lo-dim); cursor: default; }
 @media (hover: hover) and (pointer: fine) {
-  .wl-rp-key:not(:disabled):hover, .wl-rp-undo:hover { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
+  .wl-rp-key:not(:disabled):hover, .wl-rp-undo:hover { box-shadow: inset 0 0 0 0.5cqw var(--lo-ink); }
 }
 
 /* ── the pictures ──
    A writer's creature on its small screen (Replies.jsx `Creature`): the
    panel in its colour with the backlight's hot corner, the drawing in its
    inks, and the panel's pixels over both, as a face's small screen is drawn
-   (wall.css `.wl-face`). */
+   (wall.css `.wl-face`). On a letter's glass it is a sprite (`is-mono`):
+   the drawing in the panel's ink with a hair of the ink behind it, the way
+   the phone drew a picture in the one colour it had. */
 .wl-rp-av {
   position: relative; isolation: isolate; flex: 0 0 auto;
   display: inline-block; width: var(--s); height: var(--s);
@@ -423,58 +436,75 @@ button.wl-chin:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); out
     linear-gradient(112deg, rgba(255, 255, 255, 0.12), transparent 40%, transparent 70%, rgba(0, 0, 0, 0.12));
   mix-blend-mode: multiply;
 }
+.wl-rp-av.is-mono {
+  color: var(--lo-ink, var(--s-ink));
+  background: color-mix(in srgb, var(--lo-ink, var(--s-ink)) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lo-ink, var(--s-ink)) 22%, transparent);
+  filter: drop-shadow(0 0 0.8px var(--s-soft, transparent));
+}
+.wl-rp-av.is-mono::after { display: none; }
 
 /* ── the terms, before a first reply ──
    Read in the lower half in place of the thread, and scrolled there when
    they are longer than it; `agree` and `not now` are its soft keys. */
 .wl-rp-terms {
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 16px 16px 18px;
+  display: flex; flex-direction: column; gap: 3cqw;
+  padding: 4.4cqw var(--lo-pad) 4.8cqw;
   animation: wl-fade 200ms var(--ease, ease) both;
 }
-.wl-rp-terms-kicker { margin: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash); }
+.wl-rp-terms-kicker { margin: 0; font-size: var(--lo-meta); line-height: 1.2; color: var(--lo-dim); }
 .wl-rp-terms-h {
-  margin: -4px 0 0; outline: none;
-  font-family: var(--f-display); font-weight: 400;
-  font-size: clamp(26px, 7.6vw, 32px); line-height: 1.02; letter-spacing: 0;
+  margin: -1cqw 0 0; outline: none;
+  font-family: var(--f-s40); font-weight: 400;
+  font-size: calc(var(--lo-read) * 1.36); line-height: 0.98; letter-spacing: 0; color: var(--lo-ink);
 }
-.wl-rp-terms-say { margin: 0; font-size: var(--t-read); line-height: 1.22; color: var(--chalk); text-wrap: pretty; }
+.wl-rp-terms-say { margin: 0; font-size: var(--lo-read); line-height: 1.14; color: var(--lo-ink); text-wrap: pretty; }
 .wl-rp-terms-list {
   position: relative; list-style: none;
-  display: flex; flex-direction: column; gap: 10px;
-  margin: 2px 0 0; padding: 14px 0 2px;
+  display: flex; flex-direction: column; gap: 2.4cqw;
+  margin: 0.6cqw 0 0; padding: 3.6cqw 0 0.6cqw;
 }
 .wl-rp-terms-list::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: repeating-linear-gradient(90deg, var(--lcd-edge, rgba(244, 241, 234, 0.16)) 0 2px, transparent 2px 6px);
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 0.6cqw;
+  background: repeating-linear-gradient(90deg, var(--lo-faint) 0 0.6cqw, transparent 0.6cqw 1.8cqw);
 }
 .wl-rp-terms-list li {
-  position: relative; padding-left: 20px;
-  font-size: var(--t-read); line-height: 1.2; color: var(--chalk); text-wrap: pretty;
+  position: relative; padding-left: 5cqw;
+  font-size: var(--lo-read); line-height: 1.12; color: var(--lo-ink); text-wrap: pretty;
 }
 /* a pixel for a bullet */
 .wl-rp-terms-list li::before {
-  content: ''; position: absolute; left: 2px; top: 0.36em;
-  width: 6px; height: 6px; background: var(--chalk);
+  content: ''; position: absolute; left: 0.6cqw; top: 0.34em;
+  width: 1.8cqw; height: 1.8cqw; background: var(--lo-ink);
 }
-.wl-rp-terms-cost { margin: 0; font-size: var(--t-meta); line-height: 1.3; color: var(--ash); text-wrap: pretty; }
+.wl-rp-terms-cost { margin: 0; font-size: var(--lo-meta); line-height: 1.3; color: var(--lo-dim); text-wrap: pretty; }
 .wl-rp-terms-link {
-  display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
-  font-size: var(--t-meta); line-height: 1.2; color: var(--chalk);
-  text-decoration: none; padding: 4px 0;
+  display: inline-flex; align-items: center; gap: 2.4cqw; align-self: flex-start;
+  font-size: var(--lo-meta); line-height: 1.2; color: var(--lo-ink);
+  text-decoration: none; padding: 1cqw 0;
 }
-.wl-rp-terms-link .wl-pxi { display: block; color: var(--ash); }
-.wl-rp-terms-link:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
-@media (hover: hover) and (pointer: fine) {
-  .wl-rp-terms-link:hover .wl-pxi { color: var(--chalk); }
+.wl-rp-terms-link .wl-pxi { display: block; color: var(--lo-ink); }
+.wl-rp-terms-link:focus-visible { outline: 0.5cqw solid var(--lo-ink); outline-offset: 1cqw; border-radius: 0.5cqw; }
+
+/* a dark panel (the negative): the ink is the light, so it glows, as the
+   screen's own words do on it */
+.wl-set[data-kind='neg'] .wl-low-in {
+  text-shadow: 0 0 0.2cqw rgba(255, 255, 255, 0.85), 0 0 1.2cqw rgba(255, 255, 255, 0.28);
 }
+.wl-set[data-kind='neg'] .wl-low-in > .wl-scr-fx.is-grid {
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.26) 0 1px, transparent 1px var(--q-pitch, 3px)),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.22) 0 1px, transparent 1px var(--q-pitch, 3px));
+}
+.wl-set[data-kind='neg'] .wl-rp-item.is-recipient { box-shadow: 0 0 1.2cqw rgba(255,255,255,0.32), 0 0 3cqw rgba(255,255,255,0.12); }
 
 /* Asked for less movement: the phone opens and shuts as a cut (Letter.jsx
    `runQ`), and what is in the thread fades in over a beat instead of
-   coming out from under the chin; the field is simply there. */
+   coming up row by row; the field is simply there. */
 @media (prefers-reduced-motion: reduce) {
   .wl-letter.is-thread .wl-low-in { animation: wl-fade 120ms linear both; }
-  .wl-low-write, .wl-rp-item.is-mine:last-child, .wl-rp-terms, .wl-chin-n, .wl-low-said { animation: none; }
+  .wl-letter.is-thread .wl-low-list > *, .wl-letter.is-thread .wl-rp-list > .wl-rp-item { animation: none; }
+  .wl-low-write, .wl-rp-item.is-mine:last-child, .wl-rp-terms, .wl-low-said { animation: none; }
   .wl-rp-like.is-on .wl-pxi { animation: none; }
-  .wl-chin-grip i { transition: none; }
+  .wl-root .wl-sk.is-thread.is-open { transition: none; }
 }
