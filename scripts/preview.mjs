@@ -888,12 +888,13 @@ const RPC = {
     : { status: 'pending', handle: null, note: NOTE || null }),
   // 0023: the ping, placed. Standing, never announced as mutual here, and the
   // slots the server holds this person to, which the account sheet counts
-  // against. Or refused, with every slot already standing.
+  // against. Or refused, with every slot already standing. It ends at the
+  // first reveal a day or more away (0069 `celestual_note_ends`)
   celestual_submit: () => (FULL
     ? { recorded: false, error: 'no_slots', slots: { standing: 2, cap: 2 } }
     : {
       recorded: true, mutual: false, match: null, match_card: null, reachable: false,
-      expires_at: new Date(now + 60 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
+      expires_at: new Date(NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
     }),
   // The front door's notice reads this.
   wall_pulse: () => ({
@@ -1239,6 +1240,11 @@ const ROUTES = [
   { label: 'you-reveal',    path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
   { label: 'you-revealed',  path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
   { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed']], settle: 900 },
+  // the mutual under the pointer, on any visit and after the night has
+  // landed: the phone's inversion, chalk with everything on it black
+  { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+  { label: 'you-revealed-hover', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] },
+    acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
 
   // the addresses Main used to draw, landing on the wall
   { label: 'legacy-sky',    path: '/sky' },
@@ -1886,8 +1892,16 @@ for (const r of list) {
       // after it instead of the beat below: the way to catch a frame in the
       // middle of a movement the click started
       // forced, because a disc on the wall never stands still and a click
-      // that waits for a still target waits forever
+      // that waits for a still target waits forever. A forced click lands on
+      // whatever is on top at the target's middle, so a target a sheet's
+      // sticky foot covers there (a row scrolled under it) is brought to the
+      // middle of its scroller first
       if (act === 'click') {
+        await page.$eval(sel, (el) => {
+          const b = el.getBoundingClientRect()
+          const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)
+          if (top && !el.contains(top) && top.closest('.wl-foot')) el.scrollIntoView({ block: 'center' })
+        }).catch(() => {})
         await page.click(sel, { timeout: 4000, force: true }).catch(() => {})
         if (typeof more === 'number') { await page.waitForTimeout(more); continue }
       }

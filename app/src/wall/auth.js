@@ -169,9 +169,11 @@ export async function signedIn() {
 // sky on Main, one tap away. One session, one sign out. The slots this
 // person was last told they hold go with them (pings.js `slotCap`), so the
 // next person on the same laptop is not shown a count that was somebody
-// else's.
+// else's, and so do when their notes went out and the reveal they last
+// opened (pings.js `revealWaiting`), so the next person is not given a
+// light for somebody else's night.
 export function signOut() {
-  patch({ member: null, reader: false, verified: [], pingCap: 0, edu: null })
+  patch({ member: null, reader: false, verified: [], pingCap: 0, edu: null, noteSpans: [], revealSeen: null })
   forgetSession()
   dropProof()
   clearPending()

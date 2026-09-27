@@ -340,6 +340,10 @@ export default function Ping({
   const [edit] = useState(() => takeEdit(pre))
   const [to, setTo] = useState(() => held?.to || pre)
   const [line, setLine] = useState(() => held?.line || edit?.line || '')
+  // whose note had its words put on the screen (`editNote`, or a name chosen
+  // with a note out on it): a line cleared of them takes them off the note.
+  // A line that was only ever empty sends no words, and keeps what was there
+  const shown = useRef(edit?.line ? edit.to : '')
   // when the note that just went out reveals (0069), off the placement's answer
   const [ends, setEnds] = useState(0)
   // who · line · proof · done. A link with a person in it opens on that
@@ -437,7 +441,7 @@ export default function Ping({
     if (p && p.state === 'mutual') { go('reveal', k); return }
     setTo(k)
     setSaid('')
-    if (p && p.line && !line.trim()) setLine(p.line)
+    if (p && p.line && !line.trim()) { setLine(p.line); shown.current = k }
     setStep('line')
   }
 
@@ -472,7 +476,7 @@ export default function Ping({
     if (placing) return
     setPlacing(true)
     setSaid('')
-    const out = await place({ me, them: h, proof: spent || heldProof(me), words: line.trim() })
+    const out = await place({ me, them: h, proof: spent || heldProof(me), words: line.trim() || (shown.current === h ? '' : undefined) })
     if (!alive.current) return
     setPlacing(false)
     if (!out.ok) {
@@ -672,7 +676,7 @@ export default function Ping({
             >
               {done ? (
                 <ScreenNote glyph="check" title={`till ${endsWords(ends) || 'saturday'}`}>
-                  if they send you one by then, you both find out at 9pm.
+                  if they send you one by then, you both find out at 9pm pacific.
                 </ScreenNote>
               ) : (
                 <ScreenDraft

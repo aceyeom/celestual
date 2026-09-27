@@ -110,7 +110,7 @@ import '../mutual.css'
 const STEPS = [
   { line: 'you send them a note, privately.', sub: 'they’re never told.' },
   { line: 'they send you one too.', sub: 'on their own, not knowing you did.' },
-  { line: 'saturday at 9pm, you both find out, and read each other’s note.', sub: 'if it isn’t mutual, nobody ever knows. keep it for next week, or let it go.' },
+  { line: 'saturday at 9pm pacific, you both find out, and read each other’s note.', sub: 'if it isn’t mutual, nobody ever knows. keep it for next week, or let it go.' },
 ]
 
 // The story's beats are the steps': each is lit as its part of the story

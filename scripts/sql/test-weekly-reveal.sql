@@ -293,8 +293,15 @@ update celestual_entries
    set matched_at = now() - interval '10 days', sealed_with = null, sealed_at = null, reveal_at = null,
        expires_at = now() + interval '50 days 7 hours'
  where from_handle in ('wr_p', 'wr_q');
+select wr_ok('a mutual is not let go: it was told to both',
+  celestual_withdraw('wr_q', 'wr_p', 'proof-wr_q')->>'error' = 'mutual');
+select wr_ok('and both halves stay told',
+  (wr_row('wr_p', 'wr_q')).matched_at is not null and (wr_row('wr_q', 'wr_p')).matched_at is not null);
+-- the half state an older build could leave: this half standing again,
+-- the other still matched
+update celestual_entries set matched_at = null, matched_handle = null where from_handle = 'wr_q';
 select celestual_withdraw('wr_q', 'wr_p', 'proof-wr_q');
-select wr_ok('a mutual from before the week whose other side lets go is a note again, ending on a reveal',
+select wr_ok('a matched half whose other side lets go is a note again, ending on a reveal',
   (wr_row('wr_p', 'wr_q')).matched_at is null
   and (wr_row('wr_p', 'wr_q')).expires_at = celestual_next_reveal(celestual_note_ends(now())));
 

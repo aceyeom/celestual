@@ -57,22 +57,25 @@ select d_ok('the two-argument withdraw no longer exists',
                where n.nspname = 'public' and p.proname = 'celestual_withdraw'
                  and pg_get_function_identity_arguments(p.oid) = 'p_from text, p_to text'));
 
--- ── 1b. withdrawing a mutual frees the other side ──────────────────────────
--- 0038. The other person's row used to stay stamped matched_at and
--- matched_handle, with nobody on the far end of it.
+-- ── 1b. a mutual is not let go ──────────────────────────────────────────────
+-- 0038 let one half of a mutual go and stood the other up again. Since 0069
+-- a mutual has been told to both at its reveal, and a "let it go" from a
+-- screen that was up across the night would take it back from the other
+-- person after they were told, so the pair stays as it is.
 select d_proof('cy', 'proof-cy');
 insert into celestual_entries (from_handle, to_hash, to_handle, expires_at, matched_at, matched_handle)
 values ('cy', celestual_hash_handle('di'), 'di', now() + interval '60 days', now(), 'di');
 insert into celestual_entries (from_handle, to_hash, to_handle, expires_at, matched_at, matched_handle)
 values ('di', celestual_hash_handle('cy'), 'cy', now() - interval '1 day', now(), 'cy');
 insert into celestual_matches (handle_a, handle_b) values ('cy', 'di');
-select d_ok('the owner withdraws their half of a mutual',
-  (celestual_withdraw('cy', 'di', 'proof-cy')->>'withdrawn') = 'true');
-select d_ok('and the other half is standing again, with a fresh window',
-  (select matched_at is null and matched_handle is null and expires_at > now()
-     from celestual_entries where from_handle = 'di' and to_handle = 'cy'));
-select d_ok('and the match row is gone',
-  not exists (select 1 from celestual_matches where handle_a = 'cy' and handle_b = 'di'));
+select d_ok('letting go of a half of a mutual is refused, and says why',
+  (celestual_withdraw('cy', 'di', 'proof-cy')->>'withdrawn') = 'false'
+  and (celestual_withdraw('cy', 'di', 'proof-cy')->>'error') = 'mutual');
+select d_ok('and both halves are still matched',
+  (select count(*) from celestual_entries
+    where from_handle in ('cy', 'di') and matched_at is not null) = 2);
+select d_ok('and the match row stands',
+  exists (select 1 from celestual_matches where handle_a = 'cy' and handle_b = 'di'));
 
 -- ── 2. link ─────────────────────────────────────────────────────────────────
 select d_ok('anon cannot link handles',

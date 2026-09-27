@@ -89,6 +89,11 @@ select wx_ok('every pair is told, once',
     where from_handle like 'wx\_%' and matched_at is not null and sealed_with is null) = 24
   and (select count(*) from celestual_matches where handle_a like 'wx\_%') = 12);
 
+-- a connection that sent a query asynchronously is free again only once its
+-- result has been read to the empty one after it
+select * from dblink_get_result('wx_two') as t(r text);
+select * from dblink_get_result('wx_three') as t(n int);
+
 -- ── the same person placing and reading behind a running reveal ──
 -- with the proof asked for, as it is in production: every door takes the
 -- proof's row and then the reveal's lock, in that order, so a placement and
@@ -111,13 +116,16 @@ select wx_ok('a reveal is held open again',
 select dblink_send_query('wx_two', $sql$select celestual_submit('wx_1b', 'wx_y', null, 'proof-wx_1b', null)::text$sql$);
 select pg_sleep(0.2);
 select dblink_send_query('wx_three', $sql$select celestual_my_pings('wx_1b', 'proof-wx_1b')::text$sql$);
-select wx_ok('the placement and the read by the same person both wait for it', wx_waiting(2) = 2);
+-- the placement waits on the reveal's lock, and the read on the placement's
+-- proof: one order, so nobody holds what the other is waiting for
+select wx_ok('the placement and the read by the same person both wait',
+  wx_waiting(1) >= 1 and dblink_is_busy('wx_two') = 1 and dblink_is_busy('wx_three') = 1);
 select dblink_exec('wx_one', 'commit');
 create temp table wx_place as select r::jsonb as r from dblink_get_result('wx_two') as t(r text);
 create temp table wx_list as select r::jsonb as r from dblink_get_result('wx_three') as t(r text);
 select wx_ok('and both are answered, with nobody deadlocked',
   ((select r from wx_place)->>'recorded')::boolean and ((select r from wx_list)->>'ok')::boolean);
-select dblink_exec('wx_set', $sql$delete from celestual_settings where key = 'require_ig_verification'$sql$);
+select dblink_exec('wx_set', $sql$update celestual_settings set value = 'false' where key = 'require_ig_verification'$sql$);
 
 select dblink_exec('wx_set', $sql$delete from celestual_matches where handle_a like 'wx\_%' or handle_b like 'wx\_%'$sql$);
 select dblink_exec('wx_set', $sql$delete from celestual_entries where from_handle like 'wx\_%'$sql$);
