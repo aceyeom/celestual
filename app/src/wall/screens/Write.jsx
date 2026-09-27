@@ -90,7 +90,7 @@
 // name, one pulse out from its disc (screens/Wall.jsx, Hive.jsx `pulse`). A
 // letter held for the desk and a note sent privately say so on the screen,
 // once, in the words the rest of the product uses for them ("it's being
-// read." and "sent privately.", the ping's own sixty days), and the sheet
+// read." and "sent privately.", the ping's own saturday), and the sheet
 // goes back to the wall on the next press.
 //
 // ── and the wall it goes back to is the names, not the poster ──────────────
@@ -132,7 +132,7 @@ import { sendCampusCode, checkCampusCode, loadPending } from '../handoff.js'
 import { sendLink, linkStatus } from '../../api/eduverify.js'
 import { sessionToken } from '../../api/identity.js'
 import { signOut as dropProof } from '../../api/auth.js'
-import { myHandle, canPlace, readyToPlace, place, forgetPings } from '../pings.js'
+import { myHandle, canPlace, readyToPlace, place, forgetPings, endsWords } from '../pings.js'
 import { schoolOf, slugOfDomain } from '../schools.js'
 import { Sticker } from '../Sticker.jsx'
 import { useProve, ProveDoor } from './Ping.jsx'
@@ -315,6 +315,8 @@ export default function Write({
   // who · 1 (the letter) · how · edu · ig · done
   const [step, setStep] = useState(() => (sentTo ? 'done' : live(d0.held) ? 'edu' : igHeld ? 'ig' : prefill ? 1 : 0))
   const [done, setDone] = useState(() => (sentTo ? 'private' : ''))
+  // the reveal a note sent privately runs to, off the placement's answer
+  const [ends, setEnds] = useState(0)
   const [styling, setStyling] = useState(false)
   const wide = useWide()
   const letterRef = useRef(null)
@@ -665,6 +667,7 @@ export default function Write({
     setAdopted(null)
     patch({ draft: null })
     try { window.history.replaceState({ ...window.history.state, wallSent: target }, '') } catch { /* a sandbox */ }
+    setEnds(Date.parse(out.expires_at || 0) || 0)
     setDone('private')
     setStep('done')
   }
@@ -903,7 +906,7 @@ export default function Write({
                   has one name wherever it is met */}
               {fin ? (
                 done === 'private' ? (
-                  <ScreenNote glyph="check" title="sixty days">if they send you one in that time, you both find out.</ScreenNote>
+                  <ScreenNote glyph="check" title={`till ${endsWords(ends) || 'saturday'}`}>if they send you one by then, you both find out at 9pm.</ScreenNote>
                 ) : (
                   <ScreenNote glyph="wait" title="being read">it goes up once it passes.</ScreenNote>
                 )
