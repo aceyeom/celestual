@@ -68,6 +68,14 @@ Because retiring now frees the slot, enter→peek→retire cycling is bounded by
 per handle (`celestual_placements`), on top of the hourly rate limits. Honest
 use never feels it; a sweep trips it fast.
 
+**Since 0071 (pings by the week)** the standing slots are gone: one free ping
+a reveal, more bought, ten at most, and letting a note go gives its ping
+back. A bought ping has to be spendable, so the cap above became **30 new
+pairs per rolling 7 days** per handle, still counted in `celestual_placements`
+and still answered `rate_limited` before any ping is spent. Without it the
+ceiling of ten could be cycled for nothing (send, read `reachable`, let go,
+send again). docs/PINGS-BY-THE-WEEK.md section 8 has the reasoning.
+
 ### §4 — Rate limiting
 `celestual_submit` enforces trailing-hour caps: **per-IP (40/hr)**,
 **per-`from` handle (20/hr)**, **per-target (60/hr, compared by hash)**.
@@ -91,6 +99,8 @@ After (and only after) placing a ping, the sender learns whether the target is
 out). Membership is the flattering receiver-side identity; still, it's a bit,
 so it is guarded: no lookup without a placed ping, three slots, the cadence
 cap, and the hourly limits make enumeration cost slots, time, and identity.
+(Since 0071: the week's pings, the ceiling of ten a reveal, and 30 new pairs
+a rolling week, in place of the slots and the thirty day cap.)
 `celestual_ping_status` returns reachability only for targets the caller has
 actually placed.
 

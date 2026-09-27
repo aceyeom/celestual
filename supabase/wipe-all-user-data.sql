@@ -43,6 +43,8 @@ declare
     'celestual_matches',
     'celestual_entries',
     'celestual_placements',
+    -- the week's ledger of pings (migration 0071)
+    'celestual_ping_spends',
     -- identity & verification
     'celestual_members',
     'celestual_handle_links',
