@@ -57,10 +57,12 @@ privately too. they only read it if they send you one." Never write that a
 letter on the wall makes a mutual: only a note sent privately does. A line
 that asks for a proof says which proof and what it is for, in one sentence:
 "confirm this is your Instagram, so we can tell you if it's mutual", "confirm
-you're at Berkeley" (to post to an @ on the wall), "verify your Instagram
-handle to remove yourself from the wall". Instagram, Google and Berkeley are
-proper nouns and keep their capital (section 1), on a button as in a
-sentence.
+you're at Berkeley" (to post to an @ on the wall), "confirm your Instagram to
+take your name off the wall". The verb is `confirm`, every time: "confirm your
+Instagram" and "confirm your school email" in a sentence, "confirm with one
+DM" on the key. Never "verify your Instagram handle", and never "claim your @"
+as what a person is asked to do: one act, one name. Instagram, Google and Berkeley are proper nouns and keep
+their capital (section 1), on a button as in a sentence.
 
 `share` is never the word for putting a letter up, and `send` is never the word
 for passing one on. The composer's act is `send anonymously`; the key on a

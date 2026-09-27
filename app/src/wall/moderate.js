@@ -53,7 +53,9 @@
 // function's alone, and neither has a client half: the composer posts to
 // celestual-wall-moderate, which runs the list, writes the letter live and
 // answers, and reads it after; the wall asks `wall_mine` a few times over the
-// next half minute and raises the notice if the reading took it down.
+// next half minute and raises the notice if the reading took it down. A
+// letter held for the desk is said on the wall too, while it waits and once
+// it is refused (`neverUp`, screens/Wall.jsx `Down`).
 
 // ── layer 1 ─────────────────────────────────────────────────────────────────
 // Kept byte-identical in spirit to the Edge Function's list. A slur that is
@@ -66,6 +68,10 @@ const SLURS = [
   'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'retard', 'retarded', 'kike',
   'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',
 ]
+
+// What a slur caught here says, and what a letter the server refused for one
+// says (`whyNot`): the same sentence, since to the writer it is the same fact.
+const INAPPROPRIATE = 'that’s inappropriate for the wall.'
 
 // Each pattern carries the sentence the writer is shown. A refusal that says
 // "this violates our guidelines" teaches nobody anything and reads as a
@@ -99,7 +105,7 @@ function fold(s) {
 export function fault(text) {
   const folded = fold(text)
   for (const s of SLURS) {
-    if (new RegExp(`\\b${s}\\b`).test(folded)) return 'that\u2019s inappropriate for the wall.'
+    if (new RegExp(`\\b${s}\\b`).test(folded)) return INAPPROPRIATE
   }
   for (const p of PATTERNS) {
     const m = String(text || '').match(p.re)
@@ -112,19 +118,68 @@ export function fault(text) {
 
 export function clean(text) { return !fault(text) }
 
+// ── why the wall said no, at the send ──────────────────────────────────────
+// A letter read before it goes up (0066) can be refused on the spot, and the
+// server answers with the reasons it had (celestual-wall-moderate: the list's
+// own ids, or the reading's categories). The composer used to throw them away
+// and say "that's inappropriate for the wall." whatever they were, so a
+// writer did not know what to change and could send the same words and be
+// refused again. Now it says the one thing, the way a catch at the keyboard
+// does (the list's own sentence, above) and the way a refused reply does
+// (replies-check.js `whyRefused`), with the one next step. The first reason
+// it has words for wins; a reason it has none for, or none at all, is the
+// server's own sentence and the step. The lexicon's `lex:` hits ride along
+// for the desk and are not read here: they are what the letter might carry,
+// not what the reading found.
+const WHY_NOT = {
+  threat: 'it reads as a threat.',
+  locate: 'it says where somebody can be found.',
+  sexual: 'it is sexual about a person.',
+  minor: 'it is about somebody under 18.',
+  expose: 'it shares something private about a person.',
+  hate: 'it is hateful about a group.',
+  contact: 'it carries contact details.',
+}
+export function whyNot(reasons) {
+  const list = Array.isArray(reasons) ? reasons.map(String) : []
+  for (const r of list) {
+    if (r === 'slur') return INAPPROPRIATE
+    const p = PATTERNS.find((x) => x.id === r)
+    if (p) return `${p.say}.`
+    if (WHY_NOT[r]) return `${WHY_NOT[r]} change it and send it again.`
+  }
+  return 'it can’t go up as it’s written. change it and send it again.'
+}
+
+// ── a letter that was held, and never went up ──────────────────────────────
+// A letter from anybody is read before it goes up (0066), and one the reading
+// is unsure of waits for a person at the desk: `wall_mine` answers
+// `down_by: 'held'` for it while it waits. Two things can end that wait
+// other than the wall: the desk refuses it, which leaves the row 'rejected'
+// (the desk's key for a letter that went up is "take it down", which leaves
+// it 'removed'), or a week passes with nobody deciding (0032 `wall_expire`,
+// 'rejected' and 'lapsed').
+// Either way it never stood, and the notice says it didn't go up rather than
+// that it was taken down.
+export function neverUp(l) {
+  return !!l && l.status === 'rejected' && (l.downBy === 'desk' || l.downBy === 'lapsed')
+}
+
 // ── why a letter of this person's is not on the wall ───────────────────────
 // One sentence for the notice at the foot of the wall. `downBy` is the
 // server's word for whose hand it was (api.js `mine`). It names the terms
 // and not the hand: a writer whose letter came down is owed the fact and the
 // way back, not a machine explaining itself, and "the screen read it as" was
 // a machine explaining itself. The category the reading gave is kept on the
-// row for the desk, and never printed here.
-export function whyDown(downBy) {
+// row for the desk, and never printed here. `held` is a letter that never
+// went up (`neverUp`), for the one hand that reads differently for it: a
+// letter that lapsed while it waited did not stand for thirty days.
+export function whyDown(downBy, held = false) {
   switch (downBy) {
     case 'screen':
     case 'desk':   return 'it went against the terms of the wall. you can change it and put it up again.'
     case 'shut':   return 'the name has come off the wall, and nothing can be written to it now.'
-    case 'lapsed': return 'it stood for its thirty days.'
+    case 'lapsed': return held ? 'it waited a week without an answer. you can put it up again.' : 'it stood for its thirty days.'
     default:       return 'it is not on the wall.'
   }
 }

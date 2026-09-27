@@ -32,7 +32,7 @@ const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
   // that only break at an edge of the range
   ? process.env.PREVIEW_VIEWPORTS.split(',').map((v) => {
     const [width, height] = v.split('x').map(Number)
-    return { name: v, width, height, scale: width < 700 ? 2 : 1 }
+    return { name: v, width, height, scale: Number(process.env.PREVIEW_SCALE) || (width < 700 ? 2 : 1) }
   })
   : [
     { name: 'phone', width: 390, height: 844, scale: 2 },
@@ -111,6 +111,25 @@ NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
   kind: 'name', name, look,
 }))
 const COUNT_OF = new Map(INDEX.map((r) => [r.target_handle, r.letters]))
+// the names whose newest letter went up from a verified school address
+const EDU = new Set(['ren.tanaka', 'jules.k', 'thom.iversen', 'elias.brandt'])
+// ── what the wall's filter reads (0067) ──
+// Every heart under a name, added up; how many of its letters went up from
+// a verified Berkeley address, and when the newest of them did. A spread of
+// each, so the most liked and the Berkeley fields are fields of their own
+// and not the whole wall reshuffled: about half the names carry a heart and
+// four carry a Berkeley letter. A route marked `nocal` takes the Berkeley
+// letters off, for the filter's empty state.
+const LIKED = {
+  'sofiaaa.reyes': 31, 'aya.nakamura': 24, 'pilar.echevarria': 15, 'jules.k': 9,
+  'ace03d': 7, '~sofia': 6, 'nour.haddad': 4, 'dani.arroyo': 2,
+}
+const FROM_CAL = { 'jules.k': 2, 'pilar.echevarria': 1, 'nour.haddad': 1, 'elias.brandt': 1 }
+INDEX.forEach((r, i) => {
+  r.hearts = LIKED[r.target_handle] || 0
+  r.berkeley = FROM_CAL[r.target_handle] || 0
+  r.berkeley_at = r.berkeley ? new Date(now - (i * 11 + 5) * 3600000).toISOString() : null
+})
 
 // The second line runs long on purpose: a deck of letters of one height
 // never shows what the sheet does when the next card is taller, which is
@@ -149,6 +168,9 @@ function lettersFor(handle, open) {
       chars: body.length,
       has_seal: i === 0,
       campus: 'berkeley',
+      // posted from a berkeley.edu address, so the phone is on Berkeley's
+      // network (schools.js `letterMarks`, screen.jsx `Network`)
+      verified: i === 0 && EDU.has(handle),
       at: new Date(now - (i * 3 + 1) * DAY).toISOString(),
       expires: new Date(now + (27 - i) * DAY).toISOString(),
       // 0042: how many hearted it, and whether this browser did. Two
@@ -208,9 +230,88 @@ let FULL = false
 // outside the read gate; the store is seeded with that stale answer, so the
 // shot shows the wall asking the server and drawing what it says.
 let GOOGLE = false
+// Whether the fixture browser signed in with a mailed link (0065) on a device
+// that never did the DM: the row holds a verified @, and this browser holds no
+// proof for it. The store is seeded with nothing, so the shot shows the @ and
+// its private notes coming back from the server (auth.js `restoreProof`)
+// rather than the DM door the owner kept being sent to.
+let EMAIL = false
+// What `celestual-edu-verify` answers about a link: whether the one the door
+// is waiting on has been tapped, and, for /verify, what `confirm` says.
+let LINKED = false
+let CONFIRM = null
+// A door that is anonymous until its link is tapped, and then the person
+// signed in by it (`EMAIL`): the whole walk, from the address to the notes.
+let TAPS = false
+let TAPPED = false
 // What the daily check on apify last said (0060): 'ok', 'failing', 'stale'
 // or 'never'. The desk draws its line at the top of every screen from it.
 let CANARY = 'ok'
+// Whether no letter on the wall went up from a verified Berkeley address
+// (0067), so the Berkeley filter lets nothing through.
+let NOCAL = false
+// Whether a note read before it goes up (a name, or an @ with no proof,
+// 0066) is held for the desk rather than passed, so the composer's
+// "checking" screen is drawn.
+let HELD = false
+// The thread under an open letter (0068, app/src/wall/Replies.jsx): which of
+// its states the fixture draws. 'empty' by default, since most letters have
+// nothing under them; a replies route names the one it is for.
+let THREAD = 'empty'
+
+// ── the replies (0068) ──────────────────────────────────────────────────────
+// Every field is wall_reply_thread's. `who` is sixteen hex, as the server's
+// salted hash is, and one writer is one `who` all down a thread: the first
+// and the fourth reply here are the same person.
+const REPLY_AT = (mins) => new Date(now - mins * 60000).toISOString()
+const REPLIES = [
+  { id: 'r0000001-2222-4333-8444-555566660001', who: 'd41d8cd98f00b204', recipient: false, status: 'live',
+    body: 'this is the sweetest thing on here. i hope they know who it is.', at: REPLY_AT(300), likes: 14 },
+  { id: 'r0000002-2222-4333-8444-555566660002', who: '3c59dc048e885024', recipient: false, status: 'live',
+    body: 'the umbrella detail got me', at: REPLY_AT(250), likes: 6 },
+  { id: 'r0000003-2222-4333-8444-555566660003', who: '9bf31c7ff062936a', recipient: true, status: 'live',
+    body: 'i still think about that walk. keep the umbrella, it suits you better. and say hi next time.', at: REPLY_AT(180), likes: 31 },
+  { id: 'r0000004-2222-4333-8444-555566660004', who: 'd41d8cd98f00b204', recipient: false, status: 'live',
+    body: 'THEY ANSWERED. i am not okay', at: REPLY_AT(150), likes: 9 },
+  { id: 'r0000005-2222-4333-8444-555566660005', who: 'c74d97b01eae257e', recipient: false, status: 'live',
+    body: 'say it to their face next time, you have got this', at: REPLY_AT(40), likes: 2, mine: true },
+  { id: 'r0000006-2222-4333-8444-555566660006', who: 'e4da3b7fbbce2345', recipient: false, status: 'live',
+    body: 'wheeler at night is the most romantic place on campus and nobody will convince me otherwise', at: REPLY_AT(12), likes: 0 },
+]
+function thread() {
+  const me = { signed: true, recipient: false, edu: true, terms: true, who: 'c74d97b01eae257e', can: true, why: null }
+  const rows = REPLIES.map((r) => ({ liked: r.id.endsWith('1'), reported: false, mine: false, ...r }))
+  const base = { ok: true, letter: '11110111-2222-4333-8444-555566660000', state: 'open', recipient_replied: true }
+  const full = { ...base, count: rows.length, replies: rows, me }
+  switch (THREAD) {
+    case 'full': return full
+    case 'terms': return { ...full, me: { ...me, terms: false } }
+    case 'held': return { ...full, count: rows.length, replies: [...rows,
+      { id: 'r0000007-2222-4333-8444-555566660007', who: 'c74d97b01eae257e', recipient: false, status: 'held', mine: true,
+        body: 'honestly whoever wrote this should just ask them to the thing on friday', at: REPLY_AT(1), likes: 0 },
+      { id: 'r0000008-2222-4333-8444-555566660008', who: 'c74d97b01eae257e', recipient: false, status: 'hidden', mine: true,
+        body: 'called it weeks ago', at: REPLY_AT(90), likes: 0 }].sort((a, b) => a.at.localeCompare(b.at)) }
+    case 'reported': return { ...full, replies: rows.map((r, i) => (i === 1 ? { ...r, reported: true } : r)) }
+    case 'recipient': return { ...full,
+      replies: rows.map((r) => ({ ...r, mine: r.recipient })),
+      me: { ...me, recipient: true, edu: false, who: '9bf31c7ff062936a' } }
+    case 'recipient-new': return { ...base, recipient_replied: false, count: 2, replies: rows.slice(0, 2).map((r) => ({ ...r, mine: false })),
+      me: { ...me, recipient: true, edu: false, terms: false, who: '9bf31c7ff062936a' } }
+    case 'locked': return { ...full, state: 'locked', replies: rows.map((r) => ({ ...r, mine: false })),
+      me: { ...me, can: false, why: 'locked' } }
+    case 'locked-owner': return { ...full, state: 'locked', replies: rows.map((r) => ({ ...r, mine: r.recipient })),
+      me: { ...me, recipient: true, edu: false, who: '9bf31c7ff062936a' } }
+    case 'closed': return { ...base, state: 'closed', recipient_replied: false, count: 0, replies: [],
+      me: { ...me, can: false, why: 'closed' } }
+    case 'closed-owner': return { ...full, state: 'closed', replies: rows.map((r) => ({ ...r, mine: r.recipient })),
+      me: { ...me, recipient: true, edu: false, can: false, why: 'closed', who: '9bf31c7ff062936a' } }
+    case 'school': return { ...full, replies: rows.map((r) => ({ ...r, mine: false, liked: false })),
+      me: { signed: false, recipient: false, edu: false, terms: false, who: null, can: false, why: 'edu' } }
+    case 'empty-school': return { ...base, recipient_replied: false, count: 0, replies: [],
+      me: { signed: false, recipient: false, edu: false, terms: false, who: null, can: false, why: 'edu' } }
+    default: return { ...base, recipient_replied: false, count: 0, replies: [], me }
+  }
+}
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -240,7 +341,14 @@ for (const r of INDEX) if (FACES[r.target_handle]) r.avatar_path = `ig/${r.targe
 const faceUrl = (h) => (REAL.has(h) ? `https://fixture.supabase.co/storage/v1/object/public/avatars/ig/${h}.jpg` : FACES[h] || '')
 
 function whoami() {
-  if (ANON) return { ok: true, signed_in: false }
+  if (ANON && !(TAPS && TAPPED)) return { ok: true, signed_in: false }
+  if (EMAIL || (TAPS && TAPPED)) {
+    return { ok: true, signed_in: true, user: {
+      id: '99999999-8888-4777-8666-555544443335', handle: 'ace03d', handle_verified: true, email: 'ace@gmail.com',
+      edu_verified: false, campus: null, google_verified: false, email_verified: true,
+      login_email: 'ace@gmail.com',
+    } }
+  }
   if (GOOGLE) {
     return { ok: true, signed_in: true, user: {
       id: '99999999-8888-4777-8666-555544443334', handle: null, handle_verified: false, email: null,
@@ -495,6 +603,51 @@ const DESK_CARDS = {
   totals: { cards: 5, scans: 188, joined: 22, letters: 13, other_scans: 148 },
 }
 
+// 0068: a reply the reading held for a person, one out of sight after three
+// reports, one that went up, one the desk took down, one the reading refused
+const DESK_REPLIES = [
+  { id: 'eee11111-2222-4333-8444-555566660001', status: 'held', recipient: false,
+    body: 'you know exactly what you did at that party and everybody saw it',
+    moderation: { verdict: 'review', reasons: ['pile'], model: 'claude-haiku-4-5-20251001', before: true },
+    created_at: new Date(now - 40 * 60000).toISOString(), updated_at: new Date(now - 40 * 60000).toISOString(),
+    reports: 0, reports_all: 0, likes: 0,
+    letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_target: 'pilar.echevarria', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[2].body, thread_state: 'open',
+    author_id: DESK_USERS[1].id, author_handle: null, author_edu: 'p.echevarria@berkeley.edu', author_replies: 4, author_down: 0 },
+  { id: 'eee11111-2222-4333-8444-555566660002', status: 'hidden', recipient: false,
+    body: 'the umbrella thing is so obviously made up',
+    moderation: { verdict: 'pass', reasons: [], hidden_at: new Date(now - 2 * 3600000).toISOString(), hidden_by: 'reports' },
+    created_at: new Date(now - 5 * 3600000).toISOString(), updated_at: new Date(now - 2 * 3600000).toISOString(),
+    reports: 3, reports_all: 3, likes: 2,
+    letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_target: 'pilar.echevarria', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[2].body, thread_state: 'open',
+    author_id: DESK_USERS[0].id, author_handle: 'ace03d', author_edu: 'ace@berkeley.edu', author_replies: 9, author_down: 1 },
+  { id: 'eee11111-2222-4333-8444-555566660003', status: 'live', recipient: true,
+    body: 'i still think about that walk. keep the umbrella.',
+    moderation: { verdict: 'pass', reasons: [] },
+    created_at: new Date(now - 3 * 3600000).toISOString(), updated_at: new Date(now - 3 * 3600000).toISOString(),
+    reports: 0, reports_all: 0, likes: 31,
+    letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_target: 'pilar.echevarria', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[2].body, thread_state: 'open',
+    author_id: DESK_USERS[2].id, author_handle: 'jules.k', author_edu: null, author_replies: 1, author_down: 0 },
+  { id: 'eee11111-2222-4333-8444-555566660004', status: 'removed', recipient: false,
+    body: 'she only dates people with cars lol',
+    moderation: { verdict: 'review', reasons: ['pile'], desk: { status: 'removed', note: 'piling on', at: new Date(now - DAY).toISOString(), from: 'held' } },
+    created_at: new Date(now - 2 * DAY).toISOString(), updated_at: new Date(now - DAY).toISOString(),
+    reports: 0, reports_all: 0, likes: 0,
+    letter_id: DESK_LETTERS[0].id, letter_status: 'live', letter_target: 'sofiaaa.reyes', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[0].body, thread_state: 'locked',
+    author_id: DESK_USERS[0].id, author_handle: 'ace03d', author_edu: 'ace@berkeley.edu', author_replies: 9, author_down: 1 },
+  { id: 'eee11111-2222-4333-8444-555566660005', status: 'rejected', recipient: false,
+    body: 'i know which bus she takes home, it is the 51b at six',
+    moderation: { verdict: 'reject', reasons: ['locate'], model: 'claude-haiku-4-5-20251001', before: true },
+    created_at: new Date(now - 3 * DAY).toISOString(), updated_at: new Date(now - 3 * DAY).toISOString(),
+    reports: 0, reports_all: 0, likes: 0,
+    letter_id: DESK_LETTERS[0].id, letter_status: 'live', letter_target: 'sofiaaa.reyes', letter_kind: 'handle',
+    letter_name: null, letter_body: DESK_LETTERS[0].body, thread_state: 'locked',
+    author_id: DESK_USERS[1].id, author_handle: null, author_edu: 'p.echevarria@berkeley.edu', author_replies: 4, author_down: 0 },
+]
+
 const DESK_WAITLIST = ['nour.haddad', 'elias.brandt', 'aya.nakamura', 'k.villarreal', 'thom.iversen']
   .map((handle, i) => ({
     handle, campus: 'berkeley', source_code: i % 2 ? 'flyer-a' : null,
@@ -645,6 +798,13 @@ const DESK = {
   desk_campus_add: (b) => ({ ok: true, slug: b.slug }),
   desk_name_shut: (b) => ({ ok: true, handle: b.handle, campus: b.campus, letters: 1 }),
   desk_name_open: (b) => ({ ok: true, handle: b.handle, campus: b.campus, letters: 1 }),
+  // 0068: the replies queue, with who wrote each one, and a decision on one
+  desk_replies: (b) => ({
+    ...page(DESK_REPLIES.filter((r) => (b.status === 'waiting' || !b.status ? ['held', 'hidden'].includes(r.status)
+      : b.status === 'all' ? true : r.status === b.status))),
+    counts: { waiting: 2, held: 1, hidden: 1, live: 1, removed: 1, rejected: 1, replies_7d: 5 },
+  }),
+  desk_reply_set: (b) => ({ ok: true, id: b.id, status: b.status, was: 'held' }),
   overview: () => DESK_LEGACY,
   handle_status: (b) => ({
     ok: true, handle: b.handle, suppressed: false, member: true,
@@ -659,6 +819,18 @@ const DESK = {
 
 const RPC = {
   celestual_whoami: () => whoami(),
+  // 0065: the @'s proof, back from the session, for the person who holds one
+  celestual_session_handle_proof: () => ((ANON && !(TAPS && TAPPED)) || GOOGLE || (!VERIFIED && !EMAIL)
+    ? { ok: false, error: 'unclaimed' }
+    : { ok: true, handle: 'ace03d' }),
+  // 0064: the owner's alerts, about the caller. Without it the account sheet
+  // read the absent RPC's empty answer as an @ nobody had claimed.
+  celestual_alerts_get: () => (ANON && !(TAPS && TAPPED)
+    ? { ok: false, error: 'no_session' }
+    : {
+      ok: true, handle: VERIFIED || EMAIL ? 'ace03d' : null, claimed: !GOOGLE && (VERIFIED || EMAIL),
+      email: EMAIL ? 'a•••@gmail.com' : null, email_verified: EMAIL, wrote: false, mutual: true,
+    }),
   // 0044: the week's allowance, about the caller. Without this the composer
   // read the RPC's absence as a limit of nought and drew its act dark.
   // `capped` is 0052's switch, and the fixture keeps it on: the shot this
@@ -713,23 +885,32 @@ const RPC = {
     names: INDEX.length, letters: INDEX.reduce((n, r) => n + r.letters, 0),
     last_at: INDEX[0] ? INDEX[0].last_at : null,
   }),
+  // 0066: every letter whole, to anybody, whatever the reader has proved
   wall_letters_for: (b) => {
     const key = String(b.p_handle || '').replace(/^@/, '')
     const row = INDEX.find((r) => r.target_handle === key)
     return {
-      ok: true, open: OPEN, handle: key,
+      ok: true, open: true, handle: key,
       kind: row ? row.kind : 'handle', name: row ? row.name : null,
-      letters: lettersFor(key, OPEN),
+      letters: lettersFor(key, true),
       ...faceOf(key),
     }
   },
   wall_letter: () => ({
-    ok: true, open: OPEN,
-    letter: { ...lettersFor('pilar.echevarria', OPEN)[0], mine: VERIFIED },
+    ok: true, open: true,
+    letter: { ...lettersFor('pilar.echevarria', true)[0], mine: VERIFIED },
     ...faceOf('pilar.echevarria'),
   }),
   // 0042: a heart on, or off, and the count back
   wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 13 : 12, hearted: !!b.p_on }),
+  // 0068: the thread under a letter, a like, a report and the recipient's say
+  wall_reply_thread: () => thread(),
+  wall_reply_like: (b) => {
+    const r = REPLIES.find((x) => x.id === b.p_reply)
+    return { ok: true, reply: b.p_reply, likes: (r ? r.likes : 0) + (b.p_on ? 1 : 0), liked: !!b.p_on }
+  },
+  wall_reply_report: (b) => ({ ok: true, reply: b.p_reply, reported: !!b.p_on, hidden: false }),
+  wall_reply_thread_set: (b) => ({ ok: true, letter: b.p_letter, state: b.p_state }),
   // 0050: this browser's own letters and where each stands. One of them has
   // been taken down by the reading, after it went up, when the route asks
   // for it: the notice at the foot of the wall.
@@ -866,10 +1047,52 @@ async function fulfil(route) {
         kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null }
       INDEX.unshift(row)
     }
+    const open = named || b.proof !== 'edu'
     return route.fulfill({ json: {
-      ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000',
+      ok: true, status: HELD && open ? 'pending' : 'live', id: 'dddd0111-2222-4333-8444-555566660000',
       handle: key, kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null,
+      campus: open ? (named ? b.campus || 'global' : 'global') : 'berkeley', verified: !open,
     } })
+  }
+
+  // 0068: a reply, read before it is written. The words say which way the
+  // reading goes, so a route can shoot each answer: 'wait' is held for a
+  // person, 'refuse' is refused, anything else goes up.
+  if (url.includes('/functions/v1/celestual-wall-reply')) {
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    const words = String(b.body || '')
+    if (THREAD === 'terms' && !b.accept) return route.fulfill({ json: { ok: false, error: 'terms' } })
+    const status = /wait/i.test(words) ? 'held' : /refuse/i.test(words) ? 'rejected' : 'live'
+    return route.fulfill({ json: {
+      ok: true, id: 'r0000009-2222-4333-8444-555566660009', status, recipient: THREAD.startsWith('recipient'),
+      ...(status === 'held' ? { say: "it's being read. it shows here once it passes." } : {}),
+      ...(status === 'rejected' ? { say: "it can't go up as it's written.", reasons: ['pile'] } : {}),
+    } })
+  }
+  // The links (0064, 0065): mailed with the number the door shows, waited on
+  // until a route says the link was tapped, and confirmed on /verify with
+  // whatever the route says the confirm answered.
+  if (url.includes('/functions/v1/celestual-edu-verify')) {
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    const edu = /\.edu$/.test(String(b.email || ''))
+    if (b.action === 'link') {
+      return route.fulfill({ json: {
+        ok: true, request: 'preview-request', match: 47,
+        domain: edu ? 'berkeley.edu' : null, campus: edu ? 'berkeley' : null, school: edu ? 'UC Berkeley' : null,
+      } })
+    }
+    if (b.action === 'status') {
+      if (LINKED) TAPPED = true
+      return route.fulfill({ json: { ok: true, verified: LINKED, purpose: 'login', campus: null, school: null, expired: false } })
+    }
+    if (b.action === 'confirm') {
+      const c = CONFIRM || { purpose: 'login', same: true }
+      return route.fulfill({ json: {
+        ok: c.ok !== false, error: c.error, purpose: c.purpose, request: 'preview-request',
+        campus: c.campus || null, school: c.campus ? 'UC Berkeley' : null, same_device: !!c.same,
+      } })
+    }
+    return route.fulfill({ json: { ok: false, error: 'bad_input' } })
   }
 
   // Every other edge function.
@@ -877,11 +1100,9 @@ async function fulfil(route) {
     return route.fulfill({ json: { ok: true } })
   }
 
-  // Supabase Auth, for the door that mails a code to any address (api/login.js
-  // `sendEmailCode`, `checkEmailCode`). signInWithOtp posts to /auth/v1/otp and
-  // answers with an empty object; verifyOtp posts to /auth/v1/verify and answers
-  // with a session. Without both, the catch-all below 404s and every shot of the
-  // code step is a shot of the ADDRESS step with a fault line under it.
+  // Supabase Auth. Only google rides it since 0065 (the address door is our
+  // own link, answered above), and a route that shoots the google return
+  // needs a session back; these two stay for a build that still mails a code.
   if (url.includes('/auth/v1/otp')) return route.fulfill({ json: {} })
   if (url.includes('/auth/v1/verify')) {
     return route.fulfill({ json: {
@@ -893,6 +1114,10 @@ async function fulfil(route) {
 
   return route.fulfill({ status: 404, body: '' })
 }
+
+// `n` letters this browser has opened (store.js `opened`), for the nudge
+// under a letter (Nudge.jsx), which counts them
+const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`opened-${i}`, true]))
 
 // ── the routes ──────────────────────────────────────────────────────────────
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
@@ -1002,31 +1227,43 @@ const ROUTES = [
   { label: 'home-gate',       path: '/gate', anon: true },
   { label: 'home-gate-ig',    path: '/gate', anon: true, press: '[data-way="instagram"]' },
   { label: 'home-gate-email', path: '/gate', anon: true, press: '[data-way="email"]' },
-  // The code step, on both walls: the address typed, the code asked for, and
-  // the box it comes back into. The one screen in the door nobody had ever
-  // looked at, because reaching it needs a mail to have gone out.
-  { label: 'home-gate-code', path: '/gate', anon: true, acts: [
+  // The address door is a link since 0065 (it was a code, mailed by Supabase,
+  // that could not be typed back): the address typed, the link sent, and the
+  // door waiting on it with the number the mail prints.
+  { label: 'home-gate-link', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
-  { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
+  // the link tapped on another device while the door waits: it lands on the
+  // person, with their @ and their private notes, and no DM asked for
+  { label: 'home-gate-link-in', path: '/gate', anon: true, taps: true, linked: true, settle: 1600, acts: [
+    ['click', '[data-way="email"]'],
+    ['fill', '.wl-addr-in', 'ace@gmail.com'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
+    ['wait', 4500],
+    ['click', '.wl-mast-go'],
+    ['wait', 3400],
+    ['click', '.wl-memberbtn'],
+  ] },
+  { label: 'home-gate-link-typed', path: '/gate', anon: true, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
-    ['click', '.wl-door-ways .wl-pill.is-light'],
-    ['fill', '.wl-codebox-in', '481920'],
   ] },
+  // the link, landed: on the device that asked, and on another one
+  { label: 'verify-login',      path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: true } },
+  { label: 'verify-login-away', path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: false } },
+  { label: 'verify-login-used', path: '/verify#t=preview-token-preview-token', anon: true, confirm: { ok: false, error: 'used' } },
+  // signed in by a mailed link on a device that never did the DM: the @ and
+  // its private notes are back, and nothing asks for Instagram
+  { label: 'you-email',  path: '/you', email: true, settle: 1400 },
+  { label: 'ping-email', path: '/ping/pilar.echevarria', email: true, settle: 1400 },
   // the DM code, on the door: the one screen whose success depends on what
   // somebody does after they have left the product
   { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
     ['click', '[data-way="instagram"]'],
     ['fill', '.wl-field input', 'ace03d'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
-  ] },
-  { label: 'berkeley-gate-code', path: '/berkeley/gate', anon: true, acts: [
-    ['fill', '.wl-addr-in', 'you'],
-    ['click', '.wl-door-ways .wl-pill.is-light'],
-    ['fill', '.wl-codebox-in', '481920'],
   ] },
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
   { label: 'home-letter',     path: '/letter/pilar.echevarria' },
@@ -1053,6 +1290,27 @@ const ROUTES = [
   // menu of names, the first one chosen by the pointer that typed it
   { label: 'berkeley-seek-typed', path: '/berkeley',
     acts: [['click', '.wl-mast-go'], ['wait', 3400], ['fill', '.wl-seek .wl-field input', 'a']], settle: 1200 },
+  // the filter (Filter.jsx): the key at the end of the strip, its menu in
+  // the strip's panel, the field it seats for most liked and for Berkeley,
+  // the field caught going out and coming up, and the empty field when a
+  // filter lets nothing through
+  { label: 'wall-filter-menu', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key']], settle: 600 },
+  { label: 'wall-filter-liked', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(3)']], settle: 1600 },
+  { label: 'wall-filter-cal', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(4)']], settle: 1600 },
+  { label: 'wall-filter-new', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(2)']], settle: 1600 },
+  { label: 'wall-filter-out', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(3)', null, 120]], settle: 0 },
+  { label: 'wall-filter-in', path: '/',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(3)', null, 420]], settle: 0 },
+  // a name opened from the most liked field: its most hearted letter first,
+  // and the deck turning on to the next most liked name
+  { label: 'wall-filter-deck', path: '/letter/sofiaaa.reyes', filter: 'liked', settle: 1800 },
+  { label: 'wall-filter-none', path: '/', nocal: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-filter-key'], ['click', '.wl-filter-row:nth-child(4)']], settle: 1600 },
   // the same two under prefers-reduced-motion (rebuild-spec 7.2): the veil
   // composed with nothing arriving, and the field still, with the lens on
   { label: 'berkeley-still',        path: '/berkeley', still: true, settle: 1200 },
@@ -1160,7 +1418,16 @@ const ROUTES = [
   { label: 'letter-report-back', path: '/berkeley/letter/pilar.echevarria',
     acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 600], ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900],
            ['click', '.wl-close'], ['wait', 900]], settle: 600 },
-  { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
+  // 0066: nothing is sealed. A reader signed in to nothing reads the letter
+  // whole, and once they have read a few (`store.opened`, eight of them
+  // here) the nudge stands under the card; then the same after `not now`
+  { label: 'letter-anon',   path: '/letter/pilar.echevarria', anon: true },
+  { label: 'letter-nudge',  path: '/letter/pilar.echevarria', anon: true, store: { opened: OPENED(8) }, settle: 3200 },
+  { label: 'letter-nudge-no', path: '/letter/pilar.echevarria', anon: true, store: { opened: OPENED(8) },
+    acts: [['wait', 2200], ['click', '.wl-signnote-no']], settle: 900 },
+  { label: 'letter-nudge-cold', path: '/letter/11110111-2222-4333-8444-555566660000', anon: true, store: { opened: OPENED(8) }, settle: 3200 },
+  // a letter to an @ the resolver has no name for: "dear you", and no @
+  { label: 'letter-noname', path: '/letter/ace03d.nobody', anon: true },
   // `write to` in the screen's options opens the composer on the name, and
   // the composer's mark comes back to the letter it was opened from
   // (index.jsx `up`)
@@ -1169,6 +1436,25 @@ const ROUTES = [
   { label: 'letter-pen-back', path: '/berkeley/letter/pilar.echevarria',
     acts: [['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
+  // 0066: the one decision, for a letter to an @: the wall (anybody, read
+  // first), as a Berkeley student (the sticker, at once) and privately;
+  // from a device confirmed at Berkeley, and from one signed in to nothing;
+  // for a letter to a name; the Berkeley link asked for; and a note held
+  // for the desk
+  { label: 'write-how',     path: '/write/sofiaaa.reyes',
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'write-how-anon', path: '/write/sofiaaa.reyes', anon: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'write-how-name', path: '/write', anon: true,
+    draftOf: { kind: 'name', name: 'the girl on the 51B', to: '' },
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'write-how-edu', path: '/write/sofiaaa.reyes', anon: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-cal .wl-how-go']], settle: 900 },
+  { label: 'write-held',    path: '/write/sofiaaa.reyes', anon: true, held: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go']], settle: 1200 },
+  // the draft to an @ the resolver has no name for: "dear you", and the
+  // line under the card asking for their name
+  { label: 'write-noname',  path: '/write/ace03d.nobody', anon: true },
   // 0055: the first question with its two answers on one rail, the handle
   // on; then the other answer on, with a name that is not a first name in it
   { label: 'write-who',     path: '/berkeley/write', draft: null },
@@ -1196,7 +1482,11 @@ const ROUTES = [
   { label: 'letter-name-turned', path: '/berkeley/letter/~sofia', press: '.wl-turn.is-next', settle: 1200 },
   // a handle's letter, lit amber
   { label: 'letter-look',   path: '/berkeley/letter/ren.tanaka' },
-  { label: 'letter-look-sealed', path: '/berkeley/letter/m.okonkwo', open: false },
+  // a Berkeley letter: the phone on Berkeley's network, in lilac, in acid
+  // and in a print, and the composer's option that posts there
+  { label: 'letter-edu-lilac', path: '/berkeley/letter/jules.k' },
+  { label: 'letter-edu-acid', path: '/berkeley/letter/thom.iversen' },
+  { label: 'letter-edu-print', path: '/berkeley/letter/elias.brandt' },
   // the week spent: the act dark, and the one line the foot says about it
   { label: 'write-spent',   path: '/berkeley/write/sofiaaa.reyes', spent: true },
   { label: 'write-name',    path: '/berkeley/write', type: { into: ".wl-field input", text: 'pilar.echevarria' }, draft: null },
@@ -1228,6 +1518,64 @@ const ROUTES = [
   { label: 'write-sent', path: '/berkeley',
     acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400],
       ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
+
+  // ── the replies (0068) ──
+  // The thread under an open letter, in every state it has: the first
+  // screenful (the letter and the thread's head together), the thread
+  // itself, nothing yet, the recipient's own view and their reply, shut and
+  // put away, a device with no school, the link sent, the terms before a
+  // first reply, a name caught at the keyboard, a reply held and one
+  // refused, a report folded away, and the desk's queue.
+  { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
+  { label: 'replies-thread',   path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1200]], settle: 400 },
+  { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-empty',    path: '/letter/pilar.echevarria', thread: 'empty',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-recipient', path: '/letter/pilar.echevarria', thread: 'recipient-new',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-recipient-thread', path: '/letter/pilar.echevarria', thread: 'recipient',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-locked',   path: '/letter/pilar.echevarria', thread: 'locked',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-locked-owner', path: '/letter/pilar.echevarria', thread: 'locked-owner',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-closed',   path: '/letter/pilar.echevarria', thread: 'closed', settle: 1800 },
+  { label: 'replies-closed-owner', path: '/letter/pilar.echevarria', thread: 'closed-owner',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-school',   path: '/letter/pilar.echevarria', thread: 'school',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-school-sent', path: '/letter/pilar.echevarria', thread: 'empty-school',
+    acts: [['wait', 900], ['fill', '.wl-rp-school .wl-addr-in', 'you@berkeley.edu'], ['click', '.wl-rp-school .wl-pill.is-light'],
+           ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+  { label: 'replies-terms',    path: '/letter/pilar.echevarria', thread: 'terms',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'this made my whole week'],
+           ['click', '.wl-rp-go']], settle: 700 },
+  { label: 'replies-caught',   path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'i bet Maria Delgado wrote this']], settle: 500 },
+  { label: 'replies-held',     path: '/letter/pilar.echevarria', thread: 'held',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'wait until they see this'],
+           ['click', '.wl-rp-go']], settle: 900 },
+  { label: 'replies-refused',  path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'refuse this one please'],
+           ['click', '.wl-rp-go']], settle: 900 },
+  { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
+  // the recipient's reply lit in the letter's own colour, one of each kind
+  { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-acid',     path: '/letter/thom.iversen', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-lilac',    path: '/letter/jules.k', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-teal',     path: '/letter/elias.brandt', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+  { label: 'replies-still',    path: '/letter/pilar.echevarria', thread: 'full', still: true,
+    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 400]], settle: 400 },
+  { label: 'admin-replies',    path: '/admin', desk: true, click: 'replies' },
 
   // Phase 7. The desk, and the states worth looking at: what it opens on, the
   // queue with something held in it, a report whose letter is already down, the
@@ -1295,6 +1643,15 @@ for (const r of list) {
   PASS = r.pass === true
   FULL = r.full === true
   GOOGLE = r.google === true
+  NOCAL = r.nocal === true
+  INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })
+  EMAIL = r.email === true
+  LINKED = r.linked === true
+  CONFIRM = r.confirm || null
+  TAPS = r.taps === true
+  TAPPED = false
+  HELD = r.held === true
+  THREAD = r.thread || 'empty'
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
@@ -1308,7 +1665,7 @@ for (const r of list) {
     })
     const problems = []
     page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
-    page.on('pageerror', (e) => problems.push(String(e)))
+    page.on('pageerror', (e) => problems.push(process.env.PREVIEW_STACK ? String(e.stack) : String(e)))
     await page.route('**/*', (route) => {
       const u = route.request().url()
       // /api/resolve is SAME ORIGIN by design: vercel.json rewrites it onto the
@@ -1324,11 +1681,18 @@ for (const r of list) {
     // rather than typed; a route can bring its own words (`write-caught`).
     const DRAFT = r.draft === null
       ? null
-      : { to: 'sofiaaa.reyes', body: r.body || 'you sat two rows ahead all semester and i never once said anything.' }
+      : { to: 'sofiaaa.reyes', body: r.body || 'you sat two rows ahead all semester and i never once said anything.', ...(r.draftOf || {}) }
     // The desk holds its password in sessionStorage and the server re-checks it
     // on every call. Seeding it here is what puts the screenshot behind the
     // door rather than on it; `admin-gate` deliberately does not, because the
     // door is a surface too.
+    // a tab already looking at the wall through a filter (data.js, the
+    // filter), which it keeps for as long as the tab is open
+    if (r.filter) {
+      await page.addInitScript((f) => {
+        try { sessionStorage.setItem('celestual.wall.filter', f) } catch { /* private mode */ }
+      }, r.filter)
+    }
     if (r.desk) {
       await page.addInitScript(() => {
         try { sessionStorage.setItem('celestual:adminpw', 'preview') } catch { /* private mode */ }
@@ -1338,16 +1702,18 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
-          member: ANON || GOOGLE ? null : 'someone@berkeley.edu',
-          reader: !ANON && !GOOGLE,
-          verified: VERIFIED && !ANON && !GOOGLE ? ['ace03d'] : [],
+          member: ANON || GOOGLE || EMAIL ? null : 'someone@berkeley.edu',
+          reader: !ANON && !GOOGLE && !EMAIL,
+          verified: VERIFIED && !ANON && !GOOGLE && !EMAIL ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: WRITTEN,
           proof: 'a'.repeat(64),
           draft: DRAFT,
+          // anything else a route needs in the blob (`store`)
+          ...STORE,
         }))
         localStorage.setItem('celestual.session.v1', 'b'.repeat(64))
         // The DM flow's own session (api/auth.js), which is what `heldProof`
@@ -1355,7 +1721,7 @@ for (const r of list) {
         // a verified handle with no proof to spend, `celestual_my_pings` is
         // never asked, and the reveal draws "nothing here" over a fixture that
         // has a mutual in it.
-        if (VERIFIED && !ANON) {
+        if (VERIFIED && !ANON && !EMAIL) {
           localStorage.setItem('celestual:auth', JSON.stringify({
             verified: true, handle: 'ace03d', proof: 'a'.repeat(64), at: Date.now(),
           }))
@@ -1363,7 +1729,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE: r.store || {} })
     // The letter's deck leans toward the next letter the first times a
     // device opens it (screens/Letter.jsx `nudge`), which would catch a shot
     // part way through. Every device here has turned it, but the one the
@@ -1438,6 +1804,13 @@ for (const r of list) {
       // the end when it is negative (-1 is after the last one). It blinks on
       // the phone's beat, so once it has been drawn its beat is held on the
       // lit half, and the shot is of the caret and not of the half it is out
+      // a scroller taken to its foot, for the thread under a letter
+      if (act === 'end') {
+        await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+        await page.$eval(sel, (el) => { el.scrollTop = el.scrollHeight }).catch(() => {})
+        await page.waitForTimeout(Number(arg) || 500)
+        continue
+      }
       if (act === 'caret') {
         await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
         await page.$eval(sel, (el, at) => {
@@ -1520,8 +1893,17 @@ for (const r of list) {
       await page.waitForTimeout(900)
     }
 
+    // `PREVIEW_EVAL` is an expression asked of the page before the shot and
+    // printed, for a question a picture cannot answer (a computed style)
+    if (process.env.PREVIEW_EVAL) {
+      console.log(`  ${r.label} ${v.name}:`, await page.evaluate(process.env.PREVIEW_EVAL).catch((e) => String(e)))
+    }
     const file = join(out, `${r.label}-${v.name}.png`)
-    await page.screenshot({ path: file })
+    // `PREVIEW_CLIP` shoots one element rather than the window, for a detail
+    // that has to be looked at closely
+    const clip = process.env.PREVIEW_CLIP ? await page.$(process.env.PREVIEW_CLIP) : null
+    if (clip) await clip.screenshot({ path: file })
+    else await page.screenshot({ path: file })
     made.push(file)
     if (r.full) {
       const whole = join(out, `${r.label}-${v.name}-full.png`)

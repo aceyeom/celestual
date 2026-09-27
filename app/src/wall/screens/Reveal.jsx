@@ -24,13 +24,18 @@
 //                        own cursor, "it's mutual." is typed a character at a
 //                        time. Exactly those words: no congratulations, no
 //                        match (VOICE.md 2). And the phone never stops: its
-//                        backlight beats, lub and dub, a light goes round
-//                        the ring, the star twinkles, a heart floats up off
-//                        it now and then, the phone itself rises and settles
-//                        in its own light, the way a thing that is on and
-//                        alive does, and that light drifts, slowly, from the
-//                        rose through the pinks, the oranges and the greens
-//                        and back (`drift`).
+//                        backlight breathes, a light goes round the ring,
+//                        the star twinkles, the phone itself rises and
+//                        settles in its own light, the way a thing that is
+//                        on and alive does, and that light drifts, slowly,
+//                        from the rose through the pinks and the oranges
+//                        (`drift`). Then the screen goes to sleep and wakes
+//                        on the two of them running in again, and tells it
+//                        again, words and all (`STORY.loop`), for as long as
+//                        the sheet is open; the sheet under it stays as it
+//                        is. There is no heart in it: the backlight used to
+//                        beat, lub and dub, and a heart floated up off the
+//                        star now and then, and the owner took them out.
 //   2  the two of them   the pair, face and handle, one beside the other and
 //                        never one before the other: a stagger would say one
 //                        of them mattered more, and the whole premise is that
@@ -68,17 +73,29 @@
 // is the account sheet (screens/You.jsx), which is where each reason has its
 // own words and its own way on: a proof this browser does not hold, one the
 // server no longer takes, or no @ at all.
+//
+// Except to somebody this device does not know at all. The mutual mail's link
+// is opened wherever the mail is read, often a phone or a laptop nobody ever
+// signed in on, and "nothing here." there contradicted the mail that had
+// just said it was mutual; its key went on to a door that asked for the DM
+// again, when an email or a Google sign in brings the @ and its private
+// notes back with it (auth.js `restoreProof`). So a person whoami says is not
+// signed in is asked to sign in, by the gate's three ways, and the gate comes
+// back here once they have (store.js `setAfterGate`). It says nothing about
+// anybody: every visitor who is not signed in reads the same line, mutual or
+// not.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfile } from '../parts.jsx'
 import { Screen, Wait } from '../screen.jsx'
 import { skinOf, skinVars } from '../looks.js'
 import { TURNS, turnStyle } from '../turn.js'
-import PixelStory, { SQUARE } from '../PixelStory.jsx'
+import PixelStory, { SQUARE, underPink, useStoryClock, heldAt } from '../PixelStory.jsx'
 import { revealStory } from '../pixmark.js'
 import { normHandle, atHandle } from '../data.js'
 import { heldProof } from '../auth.js'
 import { href } from '../router.js'
+import { setAfterGate } from '../store.js'
 import { getSession } from '../../api/auth.js'
 import { me } from '../../main/data.js'
 import { myHandle, myPings, heldPings, sinceAgo } from '../pings.js'
@@ -104,14 +121,27 @@ const SAY = 'it’s mutual.'
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
 const STORY = revealStory(200, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
+const T = STORY.times
 // The sentence, typed on the glass as the mark gathers up to make room for
 // it, a character every 70ms, which is how fast the phone put a message on
 // its screen.
-const SAY_AT = STORY.times.gather + 160
+const SAY_AT = T.gather + 160
 const TYPE_MS = 70
 // and the rest of the sheet once it is said: the pair and the line, their
 // note, then the keys, each a beat after the last (mutual.css `is-said`)
 const SAID_AT = SAY_AT + SAY.length * TYPE_MS + 180
+// The moments a telling passes, in order: the pink leaving the two of them,
+// each character of the sentence, the sentence said, the screen going to
+// sleep, and dark enough that the phone's light goes back to the night's
+// unseen (`wl-sleep` is 560ms).
+const MARKS = [
+  T.glow,
+  ...Array.from(SAY, (c, i) => SAY_AT + (i + 1) * TYPE_MS),
+  SAID_AT, T.rest, T.rest + 600,
+]
+const SAID = 1 + SAY.length + 1
+const ASLEEP = SAID + 1
+const DARK = ASLEEP + 1
 
 const LOOK = { tint: 'night' }
 const NO_KEYS = {}
@@ -119,9 +149,21 @@ const NO_TOP = {}
 
 // ── the phone's light ──
 // It starts as the night's, and as the pink spreads on the glass the whole
-// phone becomes a letter lit in rose, as the intro's does (turn.js), and the
-// rose it turns to is the one the drift below moves on from.
-const PHONE = turnStyle('night', 'rose', SQUARE)
+// phone becomes a letter lit in rose, as the intro's does (turn.js), the
+// panel under the pink once the pink has covered it; and the rose it turns
+// to is the one the drift below moves on from. The moments are the
+// story's.
+const PHONE = underPink(turnStyle('night', 'rose', SQUARE))
+const TURN = { '--mu-turn-at': `${T.top - T.glow}ms`, '--mu-pan-at': `${T.covered - T.glow}ms` }
+
+// ── the screenshot loop's hold ──
+// Development only, as the intro's `?t=` is: `?story=5200` holds the glass,
+// the words and the phone's light on 5200ms into a telling.
+function devHold() {
+  if (!import.meta.env.DEV) return null
+  const v = new URLSearchParams(window.location.search).get('story')
+  return v === null ? null : Math.max(0, Number(v) || 0) % STORY.loop
+}
 
 // ── the drift ──
 // Once the mark is alive the light does not stay rose. It drifts, a shade at
@@ -130,7 +172,9 @@ const PHONE = turnStyle('night', 'rose', SQUARE)
 // colours would be (looks.js `skinOf`, the lit arithmetic), so the words on
 // it are always the dark of the light they are on. A function of the glass's
 // own clock, set ten times a second, still with the tab, and never under
-// reduced motion, which keeps the rose.
+// reduced motion, which keeps the rose. Each telling is alive for a little
+// under six seconds of it, so it goes from the rose into the peach, and the
+// next telling turns the phone to the rose again and starts it over.
 const DRIFT_MS = 24000
 const DRIFT = [
   [0, '#DF93AF'], [0.13, '#E88DAE'], [0.27, '#EE9A82'], [0.4, '#E0A95A'],
@@ -169,46 +213,41 @@ function One({ handle, fallback }) {
 }
 
 function Mutual({ mine, them, mutual, reduce }) {
-  const [landed, setLanded] = useState(!!reduce)
-  const [typed, setTyped] = useState(reduce ? SAY.length : 0)
-  const [said, setSaid] = useState(!!reduce)
-  const [glow, setGlow] = useState(false)
+  const hold = useRef(devHold()).current
+  const still = !!reduce || hold !== null
   const [mineOpen, setMineOpen] = useState(false)
-  const t0 = useRef(performance.now()).current
   // when the glass's clock started: from the mount, or, once landed, from
-  // far enough back that it is already alive
-  const [from, setFrom] = useState(t0)
-  const timers = useRef([])
+  // far enough back that the sentence is said
+  const [from, setFrom] = useState(() => performance.now())
+  const [landed, setLanded] = useState(false)
   const theirs = useProfile(them)
-
-  useEffect(() => {
-    if (landed) return undefined
-    const at = (ms, fn) => timers.current.push(setTimeout(fn, Math.max(0, ms - (performance.now() - t0))))
-    at(STORY.times.glow, () => setGlow(true))
-    for (let i = 1; i <= SAY.length; i++) at(SAY_AT + i * TYPE_MS, () => setTyped(i))
-    at(SAID_AT, () => setSaid(true))
-    const all = timers.current
-    return () => all.forEach(clearTimeout)
-  }, [landed, t0])
+  const clock = useStoryClock(STORY, from, MARKS, still)
+  const now = reduce ? heldAt(MARKS, SAID_AT) : hold !== null ? heldAt(MARKS, hold) : clock
+  // the sentence as far as this telling has typed it, gone with the screen
+  // when it sleeps; the sheet under the phone, once it has been said, stays
+  const typed = Math.max(0, Math.min(SAY.length, now.i - 1))
+  const said = !!reduce || now.n > 0 || landed || now.i >= SAID
+  const asleep = !reduce && now.i >= ASLEEP
+  const glow = now.i >= 1 && now.i < DARK
+  // a landing is for the telling it lands, and the next one is told whole
+  const skip = landed && now.n === 0
 
   const land = useCallback(() => {
-    timers.current.forEach(clearTimeout)
-    timers.current = []
     setLanded(true)
-    setTyped(SAY.length)
-    setSaid(true)
-    setFrom(performance.now() - STORY.times.live)
+    setFrom(performance.now() - SAID_AT)
   }, [])
 
   // a tap on the room, or a key, lands it; a press on a control is that
-  // control's, and Escape is the sheet's way out
+  // control's, and Escape is the sheet's way out. Once the telling is said
+  // there is nothing to land.
+  const told = now.i >= SAID && !asleep
   useEffect(() => {
-    if (landed) return undefined
+    if (still || told) return undefined
     const onKey = (e) => { if (e.key !== 'Escape') land() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [landed, land])
-  const onPress = (e) => { if (!landed && !e.target.closest('a, button')) land() }
+  }, [still, told, land])
+  const onPress = (e) => { if (!still && !told && !e.target.closest('a, button')) land() }
 
   // The phone's own float and light stop with the tab, as its glass does
   // (PixelStory.jsx), rather than running on unseen.
@@ -219,34 +258,54 @@ function Mutual({ mine, them, mutual, reduce }) {
     return () => document.removeEventListener('visibilitychange', on)
   }, [])
 
-  // the light, drifting, once the words are said (see `drift`)
+  // The light, drifting, once the mark is alive (see `drift`), from the rose
+  // on each telling; and taken off again as the screen goes dark, so the
+  // next telling turns the phone to the rose the pink on its glass is.
   const fig = useRef(null)
-  const alive = said && !reduce
   useEffect(() => {
     const el = fig.current
-    if (!el || !alive || hidden) return undefined
+    if (!el || still || hidden) return undefined
+    let on = false
+    const off = () => {
+      if (!on) return
+      for (const k of TURNS) el.style.removeProperty(`--mu${k}`)
+      el.style.removeProperty('--story-glow-rgb')
+      on = false
+    }
     const step = () => {
-      const u = performance.now() - from - STORY.times.live
-      if (u < 0) return
+      const t = performance.now() - from
+      const u = (((t % STORY.loop) + STORY.loop) % STORY.loop) - T.live
+      if (u < 0 || u >= T.rest + 520 - T.live) { off(); return }
       const { v, glow: rgb } = drift(u)
       for (const k of TURNS) el.style.setProperty(`--mu${k}`, v[k])
       el.style.setProperty('--story-glow-rgb', rgb)
+      on = true
     }
     step()
     const id = setInterval(step, 100)
     return () => clearInterval(id)
-  }, [alive, hidden, from])
+  }, [still, hidden, from])
 
   const ago = sinceAgo(mutual.at)
   const theirName = theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)
   const note = mutual.theirLine
   const yours = mutual.line
+  // a held frame holds the phone's light where it is at that moment too
+  const figStyle = hold === null ? TURN : {
+    ...TURN,
+    '--held-turn': glow ? Math.max(0, Math.min(1, (hold - T.top) / 460)) : 0,
+    '--held-pan': glow && hold >= T.covered ? 1 : 0,
+  }
+  // `is-landed` is for the sheet under the phone, which does not rise again
+  // once a tap has put it there; `is-skip` for the phone, which is lit at
+  // once on the telling the tap landed and turns as it always does after
+  const cls = [
+    'wl-mutual', said && 'is-said', glow && 'is-glow', (landed || reduce) && 'is-landed', skip && 'is-skip',
+    asleep && 'is-asleep', reduce && 'is-still', hidden && 'is-hidden',
+  ].filter(Boolean).join(' ')
 
   return (
-    <div
-      className={`wl-mutual${said ? ' is-said' : ''}${glow ? ' is-glow' : ''}${landed ? ' is-landed' : ''}${reduce ? ' is-still' : ''}${hidden ? ' is-hidden' : ''}`}
-      onPointerDown={onPress}
-    >
+    <div className={cls} onPointerDown={onPress}>
       {/* what the page is, for a reader that never sees the phone */}
       <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual with {theirName}</h2>
       <p className="wl-sr">
@@ -255,15 +314,16 @@ function Mutual({ mine, them, mutual, reduce }) {
         {ago ? ` you sent yours ${ago}.` : ''}
       </p>
 
-      <div className="wl-mutual-fig" aria-hidden="true" ref={fig}>
+      <div className={`wl-mutual-fig${hold !== null ? ' is-held' : ''}`} style={figStyle} aria-hidden="true" ref={fig}>
         <span className="wl-mutual-halo" />
         <div className="wl-mutual-float">
+          {/* asleep between two tellings, and waking on the next (mutual.css) */}
           <Screen
             look={LOOK} seed={`mutual:${mine}:${them}`} top={NO_TOP}
-            keys={NO_KEYS} live={false} state={reduce ? '' : 'waking'}
+            keys={NO_KEYS} live={false} state={reduce ? '' : asleep ? 'asleep' : 'waking'}
             className="wl-mutual-scr" style={PHONE}
           >
-            <PixelStory story={STORY} at={reduce ? STORY.still : null} from={from} />
+            <PixelStory story={STORY} at={reduce ? STORY.still : hold} from={from} />
             {/* The sentence, on the glass, in the phone's face and its ink,
                 laid out whole from the first frame so it never moves as it
                 fills, with the phone's cursor after the last character in. */}
@@ -283,7 +343,9 @@ function Mutual({ mine, them, mutual, reduce }) {
           <span className="wl-mutual-and" aria-hidden="true">+</span>
           <One handle={them} fallback={atHandle(them)} />
         </div>
-        <p className="wl-mutual-plain">you both said yes. nobody else was told.</p>
+        {/* what happened, as it happened: nobody was asked a question, each
+            of them sent the other a note */}
+        <p className="wl-mutual-plain">you both sent a note. nobody else was told.</p>
 
         {note ? (
           <figure className="wl-mutual-note">
@@ -308,7 +370,7 @@ function Mutual({ mine, them, mutual, reduce }) {
 
         <SheetFoot className="wl-mutual-foot">
           <Pill tone="light" wide href={`https://instagram.com/${them}`} rel="noreferrer noopener" target="_blank">
-            message {atHandle(them)} on instagram
+            message {atHandle(them)} on Instagram
           </Pill>
           {/* The quiet way out closes onto the wall and says nothing to
               anybody (`onClosing` in Reveal below). */}
@@ -319,10 +381,15 @@ function Mutual({ mine, them, mutual, reduce }) {
   )
 }
 
-export default function Reveal({ id, go, up, back, upLabel = 'back to the wall', reduce, toWall = null }) {
+export default function Reveal({
+  id, go, up, back, upLabel = 'back to the wall', nested = false, reduce, toWall = null,
+}) {
   const them = normHandle(id)
   // who this is: null until the server has said, then the row (main/data.js)
   const [who, setWho] = useState(null)
+  // and nobody at all: whoami has answered, and there is no session here by
+  // any proof, so there is no one whose private notes these could be
+  const stranger = !!who && !who.signedIn
   const [mutual, setMutual] = useState(() => fromHeld(guessHandle(), them) || undefined)
 
   useEffect(() => {
@@ -357,13 +424,24 @@ export default function Reveal({ id, go, up, back, upLabel = 'back to the wall',
   // wall was ever opened has its poster still up under the sheet, and it is
   // dropped as the sheet starts to go (index.jsx `toWall`), as the ping's
   // own way back does. The close mark, the scrim and Escape go back one
-  // step, as every sheet's do.
+  // step, as every sheet's do, and when that step is the wall (the mark
+  // says "back to the wall" then, and not "back") they drop the poster too.
+  // They did not, and on a reveal opened from the mail the mark landed on
+  // the poster and its `view the wall` while the line under the note, with
+  // the same words on it, landed on the names.
   const way = useRef('')
   const onClosing = useCallback((by) => {
     way.current = by
-    if (by === 'quiet' && toWall) toWall()
-  }, [toWall])
+    if (toWall && (by === 'quiet' || !nested)) toWall()
+  }, [toWall, nested])
   const onClose = useCallback(() => (way.current === 'quiet' ? back() : up()), [back, up])
+  // Not signed in: the gate, with this reveal as the way back once it has
+  // let them in (Gate.jsx `finish`). Closing the gate without signing in
+  // comes back here too, one step up, as every sheet over a sheet does.
+  const toGate = useCallback(() => {
+    setAfterGate({ name: 'reveal', id: them })
+    go('gate')
+  }, [go, them])
   // Nothing to show, and the account sheet is where the reason is. A reveal
   // the browser opened on directly has nothing behind it, so its entry is
   // given to the wall first, as the door gives its own (Join.jsx `place`),
@@ -386,6 +464,16 @@ export default function Reveal({ id, go, up, back, upLabel = 'back to the wall',
           <div className="wl-reveal-wait">
             <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual</h2>
             <Wait scale={3} />
+          </div>
+        ) : mutual === null && stranger ? (
+          // Nobody this device knows: the same words to every such visitor,
+          // and the one key is the gate, which comes back here.
+          <div className="wl-reveal-none">
+            <Display size="l" as="h2" id="wl-reveal-h">sign in to read it.</Display>
+            <div className="wl-push" />
+            <SheetFoot>
+              <Pill tone="light" wide onClick={toGate}>sign in</Pill>
+            </SheetFoot>
           </div>
         ) : mutual === null ? (
           // Not a mutual, or not this person's to see. Said flatly and

@@ -949,24 +949,37 @@ function follow(v, t0, t1) {
 }
 
 // ── the intro, from the run to the hold ─────────────────────────────────────
-// `ground` is the row under their feet and `mid` the column the two of them
-// are centred on. From 0, in ms:
+// `ground` is the row under their feet and `mid` the column of the glass's
+// middle. From 0, in ms:
 //
 //      0   they are running when the screen wakes: he in from the left edge,
-//          and she, lighter and a step slower, in from the right
+//          and she, lighter and a step slower, in from the right, the two
+//          of them onto the glass on the same frame (`LEAD`, below)
 //    480   his near foot comes down and he slows over two strides, the
 //          second a short one, the body coming up out of the lean and his
-//          arms opening; by 860 he stands, and waits for her with them open
-//   1060   her last stride lands, and she does not stop: her run carries
+//          arms opening; by 860 he stands, his arms open to her
+//    940   her last stride lands, and she does not stop: her run carries
 //          her on over the foot she landed on, into him and behind him,
 //          leaning the way she ran, gently; her other heel comes up behind
 //          her, her hair and her hem go on past her and swing back. His
 //          arms close round her and he takes her weight, rocking back.
-//   1560   she is still, tucked behind him, his arm round her; and they
+//   1440   she is still, tucked behind him, his arm round her; and they
 //          hold on, breathing
 //
+// ── and they come on together ──
+// He runs half as fast again as she does, and it used to show: he was well
+// onto the glass before she came on at all, a quarter of a second later,
+// and the owner asked for the two of them to come in at the same moment.
+// Nothing about how either of them runs has changed for it. They hold each
+// other six cells left of the glass's middle (`LEAD`), which gives her six
+// cells more to run and him six fewer, and she lands 120ms sooner after he
+// has slowed than she did, into arms that have just opened rather than arms
+// that had waited: between them, on a phone's panel and on a desk's, the
+// two come over the edges of the glass within a frame of each other. The
+// mark still stands in the middle; the pair glides the six cells into it.
+//
 // Answers `at(t)` (a key and the cells), `times`, the hold's cells (`pair`)
-// and where they hold each other (`heart`), where the pink leaves from.
+// and where they hold each other (`hug`), where the pink leaves from.
 const RUN = {
   // a stride (two steps) in ms, the share of it a foot is down, how far in
   // front of the pelvis a foot comes down, the pelvis's height and its rise
@@ -993,18 +1006,20 @@ export function standing(who, over = {}) {
   }
 }
 
+const LEAD = 6
 export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   const T_BRAKE = 480
   const T_PLANT = T_BRAKE + 380
-  const T_LAND = 1060
+  const T_LAND = 940
   const T_HOLD = T_LAND + 500
   // past this the two of them are the mark, and nothing of them moves
   const T_END = 3200
   // where each of them holds the other: she comes to rest close in, so
   // that he is in front of her and she is half behind him, her hair at his
-  // neck and her dress and her raised heel past his back
-  const HX = mid - 4
-  const SX = mid + 4
+  // neck and her dress and her raised heel past his back; the two of them
+  // `LEAD` cells to his side of the middle, so they come on together
+  const HX = mid - 4 - LEAD
+  const SX = mid + 4 - LEAD
 
   // ── him ──
   // The pelvis: running, then slowing to a stand over D ms; x is along the
@@ -1210,7 +1225,7 @@ export function introFolk({ ground = 64, mid = 47, cols = 95 } = {}) {
   let pair = null
   return {
     at, times, poseAt, himX, herX,
-    heart: { x: Math.round((HX + SX) / 2), y: Math.round(ground - 36 * SCALE) },
+    hug: { x: Math.round((HX + SX) / 2), y: Math.round(ground - 36 * SCALE) },
     get pair() { if (!pair) pair = frameAt(T_HOLD); return pair },
   }
 }

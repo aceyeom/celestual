@@ -15,6 +15,18 @@ What you will end up with:
 - the code email set to carry a six digit code instead of a link
 - migration 0057 applied to the database
 
+**The mailed code went with migration 0065 (26 September).** The live
+template mailed eight digits into a box that held six, so nobody ever signed
+in that way, and `continue with email` is the product's own mailed link now
+(`celestual-edu-verify`, purpose `login`, docs/EDU-VERIFICATION.md), which
+does not touch Supabase Auth. Google still runs on Supabase Auth, and
+sections 1 to 4 stand. Section 5 is the record of the code, and step 4 of
+section 6 now reads: press **continue with email**, type an address, press
+**send me a link**, and tap the link in the mail; opened on another device,
+it asks for the number the gate shows. Once that build is out, Supabase's
+Email provider can be switched off (docs/launchsteps.md, the deploy of 26
+September).
+
 ---
 
 ## 1. Apply the migration
@@ -91,6 +103,9 @@ they were on. It only sends people to addresses you have allowed.
 ---
 
 ## 5. Make the email a code, not a link
+
+**Superseded by 0065: skip this section.** The email door no longer uses
+Supabase Auth (above).
 
 The "continue with email" door mails a six digit code. Out of the box Supabase
 mails a link instead, so the template has to include the code.

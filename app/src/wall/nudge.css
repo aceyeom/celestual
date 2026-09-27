@@ -1,0 +1,109 @@
+/* ═══ THE NUDGE ════════════════════════════════════════════════════════════
+   Nudge.jsx. Under a letter, never over it: the one note a reader who has
+   been reading is shown, where the seal's line and its `read it` key stood
+   until 26 September. It is the phone's own note, the notice at the foot of
+   the wall (wall.css `.wl-down`) in the letter's room: an unlit panel under
+   its pixel grid with a one pixel bezel, the envelope and the line in chalk,
+   the reason under it in ash, and the two soft keys at its foot over a
+   dotted seam. `sign in` is lit, a chalk plate with the word struck out of
+   it in black, the way every act on the wall is; `not now` is quiet and
+   inverts under a press. It is as wide as the screen over it and no wider,
+   so the card and the note read as one object and the note as the card's
+   footnote.
+
+   It comes up after the card has woken, slowly, so the letter is read first
+   and the note is noticed second; and it folds away where it stands. No
+   blur, no shadow bigger than the panel's own, nothing backlit: the letter
+   stays the one bright thing in the room (DESIGN.md 2.6).
+
+   ── the fold ──
+   The note's room under the card is there from the sheet's first frame
+   (Nudge.jsx `useNudge` decides as the sheet opens), so the card, which is
+   centred with its foot, never moves for it arriving. Put away, the room
+   closes on the system's curve rather than going at once, and the card
+   settles back down with it; the fold stays, shut, for as long as the sheet
+   is up, so nothing is taken out from under the card after it has moved.
+   The gap between the card and the note is inside the fold, and so is the
+   foot's own spacing when the note is all the foot holds, so a shut fold is
+   no room at all. */
+.wl-letter .wl-foot:has(> .wl-signnote-fold) {
+  padding-top: 0;
+  transition: padding-bottom 420ms var(--ease);
+}
+.wl-letter .wl-foot:has(> .wl-signnote-fold.is-shut:only-child) { padding-bottom: 0; }
+.wl-signnote-fold {
+  display: grid; grid-template-rows: 1fr;
+  transition: grid-template-rows 420ms var(--ease), opacity 260ms var(--ease);
+}
+.wl-signnote-fold.is-shut { grid-template-rows: 0fr; opacity: 0; }
+/* clipped only while it closes: open, a clip exactly the note's height cut
+   the bezel's last row wherever the note fell between two device pixels */
+.wl-signnote-clip { min-height: 0; }
+.wl-signnote-fold.is-shut > .wl-signnote-clip { overflow: hidden; }
+/* on a letter reached from a link, `view the wall` stands under the note,
+   and keeps its own distance from the card once the note has gone */
+.wl-letter .wl-foot > .wl-signnote-fold + .wl-letter-out { transition: margin-top 420ms var(--ease); }
+.wl-letter .wl-foot > .wl-signnote-fold.is-shut + .wl-letter-out { margin-top: 14px; }
+
+.wl-signnote {
+  width: min(100%, var(--scene-w, 100%));
+  margin: 16px auto 0;
+  padding: 12px 12px 4px;
+  display: flex; flex-direction: column; gap: 8px;
+  border-radius: var(--r-lcd);
+  background-color: var(--lcd, #0B0B0B);
+  background-image: var(--lcd-grid, none);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
+  text-align: left;
+  animation: wl-signnote-in 700ms var(--ease) 900ms both;
+}
+@keyframes wl-signnote-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+.wl-signnote-in { display: flex; align-items: flex-start; gap: 11px; }
+/* the envelope sits on the first line's cap height, not its box */
+.wl-signnote-env { flex: 0 0 auto; margin-top: 5px; color: var(--chalk); }
+.wl-signnote-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.wl-signnote-h {
+  margin: 0;
+  font-size: var(--t-read); line-height: 1.12; color: var(--chalk);
+  text-wrap: balance;
+}
+.wl-signnote-why {
+  margin: 0;
+  font-size: var(--t-small); line-height: 1.24; color: var(--ash);
+  text-wrap: pretty;
+}
+
+/* ── the two soft keys ──
+   Where the phone put them, at the foot of the note, left and right, over
+   the dotted seam the wall's notes and panels share. */
+.wl-signnote-keys {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding-top: 4px;
+  border-top: 2px solid transparent;
+  border-image: repeating-linear-gradient(90deg, var(--lcd-edge, rgba(244, 241, 234, 0.16)) 0 2px, transparent 2px 6px) 2;
+}
+.wl-root .wl-signnote-no,
+.wl-root .wl-signnote-go {
+  min-height: 34px; padding: 6px 12px; border-radius: 2px;
+  font-size: var(--t-ctrl); line-height: 1;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+.wl-root .wl-signnote-no { margin-left: -6px; color: var(--ash); }
+.wl-root .wl-signnote-go { margin-right: -2px; background: var(--chalk); color: #000; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-root .wl-signnote-no:hover { background: rgba(244, 241, 234, 0.1); color: var(--chalk); }
+  .wl-root .wl-signnote-go:hover { background: #FFFFFF; }
+}
+.wl-root .wl-signnote-no:active { background: var(--chalk); color: #000; transition-duration: 0ms; }
+.wl-root .wl-signnote-go:active { background: #CFCBC3; transform: translate3d(0, 1px, 0); transition-duration: 0ms; }
+.wl-root :is(.wl-signnote-no, .wl-signnote-go):focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-signnote { animation: none; }
+  .wl-signnote-fold, .wl-letter .wl-foot:has(> .wl-signnote-fold),
+  .wl-letter .wl-foot > .wl-signnote-fold + .wl-letter-out { transition: none; }
+}

@@ -5,6 +5,9 @@
 // Berkeley address at the moment it is posted, the link is mailed to it, and
 // tapping the link confirms it. `sendLink`, `confirmLink` and `linkStatus`
 // below are that flow; the device is verified once and its session kept.
+// Since 26 September the same link signs anybody in by email too (purpose
+// 'login', api/login.js `sendEmailLink`), with any address, in place of a
+// code Supabase mailed that nobody could type back.
 //
 // The code flow under them is the one it replaces, kept for a tab still on an
 // old build and for a function still on the old deploy:
@@ -95,18 +98,27 @@ export async function verifyEduCode({ token, code, session }) {
 // screen can fall back to the code.
 //
 //   sendLink     mail a link to `email` for this session. `purpose` is 'edu'
-//                (a post) or 'alerts' (the alert address). `campus` asks the
-//                function to refuse an address that is not at that school
-//                ('domain'). Answers { ok, request, match, domain, campus,
-//                school }: `request` is what `linkStatus` asks after, and
-//                `match` the two digits the mail prints, so a person can
-//                tell their own mail from anybody else's.
-//   confirmLink  the link's token, spent by whichever device tapped it.
+//                (a post), 'alerts' (the alert address) or 'login' (the
+//                door's "continue with email", migration 0065: any address,
+//                and the device is signed in as whoever holds it). `campus`
+//                asks the function to refuse an address that is not at that
+//                school ('domain'). Answers { ok, request, match, domain,
+//                campus, school }: `request` is what `linkStatus` asks after,
+//                and `match` the two digits the asking screen shows, and
+//                nothing else does: the mail never prints them (migration
+//                0065 section 3).
+//   confirmLink  the link's token, spent by whichever device tapped it. On
+//                the device that asked it confirms at once. On any other it
+//                answers 'match' and spends nothing, until it is called again
+//                with `match`, the number typed off the asking screen: the
+//                right one confirms, a wrong one burns the link ('mismatch').
 //                Answers { ok, purpose, request, campus, school, sameDevice }
-//                or an error: 'invalid', 'expired', 'used'.
+//                or { ok: false, error, purpose }, with error one of
+//                'invalid', 'expired', 'used', 'match', 'mismatch' or
+//                'offline', and `purpose` whenever the link was found.
 //   linkStatus   whether the request this session made has been confirmed,
-//                wherever the link was tapped. { ok, verified, purpose,
-//                campus, school }.
+//                wherever the link was tapped. { ok, verified, expired,
+//                purpose, campus, school }.
 async function invokeLink(body) {
   if (!hasSupabase) return { ok: false, error: 'offline' }
   try {
@@ -126,12 +138,16 @@ async function invokeLink(body) {
   }
 }
 
+// The three purposes a link has, and 'edu' for anything else, as the
+// function reads them.
+const purposeOf = (p) => (p === 'alerts' || p === 'login' ? p : 'edu')
+
 export async function sendLink({ email, session, purpose = 'edu', campus = null }) {
   const out = await invokeLink({
     action: 'link',
     email: String(email || '').trim().toLowerCase(),
     session: String(session || ''),
-    purpose: purpose === 'alerts' ? 'alerts' : 'edu',
+    purpose: purposeOf(purpose),
     ...(campus ? { campus: String(campus) } : {}),
   })
   if (!out.ok) return { ok: false, error: out.error || 'send' }
@@ -145,15 +161,24 @@ export async function sendLink({ email, session, purpose = 'edu', campus = null 
   }
 }
 
-export async function confirmLink({ token, session }) {
-  const out = await invokeLink({ action: 'confirm', token: String(token || ''), session: String(session || '') })
+// The answers the page words, each its own way. 'taken' was read as 'invalid'
+// here, and the page's own line for it ("already confirmed on another
+// account") was never drawn.
+const CONFIRM_FAULTS = new Set(['expired', 'used', 'offline', 'taken', 'match', 'mismatch'])
+
+export async function confirmLink({ token, session, match = null }) {
+  const typed = match == null ? '' : String(match).replace(/\D/g, '')
+  const out = await invokeLink({
+    action: 'confirm', token: String(token || ''), session: String(session || ''),
+    ...(typed ? { match: typed } : {}),
+  })
   if (!out.ok) {
-    const e = out.error === 'expired' || out.error === 'used' || out.error === 'offline' ? out.error : 'invalid'
-    return { ok: false, error: e }
+    const e = CONFIRM_FAULTS.has(out.error) ? out.error : 'invalid'
+    return { ok: false, error: e, purpose: out.purpose ? purposeOf(out.purpose) : null }
   }
   return {
     ok: true,
-    purpose: out.purpose === 'alerts' ? 'alerts' : 'edu',
+    purpose: purposeOf(out.purpose),
     request: String(out.request || ''),
     campus: out.campus ? String(out.campus) : null,
     school: out.school ? String(out.school) : null,
@@ -167,7 +192,10 @@ export async function linkStatus({ request, session }) {
   return {
     ok: true,
     verified: !!out.verified,
-    purpose: out.purpose === 'alerts' ? 'alerts' : 'edu',
+    // thirty minutes gone with nobody tapping it (0064), so the screen that
+    // is waiting can say so rather than wait for ever
+    expired: !out.verified && !!out.expired,
+    purpose: purposeOf(out.purpose),
     campus: out.campus ? String(out.campus) : null,
     school: out.school ? String(out.school) : null,
   }

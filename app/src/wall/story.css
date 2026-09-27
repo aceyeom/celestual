@@ -27,13 +27,31 @@
    the phone's own pixels did */
 .wl-scr-body:has(> .wl-story) { padding: 0; }
 
-/* A screen with a story on it draws its own cells, a gap between each, and
-   the camera's grid of the panel over them was a second grid at another
-   pitch: the two beat against each other into a moire across the runners.
-   So those two layers, and the pixels up close, are off on these screens.
-   The glare, the dust and the backlight's clouds stay: it is the same
-   phone, photographed the same way. */
-.wl-scr:has(.wl-story) .wl-scr-fx:is(.is-grid, .is-moire, .is-rgb) { display: none; }
+/* ── the photograph over it ──
+   A screen with a story on it draws its own cells, a gap between each, and
+   the camera's grid of the panel and its pixels up close used to be laid
+   over them at the letter's own pitch: a second grid at another pitch, the
+   two beating into a moire across the runners. So they were off here, and
+   the story's glass was a clean drawing where every letter's is a
+   photograph. The story says where its cells are now (PixelStory.jsx
+   `onCells`), and the two are laid on exactly those: the grid's lines in
+   the gaps between the cells, a tile of it to a cell, and the pixels' three
+   stripes and their patches of colour a triple to a cell, so each of the
+   story's cells is one pixel of the photograph, on the grey, on the pink,
+   and under the mark. Until it has said, they are off, and they never come
+   on at the wrong pitch for a frame. The camera's own moire stays off: it
+   is a grid at another pitch by design, and over two people running it
+   swims. The glare, the dust and the backlight's clouds are on throughout:
+   it is the same phone, photographed the same way. */
+.wl-scr:has(.wl-story):not([data-cells]) .wl-scr-fx:is(.is-grid, .is-rgb),
+.wl-scr:has(.wl-story) .wl-scr-fx.is-moire { display: none; }
+.wl-scr[data-cells] .wl-scr-fx.is-grid {
+  background-size: var(--q-pitch) var(--q-pitch);
+  /* the rows' line along the foot of each cell, and the columns' down its
+     right, where the story leaves its gap (the first layer is the rows') */
+  background-position: 0 var(--story-y), calc(var(--story-x) + var(--story-lit)) 0;
+}
+.wl-scr[data-cells] .wl-scr-fx.is-rgb { background-position: var(--story-x) var(--story-y); }
 
 /* No story names anybody in its status row any more: the door's two are
    told apart by the steps under it and the mutual's by the row under it

@@ -69,7 +69,12 @@ const EMPTY = {
                       // already holds it reads the same blob
   noticed: {},        // letterId -> true: a letter of this device's that came
                       // down, and whose notice has been read. The notice stands
-                      // at the foot of the wall until it is answered, once
+                      // at the foot of the wall until it is answered, once.
+                      // And `${letterId}:held` -> true: the notice that a
+                      // letter of this device's is waiting for the desk
+                      // ("is being read"), put away under a key of its own so
+                      // the verdict on the same letter still raises its
+                      // notice (screens/Wall.jsx `heldKey`)
   justPosted: '',     // the handle a letter was just put up to, so the wall can
                       // send one ripple out from that name on the way back
                       // from the posted screen. Taken once

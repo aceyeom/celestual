@@ -9,7 +9,9 @@
 //            every other screen runs (Ping.jsx `useProve`, `ProveDoor`), filed
 //            under its own use so a reload on the way back from Instagram
 //            resumes this sheet and nobody else's.
-//   yours    it is theirs. The letter's menu now has remove on it, with an
+//   yours    it is theirs. They can answer it as the recipient (the thread
+//            under it, Replies.jsx, where a reply of theirs is lit and marked
+//            as theirs), the letter's menu now has remove on it, with an
 //            undo, and the sheet asks: "want an email when someone writes to
 //            you?"
 //   email    no confirmed address yet: one is typed and sent a link, and the
@@ -76,7 +78,7 @@ export default function Claim({ handle: raw = '', go, up, upLabel = 'back' }) {
   const link = useAlertLink({
     onConfirmed: async () => {
       const s = await turnOn()
-      if (s !== true) { setSaid('the address is confirmed, but the alert did not turn on. try again from your page.'); setStep('yours') }
+      if (s !== true) { setSaid('the address is confirmed, but the alert did not turn on. try again from your account.'); setStep('yours') }
     },
   })
   const want = async () => {
@@ -112,7 +114,7 @@ export default function Claim({ handle: raw = '', go, up, upLabel = 'back' }) {
       <ProveDoor
         p={proof} headId="wl-claim-h" onAsk={() => proof.ask()}
         title={<>is this letter<br />about you?</>}
-        say="confirm this is your Instagram. then you can remove letters about you in one tap."
+        say="confirm this is your Instagram. then you can answer it as the recipient, and remove letters about you in one tap."
       />
     )
     quiet = proof.dm
@@ -136,7 +138,7 @@ export default function Claim({ handle: raw = '', go, up, upLabel = 'back' }) {
     door = (
       <DoorHead
         id="wl-claim-h" title={<>it&rsquo;s yours.</>}
-        say={`you can now remove letters to ${at} from their menu. want an email when someone writes to you?`}
+        say={`you can now answer it as the recipient, and remove letters to ${at} from their menu. want an email when someone writes to you?`}
       />
     )
     ways = (
@@ -161,16 +163,16 @@ export default function Claim({ handle: raw = '', go, up, upLabel = 'back' }) {
     door = (
       <DoorHead
         id="wl-claim-h" title={<>you&rsquo;re set.</>}
-        say={`we will email ${masked || 'you'} when someone writes to you, and when it’s mutual. you can turn this off on your page.`}
+        say={`we will email ${masked || 'you'} when someone writes to you, and when it’s mutual. you can turn this off in your account.`}
       />
     )
     ways = <ClosePill tone="light" wide onClose={up}>done</ClosePill>
-    quiet = <button type="button" className="wl-quiet" onClick={() => go('you')}>open your page</button>
+    quiet = <button type="button" className="wl-quiet" onClick={() => go('you')}>open your account</button>
   } else {
     door = (
       <DoorHead
         id="wl-claim-h" title={<>it&rsquo;s yours.</>}
-        say={`you can now remove letters to ${at} from their menu. email alerts are not ready yet. they will be on your page when they are.`}
+        say={`you can now answer it as the recipient, and remove letters to ${at} from their menu. email alerts are not ready yet. they will be in your account when they are.`}
       />
     )
     ways = <ClosePill tone="light" wide onClose={up}>done</ClosePill>

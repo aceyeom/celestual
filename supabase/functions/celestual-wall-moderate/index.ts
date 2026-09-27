@@ -31,9 +31,10 @@
 //     { ok:false, error:'cap', limit, used, resets_at }
 //                                                   the allowance, spent
 //
-//   A request with `v: 2` is the one wall's (docs/ONE-WALL.md, migration
-//   0063), and is answered by `v2()` below. Without it, everything here is
-//   as it was.
+//   A request with `v: 2` is the one wall's (docs/ONE-WALL.md, migrations
+//   0063 and 0066), and is answered by `v2()` below: since 0066 an @-note
+//   can go with no proof at all, read before it is written, as a name note
+//   is. Without `v: 2`, everything here is as it was.
 //
 // ── MODERATE THE CONSEQUENCE, NOT THE EMOTION ───────────────────────────────
 // The wall is where people say the thing they never said, and a good deal
@@ -378,30 +379,39 @@ function after(work: Promise<unknown>): Promise<unknown> | undefined {
 
 const CAMPUS_SLUG = /^[a-z0-9-]{2,40}$/
 
-// ── version 2: the one wall (docs/ONE-WALL.md, migration 0063) ──────────────
+// ── version 2: the one wall (docs/ONE-WALL.md, migrations 0063 and 0066) ────
 // A request carrying `v: 2`. Everything above this line is the version 1
 // path, byte for byte, for a tab still on the old build.
 //
 //   request  { v: 2, token, kind: 'handle'|'name', target?, name?, salutation?,
-//              look?, campus?: slug|null, nonce, source?, body }
+//              look?, campus?: slug|null, nonce, source?, body,
+//              proof?: 'edu'|'none' }
 //   ok       { ok: true, id, status: 'live'|'pending'|'rejected', handle, kind,
 //              name, look, campus, school, verified, salutation, say?, reasons? }
 //   error    { ok: false, error: 'edu' | 'campus' | 'throttle' | 'salutation'
 //              | 'nonce' | 'no_session' | 'removed' | 'name' | 'handle'
 //              | 'empty' | 'cap' | 'write', ... }
 //
-// An @-note goes up as version 1's letters do: layer 1 before, the write at
-// `live`, and the reading after the answer. The schema decides who may write
-// one (wall_write v2: `edu`, `campus`) and which school it carries.
+// Two kinds of note, and `proof` says which an @-note is (0066):
 //
-// A name note is read BEFORE it is written, by the classifier itself: it
-// needs no proof, so nothing stands between a stranger and the wall but the
-// reading. A pass writes it `live`; a review, or no classifier configured,
-// writes it `pending` for the desk; a reject writes it `rejected`. The lexicon
-// that spares most @-notes a model call is not a pass here, because "no
-// classifier configured" has to hold a note for the desk, not wave it up.
-// Name notes are throttled, five a device and twenty an address a day,
-// counted before the reading so a refused note is not a free retry.
+//   verified  an @-note with `proof: 'edu'`, or with no `proof` at all, which
+//             is how a tab from before 0066 asks. It goes up as version 1's
+//             letters do: layer 1 before, the write at `live`, and the reading
+//             after the answer. The schema decides who may write one
+//             (wall_write: `edu`, `campus`) and which school it carries, and
+//             it carries that school's sticker.
+//   open      a name note, always, and an @-note with `proof: 'none'`: anybody
+//             may write one, with no proof, so nothing stands between a
+//             stranger and the wall but the reading, and it is read BEFORE it
+//             is written, by the classifier itself. A pass writes it `live`; a
+//             review, or no classifier configured, writes it `pending` for the
+//             desk; a reject writes it `rejected`. The lexicon that spares most
+//             verified notes a model call is not a pass here, because "no
+//             classifier configured" has to hold a note for the desk, not wave
+//             it up. Open notes are throttled, five a device and twenty an
+//             address a day between them, counted before the reading so a
+//             refused note is not a free retry. An open @-note carries no
+//             school and never the sticker.
 //
 // The same (device, nonce) answers the first send's answer before anything
 // is read or counted, so a draft posted from two tabs is one letter, one
@@ -413,6 +423,13 @@ function clientIp(req: Request): string | null {
     req.headers.get('x-real-ip')?.trim() ||
     (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
     null
+}
+
+// PostgREST's answer for a signature the database does not have: a database
+// a migration behind, and nothing else, so a failure of any other kind is
+// never mistaken for one and retried on the older write.
+function noSuchWrite(e: { code?: string; message?: string }): boolean {
+  return e?.code === 'PGRST202' || /could not find the function|does not exist/i.test(String(e?.message || ''))
 }
 
 // deno-lint-ignore no-explicit-any
@@ -452,6 +469,10 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
   const nonce = String(p.nonce || '')
   const salRaw = p.salutation == null ? '' : String(p.salutation).replace(/\s+/g, ' ').trim()
   const salutation = salRaw === '' ? null : salRaw
+  // read before it is written, and throttled: a name note, and an @-note
+  // sent with no proof (0066). An @-note that says nothing is the verified
+  // kind, which is what every @-note was before 0066.
+  const open = kind === 'name' || p.proof === 'none'
 
   if (!body.trim()) return json({ ok: false, error: 'empty' })
   if (kind === 'name' && !name) return json({ ok: false, error: 'name' })
@@ -479,8 +500,8 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
     if (s.verdict === 'reject') return json({ ok: false, error: 'salutation', reasons: s.reasons })
   }
 
-  // ── a name note is counted before it is read ──
-  if (kind === 'name') {
+  // ── an open note is counted before it is read ──
+  if (open) {
     const { data: allowed, error: thErr } = await supabase.rpc('wall_name_throttle_take', {
       p_token: token,
       p_ip: clientIp(req),
@@ -504,7 +525,7 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
   if (caught) {
     status = 'rejected'
     moderation = { verdict: 'reject', reasons: layer1.reasons, flagged: false, at, model_layer: 1 }
-  } else if (kind === 'name') {
+  } else if (open) {
     // read before it is written
     let out: { verdict: string; reasons: string[]; model: string }
     try {
@@ -527,7 +548,11 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
   }
 
   // ── the write: the schema decides who, where and whether ──
-  const { data, error } = await supabase.rpc('wall_write', {
+  // With its proof (0066). A database from before it has only the twelve
+  // argument write, which is the verified path: a verified note or a name
+  // note steps down to it and writes as it always did, and an open @-note,
+  // which that database cannot take, is answered as it would have been then.
+  const args = {
     p_token: token,
     p_kind: kind,
     p_target: kind === 'handle' ? target : null,
@@ -540,7 +565,16 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
     p_status: status,
     p_moderation: moderation,
     p_nonce: nonce,
-  })
+  }
+  let { data, error } = await supabase.rpc('wall_write', { ...args, p_proof: open ? 'none' : 'edu' })
+  if (error && noSuchWrite(error)) {
+    if (kind === 'handle' && open) {
+      console.warn('an open @-note needs 0066', error.message)
+      return json({ ok: false, error: 'edu' })
+    }
+    console.warn('wall_write with a proof refused, trying the twelve argument write', error.message)
+    ;({ data, error } = await supabase.rpc('wall_write', args))
+  }
   if (error) {
     console.error('wall_write v2 failed', error.message)
     return json({ ok: false, error: 'write' }, 500)
@@ -552,9 +586,10 @@ async function v2(p: Record<string, unknown>, req: Request): Promise<Response> {
   if (data.status === 'live') {
     const topics = [...new Set([String(data.campus || 'global'), 'global'])]
     const work: Promise<unknown>[] = topics.map((t) => nudge(t))
-    if (kind === 'handle') {
-      // a reject takes it down and tells the one wall (`global`), which is
-      // where the build that sent `v: 2` is listening
+    if (!open) {
+      // a verified note is read where it stands: a reject takes it down and
+      // tells the one wall (`global`), which is where the build that sent
+      // `v: 2` is listening. An open note was read before it was written.
       work.push(readWhereItStands(supabase, String(data.id), reading, null, 'global', addressee))
     }
     const inline = after(Promise.all(work))

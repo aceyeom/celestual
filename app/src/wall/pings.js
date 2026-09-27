@@ -14,7 +14,7 @@
 import { placePing, fetchMyPings, renewPing, retirePing, normHandle, PING_DAYS, SLOT_CAP } from '../api/celestual.js'
 import { getSession } from '../api/auth.js'
 import { learnHandle, avatarUrl } from '../api/handles.js'
-import { heldProof, verified } from './auth.js'
+import { heldProof, verified, proofFor, renewProof } from './auth.js'
 import { isNameKey, validHandle, mine } from './data.js'
 import { getState, patch } from './store.js'
 
@@ -35,37 +35,59 @@ export function myHandle() {
 
 // Whether this browser can place a ping without asking for anything first:
 // a handle, and the proof that spends it, both held here. The second half is
-// the one that drifts: the row remembers a verification from another phone,
-// or from before thirty idle days, and the secret it needs is not on this one.
+// the one that used to drift: the row remembers a verification from another
+// phone, or from before thirty idle days, and the secret it needs was not on
+// this one. Since 0065 the proof comes back with the person (auth.js
+// `restoreProof`, started the moment the row is read), so this turns true a
+// beat after a sign in, and `readyToPlace` is the same question for a screen
+// that can wait that beat.
 export function canPlace() {
   const me = myHandle()
   return !!me && !!heldProof(me)
+}
+
+export async function readyToPlace() {
+  const me = myHandle()
+  return me ? proofFor(me) : null
 }
 
 // ── the standing pings ──────────────────────────────────────────────────────
 // What this person has out, and which of them came back. The proof is the DM
 // flow's, held in this browser, and it is what `celestual_my_pings` checks.
 //
-// Three answers, and the sheets have to tell them apart: the list, "the proof
-// this browser holds has lapsed" (celestual_my_pings answers ok:false to a dead
-// proof, and the server's row still says handle_verified, so nothing else in
-// the product would ever ask again), and "could not read it". The sky used to
-// draw all three as "nothing out yet.", which for the second is a lie told to
-// somebody with a mutual on their row.
+// Three answers, and the sheets have to tell them apart: the list, "there is
+// no proof for this @ to be had" (celestual_my_pings answers ok:false to a
+// dead proof), and "could not read it". The sky used to draw all three as
+// "nothing out yet.", which for the second is a lie told to somebody with a
+// mutual on their row.
+//
+// The second is rarer than it was. A device with no proof, or with one the
+// server has let lapse, asks for the @'s proof back from the person it is
+// signed in as (auth.js `restoreProof`, 0065) before it answers 'unverified',
+// so a person who has claimed their @ once, anywhere, and signed in here by
+// any proof, reads their list with no DM. 'unverified' is left for a device
+// whose person holds no @ at all, which is the one time the DM is owed.
 export async function myPings({ handle, proof }) {
-  if (!handle || !proof) return { ok: false, error: 'unverified', pings: [], mutuals: [] }
+  const h = normHandle(handle)
+  if (!h) return { ok: false, error: 'unverified', pings: [], mutuals: [] }
   try {
+    const key = proof || await proofFor(h)
+    if (!key) return { ok: false, error: 'unverified', pings: [], mutuals: [] }
     // api/celestual.js already normalises what celestual_my_pings returns, and
     // this follows ITS shape rather than the RPC's: one place in the product
     // reads that RPC and this is not it. The fields are
     // { handle, time, expires_at, mutual, card, theirCard }.
-    const out = await fetchMyPings({ handle, proof })
+    let out = await fetchMyPings({ handle: h, proof: key })
+    if (out && out.ok === false && out.error === 'unverified') {
+      const fresh = await renewProof(h, key)
+      if (fresh) out = await fetchMyPings({ handle: h, proof: fresh })
+    }
     if (!out || out.ok === false) {
       return { ok: false, error: out?.error || 'network', pings: [], mutuals: [] }
     }
     const pings = (Array.isArray(out.pings) ? out.pings : []).map(shapePing)
     const answer = { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual') }
-    HELD.set(normHandle(handle), { at: Date.now(), answer })
+    HELD.set(h, { at: Date.now(), answer })
     return answer
   } catch {
     return { ok: false, error: 'network', pings: [], mutuals: [] }
@@ -148,15 +170,26 @@ export function slotCap() {
 // an @ that had opted out, was told "it's out." over a ping that was never
 // written. The two exceptions the RPC raises ('same handle', 'invalid handle')
 // arrive as thrown errors and are named here rather than read as the network.
+//
+// A proof the server refuses ('unverified': it lapsed, or it was never on this
+// device) is renewed from the person once (auth.js `renewProof`, 0065) and the
+// ping sent again with the fresh one, so the DM is asked for only when this
+// person holds no @ the server can vouch for.
 export async function place({ me: mineNow, them, email, proof, words }) {
   try {
-    const out = await placePing({
+    const send = (spend) => placePing({
       me: mineNow,
       them,
       email: email || null,
-      proof,
+      proof: spend,
       card: words ? { words } : null,
     })
+    const key = proof || await proofFor(mineNow)
+    let out = await send(key)
+    if (out && out.recorded === false && out.error === 'unverified') {
+      const fresh = await renewProof(mineNow, key)
+      if (fresh) out = await send(fresh)
+    }
     const cap = Number(out?.slots?.cap)
     if (cap > 0) patch({ pingCap: cap })
     if (!out || out.recorded === false || out.ok === false) {
@@ -181,7 +214,7 @@ export async function place({ me: mineNow, them, email, proof, words }) {
 // elsewhere.
 export async function renew({ me: mineNow, them }) {
   try {
-    const out = await renewPing({ me: mineNow, them, proof: heldProof(mineNow) })
+    const out = await renewPing({ me: mineNow, them, proof: await proofFor(mineNow) })
     return out?.ok === true
   } catch {
     return false
@@ -190,7 +223,7 @@ export async function renew({ me: mineNow, them }) {
 
 export async function release({ me: mineNow, them }) {
   try {
-    const out = await retirePing({ me: mineNow, them, proof: heldProof(mineNow) })
+    const out = await retirePing({ me: mineNow, them, proof: await proofFor(mineNow) })
     return !!(out && (out.withdrawn || out.ok))
   } catch {
     return false

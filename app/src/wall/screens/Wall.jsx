@@ -29,7 +29,7 @@
 // a small capsule reading "write" between the glass and the person
 // (parts.jsx TopBar). The field keeps its bottom edge, and the dock at the
 // foot carries only what is ABOUT this person: the tab, and the notice when a
-// letter of theirs has come down.
+// letter of theirs has come down, or is still being read.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE HIVE, AND THE VEIL OVER IT                                          ║
@@ -115,22 +115,24 @@
 //
 // ── the foot of the wall is about the person looking ────────────────────────
 // Two things can stand in the dock, and never both: the notice, when a letter
-// this person put up has since been taken down, saying so in one sentence and
-// handing them their own words back to change; and the tab, the one door out
-// of the wall, which asks the one question a person who has just named
-// somebody is carrying. The tab can be put away, and it comes back: after a
-// few days, and at once after another letter goes up, because that is the
-// moment its question is fresh again. A door that cannot be closed is a
-// banner, and a door that never reopens is a door somebody missed once.
+// this person put up has since been taken down, or was held for the desk and
+// is still being read or was refused, saying so in one sentence; and the
+// tab, the one door out of the wall, which asks the one question a person
+// who has just named somebody is carrying. The tab can be put away, and it
+// comes back: after a few days, and at once after another letter goes up,
+// because that is the moment its question is fresh again. A door that
+// cannot be closed is a banner, and a door that never reopens is a door
+// somebody missed once.
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { PixIcon, Wait } from '../screen.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest, setWallFilter } from '../data.js'
+import { useSift, FilterKey, FilterMenu, FilterNone, useFilterMenu, useOutside } from '../Filter.jsx'
 import { getState, patch, setCold } from '../store.js'
 import { isMember } from '../auth.js'
-import { whyDown } from '../moderate.js'
+import { whyDown, neverUp } from '../moderate.js'
 import { campus } from '../campus.js'
 import Hive from '../Hive.jsx'
 import { PixelMark } from '../PixelStory.jsx'
@@ -351,7 +353,12 @@ function Ear({ letters }) {
 // yet, the third for taking the one slot the tab needs.
 const SEEK_ROWS = 6
 
-function Seek({ go }) {
+// ── and what the field shows ──
+// The filter's key stands at the end of the strip and its menu opens in the
+// strip's own panel, where the answers do (Filter.jsx). One panel, and one
+// of the two at a time: the key takes the caret out of the field, which
+// folds the answers, and the caret going back in puts the menu away.
+function Seek({ go, sift }) {
   // The question survives the veil and the sheet both: whatever was typed
   // here is what `/find` opens on, and what this reopens on if it is left and
   // come back to.
@@ -376,7 +383,12 @@ function Seek({ go }) {
     return () => clearTimeout(t)
   }, [v])
 
-  const change = (next) => { setShut(false); setV(next) }
+  const glass = useRef(null)
+  const key = useRef(null)
+  const menu = useFilterMenu()
+  useOutside(glass, menu.open, menu.close)
+  const toKey = () => { if (key.current) key.current.focus({ preventScroll: true }) }
+  const change = (next) => { setShut(false); menu.close(); setV(next) }
 
   // Down while the field is held and there is something in it.
   //
@@ -389,7 +401,7 @@ function Seek({ go }) {
   // below), so a press anywhere else is a press outside: the crowd takes it,
   // the field is left, the panel folds. Nothing invisible is ever laid over
   // the faces to catch it.
-  const down = held && typed && !shut
+  const down = held && typed && !shut && !menu.open
 
   const keys = (e) => {
     if (e.key === 'Escape' && down) { e.preventDefault(); setShut(true); return true }
@@ -401,12 +413,22 @@ function Seek({ go }) {
 
   return (
     <div className="wl-seek">
-      <div className={`wl-seek-glass${down ? ' is-open' : ''}`}>
-        <HandleField
-          kind="search" value={v} onChange={change} onSubmit={commit} onKeyDown={keys}
-          onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}
-          placeholder="look for a name" label="look for a name"
-        />
+      <div className={`wl-seek-glass${down || menu.open ? ' is-open' : ''}`} ref={glass}>
+        <div className="wl-seek-head">
+          <HandleField
+            kind="search" value={v} onChange={change} onSubmit={commit} onKeyDown={keys}
+            onFocus={() => { setHeld(true); menu.close() }} onBlur={() => setHeld(false)}
+            placeholder="look for a name" label="look for a name"
+          />
+          <FilterKey ref={key} want={sift.want} open={menu.open} onToggle={menu.toggle} menuId={menu.menuId} />
+        </div>
+        {menu.open && (
+          <FilterMenu
+            want={sift.want} menuId={menu.menuId}
+            onPick={(k) => { menu.close(); toKey(); sift.pick(k) }}
+            onClose={(back) => { menu.close(); if (back) toKey() }}
+          />
+        )}
         {down && (
           <div className="wl-seek-found" role="listbox" aria-label="names on the wall">
             {rows.map((t, i) => (
@@ -479,6 +501,18 @@ function Tab({ faces, onGo, onHide, going }) {
 // a matter between the reader and a desk, and telling the writer would be
 // pointing them at the person who is likeliest to have done it.
 //
+// ── and a letter that is still being read ──
+// A letter from anybody is read before it goes up (0066), and one held for
+// the desk used to vanish from the writer's side the moment the composer's
+// "back to the wall" was pressed: nothing on the wall said it existed, and a
+// refusal days later was never said at all, since it was never taken down.
+// So the same card says it while it waits, in the words the composer used
+// for it: the hourglass for the envelope, "your letter to Sofia is being
+// read. it goes up once it passes." It goes by itself once the letter is up,
+// since the row stops being held, and `ok` puts it away until the verdict,
+// which has a notice of its own: one that went up and came down says so,
+// and one that never went up says it didn't (moderate.js `neverUp`).
+//
 // It stands until it is put away, once, and then it is remembered as read.
 // One control on it: it used to carry a pill that reopened the composer on
 // the words and a quiet line beside it, and the quiet line changed the store
@@ -491,16 +525,19 @@ function Tab({ faces, onGo, onHide, going }) {
 // its corner, which on a note the phone is telling you is a way of saying
 // "not now" to something that is not a question.
 function Down({ letter: l, onLeave }) {
+  const reading = l.downBy === 'held'
+  const never = neverUp(l)
   return (
     <div className="wl-down" role="status">
       <div className="wl-down-in">
         <Face handle={l.to} size={36} className="wl-down-face" />
         <div className="wl-down-text">
           <p className="wl-down-h">
-            <PixIcon name="env" scale={2} className="wl-down-env" />
-            your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.
+            <PixIcon name={reading ? 'wait' : 'env'} scale={2} className="wl-down-env" />
+            your letter to <span className="wl-h">{labelFor(l.to)}</span>{' '}
+            {reading ? 'is being read.' : never ? 'didn’t go up.' : 'was taken down.'}
           </p>
-          <p className="wl-down-why">{whyDown(l.downBy)}</p>
+          <p className="wl-down-why">{reading ? 'it goes up once it passes.' : whyDown(l.downBy, never)}</p>
         </div>
       </div>
       <div className="wl-down-keys">
@@ -509,6 +546,10 @@ function Down({ letter: l, onLeave }) {
     </div>
   )
 }
+
+// A held letter's notice is put away under a key of its own, so the verdict
+// on the same letter still has a notice to raise.
+const heldKey = (l) => `${l.id}:held`
 
 // the wall under a sheet is not drawn again when only the sheet changed: a
 // letter's deck turned is a new address, and nothing here reads it
@@ -521,6 +562,11 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   const tiles = wall()
   const letters = liveCount()
   const state = getState()
+  // ── the filter ──
+  // What the field shows (data.js, the filter), and the move from one
+  // filter to the next: the field goes out, and the next is seated afresh
+  // and comes up, as a new field under a key of its own (Filter.jsx).
+  const sift = useSift(reduce)
   const written = state.written
   const wroteTo = state.wroteTo || []
 
@@ -657,19 +703,35 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
 
   // ── the notice ──
   // This person's own letters are asked about on every landing by a device
-  // that can write, since a person at a desk can take one down at any hour.
-  // The first that has come down and has not been answered is the notice.
+  // that is signed in or has written anything, since a person at a desk can
+  // take one down, or decide on one held for them, at any hour. `wall_mine`
+  // answers for this device's own session (0063), so a writer who never
+  // signed in is asked about too: it used to be members only, and a letter
+  // from anybody that was held for the desk was never heard of again. It is
+  // asked afresh when this device has put up another letter since it last
+  // asked, which is the walk back from the composer's held screen.
+  // The first that has come down, or never went up, and has not been
+  // answered is the notice; else the first still being read.
   const member = isMember()
-  useEffect(() => { if (member) loadMine() }, [member, rev])
+  const wrote = (state.written || []).length
+  const askedAt = useRef(wrote)
+  useEffect(() => {
+    if (!member && !wrote) return
+    loadMine(wrote !== askedAt.current)
+    askedAt.current = wrote
+  }, [member, wrote, rev])
   // The store is not something React watches, so putting a notice away has
   // to be turned into a render here or the card stands until the next route
   // change. That was the bug in "leave it".
   const [, noticedRev] = useState(0)
   const noticed = state.noticed || {}
-  const down = (mine() || []).find((l) =>
-    (l.downBy === 'screen' || l.downBy === 'desk' || l.downBy === 'shut') && !noticed[l.id]) || null
+  const own = mine() || []
+  const down = own.find((l) =>
+    (l.downBy === 'screen' || l.downBy === 'desk' || l.downBy === 'shut' || neverUp(l)) && !noticed[l.id])
+    || own.find((l) => l.downBy === 'held' && !noticed[heldKey(l)])
+    || null
   const answer = useCallback((l) => {
-    patch({ noticed: { ...(getState().noticed || {}), [l.id]: true } })
+    patch({ noticed: { ...(getState().noticed || {}), [l.downBy === 'held' ? heldKey(l) : l.id]: true } })
     noticedRev((n) => n + 1)
   }, [])
 
@@ -725,6 +787,10 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
     if (!h) return undefined
     patch({ justPosted: '' })
     setSentAt(Date.now())
+    // a letter going up is received by the wall it went up on: a field
+    // filtered to names this one is not among goes back to every name, so
+    // the pulse has a disc to go out from
+    if (!wall().some((t) => t.handle === h)) setWallFilter('all')
     if (reduce) return undefined
     const t = setTimeout(() => { if (hive.current) hive.current.pulse(h) }, ARRIVE_AFTER_MS)
     return () => clearTimeout(t)
@@ -768,12 +834,19 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
           in. What keeps the type on top of it legible is not a box around the
           field but two gradients over it, below. */}
       <div className="wl-stage">
-        <Hive
-          ref={hive}
-          tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
-          opening={playing} mine={wroteTo} wave={wave} onOpen={open} onPeek={peek}
-          none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
-        />
+        {/* keyed by the filter, so a new filter is a new field, seated
+            afresh with its first name in the light (Filter.jsx) */}
+        <div className={`wl-sift${sift.out ? ' is-out' : ''}${sift.moved ? ' is-in' : ''}`} key={sift.shown}>
+          <Hive
+            ref={hive}
+            tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
+            opening={playing} mine={wroteTo} wave={wave} onOpen={open} onPeek={peek}
+            none={wallLoaded() && !wallError() && sift.shown === 'all' ? 'nobody has been written to yet' : ''}
+          />
+          {lifted && !tiles.length && sift.shown !== 'all' && wallLoaded() && !wallError() ? (
+            <FilterNone filter={sift.shown} onAll={() => sift.pick('all')} />
+          ) : null}
+        </div>
       </div>
 
       {/* ── the two shades ──
@@ -807,7 +880,7 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
         {lifted && (
           <div className="wl-masthead">
             <Ear letters={letters} />
-            <Seek go={go} />
+            <Seek go={go} sift={sift} />
           </div>
         )}
 

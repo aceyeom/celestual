@@ -41,6 +41,9 @@
 //                                the pass list (0043): who is let through
 //                                without the code's domain rule or the DM
 //     desk_log                   what the desk did, and when
+//     desk_replies, desk_reply_set
+//                                the replies queue (0068): held and hidden
+//                                replies, restored or removed
 //     desk_canary_run            the daily check on Apify, run now (0060).
 //                                Not an RPC: celestual-resolve is asked, with
 //                                the service role key, and the answer is
@@ -162,6 +165,12 @@ const DESK: Record<string, (b: Record<string, unknown>) => [string, Args]> = {
   desk_log: (b) => ['celestual_desk_log_list', {
     p_limit: num(b.limit, 100, 500), p_offset: num(b.offset, 0, 100000),
   }],
+  // 0068: the replies a person has to read (held by the screen, or out of
+  // sight after three reports), and the rest, with who wrote each one.
+  desk_replies: (b) => ['celestual_desk_replies', {
+    p_status: str(b.status, 16) || 'waiting',
+    p_limit: num(b.limit, 50, 200), p_offset: num(b.offset, 0, 100000),
+  }],
 };
 
 // The writes. Separate from the reads above so that reading the file tells you
@@ -211,6 +220,11 @@ const DESK_WRITE: Record<string, (b: Record<string, unknown>) => [string, Args]>
     p_label: str(b.label, 80),
     p_place: typeof b.place === 'string' ? b.place.trim().slice(0, 80) : null,
     p_active: typeof b.active === 'boolean' ? b.active : null,
+  }],
+  // 0068: a reply put up or back (`live`, which clears its reports) or taken
+  // down (`removed`), with the note kept beside the decision.
+  desk_reply_set: (b) => ['celestual_desk_reply_set', {
+    p_id: str(b.id, 64), p_status: str(b.status, 16), p_note: str(b.note, 400),
   }],
 };
 

@@ -84,8 +84,9 @@ export default function Find({ go, up, upLabel = 'back to the wall', rev }) {
   const nameShaped = q.length > 0 && (q.includes(' ') || normHandle(q).length < q.replace(/^@+/, '').length)
 
   // The names most recently written to: the index's own order, newest
-  // first, and no rank in it.
-  const fresh = useMemo(() => wall().slice(0, FRESH), [rev]) // eslint-disable-line react-hooks/exhaustive-deps
+  // first, and no rank in it. Every name, whatever the field is filtered
+  // to (data.js, the filter): this is about the whole wall.
+  const fresh = useMemo(() => wall(true).slice(0, FRESH), [rev]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The search is the server's, so it is a request rather than a filter.
   // Debounced, because a request per keystroke over a field is a request

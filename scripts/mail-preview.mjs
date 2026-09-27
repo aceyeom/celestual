@@ -4,10 +4,15 @@
 // Renders every mail the product sends from the REAL templates
 // (supabase/functions/_shared/mails.ts on _shared/mail.ts), at the widths a
 // mail is read at, and screenshots them into design/shots/ (gitignored:
-// regenerate, never commit). It also writes the one mail Supabase sends for
-// us, the "continue with email" code, to supabase/templates/magic-link.html,
-// from the same template function, so the file pasted into the dashboard is
-// never a hand copy of the design.
+// regenerate, never commit).
+//
+// It used to write one more file: supabase/templates/magic-link.html, the
+// "continue with email" code that Supabase Auth mailed for us, for pasting
+// into the dashboard. It was never pasted, and the live project mailed its
+// own template with an eight digit code into a box that held six. The login
+// is our own link now (migration 0065, `verify-login` below), sent by
+// celestual-edu-verify like every other mail, so there is no template to
+// paste and the file is gone.
 //
 //   node scripts/mail-preview.mjs            every mail, every view
 //   node scripts/mail-preview.mjs wrote      one of them
@@ -26,7 +31,7 @@
 // app/public/mail/head.png exists (builder E draws it), a stand-in is drawn
 // here from the real mark and the real faces, 600 by 150 at 2x, and the shots
 // say so in the list they print.
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
+import { mkdirSync, existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
@@ -45,6 +50,10 @@ const TOKEN = 'Hk3n0pQ8rS2tU6vW9xY1zA4bC7dE0fG3hJ6kL9mN2p'
 const MAILS = {
   verify: () => mails.verifyMail({ link: LINK, match: 47, purpose: 'edu', domain: 'berkeley.edu' }),
   'verify-alerts': () => mails.verifyMail({ link: LINK, match: 82, purpose: 'alerts' }),
+  // the door's "continue with email" (0065), for any address, and for a .edu
+  // one, which opens its campus as it signs somebody in
+  'verify-login': () => mails.verifyMail({ link: LINK, match: 36, purpose: 'login' }),
+  'verify-login-edu': () => mails.verifyMail({ link: LINK, match: 58, purpose: 'login', domain: 'berkeley.edu' }),
   mutual: () => mails.mutualMail({
     other: 'jules.k', hasCard: true,
     openUrl: `${SITE}/reveal/jules.k`, stopUrl: `${SITE}/alerts#off=${TOKEN}`,
@@ -54,12 +63,6 @@ const MAILS = {
     removeUrl: `${SITE}/r#t=${TOKEN}`, stopUrl: `${SITE}/alerts#off=${TOKEN}`,
   }),
   code: () => mails.codeMail({ code: '481920', school: 'UC Berkeley', minutes: 10 }),
-  // Supabase fills `{{ .Token }}`; the shot shows a code in its place, and
-  // the file written below keeps the placeholder.
-  magic: () => {
-    const t = mails.magicLinkTemplate()
-    return { ...t, html: t.html.replaceAll('{{ .Token }}', '520734') }
-  },
 }
 
 const VIEWS = [
@@ -124,18 +127,6 @@ for (const key of list) {
   }
 }
 await browser.close()
-
-// ── the one template Supabase sends ──────────────────────────────────────────
-if (!want || want === 'magic') {
-  const t = mails.magicLinkTemplate()
-  const dir = join(root, 'supabase/templates')
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'magic-link.html'),
-    `<!-- supabase/templates/magic-link.html: Supabase Auth, "Magic Link" template.\n` +
-    `     Written by scripts/mail-preview.mjs from _shared/mails.ts magicLinkTemplate(). Do not edit by hand.\n` +
-    `     Subject: ${t.subject} -->\n` + t.html + '\n')
-  made.push('supabase/templates/magic-link.html')
-}
 
 console.log(made.join('\n'))
 if (standIn) console.log('(the header is a stand-in: app/public/mail/head.png is not in this checkout yet)')

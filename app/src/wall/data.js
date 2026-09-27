@@ -25,17 +25,13 @@
 //
 // That is the guarantee the printed card makes.
 //
-// ── body can be null, and null is not empty ─────────────────────────────────
-// A letter this browser may not read comes back with `body: null`. That is the
-// redaction, it is performed by the database rather than here, and it is
-// deliberately distinct from `''`: the screen has to be able to tell "there are
-// words and you may not read them" from "somebody wrote nothing".
-//
-// Which letters those are is the server's arithmetic too. Every browser is
-// handed five whole ones before it is asked for anything (0045) and the rest
-// go through the read gate (0044), so openness is per LETTER and `body` is the
-// only thing a screen should branch on. `gated()` and `freeReads()` below are
-// what the meter draws, and neither of them decides anything.
+// ── every letter arrives whole ──────────────────────────────────────────────
+// A letter's `body` is its words, for every reader, always (0066). It used to
+// be null past the eighth letter a browser read, until a proof: the redaction,
+// performed by the database, with the count it kept beside it (0045, 0049).
+// Nothing is withheld now, and nothing here counts on the server's behalf.
+// What asks a reader to sign in is the nudge under the letter (Nudge.jsx),
+// which counts in this browser because it gates nothing.
 
 import * as api from './api.js'
 import { learnHandle, warmFaces, isNameKey } from '../api/handles.js'
@@ -162,8 +158,7 @@ export function rand(key, channel = 0) {
 //
 //   TILES     the public index. One request, no session, and it is what the
 //             wall of names is drawn from.
-//   BY_HANDLE the letters for one handle, redacted or whole depending on the
-//             gate. Filled when somebody opens a name.
+//   BY_HANDLE the letters for one handle. Filled when somebody opens a name.
 //   BY_ID     one letter. Filled when somebody opens a letter directly, which
 //             is what a link off a card does.
 //
@@ -183,20 +178,6 @@ export function wallError() { return TILES.length ? null : TILES_ERROR }
 export function wallLoaded() { return TILES_AT > 0 || !!TILES_ERROR }
 const BY_HANDLE = new Map()
 const BY_ID = new Map()
-
-// ── the five ────────────────────────────────────────────────────────────────
-// Every browser reads five whole letters before it is asked for anything
-// (migration 0045). These two are the server's last word on that, updated by
-// every read: `GATED` is whether the reader is through the gate, in which case
-// the five stop applying, and `FREE` is { limit, used, left } counted after
-// that read. `null` before anything has been asked.
-//
-// Nothing here decides anything. The body is withheld by the database and the
-// count is kept by the database; this is what the meter draws.
-let GATED = null
-let FREE = null
-export function gated() { return GATED }
-export function freeReads() { return FREE }
 
 // ── the allowance ───────────────────────────────────────────────────────────
 // Three letters in any five days (migrations 0044 and 0051), unless the desk
@@ -219,10 +200,11 @@ export function allowance() { return QUOTA }
 let MINE = null
 export function mine() { return MINE }
 
-// Everything read about the letters, dropped. Called when the gate opens or
-// closes, because every cached letter was read with the gate the way it was:
-// signing in over a cache of redacted bodies is a wall that stays shut, and
-// signing out over a cache of open ones is a wall that stays open.
+// Everything read about the letters, dropped. Called when somebody signs in
+// or out, because a cached letter was read AS somebody: whether this person
+// hearted it, and whether it is written to the @ they hold (`mine`, which is
+// what puts "remove this letter" on its menu). Signing in over that cache is
+// a menu that does not know whose letter it is.
 //
 // The allowance goes with them, for the same reason: it is a fact about a
 // person, and the person at this browser has just changed. So do the person's
@@ -230,9 +212,8 @@ export function mine() { return MINE }
 export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
+  ORDERED.clear()
   PRESSED.clear()
-  GATED = null
-  FREE = null
   QUOTA = null
   MINE = null
   bump()
@@ -413,8 +394,6 @@ export function loadHandle(raw, force = false) {
     const asked = Date.now()
     const out = await api.lettersFor(h)
     if (!out.ok) return
-    GATED = out.gated
-    if (out.free) FREE = out.free
     if (out.kind === 'name') learnName(h, out.name)
     if (out.letters.length) learnLook(h, out.letters[0].look)
     const letters = out.letters.map((l) => held(l, asked))
@@ -438,8 +417,6 @@ export function loadLetter(id, force = false) {
       if (out.error === 'gone') { BY_ID.set(id, null); bump() }
       return
     }
-    GATED = out.gated
-    if (out.free) FREE = out.free
     if (out.letter?.kind === 'name') learnName(out.letter.to, out.letter.name)
     BY_ID.set(id, held(out.letter, asked))
     bump()
@@ -530,6 +507,7 @@ function shapeTile(t, was) {
   if (was && was.count === t.count && was.at === t.at && was.known === t.known
     && was.name === t.name && was.verified === t.verified && was.avatar === t.avatar
     && was.campus === t.campus && was.edu === t.edu
+    && was.hearts === t.hearts && was.berkeley === t.berkeley && was.berkeleyAt === t.berkeleyAt
     && lookKey(was.look) === lookKey(t.look)) return { ...was, look: was.look }
   return {
     ...t,
@@ -537,14 +515,25 @@ function shapeTile(t, was) {
     seed: hash(t.handle),
   }
 }
-let SHAPED = { of: null, tiles: [] }
+//
+// ── and it is the field the filter shows ──
+// `wall()` is what the field draws and what the deck turns through: the
+// names the filter lets through, in its order (the filter, below), memoised
+// on the reading AND the filter, so it is the same array until one of the
+// two moves. `wall(true)` is every name in the index's own order, for what
+// is about the whole wall whatever the field shows (the find sheet's six
+// names most recently written to).
+let SHAPED = { of: null, all: [], filter: null, tiles: [] }
 let SHAPES = new Map()
-export function wall() {
-  if (SHAPED.of === TILES) return SHAPED.tiles
-  const tiles = TILES.map((t) => shapeTile(t, SHAPES.get(t.handle)))
-  SHAPES = new Map(tiles.map((t) => [t.handle, t]))
-  SHAPED = { of: TILES, tiles }
-  return tiles
+export function wall(every = false) {
+  if (SHAPED.of !== TILES) {
+    const all = TILES.map((t) => shapeTile(t, SHAPES.get(t.handle)))
+    SHAPES = new Map(all.map((t) => [t.handle, t]))
+    SHAPED = { of: TILES, all, filter: null, tiles: [] }
+  }
+  if (every) return SHAPED.all
+  if (SHAPED.filter !== FILTER) SHAPED = { ...SHAPED, filter: FILTER, tiles: sieve(SHAPED.all, FILTER) }
+  return SHAPED.tiles
 }
 
 // The masthead's number. The sum off the index rather than a second count, so
@@ -553,12 +542,140 @@ export function liveCount() {
   return TILES.reduce((n, t) => n + t.count, 0)
 }
 
+// ── the filter ──────────────────────────────────────────────────────────────
+// The owner, 26 September: "Add a filtering mechanism, to see only Berkeley,
+// newest, most liked, these kind of things. Make it clean." So the field can
+// be looked at four ways, one at a time, and the choice is kept for as long
+// as the tab is (sessionStorage), because a filter is where somebody is
+// looking this visit and not a setting they made:
+//
+//   all        every name, as the wall has always been seated: the newest
+//              written to nearest the light, and nobody moving after that
+//   newest     the names written to this week, newest first; and never
+//              fewer than the dozen newest, so a quiet week still shows what
+//              came in last rather than a field of three
+//   most liked the names whose letters carry a heart, the most hearted
+//              first, which is every heart on every letter under the name
+//              added up, the count each letter shows (migration 0067)
+//   Berkeley   the names with a letter from a verified Berkeley address, the
+//              one that carries the Cal sticker, newest of those first
+//
+// What it changes is what the field shows and in what order: the hive seats
+// a filtered field afresh, its first name in the light and the rest outward
+// in the filter's order (Hive.jsx, the tile), and the deck turns through the
+// names in the same order, so a person reading the most liked turns from
+// one to the next most liked. Under a name the letters follow the filter
+// where the filter says something about letters (`ordered`, below): the
+// most hearted first, or the Berkeley ones first. It filters nothing out of
+// a name, since a filter is a way of looking at the wall and never a way of
+// hiding a letter from somebody who opened one.
+//
+// The numbers are the server's, on the index (0067). On a database from
+// before them the Berkeley cut falls back to the newest letter's sticker,
+// and most liked is not offered (`filtersOpen`), rather than drawn empty.
+export const FILTERS = [
+  { key: 'all', word: 'all' },
+  { key: 'new', word: 'newest' },
+  { key: 'liked', word: 'most liked' },
+  { key: 'berkeley', word: 'Berkeley' },
+]
+const FILTER_STORE = 'celestual.wall.filter'
+const NEW_DAYS = 7
+const NEW_FLOOR = 12
+function readFilter() {
+  try {
+    const k = typeof sessionStorage === 'undefined' ? '' : sessionStorage.getItem(FILTER_STORE)
+    return FILTERS.some((f) => f.key === k) ? k : 'all'
+  } catch {
+    return 'all'
+  }
+}
+let FILTER = readFilter()
+export function wallFilter() { return FILTER }
+
+// One choice at a time. A new one drops the order the last one gave each
+// name's letters, and moves the field: every screen reading `wall()` is
+// told by the revision.
+export function setWallFilter(key) {
+  if (!FILTERS.some((f) => f.key === key) || key === FILTER) return
+  FILTER = key
+  ORDERED.clear()
+  try { sessionStorage.setItem(FILTER_STORE, key) } catch { /* a private tab keeps it in memory */ }
+  bump()
+}
+
+// Which of the four this index can answer: all four once the index carries
+// the hearts (0067); without them, most liked stays off the menu. A filter
+// that is on and stops being answerable reads as all.
+export function filtersOpen() {
+  const all = wall(true)
+  const hearts = !all.length || all.some((t) => t.hearts !== null)
+  return FILTERS.filter((f) => f.key !== 'liked' || hearts).map((f) => f.key)
+}
+
+// the Berkeley cut: the server's count, or on an older index the newest
+// letter's sticker
+const berkeleyOf = (t) => (t.berkeley !== null && t.berkeley !== undefined
+  ? t.berkeley > 0
+  : !!t.edu && t.campus === 'berkeley')
+
+function sieve(all, key) {
+  if (key === 'new') {
+    const byAt = [...all].sort((a, b) => b.at - a.at)
+    const since = Date.now() - NEW_DAYS * DAY
+    const week = byAt.filter((t) => t.at >= since)
+    return week.length >= NEW_FLOOR ? week : byAt.slice(0, NEW_FLOOR)
+  }
+  if (key === 'liked') {
+    if (!all.some((t) => t.hearts !== null)) return all
+    return all.filter((t) => t.hearts > 0).sort((a, b) => b.hearts - a.hearts || b.at - a.at)
+  }
+  if (key === 'berkeley') {
+    return all.filter(berkeleyOf).sort((a, b) => (b.berkeleyAt || b.at) - (a.berkeleyAt || a.at))
+  }
+  return all
+}
+
+// ── and the letters under a name, in the filter's order ──
+// Most liked: the most hearted first. Berkeley: the letters from a verified
+// Berkeley address first, newest first, and then the rest as they were.
+//
+// Worked out once per name and filter and then held: a heart pressed while
+// the name is being read moves the count on the card and not the card, so
+// the letter before and the letter after do not swap places under the
+// reader's thumb. A letter that arrives while it is held goes after the
+// ones already there. A new filter works every name out afresh.
+const ORDERED = new Map() // key -> { of, ids, list }
+const calOf = (l) => (l.verified && l.campus === 'berkeley' ? 1 : 0)
+function orderOf(list) {
+  if (FILTER === 'liked') return [...list].sort((a, b) => (b.hearts || 0) - (a.hearts || 0) || b.at - a.at)
+  if (FILTER === 'berkeley') return [...list].sort((a, b) => calOf(b) - calOf(a) || b.at - a.at)
+  return list
+}
+function ordered(k, list) {
+  const was = ORDERED.get(k)
+  if (was && was.of === list) return was.list
+  let out
+  if (was) {
+    const rank = new Map(was.ids.map((id, i) => [id, i]))
+    const kept = list.filter((l) => rank.has(l.id)).sort((a, b) => rank.get(a.id) - rank.get(b.id))
+    out = [...kept, ...orderOf(list.filter((l) => !rank.has(l.id)))]
+  } else {
+    out = orderOf(list)
+  }
+  ORDERED.set(k, { of: list, ids: out.map((l) => l.id), list: out })
+  return out
+}
+
 // ── reading ─────────────────────────────────────────────────────────────────
 // Both of these answer out of the cache. A caller that wants them filled calls
 // the matching loader first, or renders the empty state and lets the
 // subscription bring it back.
 export function lettersFor(handle) {
-  return BY_HANDLE.get(targetKey(handle)) || []
+  const k = targetKey(handle)
+  const list = BY_HANDLE.get(k)
+  if (!list) return []
+  return FILTER === 'liked' || FILTER === 'berkeley' ? ordered(k, list) : list
 }
 
 // Three states, and screens need all three:
@@ -621,12 +738,14 @@ export async function search(query) {
 // the disc the wall lights is already on that paper.
 //
 // Version 2 (the one wall, docs/ONE-WALL.md) adds the salutation, a name
-// note's school, and the draft's nonce, and a third answer: `pending`, a name
-// note read by the classifier and waiting on the desk. It is not on the wall
-// yet, so nothing on the wall moves for it; this device's own letters are
-// read again, where it is listed as waiting.
-export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus = null, nonce = '' }) {
-  const out = await api.write({ to, body, source, kind, name, look, salutation, campus, nonce })
+// note's school, and the draft's nonce, and a third answer: `pending`, a note
+// read by the classifier and waiting on the desk. It is not on the wall yet,
+// so nothing on the wall moves for it; this device's own letters are read
+// again, where it is listed as waiting. And since 0066 `proof`, for a letter
+// to an @: 'edu' posts it as a Berkeley student, verified and up at once,
+// and 'none' posts it from anybody, read first, the way a name note goes.
+export async function write({ to, body, source, kind = 'handle', name = '', look = null, salutation = null, campus = null, nonce = '', proof = 'none' }) {
+  const out = await api.write({ to, body, source, kind, name, look, salutation, campus, nonce, proof })
   if (out?.ok && out.status === 'live') {
     const h = out.handle || (kind === 'name' ? nameKey(name) : normHandle(to))
     if (kind === 'name') learnName(h, out.name || cleanName(name))
@@ -661,10 +780,15 @@ export async function write({ to, body, source, kind = 'handle', name = '', look
 //   greet   the "dear" line as the writer edited it, or null while it
 //           follows the name
 //   school  a name note's school, a campus slug, or '' for none
+//   proof   how a letter to an @ goes up: 'edu', as a Berkeley student, with
+//           the Berkeley mark and at once; or 'none', from anybody, read
+//           first (0066). A name note is always 'none'
 //   nonce   made once per draft (`newNonce`), so the same draft posted twice
 //           is one letter (docs/ONE-WALL.md)
 //   held    the Berkeley link it is waiting on, once one is out:
-//           { email, request, match, at }
+//           { email, request, match, at, earlier }, where `earlier` is the
+//           requests sent before it for the same address, up to four, so a
+//           tap on any of the mails posts the letter (screens/Write.jsx)
 //
 // `draftPost` turns that into what goes up, and `postDraft` sends it and, if
 // it went, lands it: the composer calls it on the press, and the verify page
@@ -696,6 +820,9 @@ export function draftPost(d) {
     // which is not the line the letter would say by itself
     salutation: greet || (viaAt && nm ? `dear ${nm}` : null),
     campus: kind === 'name' && d.school ? String(d.school) : null,
+    // a draft kept from before 0066 carries no `proof`, and one of those
+    // waiting on the Berkeley link was always the Berkeley kind
+    proof: kind === 'handle' && (d.proof === 'edu' || (d.proof == null && !!d.held)) ? 'edu' : 'none',
   }
 }
 
@@ -721,7 +848,7 @@ export async function postDraft(d) {
   if (p.kind === 'name') learnName(p.key, p.name)
   const out = await write({
     to: p.handle, body: p.body, source: getState().source || null, kind: p.kind, name: p.name,
-    look: p.look, salutation: p.salutation, campus: p.campus, nonce: d.nonce || '',
+    look: p.look, salutation: p.salutation, campus: p.campus, nonce: d.nonce || '', proof: p.proof,
   })
   if (out?.ok && (out.status === 'live' || out.status === 'pending')) landLetter(out, p)
   return out || { ok: false, error: 'network' }

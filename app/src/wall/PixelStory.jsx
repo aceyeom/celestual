@@ -11,10 +11,10 @@
 // ── what it costs ───────────────────────────────────────────────────────────
 // One loop, on the clock, and no state per frame: the story is asked for its
 // frame on every animation frame, and the canvas is drawn only when the
-// answer is a different frame. The run and the dance change twelve times a
-// second; the pink wave and the mark gathering are drawn at the display's
-// own rate, because they glide, for the second and a half they move; a
-// screen standing still is not drawn at all, and the loop stops at the last
+// answer is a different frame. The two of them running and the mark
+// gathering are drawn at the display's own rate, because they glide; the
+// pink steps twenty five times a second, because it does not; a screen
+// standing still is not drawn at all, and the loop stops at the last
 // frame. A screen's glass is blurred a third of a pixel and tilted
 // (screen.css `.wl-scr`), so every drawing is a composite through a filter,
 // and a canvas drawn sixty times a second under one for longer than it has
@@ -27,27 +27,37 @@
 // frame, when it is shown: the loop is a function of the clock, so nothing
 // is lost by not drawing it.
 //
+// A story with a `loop` (the door's and the mutual's) is told again from
+// its first frame every `loop` ms, the clock taken round: at the display's
+// rate while it is being told, and past its end a still mark waits on one
+// timer for the next telling, and a live one ticks as above. The screen is
+// asleep across the turn (Join.jsx, Reveal.jsx), so the first frame of the
+// next telling is not seen to replace the last of this one.
+//
 // ── what a cell carries ─────────────────────────────────────────────────────
 // A cell is [x, y, ink, heat, alpha]. The ink is the screen's near ink, the
 // same ink at half for the far side, or the story's rose (pixmark.js `ROSE`).
 // `heat` is how much of the rose a cell of ink is carrying, for the glint on
-// the mutual's ring. `alpha` is how much of it is lit, for the heart that
-// fades as it rises. A cell whose x or y is not a whole number is one on its
-// way somewhere (the mark gathering), and it is drawn where it is, to the
-// device pixel, between the panel's own cells, until it lands on one.
+// the mutual's ring. `alpha` is how much of it is lit, for the edges of the
+// two of them and a note going out. A cell whose x or y is not a whole
+// number is one on its way somewhere (the mark gathering), and it is drawn
+// where it is, to the device pixel, between the panel's own cells, until it
+// lands on one.
 //
 // ── the pink ────────────────────────────────────────────────────────────────
 // A frame may carry a `wash`: the backlight turned pink (pixmark.js `PANEL`),
-// out to a radius round a point, its front a little brighter than what is
-// behind it, or the whole panel once the front has passed its corners. It is
-// the panel's own gradient, round the same hot spot the screen's greys are
-// round (screen.css `.wl-scr-bg`, looks.js `quirks`), painted once for each
-// size and uncovered frame by frame, so the pink screen is the same phone,
-// photographed the same way, lit another colour; the dust and the glare lie
-// over it as they lie over the grey. It is drawn first, under the dots.
+// a few of the panel's cells at a time, or the whole panel once the last
+// corner has turned. The pink itself is the panel's own gradient, round the
+// same hot spot the screen's greys are round (screen.css `.wl-scr-bg`,
+// looks.js `quirks`), painted once for each size, so the pink screen is the
+// same phone, photographed the same way, lit another colour; the dust, the
+// glare and the pixels up close lie over it as they lie over the grey. What
+// moves is which of the panel's cells it shows through: blocks of them,
+// each turning on its own step (`spreadMap`, `spreadOn`), and never a soft
+// front. It is drawn first, under the dots.
 //
 // A frame may carry a `glow` as well: a soft ring of light round a point,
-// brighter at its edge, for the mutual's heartbeat behind the mark.
+// brighter at its edge, for the mutual's breath behind the mark.
 //
 // ── the two ways of drawing it ──────────────────────────────────────────────
 // `pixel` is the product: square cells in the screen's ink. `ascii` sets each
@@ -60,7 +70,7 @@
 // story can be started by whoever owns the beats around it, and started
 // again from another moment by moving it.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { markCells, MARK_CUT, BLUSH, ROSE, PANEL } from './pixmark.js'
 import { CHALK } from './mark.js'
 import './story.css'
@@ -106,6 +116,68 @@ export function PixelMark({ cell = 2, ink = CHALK, className = '' }) {
 // kept. Handed to `Screen` as its `style`, which is laid over its quirks.
 export const SQUARE = { '--q-rx': '0deg', '--q-ry': '0deg', '--q-rz': '0deg' }
 
+// ── and the panel under the pink ──
+// A phone turned from one light to another as the pink spreads over it
+// (turn.js) turns everything it paints by one number, `--mu-turn`. The
+// panel itself, its three greys under the pink, turns by a number of its
+// own, `--mu-pan`, which comes up only once the pink has covered all of it
+// (mutual.css): the grey the pink has not reached yet is never seen to go
+// pink, only a block of cells at a time.
+const PANEL_VARS = ['--s-hi', '--s-mid', '--s-lo']
+export function underPink(style) {
+  const out = { ...style }
+  for (const k of PANEL_VARS) if (typeof out[k] === 'string') out[k] = out[k].replace('var(--mu-turn)', 'var(--mu-pan)')
+  return out
+}
+
+// ── the story's clock, for the page round the screen ──
+// The steps under the door's phone and the words typed on the mutual's are
+// lit on the story's own clock, taken round with it when it is told again.
+// This answers how many of `marks` (ms into a telling, in order) the clock
+// has passed on this telling (`i`), and which telling it is (`n`), and
+// wakes only when the next mark or the next telling comes, not on every
+// frame. `marks` is a list made once, outside the render. Held with the
+// tab, and not run at all when `off` (reduced motion, a held frame).
+function passed(marks, u) {
+  let i = 0
+  while (i < marks.length && u >= marks[i]) i++
+  return i
+}
+export function useStoryClock(story, from, marks, off = false) {
+  const loop = story.loop || 0
+  const read = () => {
+    const t = performance.now() - from
+    const u = loop ? ((t % loop) + loop) % loop : t
+    return { i: passed(marks, u), n: loop ? Math.floor(t / loop) : 0, u }
+  }
+  const [got, setGot] = useState(read)
+  useEffect(() => {
+    if (off) return undefined
+    let id = 0
+    const step = () => {
+      const r = read()
+      setGot((g) => (g.i === r.i && g.n === r.n ? g : r))
+      if (document.hidden) return
+      const next = r.i < marks.length ? marks[r.i] : loop
+      if (next) id = setTimeout(step, Math.max(8, next - r.u + 2))
+    }
+    step()
+    const onVis = () => { clearTimeout(id); if (!document.hidden) step() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      clearTimeout(id)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+    // `read` is this render's, over the same three things
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story, from, marks, off])
+  return got
+}
+// the marks a held moment of a telling has passed, for a frame held still
+export function heldAt(marks, u) {
+  return { i: passed(marks, u), n: 0, u }
+}
+
 // the characters, lightest to heaviest, all plain ASCII
 const RAMP = ['.', ':', '+', '*', '#', '@']
 
@@ -116,8 +188,9 @@ function rgbOf(hex) {
 }
 const ROSE_RGB = rgbOf(ROSE)
 const BLUSH_RGB = rgbOf(BLUSH).join(', ')
-// the heartbeat on a pink panel is the pink going nearly white, and the
-// wave's front a pink a step lighter than the panel behind it
+// the breath on a pink panel is the pink going nearly white, and a block of
+// the panel that has just turned a pink a step lighter than the panel
+// behind it
 const LIGHT_RGB = '255, 246, 250'
 const FRONT_RGB = '255, 214, 230'
 
@@ -214,111 +287,130 @@ function pinkPanel(s, host, el, dpr) {
   s.tmp = tmp
 }
 
-// The pink, out to the wave's front, or whole. The front is soft over five
-// cells, so it is a light arriving and not a line, and a little brighter
-// than what is behind it for as long as it is moving (`rim`).
-function washOn(g, w, s) {
-  if (!s.pink) return
-  g.setTransform(1, 0, 0, 1, 0, 0)
-  g.globalAlpha = Math.max(0, Math.min(1, w.level ?? 1))
-  if (w.r == null) {
-    g.drawImage(s.pink, 0, 0)
-    g.globalAlpha = 1
-    return
+// ── the pink, a few cells at a time ──
+// The panel in square blocks of `SPREAD` cells a side, and for each the
+// moment it turns: how far it is from where the pink leaves, in cells,
+// pushed on or held back by two octaves of a slow noise (lobes a score of
+// cells across, and ripples in their edges) and by a jitter of its own, so
+// the front is ragged at the block and grows in lobes, never as a circle;
+// then laid between 0 and 1, the nearest block to the farthest, so a front
+// that has gone all the way has turned every block on the panel, whatever
+// its size. Worked out once for a size and a place it leaves from. The
+// noise is in the story's own cells, so the lobes are the same shape on a
+// phone's panel and a desk's.
+const SPREAD = 2
+const smoothstep = (k) => k * k * (3 - 2 * k)
+// a number from three others, the same every time it is asked
+function hash3(a, b, c) {
+  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35) ^ Math.imul(c + 0x27d4eb2f, 0x165667b1)
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d)
+  return ((h ^ (h >>> 13)) >>> 0) / 4294967296
+}
+// a smooth noise, -1 to 1, on a lattice `w` cells apart
+function noise(x, y, w, salt) {
+  const fx = x / w
+  const fy = y / w
+  const i = Math.floor(fx)
+  const j = Math.floor(fy)
+  const u = smoothstep(fx - i)
+  const v = smoothstep(fy - j)
+  const a = hash3(i, j, salt)
+  const b = hash3(i + 1, j, salt)
+  const c = hash3(i, j + 1, salt)
+  const d = hash3(i + 1, j + 1, salt)
+  return 2 * (a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v) - 1
+}
+function spreadMap(s, w) {
+  const key = `${w.x}|${w.y}`
+  if (s.spread && s.spread.key === key) return s.spread
+  const bw = Math.ceil(s.pc / SPREAD)
+  const bh = Math.ceil(s.pr / SPREAD)
+  const th = new Float32Array(bw * bh)
+  let lo = Infinity
+  let hi = -Infinity
+  for (let j = 0; j < bh; j++) {
+    for (let i = 0; i < bw; i++) {
+      // the block's middle, in the story's cells
+      const x = (i + 0.5) * SPREAD - s.ox
+      const y = (j + 0.5) * SPREAD - s.oy
+      const v = Math.hypot(x - w.x - 0.5, y - w.y - 0.5)
+        + 7 * noise(x, y, 19, 1) + 2.6 * noise(x, y, 7, 2) + 3.4 * (hash3(i, j, 3) - 0.5)
+      th[j * bw + i] = v
+      if (v < lo) lo = v
+      if (v > hi) hi = v
+    }
   }
-  const { ox, oy, cell, mx, my } = s
-  const x = mx + (w.x + ox + 0.5) * cell
-  const y = my + (w.y + oy + 0.5) * cell
-  const R = Math.max(0.5, w.r) * cell
-  // how soft its front is, in cells (the intro's finer grid asks for more)
-  const E = (w.soft || 5) * cell
-  const out = R + E
-  const t = s.tmp.getContext('2d')
-  t.globalCompositeOperation = 'source-over'
-  t.clearRect(0, 0, s.W, s.H)
-  t.drawImage(s.pink, 0, 0)
-  t.globalCompositeOperation = 'destination-in'
-  const m = t.createRadialGradient(x, y, 0, x, y, out)
-  m.addColorStop(0, 'rgba(0, 0, 0, 1)')
-  m.addColorStop(Math.max(0, (R - E) / out), 'rgba(0, 0, 0, 1)')
-  m.addColorStop(1, 'rgba(0, 0, 0, 0)')
-  t.fillStyle = m
-  t.fillRect(0, 0, s.W, s.H)
-  t.globalCompositeOperation = 'source-over'
-  g.drawImage(s.tmp, 0, 0)
-  g.globalAlpha = 1
-  const rim = Math.max(0, Math.min(1, w.rim ?? 0))
-  if (rim > 0.01) {
-    const r = g.createRadialGradient(x, y, 0, x, y, out)
-    r.addColorStop(0, `rgba(${FRONT_RGB}, 0)`)
-    r.addColorStop(Math.max(0, (R - 1.6 * E) / out), `rgba(${FRONT_RGB}, 0)`)
-    r.addColorStop(Math.max(0, (R - 0.4 * E) / out), `rgba(${FRONT_RGB}, ${(0.42 * rim).toFixed(3)})`)
-    r.addColorStop(1, `rgba(${FRONT_RGB}, 0)`)
-    g.fillStyle = r
-    g.fillRect(0, 0, s.W, s.H)
-  }
+  for (let k = 0; k < th.length; k++) th[k] = (th[k] - lo) / (hi - lo || 1)
+  s.spread = { key, th, bw, bh }
+  return s.spread
 }
 
-// The fine story's pink is worked out at a quarter of the canvas's size and
-// laid on it smoothly. It is a light, all gradient, with a front soft over a
-// dozen cells, and a gradient a quarter the size is the same gradient; the
-// sixteenth of the pixels is what lets a phone spread it sixty times a
-// second.
-const QW = 4
-function washFine(g, w, s) {
+// The pink through the blocks that have turned; and over the ones that
+// turned on this step, and the step before, a lighter pink, less on the
+// second, so a block is seen to come on and settle the way a cell of an LCD
+// does, and the front is a ragged line of blocks just lit rather than an
+// edge. `level` takes the whole of it down (the mutual's pink going out
+// onto the panel's own).
+function spreadOn(g, w, s) {
   if (!s.pink) return
   g.setTransform(1, 0, 0, 1, 0, 0)
-  g.globalAlpha = Math.max(0, Math.min(1, w.level ?? 1))
-  if (w.r == null) {
+  const level = Math.max(0, Math.min(1, w.level ?? 1))
+  if (w.p == null) {
+    g.globalAlpha = level
     g.drawImage(s.pink, 0, 0)
     g.globalAlpha = 1
     return
   }
-  if (!s.pinkS) {
-    const sw = Math.ceil(s.W / QW)
-    const sh = Math.ceil(s.H / QW)
-    const a = document.createElement('canvas')
-    a.width = sw
-    a.height = sh
-    a.getContext('2d').drawImage(s.pink, 0, 0, sw * QW, sh * QW, 0, 0, sw, sh)
-    const b = document.createElement('canvas')
-    b.width = sw
-    b.height = sh
-    s.pinkS = a
-    s.tmpS = b
+  const m = spreadMap(s, w)
+  // The pink changes twenty five times a second and the two of them under
+  // it sixty, breathing: what a step of the pink is, is worked out on its
+  // step and laid again as it is on the frames between.
+  const at = `${m.key}|${w.p}`
+  if (s.spreadAt !== at) {
+    const { bw, bh, th } = m
+    const px = SPREAD * s.cell
+    // a block's edges; the blocks along the panel's own edges run on to the
+    // canvas's, over the part of a cell left over there
+    const X = (i) => (i <= 0 ? 0 : i >= bw ? s.W : s.mx + i * px)
+    const Y = (j) => (j <= 0 ? 0 : j >= bh ? s.H : s.my + j * px)
+    const p1 = w.p1 ?? w.p
+    const p2 = w.p2 ?? p1
+    const now = []
+    const then = []
+    const t = s.tmp.getContext('2d')
+    t.globalCompositeOperation = 'source-over'
+    t.clearRect(0, 0, s.W, s.H)
+    t.fillStyle = '#000'
+    t.beginPath()
+    for (let j = 0; j < bh; j++) {
+      const y = Y(j)
+      const h = Y(j + 1) - y
+      for (let i = 0; i < bw; i++) {
+        const v = th[j * bw + i]
+        if (v > w.p) continue
+        const x = X(i)
+        const wd = X(i + 1) - x
+        t.rect(x, y, wd, h)
+        if (v > p1) now.push(x, y, wd, h)
+        else if (v > p2) then.push(x, y, wd, h)
+      }
+    }
+    t.fill()
+    t.globalCompositeOperation = 'source-in'
+    t.drawImage(s.pink, 0, 0)
+    t.globalCompositeOperation = 'source-over'
+    s.spreadAt = at
+    s.fresh = [[now, 0.55], [then, 0.22]]
   }
-  const { ox, oy, cell, mx, my } = s
-  const x = (mx + (w.x + ox + 0.5) * cell) / QW
-  const y = (my + (w.y + oy + 0.5) * cell) / QW
-  const R = (Math.max(0.5, w.r) * cell) / QW
-  const E = ((w.soft || 5) * cell) / QW
-  const out = R + E
-  const sw = s.tmpS.width
-  const sh = s.tmpS.height
-  const t = s.tmpS.getContext('2d')
-  t.globalCompositeOperation = 'source-over'
-  t.clearRect(0, 0, sw, sh)
-  t.drawImage(s.pinkS, 0, 0)
-  t.globalCompositeOperation = 'destination-in'
-  const m = t.createRadialGradient(x, y, 0, x, y, out)
-  m.addColorStop(0, 'rgba(0, 0, 0, 1)')
-  m.addColorStop(Math.max(0, (R - E) / out), 'rgba(0, 0, 0, 1)')
-  m.addColorStop(1, 'rgba(0, 0, 0, 0)')
-  t.fillStyle = m
-  t.fillRect(0, 0, sw, sh)
-  t.globalCompositeOperation = 'source-over'
-  const rim = Math.max(0, Math.min(1, w.rim ?? 0))
-  if (rim > 0.01) {
-    const r = t.createRadialGradient(x, y, 0, x, y, out)
-    r.addColorStop(0, `rgba(${FRONT_RGB}, 0)`)
-    r.addColorStop(Math.max(0, (R - 1.6 * E) / out), `rgba(${FRONT_RGB}, 0)`)
-    r.addColorStop(Math.max(0, (R - 0.4 * E) / out), `rgba(${FRONT_RGB}, ${(0.42 * rim).toFixed(3)})`)
-    r.addColorStop(1, `rgba(${FRONT_RGB}, 0)`)
-    t.fillStyle = r
-    t.fillRect(0, 0, sw, sh)
+  g.globalAlpha = level
+  g.drawImage(s.tmp, 0, 0)
+  for (const [list, a] of s.fresh) {
+    if (!list.length) continue
+    g.fillStyle = `rgba(${FRONT_RGB}, ${a})`
+    g.beginPath()
+    for (let k = 0; k < list.length; k += 4) g.rect(list[k], list[k + 1], list[k + 2], list[k + 3])
+    g.fill()
   }
-  g.imageSmoothingEnabled = true
-  g.drawImage(s.tmpS, 0, 0, sw, sh, 0, 0, sw * QW, sh * QW)
   g.globalAlpha = 1
 }
 
@@ -379,7 +471,7 @@ function paint(g, f, s) {
   // It read as a collision, and it went with the collision (pixmark.js
   // `THE PINK`): what the panel does now is turn pink.
   // the pink and the light, under the dots
-  if (f.wash) washOn(g, f.wash, s)
+  if (f.wash) spreadOn(g, f.wash, s)
   if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
   g.setTransform(1, 0, 0, 1, mx, my)
   if (s.mode === 'ascii') {
@@ -465,7 +557,7 @@ function paintFine(g, f, s) {
   // for each step of the ink toward the rose's: at that strength the two
   // inks are one grey)
   if (!s.grid) ghostGrid(s)
-  if (f.wash) washFine(g, f.wash, s)
+  if (f.wash) spreadOn(g, f.wash, s)
   if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
   g.drawImage(s.grid, 0, 0)
   // the lit cells, by their fill; a cell lit twice keeps the stronger
@@ -507,6 +599,37 @@ function paintFine(g, f, s) {
     for (let k = 0; k < list.length; k += 2) g.rect(list[k], list[k + 1], d, d)
     g.fill()
   }
+}
+
+// ── the photograph, on the story's own cells ──
+// A letter's glass carries what a camera catches of an LCD in the dark: the
+// grid between its pixels, the moire of that grid against the sensor, and
+// every pixel's three stripes, each pixel lit a little off in soft patches
+// of colour (screen.css `.wl-scr-fx`, looks.js `rgbTile`). They were off on
+// a screen with a story on it: they were laid at the letter's own pitch and
+// the story draws its cells at another, and the two grids beat into a moire
+// across the runners. Without them the story's glass was a clean drawing on
+// a photograph, and the owner saw that the logo was not on the same phone as
+// the letters. So the story tells its screen where its cells are, the
+// pitch in CSS pixels and where the first cell's corner is in the glass,
+// and the grid and the pixels up close are laid on exactly those cells
+// (story.css `[data-cells]`): a stripe triple to a cell, the grid's line in
+// the gap between two, each of the story's cells one pixel of the
+// photograph. Measured, not assumed, as the pink is, and again at every
+// size.
+function onCells(el, host, s, dpr) {
+  const scr = el.closest('.wl-scr')
+  if (!scr) return
+  const hr = host.getBoundingClientRect()
+  const sr = scr.getBoundingClientRect()
+  // a scale on some ancestor (a sheet arriving) scales both rects alike
+  const k = hr.width ? host.clientWidth / hr.width : 1
+  const px = (v) => `${Math.round(v * 1000) / 1000}px`
+  scr.style.setProperty('--q-pitch', px(s.cell / dpr))
+  scr.style.setProperty('--story-x', px((hr.left - sr.left) * k + s.mx / dpr))
+  scr.style.setProperty('--story-y', px((hr.top - sr.top) * k + s.my / dpr))
+  scr.style.setProperty('--story-lit', px((s.cell - s.gap) / dpr))
+  scr.setAttribute('data-cells', '')
 }
 
 // how often a live story is asked for its frame, once it is past its end
@@ -556,11 +679,16 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       el.style.width = `${w}px`
       el.style.height = `${h}px`
       pinkPanel(s, host, el, dpr)
+      onCells(el, host, s, dpr)
       key = null
       return true
     }
+    // the story's own clock, taken round if it is told again
+    const loop = story.loop || 0
+    const round = (t) => (loop ? ((t % loop) + loop) % loop : t)
     const draw = (t) => {
-      const f = story.frame(Math.max(0, story.live ? t : Math.min(t, story.end)))
+      const u = round(t)
+      const f = story.frame(Math.max(0, story.live ? u : Math.min(u, story.end)))
       last = f
       if (!s || f.key === key) return
       key = f.key
@@ -580,8 +708,11 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       const t = now()
       draw(t)
       if (at != null || document.hidden) return
-      if (t < story.end) raf = requestAnimationFrame(tick)
+      const u = round(t)
+      if (u < story.end) raf = requestAnimationFrame(tick)
       else if (story.live) timer = setTimeout(tick, LIVE_TICK)
+      // a still mark waits for the next telling
+      else if (loop) timer = setTimeout(tick, loop - u)
     }
     size()
     tick()

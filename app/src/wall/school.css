@@ -1,0 +1,98 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  A SCHOOL'S PHONE                                                        ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+   Sticker.jsx. A letter posted from a verified school address is a phone on
+   that school's network, and says so in the phone's own language rather
+   than with anything stuck on it: the network's name in the status row
+   beside the aerial, and three quiet differences on the whole phone, each
+   in the school's colour (`--net`, schools.js `fg`: Berkeley's gold):
+
+     the aerial   lit in the colour, with the name after it
+     the trim     a hairline of the colour round the glass, the way a
+                  special edition of a phone was trimmed in its metal
+     the band     a faint cast of the colour down the status band, as if
+                  the band's glass were lit a little warmer from inside
+
+   None of it moves a word or covers a glyph: the battery is where it
+   always was. Everything is sized in the screen's `cqw`, so the mark is the
+   same on the letter, the deck and the composer. A print is its inks and
+   nothing else, so on a print the name and the aerial are struck in the
+   print's palest ink like the rest of the status, which is where the press
+   would have put the colour anyway, and the trim and the cast stay off it,
+   since the press would break them into specks of the next ink. */
+
+/* ── the network's name ──
+   In the screen's own face a size under the day's, the way a phone set the
+   name of its network small beside the aerial, and the star after it a head
+   over the capitals (screen.jsx `Network`). Close to the aerial, as the name
+   sat by the bars; a long name is cut rather than pushing the day off the
+   row */
+.wl-scr-net {
+  display: flex; align-items: center; gap: 0.9cqw; flex: 0 1 auto; min-width: 0;
+  margin-left: -0.2cqw;
+  color: var(--net, #FDB515);
+}
+.wl-scr-net-nm {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 8.6cqw; line-height: 0.8; letter-spacing: 0.02em;
+  text-shadow: 0 0 0.25cqw var(--net, #FDB515), 0 0 1.4cqw var(--net-glow, transparent), 0 0 3.2cqw var(--net-glow, transparent);
+}
+.wl-scr-net .wl-px { filter: drop-shadow(0 0 0.9cqw var(--net-glow, transparent)); }
+/* the aerial, lit in the same colour, with its bloom */
+.wl-scr[data-school] .wl-scr-ant { color: var(--net, #FDB515); }
+.wl-scr[data-school] .wl-scr-ant .wl-px { filter: drop-shadow(0 0 0.9cqw var(--net-glow, transparent)); }
+
+/* ── the trim ──
+   Over the glass and its grain, since it is the phone's edge and not the
+   screen's; round with the screen's own corner */
+.wl-scr[data-school]::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 0.35cqw var(--net-trim, transparent), inset 0 0 1.6cqw var(--net-cast, transparent);
+}
+
+/* ── the band ──
+   Under the status and over the band's own glass: the band is a stacking
+   context of its own (screen.css `.wl-scr-top`), so this sits between the
+   two */
+.wl-scr[data-school] .wl-scr-top::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, var(--net-cast, transparent), transparent 85%);
+}
+
+/* ── on a print, the print's inks ── */
+.wl-scr[data-school]:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) :is(.wl-scr-net, .wl-scr-ant) { color: var(--s-lit); }
+.wl-scr[data-school]:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) :is(.wl-scr-net .wl-px, .wl-scr-ant .wl-px) { filter: none; }
+.wl-scr[data-school]:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-scr-net-nm { text-shadow: none; }
+.wl-scr[data-school]:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'])::after,
+.wl-scr[data-school]:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-scr-top::before { display: none; }
+/* the square blooms nothing either: its status is ink on a band */
+.wl-scr[data-school][data-kind='brat'] :is(.wl-scr-net .wl-px, .wl-scr-ant .wl-px) { filter: none; }
+
+/* ═══ THE PLATE ════════════════════════════════════════════════════════════
+   Sticker.jsx `Sticker`: the same status row off a screen, where the
+   composer offers the Berkeley wall and where the mailed link lands. An
+   unlit panel of the chrome's (phone.css), its one pixel bezel, and on it
+   the aerial, the name and the star lit in the school's colour: the one lit
+   thing on it, as a screen is the one lit thing in the room. `--cell` is
+   how many of the page's pixels make one of the phone's, a whole number, so
+   the glyphs are never smoothed and the name is set on the same pixels
+   (a pixel of the face is 0.107em) */
+.wl-sticker {
+  --cell: 3px;
+  display: inline-flex; align-items: center; flex: 0 0 auto;
+  gap: calc(var(--cell) * 2);
+  padding: calc(var(--cell) * 3) calc(var(--cell) * 4) calc(var(--cell) * 3) calc(var(--cell) * 3.5);
+  background-color: var(--lcd, #0B0B0B); background-image: var(--lcd-grid, none);
+  border-radius: var(--r-lcd, 2px);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
+  color: var(--net, #FDB515);
+  font-family: var(--f-s40); font-weight: 400;
+}
+.wl-sticker svg { display: block; flex: 0 0 auto; fill: currentColor; }
+.wl-sticker-ant { width: calc(var(--cell) * 9); height: calc(var(--cell) * 10); }
+.wl-sticker-nm {
+  font-size: calc(var(--cell) * 9.35); line-height: 0.8; letter-spacing: 0.02em; white-space: nowrap;
+  text-shadow: 0 0 calc(var(--cell) * 4) color-mix(in srgb, currentColor 40%, transparent);
+}
+.wl-sticker-star { width: calc(var(--cell) * 7); height: calc(var(--cell) * 7); margin-left: calc(var(--cell) * -0.5); }

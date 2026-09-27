@@ -19,10 +19,28 @@
 // and a post to an @ asks for a Berkeley address when it is sent, by a link
 // (screens/Write.jsx). So this door asks for a person, by any of the three
 // proofs the product takes: an instagram handle through the DM code, a google
-// account, or an address a code is mailed to. Instagram is put first and
+// account, or an address a link is mailed to. Instagram is put first and
 // recommended, and the reason is said on the row: it is the only one of the
 // three that lets the product tell somebody when a ping of theirs is mutual,
 // because that is where the ping lives.
+//
+// ── the address door is a link, not a code (migration 0065) ─────────────────
+// It was a six digit code, mailed by Supabase Auth. The live project mailed
+// Supabase's own undesigned template, with EIGHT digits, into a box that holds
+// six, so the door could not be walked through at all. It is the product's own
+// link now, the one the campus proof already used: mailed in the black room
+// from hello@celestual.us, tapped on whichever device the mail is read on.
+// This sheet waits for the tap (wall/linkdoor.jsx) and moves on the moment it
+// lands; a tap on this same phone opens /verify, which says so and signs it in
+// there. Whoever already holds the address is who this device becomes, with
+// their @ and their private notes (auth.js `restoreProof`).
+//
+// The two digits this screen shows large are YOUR NUMBER, and the mail does
+// not print them (0065 section 3). The link opened on another phone or
+// computer asks for them before it signs anything in, so a person who was
+// sent a link they never asked for cannot hand their account to whoever
+// typed their address here. The line under the heading says so, in the words
+// every asking screen uses.
 //
 // ── the door names the act that knocked on it ───────────────────────────────
 // Three acts come here and only one of them is writing, so a door that asks
@@ -32,9 +50,17 @@
 // and met "verify you're at Berkeley", a sentence about a room, in answer
 // to a question about a letter. The screen that sent them already leaves a
 // return address behind (store.js `setAfterGate`), so the heading reads it
-// and says what they are here to get back to: the whole wall. A person who
-// pressed a sign in chip on the bar left no return address and gets the
-// heading the door always had.
+// and says what they are here to get back to: the report. Anybody else is
+// asked to sign in, and nothing more, since reading is open and the one
+// promise under the heading has to be true of all three ways in.
+//
+// It said "sign in to ping and be told." A ping is the product's own word,
+// never the wall's (design/VOICE.md: on the wall it is a note sent
+// privately), "be told" never said of what, and only one of the three ways
+// in can tell anybody anything: an alert needs the @, and the @ is proved by
+// the Instagram DM. Google and an address buy something else, and the door
+// says what: the same way in as last time brings back your @ and your private
+// notes (0065), and a note sent privately asks for the Instagram once.
 //
 // ── what a signed-in person buys, and what they do not ──────────────────────
 // Reading, the heart and the report, by any proof. It is never attached to
@@ -46,8 +72,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Label, Pill,
-  HandleField, DmCode, VerifyHead, DoorHead, DoorFoot, Or, CodeBox, Resend,
+  Sheet, SheetHead, SheetFoot, Pill,
+  HandleField, DmCode, VerifyHead, DoorHead, DoorFoot, Or,
 } from '../parts.jsx'
 import { Ecliptic, Envelope, Google, Provider } from '../art.jsx'
 import { normHandle, validHandle, heart } from '../data.js'
@@ -59,7 +85,8 @@ import {
   startHandoff, pollHandoff,
   savePending, loadPending, clearPending, igVerifyEnabled,
 } from '../handoff.js'
-import { loginEnabled, startGoogle, sendEmailCode, checkEmailCode, finishLogin } from '../../api/login.js'
+import { loginEnabled, startGoogle, sendEmailLink, finishLogin } from '../../api/login.js'
+import { useLinkWait, LinkMatch, LinkWaiting, ResendLink } from '../linkdoor.jsx'
 import { href } from '../router.js'
 import { cardStep } from '../seed.js'
 import { Caret } from '../caret.jsx'
@@ -112,10 +139,13 @@ export function AddressField({ value, onChange, onSubmit, domain = '', autoFocus
 // The return address across a redirect. The gate remembers where to land
 // once it opens (store.js `setAfterGate`), in memory; a login that leaves
 // for Google and comes back is a fresh tab, so the address is put away in
-// the session's storage for the walk and taken back on the return.
+// the session's storage for the walk and taken back on the return. `home` is
+// the door's own landing (`after`, below), for a door drawn with no address
+// left for it: Google brings the browser back to /gate, not to where the door
+// was drawn.
 const STASH = 'celestual.gate.after'
-function stashAfter() {
-  try { sessionStorage.setItem(STASH, JSON.stringify(peekAfterGate() || null)) } catch { /* private mode */ }
+function stashAfter(home = null) {
+  try { sessionStorage.setItem(STASH, JSON.stringify(peekAfterGate() || home || null)) } catch { /* private mode */ }
 }
 function unstashAfter() {
   try {
@@ -146,15 +176,21 @@ function resumeIg() {
   return p && p.use === IG_USE ? p : null
 }
 
-export default function Gate({ go, up, upLabel = 'back to the wall' }) {
+// `after` is where the door lands when nothing that sent somebody here left a
+// return address: the account sheet draws this door for a person it does not
+// know yet (You.jsx), and signing in there is signing in to the account.
+export default function Gate({ go, up, upLabel = 'back to the wall', after = null }) {
   // Held in state rather than read on every render: signing out has to repaint
   // this sheet, and the store is not something React is watching.
   const [who, setWho] = useState(() => member())
+  const home = useRef(after)
   // Which door is open on the sheet: the three ways, and one is chosen.
   const [way, setWay] = useState(() => (resumeIg() ? 'instagram' : ''))
-  const [step, setStep] = useState(0)            // 0 the address · 1 the code
   const [local, setLocal] = useState('')
-  const [code, setCode] = useState('')
+  // the link that went out: { request, match, email }, or null while the
+  // address is still being typed
+  const [sent, setSent] = useState(null)
+  const [landing, setLanding] = useState(false)
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')       // what went wrong, in words
   const alive = useRef(true)
@@ -173,8 +209,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // its mind on the last render before the sheet closes is a heading
   // somebody sees flicker.
   const [forReading] = useState(() => {
-    const after = peekAfterGate() || peekStash()
-    return !!after && (after.name === 'letter' || after.name === 'report')
+    const to = peekAfterGate() || peekStash() || home.current
+    return !!to && (to.name === 'letter' || to.name === 'report')
   })
 
   // Back to whatever sent somebody here: the letter they pressed "read it"
@@ -184,16 +220,16 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // opens with it already on; the cache it lands in was emptied by the
   // sign in, and data.js `heart` holds the press until the letter is read.
   const finish = () => {
-    const after = takeAfterGate()
-    if (after && after.name === 'letter' && after.heart && after.id && isReader()) heart(after.id, true)
-    if (after) go(after.name, after.id)
+    const to = takeAfterGate() || home.current
+    if (to && to.name === 'letter' && to.heart && to.id && isReader()) heart(to.id, true)
+    if (to) go(to.name, to.id)
     else up()
   }
 
   // ── a login that has just come back ──
-  // A google account, or the code checked a moment ago: the Supabase session
-  // is spent against this browser's row (api/login.js), the row is read
-  // again, and the sheet lands where it was going.
+  // A google account: the Supabase session is spent against this browser's
+  // row (api/login.js), the row is read again, and the sheet lands where it
+  // was going.
   const landedLogin = async (out) => {
     if (!out) return
     if (!out.ok) {
@@ -222,60 +258,59 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     if (busy) return
     setSaid('')
     setBusy(true)
-    stashAfter()
+    stashAfter(home.current)
     const out = await startGoogle(href('gate'))
     if (!alive.current) return
     if (!out.ok) { setBusy(false); setSaid(out.error === 'offline' ? 'not connected here' : 'google did not answer. try again') }
   }
 
-  // ── any address, and the code (the wall at the root) ──
-  // Supabase Auth mails the code and checks it; the session it hands back is
-  // spent against this browser's row (api/login.js).
+  // ── any address, and a link mailed to it ──
+  // celestual-edu-verify mails the link (api/login.js `sendEmailLink`), and
+  // this sheet waits for it to be tapped, here or anywhere (linkdoor.jsx).
+  // Whatever tapped it, the server has signed this device in by then, so the
+  // row is read again and the sheet lands where it was going.
   const anyOk = anyEmail(normEmail(local))
-  // Returns whether a code actually went out. `Resend` reads it: a send that
-  // failed says so through the fault line under the box, and the line that
-  // offers another one must not start its clock again and tell somebody a
-  // code is coming when none is.
+  // Returns whether a link actually went out. `ResendLink` reads it: a send
+  // that failed says so through the fault line, and the line that offers
+  // another must not start its clock again over a mail that is not coming.
   const sendAny = async () => {
     if (!anyOk || busy) return false
-    const again = step === 1
+    const again = !!sent
     setBusy(true)
     setSaid('')
-    const out = await sendEmailCode(normEmail(local))
+    const out = await sendEmailLink(normEmail(local))
     if (!alive.current) return false
     setBusy(false)
     if (!out.ok) {
       setSaid(
-        out.error === 'rate' ? 'too many codes for that address. give it a minute'
+        out.error === 'rate' ? 'that is a lot of links for one address. give it an hour'
           : out.error === 'email' ? 'that does not look like an address'
           : out.error === 'offline' ? 'not connected here'
           : 'the mail did not go out. try again',
       )
       return false
     }
-    // The old code is dead the moment a new one is minted, so what is in the
-    // field is wrong whatever it is.
-    setCode('')
-    setStep(1)
+    // The link before is dead to this screen the moment a new one is asked
+    // for: it is the new one's number the mail and the glass must agree on.
+    setSent({ request: out.request, match: out.match, email: out.email })
     // The step before the proof: somebody gave an address and asked for a
-    // code. Once per address, not once per code — asking again because the
+    // link. Once per address, not once per link: asking again because the
     // first one went to spam is not a second intent.
     if (!again) cardStep('gate')
     return true
   }
-  const finishAny = async () => {
-    if (code.length < 6 || busy) return
-    setBusy(true)
-    setSaid('')
-    const out = await checkEmailCode(normEmail(local), code)
-    if (!alive.current) return
-    setBusy(false)
-    if (!out.ok) {
-      setSaid(out.error === 'expired' ? 'that code has lapsed. ask for another' : 'that code is not right')
-      return
-    }
-    landedLogin(out)
-  }
+  useLinkWait({
+    request: sent && !landing ? sent.request : '',
+    onConfirmed: async () => {
+      setLanding(true)
+      await signedIn()
+      if (!alive.current) return
+      setLanding(false)
+      if (isMember()) setWho(member())
+      finish()
+    },
+    onLapsed: () => { setSent(null); setSaid('that link has run out. send a new one') },
+  })
 
   // ── instagram (the wall at the root) ──
   // The DM code flow, as Main runs it: the code is minted against the handle
@@ -352,7 +387,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // to be drawn here as its own card, and it is the same card now wherever
   // the person is opened from. Signing out on it brings the door back.
   if (who) {
-    const out = () => { setWho(null); setStep(0); setWay('') }
+    const out = () => { setWho(null); setSent(null); setWay('') }
     return <You go={go} up={up} upLabel={upLabel} onOut={out} />
   }
 
@@ -393,7 +428,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // It is the only proof that lets the product tell somebody a ping of theirs
   // is mutual, because that is where the ping lives, and it is the one thing
   // about these three doors that is not interchangeable. Google and the
-  // mailed code stand under the rule as what they are: two ways in that cost
+  // mailed link stand under the rule as what they are: two ways in that cost
   // less and buy less.
 
   // ── the ways in ──
@@ -406,13 +441,16 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h"
-              /* What this person came for, said back to them. A reader who
-                 has run out of the free letters is here for the wall and
-                 not for an account, so the heading is the wall. Writing is
-                 not behind this door (the head of this file says why). */
-              title={forReading ? <>sign in to read<br />the whole wall.</>
-                : <>sign in to read<br />and ping.</>}
-              say="your information will stay anonymous."
+              /* What this person came for, said back to them. Reading is
+                 not behind this door any more (migration 0066: every letter
+                 is whole to anybody), so neither heading says read: from a
+                 letter, what a proof gets a reader is the report (the heart
+                 is anybody's since 0068); from anywhere else, signing in,
+                 and the line under it says what it brings back. Writing is
+                 not behind this door either (the head of this file says
+                 why). */
+              title={forReading ? <>sign in to<br />report it.</> : <>sign in.</>}
+              say="been here before? use the same way in and your @ and private notes come back."
             />
             <div className="wl-door-ways" role="group" aria-label="how to sign in">
               <Pill
@@ -437,6 +475,9 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
               >
                 continue with email
               </Pill>
+              {/* and what the two of them do not buy, said before either is
+                  picked rather than found out at the first private note */}
+              <p className="wl-door-why">to send a note privately you&rsquo;ll confirm your Instagram once.</p>
             </div>
             <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
@@ -512,7 +553,10 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
     )
   }
 
-  // ── any address, and a code (the wall at the root) ──
+  // ── any address, and a link (the wall at the root) ──
+  // Two states on the door's one shape: the address and its key, then the
+  // inbox it went to, your number (which the mail does not print, and which
+  // the link asks for on another device) and the wait.
   if (way === 'email') {
     return (
       <Sheet onClose={up} tall labelledBy="wl-gate-h">
@@ -521,40 +565,36 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
           <div className="wl-push" />
           <div className="wl-door">
             <DoorHead
-              id="wl-gate-h"
-              title={step === 0 ? <>an address, and<br />a code mailed to it.</> : <>the code from<br />the mail.</>}
-              say={step === 0 ? 'your information will stay anonymous.' : null}
+              id="wl-gate-h" className={sent ? 'wl-edu-head' : ''}
+              title={sent ? <>check your inbox.</> : <>sign in with<br />your email.</>}
+              say={sent
+                ? <>we sent a link to <span className="wl-h">{sent.email}</span>. tap the link in the mail.{sent.match == null ? null : ' on another phone or computer, it asks for this number.'}</>
+                : 'your information will stay anonymous.'}
             />
-            {step === 0 ? (
+            {sent ? (
               <div className="wl-door-ways">
-                <AddressField value={local} onChange={setLocal} onSubmit={sendAny} />
-                <Pill tone="light" wide disabled={!anyOk || busy} onClick={sendAny}>
-                  {busy ? 'sending' : 'send me a code'}
-                </Pill>
+                <LinkMatch n={sent.match} />
+                <LinkWaiting>{landing ? 'signing you in' : 'waiting for the link'}</LinkWaiting>
+                {landing ? null : <ResendLink key={sent.request} onSend={sendAny} />}
               </div>
             ) : (
               <div className="wl-door-ways">
-                <Label tone="dim" className="wl-door-sentto">
-                  sent to <span className="wl-h">{normEmail(local)}</span>
-                </Label>
-                <CodeBox value={code} onChange={setCode} onSubmit={finishAny} autoFocus />
-                <Pill tone="light" wide disabled={code.length < 6 || busy} onClick={finishAny}>
-                  {busy ? 'checking' : 'sign in'}
+                <AddressField value={local} onChange={(v) => { setLocal(v); setSaid('') }} onSubmit={sendAny} autoFocus />
+                <Pill tone="light" wide disabled={!anyOk || busy} onClick={sendAny} aria-busy={busy || undefined}>
+                  {busy ? 'sending' : 'send me a link'}
                 </Pill>
-                <Resend onSend={sendAny} />
               </div>
             )}
             <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
           <div className="wl-push" />
           <SheetFoot>
-            {step === 0 ? (
-              <button type="button" className="wl-quiet" onClick={() => { setWay(''); setSaid('') }}>another way in</button>
-            ) : (
-              <button type="button" className="wl-quiet"
-                onClick={() => { setCode(''); setSaid(''); setStep(0) }}>
+            {sent ? (
+              <button type="button" className="wl-quiet" onClick={() => { setSent(null); setSaid('') }}>
                 use a different address
               </button>
+            ) : (
+              <button type="button" className="wl-quiet" onClick={() => { setWay(''); setSaid('') }}>another way in</button>
             )}
           </SheetFoot>
           <DoorFoot />

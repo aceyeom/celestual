@@ -9,13 +9,16 @@
 // and it draws nothing outside development either way.
 //
 //   /looks.html                 the pool as it is
-//   /looks.html?light=dots      every print in one light, to compare lights
+//   /looks.html?light=keyline   every print in one light, to compare lights
 //   /looks.html?seed=2          five other phones (the quirks off the ids)
 //   /looks.html?only=teal       one colour
 //   /looks.html?prints=1        the prints alone, with `light` the way to compare,
 //                               and acid's square beside them, which is paper
 //                               too but never pulled through the press
 //   /looks.html?pictures=0      without the shared pictures, which are slow
+//   /looks.html?school=berkeley every letter as one posted from a verified
+//                               school address, carrying that school's mark
+//                               (schools.js), on the letter and the picture
 //   /looks.html?words=ko        the letter in Korean, and `ja`, `zh`,
 //                               `zh-hant` and `mix` (Korean with a line of
 //                               Japanese and one of Chinese in it), for the
@@ -36,14 +39,17 @@ import { Screen, ScreenText, Tile, Mini } from '../screen.jsx'
 import { PhoneChrome } from '../parts.jsx'
 import { letterFace, renderLetter } from '../share.js'
 import { ensureFaces, warmType } from '../type.js'
+import { schoolOf } from '../schools.js'
+import { Sticker } from '../Sticker.jsx'
 
-const LIGHTS = ['corner', 'keyline', 'dots', 'plain']
+const LIGHTS = ['corner', 'keyline', 'plain']
 const ask = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
 const FORCE = LIGHTS.includes(ask.get('light')) ? ask.get('light') : ''
 const SEED = Math.max(0, Number(ask.get('seed')) || 0)
 const ONLY = ask.get('only') || ''
 const PRINTS = ask.get('prints') === '1'
 const PICTURES = ask.get('pictures') !== '0'
+const SCHOOL = ask.get('school') ? schoolOf(ask.get('school')) : null
 if (FORCE) for (const c of COLOURS) if (c.kind === 'poster' || c.kind === 'riso') c.light = FORCE
 
 // the same letter in each of the languages the screen's pixel face draws
@@ -60,7 +66,10 @@ const idOf = (c, k) => `${(k * 0x2f1b3 + c.slug.length * 7919 + SEED * 104729).t
 
 function letterOf(c, i) {
   const id = idOf(c, i)
-  const l = { id, to: 'sofia.reyes', look: { tint: c.slug }, body: BODY, words: 22, chars: BODY.length, hearts: 3, hearted: false, at: Date.now() - 86400000 }
+  const l = {
+    id, to: 'sofia.reyes', look: { tint: c.slug }, body: BODY, words: 22, chars: BODY.length, hearts: 3, hearted: false, at: Date.now() - 86400000,
+    ...(SCHOOL ? { verified: true, campus: SCHOOL.slug } : {}),
+  }
   return { l, face: letterFace(l, { name: NAME, handle: '@sofia.reyes' }) }
 }
 
@@ -83,11 +92,11 @@ function Picture({ face, go }) {
 function Card({ c, i, go }) {
   const { l, face } = letterOf(c, i)
   const s = skinOf(c)
-  const top = { name: face.name, handle: face.handle, dear: face.dear, icon: face.icon, date: face.date, counter: face.counter, bat: face.bat }
+  const top = { name: face.name, handle: face.handle, dear: face.dear, icon: face.icon, date: face.date, counter: face.counter, stamp: face.stamp, bat: face.bat }
   return (
     <article className="lk-card" data-colour={c.slug}>
       <Screen
-        look={l.look} seed={l.id} top={top} live={false}
+        look={l.look} seed={l.id} top={top} live={false} sticker={face.sticker}
         keys={{ l: { label: face.left }, c: { glyph: 'heartO', label: String(face.hearts) }, r: { label: face.right } }}
       >
         <ScreenText text={face.text} />
@@ -142,12 +151,23 @@ function Looks() {
             <a href={link({ prints: '' })} aria-current={PRINTS ? undefined : 'page'}>all twelve</a>
             <a href={link({ prints: '1' })} aria-current={PRINTS ? 'page' : undefined}>the prints</a>
           </nav>
+          <nav aria-label="school">
+            <a href={link({ school: '' })} aria-current={SCHOOL ? undefined : 'page'}>no school</a>
+            <a href={link({ school: 'berkeley' })} aria-current={SCHOOL ? 'page' : undefined}>berkeley</a>
+          </nav>
           <nav aria-label="phones">
             {[0, 1, 2, 3].map((n) => (
               <a key={n} href={link({ seed: n ? String(n) : '' })} aria-current={SEED === n ? 'page' : undefined}>phones {n + 1}</a>
             ))}
           </nav>
         </header>
+        {SCHOOL ? (
+          <p className="lk-plates">
+            the plate, off a screen:
+            <Sticker school={SCHOOL} />
+            <Sticker school={SCHOOL} style={{ '--cell': '2px' }} />
+          </p>
+        ) : null}
         <main className="lk-grid">
           {shown.map((c) => <Card key={c.slug} c={c} i={SEED} go={PICTURES && upTo >= COLOURS.indexOf(c)} />)}
         </main>

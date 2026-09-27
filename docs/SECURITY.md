@@ -174,6 +174,63 @@ required at signup** (not optional): it is both the mutual-match reveal channel
 return without a DM. School (`.edu`) addresses are encouraged — the core
 audience — and double as community setup.
 
+**The proof comes back from the session (0065).** "The browser can never mint
+its own proof" stopped being true with 0065, on purpose, and the line it holds
+now is narrower and still the one that matters: **the browser only ever gets a
+proof for the @ its own session's person already holds verified, and only the
+DM claims an @.** The sign-back-in link above was never deployed and went in
+Phase 4a (`celestual-relogin`, docs/open-questions.md Q4), and nothing turned
+the identity row's `handle_verified_at` back into a proof on another device,
+so a person who had DMd once and then signed in by email on a laptop, or came
+back after thirty idle days, was asked for the DM again before their private
+notes would show. 0065 is that recovery, finally wired.
+`celestual_session_handle_proof(token, proof_hash)` is browser-callable: the
+browser mints a fresh secret and sends its SHA-256 with its session token, and
+the server looks the session up and, only if the person it resolves to holds a
+verified @ that is not banned, writes a verified proof row for THAT @ under
+that hash (`verified_via = 'session'`, thirty days sliding like every proof,
+idempotent per hash, a dozen an hour an @). It takes no @ as an argument: the
+@ is the one the person's row holds. The session token was already
+the key to everything the @ owns on the wall (taking letters about it down,
+0063; its alerts, 0064), and is bound to a person only by a proof (the DM, a
+campus link, Google, the login link), so a thirty-day proof minted from it
+gives nothing the session did not already hold. `celestual_user_bind_handle`,
+the one writer of `handle_verified_at`, is untouched.
+
+### §link — The mailed link, and the number that is typed (0064, 0065)
+Three things are proved by one mailed link (`celestual-edu-verify`,
+docs/EDU-VERIFICATION.md): a campus address, an alert address, and since 0065
+a login, for any address, which signs the device in as whoever holds the
+address. The token is 32 random bytes, in the URL's fragment, stored only as
+its SHA-256, single-use and thirty minutes long, and the sessions on either
+end are stored as hashes. What a link can do is what the address can do, and
+with `login` on every address that is every account.
+
+**The number is the defence against a link somebody did not ask for.** The
+attack is plain: type somebody's address into the door on your own phone, get
+them to tap the link that arrives ("is this you?"), and your phone is signed in
+as them, with their @, their private notes and their alerts. It used to be
+answered by a number from 10 to 99 shown on the asking screen and printed in
+the mail, so a careful person could see that the mail's number was not on
+their screen and ignore it. That protected the careful and nobody else. Since
+0065 the number is on the asking screen and nowhere else, and the mail says
+only that on another device the link will ask for it. A link opened on the
+device that asked (the same session hash) confirms at once. Opened on any
+other, it confirms nothing until the number is typed there: none answers
+`match` and spends nothing, a wrong one marks the link `refused` and runs it
+out for good. The person the attack depends on never asked, has no screen to
+read a number off, and is told by the page to close it; a number typed anyway
+has one chance in ninety, once a link, five links an address an hour. What it
+does not stop is a person talked into typing a number somebody sent them with
+the link, which is why the page says in so many words to close it if they did
+not ask for one. A resend from the
+same screen carries the pending link's number, so the person who did ask is
+never made to burn their own link by typing the number the screen shows into
+the older mail. The function deployed before 0065 calls a two-argument
+confirm that is the same check with no number, so it fails closed: across
+devices it asks, and never confirms, until the function that passes the
+number ships.
+
 ### §ident — Multi-account identity
 A person can link up to 3 of their own @s (`celestual_link`); matching and the
 slot count are **group-aware**. Claiming is first-come, never steals an @ from
@@ -195,9 +252,12 @@ faces, with the block where the person left it, plus one number for the light it
 burns with. It lives in `celestual_entries.card`.
 
 - **Rebuilt, never accepted.** `celestual_card_clean` constructs the stored
-  jsonb from scratch on every write — twenty words, a known plate, a known face,
-  a position clamped inside the disc, a tone in range — so an unknown key cannot
-  ride along inside the object and come back out at a reveal.
+  jsonb from scratch on every write — eighty words and 280 characters (since
+  0063, when a private note became as long as a letter; it was twenty words), a
+  known plate, a known face, a position clamped inside the disc, a tone in
+  range — so an unknown key cannot ride along inside the object and come back
+  out at a reveal. Since 0063 the words are also read by the letters' list
+  (`celestual_text_caught`), and a card it catches places nothing.
 - **One door, and it is locked to a matched row.**
   `celestual_counterpart_card` is the only function that returns a card its
   caller did not write, it is **not granted to `anon` or `authenticated`**, and
@@ -236,6 +296,46 @@ placed it, exactly as the plaintext handles already do. The card system's
 design record went with the retired design on 4 September; 0022's header
 carries the seal rule.
 
+### §replies — Anonymous to readers, not to the desk (0068)
+A letter has a thread of replies under it, and a reply is the one place on the
+wall where one anonymous writer answers another in public, under a letter the
+person it is to may be reading. So the model is the letters' with three things
+added.
+
+- **The author is kept, and never leaves the database.** `wall_replies` carries
+  `author_id`, because the desk has to be able to act on abuse. Nothing a
+  browser can call returns it: `wall_reply_thread` names each writer by `who`,
+  sixteen hex of the SHA-256 of a salt, the letter and the author. The salt is
+  a row in `celestual_settings` (`wall_reply_salt`, 24 random bytes) the desk
+  never lists. So one person is one creature all the way down one thread, and a
+  different one under the next letter, and nobody can follow them from one
+  thread to another or join a creature to a person. `mine` tells a device which
+  replies are its own and nothing about anybody else's. The desk's queue
+  (`celestual_desk_replies`, service role, behind the desk password) does show
+  the author, the @ they proved and their school address.
+- **Who may reply is narrow, and the rest is read first.** A proved school
+  address (`edu_verified_at`, which includes the desk's pass list), the same
+  accountability the @-notes keep, or the person the letter is to, proved by
+  the Instagram claim, whose replies are marked as theirs. Every reply is read
+  before it is written: the letters' list, a rule that it names nobody else
+  (no @, no word shaped like a handle, no full name, checked at the keyboard,
+  in the edge function and again in the database by `wall_reply_caught`, where
+  nothing can edit it out), then the classifier. A doubt is held for a person;
+  the writer alone sees a held reply. The write, `wall_reply_write`, is the
+  service role's alone, so there is no path from a browser to the table that
+  skips the reading. Forty a day and six under one letter in ten minutes, and a
+  refused reply counts, so the classifier is not a free retry.
+- **The crowd can put a reply out of sight, and the person it is about can
+  shut the thread.** Three reports from three devices hide a live reply until
+  the desk restores or removes it; a device reports a reply once, ever, and
+  never its own. The recipient can stop new replies or put the thread away so
+  nobody else sees it, on any letter to their @.
+
+Every reply table has RLS on and every grant revoked; the browser reads a
+thread, likes, reports and, as the recipient, shuts, through four definer
+functions, and nothing else. The terms for replying are accepted once and
+recorded on the server (`wall_reply_terms`).
+
 ### §optout — The public escape hatch
 `celestual_suppress` is the opt-out any handle owner — user or not — can use
 without an account: it hashes the handle into the block list and erases
@@ -272,7 +372,9 @@ Three emails exist: *it's mutual* (to the earlier entrant's own address),
 state or imply anything about any other person's activity. That line is
 load-bearing legally (FTC v. NGL) and is pre-committed here in writing. The
 transactional mails — the `.edu` join code and the sign-back-in magic link —
-speak only to the recipient about their own action and name no one else.
+speak only to the recipient about their own action and name no one else. So
+does the one mailed link that has replaced them (§link: a campus address, an
+alert address, a login), which since 0065 carries no number either.
 
 ### §age — Adults
 The landing states the 18+ condition on the primary action; marketing is
@@ -341,6 +443,14 @@ pages. If the doc viewer is ever removed, put this back to `'none'`.
   the mutual/lapse mail; the binding is only ever written under a live DM proof,
   the link is single-use + short-TTL + hash-only at rest, and the opt-out wipes
   the binding and any live tokens. Treat `celestual_recovery` as sensitive.
+- **Any address is a login (0065)** — whoever controls an inbox can sign in as
+  the person who proved that address, by a login, as a campus address or as a
+  Google account, and gets their @'s proof back from the session (§verify).
+  This is the same magic-link tradeoff, now on every account rather than on a
+  recovery path. What bounds it is §link: the link is single-use, thirty
+  minutes, hash-only at rest, and confirms on another device only with the
+  number off the asking screen, so a link its owner never asked for signs
+  nobody in.
 - **The identity router answers "is this @ registered?" (0015)** —
   `celestual_handle_route` tells the caller whether a handle is known, which is
   how the sign-in screen stopped hedging in print. This discloses nothing new:
