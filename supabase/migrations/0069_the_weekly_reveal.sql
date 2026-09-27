@@ -66,9 +66,10 @@
 -- the next person's read.
 --
 -- ── the notes already out ───────────────────────────────────────────────────
--- A note standing when this applies keeps what it had, up to the second
--- reveal from now: nobody's note is cut to hours, and within a fortnight
--- everybody is on the week. Pairs already mutual stay mutual.
+-- A note standing when this applies keeps what it had, moved onto the
+-- reveal at or after its end and no later than the second from now: nobody's
+-- note is cut short, every note ends on a Saturday night, and within a
+-- fortnight everybody is on the week. Pairs already mutual stay mutual.
 --
 -- Idempotent, like every migration here.
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -132,6 +133,14 @@ grant execute on function celestual_note_ends(timestamptz) to anon, authenticate
 -- whose other half has gone (let go, opted out, erased) is simply unsealed
 -- and is an unanswered note from here. Safe to run at any moment, as often
 -- as anybody likes: it only ever does what is owed.
+--
+-- One runs at a time. At nine on Saturday the clock job and every open phone
+-- ask for it in the same second, and one that comes while another is running
+-- waits for it and then finds nothing left. Passing the other's rows by
+-- would read their pairs as notes nobody answered ("not this time", to
+-- somebody whose note was mutual), and could take one half of a pair while
+-- the other run held the other half, and deadlock with it. The rest of the
+-- week nothing is due and nothing waits.
 create or replace function celestual_reveal_due()
 returns integer
 language plpgsql security definer set search_path = public as $$
@@ -143,17 +152,33 @@ declare
   v_match uuid;
   v_n int := 0;
 begin
+  if not exists (select 1 from celestual_entries
+                  where sealed_with is not null and matched_at is null and reveal_at <= now()) then
+    return 0;
+  end if;
+  perform pg_advisory_xact_lock(hashtext('celestual_reveal_due'));
+
+  -- read after the lock, so a run that waited sees what the one before it did
   for e in
     select * from celestual_entries
      where sealed_with is not null and matched_at is null and reveal_at <= now()
-     order by sealed_at
-     for update skip locked
+     order by sealed_at, id
+     for update
   loop
     -- the other half may have been taken by this same run already
     continue when not exists (select 1 from celestual_entries where id = e.id and sealed_with is not null and matched_at is null);
 
+    -- The other half answers e when it points back at it. With handles linked
+    -- as one person (celestual_group) it may since have been sealed to another
+    -- of e's own handles, noting the same person the same week, or been told
+    -- through one already in this run: then e is that person's note to the
+    -- same person, and is told with it rather than lapsing beside it.
     select * into r from celestual_entries where id = e.sealed_with for update;
-    if not found or r.sealed_with is distinct from e.id then
+    if not found or (r.sealed_with is distinct from e.id and not (
+         r.to_hash in (select celestual_hash_handle(g) from celestual_group(e.from_handle) g)
+         and (r.matched_at is not null
+              or exists (select 1 from celestual_entries s
+                          where s.id = r.sealed_with and s.from_handle in (select celestual_group(e.from_handle)))))) then
       update celestual_entries set sealed_with = null, sealed_at = null, reveal_at = null where id = e.id;
       continue;
     end if;
@@ -165,6 +190,16 @@ begin
     b_target := coalesce(r.to_handle,
       (select g from celestual_group(e.from_handle) g where celestual_hash_handle(g) = r.to_hash limit 1),
       e.from_handle);
+
+    if r.sealed_with is distinct from e.id then
+      -- told on the same night, and quietly: the pair that holds the seal
+      -- writes the match row, and so the mail and the DM, for both people
+      update celestual_entries
+         set matched_at = e.reveal_at, matched_handle = coalesce(matched_handle, a_target),
+             sealed_with = null, sealed_at = null
+       where id = e.id;
+      continue;
+    end if;
 
     update celestual_entries
        set matched_at = coalesce(matched_at, e.reveal_at), matched_handle = coalesce(matched_handle, a_target),
@@ -399,7 +434,10 @@ grant execute on function celestual_submit(text, text, text, text, jsonb) to ano
 -- first, a note that lapsed at a reveal is listed for a week after it
 -- (`lapsed`), a mutual carries the night it was told (`revealed_at`), and the
 -- answer says when the next reveal is and when the last one was, so every
--- device counts down to the same moment.
+-- device counts down to the same moment. A sealed row is never said to have
+-- lapsed: past its night it is one whose reveal has not landed for this read
+-- (sealed by a placement still committing when the reveal above ran), and it
+-- is mutual on the next.
 create or replace function celestual_my_pings(p_handle text, p_proof text)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -418,7 +456,7 @@ begin
            'time',   (extract(epoch from e.created_at) * 1000)::bigint,
            'expires_at', to_char(e.expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
            'mutual', e.matched_at is not null,
-           'lapsed', e.matched_at is null and e.expires_at <= now(),
+           'lapsed', e.matched_at is null and e.sealed_with is null and e.expires_at <= now(),
            'revealed_at', case when e.matched_at is not null
                                then to_char(e.matched_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') end,
            'card', case when e.card is null then null
@@ -484,7 +522,10 @@ grant execute on function celestual_renew(text, text, text) to anon, authenticat
 
 -- ── 7. letting one go ────────────────────────────────────────────────────────
 -- celestual_withdraw, as 0038 wrote it, and a sealed other half unsealed, so
--- it stands or lapses as a note nobody answered.
+-- it stands or lapses as a note nobody answered. A mutual whose other side
+-- lets go is a running note again, ending on a reveal like any other: one
+-- told before this, whose sixty days end at any hour, is moved onto one as
+-- section 10 moves the notes already out.
 create or replace function celestual_withdraw(p_from text, p_to text, p_proof text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -518,7 +559,8 @@ begin
   update celestual_entries e
      set matched_at = null,
          matched_handle = null,
-         expires_at = greatest(e.expires_at, celestual_note_ends(now()))
+         expires_at = least(celestual_next_reveal(greatest(e.expires_at, celestual_note_ends(now())) - interval '1 microsecond'),
+                            celestual_next_reveal(celestual_note_ends(now())))
    where e.from_handle in (select celestual_group(nt))
      and e.to_hash in (select celestual_hash_handle(g) from celestual_group(nf) g)
      and e.matched_at is not null;
@@ -538,7 +580,7 @@ grant execute on function celestual_withdraw(text, text, text) to anon, authenti
 
 -- ── 8. the status of a few ───────────────────────────────────────────────────
 -- celestual_ping_status, as 0038 wrote it, with the reveal run first and a
--- lapsed note said to be one.
+-- lapsed note said to be one, never a sealed one (as in the list).
 create or replace function celestual_ping_status(p_from text, p_to text[], p_proof text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -558,7 +600,7 @@ begin
 
   foreach t in array v_to loop
     continue when celestual_norm(t) is null;
-    select e2.id, e2.created_at, e2.expires_at, e2.matched_at, e2.card,
+    select e2.id, e2.created_at, e2.expires_at, e2.matched_at, e2.sealed_with, e2.card,
            e2.photo is not null as has_photo
       into e
       from celestual_entries e2
@@ -574,7 +616,7 @@ begin
         'time', (extract(epoch from e.created_at) * 1000)::bigint,
         'expires_at', to_char(e.expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
         'mutual', e.matched_at is not null,
-        'lapsed', e.matched_at is null and e.expires_at <= now(),
+        'lapsed', e.matched_at is null and e.sealed_with is null and e.expires_at <= now(),
         'card', case when e.card is null then null
                      else e.card || jsonb_build_object('photo', e.has_photo) end,
         'their_card', case when e.matched_at is not null
@@ -608,10 +650,19 @@ end;
 $$;
 
 -- ── 10. the notes already out ────────────────────────────────────────────────
+-- Every note still running is moved onto a reveal: the first at or after the
+-- end it had, and no later than the second from now. A note from before this
+-- ended sixty days after it was sent, at whatever hour of the week that was.
+-- Left there it would lapse on a Tuesday, and a seal (`greatest(expires_at,
+-- v_reveal)` in celestual_submit) would move it to Saturday, telling its
+-- sender days early that the other side had answered. On a reveal a seal
+-- moves nothing.
 update celestual_entries
-   set expires_at = least(expires_at, celestual_next_reveal(celestual_note_ends(now())))
+   set expires_at = least(celestual_next_reveal(expires_at - interval '1 microsecond'),
+                          celestual_next_reveal(celestual_note_ends(now())))
  where matched_at is null and expires_at > now()
-   and expires_at > celestual_next_reveal(celestual_note_ends(now()));
+   and expires_at <> least(celestual_next_reveal(expires_at - interval '1 microsecond'),
+                           celestual_next_reveal(celestual_note_ends(now())));
 
 -- ── 11. the night, on the clock ──────────────────────────────────────────────
 do $$
