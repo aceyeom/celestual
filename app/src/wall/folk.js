@@ -952,9 +952,12 @@ function follow(v, t0, t1) {
 // `ground` is the row under their feet and `mid` the column of the glass's
 // middle. From 0, in ms:
 //
-//      0   they are running when the screen wakes: he in from the left edge,
-//          and she, lighter and a step slower, in from the right, the two
-//          of them onto the glass on the same frame (`LEAD`, below)
+//      0   they are running, out past either edge of the glass, he from the
+//          left and she, lighter and a step slower, from the right; the run
+//          goes on back before this for as long as a story asks, and a
+//          story starts them early enough that the screen is on and empty
+//          before they reach it (pixmark.js `I_RUN_AT`). About 30ms on, the
+//          two of them come onto the glass on the same frame (`LEAD`, below)
 //    480   his near foot comes down and he slows over two strides, the
 //          second a short one, the body coming up out of the lean and his
 //          arms opening; by 860 he stands, his arms open to her
@@ -977,6 +980,9 @@ function follow(v, t0, t1) {
 // that had waited: between them, on a phone's panel and on a desk's, the
 // two come over the edges of the glass within a frame of each other. The
 // mark still stands in the middle; the pair glides the six cells into it.
+// A glass that runs further past the grid than a phone's usually does
+// would part them again, and the story sets the pair a cell or two along
+// for it (pixmark.js `shiftFor`), so they come on together there too.
 //
 // Answers `at(t)` (a key and the cells), `times`, the hold's cells (`pair`)
 // and where they hold each other (`hug`), where the pink leaves from.

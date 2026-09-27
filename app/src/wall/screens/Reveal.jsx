@@ -13,29 +13,35 @@
 //
 // ── the order is the meaning ────────────────────────────────────────────────
 //
-//   1  the phone         a boy and a girl run in from either edge of the
-//                        glass, the intro's two (folk.js), and her run
-//                        carries her on into his arms and half behind him;
-//                        the backlight turns pink and the phone becomes a
-//                        letter lit in rose, and they glide together into
-//                        the mark (pixmark.js `revealStory`).
-//                        The mark gathers up into the top of the glass, and
-//                        under it, IN the phone, in its own face and with its
-//                        own cursor, "it's mutual." is typed a character at a
-//                        time. Exactly those words: no congratulations, no
-//                        match (VOICE.md 2). And the phone never stops: its
-//                        backlight breathes, a light goes round the ring,
-//                        the star twinkles, the phone itself rises and
-//                        settles in its own light, the way a thing that is
-//                        on and alive does, and that light drifts, slowly,
-//                        from the rose through the pinks and the oranges
-//                        (`drift`). Then the screen goes to sleep and wakes
-//                        on the two of them running in again, and tells it
-//                        again, words and all (`STORY.loop`), for as long as
-//                        the sheet is open; the sheet under it stays as it
-//                        is. There is no heart in it: the backlight used to
-//                        beat, lub and dub, and a heart floated up off the
-//                        star now and then, and the owner took them out.
+//   1  the phone         the screen comes on, lit and empty, the ground and
+//                        nobody on it, and holds a beat; then a boy and a
+//                        girl run in from out past either edge of the
+//                        glass, onto it on the same frame, the intro's two
+//                        (folk.js), and her run carries her on into his arms
+//                        and half behind him; the backlight turns pink and
+//                        the phone becomes a letter lit in rose, and they
+//                        glide together into the mark (pixmark.js
+//                        `revealStory`). The mark gathers up into the top of
+//                        the glass, and under it, IN the phone, in its own
+//                        face and with its own cursor, "it's mutual." is
+//                        typed a character at a time. Exactly those words:
+//                        no congratulations, no match (VOICE.md 2). And the
+//                        phone never stops: its backlight breathes, a light
+//                        goes round the ring, the star twinkles, the phone
+//                        itself rises and settles in its own light, the way
+//                        a thing that is on and alive does, and that light
+//                        drifts, slowly, from the rose toward the corals and
+//                        home again (`drift`). Then the telling takes itself
+//                        back: the words are deleted the way the phone
+//                        deleted, the mark comes down into the ground and
+//                        goes out, and the pink leaves the glass for it, until
+//                        the glass is the empty one it opened on, and the two
+//                        of them run in again (`STORY.loop`), for as long as
+//                        the sheet is open, with no seam anywhere in it; the
+//                        sheet under it stays as it is. There is no heart in
+//                        it: the backlight used to beat, lub and dub, and a
+//                        heart floated up off the star now and then, and the
+//                        owner took them out.
 //   2  the two of them   the pair, face and handle, one beside the other and
 //                        never one before the other: a stagger would say one
 //                        of them mattered more, and the whole premise is that
@@ -90,8 +96,8 @@ import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfil
 import { Screen, Wait } from '../screen.jsx'
 import { skinOf, skinVars } from '../looks.js'
 import { TURNS, turnStyle } from '../turn.js'
-import PixelStory, { SQUARE, underPink, useStoryClock, heldAt } from '../PixelStory.jsx'
-import { revealStory } from '../pixmark.js'
+import PixelStory, { SQUARE, underPink, useStoryClock, heldAt, useFirstFrame } from '../PixelStory.jsx'
+import { revealStory, R_WAKE } from '../pixmark.js'
 import { normHandle, atHandle } from '../data.js'
 import { heldProof } from '../auth.js'
 import { href } from '../router.js'
@@ -120,7 +126,7 @@ function guessHandle() {
 const SAY = 'it’s mutual.'
 const NIGHT = skinOf('night')
 const ROSE = skinOf('rose')
-const STORY = revealStory(200, { panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
+const STORY = revealStory({ panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
 const T = STORY.times
 // The sentence, typed on the glass as the mark gathers up to make room for
 // it, a character every 70ms, which is how fast the phone put a message on
@@ -130,18 +136,25 @@ const TYPE_MS = 70
 // and the rest of the sheet once it is said: the pair and the line, their
 // note, then the keys, each a beat after the last (mutual.css `is-said`)
 const SAID_AT = SAY_AT + SAY.length * TYPE_MS + 180
+// And taken off it again, when the telling is taken back (pixmark.js
+// `quiet`), the way the phone deleted: the clear key pressed, a character
+// goes; held, a moment later they go one after another, quicker than anybody
+// types, the cursor stepping back with them. The last goes as the mark
+// starts to come down into the ground (pixmark.js `R_UNMAKE_AT`).
+const UNSAY_HELD = 200
+const UNSAY_MS = 42
+const TYPED = Array.from(SAY, (c, i) => SAY_AT + (i + 1) * TYPE_MS)
+const UNTYPED = Array.from(SAY, (c, i) => T.quiet + (i ? UNSAY_HELD + (i - 1) * UNSAY_MS : 0))
 // The moments a telling passes, in order: the pink leaving the two of them,
-// each character of the sentence, the sentence said, the screen going to
-// sleep, and dark enough that the phone's light goes back to the night's
-// unseen (`wl-sleep` is 560ms).
-const MARKS = [
-  T.glow,
-  ...Array.from(SAY, (c, i) => SAY_AT + (i + 1) * TYPE_MS),
-  SAID_AT, T.rest, T.rest + 600,
-]
-const SAID = 1 + SAY.length + 1
-const ASLEEP = SAID + 1
-const DARK = ASLEEP + 1
+// each character of the sentence typed, the sentence said, each character
+// taken off again, the pink coming back over the panel's own to leave it,
+// and the telling back at the empty glass it opened on. Everything the page
+// does round the phone changes on one of them, and is read off the clock
+// at it (below), so a held frame is drawn the same way as a running one.
+const MARKS = [T.glow, ...TYPED, SAID_AT, ...UNTYPED, T.going, T.night].sort((a, b) => a - b)
+const count = (list, u) => list.reduce((n, ms) => (u >= ms ? n + 1 : n), 0)
+// how much of the sentence is on the glass, `u` into a telling
+const typedAt = (u) => Math.min(SAY.length, count(TYPED, u)) - count(UNTYPED, u)
 
 const LOOK = { tint: 'night' }
 const NO_KEYS = {}
@@ -151,14 +164,33 @@ const NO_TOP = {}
 // It starts as the night's, and as the pink spreads on the glass the whole
 // phone becomes a letter lit in rose, as the intro's does (turn.js), the
 // panel under the pink once the pink has covered it; and the rose it turns
-// to is the one the drift below moves on from. The moments are the
-// story's.
+// to is the one the drift below moves on from and comes home to. When the
+// telling is taken back it goes back to the night's the same way round:
+// the panel under the pink once the pink is whole over it again, unseen, and
+// the bands and the light round the phone as the pink leaves the top of the
+// glass. The moments are the story's (pixmark.js `phone`).
 const PHONE = underPink(turnStyle('night', 'rose', SQUARE))
-const TURN = { '--mu-turn-at': `${T.top - T.glow}ms`, '--mu-pan-at': `${T.covered - T.glow}ms` }
+const TURN = {
+  '--mu-turn-at': `${T.top - T.glow}ms`, '--mu-pan-at': `${T.covered - T.glow}ms`,
+  '--mu-back-at': `${T.back - T.going}ms`,
+}
+// The light the phone throws in the room, and the phone rising and
+// settling in it, on the story's own clock: the page used to run them on
+// clocks of their own, from when it opened, so a telling found them
+// wherever they had got to. They are laid on the telling now (pixmark.js
+// `phone`), a telling long and taken round with it, from its nought: the
+// light comes up with the rose and breathes a whole number of times, the
+// phone rises only while the mark is whole, and each telling ends with
+// both where it began. Web animations, so they are the compositor's
+// (opacity and transform), and not a frame of script.
+const onLoop = (keys, style) => keys.map(([t, v, e]) => ({ offset: t / STORY.loop, easing: e || 'linear', ...style(v) }))
+const HALO = onLoop(STORY.phone.halo, ([o, s]) => ({ opacity: o, transform: `translate3d(-50%, -50%, 0) scale(${s})` }))
+const FLOAT = onLoop(STORY.phone.float, (y) => ({ transform: `translate3d(0, ${y}px, 0)` }))
 
 // ── the screenshot loop's hold ──
 // Development only, as the intro's `?t=` is: `?story=5200` holds the glass,
-// the words and the phone's light on 5200ms into a telling.
+// the words, the phone's light, the light it throws and the phone itself on
+// 5200ms into a telling.
 function devHold() {
   if (!import.meta.env.DEV) return null
   const v = new URLSearchParams(window.location.search).get('story')
@@ -167,24 +199,34 @@ function devHold() {
 
 // ── the drift ──
 // Once the mark is alive the light does not stay rose. It drifts, a shade at
-// a time, through the pinks into the oranges and the greens, and back the
-// way it came, once every 24 seconds, as a letter lit in each of those
-// colours would be (looks.js `skinOf`, the lit arithmetic), so the words on
-// it are always the dark of the light they are on. A function of the glass's
-// own clock, set ten times a second, still with the tab, and never under
-// reduced motion, which keeps the rose. Each telling is alive for a little
-// under six seconds of it, so it goes from the rose into the peach, and the
-// next telling turns the phone to the rose again and starts it over.
-const DRIFT_MS = 24000
+// a time, through the pinks toward the corals, as a letter lit in each of
+// those colours would be (looks.js `skinOf`, the lit arithmetic), so the
+// words on it are always the dark of the light they are on, and comes home
+// to the rose as the mark goes quiet, so the telling is taken back from the
+// rose it was told in. The colours are laid round a circle of 24 seconds
+// (`DRIFT`), and a telling goes out along it and back (`DRIFT_OUT` of the
+// way at the most, half way through its life) on an ease with no corner at
+// either end. A function of the glass's own clock, set ten times a second,
+// still with the tab, and never under reduced motion, which keeps the rose.
+// On the rose itself it is nothing at all: the phone's own rose shows, so
+// the light going to drifting and back is never seen to change. The light
+// it throws in the room is the story's glow on the rose, and the drift's
+// own further out.
 const DRIFT = [
   [0, '#DF93AF'], [0.13, '#E88DAE'], [0.27, '#EE9A82'], [0.4, '#E0A95A'],
   [0.55, '#A3BB6B'], [0.68, '#86C29B'], [0.8, '#A3BB6B'], [0.9, '#E6A267'], [1, '#DF93AF'],
 ]
 const DRIFT_STEPS = 480
+const DRIFT_OUT = 0.24
+// the story's glow on the rose (story.css `--story-glow-rgb`)
+const GLOW_RGB = [255, 150, 194]
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
 const mixHex = (a, b, k) => `#${hexRgb(a).map((v, i) => Math.round(v + (hexRgb(b)[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
-function drift(u) {
-  const q = Math.floor(((((u % DRIFT_MS) + DRIFT_MS) % DRIFT_MS) / DRIFT_MS) * DRIFT_STEPS)
+// the drift `u` into its window, `span` long: null on the rose
+function drift(u, span) {
+  const out = DRIFT_OUT * ((1 - Math.cos((2 * Math.PI * Math.max(0, Math.min(span, u))) / span)) / 2)
+  const q = Math.round(out * DRIFT_STEPS)
+  if (q <= 0) return null
   const k = q / DRIFT_STEPS
   let j = 0
   while (j < DRIFT.length - 2 && DRIFT[j + 1][0] <= k) j++
@@ -194,7 +236,10 @@ function drift(u) {
   const hue = mixHex(ha, hb, e * e * (3 - 2 * e))
   // a letter in this light, made once for each of the steps and kept
   const v = skinVars({ slug: `mutual-drift-${q}`, kind: 'lit', hue })
-  return { v, glow: hexRgb(mixHex(hue, '#FFFFFF', 0.25)).join(', ') }
+  const far = k / DRIFT_OUT
+  const own = hexRgb(mixHex(hue, '#FFFFFF', 0.25))
+  const glow = GLOW_RGB.map((c, i) => Math.round(c + (own[i] - c) * far * far * (3 - 2 * far))).join(', ')
+  return { v, glow }
 }
 
 // One of the two: the face and the handle, with the name under it when the
@@ -216,31 +261,40 @@ function Mutual({ mine, them, mutual, reduce }) {
   const hold = useRef(devHold()).current
   const still = !!reduce || hold !== null
   const [mineOpen, setMineOpen] = useState(false)
-  // when the glass's clock started: from the mount, or, once landed, from
-  // far enough back that the sentence is said
-  const [from, setFrom] = useState(() => performance.now())
-  const [landed, setLanded] = useState(false)
   const theirs = useProfile(them)
+  // The glass's nought: the first frame the page can paint, after the
+  // story's heavy start, with the screen's wake set on it (PixelStory.jsx
+  // `useFirstFrame`); and the first telling starts once the screen is on, a
+  // wake after it, on the empty glass. Until then it is dark and empty.
+  const fig = useRef(null)
+  const t0 = useFirstFrame(fig, STORY.prime, still)
+  // Once landed, the clock is from far enough back that the sentence is
+  // said, and it goes on round from there.
+  const [landedAt, setLandedAt] = useState(null)
+  const landed = landedAt !== null
+  const from = landed ? landedAt : t0 === null ? null : t0 + R_WAKE
   const clock = useStoryClock(STORY, from, MARKS, still)
   const now = reduce ? heldAt(MARKS, SAID_AT) : hold !== null ? heldAt(MARKS, hold) : clock
-  // the sentence as far as this telling has typed it, gone with the screen
-  // when it sleeps; the sheet under the phone, once it has been said, stays
-  const typed = Math.max(0, Math.min(SAY.length, now.i - 1))
-  const said = !!reduce || now.n > 0 || landed || now.i >= SAID
-  const asleep = !reduce && now.i >= ASLEEP
-  const glow = now.i >= 1 && now.i < DARK
-  // a landing is for the telling it lands, and the next one is told whole
-  const skip = landed && now.n === 0
+  // everything round the phone, as it is `u` into this telling
+  const u = Math.max(0, now.u)
+  const typed = Math.max(0, typedAt(u))
+  // the sheet under the phone, once it has been said, stays
+  const said = !!reduce || now.n > 0 || landed || u >= SAID_AT
+  const glow = u >= T.glow && u < T.going
+  const going = !reduce && u >= T.going && u < T.night
+  // the cursor stands still while the sentence is being typed or taken off,
+  // as the phone's did, and blinks while it waits
+  const typing = (u >= SAY_AT && u < SAID_AT) || (u >= T.quiet && typed > 0)
+  // a landing is for the telling it lands, up to where it is taken back,
+  // and the next one is told whole
+  const skip = landed && now.n === 0 && !going && u < T.night
 
-  const land = useCallback(() => {
-    setLanded(true)
-    setFrom(performance.now() - SAID_AT)
-  }, [])
+  const land = useCallback(() => setLandedAt(performance.now() - SAID_AT), [])
 
   // a tap on the room, or a key, lands it; a press on a control is that
   // control's, and Escape is the sheet's way out. Once the telling is said
   // there is nothing to land.
-  const told = now.i >= SAID && !asleep
+  const told = u >= SAID_AT
   useEffect(() => {
     if (still || told) return undefined
     const onKey = (e) => { if (e.key !== 'Escape') land() }
@@ -249,22 +303,41 @@ function Mutual({ mine, them, mutual, reduce }) {
   }, [still, told, land])
   const onPress = (e) => { if (!still && !told && !e.target.closest('a, button')) land() }
 
-  // The phone's own float and light stop with the tab, as its glass does
-  // (PixelStory.jsx), rather than running on unseen.
+  // The light the phone throws, and the phone rising and settling, laid on
+  // the story's clock from its nought (`HALO`, `FLOAT`): before it, and
+  // under a held frame, stood on the moment it is. Under reduced motion,
+  // neither moves (mutual.css `.is-still`). A hidden tab draws neither, and
+  // shown again they are where the clock is, with the glass.
+  const halo = useRef(null)
+  const float = useRef(null)
+  useEffect(() => {
+    const h = halo.current
+    const f = float.current
+    if (reduce || !h || !f || !h.animate) return undefined
+    const opts = { duration: STORY.loop, iterations: Infinity, fill: 'both' }
+    const all = [h.animate(HALO, opts), f.animate(FLOAT, opts)]
+    for (const a of all) {
+      if (hold !== null || from === null) {
+        a.pause()
+        a.currentTime = hold ?? 0
+      } else a.startTime = from
+    }
+    return () => all.forEach((a) => a.cancel())
+  }, [reduce, hold, from])
+
+  // The light, drifting while the mark is alive (see `drift`), from the
+  // rose and home to it; on the rose, and outside that window, nothing is
+  // set and the phone's own rose shows. Stops with the tab, and a held frame
+  // is lit as it would be at that moment.
   const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
   useEffect(() => {
     const on = () => setHidden(document.hidden)
     document.addEventListener('visibilitychange', on)
     return () => document.removeEventListener('visibilitychange', on)
   }, [])
-
-  // The light, drifting, once the mark is alive (see `drift`), from the rose
-  // on each telling; and taken off again as the screen goes dark, so the
-  // next telling turns the phone to the rose the pink on its glass is.
-  const fig = useRef(null)
   useEffect(() => {
     const el = fig.current
-    if (!el || still || hidden) return undefined
+    if (!el || reduce || hidden || (from === null && hold === null)) return undefined
     let on = false
     const off = () => {
       if (!on) return
@@ -272,36 +345,37 @@ function Mutual({ mine, them, mutual, reduce }) {
       el.style.removeProperty('--story-glow-rgb')
       on = false
     }
+    const [a, b] = STORY.phone.drift
     const step = () => {
-      const t = performance.now() - from
-      const u = (((t % STORY.loop) + STORY.loop) % STORY.loop) - T.live
-      if (u < 0 || u >= T.rest + 520 - T.live) { off(); return }
-      const { v, glow: rgb } = drift(u)
-      for (const k of TURNS) el.style.setProperty(`--mu${k}`, v[k])
-      el.style.setProperty('--story-glow-rgb', rgb)
+      const t = hold ?? performance.now() - from
+      const d = t < 0 ? null : drift((t % STORY.loop) - a, b - a)
+      if (!d) { off(); return }
+      for (const k of TURNS) el.style.setProperty(`--mu${k}`, d.v[k])
+      el.style.setProperty('--story-glow-rgb', d.glow)
       on = true
     }
     step()
+    if (hold !== null) return off
     const id = setInterval(step, 100)
-    return () => clearInterval(id)
-  }, [still, hidden, from])
+    return () => {
+      clearInterval(id)
+      off()
+    }
+  }, [reduce, hidden, from, hold])
 
   const ago = sinceAgo(mutual.at)
   const theirName = theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)
   const note = mutual.theirLine
   const yours = mutual.line
   // a held frame holds the phone's light where it is at that moment too
-  const figStyle = hold === null ? TURN : {
-    ...TURN,
-    '--held-turn': glow ? Math.max(0, Math.min(1, (hold - T.top) / 460)) : 0,
-    '--held-pan': glow && hold >= T.covered ? 1 : 0,
-  }
+  const lit = hold === null ? null : STORY.lightAt(hold)
+  const figStyle = lit ? { ...TURN, '--held-turn': lit.turn, '--held-pan': lit.pan } : TURN
   // `is-landed` is for the sheet under the phone, which does not rise again
   // once a tap has put it there; `is-skip` for the phone, which is lit at
-  // once on the telling the tap landed and turns as it always does after
+  // once on the telling the tap landed and goes back as it always does
   const cls = [
-    'wl-mutual', said && 'is-said', glow && 'is-glow', (landed || reduce) && 'is-landed', skip && 'is-skip',
-    asleep && 'is-asleep', reduce && 'is-still', hidden && 'is-hidden',
+    'wl-mutual', said && 'is-said', glow && 'is-glow', going && 'is-going', (landed || reduce) && 'is-landed',
+    skip && 'is-skip', reduce && 'is-still',
   ].filter(Boolean).join(' ')
 
   return (
@@ -315,19 +389,20 @@ function Mutual({ mine, them, mutual, reduce }) {
       </p>
 
       <div className={`wl-mutual-fig${hold !== null ? ' is-held' : ''}`} style={figStyle} aria-hidden="true" ref={fig}>
-        <span className="wl-mutual-halo" />
-        <div className="wl-mutual-float">
-          {/* asleep between two tellings, and waking on the next (mutual.css) */}
+        <span className="wl-mutual-halo" ref={halo} />
+        <div className="wl-mutual-float" ref={float}>
+          {/* dark until the page can paint, then waking, once (mutual.css) */}
           <Screen
             look={LOOK} seed={`mutual:${mine}:${them}`} top={NO_TOP}
-            keys={NO_KEYS} live={false} state={reduce ? '' : asleep ? 'asleep' : 'waking'}
+            keys={NO_KEYS} live={false} state={still ? '' : t0 === null ? 'dark' : 'waking'}
             className="wl-mutual-scr" style={PHONE}
           >
-            <PixelStory story={STORY} at={reduce ? STORY.still : hold} from={from} />
+            <PixelStory story={STORY} at={reduce ? STORY.still : hold ?? (from === null ? 0 : null)} from={from} />
             {/* The sentence, on the glass, in the phone's face and its ink,
                 laid out whole from the first frame so it never moves as it
-                fills, with the phone's cursor after the last character in. */}
-            <p className="wl-mutual-say">
+                fills or empties, with the phone's cursor after the last
+                character in. */}
+            <p className={`wl-mutual-say${typing ? ' is-typing' : ''}`}>
               {SAY.slice(0, typed)}
               {typed > 0 ? <span className="wl-scr-cur" /> : null}
               <span className="wl-mutual-rest">{SAY.slice(typed)}</span>
