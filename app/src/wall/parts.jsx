@@ -811,7 +811,7 @@ const SheetCtx = createContext(null)
 export function useSheet() { return useContext(SheetCtx) }
 
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, onClosing = null, onEscape = null, tall = false, labelledBy, className = '', aside = null, ref = null }) {
+export function Sheet({ children, onClose, onClosing = null, onEscape = null, tall = false, labelledBy, className = '', aside = null, room = false, ref = null }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
@@ -850,6 +850,42 @@ export function Sheet({ children, onClose, onClosing = null, onEscape = null, ta
     const t = setTimeout(finish, SHEET_OUT_MS + 260)
     return () => { if (el) el.removeEventListener('animationend', onEnd); clearTimeout(t) }
   }, [closing]) // eslint-disable-line react-hooks/exhaustive-deps
+  // The wall under the sheet takes its light back as the sheet drops
+  // (wall.css `.wl-main.is-under`), and it is told on the root, on the frame
+  // the drop starts and until the sheet has gone. The root used to find it
+  // out with a `:has()`, which cost a style pass over the whole page for
+  // every class any element changed while any sheet was up.
+  useLayoutEffect(() => {
+    const root = closing && box.current ? box.current.closest('.wl-root') : null
+    if (!root) return undefined
+    root.dataset.sheet = 'closing'
+    return () => { delete root.dataset.sheet }
+  }, [closing])
+  // ── and the room, once it is dark ──
+  // A sheet that is the black room (`room`: the letter) puts out everything
+  // behind it once its scrim has come all the way up, and nothing behind an
+  // opaque black can be seen. The room's far lights stop being drawn then
+  // (wall.css `data-covered`): they drift on the page's own clock, a layout
+  // and a paint a step, and under a letter that was work on every frame for
+  // a picture nobody could see. They are back on the frame the way out is
+  // taken, before the scrim starts to lift, where their clock has them.
+  useLayoutEffect(() => {
+    const el = box.current
+    const root = room && !closing && el ? el.closest('.wl-root') : null
+    const scrim = root ? el.parentElement.querySelector(':scope > .wl-scrim') : null
+    if (!scrim) return undefined
+    const cover = () => { root.dataset.covered = '' }
+    const onEnd = (e) => { if (e.target === scrim && e.animationName === 'wl-fade') cover() }
+    scrim.addEventListener('animationend', onEnd)
+    // and a scrim whose fade never reports, or never ran, is up by then: the
+    // slowest comes up in 480ms (wall.css `.wl-scrim`)
+    const t = setTimeout(cover, 900)
+    return () => {
+      scrim.removeEventListener('animationend', onEnd)
+      clearTimeout(t)
+      delete root.dataset.covered
+    }
+  }, [room, closing])
 
   useEffect(() => {
     const onKey = (e) => {

@@ -368,6 +368,12 @@
   background: radial-gradient(125% 95% at 50% 54%, transparent 48%, rgba(0, 0, 0, 0.8) 100%);
 }
 @media (prefers-reduced-motion: reduce) { .wl-far i { animation: none; } }
+/* and not drawn at all while a letter's black room is all the way up over
+   them (parts.jsx Sheet `room`): stepped as they are, the lights were a
+   style pass on every frame and a layout and a paint on every step, under a
+   black nobody can see through. Their clock runs on regardless, so they are
+   back where it has them when the room lifts */
+.wl-root[data-covered] .wl-far { content-visibility: hidden; }
 
 /* ═══ THE COLUMN ═══════════════════════════════════════════════════════════
    460px, centred, and the void bleeds to the edges of the viewport on a
@@ -388,8 +394,12 @@
    wall used to start un-blurring: the sheet fell, the wall sat dim under it
    for a beat, and then woke up. The sheet's closing state is a sibling the
    wall cannot see, so the root reads it and hands the wall its light back
-   on the same clock the sheet drops on. */
-.wl-root:has(.wl-sheet-wrap.is-closing) .wl-main.is-under {
+   on the same clock the sheet drops on. The sheet says so on the root
+   itself (parts.jsx `Sheet`, `data-sheet`) rather than the root asking with
+   a `:has()`: a class inside a `:has()` with anything after it is watched
+   on every element, and Chrome styled all two thousand elements of the page
+   again whenever any one of them took or lost one of its classes. */
+.wl-root[data-sheet='closing'] .wl-main.is-under {
   opacity: 1; filter: none;
   transition-duration: 340ms; transition-timing-function: var(--ease-out);
 }
@@ -2424,13 +2434,14 @@ a.wl-lq { text-decoration: none; }
    the thread slides out from (Letter.jsx `Handset`). */
 .wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 230px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  /* a letter with no nudge under it has no foot to leave room for */
-  .wl-sheet-wrap.is-letter:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 160px) / 1.22)); }
+  /* a letter with no nudge under it has no foot to leave room for (the
+     sheet says whether it has one, Letter.jsx `has-note`) */
+  .wl-sheet-wrap.is-letter:not(.has-note) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 160px) / 1.22)); }
 }
 /* a letter reached from a link gives the line to the wall its row */
 .wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 276px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 206px) / 1.22)); }
+  .wl-sheet-wrap.is-letter.is-cold:not(.has-note) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 206px) / 1.22)); }
 }
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
@@ -2780,15 +2791,18 @@ a.wl-lq { text-decoration: none; }
   -webkit-tap-highlight-color: transparent; cursor: default;
 }
 /* and the black behind the close mark stands over the phone, for a short
-   window or a keyboard that has pushed the letter's top up under it */
-.wl-sheet-wrap.is-letter:has(.wl-letter.is-thread)::after {
+   window or a keyboard that has pushed the letter's top up under it. The
+   sheet is told the phone is open (Letter.jsx `is-slid`) rather than asking
+   with a `:has()`, which Chrome answered by styling the whole page again
+   whenever any element anywhere changed a class */
+.wl-sheet-wrap.is-letter.is-slid::after {
   content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 2;
   height: calc(60px + env(safe-area-inset-top, 0px));
   background: linear-gradient(180deg, #000 0%, #000 50%, rgba(0, 0, 0, 0) 100%);
   pointer-events: none;
 }
 @media (min-width: 900px) {
-  .wl-sheet-wrap.is-letter:has(.wl-letter.is-thread)::after { height: 36px; }
+  .wl-sheet-wrap.is-letter.is-slid::after { height: 36px; }
 }
 /* they come up out of the dark once the card has woken, the way the eye
    finds the rest of a dark room after the one light in it. One that comes
@@ -2825,17 +2839,21 @@ a.wl-lq { text-decoration: none; }
 .wl-turn.is-prev { right: calc(50% + var(--scene-w) / 2); }
 .wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; }
 /* a neighbour that is about to be turned to wakes a little and leans in:
-   under a mouse, or under the focus of a key */
-.wl-letter-stage:not([data-moving]):has(> .wl-turn.is-next:focus-visible) .wl-letter-slot[data-side='next'],
-.wl-letter-stage:not([data-moving]):has(> .wl-turn.is-prev:focus-visible) .wl-letter-slot[data-side='prev'] {
+   under a mouse, or under the focus of a key. The stage is told which, by
+   the turn keys themselves (Letter.jsx `aimed`): asked with a `:has()` over
+   the keys' own `:hover` and `:focus-visible`, Chrome could not tell which
+   changes mattered to it and styled the whole page again for every element
+   added or taken away anywhere on it, a turn's landing included */
+.wl-letter-stage:not([data-moving])[data-focus='next'] .wl-letter-slot[data-side='next'],
+.wl-letter-stage:not([data-moving])[data-focus='prev'] .wl-letter-slot[data-side='prev'] {
   opacity: calc(var(--peek-dim) + 0.16);
 }
 @media (hover: hover) and (pointer: fine) {
   .wl-letter-slot { transition: opacity 240ms var(--ease), translate 360ms var(--ease); }
-  .wl-letter-stage:not([data-moving]):has(> .wl-turn.is-next:hover) .wl-letter-slot[data-side='next'] {
+  .wl-letter-stage:not([data-moving])[data-hover='next'] .wl-letter-slot[data-side='next'] {
     opacity: calc(var(--peek-dim) + 0.16); translate: -8px 0;
   }
-  .wl-letter-stage:not([data-moving]):has(> .wl-turn.is-prev:hover) .wl-letter-slot[data-side='prev'] {
+  .wl-letter-stage:not([data-moving])[data-hover='prev'] .wl-letter-slot[data-side='prev'] {
     opacity: calc(var(--peek-dim) + 0.16); translate: 8px 0;
   }
   /* ── and under a mouse the card is a thing picked up ──

@@ -349,9 +349,10 @@
 
 /* a note that was not this time, opened: its screen with the backlight
    down, the way a phone dims one that is done, and the light it throws down
-   with it */
+   with it (the scene says so, screen.jsx `data-state`, since a `:has()`
+   here styled the whole page again for every class changed anywhere) */
 .wl-you-ping .wl-scr.is-dim { filter: blur(0.35px) brightness(0.62) saturate(0.55); }
-.wl-you-ping .wl-scene:has(.wl-scr.is-dim) :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0.35; }
+.wl-you-ping .wl-scene[data-state='dim'] :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0.35; }
 
 /* ── the letters ────────────────────────────────────────────────────────────
    Unlit rows, as the wall's are, and the letter the composer is holding

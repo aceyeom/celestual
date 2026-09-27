@@ -737,6 +737,17 @@ const NameTile = memo(function NameTile({ handle, look, name, at }) {
   return <Tile key={handle} look={look} seed={handle} mono={mono} src={p?.avatar || ''} at={at} />
 })
 
+// Every cell leaves the tab order under the veil and under a sheet (`off`),
+// and a letter opened is a sheet: drawn again for that alone, every cell on
+// the field was a render inside the tap that opened the letter, the frame
+// before the letter could start to rise, and again as it closed. So a cell
+// is not drawn again when only `off` has changed, and the field sets the tab
+// order on the cells itself (Hive, `off`), to what a render would have set.
+const sameCell = (a, b) => {
+  for (const k in a) if (k !== 'off' && a[k] !== b[k]) return false
+  for (const k in b) if (!(k in a)) return false
+  return true
+}
 const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, look, name, off, bind, onOpen, onHover, onPeek }) {
   if (!handle) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
@@ -770,7 +781,7 @@ const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, l
       </span>
     </button>
   )
-})
+}, sameCell)
 
 export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', wave = null, onOpen, onPeek, ref = null }) {
   const names = useMemo(() => tiles.slice(0, CAP), [tiles])
@@ -855,6 +866,9 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     lens: lensFor(0, 0),      // the four ramps, for this window's shape
     wave: null,               // the veil's pulse, placed in this frame
     tap: null,                // a disc's pulse, in the lattice (readTap)
+    dark: false,              // under a letter's black room, drawing nothing
+    stale: false,             // and a frame there went undrawn
+    redraw: false,            // drawn again until every name is seated
     bloom: 0,                 // 0 under the veil, 1 with the field at full
     v: { x: 0, y: 0 },        // the field's velocity, px/s
     heading: 0.6,             // where the drift is going
@@ -1321,17 +1335,34 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // that is still going when the sheet rises, which is what a tap on a disc
   // leaves behind: those run out under the glass, because a crowd frozen in
   // the middle of a wave is a crowd that jumps when the sheet goes.
+  //
+  // ── and under the black room ──
+  // A letter's sheet is a black room, and once its black is all the way up
+  // nothing behind it can be seen (parts.jsx Sheet `room`, `data-covered` on
+  // the root). The wave and the travel still run out, on their own clocks,
+  // but nothing is drawn while they do: every frame of it was the crowd
+  // written, styled and handed to the compositor, a sixth of a phone's frame
+  // for two seconds after a letter opened, under a black nobody sees through.
+  // The crowd is drawn once more when they have run out, where they have
+  // left it, and every name that came onto the glass meanwhile is seated
+  // then, still under the black, so the room lifts on a crowd already
+  // standing where it would have been and nothing is left to draw as it
+  // goes (`redraw`, for a room that lifts before they have run out).
   useEffect(() => {
     if (!grid) return undefined
     let raf = 0
     let last = 0
+    const root = stage.current ? stage.current.closest('.wl-root') : null
 
     const frame = (now) => {
       raf = requestAnimationFrame(frame)
       const m = motion.current
       const { w, h } = size.current
       if (!w || !h || !m.ready) return
-      if (m.paused && !m.tap && !m.goal && !m.zoomGoal) {
+      const dark = m.paused && !!root && root.hasAttribute('data-covered')
+      if (m.dark && !dark && m.stale) m.redraw = true
+      m.dark = dark
+      if (m.paused && !m.tap && !m.goal && !m.zoomGoal && !m.redraw) {
         last = 0
         // A sheet has come over the wall and the loop is idling. A disc
         // half turned over behind the glass has no frames coming to finish
@@ -1412,6 +1443,14 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const wantA = m.over && !m.drag ? 1 : 0
       if (m.reduce) m.pa = wantA
       else m.pa += (wantA - m.pa) * (1 - Math.exp(-dt / (wantA ? 150 : 380)))
+
+      // under the black room the wave's clock is kept, and nothing is drawn
+      // until it and the travel have run out
+      if (dark) {
+        if (!m.reduce) readTap(m, now)
+        if (m.tap || m.goal || m.zoomGoal) { m.stale = true; return }
+      }
+      m.stale = false
 
       // ── the draw ──
       const { S, rowH, slots, bySlot, free, lens } = m
@@ -1586,6 +1625,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         }
       }
       let grew = false
+      // drawn again as the black room lifts until every name is seated
+      m.redraw = !!entering && entering.length > ASSIGN_PER_FRAME
       if (entering) {
         // nearest the light first, so under a pinch the middle of the glass
         // is seated before the rim
@@ -2097,6 +2138,21 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   }, [names, lay, worldX, tapCell, nameAt, uncycle])
   useImperativeHandle(ref, () => ({ pulse }), [pulse])
 
+  // ── the tab order ──
+  // Out of it under the veil and under a sheet, written onto the cells here
+  // rather than by drawing each of them again (`sameCell`, above), and to
+  // exactly what their render writes: -1, or no tabindex at all. A cell
+  // drawn for any other reason draws it the same way.
+  const off = veiled || paused
+  useLayoutEffect(() => {
+    const el = stage.current
+    if (!el) return
+    for (const b of el.querySelectorAll('.wl-cell[data-slot]')) {
+      if (off) b.setAttribute('tabindex', '-1')
+      else b.removeAttribute('tabindex')
+    }
+  }, [off])
+
   // Nothing to draw: the line the caller gives, which is empty while the
   // index is still loading or did not load, since either of those said so
   // already in the ear and neither is an empty wall.
@@ -2155,7 +2211,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             delay={opening && t ? a.delay : 0}
             look={t ? t.look : null}
             name={t && t.kind === 'name' ? t.name : ''}
-            off={veiled || paused}
+            off={off}
             bind={bind}
             onOpen={open}
             onHover={onHover}

@@ -32,7 +32,7 @@
 //
 // The system is app/src/wall/wall.css. Nothing here invents a token, a radius,
 // a face or a duration.
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import '../wall/wall.css'
 import '../signature/signature.css'
 import './main.css'
@@ -73,6 +73,13 @@ export default function MainApp() {
   // drawing the signed out state over somebody who is signed in.
   const [known, setKnown] = useState(false)
   const still = useRef(prefersReducedMotion()).current
+  // a full-bleed room with no scrollbar (styles.css `wl-bleed`), said on the
+  // html as this root is first drawn rather than asked with a `:has()`
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    html.classList.add('wl-bleed')
+    return () => html.classList.remove('wl-bleed')
+  }, [])
 
   // ── the faces ──
   // Local, fetched by main.jsx beside this chunk, and linked here through the

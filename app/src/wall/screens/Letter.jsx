@@ -111,7 +111,7 @@
 // line, or the resolver's first name for the @, or, with neither, "dear you",
 // which is who a letter is to.
 
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
   Sheet, SheetFoot, Close, Brand, ArrowLink, useProfile, useSheet,
@@ -367,9 +367,13 @@ function Handset({ l, seed, live = false, open = false, onToggle, onClose, reduc
     const s = skinOf(colour)
     return { kind: s.kind, vars: { ...skinVars(colour, !!s.print), '--q-pitch': q.vars['--q-pitch'], '--q-hx': q.vars['--q-hx'] } }
   }, [on, look, seed]) // eslint-disable-line react-hooks/exhaustive-deps
+  // the card's thread is its own and is read again with every render of it;
+  // a neighbour's is nothing, and stays the same nothing, so the screen on a
+  // neighbour is not drawn again whenever the sheet is (`LetterScreen`)
+  const own = live ? th : null
   const ctx = useMemo(
-    () => ({ th: live ? th : null, open, onToggle, keyId, letter: live ? l : null }),
-    [live, th, open, onToggle, keyId, l],
+    () => ({ th: own, open, onToggle, keyId, letter: live ? l : null }),
+    [live, own, open, onToggle, keyId, l],
   )
   return (
     <div
@@ -452,7 +456,16 @@ function removedFace(r) {
 // rather than "0". It was behind the same gate as reading, and on a letter
 // from outside it the heart was the way to the gate; since 0068 it is
 // anybody's, on any device, and pressing it never opens a door.
-function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, woke = '', onRemove = null }) {
+//
+// ── and it is drawn again only when it changes ──
+// A screen is the dearest thing on the sheet to draw, and the sheet is drawn
+// again for a good many things that are not the screens beside the card: a
+// turn landing, the screen drawn ahead of one, a menu, the phone slid open,
+// the card waking. Each of those drew both neighbours again too, the words
+// and the pixels and the keys of letters that had not changed, inside the
+// frame the thing happened on. So a screen is kept as it was unless what it
+// shows has changed (`memo`), which for a neighbour is only its letter.
+const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, woke = '', onRemove = null }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
   const hs = useContext(ThreadKey)
@@ -654,7 +667,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
       {body}
     </Screen>
   )
-}
+})
 
 export default function Letter({
   id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0,
@@ -1240,6 +1253,9 @@ export default function Letter({
     keyed.current = ''
     const key = k && track.current ? track.current.querySelector(`:scope > .wl-letter-card .wl-sk.${k}`) : null
     if (key && !key.disabled) key.focus({ preventScroll: true })
+    // and the neighbour a mouse or the focus is on, which may have changed
+    // under a key or a pointer that did not move (`reaim`)
+    reaim()
   }, [param]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // A screen that comes to stand on the strip while it is written to (the
@@ -1475,6 +1491,11 @@ export default function Letter({
   const runQ = (to, { v = 0, from = null } = {}) => {
     const g = fitSlider()
     if (!g) return
+    // the strip's measure, read now, while the page has just been measured
+    // for the slider and nothing has been written since: read inside the
+    // first write (`writeQ`, for the neighbours' light) it made the browser
+    // style the phone's lower half once for that and again for the press
+    geo()
     const q = from == null ? readQ() : from
     hold()
     writeQ(q, 'none', 'none')
@@ -1873,6 +1894,46 @@ export default function Letter({
     onPointerCancel: onCancel, onLostPointerCapture: onLost, onClickCapture: onClick,
   }
 
+  // ── the neighbour a key or a mouse is on ──
+  // A mouse over a turn key, or the keyboard's focus on one, wakes the
+  // neighbour behind it a little (wall.css). The stage is told which by the
+  // keys themselves (`data-hover`, `data-focus`), and asked again when a turn
+  // lands, since a key the pointer is still over or the focus is still on
+  // says nothing then, and one that has gone says nothing at all. The
+  // stylesheet used to ask with a `:has()` over the keys' `:hover` and
+  // `:focus-visible`, and Chrome could not tell which changes that cared
+  // about: every element added to the page or taken off it, a turn's
+  // landing and the wall's discs included, was a style pass over all two
+  // thousand of them.
+  const sideOf = (b) => (b.classList.contains('is-next') ? 'next' : 'prev')
+  const tell = (k, v) => {
+    const st = stage.current
+    if (!st || (st.getAttribute(k) || '') === v) return
+    if (v) st.setAttribute(k, v)
+    else st.removeAttribute(k)
+  }
+  const onAim = (e) => {
+    const b = e.currentTarget
+    const st = stage.current
+    if (!b || !st) return
+    if (e.type === 'focus') tell('data-focus', b.matches(':focus-visible') ? sideOf(b) : '')
+    else if (e.type === 'blur') { if (st.getAttribute('data-focus') === sideOf(b)) tell('data-focus', '') }
+    else if (e.pointerType === 'touch') return
+    else if (e.type === 'pointerenter') tell('data-hover', sideOf(b))
+    else if (st.getAttribute('data-hover') === sideOf(b)) tell('data-hover', '')
+  }
+  const reaim = () => {
+    const st = stage.current
+    if (!st) return
+    const on = (how) => {
+      for (const b of st.querySelectorAll(':scope > .wl-turn')) if (b.matches(how)) return sideOf(b)
+      return ''
+    }
+    tell('data-focus', on(':focus-visible'))
+    tell('data-hover', on(':hover'))
+  }
+  const aimed = { onFocus: onAim, onBlur: onAim, onPointerEnter: onAim, onPointerLeave: onAim }
+
   // ── which element each screen keeps ──
   // A screen is keyed by its letter, so a turn draws nothing again. A name
   // whose letters are still on their way stands as its waiting card, keyed by
@@ -2025,7 +2086,7 @@ export default function Letter({
   if (one === null) {
     const mineGone = removedAt && (removedAt.id === param || removedAt.to === handle) ? removedFace(removedAt) : null
     return (
-      <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside}>
+      <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside} room>
         <div className="wl-sheet-in wl-letter">
           <div className="wl-letter-card">
             <Screen
@@ -2071,9 +2132,26 @@ export default function Letter({
     ? <button type="button" className="wl-low-room" tabIndex={-1} aria-label="shut the replies" onClick={shutThread} />
     : null
 
+  // ── and what the stylesheet reads off the sheet ──
+  // Whether the phone is slid open, whether a note stands under it, whether
+  // that note is folded away with nothing beside it, and whether the card is
+  // waking: said here, on the elements styled by them, and not found out by
+  // the stylesheet with a `:has()`. Chrome answered each of those by styling
+  // the whole page again, some two thousand elements, whenever any element
+  // anywhere was added, taken away or changed a class, which on a phone was
+  // a tenth of a second at the start and the end of every turn.
+  const cardWoke = moved.current ? '' : woke
+  const folded = note.on && !note.open && !cold
+
   return (
-    <Sheet onClose={leave} onClosing={stop} onEscape={onEscape} labelledBy="wl-letter-to" className={wrap} aside={<>{shade}{aside}</>}>
-      <div className={`wl-sheet-in wl-letter${thread ? ' is-thread' : ''}`} ref={room}>
+    <Sheet
+      onClose={leave} onClosing={stop} onEscape={onEscape} labelledBy="wl-letter-to" room
+      className={`${wrap}${thread ? ' is-slid' : ''}${note.on ? ' has-note' : ''}`} aside={<>{shade}{aside}</>}
+    >
+      <div
+        className={`wl-sheet-in wl-letter${thread ? ' is-thread' : ''}`} ref={room}
+        data-waking={one && cardWoke === 'waking' ? '' : undefined}
+      >
         {one ? <Lights look={one.look} seed={one.id} /> : null}
         {/* ── the card, and the letters either side of it ──
             One object, carrying everything true about the letter: when it
@@ -2087,11 +2165,11 @@ export default function Letter({
             screen reader finds. The glass is the only clip. */}
         <div
           ref={stage}
-          className={`wl-letter-stage${canTurn ? ' can-turn' : ''}${woke && !moved.current ? ' is-waking' : ''}`}
+          className={`wl-letter-stage${canTurn ? ' can-turn' : ''}${cardWoke ? ' is-waking' : ''}`}
           {...swipe}
         >
           {prevTo ? (
-            <button type="button" className="wl-turn is-prev" onClick={() => slide(-1)} aria-label="the letter before this one" tabIndex={thread ? -1 : undefined} />
+            <button type="button" className="wl-turn is-prev" onClick={() => slide(-1)} aria-label="the letter before this one" tabIndex={thread ? -1 : undefined} {...aimed} />
           ) : null}
           <div className="wl-letter-track" ref={track}>
             {strip.map((s) => (
@@ -2110,7 +2188,7 @@ export default function Letter({
                       id="wl-letter-to" live go={go}
                       view={removedAt && one && removedAt.id === one.id ? { kind: 'removed', ...removedAt } : view}
                       onView={setView}
-                      woke={moved.current ? '' : woke} onRemove={removeMine}
+                      woke={cardWoke} onRemove={removeMine}
                     />
                   </Handset>
                 )}
@@ -2118,12 +2196,12 @@ export default function Letter({
             ))}
           </div>
           {nextTo ? (
-            <button type="button" className="wl-turn is-next" onClick={() => slide(1)} aria-label="the letter after this one" tabIndex={thread ? -1 : undefined} />
+            <button type="button" className="wl-turn is-next" onClick={() => slide(1)} aria-label="the letter after this one" tabIndex={thread ? -1 : undefined} {...aimed} />
           ) : null}
         </div>
 
         {foot || cold ? (
-          <SheetFoot>
+          <SheetFoot className={note.on ? `has-fold${folded ? ' is-folded' : ''}` : ''}>
             {foot}
             {cold ? <ViewWall onWall={onWall} /> : null}
           </SheetFoot>
