@@ -88,6 +88,7 @@ export async function myPings({ handle, proof }) {
     const pings = (Array.isArray(out.pings) ? out.pings : []).map(shapePing)
     const answer = { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual') }
     HELD.set(h, { at: Date.now(), answer })
+    keepSpans(pings)
     return answer
   } catch {
     return { ok: false, error: 'network', pings: [], mutuals: [] }
@@ -135,9 +136,14 @@ function shapePing(p) {
     // the wire and inventing one would only be inventing a key for React.
     id: to,
     to,
-    state: p.mutual ? 'mutual' : 'standing',
+    // standing until its reveal; then mutual, or lapsed: not this time, and
+    // listed for a week so it can be sent again (0069)
+    state: p.mutual ? 'mutual' : p.lapsed ? 'lapsed' : 'standing',
     at: Number(p.time) || 0,
     expires: Date.parse(p.expires_at || 0) || 0,
+    // the night a mutual was told, which is a reveal for every pair found
+    // since 0069, and whenever it happened for the ones before
+    revealedAt: Date.parse(p.revealed_at || 0) || 0,
     line: p.card?.words || '',
     theirLine: p.theirCard?.words || '',
     // The moment it opened is not on the wire either. A mutual opens when the
@@ -221,6 +227,13 @@ export async function renew({ me: mineNow, them }) {
   }
 }
 
+// A note that lapsed at a reveal, sent again for this week with the words it
+// had (the server keeps them when none are sent), through the placement, so
+// the slot rule and the matching run as for any note going out (0069).
+export async function sendAgain({ me: mineNow, them }) {
+  return place({ me: mineNow, them, words: '' })
+}
+
 export async function release({ me: mineNow, them }) {
   try {
     const out = await retirePing({ me: mineNow, them, proof: await proofFor(mineNow) })
@@ -257,25 +270,141 @@ export function writtenTo(self = myHandle()) {
   return out
 }
 
+// ── the reveal ──────────────────────────────────────────────────────────────
+// Every note runs to a reveal, and every reveal is the same moment for
+// everybody: Saturday, nine at night, in California (migration 0069,
+// `celestual_next_reveal`). Worked out here in California's own wall time, so
+// a phone in New York or Seoul counts down to the same instant the server
+// opens the pairs at, and a change of the clocks moves nothing.
+export const REVEAL_TZ = 'America/Los_Angeles'
+const REVEAL_DAY = 6
+const REVEAL_HOUR = 21
+const DAY_MS = 86400000
+const HOUR_MS = 3600000
+let WALL = null
+function wallOf(ms) {
+  if (!WALL) {
+    WALL = new Intl.DateTimeFormat('en-US', {
+      timeZone: REVEAL_TZ, year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', hourCycle: 'h23', weekday: 'short',
+    })
+  }
+  const o = {}
+  for (const x of WALL.formatToParts(new Date(ms))) o[x.type] = x.value
+  const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(o.weekday)
+  return { y: +o.year, m: +o.month, d: +o.day, h: +o.hour % 24, min: +o.minute, dow }
+}
+// the instant a California wall clock reads `h` o'clock on that day: a guess
+// in winter time, corrected by however far the clock there disagrees
+function atWall(y, m, d, h) {
+  let t = Date.UTC(y, m - 1, d, h + 8)
+  for (let i = 0; i < 2; i++) {
+    const w = wallOf(t)
+    const off = (Date.UTC(w.y, w.m - 1, w.d, w.h) - Date.UTC(y, m - 1, d, h)) / HOUR_MS
+    if (!off) break
+    t -= off * HOUR_MS
+  }
+  return t
+}
+// the first reveal strictly after a moment
+export function nextReveal(at = Date.now()) {
+  const w = wallOf(at)
+  const k = (REVEAL_DAY - w.dow + 7) % 7
+  let t = atWall(w.y, w.m, w.d + k, REVEAL_HOUR)
+  if (t <= at) t = atWall(w.y, w.m, w.d + k + 7, REVEAL_HOUR)
+  return t
+}
+// the day of a reveal as the phone stamps a letter's day (looks.js
+// `stampOf`), in California, where it happens: a reveal is a Saturday there
+// and already a Sunday in most of the world
+export function revealStamp(ms) {
+  const w = wallOf(ms)
+  const two = (n) => String(n).padStart(2, '0')
+  return `${two(w.m)}/${two(w.d)}/${two(w.y % 100)}`
+}
+// the last reveal at or before it
+export function lastReveal(at = Date.now()) {
+  const n = wallOf(nextReveal(at))
+  return atWall(n.y, n.m, n.d - 7, REVEAL_HOUR)
+}
+
+// ── a reveal nobody here has opened yet ─────────────────────────────────────
+// The account's key in the bar carries a light after a reveal this person had
+// a note in, until they open their private notes (parts.jsx `TopBar`,
+// screens/You.jsx). What it knows is what the last read of the list said: when
+// each note went out and when it ended or was told (`noteSpans`), kept on this
+// device, so the light is there on the first frame of any visit and needs no
+// request. A person who has never been here is given the last reveal as seen,
+// so nobody's first visit after this lands carries a light for a night they
+// were not part of.
+function keepSpans(pings) {
+  const spans = pings.map((p) => [p.at || 0, p.state === 'mutual' ? p.revealedAt : p.expires]).filter((x) => x[1])
+  patch({ noteSpans: spans.slice(0, 12) })
+}
+function seenReveal() {
+  const s = getState()
+  if (typeof s.revealSeen === 'number') return s.revealSeen
+  const last = lastReveal()
+  patch({ revealSeen: last })
+  return last
+}
+export function revealWaiting(at = Date.now()) {
+  const last = lastReveal(at)
+  if (seenReveal() >= last) return false
+  return (getState().noteSpans || []).some(([from, to]) => from < last && to >= last)
+}
+export function sawReveal(at = Date.now()) {
+  patch({ revealSeen: lastReveal(at) })
+}
+
 // ── time, in words ──────────────────────────────────────────────────────────
-// The same voice the wall uses. A ping is a sixty day object and its clock
-// should read like one.
+// The same voice the wall uses. A note is a week long now, and its clock
+// reads in nights, not days.
 export function daysLeft(expires) {
   if (!expires) return PING_DAYS
   return Math.max(0, Math.ceil((expires - Date.now()) / 86400000))
 }
 
-// The count, as the sheets say it. Zero is "lapses today", not "0 days left".
-export function daysLeftWords(expires) {
-  const n = daysLeft(expires)
-  return n === 0 ? 'lapses today' : n === 1 ? 'one day left' : `${n} days left`
+// When a note ends, said the way a person would: this saturday, next
+// saturday, or the date when it is further than that.
+export function endsWords(end, at = Date.now()) {
+  if (!end) return ''
+  const n = nextReveal(at)
+  if (Math.abs(end - n) < HOUR_MS * 2) return 'this saturday'
+  if (Math.abs(end - nextReveal(n)) < HOUR_MS * 2) return 'next saturday'
+  const w = wallOf(end)
+  return `saturday ${['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][w.m - 1]} ${w.d}`
 }
 
-// What a ping is doing, in the words a row carries under the name: that it
-// is mutual, or how long it has left, which says it is standing.
+// Whether a standing note is already kept for the week after this one.
+export function keptAhead(p, at = Date.now()) {
+  return !!p && p.state === 'standing' && p.expires - nextReveal(at) > DAY_MS
+}
+
+// The count, as the sheets say it, to the note's own reveal.
+export function daysLeftWords(expires) {
+  return expires ? `ends ${endsWords(expires)}` : ''
+}
+
+// What a note is doing, in the words a row carries under the name: that it
+// is mutual, that it was not this time, or when its reveal is.
 export function stateWords(p) {
   if (!p) return ''
-  return p.state === 'mutual' ? 'it’s mutual' : daysLeftWords(p.expires)
+  if (p.state === 'mutual') return 'it’s mutual'
+  if (p.state === 'lapsed') return 'not this time'
+  return keptAhead(p) ? `kept to ${endsWords(p.expires)}` : `reveals ${endsWords(p.expires)}`
+}
+
+// The time left to a moment, as the phone's clock counted it: days and hours
+// while it is days away, then hours, minutes and seconds.
+export function countdown(to, at = Date.now()) {
+  const s = Math.max(0, Math.floor((to - at) / 1000))
+  const d = Math.floor(s / 86400)
+  const h = Math.floor((s % 86400) / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  const two = (n) => String(n).padStart(2, '0')
+  return { d, h, m, s: sec, text: d ? `${d}d ${two(h)}:${two(m)}:${two(sec)}` : `${two(h)}:${two(m)}:${two(sec)}` }
 }
 
 export function since(ts) {

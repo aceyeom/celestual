@@ -41,6 +41,22 @@ const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
 
 const DAY = 86400000
 const now = Date.now()
+// the next Saturday at nine at night in California, as the app works it out
+// (pings.js `nextReveal`): a winter guess, corrected by the clock there
+const NEXT_REVEAL = (() => {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hourCycle: 'h23', weekday: 'short' })
+  const wall = (t) => Object.fromEntries(f.formatToParts(new Date(t)).map((x) => [x.type, x.value]))
+  const w = wall(now)
+  const k = (6 - ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(w.weekday) + 7) % 7
+  const at = (d) => {
+    let t = Date.UTC(+w.year, +w.month - 1, d, 21 + 8)
+    const h = +wall(t).hour % 24
+    if (h !== 21) t -= (h - 21) * 3600000
+    return t
+  }
+  const t = at(+w.day + k)
+  return t > now ? t : at(+w.day + k + 7)
+})()
 
 // ── the fixtures ────────────────────────────────────────────────────────────
 // Names and lines invented; every field name is the one the schema carries.
@@ -930,24 +946,37 @@ const RPC = {
     }] : [],
   }),
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
+  // the week (0069): a mutual told at the last reveal, a note running to the
+  // next, and one that was not this time at the last
   celestual_my_pings: () => ({
     ok: true,
+    next_reveal: new Date(NEXT_REVEAL).toISOString(),
+    last_reveal: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
     pings: [
       {
         handle: 'jules.k',
-        time: now - 14 * DAY,
-        expires_at: new Date(now + 46 * DAY).toISOString(),
+        time: now - 9 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
         mutual: true,
+        revealed_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
         card: { words: 'i have wanted to say this since the second week of term.' },
         their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
         ...faceOf('jules.k'),
       },
       {
         handle: 'ren.tanaka',
-        time: now - 6 * DAY,
-        expires_at: new Date(now + 54 * DAY).toISOString(),
+        time: now - 2 * DAY,
+        expires_at: new Date(NEXT_REVEAL).toISOString(),
         mutual: false,
         card: { words: 'you were the one singing on the 51B that night.' },
+      },
+      {
+        handle: 'maya.okafor',
+        time: now - 11 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        mutual: false,
+        lapsed: true,
+        card: { words: 'the library steps, the day it hailed.' },
       },
     ],
   }),
@@ -1186,11 +1215,11 @@ const ROUTES = [
   // nobody at all, which is the door.
   { label: 'you',           path: '/berkeley/you' },
   { label: 'you-bar',       path: '/berkeley', acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-memberbtn']], settle: 1400 },
-  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing']], settle: 1200 },
+  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing']], settle: 1200 },
   { label: 'you-options',   path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
   { label: 'you-let-go',    path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-wrote-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'you-unproved',  path: '/berkeley/you', verified: false },
   { label: 'you-door',      path: '/berkeley/you', anon: true },
@@ -1200,6 +1229,13 @@ const ROUTES = [
   { label: 'ping-done-still', path: '/berkeley/ping/pilar.echevarria', still: true,
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
   { label: 'you-still',     path: '/berkeley/you', still: true, settle: 900 },
+  // the night (0069): a reveal this device had notes in and has not seen,
+  // the bar's light, and the tab waking on it with the rows landing
+  { label: 'you-reveal-bar', path: '/', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, acts: [['click', '.wl-mast-go'], ['wait', 3400]], settle: 1600 },
+  { label: 'you-reveal',    path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
+  { label: 'you-revealed',  path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
+  { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed']], settle: 900 },
+
   // the addresses Main used to draw, landing on the wall
   { label: 'legacy-sky',    path: '/sky' },
   { label: 'legacy-place',  path: '/place' },

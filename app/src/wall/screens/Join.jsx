@@ -104,10 +104,13 @@ import { patch } from '../store.js'
 import { href } from '../router.js'
 import '../mutual.css'
 
+// The third step is the night (migration 0069): a note runs to Saturday's
+// reveal, and everybody finds out then, together. The sub line answers the
+// two questions the night raises: what if it was not, and what then.
 const STEPS = [
   { line: 'you send them a note, privately.', sub: 'they’re never told.' },
   { line: 'they send you one too.', sub: 'on their own, not knowing you did.' },
-  { line: 'you both find out, at once, and read each other’s note.', sub: 'if it never happens, nobody ever knows.' },
+  { line: 'saturday at 9pm, you both find out, and read each other’s note.', sub: 'if it isn’t mutual, nobody ever knows. keep it for next week, or let it go.' },
 ]
 
 // The story's beats are the steps': each is lit as its part of the story

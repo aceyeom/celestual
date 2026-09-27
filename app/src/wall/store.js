@@ -81,9 +81,12 @@ const EMPTY = {
   goneSeen: {},       // replyId -> 1: a reply of this device's that was taken
                       // down, seen struck through in its thread once and not
                       // drawn again (Replies.jsx `goneSeen`)
-  revealSeen: '',     // the weekly reveal this device has opened, by the
+  revealSeen: null,   // the weekly reveal this device has opened, by the
                       // moment it fell (pings.js `lastReveal`): until it has
                       // been, the account's key in the bar carries a light
+  noteSpans: [],      // when each of this person's private notes went out and
+                      // when it ended or was told, as the list last said it
+                      // (pings.js `revealWaiting`). Never who it was to
   justPosted: '',     // the handle a letter was just put up to, so the wall can
                       // send one ripple out from that name on the way back
                       // from the posted screen. Taken once

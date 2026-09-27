@@ -78,6 +78,7 @@
    what is in the frame and never the frame: a sheet that grew and shrank
    under the thumb with every press read as two sheets. */
 .wl-sheet-wrap.is-you .wl-sheet:has(> .wl-you.is-card) { min-height: min(86dvh, 700px); }
+.wl-you { --rose: #E9A2BD; }
 .wl-sheet:has(> .wl-you.is-card) > .wl-you.is-card { flex: 1 1 auto; }
 
 .wl-you-panel { margin-top: 14px; animation: wl-you-in 220ms var(--ease) both; }
@@ -156,42 +157,136 @@
 .wl-vault-row.is-mutual .wl-wrote-meta { color: var(--chalk); }
 .wl-vault-row.is-draft .wl-wrote-meta { color: var(--ash-dim); }
 .wl-vault-row:active { background: var(--chalk); box-shadow: none; }
-.wl-vault-row:active :is(.wl-wrote-name, .wl-wrote-meta, .wl-signal) { color: #000; }
+.wl-vault-row:active :is(.wl-wrote-name, .wl-wrote-meta) { color: #000; }
 @media (hover: hover) and (pointer: fine) {
   .wl-vault-row:hover { background: var(--chalk); box-shadow: none; }
-  .wl-vault-row:hover :is(.wl-wrote-name, .wl-wrote-meta, .wl-signal) { color: #000; }
+  .wl-vault-row:hover :is(.wl-wrote-name, .wl-wrote-meta) { color: #000; }
 }
 .wl-vault-row:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: -1px; }
 /* not sent: the face and the name a step back, since nothing is out yet */
 :is(.wl-vault-row, .wl-wrote-row).is-draft .wl-face { opacity: 0.5; }
 :is(.wl-vault-row, .wl-wrote-row).is-draft .wl-wrote-name { color: var(--ash); }
 
-/* ── the signal ─────────────────────────────────────────────────────────────
-   The aerial and four bars from the phone's status row. A mutual has all
-   four, lit in chalk and still. A standing note is searching: every bar
-   unlit but for the cells the phone always showed faintly, and one, two,
-   three climbing on the phone's own half beat (530ms, the caret's 1060
-   halved) before they fall back. Opacity on four spans, nothing else, so it
-   costs the compositor nothing; a hidden tab paints none of it; and under
-   reduced motion two bars stand still, which still says waiting. */
-.wl-signal { flex: 0 0 auto; display: inline-flex; align-items: flex-end; gap: 4px; margin-right: 2px; color: var(--ash); }
-.wl-signal .wl-signal-ant { display: block; }
-/* on the aerial's own grid, two of the page's pixels to each of its cells */
-.wl-signal-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; }
-.wl-signal-bars i { width: 4px; background: currentColor; opacity: 0.2; }
-.wl-signal-bars i:nth-child(1) { height: 6px; }
-.wl-signal-bars i:nth-child(2) { height: 10px; }
-.wl-signal-bars i:nth-child(3) { height: 14px; }
-.wl-signal-bars i:nth-child(4) { height: 20px; }
-.wl-signal.is-full { color: var(--chalk); }
-.wl-signal.is-full .wl-signal-bars i { opacity: 1; }
-.wl-signal.is-seeking .wl-signal-bars i { animation: 2120ms steps(1, end) infinite; }
-.wl-signal.is-seeking .wl-signal-bars i:nth-child(1) { animation-name: wl-seek-1; }
-.wl-signal.is-seeking .wl-signal-bars i:nth-child(2) { animation-name: wl-seek-2; }
-.wl-signal.is-seeking .wl-signal-bars i:nth-child(3) { animation-name: wl-seek-3; }
-@keyframes wl-seek-1 { 0% { opacity: 0.2; } 25%, 100% { opacity: 1; } }
-@keyframes wl-seek-2 { 0% { opacity: 0.2; } 50%, 100% { opacity: 1; } }
-@keyframes wl-seek-3 { 0% { opacity: 0.2; } 75%, 100% { opacity: 1; } }
+/* ── the aerial ─────────────────────────────────────────────────────────────
+   The Y from the phone's status row, alone (You.jsx `Aerial`), two of the
+   page's pixels to each of its cells, and the two waves a phone drew off it
+   while it was sending. Searching, the inner wave and then the outer come on
+   and go, on the phone's half beat (530ms, the caret's 1060 halved), in the
+   dim chalk every unlit thing on the sheet is in; kept for the week after,
+   the waves stand, a step dimmer, since nothing is searching that has
+   already been told to wait. A mutual is the one colour on the frame: rose,
+   both waves out and still, with the light it throws. Not this time: the Y
+   dark and the phone's small cross at its foot. Opacity on three paths,
+   nothing else, so it costs the compositor nothing, and under reduced
+   motion the searching Y holds its inner wave. */
+.wl-aerial { flex: 0 0 auto; display: block; margin-right: 2px; color: var(--ash); overflow: visible; }
+.wl-aerial path { transition: opacity 160ms steps(2, end); }
+.wl-aerial-in, .wl-aerial-out, .wl-aerial-x { opacity: 0; }
+.wl-aerial.is-seek .wl-aerial-in { animation: wl-wave-in 1060ms steps(1, end) infinite; }
+.wl-aerial.is-seek .wl-aerial-out { animation: wl-wave-out 1060ms steps(1, end) infinite; }
+@keyframes wl-wave-in  { 0% { opacity: 0.18; } 25% { opacity: 1; } 75%, 100% { opacity: 0.18; } }
+@keyframes wl-wave-out { 0%, 50% { opacity: 0.18; } 50.01% { opacity: 1; } 100% { opacity: 0.18; } }
+.wl-aerial.is-kept .wl-aerial-in { opacity: 0.75; }
+.wl-aerial.is-kept .wl-aerial-out { opacity: 0.4; }
+.wl-aerial.is-full { color: var(--rose); filter: drop-shadow(0 0 3px rgba(233, 162, 189, 0.55)); }
+.wl-aerial.is-full .wl-aerial-in, .wl-aerial.is-full .wl-aerial-out { opacity: 1; }
+.wl-aerial.is-none { color: var(--ash-dim); }
+.wl-aerial.is-none .wl-aerial-x { opacity: 1; color: var(--ash); }
+
+/* ── the night, landing ──
+   On the first look after a reveal every row searches once more, the
+   words under the name saying so, and lands on what it is a beat after the
+   one above (`--land`, You.jsx): the searching goes, the aerial and the
+   words come up as they are, and the row blinks inverted once, the way the
+   phone lit a line that had just arrived. A mutual's blink is rose. */
+.wl-vault-meta, .wl-wrote-meta { position: relative; }
+.wl-vault-seek { display: none; }
+.wl-vault-row.is-landing .wl-vault-seek {
+  display: inline; animation: wl-land-out 1ms linear var(--land, 700ms) both;
+}
+.wl-vault-row.is-landing .wl-vault-said { animation: wl-land-in 1ms linear var(--land, 700ms) both; }
+.wl-vault-row.is-landing .wl-vault-seek + .wl-vault-said { position: absolute; left: 0; top: 0; white-space: nowrap; }
+@keyframes wl-land-out { to { visibility: hidden; opacity: 0; } }
+@keyframes wl-land-in  { from { visibility: hidden; opacity: 0; } }
+.wl-aerial.is-landing:not(.is-seek) .wl-aerial-y,
+.wl-aerial.is-landing:not(.is-seek) .wl-aerial-x { animation: wl-land-in 1ms linear var(--land, 700ms) both; }
+.wl-aerial.is-landing:not(.is-seek) .wl-aerial-in { animation: wl-wave-in 1060ms steps(1, end) 2 both; }
+.wl-aerial.is-landing:not(.is-seek) .wl-aerial-out { animation: wl-wave-out 1060ms steps(1, end) 2 both; }
+.wl-aerial.is-landing.is-full .wl-aerial-in,
+.wl-aerial.is-landing.is-full .wl-aerial-out { animation: wl-wave-in 1060ms steps(1, end) 1 both, wl-land-full 1ms linear var(--land, 700ms) forwards; }
+@keyframes wl-land-full { to { opacity: 1; } }
+.wl-vault-row.is-landing { animation: wl-row-land 300ms steps(2, end) var(--land, 700ms) both; }
+.wl-vault-row.is-landing.is-mutual { animation-name: wl-row-land-rose; }
+@keyframes wl-row-land {
+  0%, 49% { background: var(--chalk); }
+  50%, 100% { background: transparent; }
+}
+@keyframes wl-row-land-rose {
+  0%, 49% { background: var(--rose); }
+  50%, 100% { background: rgba(233, 162, 189, 0.07); }
+}
+
+/* the notes that were not this time, under a seam of their own, a step
+   back: the face dimmed, the words in ash, the aerial dark */
+.wl-vault-past { position: relative; display: flex; flex-direction: column; margin-top: 6px; padding-top: 10px; }
+.wl-vault-past::before {
+  content: ''; position: absolute; left: 8px; right: 8px; top: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+.wl-vault-past-h {
+  padding: 2px 8px 4px; font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash-dim);
+}
+.wl-vault-row.is-lapsed .wl-face { opacity: 0.55; filter: grayscale(0.6); }
+.wl-vault-row.is-lapsed .wl-wrote-name { color: var(--ash); }
+.wl-vault-row.is-lapsed .wl-wrote-meta { color: var(--ash-dim); }
+.wl-vault-row.is-mutual { --rose-edge: rgba(233, 162, 189, 0.42); box-shadow: inset 0 0 0 1px var(--rose-edge); background: rgba(233, 162, 189, 0.05); }
+.wl-vault-row.is-mutual .wl-wrote-meta { color: var(--rose); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-vault-row:hover .wl-aerial { color: #000; filter: none; }
+}
+.wl-vault-row:active .wl-aerial { color: #000; filter: none; }
+
+/* ── the reveal ─────────────────────────────────────────────────────────────
+   A small screen lit in rose over the frame (You.jsx `RevealClock`): the
+   screen's own status rows, its own soft key and its own glass, pixels and
+   glare (screen.css), so the one lit thing on the sheet is a phone and not
+   a badge. Not the letter's proportion: as tall as its three lines, the time
+   left in the phone's large figures. On the night it wakes (`is-waking`, the
+   screen's own flicker on) on what the reveal said. */
+.wl-clock { position: relative; margin: 0 0 12px; animation: wl-you-in 260ms var(--ease) both; }
+.wl-clock .wl-scr { aspect-ratio: auto; }
+.wl-clock .wl-scr-body { padding: 0.6cqw 3.6cqw 1.8cqw 3.6cqw; }
+.wl-clock-in { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 1.4cqw; min-height: 20cqw; color: var(--s-ink); }
+.wl-clock-big {
+  font-weight: 400; font-size: 15cqw; line-height: 0.9; letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  text-shadow: 0 0 0.35cqw var(--s-soft);
+}
+.wl-clock.is-told .wl-clock-big { font-size: 13.4cqw; }
+.wl-clock-say { font-size: 7.4cqw; line-height: 1; opacity: 0.82; }
+.wl-clock .wl-scr-hd { opacity: 0.9; }
+
+/* the key in the bar, with a reveal nobody here has opened yet: a light at
+   its shoulder, rose, and the key hops once as the bar arrives */
+.wl-memberbtn { position: relative; }
+.wl-memberbtn-news {
+  position: absolute; top: 1px; right: 1px; z-index: 1;
+  width: 10px; height: 10px; border-radius: 1px;
+  background: #FF5A7A;
+  box-shadow: 0 0 0 2px #000, 0 0 10px 1px rgba(255, 90, 122, 0.7);
+}
+.wl-memberbtn.has-news { animation: wl-news-hop 620ms cubic-bezier(0.3, 1.6, 0.5, 1) 900ms both; }
+@keyframes wl-news-hop {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-7px); }
+  55% { transform: translateY(0); }
+  72% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+/* a note that was not this time, opened: its screen with the backlight
+   down, the way a phone dims one that is done */
+.wl-you-ping .wl-scr.is-dim { filter: blur(0.35px) brightness(0.62) saturate(0.55); }
 
 /* ── the letters ────────────────────────────────────────────────────────────
    Unlit rows, as the wall's are, and the letter the composer is holding
@@ -230,7 +325,11 @@
 .wl-you.is-settings .wl-owner-off { margin-top: 22px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-you-id, .wl-you-panel, .wl-set-group { animation: none; }
-  .wl-signal.is-seeking .wl-signal-bars i { animation: none; }
-  .wl-signal.is-seeking .wl-signal-bars i:nth-child(-n + 2) { opacity: 1; }
+  .wl-you-id, .wl-you-panel, .wl-set-group, .wl-clock { animation: none; }
+  .wl-aerial.is-seek .wl-aerial-in { animation: none; opacity: 1; }
+  .wl-aerial.is-seek .wl-aerial-out { animation: none; opacity: 0.18; }
+  .wl-vault-row.is-landing, .wl-aerial.is-landing path, .wl-memberbtn.has-news { animation: none; }
+  .wl-aerial.is-landing.is-full :is(.wl-aerial-in, .wl-aerial-out) { opacity: 1; }
+  .wl-vault-row.is-landing .wl-vault-seek { display: none; }
+  .wl-vault-row.is-landing .wl-vault-said { animation: none; position: static; }
 }
