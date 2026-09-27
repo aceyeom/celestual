@@ -281,7 +281,6 @@ declare
 begin
   if nf is null or nt is null then raise exception 'invalid handle'; end if;
   if nf = nt then raise exception 'same handle'; end if;
-  perform celestual_reveal_due();
   nh := celestual_hash_handle(nt);
   nc := celestual_card_clean(p_card);
 
@@ -297,6 +296,11 @@ begin
       return jsonb_build_object('recorded', false, 'error', 'unverified');
     end if;
   end if;
+  -- the reveal after the proof, as every other door here takes them: the
+  -- proof's row and then the reveal's lock, in that order, everywhere, or a
+  -- placement and a read by the same person queued behind a running reveal
+  -- each hold what the other is waiting for
+  perform celestual_reveal_due();
 
   if exists (select 1 from celestual_suppressions where handle_hash = nh) then
     return jsonb_build_object('recorded', false, 'error', 'suppressed');

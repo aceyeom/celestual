@@ -89,6 +89,36 @@ select wx_ok('every pair is told, once',
     where from_handle like 'wx\_%' and matched_at is not null and sealed_with is null) = 24
   and (select count(*) from celestual_matches where handle_a like 'wx\_%') = 12);
 
+-- ── the same person placing and reading behind a running reveal ──
+-- with the proof asked for, as it is in production: every door takes the
+-- proof's row and then the reveal's lock, in that order, so a placement and
+-- a read by one person queued behind a reveal never hold what the other
+-- waits for
+select dblink_exec('wx_set', $sql$
+  insert into celestual_settings (key, value) values ('require_ig_verification', 'true')
+  on conflict (key) do update set value = 'true'
+$sql$);
+select dblink_exec('wx_set', $sql$
+  insert into celestual_entries (id, from_handle, to_hash, to_handle, expires_at, sealed_with, sealed_at, reveal_at)
+  values ('00000000-0000-4000-8000-00000000a001', 'wx_1b', celestual_hash_handle('wx_z'), 'wx_z',
+          now() - interval '1 second', '00000000-0000-4000-8000-00000000a002', now() - interval '1 day', now() - interval '1 second'),
+         ('00000000-0000-4000-8000-00000000a002', 'wx_z', celestual_hash_handle('wx_1b'), 'wx_1b',
+          now() - interval '1 second', '00000000-0000-4000-8000-00000000a001', now() - interval '1 day', now() - interval '1 second')
+$sql$);
+select dblink_exec('wx_one', 'begin');
+select wx_ok('a reveal is held open again',
+  (select n from dblink('wx_one', 'select celestual_reveal_due()') as t(n int)) = 1);
+select dblink_send_query('wx_two', $sql$select celestual_submit('wx_1b', 'wx_y', null, 'proof-wx_1b', null)::text$sql$);
+select pg_sleep(0.2);
+select dblink_send_query('wx_three', $sql$select celestual_my_pings('wx_1b', 'proof-wx_1b')::text$sql$);
+select wx_ok('the placement and the read by the same person both wait for it', wx_waiting(2) = 2);
+select dblink_exec('wx_one', 'commit');
+create temp table wx_place as select r::jsonb as r from dblink_get_result('wx_two') as t(r text);
+create temp table wx_list as select r::jsonb as r from dblink_get_result('wx_three') as t(r text);
+select wx_ok('and both are answered, with nobody deadlocked',
+  ((select r from wx_place)->>'recorded')::boolean and ((select r from wx_list)->>'ok')::boolean);
+select dblink_exec('wx_set', $sql$delete from celestual_settings where key = 'require_ig_verification'$sql$);
+
 select dblink_exec('wx_set', $sql$delete from celestual_matches where handle_a like 'wx\_%' or handle_b like 'wx\_%'$sql$);
 select dblink_exec('wx_set', $sql$delete from celestual_entries where from_handle like 'wx\_%'$sql$);
 select dblink_exec('wx_set', $sql$delete from celestual_ig_verifications where handle like 'wx\_%'$sql$);
