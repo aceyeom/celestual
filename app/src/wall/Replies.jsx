@@ -25,10 +25,10 @@
 // phone: the screen, and behind it the thread, the phone's lower half
 // (`Slide`). The letter's right soft key, `replies` (`threadKey`), or the
 // screen pushed up, slides it out from under the screen's own key band: the
-// same width, in the same plane, ending in a band of soft keys, `reply` on
-// the left and `back` on the right. Closed, the phone is the letter and
-// nothing else; open, it is one tall handset whose key band runs across its
-// middle like the tab it is. Screens/Letter.jsx moves it (the handset, and
+// same width, in the same plane, ending in the tray (the field you reply in,
+// and `send`) and the lip it is folded back up by. Closed, the phone is the
+// letter and nothing else; open, it is one tall handset whose key band runs
+// across its middle like the tab it is, and only there. Screens/Letter.jsx moves it (the handset, and
 // what a turn of the deck does to an open one); this file draws it and holds
 // the thread's state.
 //
@@ -41,8 +41,8 @@
 // backlight now, in the letter's own colours (looks.js `skinVars`, handed
 // down by Letter.jsx `Handset`): its panel, its ink, its pixel grid and its
 // glass, the words in the screen's one face measured off the phone's width
-// as the screen's are, and its keys the screen's keys, the same band, the
-// same size, the same bloom. A writer's creature is a sprite drawn in the
+// as the screen's are, and its foot a tray on that glass rather than a
+// second band of keys (`Slide` says why). A writer's creature is a sprite drawn in the
 // panel's ink, as the phone drew every picture it had. The recipient's reply
 // is the one row struck out of the ink, as a menu's chosen row is: the letter
 // answering, in the letter's colours, turned over. A thread folded into the
@@ -50,7 +50,6 @@
 // the words somebody wrote pushed off their own screen by the answers.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { Face, EmailField, Pill, usePhone } from './parts.jsx'
 import { PixIcon, Wait } from './screen.jsx'
 import { Caret } from './caret.jsx'
@@ -639,7 +638,10 @@ function School({ letter, onVerified, onTheirs }) {
 // apart (no new replies, against nobody else seeing any) was only said after
 // one was pressed. While the replies are out of sight there are no replies to
 // stop, so the first key is not drawn at all rather than drawn dead.
-function Owner({ state, onReply, onSet, busy }) {
+//
+// Answering is the tray's, at the foot of the glass, like every reply: the
+// row only says what an answer here is, and holds the two say-sos.
+function Owner({ state, onSet, busy }) {
   const shut = state === 'locked'
   const away = state === 'closed'
   return (
@@ -650,12 +652,9 @@ function Owner({ state, onReply, onSet, busy }) {
           ? 'only you can see the replies now.'
           : shut
             ? 'only you can reply now, and the ones here stay.'
-            : 'answer it here, and your reply is marked as the recipient’s. nobody sees more than that.'}
+            : 'answer it below, and your reply is marked as the recipient’s. nobody sees more than that.'}
       </p>
       <div className="wl-rp-owner-keys">
-        {away ? null : (
-          <Pill tone="light" onClick={onReply} className="wl-rp-owner-go">reply as the recipient</Pill>
-        )}
         {away ? null : (
           <button type="button" className="wl-rp-key" disabled={busy} onClick={() => onSet(shut ? 'open' : 'locked')}>
             <PixIcon name="lock" scale={2} />
@@ -671,37 +670,58 @@ function Owner({ state, onReply, onSet, busy }) {
   )
 }
 
-// ── a soft key of the lower half ──
-// The screen's own (screen.css `.wl-sk`), on a band drawn as the screen's
-// is: the word in the one face at the one size, blooming, lit behind under a
-// mouse and dimmed under a finger, with the hourglass in the word's place
-// while what it asked for is out.
-function Key({ side, k }) {
-  if (!k) return <span className={`wl-sk wl-low-sk is-${side} is-empty`} aria-hidden="true" />
+// ── a key of the tray ───────────────────────────────────────────────────────
+// Drawn on the glass rather than on a band of its own: the words in the
+// panel's ink, framed in its faint rule, or, for the one act the tray is
+// for at that moment, struck out of the ink as the phone struck out the row
+// it meant. `back` marks the key that steps back inside the lower half,
+// which Escape presses (Letter.jsx `onEscape`).
+function TrayKey({ lit = false, back = false, busy = false, disabled = false, onClick, aria, glyph = '', children }) {
   return (
     <button
-      type="button" className={`wl-sk wl-low-sk is-${side}`} onClick={k.onClick}
-      disabled={k.disabled || k.busy} aria-label={k.aria || undefined} aria-busy={k.busy || undefined}
+      type="button" className={`wl-tray-key${lit ? ' is-lit' : ''}`} onClick={onClick}
+      disabled={disabled || busy} aria-label={aria || undefined} aria-busy={busy || undefined}
+      data-low-back={back ? '' : undefined}
     >
-      {k.busy ? <Wait scale={2} className="wl-lit-g" /> : <span className="wl-lit">{k.label}</span>}
+      {busy ? <Wait scale={2} /> : (
+        <>
+          {glyph ? <PixIcon name={glyph} scale={2} /> : null}
+          <span>{children}</span>
+        </>
+      )}
     </button>
   )
 }
 
 // ── the lower half ──────────────────────────────────────────────────────────
-// What slides out from under the chin: the thread, a scroller that is the
-// phone's list, and under it the band of soft keys. It is in one of four
-// modes, each with its keys, the act on the left and the way back on the
-// right, as the screen's own menus have them:
+// What slides out from under the screen's key band: the thread, a scroller
+// that is the phone's list, and under it the tray, and under the tray the
+// lip the phone is folded back up by.
 //
-//   reading   reply · back          the thread, the recipient's row first
-//   writing   send · back           the field rises from behind the keys
-//   terms     agree · not now       the terms in place of the thread
-//   school    · back                the school's link in place of the thread
+// ── why it has no key band of its own ──
+// It ended in a band of soft keys, the screen's own, `reply` on the left and
+// `back` on the right, black across the phone's foot. With the screen's band
+// across its middle, the open phone was two phones stacked, the second a
+// mirror of the first, and the owner read it as exactly that. A slider's
+// lower half is not a second screen: it is what the screen was hiding. So
+// the thread's foot is drawn on its own glass now, as the phone's message
+// editor drew its text box: the one you reply as, the field, and `send`
+// beside it, lit only when there is something to send. Under it the lip, the
+// edge a thumb pushes to close a slider, with the phone's chevron on it.
+// `replies` on the screen's band still shuts it too, as a tab does.
 //
-// `back` while reading shuts the phone; anywhere else it goes back to
-// reading, the words kept. Letter.jsx owns open and shut (`onClose`), and
-// every time the phone is opened it opens on the thread.
+// It is in one of four modes, and the tray is what changes:
+//
+//   reading   the field, waiting    the thread, the recipient's row first
+//   writing   who you are, what is  the field has the focus, or words in it
+//             left, the field, send
+//   terms     not now · agree       the terms in place of the thread
+//   school    back to the replies   the school's link in place of the thread
+//
+// With no field to give (the replies shut, a school address wanted, a read
+// that failed) the tray says so in one line, with the way on where there is
+// one. Letter.jsx owns open and shut (`onClose`), and every time the phone
+// is opened it opens on the thread.
 export function Slide({ letter, th, open = false, reduce = false, go = null, onClose }) {
   const phone = usePhone()
   const [mode, setMode] = useState('read')
@@ -777,14 +797,6 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
     if (!el) return
     el.scrollTo({ top: el.scrollHeight, behavior: smooth && !reduce ? 'smooth' : 'auto' })
   }
-  // Writing, from `reply`: the field is drawn and focused inside the same
-  // press, since a phone raises its keyboard only for a focus the press
-  // itself made
-  const write = () => {
-    flushSync(() => setMode('write'))
-    if (field.current) field.current.focus({ preventScroll: true })
-    toEnd()
-  }
   // A step back inside the lower half takes away what had the focus when it
   // was taken by a key on the keyboard (Escape in the field, or out of the
   // terms), and the focus would fall to the page, out of the phone and out
@@ -823,6 +835,8 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
       }
       setBody('')
       setMode('read')
+      // the keys go down, so the reply that just went up is seen landing
+      if (field.current) field.current.blur()
       th.setNote(out.status === 'live' ? 'it’s up.' : (out.say || 'it’s being read. others see it once it passes.'))
       await th.load()
       requestAnimationFrame(() => toEnd())
@@ -872,7 +886,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
     inside = (
       <>
         {me.recipient && th.toAt ? (
-          <Owner state={th.state} onReply={write} onSet={th.set} busy={th.setting} />
+          <Owner state={th.state} onSet={th.set} busy={th.setting} />
         ) : null}
         {th.hiddenFromMe ? (
           <div className="wl-rp-note is-away">
@@ -897,46 +911,117 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
             <span className="wl-rp-empty-say">{canWrite ? 'be the first to reply.' : 'the first one will be here.'}</span>
           </div>
         )}
-        {!th.hiddenFromMe && me.why === 'locked' ? (
-          <div className="wl-rp-note">
-            <PixIcon name="lock" scale={2} />
-            <span>the person this letter is to shut the replies. the ones here stay.</span>
-          </div>
-        ) : null}
       </>
     )
   }
 
-  // ── the keys, by mode ──
+  // ── the tray, by mode ──
   const shutIt = () => onClose && onClose()
   const toRead = () => { keepFocus(); setMode('read'); if (said && said.tone !== 'no') setSaid(null) }
-  let keys
-  if (mode === 'write') {
-    keys = {
-      l: { label: 'send', onClick: () => send(), busy, disabled: empty || !!fault || !!said?.refused, aria: me.recipient ? 'send your reply, as the recipient' : 'send your reply' },
-      r: { label: 'back', onClick: toRead, aria: 'back to the replies, the words kept' },
-    }
-  } else if (mode === 'terms') {
-    keys = {
-      l: { label: 'agree', onClick: () => send(true), busy, aria: 'agree to the terms for replying, and send' },
-      r: { label: 'not now', onClick: () => { keepFocus(); setMode('write') }, aria: 'not now, back to the words' },
-    }
-  } else if (mode === 'school') {
-    keys = { r: { label: 'back', onClick: toRead, aria: 'back to the replies' } }
-  } else {
-    const reply = t && t.ok && !th.hiddenFromMe
-      ? (canWrite ? { label: 'reply', onClick: write, aria: me.recipient ? 'reply as the recipient' : 'reply to the letter' }
-        : me.why === 'edu' ? { label: 'reply', onClick: () => setMode('school'), aria: 'reply: confirm a school address first' } : null)
-      : t && !t.ok ? { label: 'try again', onClick: th.retry, aria: 'load the replies again' } : null
-    keys = { l: reply, r: { label: 'back', onClick: shutIt, aria: 'shut the replies' } }
-  }
+  const writing = mode === 'write'
+  const name = th.names.get(me.who) || (me.who ? creatureOf(me.who).name : '')
 
   // what stands under the field: what was caught while it is typed, or what
   // the last send said
   const line = fault
     ? <p className="wl-rp-line is-no" role="alert">{fault}</p>
     : said ? <p className={`wl-rp-line is-${said.tone}`} role={said.tone === 'no' ? 'alert' : 'status'}>{said.text}</p> : null
-  const name = th.names.get(me.who) || (me.who ? creatureOf(me.who).name : '')
+
+  let tray = null
+  if (mode === 'terms') {
+    tray = (
+      <div className="wl-tray-keys">
+        <TrayKey back onClick={() => { keepFocus(); setMode('write') }} aria="not now, back to the words">not now</TrayKey>
+        <TrayKey lit busy={busy} onClick={() => send(true)} aria="agree to the terms for replying, and send">agree and send</TrayKey>
+      </div>
+    )
+  } else if (mode === 'school') {
+    tray = (
+      <div className="wl-tray-keys">
+        <TrayKey back glyph="back" onClick={toRead} aria="back to the replies">back to the replies</TrayKey>
+      </div>
+    )
+  } else if (t && !t.ok) {
+    tray = (
+      <div className="wl-tray-note">
+        <span>the replies did not load.</span>
+        <TrayKey onClick={th.retry} aria="load the replies again">try again</TrayKey>
+      </div>
+    )
+  } else if (t && !th.hiddenFromMe && canWrite) {
+    // the field is always the field: a finger on it is the focus a phone
+    // raises its keys for, and focus is what turns reading into writing
+    tray = (
+      <div className="wl-tray-write">
+        {writing ? (
+          <div className="wl-low-as">
+            {me.recipient ? (
+              <span>as <span className="wl-rp-as-badge">the recipient</span></span>
+            ) : name ? (
+              <span>as <span className="wl-h">{name}</span></span>
+            ) : <span />}
+            <span className={`wl-low-left${left < 30 ? ' is-low' : ''}`} aria-hidden="true">{left}</span>
+          </div>
+        ) : null}
+        <div className="wl-tray-row">
+          <span className="wl-tray-me" aria-hidden="true">
+            {me.recipient ? <Face handle={letter.to} size={30} /> : me.who ? <Creature who={me.who} size={30} mono /> : null}
+          </span>
+          <div className={`wl-rp-field${fault ? ' is-caught' : ''}`}>
+            <textarea
+              ref={field} value={body} maxLength={MAX} rows={1}
+              placeholder={me.recipient ? 'say it back' : 'reply to the letter'}
+              aria-label={me.recipient ? 'your reply, as the recipient' : 'your reply'}
+              spellCheck="true" enterKeyHint="send"
+              onFocus={() => { if (mode === 'read') { setMode('write'); toEnd() } }}
+              onBlur={() => { if (!body.trim() && !said) setMode('read') }}
+              onChange={(e) => {
+                setBody(e.target.value)
+                if (mode !== 'write') setMode('write')
+                if (said && said.tone !== 'hold') setSaid(null)
+              }}
+              onKeyDown={(e) => {
+                // the letter's arrows turn the deck (Letter.jsx); in here
+                // they move the caret
+                if (e.key.startsWith('Arrow')) e.stopPropagation()
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() }
+                // Escape leaves the words, kept, and not the phone
+                if (e.key === 'Escape') {
+                  e.preventDefault(); e.stopPropagation()
+                  setMode('read')
+                  if (list.current) list.current.focus({ preventScroll: true })
+                }
+              }}
+            />
+            {phone ? <Caret of={field} /> : null}
+          </div>
+          <button
+            type="button" className="wl-tray-send" onClick={() => send()}
+            disabled={busy || empty || !!fault || !!said?.refused} aria-busy={busy || undefined}
+            aria-label={me.recipient ? 'send your reply, as the recipient' : 'send your reply'}
+          >
+            {busy ? <Wait scale={2} /> : <PixIcon name="send" scale={2} />}
+          </button>
+        </div>
+        {line}
+      </div>
+    )
+  } else if (t && !th.hiddenFromMe && me.why === 'edu') {
+    tray = (
+      <div className="wl-tray-note">
+        <PixIcon name="key" scale={2} />
+        <span>replies come from school emails, and stay anonymous.</span>
+        <TrayKey lit onClick={() => setMode('school')} aria="reply: confirm a school address first">reply</TrayKey>
+      </div>
+    )
+  } else if (t && !th.hiddenFromMe && me.why === 'locked') {
+    tray = (
+      <div className="wl-tray-note">
+        <PixIcon name="lock" scale={2} />
+        <span>the person this letter is to shut the replies. the ones here stay.</span>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -955,47 +1040,10 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
           {inside}
         </div>
         {th.note ? <p className="wl-low-said" role="status">{th.note}</p> : null}
-        {mode === 'write' ? (
-          <div className="wl-low-write">
-            <div className="wl-low-as">
-              {me.recipient ? (
-                <>
-                  <Face handle={letter.to} size={26} />
-                  <span>as <span className="wl-rp-as-badge">the recipient</span></span>
-                </>
-              ) : me.who ? (
-                <>
-                  <Creature who={me.who} size={26} mono />
-                  <span>as <span className="wl-h">{name}</span></span>
-                </>
-              ) : <span />}
-              <span className={`wl-low-left${left < 30 ? ' is-low' : ''}`} aria-hidden="true">{left}</span>
-            </div>
-            <div className={`wl-rp-field${fault ? ' is-caught' : ''}`}>
-              <textarea
-                ref={field} value={body} maxLength={MAX} rows={1}
-                placeholder={me.recipient ? 'say it back' : 'reply to the letter'}
-                aria-label={me.recipient ? 'your reply, as the recipient' : 'your reply'}
-                spellCheck="true" enterKeyHint="send"
-                onChange={(e) => { setBody(e.target.value); if (said && said.tone !== 'hold') setSaid(null) }}
-                onKeyDown={(e) => {
-                  // the letter's arrows turn the deck (Letter.jsx); in here
-                  // they move the caret
-                  if (e.key.startsWith('Arrow')) e.stopPropagation()
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send() }
-                  // Escape leaves the words and not the phone
-                  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); toRead() }
-                }}
-              />
-              {phone ? <Caret of={field} /> : null}
-            </div>
-            {line}
-          </div>
-        ) : null}
-        <div className="wl-low-foot">
-          <Key side="l" k={keys.l} />
-          <Key side="r" k={keys.r} />
-        </div>
+        {tray ? <div className={`wl-tray is-${mode}`}>{tray}</div> : null}
+        <button type="button" className="wl-low-lip" onClick={shutIt} aria-label="shut the replies">
+          <PixIcon name="up" scale={2} />
+        </button>
         {/* the LCD over all of it, as over the screen: its pixels, the
             moire a camera makes of them, the glare and the sensor's grain */}
         <span className="wl-scr-fx is-grid" aria-hidden="true" />

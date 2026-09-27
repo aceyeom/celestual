@@ -1554,7 +1554,7 @@ export default function Letter({
   const onEscape = () => {
     if (!threadRef.current) return false
     const set = liveSet()
-    const back = set && set.querySelector(':scope > .wl-low:not(.is-read) .wl-low-sk.is-r')
+    const back = set && set.querySelector(':scope > .wl-low:not(.is-read) [data-low-back]')
     if (back) { back.click(); return true }
     const a = document.activeElement
     const key = set && (!a || a === document.body) ? set.querySelector('.wl-sk.is-thread') : null

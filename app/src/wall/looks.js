@@ -982,6 +982,8 @@ export const PIX = {
   find: ['..XXX....', '.X...X...', 'X.....X..', 'X.....X..', 'X.....X..', '.X...X...', '..XXXXX..', '......XX.', '.......XX'],
   back: ['...XX', '..XX.', '.XX..', 'XX...', '.XX..', '..XX.', '...XX'],
   down: ['XX...XX', '.XX.XX.', '..XXX..', '...X...'],
+  // the lip at the foot of a phone slid open: fold it back up
+  up: ['...X...', '..XXX..', '.XX.XX.', 'XX...XX'],
   close: ['X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X...X.', 'X.....X'],
   key: ['.XXX.', 'X...X', 'X...X', 'X...X', '.XXX.', '..X..', '..XX.', '..X..', '..XX.'],
   flag: ['XXXXXX', 'X....X', 'X...X.', 'X....X', 'XXXXXX', 'X.....', 'X.....', 'X.....'],
