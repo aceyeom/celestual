@@ -211,69 +211,87 @@ function Aerial({ state = 'seek', land = false }) {
 }
 const aerialOf = (p) => (p.state === 'mutual' ? 'full' : p.state === 'lapsed' ? 'none' : keptAhead(p) ? 'kept' : 'seek')
 
-// ── the reveal ──────────────────────────────────────────────────────────────
-// A small screen lit in rose over the frame: the aerial, the day of the next
-// reveal stamped as a letter's day is, and the battery, which is the week
-// draining (four bars at the start of one, and blinking empty in the last
-// hours); under them "the reveal" and when it is, and on the glass the time
-// left, counted in the phone's own figures. One soft key, `info`, opens how
-// it works. At its moment the list is read again, since the server opens the
-// pairs on the first read after it, and the screen tells the night.
+// ── the week ────────────────────────────────────────────────────────────────
+// The countdown to the night, drawn inside the frame and in its language
+// rather than stood over it: a band under the title strip, on the panel's
+// own pixel grid, with the one colour the frame carries, rose, as a faint
+// backlight at its end. A line saying what it is counting to and when, the
+// time left in the face's large figures, and the week itself as seven cells,
+// Sunday to Saturday, the way the frame already draws its slots: the days
+// gone filled, today's lit rose and breathing, and Saturday's cell ringed,
+// since it is the night. A rose screen stood here for an hour, a letter's
+// phone laid on top of the account, and the owner read it as something
+// slapped on; the frame is the one thing on the sheet that is sealed, and
+// the week belongs inside it.
 //
+// It re-reads the list once the night it is counting to has come (the
+// server opens the pairs on the first read after it), from the second's own
+// tick, so the night it was waiting for is never dropped for the next one.
 // After a reveal this person had a note in, and until they have seen it
-// (`fresh`, read once as the sheet opens), it wakes on the night instead:
-// "the reveal is in", and what it said.
-const ROSE = { tint: 'rose' }
+// (`fresh`), the band tells the night instead: "the reveal is in", what it
+// said, and all seven cells lit.
 const WEEK = 7 * DAY
 // how close to a reveal a note's end or a mutual's telling is counted as that reveal's
 const NEAR_MS = 2 * 3600000
-function RevealClock({ fresh, told, onInfo, onNight }) {
+const DAYS = ['s', 'm', 't', 'w', 't', 'f', 's']
+function RevealWeek({ fresh, told, onNight }) {
   const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [])
-  const next = nextReveal(now)
+  const waiting = useRef(nextReveal())
   const night = useRef(onNight)
   night.current = onNight
   useEffect(() => {
-    const t = setTimeout(() => night.current && night.current(), Math.max(0, next - Date.now()) + 2500)
-    return () => clearTimeout(t)
-  }, [next])
-  const frac = (next - now) / WEEK
-  const bat = frac < 0.06 ? 0 : Math.min(4, Math.ceil(frac * 4))
-  const c = countdown(next, now)
+    const t = setInterval(() => {
+      const at = Date.now()
+      setNow(at)
+      // the night being counted to has come: read the list again, a beat
+      // after it so the server has opened the pairs, and count to the next
+      if (at >= waiting.current + 2500) {
+        waiting.current = nextReveal(at)
+        if (night.current) night.current()
+      }
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+  const next = nextReveal(now)
+  const last = lastReveal(now)
+  // which of the week's seven days this is, counted back from the night:
+  // the week runs from one Saturday's reveal to the next
+  const day = Math.max(0, Math.min(6, 6 - Math.floor((next - now) / DAY)))
   const tell = fresh && told.total > 0
-  let big
-  let say
-  if (tell) {
-    big = told.mutual ? (told.mutual === 1 ? 'it’s mutual' : `${told.mutual} mutual`) : 'not this time'
-    say = told.mutual
-      ? told.missed ? `and ${told.missed} not this time` : 'saturday’s reveal'
-      : 'nobody was told a thing. send it again, or let it go.'
-  } else {
-    big = c.text
-    say = 'till everyone finds out'
-  }
+  const c = countdown(next, now)
   const words = c.d ? `${c.d} ${c.d === 1 ? 'day' : 'days'} and ${c.h} ${c.h === 1 ? 'hour' : 'hours'}` : `${c.h} hours and ${c.m} minutes`
   return (
-    <div className={`wl-clock${tell ? ' is-told' : ''}`}>
-      <Screen
-        look={ROSE} seed="the-reveal" live className="wl-clock-scr" state={tell ? 'waking' : ''}
-        top={{
-          name: tell ? 'the reveal is in' : 'the reveal', handle: tell ? '' : 'sat 9pm',
-          stamp: revealStamp(tell ? lastReveal(now) : next), bat,
-        }}
-        keys={{ l: { label: 'info', onClick: onInfo, aria: 'how the weekly reveal works' } }}
-      >
-        <div className="wl-clock-in">
-          <b className="wl-clock-big" aria-hidden={tell ? undefined : 'true'}>{big}</b>
-          <span className="wl-clock-say">{say}</span>
-          {tell ? null : (
-            <span className="wl-sr">the reveal is saturday at 9pm california time, in {words}.</span>
-          )}
-        </div>
-      </Screen>
+    <div className={`wl-week${tell ? ' is-told' : ''}`}>
+      <div className="wl-week-row">
+        <span className="wl-week-lab">{tell ? 'the reveal is in' : 'the reveal'}</span>
+        <span className="wl-week-when">{tell ? `saturday ${revealStamp(last)}` : 'saturday · 9pm pt'}</span>
+      </div>
+      {tell ? (
+        <p className="wl-week-told">
+          <b>{told.mutual ? (told.mutual === 1 ? 'it’s mutual.' : `${told.mutual} are mutual.`) : 'not this time.'}</b>
+          <span>
+            {told.mutual
+              ? told.missed ? ` and ${told.missed} not this time.` : ' open it below.'
+              : ' nobody was told a thing. send it again, or let it go.'}
+          </span>
+        </p>
+      ) : (
+        <p className="wl-week-left">
+          <span aria-hidden="true">
+            {c.d ? <><b>{c.d}</b><i>d</i> </> : null}
+            <b>{String(c.h).padStart(2, '0')}</b><i>:</i><b>{String(c.m).padStart(2, '0')}</b><i>:</i><b>{String(c.s).padStart(2, '0')}</b>
+          </span>
+          <span className="wl-sr">the reveal is saturday at 9pm pacific time, in {words}.</span>
+        </p>
+      )}
+      <ol className="wl-week-days" aria-hidden="true">
+        {DAYS.map((d, i) => (
+          <li key={i} className={tell || i < day ? 'is-gone' : i === day ? 'is-now' : ''}>
+            <i />
+            <span>{d}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }
@@ -907,15 +925,19 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   )
   const notes = (
     <>
-      {list.error ? null : <RevealClock fresh={fresh} told={told} onInfo={() => go('join')} onNight={() => { forgetPings(); setRev((x) => x + 1) }} />}
       <div className="wl-vault" aria-labelledby="wl-vault-h">
         <div className="wl-vault-bar">
           <span className="wl-vault-title" id="wl-vault-h">
             <Seal />
             <span>sealed until saturday</span>
           </span>
-          {settled ? <Slots used={standing.length} cap={slotCap()} /> : null}
+          <button type="button" className="wl-vault-info" onClick={() => go('join')} aria-label="how the weekly reveal works">
+            <span aria-hidden="true">i</span>
+          </button>
         </div>
+        {list.error ? null : (
+          <RevealWeek fresh={fresh} told={told} onNight={() => { forgetPings(); setRev((x) => x + 1) }} />
+        )}
         <div className="wl-vault-body">
           {list.error === 'none' ? ask('confirm your Instagram to see the notes you sent privately.')
             : list.error === 'unverified' ? ask('confirm your Instagram again to see them.')
@@ -957,6 +979,11 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
             </div>
           ) : null}
         </div>
+        {settled ? (
+          <div className="wl-vault-foot">
+            <Slots used={standing.length} cap={slotCap()} />
+          </div>
+        ) : null}
       </div>
     </>
   )
