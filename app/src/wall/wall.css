@@ -2419,16 +2419,18 @@ a.wl-lq { text-decoration: none; }
    height, so the keys are never below the fold. `--scene-w` is the one
    number the sheet, the stage, the deck and the nudge's note are all sized
    from, and on a phone it leaves `--gutter` of glass either side for the
-   letters beside it (THE LETTER, below). */
-.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 190px) / 1.22)); }
+   letters beside it (THE LETTER, below). The height it is sized off keeps
+   forty pixels more than it did for the chin under every screen, the lip
+   the thread slides out from (Letter.jsx `Handset`). */
+.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 230px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
   /* a letter with no nudge under it has no foot to leave room for */
-  .wl-sheet-wrap.is-letter:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 120px) / 1.22)); }
+  .wl-sheet-wrap.is-letter:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 160px) / 1.22)); }
 }
 /* a letter reached from a link gives the line to the wall its row */
-.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 236px) / 1.22)); }
+.wl-sheet-wrap.is-letter.is-cold { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 276px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
-  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 166px) / 1.22)); }
+  .wl-sheet-wrap.is-letter.is-cold:not(:has(.wl-signnote-fold)) { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 206px) / 1.22)); }
 }
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
@@ -2658,7 +2660,9 @@ a.wl-lq { text-decoration: none; }
    the middle it stands, all written by the gesture over these rests
    (Letter.jsx `place`). The gap, the dim and the size are read back by that
    gesture, so they stay plain numbers here and never a calc. `pan-y` hands
-   a vertical drag to the sheet, so a long letter can still be scrolled.
+   a vertical drag on the glass round the card to the browser; on the card
+   itself a vertical drag is the phone's own, which slides it open on its
+   thread (the slider, below).
 
    The GLASS is the only clip (`.wl-sheet-wrap.is-letter`): a neighbour is
    cut by the window's edge and by nothing in the room. */
@@ -2707,18 +2711,77 @@ a.wl-lq { text-decoration: none; }
    the glass, and carried in with the strip (Letter.jsx `ahead`); never seen
    standing still where it is drawn */
 .wl-letter-slot[data-side='far'] { opacity: 0; }
-/* ── what a print asleep costs ──
-   A print is pulled through its press (screen.jsx `Press`, an SVG filter)
-   over a screen turned in depth, and a press over a screen in depth is drawn
-   again on every frame the page draws: three of them standing in a wide room
-   were most of every frame. So a print asleep beside the card is turned in
-   its own plane only, and stays so all the way across while the strip
-   moves: it takes its depth back once it has landed as the card, when the
-   strip is still. It used to take it back the moment the strip moved its
-   way, which was the screen drawn again in depth under the hand, and then
-   through the press on every frame of the drag */
-.wl-letter-slot .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
-  transform: rotate(var(--q-rz, -0.7deg));
+/* ── one phone, one outline ──
+   Every screen on the strip is the same rectangle, whatever its letter: the
+   proportion is the phones' middle one here (1.16, where the quirks run from
+   1.12 to 1.2), so the card and both neighbours stand at one height, their
+   key bands and chins in a line across the gap while a hand moves them, and
+   the strip never bobs as it turns. Each still lies on the table at its own
+   angle: the photograph's lie (`--q-rz`) is kept, and turns the whole phone
+   as one body (`.wl-set`, Letter.jsx `Handset`), the chin and the thread
+   with it. The camera's depth (`--q-rx`, `--q-ry`) is dropped here, since a
+   screen turned in depth reads as a card turning while the strip slides it
+   sideways, two neighbours turned opposite ways zigzag across the glass, and
+   the thread's words and caret would be read and typed on a keystone. What
+   makes a letter its own phone is painted and all of it stays: the corner,
+   the hot spot of its backlight, its pitch and moire, its dust, scratch and
+   dead pixel, its glare, a print's grain and slip. The small screens on the
+   wall keep their depth; this is the letter's sheet.
+
+   It is also what a print asleep used to cost, gone. A print is pulled
+   through its press (screen.jsx `Press`, an SVG filter), a press over a
+   screen in depth is drawn again on every frame the page draws, and a print
+   beside the card was turned in its own plane only for that reason. No
+   screen on the strip is in depth now, card or neighbour, lit or printed.
+   The screen's foot is square, where the chin is fixed to it. */
+.wl-letter-track .wl-scr {
+  aspect-ratio: 1 / 1.16;
+  transform: none;
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+}
+/* ── the slider ──
+   Letter.jsx, the slider. The phone at rest, as the stylesheet draws it:
+   shut, lying at its angle about its own middle; open, square to the eye,
+   its upper half risen to stand under the close mark (`--o-dy`, and in a
+   wide room shown smaller about its top, `--o-s`), and its thread out from
+   under the chin (replies.css `.wl-slide`). Every movement between the two
+   is written by Letter.jsx on one length and one curve, and handed back to
+   these rests. While a field in the thread has a phone's keys, the open
+   phone rises by what they cover (`--o-kb`), with the keyboard. */
+.wl-set { position: relative; transform: rotate(var(--q-rz, 0deg)); }
+.wl-set-up { position: relative; z-index: 1; transform-origin: 50% 0; }
+/* a hand on the card's upper half takes it up and down as well as
+   sideways (Letter.jsx, the swipe), so the browser is given none of it; the
+   thread itself scrolls as a list does (replies.css) */
+.wl-letter-card .wl-set.has-thread > .wl-set-up { touch-action: none; }
+.wl-letter-card .wl-set { transition: translate 280ms cubic-bezier(0.32, 0.72, 0, 1); }
+.wl-letter.is-thread .wl-letter-card .wl-set { transform: none; translate: 0 calc(-1 * var(--o-kb, 0px)); }
+.wl-letter.is-thread .wl-letter-card .wl-set-up { transform: translate3d(0, var(--o-dy, 0px), 0) scale(var(--o-s, 1)); }
+/* the light the screen throws goes up with it */
+.wl-letter.is-thread > .wl-letter-light { transform: translate3d(0, calc(var(--o-dy, 0px) * 0.5), 0); }
+/* while it is open the phone is the only thing on the table: the letters
+   beside it dark, the turn keys gone, and the foot under the card faded */
+.wl-letter.is-thread .wl-letter-slot { opacity: 0; }
+.wl-letter.is-thread .wl-turn { visibility: hidden; pointer-events: none; }
+.wl-letter.is-thread > .wl-foot { opacity: 0; pointer-events: none; }
+/* a press on the black round the open phone shuts it (Letter.jsx `shade`),
+   under the sheet and over the room's own way out */
+.wl-sheet-wrap.is-letter .wl-sheet { z-index: 1; }
+.wl-low-room {
+  position: absolute; inset: 0; z-index: 0;
+  margin: 0; padding: 0; border: 0; background: none;
+  -webkit-tap-highlight-color: transparent; cursor: default;
+}
+/* and the black behind the close mark stands over the phone, for a short
+   window or a keyboard that has pushed the letter's top up under it */
+.wl-sheet-wrap.is-letter:has(.wl-letter.is-thread)::after {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 2;
+  height: calc(60px + env(safe-area-inset-top, 0px));
+  background: linear-gradient(180deg, #000 0%, #000 50%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+@media (min-width: 900px) {
+  .wl-sheet-wrap.is-letter:has(.wl-letter.is-thread)::after { height: 36px; }
 }
 /* they come up out of the dark once the card has woken, the way the eye
    finds the rest of a dark room after the one light in it. One that comes
@@ -2777,7 +2840,11 @@ a.wl-lq { text-decoration: none; }
   .wl-letter-stage.can-turn { -webkit-user-select: none; user-select: none; }
   .wl-letter-stage.can-turn .wl-letter-card,
   .wl-letter-stage.can-turn .wl-letter-card * { cursor: grab; }
-  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li) { cursor: pointer; }
+  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li, .wl-chin:is(button), .wl-chin:is(button) *) { cursor: pointer; }
+  /* the thread is read and typed in, and is not picked up: it keeps the
+     page's own hand, and its words can be selected */
+  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-low, .wl-low *) { cursor: auto; -webkit-user-select: text; user-select: text; }
+  .wl-letter-stage.can-turn .wl-letter-card .wl-low :is(button, button *, a, a *) { cursor: pointer; }
   .wl-letter-stage[data-grab], .wl-letter-stage[data-grab] * { cursor: grabbing !important; }
 }
 /* asked for less movement: the neighbours are simply there, and one about
