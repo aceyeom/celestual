@@ -181,8 +181,9 @@ to rather than guessing at one.
 ## 9. Enforcement
 
 `scripts/voice-lint.mjs` scans the three surfaces that write their copy inline
-— `app/src/wall/`, `app/src/wall/screens/`, `app/src/main/` and
-`app/src/admin/` — and the static pages under `app/public/`. It blanks comments
+(`app/src/wall/`, `app/src/wall/screens/`, `app/src/main/` and
+`app/src/admin/`), the static pages under `app/public/`, and the words of every
+mail (`supabase/functions/_shared/mail.ts` and `mails.ts`). It blanks comments
 first, so a comment explaining a rule cannot trip it. It is a tripwire, not a
 critic.
 

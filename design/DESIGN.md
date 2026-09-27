@@ -473,6 +473,29 @@ that belonged to neither of them.
 `design/components.html` draws the phone under its own heading, beside the
 system it remaps.
 
+### 2.7 The phone, sent out
+
+What leaves the product is the phone too: every mail, the card a link unfurls
+into, and the posts on Instagram. Each is a photograph of the intro's phone
+(`quirks('intro')`), held square, lit in the black room, and none of it is drawn
+by hand: `scripts/darkroom.mjs` renders the real `Screen` and `PixelStory`
+through the app's own Vite and photographs them, so a screen that changes in
+the product changes in every picture the next time they are made.
+
+| Where | What |
+| --- | --- |
+| a mail (`supabase/functions/_shared/mail.ts`) | the night screen with the mark standing at the top of its glass and one line typed under it with the phone's cursor, where the mutual's says "it's mutual." (`tap to sign in.`, `tap to confirm.`, `a letter to you.`, `still feel it?`, `your code.`); for the mutual, that screen itself, rose, the mark alive. Under the phone the sentences, in the mail's own Helvetica and centred on its axis, one lit key as wide as the phone, the bezel key beside it when a mail offers a second thing, and the lockup signing the foot over the colophon |
+| the card (`app/public/og.png`) | the frame the intro ends on, the mark on the rose letter, with the lockup beside it |
+| Instagram (`design/instagram/`) | the same frame, larger, with the lockup signed under it as the shared picture is: a post and a story |
+
+A mail client runs no stylesheet and loads no web font, so everything in a mail
+that is the phone is a picture (`scripts/export-mail.mjs`): the screens are
+animated GIFs whose first frame is the whole picture, since Outlook shows no
+other, and the cursor blinks on the phone's beat and the light goes round the
+mutual's ring on the rest; the keys and the lockup are PNGs. Each picture's
+words are its alt text, and every sentence is text, so a mail with its
+pictures blocked still says all of it.
+
 ---
 
 ## 3. The mark
@@ -1263,6 +1286,10 @@ every route shoots an empty wall reading `not connected here`.
 | `scripts/export-liquid.mjs` | writes `app/public/liquid-mark.png`, the shader's mask, from the same geometry |
 | `scripts/fetch-faces.mjs` | writes `app/public/fonts/` |
 | `scripts/shots.mjs` | the screenshot loop |
+| `scripts/darkroom.mjs` | photographs the real screen for everything sent out of the product (2.7) |
+| `scripts/export-mail.mjs` | writes `app/public/mail/`, the mails' screens, keys and lockup |
+| `scripts/export-og.mjs` | writes `app/public/og.png` and `design/instagram/` |
+| `scripts/mail-preview.mjs` | the screenshot loop, for every mail |
 
 ### The one that is not here
 
