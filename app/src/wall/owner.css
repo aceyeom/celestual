@@ -103,7 +103,7 @@
   font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
 }
 
-/* ── your @, on the person's page ─────────────────────────────────────────── */
+/* ── your @, on the settings page of the person's sheet (profile.css) ───── */
 .wl-owner-at { display: flex; flex-direction: column; }
 .wl-owner-me { display: flex; align-items: center; gap: 12px; padding-top: 10px; }
 .wl-owner-alerts { display: flex; flex-direction: column; gap: 0; padding-top: 10px; }
