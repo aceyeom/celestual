@@ -36,6 +36,68 @@ tier has no point in time recovery.
 
 ---
 
+## Pings by the week: the deploy (migration 0071)
+
+The owner, 27 September: one free ping a week, and more for $2.99 each, as
+many as a person chooses (docs/PINGS-BY-THE-WEEK.md is the contract,
+docs/STRIPE-SETUP.md the full runbook). One migration, two functions, a
+Stripe product and its secrets, then the wall. It needs 0069 applied first.
+The database goes first: a function before it cannot begin a checkout (it
+answers `stripe`, and nothing is charged), and a wall before it never sees
+`no_pings`.
+
+1. [ ] **Apply `0071_pings_by_the_week.sql`.** Re-runnable. From this moment
+       the standing cap of two is gone: everybody has one free ping for the
+       reveal a note sent now runs to, a second note that week answers
+       `no_pings` until pings are bought, and ten is the most in a reveal.
+       Keeping a note for next week spends a ping; letting one go gives its
+       ping back. Notes already out hold no ping and are left alone. Slots
+       bought under 0021 become pings on hand, once. The wall before step 7
+       still works against it (it reads `slots.cap` as before), but a
+       refusal it does not know (`no_pings`, `week_full`) falls to its
+       general line that the note did not go, and it offers nothing to buy,
+       so step 7 should follow soon.
+2. [ ] **Create the product in Stripe**, test mode first: `celestual · pings`,
+       $2.99 USD, one time (STRIPE-SETUP.md step 2). Copy the `price_…` id.
+3. [ ] **Set the secrets** (Supabase, Edge Functions, Secrets):
+       `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PING` (the id from step 2; without
+       it `STRIPE_PRICE_SLOT` is read, the same product), and
+       `CELESTUAL_SITE_URL=https://celestual.us`. Leave
+       `STRIPE_PRICE_STEADY` unset: the plan is not offered.
+4. [ ] **`supabase functions deploy celestual-stripe`**: `kind: 'pings'` and
+       a `quantity` from one to ten, the line item's quantity fixed to it,
+       and the return on `/paid?session=` (never `?s=`, the flyer scan).
+5. [ ] **`supabase functions deploy celestual-stripe-webhook --no-verify-jwt`**:
+       a refund passes the charge's `amount_refunded`, so a partial refund
+       takes back only the pings it covers.
+6. [ ] **Create the webhook endpoint** in Stripe at
+       `https://YOUR-PROJECT-REF.supabase.co/functions/v1/celestual-stripe-webhook`
+       with `checkout.session.completed`,
+       `checkout.session.async_payment_succeeded`, `charge.refunded` and
+       `charge.dispute.closed`; set its `whsec_…` as `STRIPE_WEBHOOK_SECRET`
+       and deploy the webhook again (step 5) so it reads it.
+7. [ ] **Ship the front end**: the composer's `your free ping this week`, the
+       paywall (`screens/Pings.jsx`), `add more pings` on the private notes
+       tab, and `/paid`. Check the in-app privacy screen and `/terms` say
+       what is free and what is bought now, since both used to promise that
+       renewing (keeping a note) is free forever.
+8. [ ] **Go live** as STRIPE-SETUP.md step 8 says: the live product, the live
+       webhook and its secret, the live key, both functions deployed again,
+       and one real ping bought and refunded.
+
+Check: from one account send two notes in a week. The first goes; the second
+opens the paywall. Buy three in test mode (`4242 4242 4242 4242`): `/paid`
+says three landed and the note goes. In a SQL editor:
+
+```sql
+select handle, ping_credits from celestual_entitlements where handle = 'yourhandle';   -- 2
+select kind, reveal_at from celestual_ping_spends where handle = 'yourhandle';        -- free, paid
+select kind, quantity, status from celestual_purchases order by created_at desc limit 1; -- pings, 3, paid
+```
+
+Refund $2.99 of it in Stripe: `ping_credits` drops to 1 and the purchase
+still reads `paid`, with `refunded_quantity` 1.
+
 ## The weekly reveal: the deploy (migration 0069)
 
 The owner, 27 September: private notes expire every week, on Saturday night,

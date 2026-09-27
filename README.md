@@ -86,7 +86,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0070, in order. 0029 onward is the rebuild; 0038 is
+  migrations/       0001 to 0071, in order. 0029 onward is the rebuild; 0038 is
                     the audit; 0057 is the wall at the root and the login;
                     0058 gives every letter a colour of the screens; 0063 is
                     the one wall; 0065 is the login by our own mailed link,
@@ -96,7 +96,9 @@ supabase/
                     anybody; 0069 is the weekly reveal, private notes that
                     run to Saturday at 9pm Pacific and pairs sealed until
                     then; 0070 makes the link enough, with no number, by
-                    signing in only the browser that opens it
+                    signing in only the browser that opens it; 0071 is
+                    pings by the week, one free ping for every reveal and
+                    more bought at $2.99 each, ten a reveal at most
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -wall-reply, -edu-verify, -ig-webhook,
                     -manychat, -mutual-dm, -notify, -remind, -stripe,
@@ -185,8 +187,9 @@ order to apply what is left.
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/MANYCHAT-SETUP.md](./docs/MANYCHAT-SETUP.md) | The DM relay |
 | [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | Telling somebody on Instagram that it is mutual, inside Meta's rules |
-| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | Wiring Stripe live, and turning it back off. Dormant |
-| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately |
+| [docs/PINGS-BY-THE-WEEK.md](./docs/PINGS-BY-THE-WEEK.md) | One free ping a week and more at $2.99 each: the contract the wall, the functions and the database (0071) agree on |
+| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | Wiring Stripe live for celestual · pings, refunds, and turning it back off |
+| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: since 27 September, one free ping a week and more bought; before it, nothing |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md) | The product direction |
 | [docs/WALL-FEATURES.md](./docs/WALL-FEATURES.md) | What goes on the wall and what does not: the nine gates, the attacks by name, the proposals weighed, and what the wall needs next |

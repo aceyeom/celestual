@@ -243,6 +243,40 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0071_pings_by_the_week.sql`: **one free ping a week, and more
+  for $2.99 each** (the owner's ruling of 27 September; the contract is
+  [../docs/PINGS-BY-THE-WEEK.md](../docs/PINGS-BY-THE-WEEK.md)). The standing
+  cap of two is gone. `celestual_ping_spends` is the ledger: one row per
+  (from handle, pair, reveal) and whether it was the week's free ping or a
+  bought one, RLS on and every grant revoked. `celestual_entitlements` gains
+  `ping_credits` (bought pings on hand, summed across the identity group; the
+  slots bought under 0021 are folded in once), and `celestual_purchases`
+  gains `quantity` (one to ten) and `refunded_quantity`, and takes the kind
+  `'pings'`. The browser's new read is `celestual_ping_allowance(handle,
+  proof)`, proof gated like the list: `{ ok, allowance: { reveal_at, free,
+  free_left, credits, sent, ceiling, price_cents, next: { reveal_at,
+  free_left, sent } } }`, and the same `allowance` rides on
+  `celestual_my_pings`, `celestual_submit`, `celestual_renew` and
+  `celestual_withdraw`. `celestual_submit` spends a ping for a note that is
+  new or was not this time (free first, then bought, ten a reveal at most),
+  refusing with `no_pings` or `week_full` and writing nothing; changing the
+  words spends nothing; `slots` stays, drawn from the allowance. The thirty
+  day cadence cap is replaced by thirty new pairs a rolling week.
+  `celestual_renew` spends a ping for the reveal a note is kept to;
+  `celestual_withdraw` gives back every ping a note holds for a reveal still
+  to come; `celestual_reveal_due` gives back what a note made mutual held for
+  a reveal after its night; the broom takes the ledger a fortnight after its
+  reveal; erasure, the opt out and the desk's delete take it with the person
+  (`celestual_billing_forget`), giving back other people's pings on notes to
+  them. `celestual_billing_begin` takes `p_quantity` and always the proof;
+  `_complete` adds the quantity once; `_revoke` takes back the pings the
+  refunded money covers (partial refunds too, idempotent across them).
+  Internal, never granted: `celestual_ping_spend`, `_refund`, `_forget`,
+  `_allowance_for`, `_slots`, `_credits`, `_free`, `_ceiling`,
+  `_price_cents`. Re-runnable. **Tested by
+  `scripts/sql/test-pings-by-the-week.sql`**, and `test-weekly-reveal.sql`
+  sends on the new rule.
+
 - `migrations/0070_the_link_is_enough.sql`: **the link is enough.** A mailed
   link confirms at once for the browser that opened it, with no number: a
   login signs that browser in, a campus link proves it, an alerts link
@@ -797,8 +831,8 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a name and `look` for the paper it chose (0055, cleaned here to the three slugs the schema admits), through the eleven argument write, stepping down to the ten argument one and, for a handle letter, to the eight argument one against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeployed 20 September 2026 as version 11, carrying 0053 to 0055; redeploy after pulling this **Since 0063 a request with `v: 2` is the one wall's** (docs/ONE-WALL.md): an @-note goes up as before and is read after, and the schema decides who may write it (`edu`, `campus`) and which school it carries; a name note is counted (five a device, twenty an address a day), read by the classifier BEFORE it is written (a pass writes it live, a review or no key pending for the desk, a reject rejected), and written with the author a bare row for a new device; the dear line goes through layer 1 as the words do; the same (device, nonce) answers the first send. **Since 0066 an @-note says which kind it is, `proof: 'edu'` or `'none'`**: `'edu'`, or no `proof` at all as a tab from before sends, is the Berkeley student's note above; `'none'` is anybody's, treated as a name note is (counted by the same throttle, read before it is written, a pass live, a review or no key pending, a reject rejected), carrying no school and never the mark, and written through the thirteen argument `wall_write`, stepping down to the twelve argument one only when the database has no such function (`PGRST202`), where an open @-note is answered `edu`. Deployed with JWT verification on (config.toml) | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
 | `functions/celestual-wall-reply` | **the one way a reply goes under a letter** (0068). `{ token, letter, body, nonce, accept? }`: the same (device, nonce) answers the first send's answer; then `wall_reply_can` (a verified school address or the letter's recipient, the thread not shut, the throttle), the terms (`terms` unless accepted before or `accept` is true, and then kept at once through `wall_reply_agree`), layer 1 (wall-moderate's list, copied, and the rule that a reply names nobody else: no @, no word shaped like a handle, no full name), then one classifier call before anything is written, with wall-moderate's model, call and category schema and a prompt written for replies that adds `third` and `pile` (a `pile` only holds). A pass writes it `live`; a review, no key or no answer `held` for the desk, shown to its writer alone; a reject `rejected`, kept for the desk. The write is `wall_reply_write`, the service role's alone. Answers `{ ok, id, status, recipient, say?, reasons?, replay? }` or errors `edu`, `locked`, `closed`, `gone`, `terms`, `throttle`, `caught`, `empty`, `long`, `nonce`, `no_session`, `write`. Deployed with JWT verification on (`config.toml` `[functions.celestual-wall-reply] verify_jwt = true`), called by the browser through `supabase.functions.invoke` with the anon key, as wall-moderate is. **Contract: [../docs/ONE-WALL.md](../docs/ONE-WALL.md)** | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`), the same two celestual-wall-moderate reads. Without the key every reply is held for the desk |
 | `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log; and since 0068 the replies, `desk_replies` and `desk_reply_set`) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here. One action is not an RPC: `desk_canary_run` asks `celestual-resolve` for the daily check now, with the service role key, and logs it as `canary run` (0060) | `CELESTUAL_ADMIN_PASSWORD` |
-| `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
-| `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| `functions/celestual-stripe` | the paywall's front half (0071): `checkout` (`kind: 'pings'`, the default, and `quantity`, a whole number from 1 to 10, else `quantity`) proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session for that many at `STRIPE_PRICE_PING`, carrying only an opaque purchase id, the kind and the quantity, returning to `/paid?session={CHECKOUT_SESSION_ID}` or `/paid?c=1`; `confirm` re-reads a session for a returning browser and answers `{ ok, paid, applied, kind, quantity, credits }`. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PING` (falls back to `STRIPE_PRICE_SLOT`), `STRIPE_PRICE_STEADY` (optional, never offered), `CELESTUAL_SITE_URL` |
+| `functions/celestual-stripe-webhook` | **the only thing that grants bought pings.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke` (a refund passes the charge's `amount_refunded`, so a partial refund takes back only the pings it covers). Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 
@@ -841,6 +875,10 @@ the app uses Supabase Auth for Google alone. See
   auto-pruned).
 - **`celestual_placements`** — rolling placement log: the 6-per-30-days
   cadence cap + the week-one campus aggregates (pruned past ~40 days).
+- **`celestual_ping_spends`** (0071): the week's ledger, one row per (from
+  handle, pair, reveal) and whether the ping was the free one or bought. The
+  allowance is read from it; the broom takes a row a fortnight after its
+  reveal.
 - **`celestual_suppressions`** — the opt-out registry, **hashed**.
 - **`celestual_members`** — who is reachable (has ever verified, by DM or by
   campus preregistration); powers Loop A's one honest bit.
@@ -881,7 +919,9 @@ back anonymous by design) · `celestual_slots_for` (owner's slot snapshot) ·
 `celestual_bind_recovery` (bind handle⇄email under a live proof, for DM-free
 re-login) · `celestual_norm` · `celestual_session_handle_proof` (0065: the DM
 proof, minted from a signed in session for the verified @ its person already
-holds, and never for another).
+holds, and never for another) · `celestual_ping_allowance` (0071, proof
+gated: this reveal's free ping, bought pings on hand, what is sent, the
+ceiling, the price, and the next reveal's).
 
 **Operator-only (service role):** `celestual_complete_ig_verification` (the
 webhook's completion path — adopts the DMing account as the identity),

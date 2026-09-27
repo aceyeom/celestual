@@ -1,38 +1,51 @@
-// CELESTUAL — celestual-stripe edge function.
+// CELESTUAL: celestual-stripe edge function.
 //
-// The front door of the one thing celestual sells (docs/PRICING-REVENUE.md §3,
-// migration 0021): a third standing ping, bought once, or the 'steady' plan.
-// Two actions on one endpoint, and no card ever touches us — Stripe hosts the
-// payment page and we only ever hold a session id.
+// The front door of the one thing celestual sells (docs/PINGS-BY-THE-WEEK.md,
+// migration 0071): pings, $2.99 each, one to ten at a time. The old kinds
+// ('slot', one ping; 'steady', the plan) are still taken so a tab on an older
+// build does not break, and neither is offered by the wall. Two actions on one
+// endpoint, and no card ever touches us: Stripe hosts the payment page and we
+// only ever hold a session id.
 //
-//   { action:'checkout', handle, proof, kind:'slot'|'steady' }
-//        → celestual_billing_begin proves the @ is really theirs (the SAME DM
-//          proof placing a ping needs), writes a 'pending' purchase, and we open
-//          a Stripe Checkout Session carrying that purchase id.
-//          Response: { ok:true, url } | { ok:false, error }
+//   { action:'checkout', handle, proof, kind:'pings' (the default), quantity }
+//        celestual_billing_begin proves the @ is really theirs (the SAME DM
+//        proof placing a ping needs), writes a 'pending' purchase for that
+//        many, and we open a Stripe Checkout Session carrying that purchase id,
+//        the quantity fixed on Stripe's page so the row and the charge agree.
+//        `quantity` is a whole number from 1 to 10 for 'pings' (missing is 1);
+//        anything else is refused with 'quantity' before Stripe is asked.
+//        Response: { ok:true, url } | { ok:false, error }
 //   { action:'confirm', session_id }
-//        → the returning browser's own nudge. The webhook is the source of truth,
-//          but it can land a second or two after the redirect home, and a person
-//          who just paid should not watch a stale meter. Reads the session
-//          straight from Stripe and applies the SAME idempotent grant; if the
-//          webhook already did it, this reports applied:false and changes nothing.
-//          Response: { ok:true, paid, applied, kind, cap } | { ok:false, error }
+//        The returning browser's own nudge. The webhook is the source of truth,
+//        but it can land a second or two after the redirect home, and a person
+//        who just paid should not watch a stale count. Reads the session
+//        straight from Stripe and applies the SAME idempotent grant; if the
+//        webhook already did it, this reports applied:false and changes nothing.
+//        Response: { ok:true, paid, applied, kind, quantity, credits }
+//                | { ok:false, error }
+//        `credits` is the pings on hand now, across the buyer's linked @s.
+//
+// The buyer comes back to /paid?session={CHECKOUT_SESSION_ID}, or /paid?c=1
+// when they did not pay. Not ?s=: that is the wall's flyer scan parameter.
 //
 // Errors are stable slugs the client localizes:
-//   'handle' | 'kind' | 'unverified' | 'suppressed' | 'rate' | 'at_cap'
+//   'handle' | 'kind' | 'quantity' | 'unverified' | 'suppressed' | 'rate'
 //   | 'has_plan' | 'config' | 'stripe' | 'demo' | 'bad_input'
 //
-// WHAT STRIPE LEARNS: a purchase id (an opaque uuid) and whatever the buyer
-// types on Stripe's own page. No celestual @ is ever sent as metadata, so the
-// payment record on their side cannot be joined to a person on ours. Nothing
-// about anyone's pings exists in this file.
+// WHAT STRIPE LEARNS: a purchase id (an opaque uuid), the kind and the
+// quantity, and whatever the buyer types on Stripe's own page. No celestual @
+// is ever sent as metadata, so the payment record on their side cannot be
+// joined to a person on ours. Nothing about anyone's pings exists in this file.
 //
-// Required secrets (Supabase → Edge Functions → Secrets):
-//   STRIPE_SECRET_KEY     — sk_test_… while testing, sk_live_… in production
-//   STRIPE_PRICE_SLOT     — price id of "one more ping" ($2.99, one time)
-//   STRIPE_PRICE_STEADY   — price id of "steady" ($12.99 / month), optional:
-//                           without it the plan simply cannot be bought
-//   CELESTUAL_SITE_URL    — https://celestual.us (where Stripe sends people back)
+// Required secrets (Supabase, Edge Functions, Secrets):
+//   STRIPE_SECRET_KEY     sk_test_... while testing, sk_live_... in production
+//   STRIPE_PRICE_PING     price id of "celestual · pings" ($2.99, one time).
+//                         STRIPE_PRICE_SLOT is read when it is not set: the
+//                         same product at the same price.
+//   STRIPE_PRICE_STEADY   price id of "steady" ($12.99 / month), optional and
+//                         never offered by the wall: without it the plan
+//                         simply cannot be bought
+//   CELESTUAL_SITE_URL    https://celestual.us (where Stripe sends people back)
 // Provided automatically by the platform:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -42,7 +55,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const STRIPE_KEY = Deno.env.get('STRIPE_SECRET_KEY') ?? '';
 const PRICE_SLOT = Deno.env.get('STRIPE_PRICE_SLOT') ?? '';
+const PRICE_PING = Deno.env.get('STRIPE_PRICE_PING') || PRICE_SLOT;
 const PRICE_STEADY = Deno.env.get('STRIPE_PRICE_STEADY') ?? '';
+const MOST_PINGS = 10;
+
+// A whole number of pings from one to MOST_PINGS, or null. Missing is one.
+function quantityOf(raw: unknown): number | null {
+  if (raw === undefined || raw === null) return 1;
+  const n = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
+  if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > MOST_PINGS) return null;
+  return n;
+}
 const SITE = (Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us').replace(/\/+$/, '');
 
 // Pinned so a dashboard-side API upgrade can never change the shape we read.
@@ -136,19 +159,24 @@ Deno.serve(async (req) => {
   if (action === 'checkout') {
     const handle = String(body.handle || '');
     const proof = body.proof == null ? null : String(body.proof);
-    const kind = String(body.kind || 'slot');
-    if (kind !== 'slot' && kind !== 'steady') return json({ ok: false, error: 'kind' });
+    const kind = String(body.kind || 'pings');
+    if (kind !== 'pings' && kind !== 'slot' && kind !== 'steady') return json({ ok: false, error: 'kind' });
 
-    const price = kind === 'steady' ? PRICE_STEADY : PRICE_SLOT;
+    // Only 'pings' comes in a number; a slot is one ping and a plan is one plan.
+    const quantity = kind === 'pings' ? quantityOf(body.quantity) : 1;
+    if (quantity === null) return json({ ok: false, error: 'quantity' });
+
+    const price = kind === 'steady' ? PRICE_STEADY : kind === 'slot' ? PRICE_SLOT || PRICE_PING : PRICE_PING;
     if (!price) return json({ ok: false, error: 'config' });
 
-    // The gate: ownership, the opt-out list, the rate limit and "you already
-    // have this" all live in SQL (migration 0021) so this function holds no
-    // policy of its own.
+    // The gate: ownership, the quantity, the opt-out list, the rate limit and
+    // "you already have this" all live in SQL (migrations 0021 and 0071) so
+    // this function holds no policy of its own beyond refusing early.
     const { data: begun, error: beginErr } = await supabase.rpc('celestual_billing_begin', {
       p_handle: handle,
       p_proof: proof,
       p_kind: kind,
+      p_quantity: quantity,
     });
     if (beginErr) {
       console.error('billing_begin failed', beginErr.message);
@@ -156,19 +184,24 @@ Deno.serve(async (req) => {
     }
     if (!begun?.ok) return json({ ok: false, error: begun?.error || 'bad_input' });
     const purchaseId = String(begun.purchase_id);
+    // The row is the truth of what is being bought; Stripe charges for exactly it.
+    const lineQuantity = Number(begun.quantity) || quantity;
 
-    // Only the purchase id travels. Stripe never learns the @.
+    // Only the purchase id, the kind and the count travel. Stripe never
+    // learns the @.
     const payload: Record<string, string | number> = {
       mode: kind === 'steady' ? 'subscription' : 'payment',
       'line_items[0][price]': price,
-      'line_items[0][quantity]': 1,
+      'line_items[0][quantity]': lineQuantity,
       // The session id rides the QUERY (Stripe substitutes the template there);
-      // /paid confirms it and drops it from the address bar on arrival.
-      success_url: `${SITE}/paid?s={CHECKOUT_SESSION_ID}`,
+      // /paid confirms it and drops it from the address bar on arrival. It is
+      // `session`, not `s`, which the wall reads as a flyer scan.
+      success_url: `${SITE}/paid?session={CHECKOUT_SESSION_ID}`,
       cancel_url: `${SITE}/paid?c=1`,
       client_reference_id: purchaseId,
       'metadata[purchase_id]': purchaseId,
       'metadata[kind]': kind,
+      'metadata[quantity]': lineQuantity,
     };
     // Carry it onto the charge / subscription too, so a refund or a cancellation
     // arriving as its own event can still find its purchase.
@@ -202,7 +235,16 @@ Deno.serve(async (req) => {
     if (!purchaseId) return json({ ok: false, error: 'bad_input' });
 
     const paid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
-    if (!paid) return json({ ok: true, paid: false, applied: false });
+    if (!paid) {
+      return json({
+        ok: true,
+        paid: false,
+        applied: false,
+        kind: session.metadata?.kind ? String(session.metadata.kind) : null,
+        quantity: Number(session.metadata?.quantity) || null,
+        credits: null,
+      });
+    }
 
     let periodEndIso: string | null = null;
     if (session.subscription) {
@@ -231,7 +273,8 @@ Deno.serve(async (req) => {
       paid: true,
       applied: !!applied.applied,
       kind: applied.kind ?? null,
-      cap: applied.cap ?? null,
+      quantity: Number.isFinite(Number(applied.quantity)) ? Number(applied.quantity) : null,
+      credits: Number.isFinite(Number(applied.credits)) ? Number(applied.credits) : null,
     });
   }
 

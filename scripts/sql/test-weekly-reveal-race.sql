@@ -129,6 +129,7 @@ select dblink_exec('wx_set', $sql$update celestual_settings set value = 'false' 
 
 select dblink_exec('wx_set', $sql$delete from celestual_matches where handle_a like 'wx\_%' or handle_b like 'wx\_%'$sql$);
 select dblink_exec('wx_set', $sql$delete from celestual_entries where from_handle like 'wx\_%'$sql$);
+select dblink_exec('wx_set', $sql$delete from celestual_ping_spends where handle like 'wx\_%'$sql$);
 select dblink_exec('wx_set', $sql$delete from celestual_ig_verifications where handle like 'wx\_%'$sql$);
 select dblink_disconnect(c) from unnest(array['wx_set', 'wx_one', 'wx_two', 'wx_three']) c;
 rollback;

@@ -1,40 +1,48 @@
-// CELESTUAL — celestual-stripe-webhook edge function.
+// CELESTUAL: celestual-stripe-webhook edge function.
 //
-// The ONLY thing that grants a paid slot (migration 0021, and the pattern
-// celestual_complete_ig_verification set: a service-role function is the sole
-// writer of anything a browser could otherwise lie about). Stripe posts here;
-// every request is signature-verified before a single field is read.
+// The ONLY thing that grants bought pings (migrations 0021 and 0071, and the
+// pattern celestual_complete_ig_verification set: a service-role function is
+// the sole writer of anything a browser could otherwise lie about). Stripe
+// posts here; every request is signature-verified before a single field is
+// read. Nothing here branches on what was bought: the purchase row says it
+// ('pings' and how many, or the old 'slot' and 'steady'), and the SQL grants
+// or takes back exactly that.
 //
 // Events acted on:
 //   checkout.session.completed / .async_payment_succeeded
-//        → celestual_billing_complete. Grants the one-time slot, or stands the
-//          plan up to its paid-through date.
+//        celestual_billing_complete. Adds the purchase's pings to what the
+//        buyer has on hand, once, or stands an old plan up to its paid-through
+//        date.
 //   invoice.paid
-//        → celestual_billing_plan_sync(active). Pushes the paid-through date out
-//          a month. This is how a plan renews: nothing else has to run.
+//        celestual_billing_plan_sync(active). Pushes a plan's paid-through
+//        date out a month. This is how a plan renews: nothing else has to run.
 //   customer.subscription.updated / .deleted / .paused
-//        → celestual_billing_plan_sync. A cancelled plan keeps what was paid for
-//          and then simply stops counting; no sweep, no cron.
-//   charge.refunded / charge.dispute.closed (lost)
-//        → celestual_billing_revoke. The slot is given back. Pings already
-//          standing are LEFT ALONE — retracting one would reveal by absence that
-//          it existed.
+//        celestual_billing_plan_sync. A cancelled plan keeps what was paid for
+//        and then simply stops counting; no sweep, no cron.
+//   charge.refunded
+//        celestual_billing_revoke with the charge's amount_refunded (Stripe's
+//        running total, so a refund in parts is told once per part): it takes
+//        back the pings that money covers and no more, from what is on hand,
+//        never below none. Notes already sent are LEFT ALONE: retracting one
+//        would reveal by absence that it existed.
+//   charge.dispute.closed (lost)
+//        celestual_billing_revoke for the whole purchase, the same way.
 // Anything else is acknowledged and ignored, on purpose: an unrecognised event
 // must never make Stripe retry forever.
 //
 // SIGNATURE VERIFICATION is done by hand with Web Crypto (HMAC-SHA256 over
-// "<timestamp>.<raw body>", compared in constant time, five-minute tolerance) —
+// "<timestamp>.<raw body>", compared in constant time, five-minute tolerance):
 // the same algorithm Stripe's SDK runs, without pulling the SDK into an edge
 // runtime for one function. An unsigned or stale request gets 400 and never
 // reaches the database.
 //
 // Required secrets (Supabase → Edge Functions → Secrets):
-//   STRIPE_SECRET_KEY      — to read back a subscription's period end
-//   STRIPE_WEBHOOK_SECRET  — whsec_… from the endpoint you create in Stripe
+//   STRIPE_SECRET_KEY      to read back a subscription's period end
+//   STRIPE_WEBHOOK_SECRET  whsec_… from the endpoint you create in Stripe
 // Provided automatically by the platform:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
-// Deploy (the --no-verify-jwt matters — Stripe cannot send a Supabase JWT, and
+// Deploy (the --no-verify-jwt matters. Stripe cannot send a Supabase JWT, and
 // this endpoint's authentication IS the signature):
 //   supabase functions deploy celestual-stripe-webhook --no-verify-jwt
 // Runbook: docs/STRIPE-SETUP.md
@@ -125,12 +133,12 @@ function periodEnd(sub: Record<string, any> | null | undefined): string | null {
 
 // Hand an event back to Stripe. The guard stamps an event id before the handler
 // runs (so a duplicate delivery is cheap), which would otherwise mean a
-// transient failure burns the only delivery that mattered — so every error path
+// transient failure burns the only delivery that mattered. So every error path
 // unstamps first and then asks for the retry.
 async function retry(eventId: string, why: string): Promise<Response> {
   console.error('handing back to stripe:', why);
   const { error } = await supabase.rpc('celestual_billing_unsee', { p_event_id: eventId });
-  if (error) console.error('unsee failed — this delivery will read as duplicate', error.message);
+  if (error) console.error('unsee failed: this delivery will read as duplicate', error.message);
   return text('retry', 500);
 }
 
@@ -147,7 +155,7 @@ async function planSync(subscriptionId: string, periodEndIso: string | null, act
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return text('method', 405);
   if (!WEBHOOK_SECRET) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set — refusing every delivery');
+    console.error('STRIPE_WEBHOOK_SECRET is not set: refusing every delivery');
     return text('config', 500);
   }
 
@@ -248,15 +256,26 @@ Deno.serve(async (req) => {
       }
 
       // ── the money goes back ──
+      // A refund can be partial, and a charge can be refunded in parts: each
+      // part arrives as its own charge.refunded carrying the running total.
+      // The SQL takes back only the pings that total covers beyond what it
+      // already took, so passing the total is enough, however often it comes.
       case 'charge.refunded': {
         const pi = obj.payment_intent ? String(obj.payment_intent) : '';
         if (!pi) break;
+        const refunded = Number(obj.amount_refunded);
+        const amount = Number(obj.amount);
         const { data, error } = await supabase.rpc('celestual_billing_revoke', {
           p_payment_intent: pi,
           p_subscription: null,
+          p_amount_refunded: Number.isFinite(refunded) ? refunded : null,
+          p_amount: Number.isFinite(amount) ? amount : null,
         });
-        if (error) console.error('revoke failed', error.message);
-        else if (!data?.ok) console.error('revoke refused', data?.error ?? '');
+        // Idempotent on the running total (0071), so a failure is handed back
+        // for Stripe to deliver again rather than dropped: a refund must take
+        // back what it covers.
+        if (error) return await retry(eventId, `billing_revoke failed: ${error.message}`);
+        if (!data?.ok) console.error('revoke refused', data?.error ?? '');
         break;
       }
 
@@ -268,7 +287,7 @@ Deno.serve(async (req) => {
           p_payment_intent: pi,
           p_subscription: null,
         });
-        if (error) console.error('revoke failed', error.message);
+        if (error) return await retry(eventId, `billing_revoke failed: ${error.message}`);
         break;
       }
 
