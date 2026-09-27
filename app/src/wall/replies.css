@@ -1,125 +1,236 @@
 /* ═══ THE REPLIES ═══════════════════════════════════════════════════════════
-   Replies.jsx, migration 0068. A letter's thread, drawn as the phone drew a
-   thread under a message it had kept: an unlit panel of the phone's glass
-   under the letter's screen (DESIGN.md 2.6), its head a status row, each
-   reply a message in the one face with its sender's picture on a small
-   screen beside it. Nothing on it is backlit but the pictures, which are
-   small screens as a face is, and the recipient's reply, which is lit in the
-   letter's own colour because it is the letter answering.
+   Replies.jsx, migration 0068. A letter's thread, drawn as the lower half
+   of a slider phone: the chin fixed to the screen's foot, with the thumb
+   ridges on it, and behind the screen the thread, which slides out from
+   under the chin on the same glass (DESIGN.md 2.6). Nothing on it is
+   backlit but the pictures, which are small screens as a face is, the
+   recipient's reply, which is lit in the letter's own colour because it is
+   the letter answering, and the chin's message light, which is that reply
+   seen shut.
 
    The phone's tokens (`--lcd`, `--lcd-edge`, `--r-lcd`) are the wall's own
-   (phone.css), and the thread is drawn on the wall and nowhere else. */
+   (phone.css), and the thread is drawn on the wall and nowhere else. Where
+   the halves stand and how they move is wall.css (the slider) and
+   Letter.jsx; this is what they are made of. */
 
-/* ── the sheet scrolls once a thread stands under the letter ──
-   A letter was one card centred in the glass, and nothing on its sheet ever
-   scrolled. With a thread under it the glass scrolls, and the letter and the
-   thread's head are centred together in the first screenful, so the count
-   and who answered are in sight and the replies are a thumb away. The
-   screen's height is `--scene-w` times the phone's proportion with its
-   bands (wall.css reserves the same 1.22), and 74 is the head and the gap
-   over it. The black behind, the close mark and the name stay where they
-   are while the glass scrolls, and the space round the letter is margin,
-   so a press on the black round it still reaches the room and closes it. */
-.wl-sheet-wrap.is-letter:has(.wl-rp) {
-  justify-content: flex-start;
-  overflow-x: hidden; overflow-y: auto;
-  overscroll-behavior-y: contain;
-  scrollbar-width: none;
-}
-.wl-sheet-wrap.is-letter:has(.wl-rp)::-webkit-scrollbar { display: none; }
-.wl-sheet-wrap.is-letter:has(.wl-rp) > .wl-scrim { position: fixed; }
-.wl-sheet-wrap.is-letter:has(.wl-rp) > :is(.wl-letter-x, .wl-letter-brand) { position: fixed; }
-.wl-sheet-wrap.is-letter:has(.wl-rp) > .wl-sheet {
-  flex: 0 0 auto;
-  margin: max(84px, calc((100svh - var(--scene-w) * 1.22 - 74px) / 2)) auto calc(56px + env(safe-area-inset-bottom, 0px));
-}
-/* and what scrolls under the close mark and the name goes out under a band
-   of the room's black, so a reply is never read through them */
-.wl-sheet-wrap.is-letter:has(.wl-rp)::after {
-  content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 2;
-  height: calc(92px + env(safe-area-inset-top, 0px));
-  background: linear-gradient(180deg, #000 0%, #000 52%, rgba(0, 0, 0, 0.82) 72%, rgba(0, 0, 0, 0) 100%);
-  pointer-events: none;
-}
-.wl-sheet-wrap.is-letter.is-closing:has(.wl-rp)::after { animation: wl-unfade 260ms var(--ease-in) both; }
-
-/* ── the panel ── */
-.wl-rp {
-  position: relative; isolation: isolate;
-  width: var(--scene-w, 100%); max-width: 100%;
-  margin: 18px auto 0;
-  background-color: var(--lcd, #0B0B0B);
-  background-image: var(--lcd-grid, none);
-  border-radius: var(--r-lcd, 3px);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16)), 0 24px 60px -30px #000;
+/* ── the chin ──
+   The unlit strip under the screen's keys: a hair lighter than a panel,
+   the panel's pixel grid, the one pixel bezel, and along its top edge the
+   seam where the slide meets the screen, caught in the screen's light. Its
+   foot takes the screen's own corner (`--set-rad`, Letter.jsx `Handset`).
+   The count on the left, the ridges in the middle, who answered on the
+   right, sized off the screen as the screen's own type is. A press lights
+   the ridges and they fall back, as a soft key does, and the hit reaches
+   a little under the chin and never up into the keys over it. */
+.wl-chin {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px;
+  width: 100%; height: clamp(32px, calc(var(--scene-w, 342px) * 0.095), 44px);
+  margin: 0; padding: 0 calc(var(--scene-w, 342px) * 0.035);
+  border: 0; border-radius: 0 0 var(--set-rad, 3px) var(--set-rad, 3px);
+  background-color: #0D0D0D; background-image: var(--lcd-grid, none);
+  box-shadow:
+    inset 0 1px 0 rgba(244, 241, 234, 0.28),
+    inset 1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
+    inset -1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
+    inset 0 -1px 0 var(--lcd-edge, rgba(244, 241, 234, 0.16));
   color: var(--chalk);
-  font-family: var(--f-util);
-  text-align: left;
-  animation: wl-rp-in 460ms var(--ease) 300ms both;
+  font-family: var(--f-util); font-size: clamp(16px, calc(var(--scene-w, 342px) * 0.042), 20px); line-height: 1;
+  text-align: left; -webkit-tap-highlight-color: transparent;
 }
-@keyframes wl-rp-in {
-  from { opacity: 0; transform: translate3d(0, 10px, 0); }
-  to   { opacity: 1; transform: none; }
+button.wl-chin { cursor: pointer; }
+button.wl-chin::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 12px; }
+/* open, its foot is where the thread meets it, and square */
+.wl-letter.is-thread .wl-letter-card .wl-chin { border-radius: 0; }
+.wl-chin-n {
+  display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  animation: wl-fade 160ms var(--ease, ease) both;
+}
+.wl-chin-n .wl-pxi, .wl-chin-wait { display: block; flex: 0 0 auto; color: var(--ash); }
+.wl-chin-grip { display: grid; gap: 3px; justify-self: center; grid-column: 2; }
+.wl-chin-grip i { display: block; width: 30px; height: 2px; background: var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); transition: background-color 140ms linear; }
+.wl-chin.is-bare .wl-chin-grip { grid-column: 2; }
+.wl-chin-end { display: inline-flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; grid-column: 3; }
+.wl-chin-lock { display: block; flex: 0 0 auto; color: var(--ash); }
+button.wl-chin:active .wl-chin-grip i { background-color: var(--chalk); transition-duration: 0ms; }
+button.wl-chin:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; }
+@media (hover: hover) and (pointer: fine) {
+  button.wl-chin:hover .wl-chin-grip i { background-color: rgba(244, 241, 234, 0.6); transition-duration: 200ms; }
+}
+/* the phone's message light, in the letter's colour, steady */
+.wl-chin-led {
+  flex: 0 0 auto; width: 6px; height: 6px;
+  /* a dark panel (the negative) is lit by its words' light, as its
+     recipient's reply is */
+  background: var(--rp-glow, var(--rp-panel));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 8px 1px var(--rp-glow, var(--rp-panel));
+}
+/* who answered: the newest three, the recipient's face first */
+.wl-rp-stack { display: inline-flex; flex: 0 0 auto; }
+.wl-rp-stack > * { box-shadow: 0 0 0 2px #0D0D0D; }
+.wl-rp-stack > * + * { margin-left: -5px; }
+
+/* ── the lower half ──
+   Behind the upper half, the same width, laid out at the width it is read
+   at and tucked all the way up under the screen while the phone is shut
+   (`--o-y0`, `--o-k0`), then out from under the chin with it (`--o-y1`),
+   the numbers Letter.jsx `fitSlider` measures. Its corners are the phone's
+   at the foot, and square where it meets the chin; no edge along its top,
+   since the chin's foot is that edge. */
+.wl-low {
+  position: absolute; top: 100%; left: 50%; z-index: 0;
+  width: var(--o-w, 100%); height: var(--o-b, 0px); margin-left: calc(var(--o-w, 100%) / -2);
+  transform-origin: 50% 0;
+  transform: translate3d(0, var(--o-y0, 0px), 0) scale(var(--o-k0, 1));
+  visibility: hidden;
+}
+.wl-letter.is-thread .wl-low { transform: translate3d(0, var(--o-y1, 0px), 0); visibility: visible; }
+.wl-low-in {
+  position: relative; isolation: isolate;
+  display: flex; flex-direction: column; height: 100%;
+  background-color: var(--lcd, #0B0B0B); background-image: var(--lcd-grid, none);
+  border-radius: 0 0 var(--set-rad, 3px) var(--set-rad, 3px);
+  overflow: hidden; overflow: clip;
+  color: var(--chalk); font-family: var(--f-util); text-align: left;
+}
+/* the bezel, over everything in it, so the field and the keys that stand on
+   their own glass inside it are edged the same */
+.wl-low-in::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
+    inset -1px 0 0 var(--lcd-edge, rgba(244, 241, 234, 0.16)),
+    inset 0 -1px 0 var(--lcd-edge, rgba(244, 241, 234, 0.16));
+}
+/* the list: the phone's own, scrolled inside the glass and never the page,
+   fading at its two edges so a row goes under the chin and the keys rather
+   than being cut */
+.wl-low-list {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  scrollbar-width: none; outline: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+.wl-low-list::-webkit-scrollbar { display: none; }
+.wl-low-list:focus-visible { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.4); }
+.wl-low-still {
+  display: flex; align-items: center; justify-content: center; min-height: 100%;
+  padding: 18px 14px; font-size: var(--t-read); line-height: 1.2; color: var(--ash); text-align: center;
+}
+/* a line about what just happened, over the keys, for a few seconds */
+.wl-low-said {
+  flex: 0 0 auto; margin: 0; padding: 8px 14px 10px;
+  font-size: var(--t-meta); line-height: 1.2; color: var(--chalk);
+  animation: wl-fade 200ms var(--ease, ease) both;
+}
+/* the band of soft keys at its foot: a step lighter than the thread, a
+   pixel of bezel over it, the act on the left and the way back on the right */
+.wl-low-foot {
+  position: relative; z-index: 1; flex: 0 0 46px;
+  display: grid; grid-template-columns: 1fr 1fr; align-items: stretch;
+  padding: 0 4px;
+  background: #121212;
+  box-shadow: inset 0 1px 0 var(--lcd-edge, rgba(244, 241, 234, 0.16));
+}
+.wl-root .wl-low-sk {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  margin: 0; padding: 0 12px; border: 0; border-radius: var(--r-lcd, 3px); background: none;
+  color: var(--chalk); font: 400 var(--t-read)/1 var(--f-util); white-space: nowrap;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity 140ms linear;
+}
+.wl-low-sk.is-l { justify-self: start; }
+.wl-low-sk.is-r { justify-self: end; }
+.wl-low-sk.is-empty { visibility: hidden; }
+.wl-low-sk .wl-pxi { display: block; color: var(--ash); }
+.wl-root .wl-low-sk:active { opacity: 0.45; transition-duration: 0ms; }
+.wl-root .wl-low-sk:disabled { opacity: 0.4; cursor: default; }
+.wl-low-sk:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -5px; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-root .wl-low-sk:not(:disabled):hover { background: rgba(244, 241, 234, 0.08); }
+}
+
+/* ── writing ──
+   The field rises from behind the keys, over a dashed seam: who the reply
+   goes up as, and how much is left, then the field, then whatever the
+   reading caught while it was typed. */
+.wl-low-write {
+  position: relative; z-index: 0; flex: 0 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px 12px;
+  background: var(--lcd, #0B0B0B);
+  animation: wl-low-write 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.wl-low-write::before {
+  content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge, rgba(244, 241, 234, 0.16)) 0 2px, transparent 2px 6px);
+}
+@keyframes wl-low-write {
+  from { transform: translate3d(0, 100%, 0); }
+  to   { transform: none; }
+}
+.wl-low-as {
+  display: flex; align-items: center; gap: 9px; min-height: 26px;
+  font-size: var(--t-meta); line-height: 1.1; color: var(--ash);
+}
+.wl-low-as .wl-h { color: var(--chalk); }
+.wl-low-left { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ash-dim, rgba(244, 241, 234, 0.4)); }
+.wl-low-left.is-low { color: var(--chalk); }
+.wl-rp-field {
+  position: relative;
+  padding: 10px 12px;
+  background: #070707;
+  border-radius: var(--r-lcd, 3px);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38));
+}
+.wl-rp-field textarea {
+  display: block; width: 100%; min-height: 24px; max-height: 72px;
+  margin: 0; padding: 0; border: 0; outline: 0; resize: none;
+  background: none; color: var(--chalk);
+  font-family: var(--f-util); font-size: var(--t-read); line-height: 1.2;
+  field-sizing: content;
+}
+/* the bezel is the field's focus, as on every field on the wall (phone.css) */
+.wl-root .wl-rp-field textarea:focus, .wl-root .wl-rp-field textarea:focus-visible { outline: none; }
+.wl-rp-field textarea::placeholder { color: rgba(244, 241, 234, 0.34); }
+.wl-rp-field textarea::selection { background: var(--chalk); color: #000; }
+.wl-rp-line { margin: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash); text-wrap: pretty; }
+.wl-rp-line.is-ok { color: var(--chalk); }
+.wl-rp-line.is-no { color: var(--accent); }
+.wl-rp-as-badge {
+  display: inline-block; padding: 3px 6px 2px; border-radius: 2px;
+  font-size: var(--t-meta); line-height: 1; white-space: nowrap;
+  background: var(--rp-panel); color: var(--rp-ink);
+  box-shadow: 0 0 0 1px var(--rp-edge, transparent), 0 0 16px -5px var(--rp-glow, var(--rp-panel));
 }
 
 /* the rule between the parts: a line of the phone's pixels, as `or` is
    drawn on the wall (phone.css), inset to the panel's own margin */
-:is(.wl-rp-item, .wl-rp-empty, .wl-rp-compose, .wl-rp-school, .wl-rp-note)::before {
+:is(.wl-rp-item, .wl-rp-empty, .wl-rp-note)::before {
   content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 2px;
   background: repeating-linear-gradient(90deg, var(--lcd-edge, rgba(244, 241, 234, 0.16)) 0 2px, transparent 2px 6px);
   pointer-events: none;
 }
 .wl-rp-list > .wl-rp-item::before { left: 0; right: 0; }
+.wl-rp-list > .wl-rp-item:first-child::before { display: none; }
 
-/* ── the head: a status row ──
-   The count and who answered, the newest three pictures of them, and, when
-   the person the letter is to has answered, a line lit in the letter's
-   colour saying so. The whole row takes the glass to the thread. */
-.wl-rp-head {
-  display: flex; align-items: center; gap: 10px;
-  min-height: 56px; padding: 0 10px 0 14px;
-}
-.wl-rp-head.is-still { gap: 12px; }
-.wl-rp-head-go {
-  flex: 1 1 auto; min-width: 0;
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 0; margin: 0;
-  border: 0; background: none; color: inherit; font: inherit; text-align: left;
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.wl-rp-head-go:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
-.wl-rp-head-words { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px 10px; }
-.wl-rp-title { font-size: var(--t-read); line-height: 1; color: var(--chalk); white-space: nowrap; }
-.wl-rp-head-wait { color: var(--ash); }
-.wl-rp-stack { display: inline-flex; flex: 0 0 auto; }
-.wl-rp-stack > * { box-shadow: 0 0 0 2px var(--lcd, #0B0B0B); }
-.wl-rp-stack > * + * { margin-left: -5px; }
-.wl-rp-head-end { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px; color: var(--ash); }
-.wl-rp-head-lock { display: block; }
-
-/* lit in the letter's colour: the recipient answered */
-.wl-rp-lit, .wl-rp-as-badge, .wl-rp-badge {
-  display: inline-block; flex: 0 1 auto; min-width: 0;
-  padding: 3px 6px 2px; border-radius: 2px;
-  font-size: var(--t-meta); line-height: 1; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-}
-.wl-rp-lit, .wl-rp-as-badge {
-  background: var(--rp-panel); color: var(--rp-ink);
-  box-shadow: 0 0 0 1px var(--rp-edge, transparent), 0 0 16px -5px var(--rp-glow, var(--rp-panel));
-}
-
-/* ── one reply ── */
-.wl-rp-list { list-style: none; margin: 0; padding: 0 14px; }
+/* ── one reply ──
+   Its picture, one meta row carrying its like and its flag at the end, and
+   the words: two lines where it was three, so more of a thread stands in
+   the phone at once. */
+.wl-rp-list { list-style: none; margin: 0; padding: 4px 14px 8px; }
 .wl-rp-item {
   position: relative;
   display: grid; grid-template-columns: 39px minmax(0, 1fr); gap: 12px;
-  padding: 14px 0 6px;
+  padding: 12px 0 12px;
 }
-.wl-rp-pic { display: block; line-height: 0; padding-top: 1px; }
+.wl-rp-pic { display: block; line-height: 0; padding-top: 2px; }
 .wl-rp-main { min-width: 0; }
 .wl-rp-meta {
-  display: flex; align-items: center; gap: 8px; min-height: 20px;
+  display: flex; align-items: center; gap: 8px; min-height: 24px;
   font-size: var(--t-meta); line-height: 1; color: var(--ash);
 }
 .wl-rp-name { color: var(--chalk); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -127,38 +238,44 @@
   flex: 0 0 auto; padding: 2px 5px 1px; border-radius: 2px;
   box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); color: var(--ash);
 }
-.wl-rp-when { flex: 0 0 auto; margin-left: auto; color: var(--ash); }
+.wl-rp-when { flex: 0 0 auto; color: var(--ash); }
 .wl-rp-words {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: var(--t-read); line-height: 1.2; color: var(--chalk);
   white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .wl-rp-state {
   display: flex; align-items: center; gap: 8px;
-  margin: 8px 0 2px; font-size: var(--t-meta); line-height: 1.2; color: var(--ash);
+  margin: 6px 0 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash);
 }
 .wl-rp-item:is(.is-held, .is-hidden) .wl-rp-words { color: var(--ash); }
 .wl-rp-item.is-removed .wl-rp-words { color: var(--ash); text-decoration: line-through; text-decoration-thickness: 2px; }
+/* a reply sent from this phone arrives, it does not appear */
+.wl-rp-item.is-mine:last-child { animation: wl-rp-new 260ms var(--ease, ease) both; }
+@keyframes wl-rp-new {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: none; }
+}
 
-/* the reply's two keys: its like and the flag. Square keys with the
-   phone's glyphs, inverted under a finger as every key on the wall is */
-.wl-rp-acts { display: flex; align-items: center; gap: 2px; margin: 2px 0 0 -8px; }
+/* the reply's two keys, at the meta row's end: square keys with the
+   phone's glyphs, their hit a thumb's size and their box the row's */
+.wl-rp-acts { display: inline-flex; align-items: center; margin: -7px -8px -7px auto; flex: 0 0 auto; }
 .wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 34px; min-width: 34px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 38px; min-width: 38px; padding: 0 8px;
   border: 0; border-radius: var(--r-lcd, 3px); background: none;
   color: var(--ash); font-family: var(--f-util); font-size: var(--t-meta); line-height: 1;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .wl-rp-like .wl-pxi, .wl-rp-flag .wl-pxi, .wl-rp-key .wl-pxi { display: block; flex: 0 0 auto; }
 .wl-rp-like.is-on { color: var(--chalk); }
+.wl-rp-like.is-on .wl-pxi { animation: wl-sk-heart 420ms var(--ease, ease); }
 .wl-rp-n { min-width: 1ch; }
-.wl-rp-flag { margin-left: auto; margin-right: -8px; }
 .wl-rp-like:not(:disabled):active, .wl-rp-flag:active, .wl-rp-undo:not(:disabled):active, .wl-rp-key:not(:disabled):active {
   background: var(--chalk); color: #000; transition-duration: 0ms;
 }
 .wl-rp-like:disabled { cursor: progress; }
-:is(.wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key):focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 1px; }
+:is(.wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key):focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -2px; }
 @media (hover: hover) and (pointer: fine) {
   .wl-rp-like:hover, .wl-rp-flag:hover { color: var(--chalk); }
 }
@@ -166,7 +283,7 @@
 /* reported by this device: folded away, with the way back */
 .wl-rp-item.is-folded {
   grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  padding: 12px 0;
+  padding: 10px 0;
   font-size: var(--t-meta); line-height: 1.2; color: var(--ash);
 }
 .wl-rp-fold-g { display: block; }
@@ -180,19 +297,19 @@
    panel's hot corner, the pixel grid of an LCD over it and the light it
    throws on the glass round it. `recipient` is struck out of the ink, where
    a writer's creature and name would be, and the picture is the face of the
-   @ the letter is to. */
+   @ the letter is to. The one lit panel in the lower half. */
 .wl-rp-item.is-recipient {
-  margin: 10px -6px 12px; padding: 13px 12px 8px;
+  margin: 8px -6px 10px; padding: 11px 12px 12px;
   border-radius: var(--r-lcd, 3px);
   background: radial-gradient(130% 120% at 16% 0%, var(--rp-hi), var(--rp-panel) 56%, color-mix(in srgb, var(--rp-panel) 80%, #000));
   color: var(--rp-ink);
   box-shadow:
     0 0 0 1px var(--rp-edge, rgba(0, 0, 0, 0.45)),
-    0 0 34px -12px var(--rp-glow, var(--rp-panel)),
-    0 18px 48px -26px var(--rp-glow, var(--rp-panel));
+    0 0 34px -12px var(--rp-glow, var(--rp-panel));
 }
 .wl-rp-list > .wl-rp-item.is-recipient::before {
   /* the LCD's own pixels over the lit panel, felt rather than seen */
+  display: block;
   top: 0; bottom: 0; left: 0; right: 0; height: auto; border-radius: inherit;
   background:
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, transparent 1px 3px),
@@ -204,7 +321,12 @@
 .wl-rp-item.is-recipient .wl-rp-words { color: var(--rp-ink); }
 .wl-rp-item.is-recipient :is(.wl-rp-meta, .wl-rp-when, .wl-rp-state) { color: color-mix(in srgb, var(--rp-ink) 72%, transparent); }
 .wl-rp-item.is-recipient .wl-rp-you { color: var(--rp-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rp-ink) 50%, transparent); }
-.wl-rp-badge { background: var(--rp-ink); color: var(--rp-panel); flex: 0 0 auto; }
+.wl-rp-badge {
+  display: inline-block; flex: 0 1 auto; min-width: 0;
+  padding: 3px 6px 2px; border-radius: 2px;
+  font-size: var(--t-meta); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--rp-ink); color: var(--rp-panel);
+}
 .wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag) { color: color-mix(in srgb, var(--rp-ink) 78%, transparent); }
 .wl-rp-item.is-recipient .wl-rp-like.is-on { color: var(--rp-ink); }
 .wl-rp-item.is-recipient :is(.wl-rp-like, .wl-rp-flag):not(:disabled):active { background: var(--rp-ink); color: var(--rp-panel); }
@@ -217,8 +339,10 @@
 .wl-rp-empty {
   position: relative;
   display: flex; flex-direction: column; gap: 5px;
-  padding: 18px 14px 18px;
+  padding: 18px 14px;
 }
+.wl-rp-list + .wl-rp-empty, .wl-rp-owner + .wl-rp-empty { margin-top: 0; }
+.wl-rp-empty::before { display: none; }
 .wl-rp-empty-h { font-size: var(--t-read); line-height: 1.1; color: var(--chalk); }
 .wl-rp-empty-say { font-size: var(--t-meta); line-height: 1.2; color: var(--ash); }
 
@@ -229,56 +353,16 @@
   padding: 16px 14px;
   font-size: var(--t-meta); line-height: 1.24; color: var(--ash);
 }
+.wl-rp-note.is-away::before { display: none; }
 .wl-rp-note .wl-pxi { flex: 0 0 auto; display: block; }
 .wl-rp-note > span { flex: 1 1 12ch; min-width: 0; }
-.wl-rp-note .wl-quiet { padding: 2px 0; }
-.wl-rp-said { margin: 0; padding: 0 14px 12px; font-size: var(--t-meta); line-height: 1.2; color: var(--chalk); }
 
-/* ── the field a reply is written in ── */
-.wl-rp-compose {
-  position: relative;
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 16px 14px 14px;
-}
-.wl-rp-as {
-  display: flex; align-items: center; gap: 9px; min-height: 26px;
-  font-size: var(--t-meta); line-height: 1.1; color: var(--ash);
-}
-.wl-rp-as:empty { display: none; }
-.wl-rp-as .wl-h { color: var(--chalk); }
-.wl-rp-field {
-  position: relative;
-  padding: 11px 12px;
-  background: #000;
-  border-radius: var(--r-lcd, 3px);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
-  transition: box-shadow 160ms var(--ease);
-}
-.wl-rp-field:focus-within { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
-.wl-rp-field.is-caught { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
-.wl-rp-field textarea {
-  display: block; width: 100%; min-height: 48px; max-height: 42vh;
-  margin: 0; padding: 0; border: 0; outline: 0; resize: none;
-  background: none; color: var(--chalk);
-  font-family: var(--f-util); font-size: var(--t-read); line-height: 1.2;
-  field-sizing: content;
-}
-/* the bezel is the field's focus, as on every field on the wall (phone.css) */
-.wl-root .wl-rp-field textarea:focus, .wl-root .wl-rp-field textarea:focus-visible { outline: none; }
-.wl-rp-field textarea::placeholder { color: rgba(244, 241, 234, 0.34); }
-.wl-rp-field textarea::selection { background: var(--chalk); color: #000; }
-.wl-rp-send { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.wl-rp-line { flex: 1 1 auto; min-width: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash); text-wrap: pretty; }
-.wl-rp-line.is-count { font-variant-numeric: tabular-nums; }
-.wl-rp-line.is-count.is-low, .wl-rp-line.is-ok { color: var(--chalk); }
-.wl-rp-line.is-no { color: var(--accent); }
-.wl-root.is-room .wl-rp-go { flex: 0 0 auto; min-width: 96px; }
-
-/* ── a school address ── */
+/* ── a school address ──
+   The composer's door, standing in the lower half in place of the thread. */
 .wl-rp-school {
   position: relative;
   display: flex; flex-direction: column; align-items: stretch; gap: 12px;
-  padding: 18px 14px 14px;
+  padding: 16px 14px 16px;
 }
 .wl-rp-school-say { margin: 0; font-size: var(--t-read); line-height: 1.2; color: var(--chalk); text-wrap: pretty; }
 .wl-rp-school.is-sent .wl-rp-school-say { font-size: var(--t-meta); line-height: 1.3; color: var(--ash); }
@@ -295,10 +379,11 @@
 
 /* ── the recipient's own row ──
    Neutral glass, a step lighter than the thread's, with the brighter bezel:
-   the one row on the panel that is about the person reading it. */
+   the one row in the lower half that is about the person reading it, and
+   the first. */
 .wl-rp-owner {
   display: flex; flex-direction: column; gap: 12px;
-  margin: 0 14px 14px; padding: 14px;
+  margin: 12px 14px 4px; padding: 14px;
   border-radius: var(--r-lcd, 3px);
   background: var(--lcd-2, #161616);
   box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38));
@@ -312,7 +397,6 @@
   background: var(--lcd, #0B0B0B); color: var(--chalk);
   box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16));
 }
-.wl-rp-key.is-small { flex: 0 0 auto; min-height: 32px; padding: 0 10px; }
 .wl-rp-key:disabled { color: var(--ash-dim); cursor: default; }
 @media (hover: hover) and (pointer: fine) {
   .wl-rp-key:not(:disabled):hover, .wl-rp-undo:hover { box-shadow: inset 0 0 0 1px var(--lcd-edge-hi, rgba(244, 241, 234, 0.38)); }
@@ -341,46 +425,24 @@
 }
 
 /* ── the terms, before a first reply ──
-   A sheet of the phone's glass over the letter, raised off the bottom edge
-   as the room's sheets are, and a dialog in the middle of a wide room. */
+   Read in the lower half in place of the thread, and scrolled there when
+   they are longer than it; `agree` and `not now` are its soft keys. */
 .wl-rp-terms {
-  position: fixed; inset: 0; z-index: 80;
-  display: flex; flex-direction: column; justify-content: flex-end;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px 16px 18px;
+  animation: wl-fade 200ms var(--ease, ease) both;
 }
-.wl-rp-terms-scrim {
-  position: absolute; inset: 0; width: 100%; padding: 0; border: 0;
-  background: rgba(0, 0, 0, 0.74);
-  animation: wl-fade 300ms var(--ease) both;
-}
-.wl-rp-terms-sheet {
-  position: relative; isolation: isolate;
-  display: flex; flex-direction: column; gap: 14px;
-  width: 100%; max-width: 470px; max-height: 92dvh; margin: 0 auto;
-  overflow-y: auto; overscroll-behavior: contain;
-  padding: 8px 22px calc(18px + env(safe-area-inset-bottom, 0px));
-  background-color: var(--lcd, #0B0B0B);
-  background-image: var(--lcd-grid, none);
-  border-radius: var(--r-sheet, 4px) var(--r-sheet, 4px) 0 0;
-  box-shadow: inset 0 0 0 1px var(--lcd-edge, rgba(244, 241, 234, 0.16)), 0 -30px 70px -30px #000;
-  color: var(--chalk); font-family: var(--f-util); text-align: left;
-  animation: wl-rise-sheet 460ms var(--ease) both;
-}
-.wl-rp-terms-grip { display: flex; justify-content: center; padding: 6px 0 2px; }
-.wl-rp-terms-grip span {
-  width: 26px; height: 4px;
-  background: repeating-linear-gradient(90deg, rgba(244, 241, 234, 0.34) 0 6px, transparent 6px 10px);
-}
-.wl-rp-terms-kicker { margin: 2px 0 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash); }
+.wl-rp-terms-kicker { margin: 0; font-size: var(--t-meta); line-height: 1.2; color: var(--ash); }
 .wl-rp-terms-h {
-  margin: -6px 0 0;
+  margin: -4px 0 0; outline: none;
   font-family: var(--f-display); font-weight: 400;
-  font-size: clamp(30px, 8.6vw, 36px); line-height: 1.02; letter-spacing: 0;
+  font-size: clamp(26px, 7.6vw, 32px); line-height: 1.02; letter-spacing: 0;
 }
 .wl-rp-terms-say { margin: 0; font-size: var(--t-read); line-height: 1.22; color: var(--chalk); text-wrap: pretty; }
 .wl-rp-terms-list {
   position: relative; list-style: none;
   display: flex; flex-direction: column; gap: 10px;
-  margin: 2px 0 0; padding: 16px 0 2px;
+  margin: 2px 0 0; padding: 14px 0 2px;
 }
 .wl-rp-terms-list::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
@@ -406,22 +468,13 @@
 @media (hover: hover) and (pointer: fine) {
   .wl-rp-terms-link:hover .wl-pxi { color: var(--chalk); }
 }
-.wl-rp-terms-keys { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin-top: 6px; }
-.wl-rp-terms-no { align-self: center; }
-@media (min-width: 900px) {
-  .wl-rp-terms { justify-content: center; }
-  .wl-rp-terms-sheet {
-    max-width: 440px; border-radius: var(--r-sheet, 4px); padding-top: 18px;
-    animation: wl-rp-dialog 380ms var(--ease) both;
-  }
-  .wl-rp-terms-grip { display: none; }
-}
-@keyframes wl-rp-dialog {
-  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.98); }
-  to   { opacity: 1; transform: none; }
-}
 
+/* Asked for less movement: the phone opens and shuts as a cut (Letter.jsx
+   `runQ`), and what is in the thread fades in over a beat instead of
+   coming out from under the chin; the field is simply there. */
 @media (prefers-reduced-motion: reduce) {
-  .wl-rp, .wl-rp-terms-scrim, .wl-rp-terms-sheet { animation: none; }
-  .wl-rp-field { transition: none; }
+  .wl-letter.is-thread .wl-low-in { animation: wl-fade 120ms linear both; }
+  .wl-low-write, .wl-rp-item.is-mine:last-child, .wl-rp-terms, .wl-chin-n, .wl-low-said { animation: none; }
+  .wl-rp-like.is-on .wl-pxi { animation: none; }
+  .wl-chin-grip i { transition: none; }
 }

@@ -21,18 +21,26 @@
 // to be is what this is built not to be.
 //
 // A story that is `live` (the mutual's, pixmark.js `revealStory`) does not
-// stop: past its end it is a loop that changes ten times a second, and it is
-// asked twenty times a second on a timer rather than sixty on the display's
-// clock. It stops when the tab is hidden and starts again, on the right
-// frame, when it is shown: the loop is a function of the clock, so nothing
-// is lost by not drawing it.
+// stop: for a window of each telling (`live`, from its end) it is alive, a
+// loop that changes ten times a second, and it is asked twenty times a
+// second on a timer rather than sixty on the display's clock. It stops when
+// the tab is hidden and starts again, on the right frame, when it is shown:
+// the loop is a function of the clock, so nothing is lost by not drawing it.
 //
 // A story with a `loop` (the door's and the mutual's) is told again from
 // its first frame every `loop` ms, the clock taken round: at the display's
 // rate while it is being told, and past its end a still mark waits on one
-// timer for the next telling, and a live one ticks as above. The screen is
-// asleep across the turn (Join.jsx, Reveal.jsx), so the first frame of the
-// next telling is not seen to replace the last of this one.
+// timer for the next telling, and a live one ticks as above until it is
+// taken back, at the display's rate again. The door's screen is asleep
+// across the turn (Join.jsx), so the first frame of its next telling is not
+// seen to replace the last of this one; the mutual's is not, because its
+// last frame is its first (pixmark.js, `untell`).
+//
+// Before the clock's nought (the mutual's first telling, while its screen
+// comes on) a story is held on its first frame, and until the owner has a
+// nought at all it is held there by `at` (Intro.jsx, Reveal.jsx,
+// `useFirstFrame` below). The clock is read afresh on every frame, so
+// starting it, or moving it, does not lay the canvas out again.
 //
 // ── what a cell carries ─────────────────────────────────────────────────────
 // A cell is [x, y, ink, heat, alpha]. The ink is the screen's near ink, the
@@ -70,7 +78,8 @@
 // story can be started by whoever owns the beats around it, and started
 // again from another moment by moving it.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { markCells, MARK_CUT, BLUSH, ROSE, PANEL } from './pixmark.js'
 import { CHALK } from './mark.js'
 import './story.css'
@@ -134,10 +143,14 @@ export function underPink(style) {
 // The steps under the door's phone and the words typed on the mutual's are
 // lit on the story's own clock, taken round with it when it is told again.
 // This answers how many of `marks` (ms into a telling, in order) the clock
-// has passed on this telling (`i`), and which telling it is (`n`), and
-// wakes only when the next mark or the next telling comes, not on every
-// frame. `marks` is a list made once, outside the render. Held with the
-// tab, and not run at all when `off` (reduced motion, a held frame).
+// has passed on this telling (`i`), which telling it is (`n`), and how far
+// into it the clock was when it last woke (`u`), and wakes only when the
+// next mark or the next telling comes, not on every frame. `marks` is a
+// list made once, outside the render. Held with the tab, and not run at
+// all when `off` (reduced motion, a held frame). A clock with no nought yet
+// (`from` null: the mutual's screen not yet on, Reveal.jsx), or before its
+// nought, has passed no mark; and a clock just started or moved is read on
+// the render that starts or moves it, not a render later.
 function passed(marks, u) {
   let i = 0
   while (i < marks.length && u >= marks[i]) i++
@@ -146,17 +159,19 @@ function passed(marks, u) {
 export function useStoryClock(story, from, marks, off = false) {
   const loop = story.loop || 0
   const read = () => {
+    if (from === null) return { i: 0, n: 0, u: 0, from }
     const t = performance.now() - from
-    const u = loop ? ((t % loop) + loop) % loop : t
-    return { i: passed(marks, u), n: loop ? Math.floor(t / loop) : 0, u }
+    if (t < 0) return { i: 0, n: 0, u: t, from }
+    const u = loop ? t % loop : t
+    return { i: passed(marks, u), n: loop ? Math.floor(t / loop) : 0, u, from }
   }
   const [got, setGot] = useState(read)
   useEffect(() => {
-    if (off) return undefined
+    if (off || from === null) return undefined
     let id = 0
     const step = () => {
       const r = read()
-      setGot((g) => (g.i === r.i && g.n === r.n ? g : r))
+      setGot((g) => (g.i === r.i && g.n === r.n && g.from === r.from ? g : r))
       if (document.hidden) return
       const next = r.i < marks.length ? marks[r.i] : loop
       if (next) id = setTimeout(step, Math.max(8, next - r.u + 2))
@@ -171,11 +186,51 @@ export function useStoryClock(story, from, marks, off = false) {
     // `read` is this render's, over the same three things
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story, from, marks, off])
-  return got
+  return got.from === from ? got : read()
 }
 // the marks a held moment of a telling has passed, for a frame held still
 export function heldAt(marks, u) {
   return { i: passed(marks, u), n: 0, u }
+}
+
+// ── the first frame ──
+// A story's clock starts on the first frame the page can paint, and not on
+// the render that made it. It used to start on the render, and everything
+// that happens between the two (the page mounting round it, the story's own
+// heavy start, the canvas laid out) was time the clock had already spent:
+// on a slow phone the first frame anybody saw of the intro was a third of a
+// second into the run. So `prime`, the story's heavy start, is done first,
+// on the black; then the frame that carries all of that is let go to the
+// display, and the clock's nought is the frame after it, the first one
+// that starts with nothing left to do. The screen's wake (screen.css
+// `wl-wake`, `wl-wake-light`, whatever each screen's own delay and length)
+// is set on that same nought, so the glass comes on and the story is drawn
+// on one clock. Answers the nought, null until that frame; `off` (reduced
+// motion, a held frame) primes nothing and moves no animation, and still
+// answers the frame. `ref` is the element the waking screen is in.
+const WAKES = new Set(['wl-wake', 'wl-wake-light'])
+export function useFirstFrame(ref, prime = null, off = false) {
+  const [t0, setT0] = useState(null)
+  useEffect(() => {
+    if (!off && prime) prime()
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame((ts) => {
+        raf = 0
+        flushSync(() => setT0(ts))
+      })
+    })
+    return () => { if (raf) cancelAnimationFrame(raf) }
+    // once, on mount: the nought is the nought
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (t0 === null || off || !el || !el.getAnimations) return
+    for (const a of el.getAnimations({ subtree: true })) {
+      if (WAKES.has(a.animationName)) a.startTime = t0
+    }
+  }, [t0, off, ref])
+  return t0
 }
 
 // the characters, lightest to heaviest, all plain ASCII
@@ -322,7 +377,9 @@ function noise(x, y, w, salt) {
 }
 function spreadMap(s, w) {
   const key = `${w.x}|${w.y}`
-  if (s.spread && s.spread.key === key) return s.spread
+  // one for each place a pink leaves from or goes back to, kept for the size
+  const had = s.spreads && s.spreads.get(key)
+  if (had) return had
   const bw = Math.ceil(s.pc / SPREAD)
   const bh = Math.ceil(s.pr / SPREAD)
   const th = new Float32Array(bw * bh)
@@ -341,8 +398,10 @@ function spreadMap(s, w) {
     }
   }
   for (let k = 0; k < th.length; k++) th[k] = (th[k] - lo) / (hi - lo || 1)
-  s.spread = { key, th, bw, bh }
-  return s.spread
+  const out = { key, th, bw, bh }
+  s.spreads = s.spreads || new Map()
+  s.spreads.set(key, out)
+  return out
 }
 
 // The pink through the blocks that have turned; and over the ones that
@@ -350,7 +409,13 @@ function spreadMap(s, w) {
 // second, so a block is seen to come on and settle the way a cell of an LCD
 // does, and the front is a ragged line of blocks just lit rather than an
 // edge. `level` takes the whole of it down (the mutual's pink going out
-// onto the panel's own).
+// onto the panel's own, and coming back over it).
+//
+// A wash that is going `back` (the mutual's telling taken back, pixmark.js
+// `recedeFrom`) is the same blocks the other way: the pink through the ones
+// the front has not yet left, farthest first, and over the ones it left on
+// this step and the step before a little of the pink still, less on the
+// second, the way an LCD's cell is slow to let its light go.
 function spreadOn(g, w, s) {
   if (!s.pink) return
   g.setTransform(1, 0, 0, 1, 0, 0)
@@ -365,7 +430,8 @@ function spreadOn(g, w, s) {
   // The pink changes twenty five times a second and the two of them under
   // it sixty, breathing: what a step of the pink is, is worked out on its
   // step and laid again as it is on the frames between.
-  const at = `${m.key}|${w.p}`
+  const back = !!w.back
+  const at = `${m.key}|${w.p}|${back ? 'b' : 's'}`
   if (s.spreadAt !== at) {
     const { bw, bh, th } = m
     const px = SPREAD * s.cell
@@ -387,9 +453,17 @@ function spreadOn(g, w, s) {
       const h = Y(j + 1) - y
       for (let i = 0; i < bw; i++) {
         const v = th[j * bw + i]
-        if (v > w.p) continue
         const x = X(i)
         const wd = X(i + 1) - x
+        if (back) {
+          // going: pink short of the front, and a little of it left on the
+          // blocks the front has just passed
+          if (v < w.p) t.rect(x, y, wd, h)
+          else if (v < p1) now.push(x, y, wd, h)
+          else if (v < p2) then.push(x, y, wd, h)
+          continue
+        }
+        if (v > w.p) continue
         t.rect(x, y, wd, h)
         if (v > p1) now.push(x, y, wd, h)
         else if (v > p2) then.push(x, y, wd, h)
@@ -400,7 +474,8 @@ function spreadOn(g, w, s) {
     t.drawImage(s.pink, 0, 0)
     t.globalCompositeOperation = 'source-over'
     s.spreadAt = at
-    s.fresh = [[now, 0.55], [then, 0.22]]
+    s.fresh = back ? [] : [[now, 0.55], [then, 0.22]]
+    s.ghosts = back ? [[now, 0.4], [then, 0.15]] : []
   }
   g.globalAlpha = level
   g.drawImage(s.tmp, 0, 0)
@@ -410,6 +485,17 @@ function spreadOn(g, w, s) {
     g.beginPath()
     for (let k = 0; k < list.length; k += 4) g.rect(list[k], list[k + 1], list[k + 2], list[k + 3])
     g.fill()
+  }
+  // the pink still in the blocks just left, the panel's own pink through them
+  for (const [list, a] of s.ghosts) {
+    if (!list.length) continue
+    g.save()
+    g.beginPath()
+    for (let k = 0; k < list.length; k += 4) g.rect(list[k], list[k + 1], list[k + 2], list[k + 3])
+    g.clip()
+    g.globalAlpha = a * level
+    g.drawImage(s.pink, 0, 0)
+    g.restore()
   }
   g.globalAlpha = 1
 }
@@ -632,7 +718,7 @@ function onCells(el, host, s, dpr) {
   scr.setAttribute('data-cells', '')
 }
 
-// how often a live story is asked for its frame, once it is past its end
+// how often a live story is asked for its frame, while it is alive
 const LIVE_TICK = 50
 
 export default function PixelStory({ story, at = null, from = null, mode = 'pixel', className = '' }) {
@@ -640,6 +726,16 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
   const cv = useRef(null)
   // when the clock started: the owner's, or this mount's
   const mounted = useRef(typeof performance !== 'undefined' ? performance.now() : 0)
+  // The clock, read afresh on every frame: a clock that starts (Intro.jsx
+  // holds the empty glass until the screen can paint) or is moved (a tap
+  // that lands a telling) goes on drawing on the same canvas, and does not
+  // lay it out again.
+  const clock = useRef({ at, from })
+  const kick = useRef(null)
+  useEffect(() => {
+    clock.current = { at, from }
+    if (kick.current) kick.current()
+  }, [at, from])
 
   useEffect(() => {
     const host = box.current
@@ -647,16 +743,17 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
     if (!host || !el || !story) return undefined
     const g = el.getContext('2d')
     if (!g) return undefined
-    const t0 = from ?? mounted.current
     let raf = 0
     let timer = 0
     let key = null
     let last = null
     let s = null
+    let laid = ''
     const size = () => {
       const w = host.clientWidth
       const h = host.clientHeight
       if (!w || !h) return false
+      laid = `${w}x${h}x${window.devicePixelRatio}`
       const dpr = Math.min(2, window.devicePixelRatio || 1)
       const cell = Math.max(1, Math.floor(Math.min((w * dpr) / story.cols, (h * dpr) / story.rows)))
       const cs = getComputedStyle(el)
@@ -670,6 +767,9 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
       }
       s.ghost = faint(s.rgb)
+      // the first and last column of the panel, on the story's own grid, for
+      // a story that sets its runners by the glass (pixmark.js `shiftFor`)
+      s.edge = { l: -s.ox, r: pc - s.ox - 1 }
       s.W = Math.round(w * dpr)
       s.H = Math.round(h * dpr)
       s.mx = (s.W - pc * cell) >> 1
@@ -683,36 +783,48 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       key = null
       return true
     }
-    // the story's own clock, taken round if it is told again
+    // The story's own clock, taken round if it is told again. Before its
+    // nought (the mutual's first telling, while its screen comes on) it is
+    // held on its first frame.
     const loop = story.loop || 0
-    const round = (t) => (loop ? ((t % loop) + loop) % loop : t)
+    const round = (t) => (t < 0 ? 0 : loop ? t % loop : t)
     const draw = (t) => {
       const u = round(t)
-      const f = story.frame(Math.max(0, story.live ? u : Math.min(u, story.end)))
+      const f = story.frame(story.live ? u : Math.min(u, story.end), s ? s.edge : null)
       last = f
       if (!s || f.key === key) return
       key = f.key
       if (s.fine) paintFine(g, f, s)
       else paint(g, f, s)
     }
-    const now = () => (at != null ? at : performance.now() - t0)
+    const now = () => {
+      const c = clock.current
+      return c.at != null ? c.at : performance.now() - (c.from ?? mounted.current)
+    }
     const stop = () => {
       cancelAnimationFrame(raf)
       clearTimeout(timer)
       raf = 0
       timer = 0
     }
+    // At the display's rate while it is told, and taken back; ten times a
+    // second while it is alive (`live`, the mutual's window of it); and a
+    // still mark past its end waits on one timer for its next telling.
     const tick = () => {
       raf = 0
       timer = 0
       const t = now()
       draw(t)
-      if (at != null || document.hidden) return
+      if (clock.current.at != null || document.hidden) return
       const u = round(t)
-      if (u < story.end) raf = requestAnimationFrame(tick)
-      else if (story.live) timer = setTimeout(tick, LIVE_TICK)
-      // a still mark waits for the next telling
+      const alive = story.live && u >= story.live[0] && u < story.live[1]
+      if (alive) timer = setTimeout(tick, LIVE_TICK)
+      else if (u < story.end || story.live) raf = requestAnimationFrame(tick)
       else if (loop) timer = setTimeout(tick, loop - u)
+    }
+    kick.current = () => {
+      stop()
+      tick()
     }
     size()
     tick()
@@ -724,9 +836,11 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
     }
     document.addEventListener('visibilitychange', onVis)
     // a new size is a new grid of device pixels: drawn again at once, from
-    // the frame already on it
+    // the frame already on it (and the size it was laid out at, which an
+    // observer reports on its first frame, is not a new one)
+    const resized = () => `${host.clientWidth}x${host.clientHeight}x${window.devicePixelRatio}` !== laid
     const ro = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => { if (size() && last) { key = null; draw(now()) } })
+      ? new ResizeObserver(() => { if (resized() && size() && last) { key = null; draw(now()) } })
       : null
     if (ro) ro.observe(host)
     // the typed version waits for its face, and is drawn again in it
@@ -736,11 +850,12 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
     }
     return () => {
       off = true
+      kick.current = null
       stop()
       document.removeEventListener('visibilitychange', onVis)
       if (ro) ro.disconnect()
     }
-  }, [story, at, from, mode])
+  }, [story, mode])
 
   return (
     <div className={`wl-story ${className}`} ref={box} aria-hidden="true">

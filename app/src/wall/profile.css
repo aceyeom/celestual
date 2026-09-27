@@ -1,0 +1,236 @@
+/* ═══ THE PERSON ════════════════════════════════════════════════════════════
+   screens/You.jsx. It was one card that held everything, and the owner said
+   it was messy with a lot crammed in. It is three places now, drawn in the
+   phone's language like the rest of the wall (DESIGN.md 2.6): the person at
+   the top with one quiet key to the settings, two tabs under them, private
+   notes and letters, and a settings page behind the key. The notes stand in
+   a frame of their own, the one thing on the sheet that looks sealed.
+
+   The phone's tokens (`--lcd`, `--lcd-2`, `--lcd-edge`, `--lcd-edge-hi`,
+   `--r-lcd`) are phone.css's, and the sheet's padding is wall.css's
+   (`--sheet-pad`). Nothing here is lit: the key at the foot is the sheet's
+   one bright thing, and a mutual is set apart by its bezel and its signal,
+   not by a second chalk plate. */
+
+/* ── the person ─────────────────────────────────────────────────────────────
+   The face, the @ as the heading and the address under it, and at the end
+   of the row the key to the settings: a square key with its word, the way
+   the phone's own keys were, and quieter than the close mark over it. */
+.wl-you-id {
+  display: flex; align-items: center; gap: 14px; min-width: 0;
+  animation: wl-you-in 280ms var(--ease) both;
+}
+.wl-you-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wl-you-id .wl-profile-addr { font-size: var(--t-subject); line-height: 1.05; }
+.wl-you-id .wl-you-also { margin: 0; color: var(--ash); }
+.wl-you-set,
+.wl-you-back {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px;
+  min-height: 36px; padding: 0 12px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+  background: var(--lcd);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1;
+  color: var(--ash); cursor: pointer;
+}
+.wl-you-back { padding: 0 13px 0 11px; color: var(--chalk); }
+.wl-you-back .wl-pxi { display: block; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-you-set:hover, .wl-you-back:hover { border-color: var(--lcd-edge-hi); color: var(--chalk); }
+}
+.wl-you-set:active, .wl-you-back:active { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-you-set:focus-visible, .wl-you-back:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
+
+/* ── the two tabs ───────────────────────────────────────────────────────────
+   A two way switch, as the phone drew one: one panel with its bezel, two
+   keys inside it, and the chosen key a step lighter with its own bezel lit,
+   its word in chalk. Not inverted: inversion is a menu's chosen row, and a
+   chalk plate here would be a second bright thing beside the key at the
+   foot. The count of each is the figure after its word, and a mutual the
+   notes tab is not showing is one chalk pixel on it. It changes at once, as
+   a phone's did; the list under it fades in. */
+.wl-you-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+  margin-top: 22px; padding: 3px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
+  background: var(--lcd);
+}
+.wl-you-tab {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 0 10px;
+  border-radius: 2px;
+  font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1;
+  color: var(--ash); cursor: pointer; white-space: nowrap;
+}
+.wl-you-tab[aria-selected='true'] {
+  background: var(--lcd-2); color: var(--chalk);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-you-tab[aria-selected='false']:hover { color: var(--chalk); }
+}
+.wl-you-tab:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 1px; }
+.wl-you-tab-n { font-size: var(--t-small); font-variant-numeric: tabular-nums; color: var(--ash-dim); }
+.wl-you-tab[aria-selected='true'] .wl-you-tab-n { color: var(--ash); }
+.wl-you-tab-pip { align-self: flex-start; flex: 0 0 auto; width: 4px; height: 4px; margin: 11px 0 0 -4px; background: var(--chalk); }
+
+/* The card keeps one height whichever tab is open, so the switch changes
+   what is in the frame and never the frame: a sheet that grew and shrank
+   under the thumb with every press read as two sheets. */
+.wl-sheet-wrap.is-you .wl-sheet:has(> .wl-you.is-card) { min-height: min(86dvh, 700px); }
+.wl-sheet:has(> .wl-you.is-card) > .wl-you.is-card { flex: 1 1 auto; }
+
+.wl-you-panel { margin-top: 14px; animation: wl-you-in 220ms var(--ease) both; }
+@keyframes wl-you-in {
+  from { opacity: 0; transform: translate3d(0, 4px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── the notes' frame ───────────────────────────────────────────────────────
+   The phone's double rule: an outer bezel lit, a ring of the panel's own
+   black, and a second bezel inside it, the way a phone boxed a dialog it
+   wanted read. A title strip across its head a step lighter, the sealed
+   envelope in chalk and the slots at its end as cells, the phone's dashed
+   seam under it. Nothing else on the wall is framed like this, so the notes
+   read as kept apart from the letters before a word of them is read. */
+.wl-vault {
+  position: relative;
+  padding: 5px;
+  border-radius: var(--r-lcd);
+  background-color: var(--lcd);
+  box-shadow:
+    inset 0 0 0 1px var(--lcd-edge-hi),
+    inset 0 0 0 4px var(--lcd),
+    inset 0 0 0 5px var(--lcd-edge);
+}
+.wl-vault-bar {
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 11px 11px;
+  background-color: var(--lcd-2);
+}
+.wl-vault-bar::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+.wl-vault-title {
+  display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1;
+  color: var(--ash); white-space: nowrap;
+}
+.wl-vault-seal { flex: 0 0 auto; display: block; color: var(--chalk); }
+.wl-slots { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; }
+.wl-slots-cells { display: inline-flex; gap: 3px; }
+.wl-slots-cells i { width: 7px; height: 7px; box-shadow: inset 0 0 0 1px var(--lcd-edge-hi); }
+.wl-slots-cells i.is-used { background: var(--ash); box-shadow: none; }
+.wl-slots-say { font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash-dim); white-space: nowrap; }
+
+.wl-vault-body { display: flex; flex-direction: column; padding: 6px 6px 7px; background-image: var(--lcd-grid); }
+.wl-vault-body > .wl-you-ask { padding: 10px 8px 8px; }
+.wl-vault-body > .wl-you-ask > .wl-quiet, .wl-set-panel .wl-you-ask > .wl-quiet { align-self: flex-start; }
+.wl-vault-body > .wl-you-wait { margin: 0; padding: 8px; }
+.wl-vault-none { margin: 0; padding: 14px 8px 12px; }
+
+/* the mutuals, first and under their own seam: the only news on the sheet */
+.wl-vault-news { display: flex; flex-direction: column; gap: 4px; padding: 2px 0 8px; }
+.wl-vault-news:not(:last-child) { margin-bottom: 6px; position: relative; }
+.wl-vault-news:not(:last-child)::after {
+  content: ''; position: absolute; left: 8px; right: 8px; bottom: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+.wl-vault-list { display: flex; flex-direction: column; }
+
+/* a row: the letters' row (wall.css `.wl-wrote-row`), with the signal at its
+   end, and the phone's inversion under the pointer and the press */
+.wl-vault-row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 8px;
+  border: 0; border-radius: var(--r-lcd); background: none;
+  color: var(--chalk); text-align: left; cursor: pointer;
+}
+.wl-vault-row .wl-wrote-meta { color: var(--ash); }
+.wl-vault-row.is-mutual {
+  background: rgba(244, 241, 234, 0.035);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi);
+}
+.wl-vault-row.is-mutual .wl-wrote-meta { color: var(--chalk); }
+.wl-vault-row.is-draft .wl-wrote-meta { color: var(--ash-dim); }
+.wl-vault-row:active { background: var(--chalk); box-shadow: none; }
+.wl-vault-row:active :is(.wl-wrote-name, .wl-wrote-meta, .wl-signal) { color: #000; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-vault-row:hover { background: var(--chalk); box-shadow: none; }
+  .wl-vault-row:hover :is(.wl-wrote-name, .wl-wrote-meta, .wl-signal) { color: #000; }
+}
+.wl-vault-row:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: -1px; }
+/* not sent: the face and the name a step back, since nothing is out yet */
+:is(.wl-vault-row, .wl-wrote-row).is-draft .wl-face { opacity: 0.5; }
+:is(.wl-vault-row, .wl-wrote-row).is-draft .wl-wrote-name { color: var(--ash); }
+
+/* ── the signal ─────────────────────────────────────────────────────────────
+   The aerial and four bars from the phone's status row. A mutual has all
+   four, lit in chalk and still. A standing note is searching: every bar
+   unlit but for the cells the phone always showed faintly, and one, two,
+   three climbing on the phone's own half beat (530ms, the caret's 1060
+   halved) before they fall back. Opacity on four spans, nothing else, so it
+   costs the compositor nothing; a hidden tab paints none of it; and under
+   reduced motion two bars stand still, which still says waiting. */
+.wl-signal { flex: 0 0 auto; display: inline-flex; align-items: flex-end; gap: 4px; margin-right: 2px; color: var(--ash); }
+.wl-signal .wl-signal-ant { display: block; }
+/* on the aerial's own grid, two of the page's pixels to each of its cells */
+.wl-signal-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; }
+.wl-signal-bars i { width: 4px; background: currentColor; opacity: 0.2; }
+.wl-signal-bars i:nth-child(1) { height: 6px; }
+.wl-signal-bars i:nth-child(2) { height: 10px; }
+.wl-signal-bars i:nth-child(3) { height: 14px; }
+.wl-signal-bars i:nth-child(4) { height: 20px; }
+.wl-signal.is-full { color: var(--chalk); }
+.wl-signal.is-full .wl-signal-bars i { opacity: 1; }
+.wl-signal.is-seeking .wl-signal-bars i { animation: 2120ms steps(1, end) infinite; }
+.wl-signal.is-seeking .wl-signal-bars i:nth-child(1) { animation-name: wl-seek-1; }
+.wl-signal.is-seeking .wl-signal-bars i:nth-child(2) { animation-name: wl-seek-2; }
+.wl-signal.is-seeking .wl-signal-bars i:nth-child(3) { animation-name: wl-seek-3; }
+@keyframes wl-seek-1 { 0% { opacity: 0.2; } 25%, 100% { opacity: 1; } }
+@keyframes wl-seek-2 { 0% { opacity: 0.2; } 50%, 100% { opacity: 1; } }
+@keyframes wl-seek-3 { 0% { opacity: 0.2; } 75%, 100% { opacity: 1; } }
+
+/* ── the letters ────────────────────────────────────────────────────────────
+   Unlit rows, as the wall's are, and the letter the composer is holding
+   first, a step back and with a seam under it. */
+.wl-you-letters { display: flex; flex-direction: column; }
+.wl-you-letters > .wl-wrote-row.is-draft { position: relative; margin: 0 -8px 6px; width: calc(100% + 16px); }
+.wl-you-letters > .wl-wrote-row.is-draft::after {
+  content: ''; position: absolute; left: 8px; right: 8px; bottom: -4px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
+}
+.wl-you-letters > .wl-wrote-row.is-draft .wl-wrote-meta { color: var(--ash-dim); }
+.wl-you-letters > .wl-wrote { padding-top: 0; }
+.wl-you-letters > .wl-profile-none { margin: 4px 0 0; }
+
+/* ── settings ───────────────────────────────────────────────────────────────
+   A heading, and each thing under its own label on its own panel: the @,
+   then its email alerts. The way off the wall stands under both as a quiet
+   line, and the way out of this device is the foot. */
+.wl-you-title {
+  margin: 0; font-family: var(--f-display); font-size: var(--t-subject); font-weight: 400; line-height: 1.05;
+  color: var(--chalk);
+}
+.wl-set-group { margin-top: 20px; animation: wl-you-in 240ms var(--ease) both; }
+.wl-set-h { margin-bottom: 8px; }
+.wl-set-panel {
+  padding: 12px 14px;
+  border-radius: var(--r-lcd);
+  background: var(--lcd);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+}
+.wl-set-panel.wl-owner-me { padding-top: 12px; }
+.wl-set-panel .wl-owner-alerts { padding-top: 0; }
+.wl-set-panel .wl-switch { padding: 8px 0; }
+.wl-set-panel > .wl-you-ask { padding-top: 0; }
+.wl-set-panel > .wl-you-wait { margin: 0; }
+.wl-you.is-settings .wl-owner-off { margin-top: 22px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-you-id, .wl-you-panel, .wl-set-group { animation: none; }
+  .wl-signal.is-seeking .wl-signal-bars i { animation: none; }
+  .wl-signal.is-seeking .wl-signal-bars i:nth-child(-n + 2) { opacity: 1; }
+}

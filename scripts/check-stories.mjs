@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// check-stories.mjs — two things about the stories on the glass that a
+// check-stories.mjs — things about the stories on the glass that a
 // screenshot cannot prove, because they are true or false on every frame and
 // a screenshot is one (app/src/wall/pixmark.js, folk.js).
 //
@@ -8,12 +8,33 @@
 //      each crosses its edge of the panel within a frame or two of the
 //      other's (folk.js `LEAD`), on a phone's panel, which runs three cells
 //      past the story's grid either side, and on a desk's, which is the grid.
-//   2  on the door, a note never touches either of them: at every 4ms of the
+//   2  the moments each of them is first seen on a glass that runs further
+//      past the grid, which pixmark.js keeps to set the pair along by
+//      (`ENTER`, `shiftFor`), are still what the bodies do: worked out again
+//      here, at a quarter of the ink and at a half, and a list that has gone
+//      stale is a failure that says what it should be.
+//   3  every telling opens on the empty glass. For the intro and for each
+//      telling of the mutual, frame by frame from the telling's first to the
+//      one they come in on: not one cell of either body lit anywhere on the
+//      panel, however faint, and that frame a beat after the screen is on
+//      (the intro's wake, pixmark.js `I_WAKE_AT` and `I_WAKE_MS`; the
+//      mutual's clock starts once its screen is on). Then the first cell of
+//      each over its edge within a frame (16ms) of the other's, on a phone's
+//      panel and on a desk's, whether it is the first sliver lit, the first
+//      cell seen or the first solid one; and on every other glass from none
+//      to ten cells past the grid, within two.
+//   4  the mutual loops without a seam: the frame a moment before a telling
+//      ends is the frame it starts on, the empty glass, and the phone round
+//      it (its light, the panel under the pink, the light it throws in the
+//      room, how far it has risen, the drift) is where it was at the start;
+//      and nothing the phone does jumps anywhere along the telling.
+//   5  on the door, a note never touches either of them: at every 4ms of the
 //      telling, not one cell of a note is lit on or beside a lit cell of
 //      either body. The owner saw a note cut into him; this is the tripwire.
 //
 // It reads the stories as functions of the clock, in node, with no page and
-// no canvas: the bodies and the notes are arithmetic until they are drawn.
+// no canvas: the bodies and the notes are arithmetic until they are drawn,
+// and nothing asked for here is past the moment the mark is rasterised.
 // Exits non-zero on a failure.
 //
 // Run: node scripts/check-stories.mjs
@@ -23,17 +44,28 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const wall = (f) => pathToFileURL(join(root, 'app/src/wall', f)).href
 const { introFolk, drawBody, cellsOf, sheet } = await import(wall('folk.js'))
-const { joinStory, I_COLS } = await import(wall('pixmark.js'))
+const {
+  joinStory, introStory, revealStory, I_COLS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, R_EMPTY,
+  ENTER, shiftFor,
+} = await import(wall('pixmark.js'))
 
 let bad = 0
 const fail = (m) => { bad++; console.error(`✗ ${m}`) }
 const pass = (m) => console.log(`✓ ${m}`)
 
+// a frame
+const FRAME = 16
+// the least the empty glass is held once the screen is on: on a phone's
+// glass and a desk's, and on any glass at all (one that runs far past the
+// grid is reached sooner)
+const BEAT = 200
+const BEAT_ANY = 100
+
 // ── 1. together ──
 const G = 67
 const folk = introFolk({ ground: G, mid: (I_COLS - 1) >> 1 })
-const SH = sheet(-140, G - 66, I_COLS + 280, 72)
-const SS = sheet(-140, G - 66, I_COLS + 280, 72)
+const SH = sheet(-160, G - 66, I_COLS + 320, 72)
+const SS = sheet(-160, G - 66, I_COLS + 320, 72)
 // a frame is 16ms; the two may be a frame or two apart, never more
 const SLACK = 40
 for (const [name, L, R] of [['a phone', -3, I_COLS + 2], ['a desk', 0, I_COLS - 1]]) {
@@ -52,7 +84,141 @@ for (const [name, L, R] of [['a phone', -3, I_COLS + 2], ['a desk', 0, I_COLS - 
   else pass(`on ${name} the two come on together (${him}ms and ${her}ms)`)
 }
 
-// ── 2. the notes ──
+// ── 2. the lists the pair is set along by ──
+// the moment each first lights a cell at a quarter of the ink (seen) and at
+// a half (solid), of a glass `o` cells past the grid on their own side
+const STRENGTH = { seen: 0.25, solid: 0.5 }
+{
+  const n = ENTER.him.seen.length - 1
+  const got = { him: {}, her: {} }
+  for (const k of Object.keys(STRENGTH)) {
+    got.him[k] = new Array(n + 1).fill(null)
+    got.her[k] = new Array(n + 1).fill(null)
+  }
+  for (let t = -900; t <= 400; t += 1) {
+    const { him: a, her: b } = folk.poseAt(t)
+    drawBody('him', a, folk.himX(t), G, false, SH)
+    drawBody('her', b, folk.herX(t), G, true, SS)
+    for (const [k, at] of Object.entries(STRENGTH)) {
+      const hx = Math.max(...cellsOf(SH).filter((c) => c[4] >= at).map((c) => c[0]))
+      const sx = Math.min(...cellsOf(SS).filter((c) => c[4] >= at).map((c) => c[0]))
+      for (let o = 0; o <= n; o++) {
+        if (got.him[k][o] === null && hx >= -o) got.him[k][o] = t
+        if (got.her[k][o] === null && sx <= I_COLS - 1 + o) got.her[k][o] = t
+      }
+    }
+  }
+  if (JSON.stringify(got) !== JSON.stringify(ENTER)) fail(`the run has changed: pixmark.js ENTER should be ${JSON.stringify(got)}`)
+  else pass(`the moments each is first seen on a glass 0 to ${n} cells past the grid are pixmark.js's own`)
+}
+
+// ── 3. the empty glass, and the two of them in on one frame ──
+// The first frame from `from` on which a cell of either body is lit, on each
+// of the panels (column l to column r), at any strength (`faint`), at a
+// quarter of the ink (`seen`) and at a half (`solid`): his are left of the
+// middle, hers right. The clock is walked once and every panel is asked on
+// each frame, which is the frame the story draws for that glass.
+const LEVELS = { faint: 1e-9, ...STRENGTH }
+function entriesOf(story, from, until, panels) {
+  const mid = (I_COLS - 1) >> 1
+  const got = panels.map(() => Object.fromEntries(Object.keys(LEVELS).map((k) => [k, { him: null, her: null }])))
+  const open = (g) => Object.values(g).some((e) => e.him === null || e.her === null)
+  for (let t = from; t <= until && got.some(open); t += 1) {
+    panels.forEach(({ l, r }, i) => {
+      if (!open(got[i])) return
+      for (const c of story.frame(t, { l, r }).cells) {
+        if (c[2] !== 1 || c[0] < l || c[0] > r) continue
+        const a = c[4] ?? 1
+        for (const [k, at] of Object.entries(LEVELS)) {
+          if (a < at) continue
+          const e = got[i][k]
+          if (c[0] < mid && e.him === null) e.him = t
+          if (c[0] > mid && e.her === null) e.her = t
+        }
+      }
+    })
+  }
+  return got
+}
+const tellings = [
+  // the intro's clock starts on the black; its screen is on at the end of
+  // its wake
+  ['the intro', introStory(I_RUN_AT - I_ENTER), 0, I_WAKE_AT + I_WAKE_MS, I_RUN_AT + 400],
+  // the mutual's clock starts once its screen is on (Reveal.jsx), and every
+  // telling after the first starts from the glass the last one ended on
+  ['the mutual', revealStory(), 0, 0, R_EMPTY + 400],
+]
+const PANELS = [['a phone', 3, 3, FRAME, BEAT], ['a desk', 0, 0, FRAME, BEAT]]
+for (let o = 0; o <= 10; o++) for (const x of [0, 1]) PANELS.push([`a glass ${o}/${o + x} cells past`, o, o + x, 2 * FRAME, BEAT_ANY])
+for (const [name, story, from, lit, until] of tellings) {
+  const worst = { faint: [0, ''], seen: [0, ''], solid: [0, ''] }
+  let early = Infinity
+  const edges = PANELS.map(([, oL, oR]) => ({ l: -oL, r: I_COLS - 1 + oR }))
+  const got = entriesOf(story, from, until, edges)
+  PANELS.forEach(([panel, , , slack, beat], i) => {
+    const { l, r } = edges[i]
+    const g = got[i]
+    if (Object.values(g).some((e) => e.him === null || e.her === null)) {
+      fail(`${name} on ${panel}: nobody came in by ${until}ms`)
+      return
+    }
+    // nothing of either of them, at any strength, until a beat after the
+    // screen is on
+    const first = Math.min(g.faint.him, g.faint.her)
+    early = Math.min(early, first - lit)
+    if (first - lit < beat) fail(`${name} on ${panel}: a cell of them is on the glass ${first - lit}ms after the screen is on, before a beat of the empty glass`)
+    const say = []
+    for (const k of Object.keys(LEVELS)) {
+      const gap = Math.abs(g[k].him - g[k].her)
+      if (gap > worst[k][0]) worst[k] = [gap, panel]
+      if (gap > slack) fail(`${name} on ${panel} (set ${shiftFor(l, r)} along): the first ${k} cell of him at ${g[k].him}ms and of her at ${g[k].her}ms, ${gap}ms apart`)
+      say.push(`${k} ${g[k].him} and ${g[k].her}`)
+    }
+    if (slack === FRAME) pass(`${name} on ${panel}: the glass is empty until ${first}ms, ${first - lit}ms after it is on, and they come in on one frame (${say.join(', ')})`)
+  })
+  pass(`${name} on every glass 0 to 10 cells past the grid: empty for at least ${early}ms once it is on, and the two at most ${Object.entries(worst).map(([k, [ms, p]]) => `${ms}ms apart ${k} (${p})`).join(', ')}`)
+}
+
+// ── 4. the mutual's seam ──
+{
+  const s = revealStory()
+  const P = s.loop
+  // the frame a moment before a telling ends, and the frame it starts on
+  const cellsKey = (f) => `${f.ink}|${f.wash ? 'w' : ''}|${f.glow ? 'g' : ''}|${[...f.cells].map((c) => c.join(',')).sort().join(';')}`
+  const late = s.frame(P - 0.5)
+  const first = s.frame(0)
+  if (cellsKey(late) !== cellsKey(first)) fail(`the mutual's last frame (${late.key}) is not the frame it starts on (${first.key})`)
+  else pass(`the mutual's last frame, ${P - 0.5}ms in, is the empty glass it opens on (${late.key === first.key ? 'the same frame' : 'the same cells'})`)
+  // it is the empty glass from the moment the telling is taken back until
+  // it is told again
+  let odd = null
+  for (let t = s.times.night; t < P; t += 1) if (s.frame(t) !== first) { odd = t; break }
+  if (odd !== null) fail(`the mutual's glass is not the empty glass at ${odd}ms, after it has been taken back`)
+  else pass(`from ${s.times.night}ms to ${P}ms, and from 0 until they come in, the glass is one frame`)
+  // the phone round it
+  const a = s.lightAt(P - 0.5)
+  const b = s.lightAt(0)
+  const off = Object.keys(b).filter((k) => Math.abs(Number(a[k]) - Number(b[k])) > 1e-6)
+  if (off.length) fail(`the phone at the end of a telling is not as it starts: ${off.map((k) => `${k} ${a[k]} and ${b[k]}`).join(', ')}`)
+  else pass(`the phone at the end of a telling is as it starts (${Object.entries(b).map(([k, v]) => `${k} ${v}`).join(', ')})`)
+  // and nothing it does jumps: every list of keys runs from the start of
+  // the telling to its end, in order, and two keys at one moment agree
+  for (const [name, keys] of Object.entries(s.phone)) {
+    if (name === 'drift') continue
+    const val = (k) => JSON.stringify(k[1])
+    let ok = keys[0][0] === 0 && keys[keys.length - 1][0] === P && val(keys[0]) === val(keys[keys.length - 1])
+    for (let i = 1; i < keys.length; i++) {
+      if (keys[i][0] < keys[i - 1][0]) ok = false
+      if (keys[i][0] === keys[i - 1][0] && val(keys[i]) !== val(keys[i - 1])) ok = false
+    }
+    if (!ok) fail(`the phone's ${name} jumps somewhere along the telling`)
+  }
+  pass(`the phone's ${Object.keys(s.phone).filter((k) => k !== 'drift').join(', ')} run once round a telling, ${P}ms, and meet themselves`)
+  const [d0, d1] = s.phone.drift
+  if (!(d0 > 0 && d1 < P && d0 < d1)) fail(`the drift is not inside the telling (${d0} to ${d1})`)
+}
+
+// ── 5. the notes ──
 const door = joinStory()
 const T = door.times
 let near = Infinity

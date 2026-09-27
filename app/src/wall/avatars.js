@@ -6,7 +6,7 @@
 // of fifteen anonymous replies set in one face is fifteen of the same grey
 // line: nobody can tell who is answering whom, or that the third reply and
 // the eighth are the same person. So every writer in a thread is a small
-// creature on a small screen, and a name of two words for it (`quiet moth`),
+// creature on a small screen, and a single old word for a name (`kairos`),
 // the way a phone with no contact saved for a number still gave the number a
 // picture.
 //
@@ -31,9 +31,17 @@
 //                creature is a picture on a small one, as a person's face is
 //                (`PixelPic`)
 //   the blush    whether its cheeks are in the second ink
-//   the name     a word from a short gentle list and the kind, so the name
-//                is what is drawn. Never anything that could describe a
-//                person, and never anything unkind
+//   the name     one word out of sixty-four from philosophy and the old
+//                sky, Greek and Latin mostly and a few from further east
+//                (`aporia`, `vesper`, `syzygy`, `yugen`): the words people
+//                had for time, longing, the soul and the night, which is
+//                what a letter written in secret is about. The owner asked
+//                for names that were short, esoteric and sophisticated, so
+//                none is longer than nine letters. The name is its own
+//                figure and has nothing to do with the kind: a `kairos` can
+//                be a moth or a frog. Never a person's name, never a god's,
+//                never a word the product uses for itself, never anything
+//                that could describe a person or hurt one
 //
 // The recipient is never a creature. Their reply carries their own small
 // screen, the face of the @ the letter is to (Replies.jsx), because the one
@@ -64,11 +72,24 @@ const KINDS = [
   ['bat', ['....X.', 'X...XX', 'XX.XXX', 'XXXXoX', 'XXXXXX', 'X.XXXh', '...XXX', '....X.']],
 ]
 
-// The word before the kind. Gentle, short, and nothing a person could be
-// described by or hurt by.
-const WORDS = [
-  'quiet', 'small', 'late', 'soft', 'still', 'sleepy', 'brave', 'calm', 'bright', 'shy',
-  'kind', 'slow', 'lucky', 'early', 'gentle', 'tiny', 'pale', 'warm', 'fond', 'round',
+// The names. Sixty-four, so the figures fall on each one evenly. Every one
+// is one word, lowercase, nine letters or fewer, and says it aloud easily;
+// none is a person's or a god's name, a slur in any common language, or
+// anything that describes a body, an age or where somebody is from.
+const NAMES = [
+  // time, and the moment
+  'kairos', 'aevum', 'epoche', 'stasis', 'otium', 'satori', 'yugen', 'duende',
+  // the soul and what it feels
+  'anima', 'thymos', 'pneuma', 'nous', 'ataraxia', 'eudaimon', 'saudade', 'henosis',
+  // knowing, and not knowing
+  'aporia', 'gnosis', 'noesis', 'episteme', 'phronesis', 'dianoia', 'theoria', 'anamnesis',
+  // what things are
+  'ousia', 'eidos', 'telos', 'arche', 'physis', 'monad', 'apeiron', 'noumenon',
+  'qualia', 'hapax', 'logos', 'ethos', 'arete', 'praxis', 'poiesis', 'mimesis',
+  'dynamis', 'energeia', 'entelechy', 'lethe', 'chora', 'numen', 'lumen', 'umbra',
+  // the old sky
+  'aether', 'kosmos', 'caelum', 'astra', 'sidera', 'vesper', 'ignis', 'zenith',
+  'syzygy', 'parallax', 'albedo', 'gnomon', 'azimuth', 'equinox', 'solstice', 'apogee',
 ]
 
 // A drawing's grid: eleven wide, as tall as its rows, each cell one of the
@@ -134,19 +155,30 @@ export function creatureOf(who) {
   const n = (i, len = 4) => parseInt(f.slice(i, i + len), 16) || 0
   const [kind, half] = KINDS[n(0) % KINDS.length]
   const colour = COLOURS[n(4) % COLOURS.length]
-  const word = WORDS[n(8) % WORDS.length]
+  const name = NAMES[n(8) % NAMES.length]
   const blush = (n(12, 1) & 1) === 1
   const out = {
     kind, colour: colour.slug, inks: inksOf(colour),
-    grid: draw(half, blush), w: W, name: `${word} ${kind}`,
+    grid: draw(half, blush), w: W, name,
   }
   MEMO.set(key, out)
   return out
 }
 
+// A count in the old way, lowercase (`ii`, `iv`, `xii`), for the second and
+// later writer in one thread to draw a name already taken.
+function roman(k) {
+  let out = ''
+  let left = k
+  for (const [v, r] of [[40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']]) {
+    while (left >= v) { out += r; left -= v }
+  }
+  return out
+}
+
 // The names of every writer in a thread, in the order they first spoke, with
-// a figure after any name a second writer in the same thread drew too, so
-// two quiet moths are never one.
+// a roman numeral after any name a second writer in the same thread drew too
+// (`kairos ii`), so two of one name are never one person.
 export function namesFor(whos) {
   const seen = new Map()
   const out = new Map()
@@ -155,7 +187,7 @@ export function namesFor(whos) {
     const base = creatureOf(w).name
     const k = (seen.get(base) || 0) + 1
     seen.set(base, k)
-    out.set(w, k > 1 ? `${base} ${k}` : base)
+    out.set(w, k > 1 ? `${base} ${roman(k)}` : base)
   }
   return out
 }
