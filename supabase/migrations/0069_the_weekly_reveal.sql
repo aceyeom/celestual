@@ -318,13 +318,15 @@ begin
   end if;
 
   -- Record, change or send again. The words change until the reveal and not
-  -- after it; a running note keeps the later of its two ends; a lapsed one
-  -- starts a new week.
+  -- after it: words sent empty ({"words": ""}) take them off, and no card at
+  -- all keeps them, which is how a note is sent again. A running note keeps
+  -- the later of its two ends; a lapsed one starts a new week.
   insert into celestual_entries (from_handle, to_hash, to_handle, from_email, card, expires_at)
   values (nf, nh, nt, ne, nc, v_expires)
   on conflict (from_handle, to_hash) do update
     set from_email = coalesce(excluded.from_email, celestual_entries.from_email),
         card       = case when celestual_entries.matched_at is not null then celestual_entries.card
+                          when excluded.card is null and jsonb_typeof(p_card) = 'object' and p_card ? 'words' then null
                           else coalesce(excluded.card, celestual_entries.card) end,
         to_handle  = excluded.to_handle,
         expires_at = case when celestual_entries.matched_at is not null then celestual_entries.expires_at
@@ -484,7 +486,11 @@ grant execute on function celestual_renew(text, text, text) to anon, authenticat
 
 -- ── 7. letting one go ────────────────────────────────────────────────────────
 -- celestual_withdraw, as 0038 wrote it, and a sealed other half unsealed, so
--- it stands or lapses as a note nobody answered.
+-- it stands or lapses as a note nobody answered. A mutual is not let go: the
+-- reveal runs first, and a pair it has just made mutual has been told to
+-- both, by the list and by the mail, so a "let it go" pressed on a screen
+-- that was up across the night answers 'mutual' and changes nothing, rather
+-- than taking the pair back from the other person after they were told.
 create or replace function celestual_withdraw(p_from text, p_to text, p_proof text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -506,14 +512,20 @@ begin
   with gone as (
     delete from celestual_entries
      where from_handle = nf and to_hash = celestual_hash_handle(nt)
+       and matched_at is null
     returning id
   ) select array_agg(id) into v_ids from gone;
   v_deleted := coalesce(cardinality(v_ids), 0);
 
-  if v_deleted > 0 then
-    update celestual_entries set sealed_with = null, sealed_at = null, reveal_at = null
-     where sealed_with = any(v_ids);
+  if v_deleted = 0 then
+    return jsonb_build_object('withdrawn', false,
+      'error', case when exists (select 1 from celestual_entries
+                                  where from_handle = nf and to_hash = celestual_hash_handle(nt))
+                    then 'mutual' end);
   end if;
+
+  update celestual_entries set sealed_with = null, sealed_at = null, reveal_at = null
+   where sealed_with = any(v_ids);
 
   update celestual_entries e
      set matched_at = null,

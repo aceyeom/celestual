@@ -181,6 +181,10 @@ export function slotCap() {
 // device) is renewed from the person once (auth.js `renewProof`, 0065) and the
 // ping sent again with the fresh one, so the DM is asked for only when this
 // person holds no @ the server can vouch for.
+//
+// Words sent empty are words taken off, and the server clears them until the
+// reveal (0069); no words at all, which is how a note is sent again, keeps
+// what it had.
 export async function place({ me: mineNow, them, email, proof, words }) {
   try {
     const send = (spend) => placePing({
@@ -188,7 +192,7 @@ export async function place({ me: mineNow, them, email, proof, words }) {
       them,
       email: email || null,
       proof: spend,
-      card: words ? { words } : null,
+      card: words == null ? null : { words },
     })
     const key = proof || await proofFor(mineNow)
     let out = await send(key)
@@ -201,6 +205,7 @@ export async function place({ me: mineNow, them, email, proof, words }) {
     if (!out || out.recorded === false || out.ok === false) {
       return { ok: false, error: out?.error || 'failed', slots: out?.slots || null }
     }
+    noteSpan(Date.parse(out.expires_at || 0))
     return { ok: true, ...out }
   } catch (e) {
     const msg = String(e?.message || '')
@@ -213,17 +218,21 @@ export async function place({ me: mineNow, them, email, proof, words }) {
 // ── keeping one, and letting one go ─────────────────────────────────────────
 // The two things a person can do to a ping they have out, off the same RPCs
 // the old design called (celestual_renew, celestual_withdraw), gated by the
-// same proof. Both answer a plain yes or no, and the list is read again on a
-// yes. celestual_renew says `ok` from its row count, and (before 0038) sent
-// an expires_at beside ok:false; reading either as a yes reported a renewal
-// that did not happen, on a ping that had just gone mutual or been let go
-// elsewhere.
+// same proof. Both answer yes or no and, on a no, why, and the list is read
+// again after either. celestual_renew says `ok` from its row count, and
+// (before 0038) sent an expires_at beside ok:false; reading either as a yes
+// reported a renewal that did not happen, on a ping that had just gone mutual
+// or been let go elsewhere. A no for a reason is not "try again": a note whose
+// reveal came while its screen was open answers 'lapsed' (not this time) or
+// 'none' (it went mutual, or was let go elsewhere), and letting go of one
+// that went mutual answers 'mutual' (0069).
 export async function renew({ me: mineNow, them }) {
   try {
     const out = await renewPing({ me: mineNow, them, proof: await proofFor(mineNow) })
-    return out?.ok === true
+    if (out?.ok !== true) return { ok: false, error: out?.error || 'network' }
+    return { ok: true, expires: Date.parse(out.expires_at || 0) || 0 }
   } catch {
-    return false
+    return { ok: false, error: 'network' }
   }
 }
 
@@ -231,15 +240,18 @@ export async function renew({ me: mineNow, them }) {
 // had (the server keeps them when none are sent), through the placement, so
 // the slot rule and the matching run as for any note going out (0069).
 export async function sendAgain({ me: mineNow, them }) {
-  return place({ me: mineNow, them, words: '' })
+  return place({ me: mineNow, them })
 }
 
+// Nothing to let go (it went elsewhere already) is a yes: the note is gone,
+// which is what was asked.
 export async function release({ me: mineNow, them }) {
   try {
     const out = await retirePing({ me: mineNow, them, proof: await proofFor(mineNow) })
-    return !!(out && (out.withdrawn || out.ok))
+    if (!out) return { ok: false, error: 'network' }
+    return out.withdrawn || out.ok || !out.error ? { ok: true } : { ok: false, error: out.error }
   } catch {
-    return false
+    return { ok: false, error: 'network' }
   }
 }
 
@@ -337,9 +349,26 @@ export function lastReveal(at = Date.now()) {
 // request. A person who has never been here is given the last reveal as seen,
 // so nobody's first visit after this lands carries a light for a night they
 // were not part of.
+//
+// Only the spans that can still meet a reveal are kept: one that ended before
+// the last reveal never will, and the list is oldest first and keeps every
+// mutual, so keeping its first dozen dropped the very notes that were out
+// this week. And a note placed is a span at once (`place`), since a person
+// who sends one from the wall may not open the list again before its night.
+const SPANS = 24
 function keepSpans(pings) {
-  const spans = pings.map((p) => [p.at || 0, p.state === 'mutual' ? p.revealedAt : p.expires]).filter((x) => x[1])
-  patch({ noteSpans: spans.slice(0, 12) })
+  const floor = lastReveal() - HOUR_MS
+  const spans = pings
+    .map((p) => [p.at || 0, p.state === 'mutual' ? p.revealedAt : p.expires])
+    .filter((x) => x[1] && x[1] >= floor)
+    .sort((a, b) => a[1] - b[1])
+  patch({ noteSpans: spans.slice(-SPANS) })
+}
+function noteSpan(end, at = Date.now()) {
+  if (!end) return
+  const spans = getState().noteSpans || []
+  if (spans.some(([from, to]) => from <= at && to >= end)) return
+  patch({ noteSpans: [...spans, [at, end]].slice(-SPANS) })
 }
 function seenReveal() {
   const s = getState()
@@ -348,7 +377,9 @@ function seenReveal() {
   patch({ revealSeen: last })
   return last
 }
+// and nobody with no @ here has notes to have a light for
 export function revealWaiting(at = Date.now()) {
+  if (!myHandle()) return false
   const last = lastReveal(at)
   if (seenReveal() >= last) return false
   return (getState().noteSpans || []).some(([from, to]) => from < last && to >= last)
@@ -366,19 +397,43 @@ export function daysLeft(expires) {
 }
 
 // When a note ends, said the way a person would: this saturday, next
-// saturday, or the date when it is further than that.
+// saturday, or the date when it is further than that. Only a reveal is a
+// saturday: an end that is not one (a note from before 0069, or a backend
+// that does not keep the week) is said on the day it really falls.
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+const NEAR_MS = HOUR_MS * 2
+const isReveal = (t) => NEAR_MS > Math.abs(t - nextReveal(t - NEAR_MS))
 export function endsWords(end, at = Date.now()) {
   if (!end) return ''
   const n = nextReveal(at)
-  if (Math.abs(end - n) < HOUR_MS * 2) return 'this saturday'
-  if (Math.abs(end - nextReveal(n)) < HOUR_MS * 2) return 'next saturday'
+  const on = isReveal(end)
+  if (on && Math.abs(end - n) < NEAR_MS) return 'this saturday'
+  if (on && Math.abs(end - nextReveal(n)) < NEAR_MS) return 'next saturday'
   const w = wallOf(end)
-  return `saturday ${['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][w.m - 1]} ${w.d}`
+  return `${on ? 'saturday' : DAYS[w.dow]} ${MONTHS[w.m - 1]} ${w.d}`
 }
 
-// Whether a standing note is already kept for the week after this one.
+// When a note that was not this time ended, by the clock of whoever is
+// reading: tonight, or today, while it is still that day where they are,
+// last night or yesterday the day after, and past that the day it was.
+export function endedWords(end, at = Date.now()) {
+  if (!end) return ''
+  const day = (t) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() }
+  const ago = Math.round((day(at) - day(end)) / DAY_MS)
+  const late = new Date(end).getHours() >= 17
+  if (ago <= 0) return late ? 'tonight' : 'today'
+  if (ago === 1) return late ? 'last night' : 'yesterday'
+  return `last ${isReveal(end) ? 'saturday' : DAYS[wallOf(end).dow]}`
+}
+
+// Whether a standing note is kept as far ahead as it goes: to the reveal
+// after the one a note sent now would end at (`celestual_note_ends`), which
+// is where `celestual_renew` stops. Measured from this moment's reveal it
+// called a note sent on Friday night or Saturday kept, since those run to
+// the Saturday after anyway, and hid the keeping the server would still do.
 export function keptAhead(p, at = Date.now()) {
-  return !!p && p.state === 'standing' && p.expires - nextReveal(at) > DAY_MS
+  return !!p && p.state === 'standing' && p.expires >= nextReveal(nextReveal(at + DAY_MS)) - NEAR_MS
 }
 
 // The count, as the sheets say it, to the note's own reveal.
