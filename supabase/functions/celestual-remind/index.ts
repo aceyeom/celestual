@@ -4,16 +4,18 @@
 // scheduler; a manual invoke is always safe, because every job is idempotent by
 // queue):
 //
-//   1. LAPSE WARNINGS. A few days before a ping's sixty days run out, its
-//      sender, if they left an email, gets one line: still feel it? keep it
-//      standing. The email names NO handle: the server stores only a salted
-//      hash of who a ping points at, so it could not name one if it wanted to.
+//   1. LAPSE WARNINGS. In the days before the Saturday reveal a ping lapses
+//      at (0069), its sender, if they left an email, gets one line: still
+//      feel it? keep it for next week. Keeping it clears the mark, so a ping
+//      kept is warned again before its next reveal. The email names NO
+//      handle: the server stores only a salted hash of who a ping points at,
+//      so it could not name one if it wanted to.
 //      It is about the sender's own action only, never about the target's
 //      activity, and that line is load bearing legally (FTC v. NGL).
 //
-//   2. THE SIXTY DAY BROOM. Lapsed unmatched pings are purged
-//      (celestual_purge_expired): unresolved longing self destructs instead of
-//      accumulating into a toxic archive.
+//   2. THE BROOM. Lapsed unmatched pings are purged a week after their
+//      reveal (celestual_purge_expired): unresolved longing self destructs
+//      instead of accumulating into a toxic archive.
 //
 // ── WHAT CAME OFF IN PHASE 8, AND WHAT THAT LEAVES ──────────────────────────
 // There was a third job, draining `celestual_campus_mail`: an "it is open" note
@@ -52,20 +54,20 @@ const supabase = createClient(
 
 // ── the lapse note ───────────────────────────────────────────────────────────
 // The one email in the product whose whole job is a decision, so it names both
-// halves of it and prices them: renewing is free, restarts the sixty days, and
-// takes no slot; letting go frees the slot on the same day. That second fact is
-// the one the product used to keep to itself.
+// halves of it and prices them: keeping it for the week after is free and
+// takes no other slot; letting go frees the slot on the same day. That second
+// fact is the one the product used to keep to itself.
 function lapseHtml(lapseDate: string) {
   return mail.frame({
     kicker: 'one of your pings',
     inner: `
       ${mail.title('still feel it?')}
       ${mail.body(
-        `it lapses on ${lapseDate}. renewing is one tap and free, as often as you feel it. ` +
-        `it restarts the sixty days from the day you tap it, and it never uses a slot.`,
+        `it lapses at the reveal on ${lapseDate}, at 9pm california time, unless it is mutual. ` +
+        `keeping it for the week after is one tap and free, and it never uses another slot.`,
       )}
       ${mail.body('or let it go, and it disappears completely. nothing was ever revealed either way, and the slot opens back up the same day.')}
-      ${mail.plate(SITE, 'keep it standing')}
+      ${mail.plate(SITE, 'keep it for next week')}
       ${mail.tick(`the slot opens ${lapseDate}`, mail.C.accent)}
 `,
     foot: mail.colophon(
@@ -87,7 +89,7 @@ async function send(to: string, subject: string, html: string) {
 Deno.serve(async () => {
   const out = { lapse_warned: 0, purged: 0, failed: [] as string[] };
 
-  // ── 1 · lapse warnings (5 days out, once per standing ping) ────────────────
+  // ── 1 · lapse warnings (5 days out, once for each week a ping runs) ────────
   const soon = new Date(Date.now() + 5 * 24 * 3600_000).toISOString();
   const nowIso = new Date().toISOString();
   const { data: lapsing } = await supabase
@@ -115,7 +117,7 @@ Deno.serve(async () => {
     }
   }
 
-  // ── 2 · the sixty-day broom ─────────────────────────────────────────────────
+  // ── 2 · the broom ──────────────────────────────────────────────────────────
   try {
     const { data } = await supabase.rpc('celestual_purge_expired');
     out.purged = (data as { purged?: number } | null)?.purged ?? 0;
