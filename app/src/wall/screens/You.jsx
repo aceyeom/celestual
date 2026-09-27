@@ -1,23 +1,51 @@
 // ── /berkeley/you, and /you: THE PERSON ─────────────────────────────────────
 //
 // What this person has out, what they have not finished, and what they have
-// written, on one card, raised over the wall from the person in its bar. It
-// is the account the gate used to draw once somebody was through it, grown by
-// the one thing an account on this product is for: the pings. They used to
-// live on Main at /sky, a page in another design reached by leaving the wall,
-// and a person who wanted to know whether a ping of theirs was still standing
-// had to walk out of the phone to ask.
+// written, raised over the wall from the person in its bar. It is the account
+// the gate used to draw once somebody was through it, grown by the one thing
+// an account on this product is for: the pings. They used to live on Main at
+// /sky, a page in another design reached by leaving the wall, and a person
+// who wanted to know whether a ping of theirs was still standing had to walk
+// out of the phone to ask.
 //
-// Three sections under the person, in the order they are asked about:
+// ── three places, not one card ──────────────────────────────────────────────
+// It was one card that stacked everything: the person, their @ and its two
+// switches and its address and the way off the wall, the private notes, the
+// drafts, the letters, the week, and a foot with two keys. The owner called
+// it messy, with a lot crammed in, and asked for the sections to be distinct,
+// the private notes set apart in a frame of their own, and the pings and the
+// public letters subdivided. So the sheet is three places now:
 //
-//   your pings   the mutuals first, set apart because they are the only news
-//                on the card, then the pings still standing with their days,
-//                and what is left of the slots. A mutual opens the reveal. A
-//                standing one opens its own screen, with the two things that
-//                can be done to it on the screen's own menu.
-//   drafts       a letter the composer is still holding, and a ping that is
-//                one DM from out. Each opens where it was left.
-//   written to   the letters this person put up, with the hearts on each.
+//   the person   who is signed in, their face and their name, and one quiet
+//                key to the settings. Always at the top.
+//   two tabs     `private notes` and `letters`, a two way switch in the
+//                phone's keys under the person, remembered for the tab
+//                (sessionStorage). Each carries its own draft: the ping one
+//                DM from out stands with the notes, the letter the composer
+//                is holding stands with the letters. And each has its own key
+//                at the foot: send a private note, or write a letter.
+//   settings     the @ and what owning it is for (the two email switches, the
+//                address, taking the name off the wall) and the way out of
+//                this device, on a page of their own behind the person's key.
+//                They are asked about once, and were in the way every time.
+//
+// Tabs rather than two stacked sections, because the two lists are two
+// different kinds of thing (one sealed and only ever this person's, one up on
+// the wall for anybody), a person comes to the sheet for one of them, and on
+// a phone a stack put the second a scroll under the first every time.
+//
+// ── the notes are sealed, and look it ───────────────────────────────────────
+// The private notes stand in a frame nothing else on the wall wears: a panel
+// with the phone's double rule round it, a title strip with the sealed
+// envelope and the slots as pixel cells, the way a phone's own inbox of
+// messages you kept was a box inside the box. The mutuals first, set apart
+// under their own seam because they are the only news on the sheet, with the
+// signal full. A standing note is live and waiting, so its signal is
+// searching: the bars climb one, two, three and fall back, and never reach
+// four, since four is what a mutual has. It is opacity on four small spans,
+// the compositor's cheapest thing, and under reduced motion two bars stand
+// still. A mutual opens the reveal. A standing one opens its own screen, with
+// the two things that can be done to it on the screen's own menu.
 //
 // ── and only ever their own ─────────────────────────────────────────────────
 // Nothing here is about anybody else. A standing ping says who and how long
@@ -34,7 +62,7 @@
 // a verification made on another phone), and a read that failed. The second
 // is the expensive one: a person with a mutual on their row was told they had
 // nothing out, and had no control on the screen to prove the handle again.
-// So each has its own words and its own way on.
+// So each has its own words and its own way on, inside the frame.
 //
 // And the second is nearly gone (migration 0065). A person who claimed their
 // @ once, on any device, and is signed in here by any proof (the DM, google,
@@ -65,7 +93,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait } from '../screen.jsx'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait, PixIcon } from '../screen.jsx'
 import { Provider } from '../art.jsx'
 import {
   labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
@@ -81,6 +109,7 @@ import { useProve, ProveDoor } from './Ping.jsx'
 import { useAlertLink, AlertEmail } from './Alerts.jsx'
 import Gate from './Gate.jsx'
 import { alertsGet, alertsSet } from '../../api/alerts.js'
+import '../profile.css'
 
 // ── the nudge's way in ──────────────────────────────────────────────────────
 // The account, opened on the Instagram DM rather than on the three ways in,
@@ -93,6 +122,76 @@ export function openForAlerts(go) {
   go('you')
 }
 
+// ── which tab was open ──────────────────────────────────────────────────────
+// Remembered for as long as the browser's tab is, so a person who went to
+// the letters, opened one and came back finds the letters again. Storage can
+// be switched off or full, and then the notes open every time, which is the
+// right first answer anyway.
+const TAB_KEY = 'celestual.you.tab'
+function readTab() {
+  try { return window.sessionStorage.getItem(TAB_KEY) === 'letters' ? 'letters' : 'notes' } catch { return 'notes' }
+}
+function keepTab(t) {
+  try { window.sessionStorage.setItem(TAB_KEY, t) } catch { /* the notes open next time, as above */ }
+}
+
+// ── drawn here ──────────────────────────────────────────────────────────────
+// The frame's own glyph, on the phone's grid like every glyph on the wall
+// (looks.js `PIX`), and drawn only here: the envelope, its flap closing on a
+// seal. One string per row, `X` lit.
+const SEAL = [
+  'XXXXXXXXXXXXXXX',
+  'XX...........XX',
+  'X.XX.......XX.X',
+  'X...XX...XX...X',
+  'X....XXXXX....X',
+  'X....XXXXX....X',
+  'X.....XXX.....X',
+  'X.............X',
+  'XXXXXXXXXXXXXXX',
+]
+const SEAL_D = SEAL.flatMap((row, y) => [...row].map((c, x) => (c === 'X' ? `M${x} ${y}h1v1h-1z` : ''))).join('')
+function Seal({ scale = 2 }) {
+  return (
+    <svg
+      className="wl-pxi wl-vault-seal" viewBox={`0 0 ${SEAL[0].length} ${SEAL.length}`}
+      width={SEAL[0].length * scale} height={SEAL.length * scale}
+      shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false"
+    >
+      <path d={SEAL_D} />
+    </svg>
+  )
+}
+
+// The signal a note is standing on, as the phone drew its own in the status
+// row: the aerial and four bars. `full` is a mutual, every bar lit and still.
+// Otherwise it is searching, the bars climbing and falling back (the head of
+// this file says why they never reach four), all of it in profile.css.
+function Signal({ full = false }) {
+  return (
+    <span className={`wl-signal${full ? ' is-full' : ' is-seeking'}`} aria-hidden="true">
+      <PixIcon name="ant" scale={2} className="wl-signal-ant" />
+      <span className="wl-signal-bars"><i /><i /><i /><i /></span>
+    </span>
+  )
+}
+
+// What is left of the slots, as cells: one per slot, lit for each one a note
+// is standing in. The words beside them say the same thing for a person who
+// does not read cells, and are what a screen reader is given.
+function Slots({ used, cap }) {
+  const room = cap - used
+  const words = room <= 0 ? 'no slot left' : room === 1 ? 'one slot left' : `${room} slots left`
+  return (
+    <span className="wl-slots">
+      <span className="wl-slots-cells" aria-hidden="true">
+        {Array.from({ length: Math.max(cap, used) }, (_, i) => <i key={i} className={i < used ? 'is-used' : ''} />)}
+      </span>
+      <span className="wl-slots-say">{words}</span>
+    </span>
+  )
+}
+
 // ── the letters this person put up ──────────────────────────────────────────
 // A list, one row per letter: the face and the name it was written to, how
 // long ago, and how many hearted it, and the row opens the letter. It used
@@ -103,22 +202,26 @@ export function openForAlerts(go) {
 // The rows are the server's (wall_mine): this identity's letters of the last
 // thirty days, with the heart count on each (0056). When the server has not
 // answered, or answers nothing, the names this browser remembers writing to
-// stand in, without counts, since those are the only fact left.
+// stand in, without counts, since those are the only fact left. The tab's
+// count reads the same rows as the list, so the two never disagree.
 const SHOWN = 4
 
-// A letter held to be read before it goes up (wall_mine's `down_by: 'held'`,
-// a pending row) is not down, and was drawn greyed as "taken down" while it
-// was still being read. It is "being read" now, in the wall's own words for
-// it, and not opened, since it is not on the wall yet to open.
-function Wrote({ go }) {
-  const [more, setMore] = useState(false)
+function wroteRows() {
   const own = mine()
-  const rows = own && own.length
+  return own && own.length
     ? own.map((l) => ({
       id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
       held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
     }))
     : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true }))
+}
+
+// A letter held to be read before it goes up (wall_mine's `down_by: 'held'`,
+// a pending row) is not down, and was drawn greyed as "taken down" while it
+// was still being read. It is "being read" now, in the wall's own words for
+// it, and not opened, since it is not on the wall yet to open.
+function Wrote({ go, rows }) {
+  const [more, setMore] = useState(false)
   if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const cut = !more && rows.length > SHOWN
   const shown = cut ? rows.slice(0, SHOWN) : rows
@@ -263,9 +366,14 @@ function PingScreen({ p, me, onBack, onChange }) {
 // to, and the way to take the name off the wall for good. Or, with no @
 // claimed, the one line on what claiming it gets them and the key to it.
 //
+// Drawn on the settings page, not the card, as two groups: the @ itself, and
+// the email alerts on it, each a panel under its own label, with the way off
+// the wall under both as a quiet line, since it is the one act here that
+// cannot be taken back and should never be the nearest thing to a thumb.
+//
 // The switches are the server's (`celestual_alerts_get` / `_set`). A database
-// that does not have them yet answers `missing`, and the section then shows
-// the @ alone, with nothing to switch: no control on this card may promise an
+// that does not have them yet answers `missing`, and the page then shows the
+// @ alone, with nothing to switch: no control on this sheet may promise an
 // email that nothing will send.
 function YourAt({ handle, rev, go, onProve }) {
   // null while it is asked · the answer · { ok: false, error }
@@ -325,70 +433,81 @@ function YourAt({ handle, rev, go, onProve }) {
 
   if (!claimed) {
     return (
-      <div className="wl-profile-sect wl-owner-at">
-        <Label tone="dim">your @</Label>
-        <div className="wl-you-ask">
-          <p className="wl-you-say">
-            confirm your Instagram to get an email when someone writes to you, and to remove letters about you in one tap.
-          </p>
-          <Pill tone="ghost" icon={<Provider size={15} />} onClick={onProve}>confirm your Instagram</Pill>
+      <section className="wl-set-group" aria-labelledby="wl-set-at">
+        <Label tone="dim" className="wl-set-h"><span id="wl-set-at">your @</span></Label>
+        <div className="wl-set-panel">
+          <div className="wl-you-ask">
+            <p className="wl-you-say">
+              confirm your Instagram to get an email when someone writes to you, and to remove letters about you in one tap.
+            </p>
+            <Pill tone="ghost" icon={<Provider size={15} />} onClick={onProve}>confirm your Instagram</Pill>
+          </div>
         </div>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div className="wl-profile-sect wl-owner-at">
-      <Label tone="dim">your @</Label>
-      <div className="wl-owner-me">
-        <Face handle={claimed} size={30} />
-        <span className="wl-wrote-who">
-          <span className="wl-wrote-name">{atHandle(claimed)}</span>
-          <span className="wl-wrote-meta">confirmed with Instagram</span>
-        </span>
-      </div>
+    <>
+      <section className="wl-set-group" aria-labelledby="wl-set-at">
+        <Label tone="dim" className="wl-set-h"><span id="wl-set-at">your @</span></Label>
+        <div className="wl-set-panel wl-owner-me">
+          <Face handle={claimed} size={30} />
+          <span className="wl-wrote-who">
+            <span className="wl-wrote-name">{atHandle(claimed)}</span>
+            <span className="wl-wrote-meta">confirmed with Instagram</span>
+          </span>
+        </div>
+      </section>
 
-      {alerts === null ? (
-        <p className="wl-profile-none wl-you-wait" aria-label="reading your alerts"><Wait /></p>
-      ) : ok ? (
-        <div className="wl-owner-alerts">
-          <Switch on={!!alerts.wrote} busy={saving === 'wrote'} onChange={(v) => flip('wrote', v)}>
-            email me when someone writes to me
-          </Switch>
-          <Switch on={!!alerts.mutual} busy={saving === 'mutual'} onChange={(v) => flip('mutual', v)}>
-            email me when it&rsquo;s mutual
-          </Switch>
-          <p className="wl-owner-to">
-            {hasMail
-              ? <>emails go to <span className="wl-h">{alerts.email}</span></>
-              : 'no email address yet'}
-            {!mail ? (
-              <button type="button" className="wl-quiet" onClick={() => { setMail(true); setSaid('') }}>
-                {hasMail ? 'change' : 'add one'}
-              </button>
-            ) : null}
-          </p>
-          {said ? <p className="wl-owner-said" aria-live="polite">{said}</p> : null}
-          {mail ? (
-            <div className="wl-owner-change">
-              <AlertEmail link={link} compact autoFocus />
-              {!link.sent ? (
-                <button type="button" className="wl-quiet" onClick={() => { setMail(false); waiting.current = null; setSaid('') }}>cancel</button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      ) : alerts.error !== 'missing' ? (
-        <div className="wl-you-ask">
-          <p className="wl-you-say">your email alerts did not load.</p>
-          <button type="button" className="wl-quiet" onClick={() => { setAlerts(null); setAsk((n) => n + 1) }}>try again</button>
-        </div>
+      {alerts === null || ok || alerts.error !== 'missing' ? (
+        <section className="wl-set-group" aria-labelledby="wl-set-mail">
+          <Label tone="dim" className="wl-set-h"><span id="wl-set-mail">email alerts</span></Label>
+          <div className="wl-set-panel">
+            {alerts === null ? (
+              <p className="wl-profile-none wl-you-wait" aria-label="reading your alerts"><Wait /></p>
+            ) : ok ? (
+              <div className="wl-owner-alerts">
+                <Switch on={!!alerts.wrote} busy={saving === 'wrote'} onChange={(v) => flip('wrote', v)}>
+                  email me when someone writes to me
+                </Switch>
+                <Switch on={!!alerts.mutual} busy={saving === 'mutual'} onChange={(v) => flip('mutual', v)}>
+                  email me when it&rsquo;s mutual
+                </Switch>
+                <p className="wl-owner-to">
+                  {hasMail
+                    ? <>emails go to <span className="wl-h">{alerts.email}</span></>
+                    : 'no email address yet'}
+                  {!mail ? (
+                    <button type="button" className="wl-quiet" onClick={() => { setMail(true); setSaid('') }}>
+                      {hasMail ? 'change' : 'add one'}
+                    </button>
+                  ) : null}
+                </p>
+                {said ? <p className="wl-owner-said" aria-live="polite">{said}</p> : null}
+                {mail ? (
+                  <div className="wl-owner-change">
+                    <AlertEmail link={link} compact autoFocus />
+                    {!link.sent ? (
+                      <button type="button" className="wl-quiet" onClick={() => { setMail(false); waiting.current = null; setSaid('') }}>cancel</button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="wl-you-ask">
+                <p className="wl-you-say">your email alerts did not load.</p>
+                <button type="button" className="wl-quiet" onClick={() => { setAlerts(null); setAsk((n) => n + 1) }}>try again</button>
+              </div>
+            )}
+          </div>
+        </section>
       ) : null}
 
       <button type="button" className="wl-quiet wl-owner-off" onClick={() => go('remove', claimed)}>
         take my name off the wall for good
       </button>
-    </div>
+    </>
   )
 }
 
@@ -410,8 +529,11 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // runs this twice, and spent once the sheet is up.
   const [want] = useState(() => !!(held && held.alerts) || FOR_ALERTS)
   useEffect(() => { FOR_ALERTS = false }, [])
-  // null · 'prove' · the handle of the ping whose screen is up
+  // null · 'prove' · 'settings' · the handle of the ping whose screen is up
   const [view, setView] = useState(() => (held || want ? 'prove' : null))
+  // 'notes' · 'letters', the two tabs under the person
+  const [tab, setTab] = useState(readTab)
+  const tabs = useRef(null)
   const [rev, setRev] = useState(0)
   // loading · pings · error, where error is 'none' (no @ proved here),
   // 'unverified' (one is, and the proof that spends it is not on this
@@ -470,9 +592,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   }
 
   // ── the door ──
-  // The Instagram DM, asked for: from the card's "confirm your Instagram"
+  // The Instagram DM, asked for: from the notes' "confirm your Instagram"
   // (somebody known by an address and not by an @, whose pings are behind
-  // the @), from a DM this sheet was waiting on, and from the nudge.
+  // the @), from the settings' own, from a DM this sheet was waiting on, and
+  // from the nudge.
   if (view === 'prove') {
     const lapsed = !!handle
     return (
@@ -507,6 +630,36 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // card once one of them lands (the head of this file says why).
   if (!known) return <Gate go={go} up={up} upLabel={upLabel} after={{ name: 'you' }} />
 
+  // ── settings ──
+  // The @, its alerts, the way off the wall, and the way out of this device,
+  // on a page of their own. The sheet's head carries the one way back to the
+  // card, in the phone's back key, and the foot carries the way out.
+  if (view === 'settings') {
+    return (
+      <Sheet onClose={up} labelledBy="wl-you-h" className="is-you">
+        <div className="wl-sheet-in wl-you is-card is-settings">
+          <SheetHead
+            onClose={up} label={upLabel}
+            lead={(
+              <button type="button" className="wl-you-back" onClick={() => setView(null)} aria-label="back to your notes and letters">
+                <PixIcon name="back" scale={2} />
+                <span>back</span>
+              </button>
+            )}
+          />
+          <h2 className="wl-you-title" id="wl-you-h">settings</h2>
+          <YourAt handle={handle} rev={rev} go={go} onProve={() => setView('prove')} />
+          <div className="wl-push" />
+          <SheetFoot>
+            <Pill tone="ghost" className="wl-profile-out" icon={<Icon name="signout" size={15} />} onClick={out}>
+              sign out
+            </Pill>
+          </SheetFoot>
+        </div>
+      </Sheet>
+    )
+  }
+
   const opened = view ? list.pings.find((p) => p.to === view && p.state !== 'mutual') : null
   if (opened) {
     return (
@@ -526,17 +679,30 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // ── the card ──
   const mutuals = list.pings.filter((p) => p.state === 'mutual')
   const standing = list.pings.filter((p) => p.state !== 'mutual')
-  const room = slotCap() - standing.length
-  const slots = list.loading || list.error ? ''
-    : room <= 0 ? 'no slot left' : room === 1 ? 'one slot left' : `${room} slots left`
+  const settled = !list.loading && !list.error
 
   const d = getState().draft
   const letter = d && String(d.body || '').trim() ? { key: draftKey(d), name: d.kind === 'name' ? cleanName(d.name) : '' } : null
   const waiting = (() => { const r = loadPending(); return r && r.use === 'ping' && r.to ? normHandle(r.to) : '' })()
+  const rows = wroteRows()
 
   const left = allowance()
   const spent = !!who && !!left && left.left <= 0
-  const title = who ? memberLabel(who) : handle ? atHandle(handle) : 'signed in'
+  // The @ is the name on the wall, so it is the heading when there is one,
+  // and the address this device signed in by stands under it.
+  const title = handle ? atHandle(handle) : who ? memberLabel(who) : 'signed in'
+  const also = handle && who ? memberLabel(who) : ''
+
+  const pick = (t) => { setTab(t); keepTab(t) }
+  // the arrow keys move between the two tabs, as a tab list's do
+  const keys = (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+    e.preventDefault()
+    const next = tab === 'notes' ? 'letters' : 'notes'
+    pick(next)
+    tabs.current?.querySelector(`[data-tab="${next}"]`)?.focus()
+  }
+  const count = (n) => (n > 0 ? <span className="wl-you-tab-n">{n}</span> : null)
 
   const ask = (words) => (
     <div className="wl-you-ask">
@@ -545,124 +711,156 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
     </div>
   )
 
+  // ── the notes' frame ──
+  // The title strip, then whatever is true: the reason there is no list and
+  // the one thing to do about it, the wait, nothing yet, or the list, the
+  // mutuals first under their own seam. The ping still one DM from out stands
+  // at the end, drawn as not sent.
+  const notes = (
+    <div className="wl-vault" aria-labelledby="wl-vault-h">
+      <div className="wl-vault-bar">
+        <span className="wl-vault-title" id="wl-vault-h">
+          <Seal />
+          <span>sealed until it&rsquo;s mutual</span>
+        </span>
+        {settled ? <Slots used={standing.length} cap={slotCap()} /> : null}
+      </div>
+      <div className="wl-vault-body">
+        {list.error === 'none' ? ask('confirm your Instagram to see the notes you sent privately.')
+          : list.error === 'unverified' ? ask('confirm your Instagram again to see them.')
+            : list.error ? (
+              <div className="wl-you-ask">
+                <p className="wl-you-say">your private notes did not load. nothing about them changed.</p>
+                <button type="button" className="wl-quiet" onClick={() => setRev((n) => n + 1)}>try again</button>
+              </div>
+            ) : list.loading && !list.pings.length ? (
+              <p className="wl-profile-none wl-you-wait" aria-label="reading your private notes"><Wait /></p>
+            ) : !list.pings.length && !waiting ? (
+              <p className="wl-profile-none wl-vault-none">none sent yet</p>
+            ) : null}
+        {mutuals.length ? (
+          <div className="wl-vault-news">
+            {mutuals.map((p) => (
+              <button
+                type="button" key={p.to} className="wl-vault-row is-mutual"
+                onClick={() => go('reveal', p.to)}
+                aria-label={`${atHandle(p.to)}, it’s mutual. open it`}
+              >
+                <Face handle={p.to} size={30} />
+                <span className="wl-wrote-who">
+                  <span className="wl-wrote-name">{atHandle(p.to)}</span>
+                  <span className="wl-wrote-meta">{stateWords(p)}</span>
+                </span>
+                <Signal full />
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {standing.length || waiting ? (
+          <div className="wl-vault-list">
+            {standing.map((p) => (
+              <button
+                type="button" key={p.to} className="wl-vault-row is-standing"
+                onClick={() => setView(p.to)}
+                aria-label={`your private note to ${atHandle(p.to)}, waiting, ${stateWords(p)}`}
+              >
+                <Face handle={p.to} size={30} />
+                <span className="wl-wrote-who">
+                  <span className="wl-wrote-name">{atHandle(p.to)}</span>
+                  <span className="wl-wrote-meta">waiting · {stateWords(p)}</span>
+                </span>
+                <Signal />
+              </button>
+            ))}
+            {waiting ? (
+              <button type="button" className="wl-vault-row is-draft" onClick={() => go('ping', waiting)}>
+                <Face handle={waiting} size={30} />
+                <span className="wl-wrote-who">
+                  <span className="wl-wrote-name">{atHandle(waiting)}</span>
+                  <span className="wl-wrote-meta">not sent · waiting on one DM</span>
+                </span>
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+
+  // ── the letters ──
+  // Unlit rows, as the wall's own are: the letter the composer is holding
+  // first, then what is up, then the week when it is spent. The letters are
+  // anonymous and stay anonymous: nothing on a letter points back here. The
+  // server answers a writer about their OWN letters and nobody else's
+  // (wall_mine, 0050).
+  const letters = (
+    <div className="wl-you-letters">
+      {letter ? (
+        <button type="button" className="wl-wrote-row is-draft" onClick={() => toWrite(go, letter.key)}>
+          <Face handle={letter.key} name={letter.name} size={30} resolve={!!letter.key} />
+          <span className="wl-wrote-who">
+            <span className="wl-wrote-name">{letter.name || (letter.key ? labelFor(letter.key) : 'no name yet')}</span>
+            <span className="wl-wrote-meta">a letter, not sent</span>
+          </span>
+        </button>
+      ) : null}
+      <Wrote go={go} rows={rows} />
+      {spent ? (
+        <Allowance left={left.left} limit={left.limit} resets={left.resets} className="wl-profile-cap" />
+      ) : null}
+    </div>
+  )
+
   return (
     <Sheet onClose={up} labelledBy="wl-you-h" className="is-you">
       <div className="wl-sheet-in wl-you is-card">
         <SheetHead onClose={up} label={upLabel} />
 
-        <section className="wl-profile" aria-labelledby="wl-you-h">
-          <div className="wl-profile-id">
-            <Face handle={handle || who} size={52} resolve={!!handle || String(who).startsWith('@')} className="wl-profile-face" />
-            <div className="wl-profile-who">
-              <p className="wl-profile-addr" id="wl-you-h">{title}</p>
-            </div>
+        {/* ── the person ── */}
+        <header className="wl-you-id">
+          <Face handle={handle || who} size={52} resolve={!!handle || String(who).startsWith('@')} className="wl-profile-face" />
+          <div className="wl-you-who">
+            <p className="wl-profile-addr" id="wl-you-h">{title}</p>
+            {also ? <p className="wl-you-also">{also}</p> : null}
           </div>
+          <button type="button" className="wl-you-set" onClick={() => setView('settings')} aria-label="settings: your @, email alerts and sign out">
+            settings
+          </button>
+        </header>
 
-          {/* ── your @ ── what claiming it is for, and the switches */}
-          <YourAt handle={handle} rev={rev} go={go} onProve={() => setView('prove')} />
+        {/* ── the two tabs ── */}
+        <div className="wl-you-tabs" role="tablist" aria-label="what you sent" ref={tabs} onKeyDown={keys}>
+          <button
+            type="button" role="tab" id="wl-you-tab-notes" data-tab="notes"
+            aria-selected={tab === 'notes'} aria-controls="wl-you-panel" tabIndex={tab === 'notes' ? 0 : -1}
+            className="wl-you-tab" onClick={() => pick('notes')}
+          >
+            <span>private notes</span>
+            {settled ? count(list.pings.length + (waiting ? 1 : 0)) : null}
+            {tab !== 'notes' && mutuals.length ? (
+              <><i className="wl-you-tab-pip" aria-hidden="true" /><span className="wl-sr">, it&rsquo;s mutual</span></>
+            ) : null}
+          </button>
+          <button
+            type="button" role="tab" id="wl-you-tab-letters" data-tab="letters"
+            aria-selected={tab === 'letters'} aria-controls="wl-you-panel" tabIndex={tab === 'letters' ? 0 : -1}
+            className="wl-you-tab" onClick={() => pick('letters')}
+          >
+            <span>letters</span>
+            {count(rows.length)}
+          </button>
+        </div>
 
-          {/* ── the pings ──
-              The mutuals first and set apart, then the standing ones with
-              their days, and what is left of the slots on the section's own
-              line. Or, when there is no list to draw, which of the three
-              reasons it is, and the one thing to do about it. */}
-          <div className="wl-profile-sect">
-            <div className="wl-you-head">
-              <Label tone="dim">your private notes</Label>
-              {slots ? <Label tone="dim" className="wl-you-slots">{slots}</Label> : null}
-            </div>
-            {list.error === 'none' ? (
-              <p className="wl-profile-none">confirm your Instagram above to see them.</p>
-            ) : list.error === 'unverified' ? ask('confirm your Instagram again to see them.')
-              : list.error ? (
-                <div className="wl-you-ask">
-                  <p className="wl-you-say">your private notes did not load. nothing about them changed.</p>
-                  <button type="button" className="wl-quiet" onClick={() => setRev((n) => n + 1)}>try again</button>
-                </div>
-              ) : list.loading && !list.pings.length ? (
-                <p className="wl-profile-none wl-you-wait" aria-label="reading your private notes"><Wait /></p>
-              ) : !list.pings.length ? (
-                <p className="wl-profile-none">none sent yet</p>
-              ) : (
-                <div className="wl-wrote">
-                  {mutuals.map((p) => (
-                    <button
-                      type="button" key={p.to} className="wl-wrote-row is-mutual"
-                      onClick={() => go('reveal', p.to)}
-                    >
-                      <Face handle={p.to} size={30} />
-                      <span className="wl-wrote-who">
-                        <span className="wl-wrote-name">{atHandle(p.to)}</span>
-                        <span className="wl-wrote-meta">{stateWords(p)}</span>
-                      </span>
-                    </button>
-                  ))}
-                  {standing.map((p) => (
-                    <button
-                      type="button" key={p.to} className="wl-wrote-row is-standing"
-                      onClick={() => setView(p.to)}
-                    >
-                      <Face handle={p.to} size={30} />
-                      <span className="wl-wrote-who">
-                        <span className="wl-wrote-name">{atHandle(p.to)}</span>
-                        <span className="wl-wrote-meta">{stateWords(p)}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-          </div>
-
-          {/* ── what is not out yet ──
-              The letter the composer is holding, and a ping that is one DM
-              from out. Each opens where it was left. */}
-          {letter || waiting ? (
-            <div className="wl-profile-sect">
-              <Label tone="dim">drafts</Label>
-              <div className="wl-wrote">
-                {letter ? (
-                  <button type="button" className="wl-wrote-row" onClick={() => toWrite(go, letter.key)}>
-                    <Face handle={letter.key} name={letter.name} size={30} resolve={!!letter.key} />
-                    <span className="wl-wrote-who">
-                      <span className="wl-wrote-name">{letter.name || (letter.key ? labelFor(letter.key) : 'no name yet')}</span>
-                      <span className="wl-wrote-meta">a letter, not sent</span>
-                    </span>
-                  </button>
-                ) : null}
-                {waiting ? (
-                  <button type="button" className="wl-wrote-row" onClick={() => go('ping', waiting)}>
-                    <Face handle={waiting} size={30} />
-                    <span className="wl-wrote-who">
-                      <span className="wl-wrote-name">{atHandle(waiting)}</span>
-                      <span className="wl-wrote-meta">a private note, waiting on one DM</span>
-                    </span>
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-
-          {/* ── what this person has written ──
-              The letters are anonymous and stay anonymous: nothing on a
-              letter points back here. The server answers a writer about
-              their OWN letters and nobody else's (wall_mine, 0050). */}
-          <div className="wl-profile-sect">
-            <Label tone="dim">letters you wrote</Label>
-            <Wrote go={go} />
-          </div>
-
-          {spent ? (
-            <Allowance left={left.left} limit={left.limit} resets={left.resets} className="wl-profile-cap" />
-          ) : null}
-        </section>
+        <div className="wl-you-panel" role="tabpanel" id="wl-you-panel" aria-labelledby={`wl-you-tab-${tab}`} key={tab}>
+          {tab === 'notes' ? notes : letters}
+        </div>
 
         <div className="wl-push" />
 
         <SheetFoot>
-          <Pill tone="light" wide onClick={() => go('ping')}>send a private note</Pill>
-          <Pill tone="ghost" className="wl-profile-out" icon={<Icon name="signout" size={15} />} onClick={out}>
-            sign out
-          </Pill>
+          {tab === 'notes'
+            ? <Pill tone="light" wide onClick={() => go('ping')}>send a private note</Pill>
+            : <Pill tone="light" wide onClick={() => toWrite(go)}>write a letter</Pill>}
         </SheetFoot>
       </div>
     </Sheet>
