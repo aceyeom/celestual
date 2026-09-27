@@ -493,10 +493,11 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
 
   const text = l.body || ''
   const hearts = l.hearts || 0
-  // the count on the key, in thousands past a thousand, as a phone counted,
-  // and three figures or more set a step smaller (screen.css `.is-long`), so
-  // it keeps to the middle of the band between `options` and `replies`
-  const heartsSaid = hearts < 1000 ? String(hearts) : hearts < 10000 ? `${Math.floor(hearts / 100) / 10}k` : `${Math.floor(hearts / 1000)}k`
+  // the count on the key, in whole thousands past a thousand, as a phone
+  // counted, so it is never more than three figures, and three set a step
+  // smaller (screen.css `.is-long`): it keeps to the middle of the band
+  // between `options` and `replies`. "9.9k" was four, and ran into the word
+  const heartsSaid = hearts < 1000 ? String(hearts) : `${Math.min(999, Math.floor(hearts / 1000))}k`
 
   // Anybody's since 0068 (likes are open to everybody): the press goes
   // straight to the server, which keeps one heart per device, and never to

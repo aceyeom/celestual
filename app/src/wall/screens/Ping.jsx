@@ -502,7 +502,7 @@ export default function Ping({
     clearOurs('ping')
     forgetPings()
     setAdopted(null)
-    setEnds(Date.parse(out.expires_at || 0) || nextReveal())
+    setEnds(out.expires_at ? Date.parse(out.expires_at) || nextReveal() : nextReveal())
     setStep('done')
     if (!reduce) setDip('dip')
   }

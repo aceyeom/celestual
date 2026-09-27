@@ -125,8 +125,9 @@ export async function renewPing({ me, them, proof }) {
 }
 
 // "Let it go" — retire a ping. This frees the slot; nothing was ever revealed.
-// Owner-gated by the DM proof since 0036, and since 0038 the other side of a
-// mutual goes back to standing rather than staying matched to nobody.
+// Owner-gated by the DM proof since 0036. Since 0069 a mutual is not let go
+// at all: it has been told to both at its reveal, and the answer is
+// { withdrawn:false, error:'mutual' }, with nothing changed.
 export async function retirePing({ me, them, proof }) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));

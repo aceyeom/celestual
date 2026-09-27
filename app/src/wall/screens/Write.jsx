@@ -667,7 +667,7 @@ export default function Write({
     setAdopted(null)
     patch({ draft: null })
     try { window.history.replaceState({ ...window.history.state, wallSent: target }, '') } catch { /* a sandbox */ }
-    setEnds(Date.parse(out.expires_at || 0) || 0)
+    setEnds(out.expires_at ? Date.parse(out.expires_at) || 0 : 0)
     setDone('private')
     setStep('done')
   }

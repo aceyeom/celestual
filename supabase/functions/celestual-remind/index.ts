@@ -105,7 +105,7 @@ Deno.serve(async () => {
   for (const e of lapsing ?? []) {
     try {
       const date = new Date(e.expires_at).toLocaleDateString('en-US', {
-        month: 'long', day: 'numeric',
+        month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles',
       });
       await send(e.from_email, 'your ping lapses soon. still feel it?', lapseHtml(date));
       await supabase.from('celestual_entries')

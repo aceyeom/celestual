@@ -233,7 +233,7 @@
 .wl-sk.is-l { justify-self: start; }
 .wl-sk.is-c { justify-self: center; font-size: 11cqw; }
 /* a count of three figures, so the middle key leaves its neighbours room */
-.wl-sk.is-c.is-long { font-size: 9.5cqw; }
+.wl-sk.is-c.is-long { font-size: 9cqw; }
 .wl-sk.is-r { justify-self: end; }
 .wl-sk.is-empty { visibility: hidden; }
 .wl-root .wl-sk:active { opacity: 0.45; transition-duration: 0ms; }
