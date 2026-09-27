@@ -1364,13 +1364,16 @@ pings, which the wall has never heard of.
 
 ### The mechanism, in one screen
 
-Two standing pings, sixty days each. Renewing is free and takes no slot.
-Letting one go is the only irreversible act on this surface and it opens the
-slot back up. A pair that closes is a **mutual**, and the two letters are
-readable to those two people and to nobody else. A mutual does **not** hold a
-slot: the slot rations pings nobody has answered yet, which is what makes
-placing one mean something, and a pair that has closed is not waiting on
-anybody.
+Since 27 September (migration 0071, docs/PINGS-BY-THE-WEEK.md): one free
+ping for every Saturday reveal, and more bought at $2.99 each, ten in a reveal
+at most. A note runs to its reveal; keeping it for the week after spends that
+week's ping. Letting one go is the only irreversible act on this surface and
+it gives its ping back. A pair that closes is a **mutual**, and the two notes
+are readable to those two people and to nobody else. A mutual never lapses and
+never spends a ping again: it is dated by the night it was told and kept.
+
+It was two standing pings, sixty days each, with renewing free; the rest of
+this section describes the tab as it was then.
 
 Every one of those is real inside the tab. Placing, renewing and letting go
 write through the same one key everything else does (`store.js`), so they

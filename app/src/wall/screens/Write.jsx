@@ -171,7 +171,7 @@ const PING_SAY = {
   self: 'that is your own @.',
   full: 'ten private notes in one week is the most. the next week starts after saturday’s reveal.',
   suppressed: 'that @ has opted out of private notes.',
-  rate: 'that is a lot of private notes for one hour. try again later.',
+  rate: 'that is a lot of new private notes for now. try again later.',
   invalid: 'that handle does not look right.',
   card: 'that can’t go in a note as it is. take out links, addresses and numbers.',
   night: 'it did not go through. try again.',

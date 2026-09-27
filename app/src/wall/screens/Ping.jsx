@@ -84,7 +84,7 @@ const SAY = {
   self: 'that is your own @',
   full: 'ten private notes in one week is the most. the next week starts after saturday’s reveal.',
   suppressed: 'that person has opted out of private notes.',
-  rate: 'that is a lot of private notes for one hour. try again later.',
+  rate: 'that is a lot of new private notes for now. try again later.',
   invalid: 'that handle does not look right.',
   night: 'it did not go through. give it a moment, then send it again.',
   // the card is read by the same list as a letter (0063): a link, an

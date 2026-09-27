@@ -130,7 +130,8 @@ export function forgetPings() {
 // this is that shape made plain:
 //
 //   revealAt   the reveal a note sent now runs to
-//   freeLeft   whether its free ping is still unspent (1 or 0)
+//   freeLeft   how many of its free pings are unspent: 1 or 0, and up to ten
+//              on a plan from before
 //   credits    pings bought and not spent, which never lapse
 //   sent       pings spent on that reveal
 //   left       what can still be sent to it: the free one and the bought
@@ -145,11 +146,12 @@ export function shapeAllowance(a) {
   const n = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
   const ceiling = n(a.ceiling, MAX_BUY)
   const sent = n(a.sent)
-  const freeLeft = n(a.free_left, 1) > 0 ? 1 : 0
+  // one, or none; ten while a plan from before (0021's steady) is paid through
+  const freeLeft = Math.max(0, n(a.free_left, 1))
   const credits = Math.max(0, n(a.credits))
   const next = a.next && typeof a.next === 'object' ? {
     revealAt: Date.parse(a.next.reveal_at || 0) || 0,
-    freeLeft: n(a.next.free_left, 1) > 0 ? 1 : 0,
+    freeLeft: Math.max(0, n(a.next.free_left, 1)),
     sent: n(a.next.sent),
   } : null
   return {
