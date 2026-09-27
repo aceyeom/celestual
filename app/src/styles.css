@@ -31,13 +31,21 @@ html { scrollbar-gutter: stable; }
 /* the wall and the hero are full-bleed rooms: no classic scrollbar, so 100vw
    is the layout width. The body is named too, because the viewport takes its
    scrollbar from the body first. The desk keeps its scrollbar: it is a long
-   table, not a room. */
-html:has(.wl-root:not(.ad-root)) { scrollbar-gutter: auto; }
-html:has(.wl-root:not(.ad-root)), html:has(.wl-root:not(.ad-root)) body { scrollbar-width: none; }
-html:has(.wl-root:not(.ad-root))::-webkit-scrollbar,
-html:has(.wl-root:not(.ad-root)) body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+   table, not a room.
+   Each room says so on the html itself as it mounts (`wl-bleed`, and the
+   wall's black `wl-dark`: wall/index.jsx, main/index.jsx, signature, the
+   colours' proof), on the same frame as its root. The html used to find out
+   with a `:has()` over the roots, and a `:has()` on the element every other
+   one is inside made Chrome style the whole document again, some three
+   thousand elements, whenever React put anything on the page or took it off:
+   at the start and the end of every turn of a letter, a tenth of a second
+   each on a phone. */
+html.wl-bleed { scrollbar-gutter: auto; }
+html.wl-bleed, html.wl-bleed body { scrollbar-width: none; }
+html.wl-bleed::-webkit-scrollbar,
+html.wl-bleed body::-webkit-scrollbar { display: none; width: 0; height: 0; }
 /* the wall's black room, down to the page behind it */
-html:has(.wl-root.is-room), html:has(.wl-root.is-room) body { background: #000; }
+html.wl-dark, html.wl-dark body { background: #000; }
 body {
   background: #08070B;
   color: #F4F1EA;

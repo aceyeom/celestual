@@ -28,7 +28,7 @@
 // painted: the catalogue's rows are read once, when a colour is first drawn
 // (looks.js `skinOf`), so this page is the only one that sees it.
 
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode, useEffect, useLayoutEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../../styles.css'
 import '../wall.css'
@@ -116,6 +116,13 @@ function Card({ c, i, go }) {
 }
 
 function Looks() {
+  // the wall's black room with no scrollbar (styles.css `wl-bleed`,
+  // `wl-dark`), said on the html rather than asked with a `:has()`
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    html.classList.add('wl-bleed', 'wl-dark')
+    return () => html.classList.remove('wl-bleed', 'wl-dark')
+  }, [])
   // the pictures one colour at a time, after the page is up: each is a press
   // pulled by hand over a whole screen
   const [upTo, setUpTo] = useState(-1)

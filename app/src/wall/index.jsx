@@ -227,6 +227,17 @@ export default function WallApp() {
     if (tc) tc.content = '#000000'
     return () => { if (tc && was) tc.content = was }
   }, [])
+  // ── and the page behind it ──
+  // The html is a full-bleed room with no scrollbar, black down to the
+  // page (styles.css `wl-bleed`, `wl-dark`), from the frame this root is
+  // first drawn on. It is told here rather than finding out with a `:has()`
+  // over the root, which Chrome paid for with a style pass over the whole
+  // document for every element any screen put on the page or took off it.
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    html.classList.add('wl-bleed', 'wl-dark')
+    return () => html.classList.remove('wl-bleed', 'wl-dark')
+  }, [])
 
   // ── the scan ──
   // /?s=flyer-a is how the flyer, the card, the chalk and the table become

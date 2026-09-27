@@ -869,15 +869,28 @@ export function rgbTileReady(seed) {
 // plain source-over, which every engine draws alike. Nothing in it is black
 // that is not a speck and nothing depends on a blend or a filter, so the worst
 // any browser can do is draw the lime without its grain. It is handed to the
-// stylesheet as `--wl-film` on the root, and screen.css lays it where the
-// square is; until it is made (the first idle moment after a square is drawn)
-// the square is its lime, clean.
+// stylesheet as `--wl-film` on the three things a square is drawn as (the
+// screen, the small screen on the wall and the swatch), and screen.css lays
+// it where the square is; until it is made (the first idle moments after a
+// square is drawn) the square is its lime, clean.
+//
+// ── and what making it costs ──
+// A quarter of a million texels, each three draws and a clump: struck in one
+// go it held a phone for most of a tenth of a second, in whatever idle moment
+// came first, which could be the one between two frames of a hand turning
+// the deck onto the square. So it is struck a few rows at a time, while the
+// page has time to spare, and the rows come out of the one seeded sequence in
+// the same order, so the grain is the same grain. It was handed to the
+// stylesheet on the root, where a new value for a property every element
+// inherits styled every element on the page again; on the squares alone it
+// styles the squares.
 const FILM = 512
 let filmAsked = false
 export function filmGrain() {
   if (filmAsked || typeof document === 'undefined') return
   filmAsked = true
-  idleOf()(() => {
+  const idle = idleOf()
+  idle((first) => {
     const cv = document.createElement('canvas')
     cv.width = FILM
     cv.height = FILM
@@ -903,35 +916,42 @@ export function filmGrain() {
     }
     const img = g.createImageData(FILM, FILM)
     const d = img.data
-    for (let y = 0; y < FILM; y++) {
-      for (let x = 0; x < FILM; x++) {
-        // a sum of three draws gathers round the middle as film's grain does,
-        // the clump leans it, and it is pulled to three times its contrast
-        // and split at the middle into the two kinds of speck, each as strong
-        // as it is far out
-        const n = 0.5 + (r() + r() + r() - 1.5) * 0.22 + clump(x, y) * 0.035
-        const a = Math.min(1, Math.max(0, 3 * n - 1))
-        const i = (y * FILM + x) * 4
-        if (a < 0.5) {
-          d[i + 3] = Math.round(255 * 0.36 * (1 - 2 * a))
-        } else {
-          d[i] = 200; d[i + 1] = 255; d[i + 2] = 40
-          d[i + 3] = Math.round(255 * 0.3 * (2 * a - 1))
-        }
-      }
-    }
-    g.putImageData(img, 0, 0)
+    let y = 0
     const lay = (url) => {
       if (!url) return
       const el = document.createElement('style')
       el.dataset.film = ''
-      el.textContent = `:root{--wl-film:url("${url}")}`
+      el.textContent = `:is(.wl-scr, .wl-tile, .wl-mini)[data-kind='brat']{--wl-film:url("${url}")}`
       document.head.appendChild(el)
     }
-    if (cv.toBlob) cv.toBlob((b) => lay(b ? URL.createObjectURL(b) : ''), 'image/png')
-    else {
-      try { lay(cv.toDataURL('image/png')) } catch { /* the lime, clean */ }
+    // rows, in order, for as long as the moment lasts, and at least one
+    const rows = (deadline) => {
+      do {
+        for (let x = 0; x < FILM; x++) {
+          // a sum of three draws gathers round the middle as film's grain does,
+          // the clump leans it, and it is pulled to three times its contrast
+          // and split at the middle into the two kinds of speck, each as strong
+          // as it is far out
+          const n = 0.5 + (r() + r() + r() - 1.5) * 0.22 + clump(x, y) * 0.035
+          const a = Math.min(1, Math.max(0, 3 * n - 1))
+          const i = (y * FILM + x) * 4
+          if (a < 0.5) {
+            d[i + 3] = Math.round(255 * 0.36 * (1 - 2 * a))
+          } else {
+            d[i] = 200; d[i + 1] = 255; d[i + 2] = 40
+            d[i + 3] = Math.round(255 * 0.3 * (2 * a - 1))
+          }
+        }
+        y++
+      } while (y < FILM && deadline && deadline.timeRemaining() > 2)
+      if (y < FILM) { idle(rows); return }
+      g.putImageData(img, 0, 0)
+      if (cv.toBlob) cv.toBlob((b) => lay(b ? URL.createObjectURL(b) : ''), 'image/png')
+      else {
+        try { lay(cv.toDataURL('image/png')) } catch { /* the lime, clean */ }
+      }
     }
+    rows(first)
   })
 }
 

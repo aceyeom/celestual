@@ -424,8 +424,11 @@
 .wl-scr-menu li { padding: 0.8cqw 2cqw 0.6cqw; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wl-scr-menu li.is-on { background: var(--s-ink); color: var(--s-mid); text-shadow: none; }
 .wl-scr-menu:focus-visible { outline: 0.5cqw dashed var(--s-ink); outline-offset: -0.5cqw; }
-/* the chosen row stands the same way in from either side of the glass */
-.wl-scr-body:has(> .wl-scr-menu) { padding-left: 2.4cqw; padding-right: 2.4cqw; }
+/* the chosen row stands the same way in from either side of the glass.
+   The body is told it holds a menu (screen.jsx `Screen`) rather than asking
+   with a `:has()`, which Chrome paid for with a style pass over the whole
+   page whenever any element anywhere was added or taken away */
+.wl-scr-body.is-menu { padding-left: 2.4cqw; padding-right: 2.4cqw; }
 .wl-scr-note {
   flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw;
   text-align: center; color: var(--s-ink); padding: 0 3cqw; font: 400 8.6cqw/1.05 var(--f-s40);
@@ -444,14 +447,19 @@
   100% { filter: blur(0.35px) brightness(1); }
 }
 /* the light the screen throws wakes with it, dark while it is dark. Low
-   specificity (`:where`), so a close that comes mid-wake still puts it out */
+   specificity (`:where`), so a close that comes mid-wake still puts it out.
+   The scene carries its screen's state itself (screen.jsx `data-state`):
+   found with a `:has()`, every screen put on the page, a turn's included,
+   and every class any element changed, cost Chrome a style pass over the
+   whole page, about two thousand elements, a tenth of a second on a phone */
 @keyframes wl-wake-light { 0% { opacity: 0; } 28% { opacity: 0.62; } 38% { opacity: 0.3; } 52% { opacity: 0.92; } 100% { opacity: 1; } }
-:where(.wl-scene:has(.wl-scr.is-waking)) .wl-scene-halo-2 {
+:where(.wl-scene[data-state='waking']) .wl-scene-halo-2 {
   animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 /* the room's light keeps its own fade first in the list, so when the wake
-   ends that fade carries on, finished, and does not start again from dark */
-:where(.wl-letter:has(.wl-letter-card .wl-scr.is-waking)) .wl-room-light {
+   ends that fade carries on, finished, and does not start again from dark.
+   The letter says when its card is waking (Letter.jsx `data-waking`) */
+:where(.wl-letter[data-waking]) .wl-room-light {
   animation: wl-fade 700ms var(--ease, ease) both, wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .wl-sheet-wrap.is-closing .wl-scene-halo-2 { animation: none; }
@@ -627,7 +635,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
-  .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
+  .wl-scene[data-state='waking'] .wl-scene-halo-2, .wl-letter[data-waking] .wl-room-light { animation: none !important; }
   /* the words are fitted by measuring them at each size (`useFit`), and a
      transition, even the 1ms one this preference gives everything
      (wall.css), hands the measure the size before, so the fit ran off the
