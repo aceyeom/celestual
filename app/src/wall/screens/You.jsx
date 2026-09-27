@@ -99,7 +99,7 @@ import {
   labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
 } from '../data.js'
 import { stampOf } from '../looks.js'
-import { getState } from '../store.js'
+import { getState, patch } from '../store.js'
 import { member, memberLabel, isReader, signOut, refresh, toWrite, heldProof } from '../auth.js'
 import { loadPending } from '../handoff.js'
 import {
@@ -206,10 +206,16 @@ function Slots({ used, cap }) {
 // count reads the same rows as the list, so the two never disagree.
 const SHOWN = 4
 
+// A letter that came down is listed until it has been seen once, here or
+// in the notice at the foot of the wall, and then it is gone from both
+// (store.js `noticed`): the owner asked for it, and a list that carries a
+// takedown for thirty days is a list that keeps saying so.
+const isDown = (l) => !!l.downBy && l.downBy !== 'held'
 function wroteRows() {
   const own = mine()
+  const read = getState().noticed || {}
   return own && own.length
-    ? own.map((l) => ({
+    ? own.filter((l) => !(isDown(l) && read[l.id])).map((l) => ({
       id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
       held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
     }))
@@ -222,6 +228,14 @@ function wroteRows() {
 // it, and not opened, since it is not on the wall yet to open.
 function Wrote({ go, rows }) {
   const [more, setMore] = useState(false)
+  // the ones that came down and were on the list while it was open are
+  // read once it is left: the tab changed, or the sheet shut
+  const shownDown = useRef([])
+  useEffect(() => { shownDown.current = rows.filter((r) => r.down && r.id).map((r) => r.id) }, [rows])
+  useEffect(() => () => {
+    if (!shownDown.current.length) return
+    patch({ noticed: { ...(getState().noticed || {}), ...Object.fromEntries(shownDown.current.map((id) => [id, true])) } })
+  }, [])
   if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const cut = !more && rows.length > SHOWN
   const shown = cut ? rows.slice(0, SHOWN) : rows
