@@ -18,11 +18,12 @@
 //            courier for one fact.
 //   email    OUR link (migration 0065), the one the campus proof already used:
 //            celestual-edu-verify mails it from hello@celestual.us in the
-//            product's own design, with the number from 10 to 99 this screen
-//            shows, and whichever device opens it confirms it (/verify#t=).
-//            The device that asked watches `linkStatus` and moves on the moment
-//            it is true. The binding is the database's
-//            (celestual_user_bind_email_hash): the device becomes the person
+//            product's own design, and whichever browser opens it is signed
+//            in (/verify#t=), with nothing typed (0070). The screen that
+//            asked watches `linkStatus`: opened there, it moves on; opened in
+//            another browser, it says so, since that browser is the one
+//            signed in and not this one. The binding is the database's
+//            (celestual_user_bind_email_hash): the browser becomes the person
 //            who holds the address, by whatever proof they showed it before.
 //
 // ── the email door that went ────────────────────────────────────────────────
@@ -98,12 +99,9 @@ export async function startGoogle(returnTo) {
 }
 
 // ── email ───────────────────────────────────────────────────────────────────
-// A link, mailed. Answers { ok, request, match, email } for the screen to
-// wait on (`linkStatus` with `request`, and `match` drawn large, the number
-// that is on this screen and nowhere else: the mail never prints it, and a
-// link opened on another device asks for it there, migration 0065), or
-// { ok: false, error } with the slugs the gate puts words to: 'email',
-// 'rate', 'send', 'offline'.
+// A link, mailed. Answers { ok, request, email } for the screen to wait on
+// (`linkStatus` with `request`), or { ok: false, error } with the slugs the
+// gate puts words to: 'email', 'rate', 'send', 'offline'.
 export async function sendEmailLink(email) {
   if (!hasSupabase) return { ok: false, error: 'offline' }
   const e = String(email || '').trim().toLowerCase()
@@ -113,7 +111,7 @@ export async function sendEmailLink(email) {
     const err = out.error === 'rate' || out.error === 'email' || out.error === 'offline' ? out.error : 'send'
     return { ok: false, error: err }
   }
-  return { ok: true, request: out.request, match: out.match, email: e, campus: out.campus, school: out.school }
+  return { ok: true, request: out.request, email: e, campus: out.campus, school: out.school }
 }
 
 // ── the bind ────────────────────────────────────────────────────────────────

@@ -450,16 +450,19 @@ function TermsBody({ recipient = false, headRef }) {
 // The composer's magic link (docs/ONE-WALL.md), in the lower half in place of
 // the thread, worded for a proof with nothing waiting on it, and in the
 // composer's words for the same act (screens/Write.jsx, the Berkeley door):
-// `send me the link`, the number, `waiting for the link`, `send it again`,
-// `use a different address`. The link is tapped wherever the mail is opened,
-// and this device is asked every few seconds whether it has been, and again
+// `send me the link`, `waiting for the link`, `send it again`, `use a
+// different address`. The link is tapped wherever the mail is opened, and
+// this device is asked every few seconds whether it has been, and again
 // when it comes back to the front.
 //
-// ── the number ──────────────────────────────────────────────────────────────
-// Shown here and nowhere else. The mail does not print it: a link opened on
-// a device that is not this one asks for it (screens/Verify.jsx), so a link
-// somebody is sent without asking for it signs nobody in. So the number is
-// labelled as theirs, and the line says when they will need it.
+// ── opened somewhere else ───────────────────────────────────────────────────
+// A link confirms the browser that opens it and no other (migration 0070),
+// so a link somebody is sent without asking for it confirms nobody here.
+// Opened in another browser (the mail read in Safari, the wall open in
+// Instagram's), that browser can reply and this one cannot, and the form
+// says so, with a new link to open here. The link carries the letter, so the
+// page it opens there leads back to it (screens/Verify.jsx). It used to show
+// a number here, to be typed there (0065).
 //
 // ── asked, and asked again ──────────────────────────────────────────────────
 // A second link is a second request with a number of its own, and this form
@@ -469,8 +472,7 @@ function TermsBody({ recipient = false, headRef }) {
 // answer is asked for too (auth.js `refresh`): a school address on it now,
 // from any of the links this form sent, opens replying the same.
 //
-// A link that has run out, or that a wrong number spent on another device,
-// is said so, with the way to another.
+// A link that has run out is said so, with the way to another.
 const RAN_OUT = new Set(['expired', 'used', 'burned', 'invalid'])
 const LINK_MS = 30 * 60000
 function ranOut(got, at) {
@@ -487,17 +489,18 @@ const SCHOOL_FAULT = {
   offline: 'there is no connection. try again in a moment.',
 }
 
-function School({ onVerified, onTheirs }) {
+function School({ letter, onVerified, onTheirs }) {
   const [email, setEmail] = useState('')
   const [step, setStep] = useState('ask')     // ask · sent
   const [busy, setBusy] = useState(false)
   const [fault, setFault] = useState('')
-  const [sent, setSent] = useState(null)      // { request, match, email, at, again }
+  const [sent, setSent] = useState(null)      // { request, email, at, again }
   const [out, setOut] = useState(false)       // the newest link ran out, or was spent
+  const [away, setAway] = useState(false)     // or was opened in another browser
 
   // one link to one address; the fault said here when none went out
   const mail = async (e) => {
-    const got = await sendSchoolLink(e)
+    const got = await sendSchoolLink(e, letter)
     if (got && got.ok) return got
     setFault(SCHOOL_FAULT[got?.error] || 'the email did not send. try again in a moment.')
     return null
@@ -512,8 +515,9 @@ function School({ onVerified, onTheirs }) {
     const got = await mail(e)
     setBusy(false)
     if (!got) return
-    setSent({ request: got.request, match: got.match, email: e, at: Date.now(), again: false })
+    setSent({ request: got.request, email: e, at: Date.now(), again: false })
     setOut(false)
+    setAway(false)
     setStep('sent')
   }
 
@@ -524,13 +528,14 @@ function School({ onVerified, onTheirs }) {
     setFault('')
     const got = await mail(sent.email)
     if (!got) return false
-    setSent({ request: got.request, match: got.match, email: sent.email, at: Date.now(), again: true })
+    setSent({ request: got.request, email: sent.email, at: Date.now(), again: true })
     setOut(false)
+    setAway(false)
     return true
   }
 
   useEffect(() => {
-    if (step !== 'sent' || !sent?.request || out) return undefined
+    if (step !== 'sent' || !sent?.request || out || away) return undefined
     let alive = true
     let asking = false
     // what this device already said about a school before the wait began:
@@ -550,6 +555,9 @@ function School({ onVerified, onTheirs }) {
       asking = false
       if (!alive) return
       if (yes) { alive = false; onVerified(); return }
+      // confirmed in another browser and not this one (0070); the function
+      // calls that `expired` as well, for a form from before
+      if (got && got.ok && got.elsewhere) { alive = false; setAway(true); return }
       if (ranOut(got, sent.at)) { alive = false; setOut(true) }
     }
     const tick = setInterval(ask, 4000)
@@ -562,36 +570,33 @@ function School({ onVerified, onTheirs }) {
       document.removeEventListener('visibilitychange', back)
       window.removeEventListener('focus', back)
     }
-  }, [step, sent, out, onVerified])
+  }, [step, sent, out, away, onVerified])
 
   if (step === 'sent' && sent) {
-    const n = sent.match
     return (
       <div className="wl-rp-school is-sent">
-        {out ? (
+        {away ? (
+          <p className="wl-rp-school-say" role="status">
+            you opened the link somewhere else, so you can reply there. to reply here, send a new link and open it here.
+          </p>
+        ) : out ? (
           <p className="wl-rp-school-say" role="status">that link has run out. send another.</p>
         ) : (
           <>
             <p className="wl-rp-school-say">
               a link is on its way to <span className="wl-h">{sent.email}</span>.{' '}
               tap the link in the mail.
-              {n != null ? ' on another phone or computer, it asks for this number.' : ''}
             </p>
-            {n != null ? (
-              <div className="wl-edu-match" role="group" aria-label={`your number is ${n}`}>
-                <span className="wl-edu-match-lab" aria-hidden="true">your number</span>
-                <span className="wl-edu-match-n" aria-hidden="true">{n}</span>
-              </div>
-            ) : null}
             <p className="wl-rp-wait" role="status"><Wait scale={2} /> waiting for the link</p>
           </>
         )}
         {fault ? <p className="wl-rp-fault" role="alert">{fault}</p> : null}
-        {/* at once when the link has run out: there is nothing to wait for */}
-        <ResendLink key={out ? 'out' : 'wait'} onSend={again} wait={out ? 0 : 30} />
+        {/* at once when the link has run out or went elsewhere: there is
+            nothing to wait for */}
+        <ResendLink key={out || away ? 'out' : 'wait'} onSend={again} wait={out || away ? 0 : 30} />
         <button
           type="button" className="wl-quiet wl-rp-again"
-          onClick={() => { setStep('ask'); setSent(null); setOut(false); setFault('') }}
+          onClick={() => { setStep('ask'); setSent(null); setOut(false); setAway(false); setFault('') }}
         >
           use a different address
         </button>
@@ -854,6 +859,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
   } else if (mode === 'school') {
     inside = (
       <School
+        letter={letter.id}
         onVerified={verified}
         onTheirs={th.toAt && !me.recipient && go ? () => go('claim', letter.to) : null}
       />

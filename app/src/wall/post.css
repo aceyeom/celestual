@@ -158,11 +158,10 @@
 
 /* ═══ CONFIRM YOU'RE AT BERKELEY ═══════════════════════════════════════════
    The door's shape (wall.css THE DOOR), with the Berkeley mark the letter
-   will carry standing where the mark stands (on its plate, Sticker.jsx),
-   and, once the link is out, the two digits of `your number`, large, in a
-   panel of their own: on this screen and nowhere else, since the mail never
-   prints them and a link opened on another device asks for them there
-   (migration 0065). */
+   will carry standing where the mark stands (on its plate, Sticker.jsx).
+   Once the link was out it showed two digits, `your number`, large, to be
+   typed in another browser (migration 0065); the link is enough since 0070,
+   and the panel went with them. */
 .wl-edu { display: flex; flex-direction: column; justify-content: center; }
 .wl-edu .wl-door, .wl-verify .wl-door { padding-top: 6px; }
 .wl-edu .wl-gate-fault { text-align: center; }
@@ -171,18 +170,6 @@
 .wl-edu .wl-addr.is-whole .wl-addr-in { text-align: center; }
 .wl-edu-sticker { margin: 4px 0 22px; animation: wl-rise 520ms var(--ease, ease) both; }
 .wl-edu-head .wl-door-say .wl-h { color: var(--chalk); overflow-wrap: anywhere; }
-.wl-edu-match {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 16px 20px 18px;
-  background: var(--lcd); background-image: var(--lcd-grid);
-  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd);
-}
-.wl-edu-match-lab { font-size: var(--t-small); color: var(--ash); }
-.wl-edu-match-n {
-  font-family: var(--f-s40); font-size: 96px; line-height: 0.9; color: var(--chalk);
-  font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
-  text-shadow: 0 0 18px rgba(244, 241, 234, 0.28);
-}
 .wl-edu-wait {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   margin: 6px 0 0; font-size: var(--t-small); color: var(--ash);
@@ -194,3 +181,13 @@
    done. */
 .wl-verify-wait { display: inline-flex; align-items: center; gap: 10px; }
 .wl-verify-note { margin-top: 18px; color: var(--ash); }
+/* A letter the link carried from the browser that asked (migration 0070),
+   on the screen it goes up on, still, over the key that posts it: the
+   composer's card, sized to stand in a door with its heading and its keys
+   under it on a phone. */
+.wl-verify-letter {
+  --notch: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+  margin-bottom: 6px;
+}
+.wl-verify-letter .wl-scene { width: min(100%, 360px, max(180px, calc((100svh - 470px - var(--notch)) / 1.22))); margin: 0 auto; }
+.wl-verify-letter .wl-scene-halo { display: none; }

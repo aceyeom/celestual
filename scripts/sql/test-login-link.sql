@@ -2,9 +2,9 @@
 -- test-login-link.sql: exercises 0065_the_link_for_everybody.sql.
 --
 -- The login link takes any address and signs the device in as the person who
--- holds it, by whichever proof they showed that inbox before; the device that
--- opened the link follows, but only with the number the asking screen shows
--- (a wrong one burns the link); a .edu address opens its campus; two people
+-- holds it, by whichever proof they showed that inbox before; opened on
+-- another device it signs in that device and never the one that asked (0070,
+-- which took the number 0065 asked for away); a .edu address opens its campus; two people
 -- on one device are a switch and never a merge; and a person signed in by ANY
 -- proof gets the proof their own verified @ is read with, from the server,
 -- with no second DM, and nobody gets one for an @ they do not hold. Run
@@ -55,6 +55,8 @@ select ll_ok('the bind by address is the service role''s',
   and not has_function_privilege('authenticated', 'celestual_user_bind_email_hash(text, text)', 'EXECUTE'));
 select ll_ok('the link stays the service role''s',
   not has_function_privilege('anon', 'celestual_edu_link_open(text, text, text, text, text, text, integer)', 'EXECUTE')
+  and not has_function_privilege('anon', 'celestual_edu_link_open(text, text, text, text, text, text, jsonb)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'celestual_edu_link_open(text, text, text, text, text, text, jsonb)', 'EXECUTE')
   and not has_function_privilege('anon', 'celestual_edu_link_confirm(text, text)', 'EXECUTE')
   and not has_function_privilege('anon', 'celestual_edu_link_confirm(text, text, integer)', 'EXECUTE')
   and not has_function_privilege('authenticated', 'celestual_edu_link_confirm(text, text, integer)', 'EXECUTE')
@@ -153,77 +155,81 @@ select ll_ok('an @ the desk banned is proved by nothing',
   (celestual_session_handle_proof('token-ll-shut-000000', ll_hash('shut-proof'))->>'error') = 'banned');
 
 -- ── 6. asked on one device, opened on another ────────────────────────────────
--- The number is on the asking screen and nowhere else (0065 section 3). The
--- device that opens the link is asked for it, and nothing happens until it is
--- typed: a link somebody was sent and never asked for signs nobody in.
+-- Since 0070 the link is enough: opened anywhere it confirms at once, with
+-- nothing typed, for the device that opened it, and signs in nothing else. A
+-- link somebody was sent and never asked for signs in the inbox's own hands,
+-- never the stranger's who typed the address.
 select ll_open('cross@proton.me', 'token-ll-cross-ask-00', 'link-ll-cross-aaaaaaaaaaaa', 61);
-select ll_ok('opened on another device with no number, it asks for the number',
-  (select r->>'error' = 'match' and r->>'purpose' = 'login' and not (r->>'ok')::boolean
+select ll_ok('opened on another device, it confirms there at once, and says it was another device',
+  (select (r->>'ok')::boolean and r->>'purpose' = 'login' and not (r->>'same_device')::boolean
      from (select celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', 'token-ll-cross-open-0', null) as r) s));
-select ll_ok('and nothing is spent: the link still waits, and nobody is signed in',
-  (select status = 'pending' and verified_at is null and confirmed_session_hash is null and expires_at > now()
-     from celestual_edu_verifications where link_hash = ll_hash('link-ll-cross-aaaaaaaaaaaa'))
-  and ll_user('token-ll-cross-ask-00') is null
-  and ll_user('token-ll-cross-open-0') is null
-  and not (celestual_edu_link_status(
-     (select token from celestual_edu_verifications where link_hash = ll_hash('link-ll-cross-aaaaaaaaaaaa')),
-     'token-ll-cross-ask-00')->>'verified')::boolean);
-select ll_ok('the call the deployed function makes asks the same way',
-  (celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', 'token-ll-cross-open-0')->>'error') = 'match'
-  and (celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', null)->>'error') = 'match'
-  and (select status = 'pending' from celestual_edu_verifications where link_hash = ll_hash('link-ll-cross-aaaaaaaaaaaa')));
-select ll_ok('with the number on the asking screen, it confirms, and says it was another device',
-  (select (r->>'ok')::boolean and not (r->>'same_device')::boolean
-     from (select celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', 'token-ll-cross-open-0', 61) as r) s));
-select ll_ok('and both devices are the one person',
-  ll_user('token-ll-cross-ask-00') is not null
-  and ll_user('token-ll-cross-ask-00') = ll_user('token-ll-cross-open-0'));
+select ll_ok('the device that opened it is signed in as the address',
+  (select u->>'login_email' = 'cross@proton.me'
+     from (select celestual_whoami('token-ll-cross-open-0')->'user' as u) s));
+select ll_ok('and the device that asked is signed in by nothing',
+  ll_user('token-ll-cross-ask-00') is null);
+select ll_ok('its status says the link was opened elsewhere, and stops the old screen waiting',
+  (select not (st->>'verified')::boolean and (st->>'elsewhere')::boolean and (st->>'expired')::boolean
+     from (select celestual_edu_link_status(
+             (select token from celestual_edu_verifications where link_hash = ll_hash('link-ll-cross-aaaaaaaaaaaa')),
+             'token-ll-cross-ask-00') as st) s));
 select ll_ok('the device that opened it may ask again, and is answered',
   (celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', 'token-ll-cross-open-0')->>'ok')::boolean);
-select ll_ok('and a third device is told it was used, number or not',
+select ll_ok('the device that asked is told it was used, and is still nobody',
+  (celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', 'token-ll-cross-ask-00')->>'error') = 'used'
+  and ll_user('token-ll-cross-ask-00') is null);
+select ll_ok('and so is a third, number or not',
   (celestual_edu_link_confirm('link-ll-cross-aaaaaaaaaaaa', 'token-ll-cross-third', 61)->>'error') = 'used');
 
--- A wrong number burns the link: one guess in ninety, once.
+-- The attack the number stopped, stopped without it: a stranger types a
+-- person's address, and the person taps the link they never asked for.
 insert into celestual_users (instagram_handle, handle_verified_at, email, email_verified_at)
 values ('target', now(), 'target@gmail.com', now());
 select ll_open('target@gmail.com', 'token-ll-asker-00000', 'link-ll-wrong-aaaaaaaaaaaa', 72);
-select ll_ok('a wrong number is refused',
-  (select r->>'error' = 'mismatch' and r->>'purpose' = 'login'
-     from (select celestual_edu_link_confirm('link-ll-wrong-aaaaaaaaaaaa', 'token-ll-victim-0000', 27) as r) s));
-select ll_ok('and the link is burned: nobody is signed in on either device',
-  (select status = 'refused' and verified_at is null and expires_at <= now()
-     from celestual_edu_verifications where link_hash = ll_hash('link-ll-wrong-aaaaaaaaaaaa'))
-  and ll_user('token-ll-asker-00000') is null
-  and ll_user('token-ll-victim-0000') is null);
-select ll_ok('the right number after a wrong one is refused too',
-  (celestual_edu_link_confirm('link-ll-wrong-aaaaaaaaaaaa', 'token-ll-victim-0000', 72)->>'error') = 'mismatch');
-select ll_ok('so is the device that asked, once it is burned',
-  (celestual_edu_link_confirm('link-ll-wrong-aaaaaaaaaaaa', 'token-ll-asker-00000')->>'error') = 'mismatch');
-select ll_ok('and still nobody is signed in',
-  ll_user('token-ll-asker-00000') is null and ll_user('token-ll-victim-0000') is null);
-select ll_ok('and the asking screen reads it as run out, so it asks again',
-  (select (st->>'expired')::boolean and not (st->>'verified')::boolean
-     from (select celestual_edu_link_status(
-             (select token from celestual_edu_verifications where link_hash = ll_hash('link-ll-wrong-aaaaaaaaaaaa')),
-             'token-ll-asker-00000') as st) s));
+select ll_ok('the tap signs in the person''s own browser, as them',
+  (celestual_edu_link_confirm('link-ll-wrong-aaaaaaaaaaaa', 'token-ll-victim-0000', 27)->>'ok')::boolean
+  and ll_user('token-ll-victim-0000') = (select id from celestual_users where instagram_handle = 'target'));
+select ll_ok('and the stranger''s browser is nobody, and cannot read their notes',
+  ll_user('token-ll-asker-00000') is null
+  and (celestual_session_handle_proof('token-ll-asker-00000', ll_hash('asker-proof'))->>'error') = 'no_session');
+select ll_ok('opening the same link on the stranger''s browser after gets it nothing',
+  (celestual_edu_link_confirm('link-ll-wrong-aaaaaaaaaaaa', 'token-ll-asker-00000')->>'error') = 'used'
+  and ll_user('token-ll-asker-00000') is null);
 
--- The same rule for a campus link and an alerts link: another device types
--- the number, and the device that asked needs none.
+-- A person signed in on both browsers already is one person: the asking
+-- screen is told the link is confirmed, and nobody new is signed in by it.
+select celestual_session_bind(ll_user('token-ll-victim-0000'), ll_hash('token-ll-both-ask-000'));
+select ll_open('target@gmail.com', 'token-ll-both-ask-000', 'link-ll-both-aaaaaaaaaaaaa', 50);
+select celestual_edu_link_confirm('link-ll-both-aaaaaaaaaaaaa', 'token-ll-victim-0000');
+select ll_ok('the same person on both browsers reads it as confirmed',
+  (celestual_edu_link_status(
+     (select token from celestual_edu_verifications where link_hash = ll_hash('link-ll-both-aaaaaaaaaaaaa')),
+     'token-ll-both-ask-000')->>'verified')::boolean);
+
+-- The same for a campus link; an alerts link confirms the asking account's
+-- address wherever it is opened.
 select celestual_edu_link_open('camp@berkeley.edu', 'token-ll-camp-ask-00', 'edu', 'berkeley', null,
                                ll_hash('link-ll-camp-aaaaaaaaaaaaa'), 45);
-select ll_ok('a campus link opened elsewhere asks for the number too',
-  (celestual_edu_link_confirm('link-ll-camp-aaaaaaaaaaaaa', 'token-ll-camp-open-0')->>'error') = 'match'
-  and not exists (select 1 from celestual_users where edu_email = 'camp@berkeley.edu'));
-select ll_ok('and with it, it confirms the campus',
-  (celestual_edu_link_confirm('link-ll-camp-aaaaaaaaaaaaa', 'token-ll-camp-open-0', 45)->>'campus') = 'berkeley');
-select ll_ok('on the device that asked',
-  (select edu_email = 'camp@berkeley.edu' from celestual_users where id = ll_user('token-ll-camp-ask-00')));
-select celestual_edu_link_open('alerted@gmail.com', 'token-ll-camp-ask-00', 'alerts', null, null,
+select ll_ok('a campus link opened elsewhere confirms the campus',
+  (celestual_edu_link_confirm('link-ll-camp-aaaaaaaaaaaaa', 'token-ll-camp-open-0')->>'campus') = 'berkeley');
+select ll_ok('on the device that opened it, and not on the one that asked',
+  (select edu_email = 'camp@berkeley.edu' from celestual_users where id = ll_user('token-ll-camp-open-0'))
+  and ll_user('token-ll-camp-ask-00') is null);
+insert into celestual_users (instagram_handle, handle_verified_at) values ('alerter', now());
+select celestual_session_bind((select id from celestual_users where instagram_handle = 'alerter'), ll_hash('token-ll-alert-ask-0'));
+select celestual_edu_link_open('alerted@gmail.com', 'token-ll-alert-ask-0', 'alerts', null, null,
                                ll_hash('link-ll-alerted-aaaaaaaaaa'), 83);
-select ll_ok('an alerts link opened elsewhere with a wrong number is refused',
-  (celestual_edu_link_confirm('link-ll-alerted-aaaaaaaaaa', 'token-ll-camp-open-0', 38)->>'error') = 'mismatch');
-select ll_ok('and sets nothing',
-  (select coalesce(alert_email, '') <> 'alerted@gmail.com' from celestual_users where id = ll_user('token-ll-camp-ask-00')));
+select ll_ok('an alerts link opened elsewhere confirms',
+  (celestual_edu_link_confirm('link-ll-alerted-aaaaaaaaaa', 'token-ll-camp-open-0', 38)->>'ok')::boolean);
+select ll_ok('the asking account''s address',
+  (select alert_email = 'alerted@gmail.com' and alert_email_verified_at is not null
+     from celestual_users where instagram_handle = 'alerter'));
+select ll_ok('and its status reads confirmed to the account that asked',
+  (celestual_edu_link_status(
+     (select token from celestual_edu_verifications where link_hash = ll_hash('link-ll-alerted-aaaaaaaaaa')),
+     'token-ll-alert-ask-0')->>'verified')::boolean);
+select ll_ok('the browser that opened it is signed in as nobody new by it',
+  ll_user('token-ll-camp-open-0') <> (select id from celestual_users where instagram_handle = 'alerter'));
 
 -- ── 7. a device with a row of its own is merged into the person ──────────────
 -- A laptop that wrote a letter before it signed in has a row, made for it,
@@ -322,17 +328,14 @@ select ll_ok('a campus link still proves a campus',
   and (select (u->>'edu_verified')::boolean and not (u->>'email_verified')::boolean
          from (select celestual_whoami('token-ll-campus-0000')->'user' as u) s));
 
--- ── 11. a resend from the same screen keeps the number ───────────────────────
-select ll_ok('the first link answers the number it was given',
-  (celestual_edu_link_open('again@gmail.com', 'token-ll-again-00000', 'login', null, null,
-                           ll_hash('link-ll-again-aaaaaaaaaaaa'), 31)->>'match')::int = 31);
-select ll_ok('a second link for the same address from the same screen carries the first one''s number',
-  (celestual_edu_link_open('again@gmail.com', 'token-ll-again-00000', 'login', null, null,
-                           ll_hash('link-ll-again-bbbbbbbbbbbb'), 77)->>'match')::int = 31);
-select ll_ok('so the late first mail opened elsewhere takes the number on the screen',
-  (celestual_edu_link_confirm('link-ll-again-aaaaaaaaaaaa', 'token-ll-again-other0', 31)->>'ok')::boolean);
-select ll_ok('another screen asking for the same address gets its own number',
-  (celestual_edu_link_open('again@gmail.com', 'token-ll-again-third0', 'login', null, null,
-                           ll_hash('link-ll-again-cccccccccccc'), 58)->>'match')::int = 58);
+-- ── 11. no number is kept or answered (0070) ─────────────────────────────────
+select ll_ok('the function from before passes a number, and none is answered',
+  (select r->>'match' is null and (r->>'ok')::boolean
+     from (select celestual_edu_link_open('again@gmail.com', 'token-ll-again-00000', 'login', null, null,
+                                          ll_hash('link-ll-again-aaaaaaaaaaaa'), 31) as r) s));
+select ll_ok('or kept',
+  (select match is null from celestual_edu_verifications where link_hash = ll_hash('link-ll-again-aaaaaaaaaaaa')));
+select ll_ok('and a number typed on the old page is taken and never read',
+  (celestual_edu_link_confirm('link-ll-again-aaaaaaaaaaaa', 'token-ll-again-other0', 99)->>'ok')::boolean);
 
 rollback;

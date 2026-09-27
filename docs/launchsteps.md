@@ -36,6 +36,32 @@ tier has no point in time recovery.
 
 ---
 
+## The link is enough: the deploy (migration 0070)
+
+The owner, 27 September: no number on a mailed link. A link confirms at once
+for the browser that opened it, and signs in the browser that asked only when
+it is the same one (docs/EDU-VERIFICATION.md). One migration, one function,
+the front end. Any order works and none of them breaks a tab on the other two;
+this order has the fewest odd moments.
+
+1. [ ] **Apply `0070_the_link_is_enough.sql`.** Re-runnable. From this moment
+       every link confirms for the browser that opened it, whatever function
+       or page is live, and the asking screen of a live build that is not
+       the one that opened it reads the link as run out and offers another.
+       Where pg_cron runs it schedules `celestual-link-carry`, every ten
+       minutes.
+2. [ ] **`supabase functions deploy celestual-edu-verify`.** The carry, no
+       number, and the mail that says the link works wherever it is opened.
+       On a database before 0070 it falls back to the open with a number.
+3. [ ] **Ship the front end.** No number on any asking screen or on
+       `/verify`; `you opened it somewhere else.` on the asking screens; the
+       carried letter on `/verify` with `post it`.
+
+Check: ask for a sign in link in one browser and open it in another. The
+second is signed in; the first says it was opened somewhere else and is not.
+Write a letter, choose Berkeley, open the link in another browser: the letter
+is shown there, and `post it` puts it up once.
+
 ## The rulings of 26 September: the deploy (migrations 0065 to 0068)
 
 The owner's batch of 26 September (docs/ONE-WALL.md, "The rulings of 26

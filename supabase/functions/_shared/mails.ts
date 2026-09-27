@@ -12,15 +12,13 @@ import { body, C, colophon, code, esc, footLink, frame, plate, quiet, SITE, tick
 export type Mail = { subject: string; html: string; text: string }
 
 // ── verify: the magic link ───────────────────────────────────────────────────
-// celestual-edu-verify `link`. It carries the link and never the number. The
-// number is on the screen that asked and only there (migration 0065 section
-// 3): tapped on that same device the link confirms at once, and tapped on any
-// other the page it opens asks for the number on the asking screen. A person
-// sent a link they never asked for has no such screen, so their tap signs
-// nobody in. The mail used to print the number ("your screen shows 47. if it
-// doesn't, don't tap it"), which kept the careful reader safe and left
-// everybody else one tap from handing their account to whoever typed their
-// address.
+// celestual-edu-verify `link`. It carries the link and nothing to type. Since
+// migration 0070 the link confirms on whatever phone or computer opens it,
+// for that one: that is where you're signed in, or confirmed at a school. A
+// person sent a link they never asked for signs in their own browser, as
+// themselves, and never the stranger's that typed their address, so the mail
+// says where the tap lands and nothing else. It printed a number once (0064),
+// and then said where one was to be typed (0065); neither is asked for now.
 //
 //   purpose 'edu'     proves a school address. `domain` is the school it
 //                     proves (berkeley.edu); null for an address on the pass
@@ -46,16 +44,16 @@ export function verifyMail(o: {
   const draft = edu && o.draft !== false
   const head = login ? 'tap to sign in.' : edu ? 'tap to confirm your school email.' : 'tap to confirm this address.'
   const proves = login
-    ? `tap the link and you're signed in on the screen that asked for it.` +
+    ? `tap the link and you're signed in.` +
       (o.domain ? ` it also confirms you're at ${esc(o.domain)}.` : '')
     : edu
     ? (o.domain ? `this confirms you're at ${esc(o.domain)}.` : `this confirms the address is yours.`) +
-      (draft ? ' your letter goes up once you tap.' : '')
+      (draft ? ' your letter is waiting on it.' : '')
     : `your alerts come here: when someone writes you a letter, and when it's mutual. you choose which.`
   const key = login ? 'sign in' : edu ? (draft ? 'confirm and post' : 'confirm') : 'confirm this address'
   const subject = login ? 'tap to sign in to celestual' : edu ? 'tap to confirm your school email' : 'tap to confirm this address'
-  // where the number is, and never what it is
-  const elsewhere = 'on another phone or computer, it asks for the number on the screen where you asked.'
+  // where the tap lands, for the two that sign a browser in
+  const lands = login || edu ? 'it works on whichever phone or computer you open it on.' : ''
   const why = login
     ? `you're getting this because this address was typed into celestual to sign in. `
     : `you're getting this because this address was typed into celestual. `
@@ -66,7 +64,7 @@ export function verifyMail(o: {
       ${title(head)}
       ${body(proves)}
       ${plate(esc(o.link), key)}
-      ${body(elsewhere, C.chalk)}
+      ${lands ? body(lands, C.chalk) : ''}
       ${tick('the link works once, for 30 minutes. nobody sees your address.')}`,
     foot: colophon(
       why + `if you didn't ask for it, ignore it and nothing happens. ${footLink(SITE, 'celestual.us')}`,
@@ -79,7 +77,7 @@ export function verifyMail(o: {
     '',
     `${key}: ${o.link}`,
     '',
-    elsewhere,
+    ...(lands ? [lands] : []),
     'the link works once, for 30 minutes. nobody sees your address.',
     '',
     `${why}if you didn't ask for it, ignore it and nothing happens.`,

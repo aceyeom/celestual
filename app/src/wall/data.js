@@ -786,13 +786,16 @@ export async function write({ to, body, source, kind = 'handle', name = '', look
 //   nonce   made once per draft (`newNonce`), so the same draft posted twice
 //           is one letter (docs/ONE-WALL.md)
 //   held    the Berkeley link it is waiting on, once one is out:
-//           { email, request, match, at, earlier }, where `earlier` is the
+//           { email, request, at, earlier }, where `earlier` is the
 //           requests sent before it for the same address, up to four, so a
 //           tap on any of the mails posts the letter (screens/Write.jsx)
 //
 // `draftPost` turns that into what goes up, and `postDraft` sends it and, if
 // it went, lands it: the composer calls it on the press, and the verify page
-// (screens/Verify.jsx) calls it for a draft that was waiting on the link.
+// (screens/Verify.jsx) calls it for a draft that was waiting on the link, the
+// one this browser holds or, since migration 0070, the one the link carried
+// here from the browser that asked. The nonce goes with it, so either way it
+// is one letter.
 export function newNonce() {
   const b = new Uint8Array(16)
   try { crypto.getRandomValues(b) } catch { for (let i = 0; i < b.length; i++) b[i] = Math.floor(Math.random() * 256) }

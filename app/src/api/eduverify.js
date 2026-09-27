@@ -100,25 +100,26 @@ export async function verifyEduCode({ token, code, session }) {
 //   sendLink     mail a link to `email` for this session. `purpose` is 'edu'
 //                (a post), 'alerts' (the alert address) or 'login' (the
 //                door's "continue with email", migration 0065: any address,
-//                and the device is signed in as whoever holds it). `campus`
-//                asks the function to refuse an address that is not at that
-//                school ('domain'). Answers { ok, request, match, domain,
-//                campus, school }: `request` is what `linkStatus` asks after,
-//                and `match` the two digits the asking screen shows, and
-//                nothing else does: the mail never prints them (migration
-//                0065 section 3).
-//   confirmLink  the link's token, spent by whichever device tapped it. On
-//                the device that asked it confirms at once. On any other it
-//                answers 'match' and spends nothing, until it is called again
-//                with `match`, the number typed off the asking screen: the
-//                right one confirms, a wrong one burns the link ('mismatch').
-//                Answers { ok, purpose, request, campus, school, sameDevice }
-//                or { ok: false, error, purpose }, with error one of
-//                'invalid', 'expired', 'used', 'match', 'mismatch' or
-//                'offline', and `purpose` whenever the link was found.
-//   linkStatus   whether the request this session made has been confirmed,
-//                wherever the link was tapped. { ok, verified, expired,
-//                purpose, campus, school }.
+//                and the browser that opens it is signed in as whoever holds
+//                it). `campus` asks the function to refuse an address that is
+//                not at that school ('domain'). `carry` (a campus link's,
+//                migration 0070) is what the browser that opens the link is
+//                handed if it is not this one: { letter: <the draft> } or
+//                { reply: { letter: <id> } }. Answers { ok, request, domain,
+//                campus, school }: `request` is what `linkStatus` asks after.
+//   confirmLink  the link's token, spent by whichever browser opened it, and
+//                since 0070 confirmed for that browser at once, with nothing
+//                typed. Answers { ok, purpose, request, campus, school,
+//                sameDevice, carry } or { ok: false, error, purpose }, with
+//                error one of 'invalid', 'expired', 'used', 'taken', 'match'
+//                or 'offline', and `purpose` whenever the link was found.
+//                'match' is a function from before 0070, which confirms a
+//                link opened elsewhere only with a number nothing shows now:
+//                the page says to open it where it was asked for.
+//   linkStatus   whether the request this session made has signed it in
+//                (`verified`), or was opened in another browser and signed
+//                that one in instead (`elsewhere`, 0070), or ran out.
+//                { ok, verified, elsewhere, expired, purpose, campus, school }.
 async function invokeLink(body) {
   if (!hasSupabase) return { ok: false, error: 'offline' }
   try {
@@ -142,19 +143,21 @@ async function invokeLink(body) {
 // function reads them.
 const purposeOf = (p) => (p === 'alerts' || p === 'login' ? p : 'edu')
 
-export async function sendLink({ email, session, purpose = 'edu', campus = null }) {
+export async function sendLink({ email, session, purpose = 'edu', campus = null, carry = null }) {
   const out = await invokeLink({
     action: 'link',
     email: String(email || '').trim().toLowerCase(),
     session: String(session || ''),
     purpose: purposeOf(purpose),
     ...(campus ? { campus: String(campus) } : {}),
+    ...(carry ? { carry } : {}),
   })
   if (!out.ok) return { ok: false, error: out.error || 'send' }
+  // No number: a function from before 0070 still answers one, and nothing
+  // shows it, since nothing after 0070 asks for it.
   return {
     ok: true,
     request: String(out.request || ''),
-    match: out.match == null ? null : Number(out.match),
     domain: String(out.domain || ''),
     campus: out.campus ? String(out.campus) : null,
     school: out.school ? String(out.school) : null,
@@ -163,17 +166,23 @@ export async function sendLink({ email, session, purpose = 'edu', campus = null 
 
 // The answers the page words, each its own way. 'taken' was read as 'invalid'
 // here, and the page's own line for it ("already confirmed on another
-// account") was never drawn.
-const CONFIRM_FAULTS = new Set(['expired', 'used', 'offline', 'taken', 'match', 'mismatch'])
+// account") was never drawn. A link a wrong number burned under 0065
+// ('mismatch') is run out, and says so.
+const CONFIRM_FAULTS = new Set(['expired', 'used', 'offline', 'taken', 'match'])
 
-export async function confirmLink({ token, session, match = null }) {
-  const typed = match == null ? '' : String(match).replace(/\D/g, '')
-  const out = await invokeLink({
-    action: 'confirm', token: String(token || ''), session: String(session || ''),
-    ...(typed ? { match: typed } : {}),
-  })
+// What a link carried to this browser (migration 0070), as the page uses it:
+// a letter's draft, or the letter a reply was going to be written under.
+function carried(c) {
+  if (!c || typeof c !== 'object') return null
+  if (c.letter && typeof c.letter === 'object' && String(c.letter.body || '').trim()) return { letter: c.letter }
+  if (c.reply && typeof c.reply === 'object' && c.reply.letter) return { reply: { letter: String(c.reply.letter) } }
+  return null
+}
+
+export async function confirmLink({ token, session }) {
+  const out = await invokeLink({ action: 'confirm', token: String(token || ''), session: String(session || '') })
   if (!out.ok) {
-    const e = CONFIRM_FAULTS.has(out.error) ? out.error : 'invalid'
+    const e = out.error === 'mismatch' ? 'expired' : CONFIRM_FAULTS.has(out.error) ? out.error : 'invalid'
     return { ok: false, error: e, purpose: out.purpose ? purposeOf(out.purpose) : null }
   }
   return {
@@ -183,18 +192,24 @@ export async function confirmLink({ token, session, match = null }) {
     campus: out.campus ? String(out.campus) : null,
     school: out.school ? String(out.school) : null,
     sameDevice: !!out.same_device,
+    carry: carried(out.carry),
   }
 }
 
 export async function linkStatus({ request, session }) {
   const out = await invokeLink({ action: 'status', request: String(request || ''), session: String(session || '') })
   if (!out.ok) return { ok: false, error: out.error || 'send', verified: false }
+  const elsewhere = !out.verified && !!out.elsewhere
   return {
     ok: true,
     verified: !!out.verified,
+    // opened in another browser, which it signed in and not this one
+    // (0070). The function answers `expired` beside it for a screen from
+    // before, which this is not.
+    elsewhere,
     // thirty minutes gone with nobody tapping it (0064), so the screen that
     // is waiting can say so rather than wait for ever
-    expired: !out.verified && !!out.expired,
+    expired: !out.verified && !elsewhere && !!out.expired,
     purpose: purposeOf(out.purpose),
     campus: out.campus ? String(out.campus) : null,
     school: out.school ? String(out.school) : null,

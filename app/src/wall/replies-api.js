@@ -84,13 +84,17 @@ export const sendReply = ({ letter, body, nonce, accept = false }) =>
 // celestual-edu-verify `link`), worded for a proof with nothing waiting on it
 // (`draft: false`), since nothing is posted when it is tapped: the thread
 // under the letter opens to this device. Any school: no campus is asked for.
-export const sendSchoolLink = (email) =>
+// It carries the letter (migration 0070), so a link opened in another
+// browser, which is the one it confirms, can take that browser to it.
+export const sendSchoolLink = (email, letter = '') =>
   invoke('celestual-edu-verify', {
     action: 'link', email: String(email || '').trim().toLowerCase(),
     session: sessionToken(), purpose: 'edu', draft: false,
+    ...(letter ? { carry: { reply: { letter: String(letter) } } } : {}),
   })
 
-// Whether the link this device asked for has been tapped, wherever it was.
+// Whether the link this device asked for has been tapped here (`verified`),
+// or in another browser, which it confirmed instead (`elsewhere`, 0070).
 export const schoolLinkStatus = (request) =>
   invoke('celestual-edu-verify', { action: 'status', request: String(request || ''), session: sessionToken() })
 

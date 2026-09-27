@@ -49,7 +49,10 @@
 // draft is kept whatever happens next (store.js `draft`, with a nonce made
 // once per draft, data.js `newNonce`), so a walk to the inbox, a reload, a
 // second tab or Instagram and back never costs anybody what they wrote, and a
-// draft that posts from two tabs at once is one letter.
+// draft that posts from two tabs at once is one letter. The Berkeley link
+// carries it too (migration 0070), so a link opened in another browser, the
+// mail read in Safari with the wall open in Instagram's, hands that browser
+// the letter to post from there (screens/Verify.jsx).
 //
 // The address does not follow the letter anywhere. It is not passed to
 // `write`, and there is no author field in the corpus for it to land in
@@ -491,6 +494,8 @@ export default function Write({
   const [email, setEmail] = useState(() => (live(d0.held) ? d0.held.email.replace(/@berkeley\.edu$/, '') : ''))
   const [busy, setBusy] = useState(false)
   const [wrongSchool, setWrongSchool] = useState(false)
+  // the link was opened in another browser, and the letter went there with it
+  const [away, setAway] = useState(false)
   const [code, setCode] = useState('')
   const whole = email.includes('@')
   const address = whole ? normEmail(email) : normEmail(`${email}@${DOMAIN}`)
@@ -500,12 +505,18 @@ export default function Write({
   // nothing
   const elsewhere = whole && !emailOk && anyEmail(address)
 
+  // The letter goes with the link (migration 0070): opened in another
+  // browser, which is where it is signed in, the link hands that browser
+  // this draft, nonce and all, and /verify shows it there with one key to
+  // post it (screens/Verify.jsx). Without it the letter stayed on this
+  // screen, in a browser the link did not sign in.
   const sendIt = async () => {
     if (elsewhere && !busy) { setSaid('only a berkeley.edu address posts marked from Berkeley.'); return false }
     if (!emailOk || busy) return false
     setBusy(true)
     setSaid('')
-    const out = await sendLink({ email: address, session: sessionToken(), purpose: 'edu', campus: 'berkeley' })
+    const { held: _held, ...letter } = { ...draftNow(), proof: 'edu' }
+    const out = await sendLink({ email: address, session: sessionToken(), purpose: 'edu', campus: 'berkeley', carry: { letter } })
     if (!alive.current) return false
     if (!out.ok && out.error === 'unsupported') {
       // a function that does not mail the link yet: the code it always mailed
@@ -514,7 +525,8 @@ export default function Write({
       setBusy(false)
       if (!got.ok) { setSaid(got.error === 'rate' ? WALL_SAY.rate : got.error === 'domain' || got.error === 'email' ? 'that is not a berkeley.edu address.' : WALL_SAY.send); return false }
       setCode('')
-      setHeld({ email: address, request: '', match: null, legacy: got.token, at: Date.now() })
+      setAway(false)
+      setHeld({ email: address, request: '', legacy: got.token, at: Date.now() })
       return true
     }
     setBusy(false)
@@ -529,11 +541,10 @@ export default function Write({
     }
     // A link asked for again leaves the one before it alive, for its thirty
     // minutes: the mail that came late is the one somebody taps. So the
-    // requests before it are kept with it and asked after too. They all
-    // carry one number (0065: a resend from this screen keeps the first
-    // link's), so whichever mail is tapped, the number on the glass is it.
+    // requests before it are kept with it and asked after too.
+    setAway(false)
     setHeld((was) => ({
-      email: address, request: out.request, match: out.match, at: Date.now(),
+      email: address, request: out.request, at: Date.now(),
       earlier: was && was.request && was.email === address ? [...(was.earlier || []), was.request].slice(-4) : [],
     }))
     return true
@@ -555,18 +566,25 @@ export default function Write({
     setHeld(null)
     setSaid('that link has run out. send a new one.')
   }, [])
+  // or one was opened in another browser, which it confirmed and not this
+  // one (0070), and which was handed the letter to post from there
+  const opened = useCallback(() => {
+    setHeld(null)
+    setAway(true)
+    setSaid('')
+  }, [])
 
   // ── waiting on the link ──
   // Asked every two and a half seconds, and at once when the tab comes back
   // to the screen, which is when somebody who tapped the link in their mail
   // app has come back to it. Every link this draft asked for is asked after,
-  // the newest first, and any one of them tapped is the letter going up: the
-  // wait used to follow the newest alone, and a first link tapped after
+  // the newest first, and any one of them tapped here is the letter going up:
+  // the wait used to follow the newest alone, and a first link tapped after
   // "send it again" confirmed the address and left this screen waiting for
-  // ever. A link that has run out, or was spent on a wrong number on another
-  // device (celestual-edu-verify), is let go; when none is left the screen
-  // says so and asks again, as the door's wait does (linkdoor.jsx
-  // `useLinkWait`).
+  // ever. One opened in another browser confirmed that browser and not this
+  // one (migration 0070), and the screen says so. A link that has run out is
+  // let go; when none is left the screen says so and asks again, as the
+  // door's wait does (linkdoor.jsx `useLinkWait`).
   const requests = step === 'edu' && held && held.request ? [...new Set([held.request, ...(held.earlier || [])])].join(' ') : ''
   useEffect(() => {
     if (!requests) return undefined
@@ -581,6 +599,7 @@ export default function Write({
       polling = false
       if (stop || !alive.current) return
       if (outs.some((out) => out.ok && out.verified)) { stop = true; clearTimeout(timer); confirmed(); return }
+      if (outs.some((out) => out.ok && out.elsewhere)) { stop = true; clearTimeout(timer); opened(); return }
       open = open.filter((_, i) => !((outs[i].ok && outs[i].expired) || outs[i].error === 'invalid'))
       if (!open.length) { stop = true; clearTimeout(timer); lapsed(); return }
       timer = setTimeout(tick, 2500)
@@ -595,7 +614,7 @@ export default function Write({
       document.removeEventListener('visibilitychange', onBack)
       window.removeEventListener('focus', onBack)
     }
-  }, [requests, confirmed, lapsed])
+  }, [requests, confirmed, lapsed, opened])
 
   // the code, for a function that mailed one
   const checkCode = async () => {
@@ -689,6 +708,7 @@ export default function Write({
     setPostAs('edu')
     if (eduBerkeley()) { postWall({ proof: 'edu' }); return }
     setWrongSchool(false)
+    setAway(false)
     setStep('edu')
   }
   const choosePrivate = () => {
@@ -1037,13 +1057,14 @@ export default function Write({
     )
   } else if (step === 'edu') {
     // ── confirm you're at Berkeley ──
-    // The address, then the wait for the link, with the two digits of this
-    // request, "your number". They are on this screen and nowhere else: the
-    // mail no longer prints them, and a link opened on another device than
-    // this one asks for them before it confirms anything, so a link nobody
-    // here asked for cannot sign anybody in (celestual-edu-verify). Opened on
-    // this device it confirms at once. "send it again" keeps the number, so
-    // any of the mails works with it.
+    // The address, then the wait for the link. Opened in this browser it
+    // confirms at once and the letter goes up. Opened in another, that one is
+    // confirmed and this one is not (migration 0070: a link signs in only the
+    // browser that opened it, so a link nobody here asked for signs in
+    // nobody here), and the letter went with the link to be posted from
+    // there, which this screen says, with a new link to open here instead.
+    // It showed two digits once, "your number", to be typed on the other
+    // browser (0065), and nearly everybody arriving from Instagram was asked.
     // The way out of it is said plainly: not at Berkeley, the same letter
     // goes up on the wall, read first, without the mark.
     const waiting = !!held
@@ -1054,22 +1075,26 @@ export default function Write({
             <Sticker school={BERKELEY} tilt={-6} className="wl-edu-sticker" label="" />
             <Display size="s" as="h2" id="wl-write-h" className="wl-door-title">
               {wrongSchool ? <>you&rsquo;re confirmed<br />at another school.</>
+                : away ? <>you opened it<br />somewhere else.</>
                 : waiting ? <>check your inbox.</>
                 : <>confirm you&rsquo;re<br />at Berkeley.</>}
             </Display>
             <p className="wl-door-say">
               {wrongSchool ? 'only a Berkeley address posts marked from Berkeley. it can still go up on the wall, read first.'
+                : away ? 'you’re confirmed there, in the browser the link opened in, and your letter went with it, to post from there. to post it from here, send a new link and open it here.'
                 : waiting ? (held.legacy
                   ? <>we mailed a code to <span className="wl-h">{held.email}</span>. type it here and your letter goes up.</>
-                  : held.match != null
-                    ? <>at <span className="wl-h">{held.email}</span>. tap the link in the mail. on another phone or computer, it asks for this number.</>
-                    : <>at <span className="wl-h">{held.email}</span>. tap the link and your letter goes up.</>)
+                  : <>at <span className="wl-h">{held.email}</span>. tap the link and your letter goes up.</>)
                 : 'the Berkeley mark is for Berkeley students. we email you one link, and your address never goes on the letter.'}
             </p>
           </div>
           <div className="wl-door-ways">
             {wrongSchool ? (
               <Pill tone="light" wide onClick={toOpen} aria-busy={sending || undefined}>{sending ? 'posting' : 'post it on the wall'}</Pill>
+            ) : away ? (
+              <Pill tone="light" wide disabled={busy} onClick={sendIt} aria-busy={busy || undefined}>
+                {busy ? 'sending' : 'send a new link'}
+              </Pill>
             ) : waiting && held.legacy ? (
               <>
                 <CodeBox value={code} onChange={setCode} onSubmit={checkCode} autoFocus />
@@ -1077,12 +1102,6 @@ export default function Write({
               </>
             ) : waiting ? (
               <>
-                {held.match != null ? (
-                  <div className="wl-edu-match" role="group" aria-label={`your number, ${held.match}`}>
-                    <span className="wl-edu-match-lab" aria-hidden="true">your number</span>
-                    <span className="wl-edu-match-n" aria-hidden="true">{held.match}</span>
-                  </div>
-                ) : null}
                 <p className="wl-edu-wait" role="status">
                   {sending ? <><Wait />posting your letter</> : <><Wait />waiting for the link</>}
                 </p>
@@ -1101,7 +1120,7 @@ export default function Write({
             )}
           </div>
           <div className="wl-gate-fault" aria-live="polite">{said}</div>
-          {wrongSchool || waiting ? null : (
+          {wrongSchool || waiting || away ? null : (
             <button type="button" className="wl-quiet wl-edu-out" onClick={toOpen}>
               not at Berkeley? post it on the wall without the Berkeley mark.
             </button>
@@ -1109,8 +1128,8 @@ export default function Write({
         </div>
       </div>
     )
-    foot = waiting && !wrongSchool ? (
-      <button type="button" className="wl-quiet" onClick={() => { setHeld(null); setCode(''); setSaid('') }}>use a different address</button>
+    foot = (waiting || away) && !wrongSchool ? (
+      <button type="button" className="wl-quiet" onClick={() => { setHeld(null); setAway(false); setCode(''); setSaid('') }}>use a different address</button>
     ) : (
       <button type="button" className="wl-quiet" onClick={() => { setSaid(''); setWrongSchool(false); setStep('how') }}>back</button>
     )

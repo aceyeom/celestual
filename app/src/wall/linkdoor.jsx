@@ -4,16 +4,22 @@
 // 0064 and 0065): a campus address for a post (screens/Write.jsx), where the
 // alerts go (screens/Alerts.jsx), and, since 26 September, signing in by
 // email at the door (screens/Gate.jsx). The link is mailed, tapped on
-// whichever device the mail is read on, and confirmed there (/verify#t=), and
+// whichever browser the mail is read in, and confirmed there (/verify#t=), and
 // the screen that asked for it is left waiting for a tap it cannot see.
 //
-// This is that wait, once, for the door: your number, the two digits this
-// screen shows large and nothing else does (migration 0065 section 3: the
-// mail stopped printing them, and the link opened on another phone or
-// computer asks for them before it signs anything in); the line that says it
-// is waiting; and the way to ask again. The pieces carry the composer's own
-// classes (post.css `.wl-edu-match`, `.wl-edu-wait`), so the wait on the door
-// and the wait on the composer are one object, drawn in two places.
+// This is that wait, once, for the door: the line that says it is waiting,
+// and the way to ask again. The pieces carry the composer's own classes
+// (post.css `.wl-edu-wait`), so the wait on the door and the wait on the
+// composer are one object, drawn in two places.
+//
+// ── opened somewhere else ───────────────────────────────────────────────────
+// Since migration 0070 a link signs in the browser that opened it, and only
+// that one: a stranger who typed somebody's address is never signed in by
+// their tap. So a link opened in another browser (the mail read in Safari,
+// the wall open in Instagram's) signs THAT one in, and the wait here is told
+// so (`onElsewhere`) rather than waiting for ever. It used to ask for the two
+// digits this screen showed, typed there (0065), and nearly everybody was
+// asked, since nearly everybody arrives from Instagram.
 //
 // ── asked, not pushed ───────────────────────────────────────────────────────
 // Nothing tells this page the link was tapped: it asks
@@ -27,11 +33,15 @@ import { linkStatus } from '../api/eduverify.js'
 import { sessionToken } from '../api/identity.js'
 import './post.css'
 
-// Watch `request` until its link is tapped (`onConfirmed`, with the status's
-// answer) or has run out (`onLapsed`). A request of '' watches nothing.
-export function useLinkWait({ request, onConfirmed, onLapsed, every = 2500 }) {
+// Watch `request` until its link is tapped here (`onConfirmed`, with the
+// status's answer), is opened in another browser (`onElsewhere`), or has run
+// out (`onLapsed`, which stands in for the second when there is none). A
+// request of '' watches nothing.
+export function useLinkWait({ request, onConfirmed, onElsewhere, onLapsed, every = 2500 }) {
   const done = useRef(onConfirmed)
   done.current = onConfirmed
+  const away = useRef(onElsewhere)
+  away.current = onElsewhere
   const lapsed = useRef(onLapsed)
   lapsed.current = onLapsed
 
@@ -50,6 +60,12 @@ export function useLinkWait({ request, onConfirmed, onLapsed, every = 2500 }) {
       if (out.ok && out.verified) {
         stop = true
         if (done.current) done.current(out)
+        return
+      }
+      if (out.ok && out.elsewhere) {
+        stop = true
+        if (away.current) away.current(out)
+        else if (lapsed.current) lapsed.current()
         return
       }
       if ((out.ok && out.expired) || out.error === 'invalid') {
@@ -72,19 +88,7 @@ export function useLinkWait({ request, onConfirmed, onLapsed, every = 2500 }) {
   }, [request, every])
 }
 
-// The two digits, in the unlit panel: your number, to be typed where the
-// link is opened if that is not here.
-export function LinkMatch({ n }) {
-  if (n == null) return null
-  return (
-    <div className="wl-edu-match" role="group" aria-label={`your number is ${n}`}>
-      <span className="wl-edu-match-lab" aria-hidden="true">your number</span>
-      <span className="wl-edu-match-n" aria-hidden="true">{n}</span>
-    </div>
-  )
-}
-
-// The line under it: waiting, or what is happening now the tap has landed.
+// The line that waits, or says what is happening now the tap has landed.
 export function LinkWaiting({ children = 'waiting for the link' }) {
   return <p className="wl-edu-wait" role="status"><Wait />{children}</p>
 }
