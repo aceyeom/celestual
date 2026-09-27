@@ -86,14 +86,16 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0068, in order. 0029 onward is the rebuild; 0038 is
+  migrations/       0001 to 0070, in order. 0029 onward is the rebuild; 0038 is
                     the audit; 0057 is the wall at the root and the login;
                     0058 gives every letter a colour of the screens; 0063 is
                     the one wall; 0065 is the login by our own mailed link,
                     and the @ that comes back with the person; 0066 opens
                     every letter and lets anybody write to an @; 0067 sorts
                     the wall; 0068 is the replies, and the heart open to
-                    anybody; 0070 makes the link enough, with no number, by
+                    anybody; 0069 is the weekly reveal, private notes that
+                    run to Saturday at 9pm Pacific and pairs sealed until
+                    then; 0070 makes the link enough, with no number, by
                     signing in only the browser that opens it
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -wall-reply, -edu-verify, -ig-webhook,

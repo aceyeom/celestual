@@ -36,6 +36,34 @@ tier has no point in time recovery.
 
 ---
 
+## The weekly reveal: the deploy (migration 0069)
+
+The owner, 27 September: private notes expire every week, on Saturday night,
+California time, and that night everybody finds out whether theirs was
+mutual. A pair found during the week is sealed, and to both people it answers
+exactly as two unanswered notes would until the reveal
+(`supabase/migrations/0069_the_weekly_reveal.sql` says how, rule by rule).
+
+1. [ ] **Apply `0069_the_weekly_reveal.sql`.** Re-runnable. From this moment
+       a new note ends at the first Saturday 9pm Pacific a day or more away,
+       and a pair found is sealed until its reveal. Every note already out is
+       moved onto a Saturday end, never shortened, and at most to the second
+       reveal from now; pairs already mutual stay mutual. Where pg_cron runs
+       it schedules `celestual-reveal` every five minutes, so the mutual mail
+       and DM go at 9pm; without it the reveal still happens, on the first
+       read after 9pm, and the mail goes then.
+2. [ ] **Ship the front end.** The countdown inside the private notes frame,
+       the aerial's states, the light on the account key after a reveal,
+       keeping a note for next week, changing its words and sending one again.
+3. [ ] **`supabase functions deploy celestual-remind`**, only if it is ever
+       scheduled: its lapse note speaks of the week now. It has never been
+       deployed (docs/deletions.md group D).
+
+Check: place two notes on each other from two accounts. Both lists say
+"reveals this saturday" and nothing more. In a SQL editor, bring the night
+forward (`update celestual_entries set reveal_at = now() where sealed_with is
+not null`) and read either list: it is mutual, and the mutual mail is queued.
+
 ## The link is enough: the deploy (migration 0070)
 
 The owner, 27 September: no number on a mailed link. A link confirms at once
