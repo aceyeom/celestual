@@ -66,10 +66,11 @@
 -- the next person's read.
 --
 -- ── the notes already out ───────────────────────────────────────────────────
--- A note standing when this applies keeps what it had, moved onto the
--- reveal at or after its end and no later than the second from now: nobody's
--- note is cut short, every note ends on a Saturday night, and within a
--- fortnight everybody is on the week. Pairs already mutual stay mutual.
+-- A note standing when this applies is moved onto the reveal at or after its
+-- end, and no later than the second from now: one that would have ended
+-- sooner runs on to that Saturday night, one of the old sixty days' that ran
+-- further ends at the second reveal, and within a fortnight everybody is on
+-- the week. Pairs already mutual stay mutual.
 --
 -- Idempotent, like every migration here.
 -- ─────────────────────────────────────────────────────────────────────────────

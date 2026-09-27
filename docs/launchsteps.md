@@ -47,8 +47,9 @@ exactly as two unanswered notes would until the reveal
 1. [ ] **Apply `0069_the_weekly_reveal.sql`.** Re-runnable. From this moment
        a new note ends at the first Saturday 9pm Pacific a day or more away,
        and a pair found is sealed until its reveal. Every note already out is
-       moved onto a Saturday end, never shortened, and at most to the second
-       reveal from now; pairs already mutual stay mutual. Where pg_cron runs
+       moved onto a Saturday end: the reveal at or after the end it had, and
+       no later than the second reveal from now, so an old sixty day note
+       ends within a fortnight; pairs already mutual stay mutual. Where pg_cron runs
        it schedules `celestual-reveal` every five minutes, so the mutual mail
        and DM go at 9pm; without it the reveal still happens, on the first
        read after 9pm, and the mail goes then.
