@@ -230,7 +230,7 @@ database goes first and the new front end ships last.
       | secret | value | why |
       | --- | --- | --- |
       | `CELESTUAL_FROM_EMAIL` | `celestual <hello@celestual.us>` | unset today, so every mail goes out from Resend's sandbox. The code's default is now this address too |
-      | `CELESTUAL_SITE_URL` | `https://celestual.us` | every link, the header image and the pixel face in a mail point here |
+      | `CELESTUAL_SITE_URL` | `https://celestual.us` | every link and every picture in a mail point here |
       | `RESEND_API_KEY` | the Resend key | confirm it is set |
       | `MODERATION_API_KEY` | an Anthropic key | **without it every name note waits for the desk** (`pending`, reason `unconfigured`): a name note is read before it is written. @-notes go up either way |
       | `CELESTUAL_UNSUB_MAILTO` | optional, default `hello@celestual.us` | where a mailto unsubscribe lands |
@@ -239,10 +239,18 @@ database goes first and the new front end ships last.
       DMARC record are still green in the Resend dashboard, and that
       `hello@celestual.us` receives mail: it is the From, the reply address and
       the mailto unsubscribe.
-- [ ] **The header image.** Every mail draws `https://celestual.us/mail/head.png`
-      (builder E, `app/public/mail/head.png`, 600px wide at 2x). It must be live
-      before the first alert goes, or the head of every mail is a broken image
-      with the word `celestual.` as its alt text.
+- [ ] **The mails' pictures.** Every mail is the phone (design/DESIGN.md 2.7):
+      it opens on a screen, `https://celestual.us/mail/<name>.gif`, and carries
+      its key and the lockup as pictures from the same folder
+      (`app/public/mail/`, made by `node scripts/export-mail.mjs`). They go
+      live with the site, and they must be live before the redeployed
+      functions send a mail, or every mail is its alt text: the line, the key's
+      word and the name, round the sentences. Then redeploy the three
+      functions that send mail, so they carry the new design:
+      `celestual-edu-verify`, `celestual-notify` (with `--no-verify-jwt`, as
+      always) and, if it is ever deployed, `celestual-remind`. `head.png`, the
+      strip the mails opened on before, stays in the folder for the mails
+      already in people's inboxes.
 
 ### The order
 

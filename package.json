@@ -15,6 +15,7 @@
     "shots:composer": "node scripts/shots-composer.mjs"
   },
   "devDependencies": {
+    "gifenc": "^1.0.3",
     "playwright": "^1.62.1"
   }
 }

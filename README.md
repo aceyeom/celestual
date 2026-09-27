@@ -139,7 +139,10 @@ node scripts/check-stories.mjs         the stories on the glass, checked on
 node scripts/shots.mjs /terms          screenshot one address or one file
 node scripts/export-mark.mjs           the logo, out of the code that draws it
 node scripts/export-liquid.mjs         the liquid metal mask, from the same geometry
-node scripts/export-og.mjs             the share card, from the same source
+node scripts/export-og.mjs             the share card and the Instagram post and
+                                       story, photographed off the real screen
+node scripts/export-mail.mjs           the mails' screens (GIFs), keys and lockup,
+                                       the same way; both need npm --prefix app install
 ```
 
 ---
