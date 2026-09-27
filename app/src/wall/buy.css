@@ -34,7 +34,7 @@
 /* ── under the screen ── */
 .wl-buy-say { text-align: center; text-wrap: balance; }
 .wl-buy-fine {
-  max-width: 34ch; margin: 14px auto 0; padding: 0 8px;
+  max-width: 42ch; margin: 12px auto 0; padding: 0 8px;
   font-size: var(--t-small); line-height: 1.4; color: var(--ash); text-align: center; text-wrap: pretty;
 }
 
