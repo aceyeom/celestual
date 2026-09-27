@@ -135,7 +135,7 @@ import { sendCampusCode, checkCampusCode, loadPending } from '../handoff.js'
 import { sendLink, linkStatus } from '../../api/eduverify.js'
 import { sessionToken } from '../../api/identity.js'
 import { signOut as dropProof } from '../../api/auth.js'
-import { myHandle, canPlace, readyToPlace, place, forgetPings, endsWords } from '../pings.js'
+import { myHandle, canPlace, readyToPlace, place, forgetPings, endsWords, waitForPings } from '../pings.js'
 import { schoolOf, slugOfDomain } from '../schools.js'
 import { Sticker } from '../Sticker.jsx'
 import { useProve, ProveDoor } from './Ping.jsx'
@@ -169,9 +169,9 @@ const BERKELEY = schoolOf('berkeley')
 // world and with the one next step.
 const PING_SAY = {
   self: 'that is your own @.',
-  slots: 'every slot is in use. let one of your private notes go to free one.',
+  full: 'ten private notes in one week is the most. the next week starts after saturday’s reveal.',
   suppressed: 'that @ has opted out of private notes.',
-  rate: 'that is a lot of private notes for one month. try again later.',
+  rate: 'that is a lot of private notes for one hour. try again later.',
   invalid: 'that handle does not look right.',
   card: 'that can’t go in a note as it is. take out links, addresses and numbers.',
   night: 'it did not go through. try again.',
@@ -671,9 +671,17 @@ export default function Write({
         proof.setSaid('that proof has lapsed. one more DM proves it again')
         return
       }
+      // the week's pings are spent: the paywall, with this note waiting on
+      // it and sent the moment the pings land (screens/Pings.jsx)
+      if (out.error === 'no_pings' || out.error === 'no_slots' || out.error === 'cap') {
+        setStep('how')
+        waitForPings({ kind: 'send', to: target, line: body.trim() })
+        go('pings')
+        return
+      }
       setStep('how')
       setSaid(PING_SAY[
-        out.error === 'no_slots' || out.error === 'cap' ? 'slots'
+        out.error === 'week_full' ? 'full'
           : out.error === 'self' ? 'self'
           : out.error === 'suppressed' ? 'suppressed'
           : out.error === 'rate_limited' ? 'rate'
