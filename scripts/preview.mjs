@@ -1520,61 +1520,75 @@ const ROUTES = [
       ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
 
   // ── the replies (0068) ──
-  // The thread under an open letter, in every state it has: the first
-  // screenful (the letter and the thread's head together), the thread
-  // itself, nothing yet, the recipient's own view and their reply, shut and
-  // put away, a device with no school, the link sent, the terms before a
-  // first reply, a name caught at the keyboard, a reply held and one
-  // refused, a report folded away, and the desk's queue.
+  // The thread, the phone's lower half (app/src/wall/Replies.jsx), in every
+  // state it has: shut with its count on the chin, sliding open, open, the
+  // field risen, nothing yet, the recipient's own view and their reply, shut
+  // and put away, a device with no school and the link sent, the terms before
+  // a first reply, a name caught at the keyboard, a reply held and one
+  // refused, a report folded away, an open phone carried half shut by a
+  // hand, and the desk's queue.
   { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
-  { label: 'replies-thread',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1200]], settle: 400 },
+  { label: 'replies-opening',  path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 170]], settle: 0 },
+  { label: 'replies-open',     path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+  { label: 'replies-write',    path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+           ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
   { label: 'replies-empty',    path: '/letter/pilar.echevarria', thread: 'empty',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-recipient', path: '/letter/pilar.echevarria', thread: 'recipient-new',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
-  { label: 'replies-recipient-thread', path: '/letter/pilar.echevarria', thread: 'recipient',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+  { label: 'replies-recipient-open', path: '/letter/pilar.echevarria', thread: 'recipient',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-locked',   path: '/letter/pilar.echevarria', thread: 'locked',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
   { label: 'replies-locked-owner', path: '/letter/pilar.echevarria', thread: 'locked-owner',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-closed',   path: '/letter/pilar.echevarria', thread: 'closed', settle: 1800 },
   { label: 'replies-closed-owner', path: '/letter/pilar.echevarria', thread: 'closed-owner',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
-  { label: 'replies-school',   path: '/letter/pilar.echevarria', thread: 'school',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+  { label: 'replies-school-open', path: '/letter/pilar.echevarria', thread: 'school',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500]], settle: 500 },
   { label: 'replies-school-sent', path: '/letter/pilar.echevarria', thread: 'empty-school',
-    acts: [['wait', 900], ['fill', '.wl-rp-school .wl-addr-in', 'you@berkeley.edu'], ['click', '.wl-rp-school .wl-pill.is-light'],
-           ['end', '.wl-sheet-wrap.is-letter']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+           ['fill', '.wl-rp-school .wl-addr-in', 'you@berkeley.edu'], ['click', '.wl-rp-school .wl-pill.is-light']], settle: 600 },
   { label: 'replies-terms',    path: '/letter/pilar.echevarria', thread: 'terms',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'this made my whole week'],
-           ['click', '.wl-rp-go']], settle: 700 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+           ['fill', '.wl-rp-field textarea', 'this made my whole week'], ['click', '.wl-low-sk.is-l']], settle: 700 },
   { label: 'replies-caught',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'i bet Maria Delgado wrote this']], settle: 500 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+           ['fill', '.wl-rp-field textarea', 'i bet Maria Delgado wrote this']], settle: 500 },
   { label: 'replies-held',     path: '/letter/pilar.echevarria', thread: 'held',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'wait until they see this'],
-           ['click', '.wl-rp-go']], settle: 900 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+           ['fill', '.wl-rp-field textarea', 'wait until they see this'], ['click', '.wl-low-sk.is-l']], settle: 900 },
   { label: 'replies-refused',  path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 900], ['end', '.wl-sheet-wrap.is-letter'], ['fill', '.wl-rp-field textarea', 'refuse this one please'],
-           ['click', '.wl-rp-go']], settle: 900 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+           ['fill', '.wl-rp-field textarea', 'refuse this one please'], ['click', '.wl-low-sk.is-l']], settle: 900 },
   { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
+  // a shut phone taken sideways and held, the chins in a line across the gap
+  { label: 'replies-drag',     path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['swipe', '.wl-letter-card .wl-scr', -120, 'hold']], settle: 200 },
+  // an open phone taken sideways and held: half shut under the hand, the
+  // neighbour coming up out of the dark
+  { label: 'replies-carry',    path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900], ['swipe', '.wl-letter-card .wl-scr', -90, 'hold']], settle: 200 },
   // the recipient's reply lit in the letter's own colour, one of each kind
   { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-acid',     path: '/letter/thom.iversen', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-lilac',    path: '/letter/jules.k', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
   { label: 'replies-teal',     path: '/letter/elias.brandt', thread: 'full',
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 1000]], settle: 400 },
-  { label: 'replies-still',    path: '/letter/pilar.echevarria', thread: 'full', still: true,
-    acts: [['wait', 900], ['click', '.wl-rp-head-go', null, 400]], settle: 400 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 900]], settle: 400 },
+  { label: 'replies-open-still', path: '/letter/pilar.echevarria', thread: 'full', still: true,
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-chin', null, 400]], settle: 400 },
   { label: 'admin-replies',    path: '/admin', desk: true, click: 'replies' },
 
   // Phase 7. The desk, and the states worth looking at: what it opens on, the
