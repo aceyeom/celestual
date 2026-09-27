@@ -246,7 +246,11 @@
    A reply that comes while it is open (Replies.jsx `fresh`, one just sent
    from this phone above all) arrives at once, on its own, and does not
    wait its turn in a stagger that is over. */
-.wl-letter.is-thread .wl-low-list > :not(.wl-rp-list) { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
+/* every row of the list but the replies' own list is `.wl-low-row`
+   (Replies.jsx): a selector that ended in `:not()` or `*` here made every
+   toggle of `.is-thread` restyle the whole letter, some five hundred
+   elements, on the press that opens the phone */
+.wl-letter.is-thread .wl-low-list > .wl-low-row { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
 .wl-letter.is-thread .wl-rp-list > .wl-rp-item { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
 .wl-letter.is-thread .wl-rp-list > .wl-rp-item.is-new { animation: wl-rp-new 260ms var(--ease, ease) both; }
 @keyframes wl-low-row {
@@ -618,7 +622,7 @@
    coming up row by row; the field is simply there. */
 @media (prefers-reduced-motion: reduce) {
   .wl-letter.is-thread .wl-low-in { animation: wl-fade 120ms linear both; }
-  .wl-letter.is-thread .wl-low-list > *, .wl-letter.is-thread .wl-rp-list > .wl-rp-item,
+  .wl-letter.is-thread .wl-low-list > .wl-low-row, .wl-letter.is-thread .wl-low-list > .wl-rp-list, .wl-letter.is-thread .wl-rp-list > .wl-rp-item,
   .wl-letter.is-thread .wl-rp-list > .wl-rp-item.is-new { animation: none; }
   .wl-tray .wl-low-as, .wl-rp-terms, .wl-low-said { animation: none; }
   .wl-tray-send, .wl-low-lip { transition: none; }

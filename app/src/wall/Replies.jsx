@@ -407,7 +407,7 @@ function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, lik
 // abuse costs is what it can cost them: the reply, and replying.
 function TermsBody({ recipient = false, headRef }) {
   return (
-    <div className="wl-rp-terms">
+    <div className="wl-rp-terms wl-low-row">
       <p className="wl-rp-terms-kicker">before your first reply</p>
       {recipient ? (
         <>
@@ -573,7 +573,7 @@ function School({ letter, onVerified, onTheirs }) {
 
   if (step === 'sent' && sent) {
     return (
-      <div className="wl-rp-school is-sent">
+      <div className="wl-rp-school wl-low-row is-sent">
         {away ? (
           <p className="wl-rp-school-say" role="status">
             you opened the link somewhere else, so you can reply there. to reply here, send a new link and open it here.
@@ -603,7 +603,7 @@ function School({ letter, onVerified, onTheirs }) {
     )
   }
   return (
-    <div className="wl-rp-school">
+    <div className="wl-rp-school wl-low-row">
       <p className="wl-rp-school-say">
         replies come from school addresses, and stay anonymous. confirm yours to reply.
       </p>
@@ -645,7 +645,7 @@ function Owner({ state, onSet, busy }) {
   const shut = state === 'locked'
   const away = state === 'closed'
   return (
-    <div className="wl-rp-owner">
+    <div className="wl-rp-owner wl-low-row">
       <p className="wl-rp-owner-say">
         <span className="wl-rp-owner-h">this letter is to you.</span>{' '}
         {away
@@ -879,9 +879,9 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
       />
     )
   } else if (!t) {
-    inside = <div className="wl-low-still"><Wait scale={2} /></div>
+    inside = <div className="wl-low-still wl-low-row"><Wait scale={2} /></div>
   } else if (!t.ok) {
-    inside = <div className="wl-low-still"><span>the replies did not load.</span></div>
+    inside = <div className="wl-low-still wl-low-row"><span>the replies did not load.</span></div>
   } else {
     inside = (
       <>
@@ -889,7 +889,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
           <Owner state={th.state} onSet={th.set} busy={th.setting} />
         ) : null}
         {th.hiddenFromMe ? (
-          <div className="wl-rp-note is-away">
+          <div className="wl-rp-note wl-low-row is-away">
             <PixIcon name="lock" scale={2} />
             <span>the person this letter is to put the replies away.</span>
           </div>
@@ -905,7 +905,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
             ))}
           </ol>
         ) : (
-          <div className="wl-rp-empty">
+          <div className="wl-rp-empty wl-low-row">
             <PixIcon name="env" scale={3} className="wl-rp-empty-g" />
             <span className="wl-rp-empty-h">no replies yet.</span>
             <span className="wl-rp-empty-say">{canWrite ? 'be the first to reply.' : 'the first one will be here.'}</span>

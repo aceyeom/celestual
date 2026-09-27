@@ -135,6 +135,9 @@ scripts/verify-migrations.sh --test    apply every migration to a bare
                                        PostgreSQL, then run scripts/sql/test-*
 node scripts/preview.mjs               screenshot every route, with fixtures
 node scripts/mail-preview.mjs          screenshot every email template
+node scripts/perf-letter.mjs           the letter's frames, measured: open, swipe,
+                                       keys, a name, close and the replies, on a
+                                       phone at 4x cpu (PERF_MODE=phone|desk)
 node scripts/check-stories.mjs         the stories on the glass, checked on
                                        every frame: the two come on together,
                                        and a note never touches either of them
