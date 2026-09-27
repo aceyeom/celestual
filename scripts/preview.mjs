@@ -1152,12 +1152,16 @@ const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`o
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
 const ROUTES = [
-  // The intro, held on its last beat: the phone, and the mark in its pixels.
-  // Then held on the run and on the hug by the clock (Intro.jsx `?t=`), and
-  // the same last beat typed, for setting beside it (`?intro=ascii`).
+  // The intro, held on its last beat: the phone, and the mark in its pixels,
+  // in the rose, as a held frame always is. Then held on the run, on the hug
+  // and on the glide by the clock (Intro.jsx `?t=`), the last beat in the
+  // wheel the intro turns one load in nine (`?tint=rainbow`), and the same
+  // last beat typed, for setting beside it (`?intro=ascii`).
   { label: 'intro',         path: '/?beat=3' },
   { label: 'intro-run',     path: '/?t=1400' },
-  { label: 'intro-hug',     path: '/?t=2300' },
+  { label: 'intro-hug',     path: '/?t=2100' },
+  { label: 'intro-glide',   path: '/?t=2450' },
+  { label: 'intro-rainbow', path: '/?beat=3&tint=rainbow' },
   { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
   // ── the ping, on the wall ──
   // Raised over the Berkeley wall, from the tab, the bar and the foot, and
@@ -1795,7 +1799,7 @@ for (const r of list) {
 
     await page.goto(BASE + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
-    // The intro plays on every cold address but the reveal, and it is three
+    // The intro plays on every cold address but the reveal, and it is four
     // and a half seconds to a bare page now, longer than a route's settle.
     // So the shot waits for it to have gone, unless the route holds it on a
     // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes,

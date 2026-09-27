@@ -2,9 +2,9 @@
    A phone's screen on black, and the story on it (Intro.jsx). Over the wall
    at the root and at a campus, the same. What animates is the screen's own
    wake and sleep (screen.css), the phone's glass turning from the night's to
-   the rose's, and the lift, all of it opacity, transform and three numbers;
-   nothing touches layout after the first frame. Every value is a token from
-   wall.css, or a length, or a colour looks.js made. */
+   the colour the load drew, and the lift, all of it opacity, transform and
+   four numbers; nothing touches layout after the first frame. Every value is
+   a token from wall.css, or a length, or a colour looks.js made. */
 
 .hi {
   /* The large viewport, not `inset: 0`: a fixed layer that tracks the layout
@@ -74,25 +74,28 @@
   animation: wl-wake-light var(--hi-wake-ms, 500ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--hi-wake-at, 40ms) both;
 }
 
-/* ── the rose ──
-   The pink leaves the two of them across the panel a few cells at a time,
-   drawn on the glass in the rose letter's own panel colours (PixelStory.jsx,
-   pixmark.js `introStory`). The rest of the phone turns with it, so that
-   when the pink has filled the glass the phone is a letter lit in rose, as
-   looks.js lights one: its dark rose bands, its status in the rose's light,
-   and the rose's own glow on the black round it, the halo every rose letter
-   has. Nothing goes on out past that: no ring, no bloom, nothing travelling
-   into the room.
+/* ── the colour ──
+   It leaves the two of them across the panel a few cells at a time, drawn
+   on the glass in the panel colours of the letter the load drew, the rose,
+   the lilac, the ice, the green or the amber (Intro.jsx `TINTS`,
+   PixelStory.jsx, pixmark.js `introStory`). The rest of the phone turns
+   with it, so that when it has filled the glass the phone is a letter lit
+   in that colour, as looks.js lights one: its dark bands, its status in its
+   light, and its own glow on the black round it, the halo every letter lit
+   in it has. Nothing goes on out past that: no ring, no bloom, nothing
+   travelling into the room.
 
    Four numbers carry it. Each of the skin's colours is the night's and the
-   rose's mixed by one of them (Intro.jsx `FRAME`), so what animates is a
+   colour's mixed by one of them (Intro.jsx `taleOf`), so what animates is a
    number on one element and the colours follow. `--hi-top` turns the top
-   band and its aerial and battery as the pink reaches the top edge of the
+   band and its aerial and battery as the colour reaches the top edge of the
    glass; `--hi-bot` the bottom band as it reaches the bottom; `--hi-glow`
-   the light round the phone, as the pink fills the glass; and `--hi-pan`
-   the panel itself, under the pink, once the pink has covered it, so the
-   grey is only ever seen to go over a block of cells at a time. The moments
-   are the story's (Intro.jsx `TURN`). On `--ease`, a colour's curve. */
+   the light round the phone, as it fills the glass; and `--hi-pan` the
+   panel itself, under it, once it has covered it, so the grey is only ever
+   seen to go over a block of cells at a time. The moments are the story's
+   (Intro.jsx `turn`), and quicker than they were, as the colour is: the
+   bands turn in a quarter of a second and a little more. On `--ease`, a
+   colour's curve. */
 @property --hi-top { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --hi-bot { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --hi-pan { syntax: '<number>'; inherits: false; initial-value: 0; }
@@ -104,10 +107,10 @@
 }
 .hi.is-glow .hi-screen {
   animation:
-    hi-top 340ms var(--ease) var(--hi-top-at, 410ms) both,
-    hi-bot 380ms var(--ease) var(--hi-bot-at, 760ms) both,
-    hi-pan 160ms linear var(--hi-pan-at, 1500ms) both,
-    hi-glow var(--hi-glow-ms, 1300ms) var(--ease) 200ms both;
+    hi-top 260ms var(--ease) var(--hi-top-at, 301ms) both,
+    hi-bot 280ms var(--ease) var(--hi-bot-at, 560ms) both,
+    hi-pan 160ms linear var(--hi-pan-at, 1100ms) both,
+    hi-glow var(--hi-glow-ms, 900ms) var(--ease) 200ms both;
 }
 .hi.is-rose .hi-screen { animation: none; --hi-top: 1; --hi-bot: 1; --hi-pan: 1; --hi-glow: 1; }
 @keyframes hi-top { from { --hi-top: 0; } to { --hi-top: 1; } }
@@ -115,32 +118,63 @@
 @keyframes hi-pan { from { --hi-pan: 0; } to { --hi-pan: 1; } }
 @keyframes hi-glow { from { --hi-glow: 0; } to { --hi-glow: 1; } }
 
+/* ── the wheel ──
+   One load in nine the colour is all five at once (Intro.jsx `RAINBOW`), and
+   the light the phone throws on the black is the wheel too: the five at
+   their own hue round a disc behind the phone, as soft as a letter's light
+   and as strong, going slowly round. It is in the halo's own place, and the
+   halo's grey goes out as it comes on (`--hi-wheel-on`), so there is still
+   one light round the phone and not two. The disc is round so that it can
+   turn without its edge being seen to move, and the disc is what turns,
+   with its blur on it: the compositor turns a picture it already has, and
+   nothing is blurred again frame by frame. So the halo's own blur goes onto
+   its grey (`::after`), and the halo itself carries neither. */
+.hi.is-rainbow .wl-scene-halo { background: none; filter: none; }
+.hi.is-rainbow .wl-scene-halo::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--s-halo); filter: blur(9cqw);
+}
+.hi.is-rainbow .wl-scene-halo::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 118%; aspect-ratio: 1; translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--hi-wheel); filter: blur(9cqw);
+  opacity: var(--hi-wheel-on, 0);
+  animation: hi-wheel 6s linear infinite;
+}
+@keyframes hi-wheel { to { rotate: 1turn; } }
+
 /* and it goes out, the way a letter's does when it is closed, while the
    black lifts off the page (screen.css `wl-sleep`) */
 .hi.is-at4 .wl-scr { animation: wl-sleep 560ms cubic-bezier(0.4, 0, 1, 1) both; }
 .hi.is-at4 .wl-scene-halo,
 .hi.is-at4 .wl-scene-halo-2 { animation: none; opacity: 0; transition: opacity 560ms var(--ease-out); }
 
-/* held for the screenshot loop: lit from the first frame, and the glass's
-   turn held on the same moment as the pink (Intro.jsx `--hi-since`) */
+/* held for the screenshot loop: lit from the first frame, the glass's turn
+   held on the same moment as the colour (Intro.jsx `--hi-since`), and the
+   wheel standing still */
 .hi.is-held .wl-scr.is-waking,
 .hi.is-held .wl-scene-halo,
+.hi.is-held .wl-scene-halo::before,
 .hi.is-held .wl-scene-halo-2 { animation: none; }
 .hi.is-held.is-glow .hi-screen {
   animation-delay:
-    calc(var(--hi-since, 0ms) + var(--hi-top-at, 410ms)), calc(var(--hi-since, 0ms) + var(--hi-bot-at, 760ms)),
-    calc(var(--hi-since, 0ms) + var(--hi-pan-at, 1500ms)), calc(var(--hi-since, 0ms) + 200ms);
+    calc(var(--hi-since, 0ms) + var(--hi-top-at, 301ms)), calc(var(--hi-since, 0ms) + var(--hi-bot-at, 560ms)),
+    calc(var(--hi-since, 0ms) + var(--hi-pan-at, 1100ms)), calc(var(--hi-since, 0ms) + 200ms);
   animation-play-state: paused;
 }
 
 /* ── reduced motion ──
-   The last frame, the mark on the rose letter, standing still: the story
-   still ARRIVES at the light, it simply does not travel to get there. The
-   veil is the only thing that moves. */
+   The last frame, the mark on the letter lit in the colour drawn, standing
+   still, and on the wheel its light still too: the story still ARRIVES at
+   the light, it simply does not travel to get there. The veil is the only
+   thing that moves. */
 .hi.is-still .hi-screen { animation: none; transition: none; }
+.hi.is-still .wl-scene-halo::before { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .hi .hi-stage { transform: none; }
   .hi.is-on :is(.wl-scene-halo, .wl-scene-halo-2),
+  .hi .wl-scene-halo::before,
   .hi.is-at4 .wl-scr { animation: none; }
   .hi .hi-veil { transition-duration: 300ms; }
 }
