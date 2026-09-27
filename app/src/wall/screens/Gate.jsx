@@ -29,18 +29,19 @@
 // Supabase's own undesigned template, with EIGHT digits, into a box that holds
 // six, so the door could not be walked through at all. It is the product's own
 // link now, the one the campus proof already used: mailed in the black room
-// from hello@celestual.us, tapped on whichever device the mail is read on.
+// from hello@celestual.us, tapped in whichever browser the mail is read in.
 // This sheet waits for the tap (wall/linkdoor.jsx) and moves on the moment it
 // lands; a tap on this same phone opens /verify, which says so and signs it in
 // there. Whoever already holds the address is who this device becomes, with
 // their @ and their private notes (auth.js `restoreProof`).
 //
-// The two digits this screen shows large are YOUR NUMBER, and the mail does
-// not print them (0065 section 3). The link opened on another phone or
-// computer asks for them before it signs anything in, so a person who was
-// sent a link they never asked for cannot hand their account to whoever
-// typed their address here. The line under the heading says so, in the words
-// every asking screen uses.
+// A link signs in only the browser that opens it (migration 0070), so a
+// person sent a link they never asked for signs in their own browser, as
+// themselves, and never hands their account to whoever typed their address
+// here. Opened in another browser (the mail read in Safari while the wall is
+// open in Instagram's), that browser is signed in and this sheet says so. It
+// used to show two digits, YOUR NUMBER, to be typed there first (0065), and
+// nearly everybody was asked for them.
 //
 // ── the door names the act that knocked on it ───────────────────────────────
 // Three acts come here and only one of them is writing, so a door that asks
@@ -86,7 +87,7 @@ import {
   savePending, loadPending, clearPending, igVerifyEnabled,
 } from '../handoff.js'
 import { loginEnabled, startGoogle, sendEmailLink, finishLogin } from '../../api/login.js'
-import { useLinkWait, LinkMatch, LinkWaiting, ResendLink } from '../linkdoor.jsx'
+import { useLinkWait, LinkWaiting, ResendLink } from '../linkdoor.jsx'
 import { href } from '../router.js'
 import { cardStep } from '../seed.js'
 import { Caret } from '../caret.jsx'
@@ -187,8 +188,9 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
   // Which door is open on the sheet: the three ways, and one is chosen.
   const [way, setWay] = useState(() => (resumeIg() ? 'instagram' : ''))
   const [local, setLocal] = useState('')
-  // the link that went out: { request, match, email }, or null while the
-  // address is still being typed
+  // the link that went out: { request, email, away }, or null while the
+  // address is still being typed. `away` once it was opened in another
+  // browser, which it signed in and not this one (linkdoor.jsx)
   const [sent, setSent] = useState(null)
   const [landing, setLanding] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -266,9 +268,13 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
 
   // ── any address, and a link mailed to it ──
   // celestual-edu-verify mails the link (api/login.js `sendEmailLink`), and
-  // this sheet waits for it to be tapped, here or anywhere (linkdoor.jsx).
-  // Whatever tapped it, the server has signed this device in by then, so the
-  // row is read again and the sheet lands where it was going.
+  // this sheet waits for it to be tapped (linkdoor.jsx). Tapped in this
+  // browser, the server has signed it in by then, so the row is read again
+  // and the sheet lands where it was going. Tapped in another (migration
+  // 0070), THAT browser is the one signed in, and never this one, which is
+  // what keeps a stranger who typed somebody's address from being signed in
+  // as them: so the sheet says where it was opened, and offers a new link to
+  // open here.
   const anyOk = anyEmail(normEmail(local))
   // Returns whether a link actually went out. `ResendLink` reads it: a send
   // that failed says so through the fault line, and the line that offers
@@ -291,8 +297,8 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
       return false
     }
     // The link before is dead to this screen the moment a new one is asked
-    // for: it is the new one's number the mail and the glass must agree on.
-    setSent({ request: out.request, match: out.match, email: out.email })
+    // for: the wait follows the newest.
+    setSent({ request: out.request, email: out.email, away: false })
     // The step before the proof: somebody gave an address and asked for a
     // link. Once per address, not once per link: asking again because the
     // first one went to spam is not a second intent.
@@ -300,7 +306,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
     return true
   }
   useLinkWait({
-    request: sent && !landing ? sent.request : '',
+    request: sent && !landing && !sent.away ? sent.request : '',
     onConfirmed: async () => {
       setLanding(true)
       await signedIn()
@@ -309,6 +315,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
       if (isMember()) setWho(member())
       finish()
     },
+    onElsewhere: () => { setSent((s) => (s ? { ...s, away: true } : s)); setSaid('') },
     onLapsed: () => { setSent(null); setSaid('that link has run out. send a new one') },
   })
 
@@ -554,10 +561,11 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
   }
 
   // ── any address, and a link (the wall at the root) ──
-  // Two states on the door's one shape: the address and its key, then the
-  // inbox it went to, your number (which the mail does not print, and which
-  // the link asks for on another device) and the wait.
+  // Three states on the door's one shape: the address and its key; then the
+  // inbox it went to and the wait; or, once the link was opened in another
+  // browser, where it signed in, and a new link to open here.
   if (way === 'email') {
+    const away = !!(sent && sent.away)
     return (
       <Sheet onClose={up} tall labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate is-door">
@@ -566,14 +574,22 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h" className={sent ? 'wl-edu-head' : ''}
-              title={sent ? <>check your inbox.</> : <>sign in with<br />your email.</>}
-              say={sent
-                ? <>we sent a link to <span className="wl-h">{sent.email}</span>. tap the link in the mail.{sent.match == null ? null : ' on another phone or computer, it asks for this number.'}</>
-                : 'your information will stay anonymous.'}
+              title={away ? <>you opened it<br />somewhere else.</>
+                : sent ? <>check your inbox.</> : <>sign in with<br />your email.</>}
+              say={away
+                ? 'you’re signed in there, in the browser the link opened in. carry on there, or send a new link and open it here.'
+                : sent
+                  ? <>we sent a link to <span className="wl-h">{sent.email}</span>. tap the link in the mail.</>
+                  : 'your information will stay anonymous.'}
             />
-            {sent ? (
+            {away ? (
               <div className="wl-door-ways">
-                <LinkMatch n={sent.match} />
+                <Pill tone="light" wide disabled={busy} onClick={sendAny} aria-busy={busy || undefined}>
+                  {busy ? 'sending' : 'send a new link'}
+                </Pill>
+              </div>
+            ) : sent ? (
+              <div className="wl-door-ways">
                 <LinkWaiting>{landing ? 'signing you in' : 'waiting for the link'}</LinkWaiting>
                 {landing ? null : <ResendLink key={sent.request} onSend={sendAny} />}
               </div>

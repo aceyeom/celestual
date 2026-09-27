@@ -386,6 +386,8 @@
 }
 .wl-rp-wait { display: flex; align-items: center; gap: 2cqw; margin: 0; font-size: var(--lo-meta); color: var(--lo-dim); }
 .wl-rp-again { align-self: flex-start; padding: 2px 0; }
+/* the way to ask again is the composer's own (wall.css `.wl-resend`), sat
+   on the thread's left edge rather than centred on a door */
 .wl-rp-school :is(.wl-resend, .wl-resend-go) { align-self: flex-start; padding: 2px 0; }
 .wl-rp-school .wl-rp-theirs { align-self: flex-start; padding: 2px 0; text-align: left; text-wrap: pretty; }
 /* the chrome's parts, on this glass: the field, the quiet lines and the

@@ -22,8 +22,8 @@ in that way, and `continue with email` is the product's own mailed link now
 does not touch Supabase Auth. Google still runs on Supabase Auth, and
 sections 1 to 4 stand. Section 5 is the record of the code, and step 4 of
 section 6 now reads: press **continue with email**, type an address, press
-**send me a link**, and tap the link in the mail; opened on another device,
-it asks for the number the gate shows. Once that build is out, Supabase's
+**send me a link**, and tap the link in the mail; opened in another browser,
+that browser is the one signed in (0070). Once that build is out, Supabase's
 Email provider can be switched off (docs/launchsteps.md, the deploy of 26
 September).
 

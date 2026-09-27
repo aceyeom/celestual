@@ -256,6 +256,8 @@ let EMAIL = false
 // is waiting on has been tapped, and, for /verify, what `confirm` says.
 let LINKED = false
 let CONFIRM = null
+// whether the link the door is waiting on was opened in another browser (0070)
+let AWAY = false
 // A door that is anonymous until its link is tapped, and then the person
 // signed in by it (`EMAIL`): the whole walk, from the address to the notes.
 let TAPS = false
@@ -1099,27 +1101,31 @@ async function fulfil(route) {
       ...(status === 'rejected' ? { say: "it can't go up as it's written.", reasons: ['pile'] } : {}),
     } })
   }
-  // The links (0064, 0065): mailed with the number the door shows, waited on
-  // until a route says the link was tapped, and confirmed on /verify with
-  // whatever the route says the confirm answered.
+  // The links (0064, 0065, 0070): mailed with no number since 0070, waited on
+  // until a route says the link was tapped here, or opened in another
+  // browser (`away`), and confirmed on /verify with whatever the route says
+  // the confirm answered, a carried letter included.
   if (url.includes('/functions/v1/celestual-edu-verify')) {
     const b = req.postData() ? JSON.parse(req.postData()) : {}
     const edu = /\.edu$/.test(String(b.email || ''))
     if (b.action === 'link') {
       return route.fulfill({ json: {
-        ok: true, request: 'preview-request', match: 47,
+        ok: true, request: 'preview-request',
         domain: edu ? 'berkeley.edu' : null, campus: edu ? 'berkeley' : null, school: edu ? 'UC Berkeley' : null,
       } })
     }
     if (b.action === 'status') {
       if (LINKED) TAPPED = true
-      return route.fulfill({ json: { ok: true, verified: LINKED, purpose: 'login', campus: null, school: null, expired: false } })
+      return route.fulfill({ json: {
+        ok: true, verified: LINKED && !AWAY, elsewhere: AWAY, purpose: 'login', campus: null, school: null, expired: AWAY,
+      } })
     }
     if (b.action === 'confirm') {
       const c = CONFIRM || { purpose: 'login', same: true }
       return route.fulfill({ json: {
         ok: c.ok !== false, error: c.error, purpose: c.purpose, request: 'preview-request',
         campus: c.campus || null, school: c.campus ? 'UC Berkeley' : null, same_device: !!c.same,
+        carry: c.carry || null,
       } })
     }
     return route.fulfill({ json: { ok: false, error: 'bad_input' } })
@@ -1281,9 +1287,20 @@ const ROUTES = [
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
   ] },
-  // the link tapped on another device while the door waits: it lands on the
+  // the link tapped in this browser while the door waits: it lands on the
   // person, with their @ and their private notes, and no DM asked for
   { label: 'home-gate-link-in', path: '/gate', anon: true, taps: true, linked: true, settle: 1600, acts: [
+    ['click', '[data-way="email"]'],
+    ['fill', '.wl-addr-in', 'ace@gmail.com'],
+    ['click', '.wl-door-ways .wl-pill.is-light'],
+    ['wait', 4500],
+    ['click', '.wl-mast-go'],
+    ['wait', 3400],
+    ['click', '.wl-memberbtn'],
+  ] },
+  // 0070: the link opened in another browser while the door waits: that
+  // browser is signed in, this one is not, and the door says so
+  { label: 'home-gate-link-away', path: '/gate', anon: true, taps: true, away: true, settle: 1600, acts: [
     ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'ace@gmail.com'],
     ['click', '.wl-door-ways .wl-pill.is-light'],
@@ -1299,6 +1316,12 @@ const ROUTES = [
   // the link, landed: on the device that asked, and on another one
   { label: 'verify-login',      path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: true } },
   { label: 'verify-login-away', path: '/verify#t=preview-token-preview-token', email: true, confirm: { purpose: 'login', same: false } },
+  // 0070: a campus link opened in another browser, carrying the letter that
+  // was waiting on it, shown before it goes up
+  { label: 'verify-carry', path: '/verify#t=preview-token-preview-token', anon: true, confirm: {
+    purpose: 'edu', same: false, campus: 'berkeley',
+    carry: { letter: { kind: 'handle', to: 'sofiaaa.reyes', name: '', at: '', body: 'you held the door at moffitt and said good luck on the final. i did pass.', look: null, greet: null, school: 'berkeley', proof: 'edu', nonce: 'preview-nonce-0001' } },
+  } },
   { label: 'verify-login-used', path: '/verify#t=preview-token-preview-token', anon: true, confirm: { ok: false, error: 'used' } },
   // signed in by a mailed link on a device that never did the DM: the @ and
   // its private notes are back, and nothing asks for Instagram
@@ -1708,6 +1731,7 @@ for (const r of list) {
   EMAIL = r.email === true
   LINKED = r.linked === true
   CONFIRM = r.confirm || null
+  AWAY = r.away === true
   TAPS = r.taps === true
   TAPPED = false
   HELD = r.held === true
