@@ -2750,6 +2750,12 @@ a.wl-lq { text-decoration: none; }
    these rests. While a field in the thread has a phone's keys, the open
    phone rises by what they cover (`--o-kb`), with the keyboard. */
 .wl-set { position: relative; transform: rotate(var(--q-rz, 0deg)); }
+/* the handset is the screen's width and no wider, so the thread that
+   Letter.jsx `fitSlider` sizes off it is too. The card is wider than the
+   screen wherever the screen is sized off the window's height (a link
+   opened in an app's own browser, a short phone), and a thread sized off
+   the card stood out past the screen on both sides */
+.wl-letter-track .wl-set { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
 .wl-set-up { position: relative; z-index: 1; transform-origin: 50% 0; }
 /* a hand on the card's upper half takes it up and down as well as
    sideways (Letter.jsx, the swipe), so the browser is given none of it; the

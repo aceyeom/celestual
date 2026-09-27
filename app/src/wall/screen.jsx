@@ -523,7 +523,7 @@ export function Screen({
   const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '') : salutation ? lineSize(salutation) : undefined
   // A key can carry a count, set small at its shoulder the way the phone
   // counted what was waiting behind a key (`badge`), and the message light
-  // beside it (`dot`); and a key that opens something stays struck out of
+  // under it (`dot`); and a key that opens something stays struck out of
   // its band while that is open (`open`), as the phone lit the tab it was on.
   const key = (k, cls) => {
     const d = keys[k]
