@@ -16,14 +16,21 @@
 /* ── the key that opens it ──
    The letter's right soft key (Replies.jsx `threadKey`, screen.jsx): the
    count at its shoulder, struck out of the band's light as a badge was on
-   the phone, and the message light before it once the person the letter is
+   the phone, and the message light under it once the person the letter is
    to has answered, lit steady. While the thread is out the key is struck
-   out of its band, the tab the phone is on, and its badge turns back. */
+   out of its band, the tab the phone is on, and its badge turns back.
+
+   The word is set at the centre key's size and the count stands after it
+   in the key's own width, the light stacked under the count. At the left
+   key's size, or with the count laid over the word's end, `replies` and
+   its count were wider than the key's third of the band: the light sat on
+   the word's last letter, and a heart count of three figures ran into the
+   word. */
 .wl-sk.is-thread { position: relative; overflow: visible; }
-.wl-root .wl-sk.is-thread:has(> .wl-sk-n) { padding-right: 5.6cqw; }
+.wl-root .wl-sk.is-thread { font-size: 11cqw; }
 .wl-sk-n {
-  position: absolute; top: 1.3cqw; right: 0.2cqw;
-  display: inline-flex; align-items: center; gap: 0.9cqw;
+  align-self: flex-start; margin-top: 1.3cqw;
+  display: inline-flex; flex-direction: column-reverse; align-items: center; gap: 0.9cqw;
   pointer-events: none;
 }
 .wl-sk-n b {
@@ -43,6 +50,9 @@
 .wl-sk.is-thread.is-open .wl-lit { text-shadow: none; }
 .wl-sk.is-thread.is-open .wl-sk-n b { background: var(--s-bot); color: var(--s-lit); box-shadow: none; }
 .wl-sk.is-thread.is-open .wl-sk-dot { background: var(--s-bot); box-shadow: none; }
+/* the focus ring is the band's light, which the open key is filled with, so
+   on the open key it is drawn in the band's dark, the colour of its word */
+.wl-root .wl-sk.is-thread.is-open:focus-visible { outline-color: var(--s-bot); }
 
 /* ── the lower half ──
    Behind the upper half, the same width, laid out at the width it is read
@@ -89,6 +99,18 @@
     linear-gradient(180deg, var(--s-mid) 0%, color-mix(in srgb, var(--s-mid) 55%, var(--s-lo)) 60%, var(--s-lo) 100%);
 }
 .wl-low-in > .wl-scr-fx { z-index: 3; }
+/* In a wide room the camera steps back and the upper half is shown smaller
+   (`--o-s`), its pixels with it, while this half is laid out at the size it
+   is shown. So its pixels are drawn at the camera's step back too, their
+   lines as fine and their pitch as close as the screen's above, or the one
+   glass would turn coarser and darker at the band. On a phone it is 1. */
+.wl-low { --lo-pitch: calc(var(--q-pitch, 3px) * var(--o-s, 1)); }
+.wl-low-in > .wl-scr-fx.is-grid {
+  inset: 0 auto auto 0;
+  width: calc(100% / var(--o-s, 1)); height: calc(100% / var(--o-s, 1));
+  transform: scale(var(--o-s, 1)); transform-origin: 0 0;
+}
+.wl-low-in > .wl-scr-fx.is-moire { --q-pitch: var(--lo-pitch); }
 /* the list: the phone's own, scrolled inside the glass and never the page,
    its rows fading into the panel at its two edges rather than being cut */
 .wl-low-list {
@@ -127,9 +149,13 @@
    The glass slides out from under the band with the phone (Letter.jsx
    `runQ`), and what is on it comes up a beat behind, row by row, the way
    a phone drew a list it had just been asked for. Only on the opening, and
-   only the first rows: a thread read again under a finger does not dance. */
+   only the first rows: a thread read again under a finger does not dance.
+   A reply that comes while it is open (Replies.jsx `fresh`, one just sent
+   from this phone above all) arrives at once, on its own, and does not
+   wait its turn in a stagger that is over. */
 .wl-letter.is-thread .wl-low-list > :not(.wl-rp-list) { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
 .wl-letter.is-thread .wl-rp-list > .wl-rp-item { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
+.wl-letter.is-thread .wl-rp-list > .wl-rp-item.is-new { animation: wl-rp-new 260ms var(--ease, ease) both; }
 @keyframes wl-low-row {
   from { opacity: 0; transform: translate3d(0, 3cqw, 0); }
   to   { opacity: 1; transform: none; }
@@ -242,8 +268,8 @@
 }
 .wl-rp-item:is(.is-held, .is-hidden) .wl-rp-words { color: var(--lo-dim); }
 .wl-rp-item.is-removed .wl-rp-words { color: var(--lo-dim); text-decoration: line-through; text-decoration-thickness: 0.6cqw; }
-/* a reply sent from this phone arrives, it does not appear */
-.wl-rp-item.is-mine:last-child { animation: wl-rp-new 260ms var(--ease, ease) both; }
+/* a reply that comes while the thread is open arrives, it does not appear
+   (the way it comes out, above) */
 @keyframes wl-rp-new {
   from { opacity: 0; transform: translate3d(0, 8px, 0); }
   to   { opacity: 1; transform: none; }
@@ -268,6 +294,8 @@
   background: var(--lo-ink); color: var(--s-mid); text-shadow: none; transition-duration: 0ms;
 }
 .wl-rp-like:disabled { cursor: progress; }
+/* the flag's room on a reply of your own, kept and not drawn */
+.wl-rp-flag.is-void { visibility: hidden; pointer-events: none; cursor: default; }
 :is(.wl-rp-like, .wl-rp-flag, .wl-rp-undo, .wl-rp-key):focus-visible { outline: 0.5cqw solid var(--lo-ink); outline-offset: -0.5cqw; }
 @media (hover: hover) and (pointer: fine) {
   .wl-rp-like:hover, .wl-rp-flag:hover { color: var(--lo-ink); background: color-mix(in srgb, var(--lo-ink) 10%, transparent); }
@@ -361,7 +389,10 @@
 .wl-rp-school :is(.wl-resend, .wl-resend-go) { align-self: flex-start; padding: 2px 0; }
 .wl-rp-school .wl-rp-theirs { align-self: flex-start; padding: 2px 0; text-align: left; text-wrap: pretty; }
 /* the chrome's parts, on this glass: the field, the quiet lines and the
-   primary are the ink's and the panel's, never the room's chalk */
+   primary are the ink's and the panel's, never the room's chalk, and the
+   quiet lines and the primary grow with the glass as its words do, never
+   below the chrome's own sizes, so on a wide phone the recipient's way in
+   is not the smallest line on it */
 .wl-root.is-room .wl-low .wl-addr {
   position: relative; min-height: 12cqw; padding: 2.2cqw 3cqw 1.8cqw;
   background: color-mix(in srgb, var(--s-lo) 55%, transparent);
@@ -375,11 +406,15 @@
 .wl-root.is-room .wl-low .wl-addr-in:focus { outline: none; }
 .wl-root.is-room .wl-low .wl-addr-in::placeholder { color: var(--lo-ink); opacity: 0.4; }
 .wl-low .wl-field-line { display: none; }
-.wl-root .wl-low .wl-quiet { color: var(--lo-dim); text-shadow: inherit; }
+.wl-root .wl-low :is(.wl-quiet, .wl-resend) {
+  color: var(--lo-dim); text-shadow: inherit;
+  font-size: max(var(--t-small), var(--lo-meta)); line-height: 1.25;
+}
 .wl-root .wl-low .wl-quiet:not(:disabled):hover { color: var(--lo-ink); }
 .wl-root.is-room .wl-low .wl-pill.is-key {
   background: var(--lo-ink); color: var(--s-mid); box-shadow: none; text-shadow: none;
   border-radius: 0.6cqw; font-family: var(--f-s40);
+  font-size: max(var(--t-ctrl), calc(var(--lo-read) * 0.9)); min-height: max(48px, 12cqw);
 }
 .wl-root.is-room .wl-low .wl-pill.is-key:disabled { background: var(--lo-faint); color: var(--s-mid); opacity: 1; }
 .wl-root.is-room .wl-low .wl-pill.is-key:not(:disabled):active { background: var(--lo-dim); color: var(--s-mid); }
@@ -503,8 +538,9 @@
    coming up row by row; the field is simply there. */
 @media (prefers-reduced-motion: reduce) {
   .wl-letter.is-thread .wl-low-in { animation: wl-fade 120ms linear both; }
-  .wl-letter.is-thread .wl-low-list > *, .wl-letter.is-thread .wl-rp-list > .wl-rp-item { animation: none; }
-  .wl-low-write, .wl-rp-item.is-mine:last-child, .wl-rp-terms, .wl-low-said { animation: none; }
+  .wl-letter.is-thread .wl-low-list > *, .wl-letter.is-thread .wl-rp-list > .wl-rp-item,
+  .wl-letter.is-thread .wl-rp-list > .wl-rp-item.is-new { animation: none; }
+  .wl-low-write, .wl-rp-terms, .wl-low-said { animation: none; }
   .wl-rp-like.is-on .wl-pxi { animation: none; }
   .wl-root .wl-sk.is-thread.is-open { transition: none; }
 }

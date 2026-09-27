@@ -379,7 +379,7 @@ function Handset({ l, seed, live = false, open = false, onToggle, onClose, reduc
       <div className="wl-set-up">
         <ThreadKey.Provider value={ctx}>{children}</ThreadKey.Provider>
       </div>
-      {on ? <Slide letter={l} th={th} open={open} reduce={reduce} go={go} onClose={onClose} labelId={keyId} /> : null}
+      {on ? <Slide letter={l} th={th} open={open} reduce={reduce} go={go} onClose={onClose} /> : null}
     </div>
   )
 }
@@ -493,6 +493,10 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
 
   const text = l.body || ''
   const hearts = l.hearts || 0
+  // the count on the key, in thousands past a thousand, as a phone counted,
+  // and three figures or more set a step smaller (screen.css `.is-long`), so
+  // it keeps to the middle of the band between `options` and `replies`
+  const heartsSaid = hearts < 1000 ? String(hearts) : hearts < 10000 ? `${Math.floor(hearts / 100) / 10}k` : `${Math.floor(hearts / 1000)}k`
 
   // Anybody's since 0068 (likes are open to everybody): the press goes
   // straight to the server, which keeps one heart per device, and never to
@@ -632,7 +636,8 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
          (data.js `heart`), and a key that dimmed until the server answered
          read as a press that had not taken, and let go of the focus */
       c: {
-        glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? String(hearts) : '',
+        glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? heartsSaid : '',
+        cls: heartsSaid.length > 2 ? 'is-long' : undefined,
         onClick: pressHeart, on: l.hearted,
         pressed: !!l.hearted,
         aria: `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
@@ -1542,13 +1547,18 @@ export default function Letter({
     else openThread('press')
   }
   // Escape shuts the phone before it closes the sheet, and inside the
-  // lower half it goes back a step first (the terms, the school's door)
+  // lower half it goes back a step first (the terms, the school's door).
+  // Shut from the keyboard, the focus goes to the key even when what had it
+  // has already gone from the page (a reply reported, folded under its flag)
   const onEscape = () => {
     if (!threadRef.current) return false
     const set = liveSet()
     const back = set && set.querySelector(':scope > .wl-low:not(.is-read) .wl-low-sk.is-r')
-    if (back) back.click()
-    else shutThread()
+    if (back) { back.click(); return true }
+    const a = document.activeElement
+    const key = set && (!a || a === document.body) ? set.querySelector('.wl-sk.is-thread') : null
+    if (key) key.focus({ preventScroll: true })
+    shutThread()
     return true
   }
   // While it is open the window can change under it (a phone turned, a

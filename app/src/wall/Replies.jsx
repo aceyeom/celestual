@@ -291,24 +291,30 @@ export function useThread(letter) {
 // it, and the dark thread it opened, as another product glued under the
 // letter. A phone has its soft keys and nothing under them, so the count is
 // the key's own, set small at its shoulder, and the light that says the
-// person the letter is to has answered stands beside it, lit steady (a blink
+// person the letter is to has answered stands under it, lit steady (a blink
 // would be urgency). While the thread is open the key stays struck out of its
 // band, as the phone lit the tab it was on, and a second press shuts it.
 //
 // Every screen on the strip draws the key, the neighbours asleep with no
-// count, so a turn onto a letter changes nothing but the number. A letter
-// with no thread behind it (a deploy without the replies, or no connection)
-// has `share` there instead, as it always did.
+// count, so a turn onto a letter changes nothing but the number, and past
+// ninety nine the badge says `99+`, as a phone's did, so it keeps to the
+// key. A letter with no thread behind it (a deploy without the replies, or
+// no connection) has `share` there instead, as it always did.
+function shown(th) {
+  return th.t && th.t.ok && !th.hiddenFromMe ? th.count : 0
+}
+// what the thread is called, by the key and by the lower half it opens:
+// the count and who has answered, and whether it is shut or put away
+function threadName(th) {
+  const n = shown(th)
+  return `${n ? `${n} ${n === 1 ? 'reply' : 'replies'}` : 'replies'}${th.answered ? ', the recipient replied' : ''}${th.shut ? ', shut' : ''}${th.hiddenFromMe ? ', put away' : ''}`
+}
 export function threadKey(th, { open = false, onToggle, id, letter } = {}) {
   if (th && letter && !th.on) return null
-  const t = th ? th.t : null
-  const ok = !!(t && t.ok)
-  const n = ok && !th.hiddenFromMe ? th.count : 0
-  const lit = !!(th && th.answered)
-  const aria = !th ? 'replies'
-    : `${n ? `${n} ${n === 1 ? 'reply' : 'replies'}` : 'replies'}${lit ? ', the recipient replied' : ''}${th.shut ? ', shut' : ''}${th.hiddenFromMe ? ', put away' : ''}`
+  const n = th ? shown(th) : 0
+  const aria = th ? threadName(th) : 'replies'
   return {
-    label: 'replies', cls: 'is-thread', open, badge: n ? String(n) : '', dot: lit,
+    label: 'replies', cls: 'is-thread', open, badge: n > 99 ? '99+' : n ? String(n) : '', dot: !!(th && th.answered),
     onClick: onToggle, id, expanded: th ? open : undefined,
     controls: letter ? `wl-low-${letter.id}` : undefined,
     aria: open ? `${aria}. shut them` : aria,
@@ -319,8 +325,12 @@ export function threadKey(th, { open = false, onToggle, id, letter } = {}) {
 // Its picture, and beside it one meta row (the name, `you`, when, and at the
 // row's end its like and its flag), then the words. The acts ride the meta
 // row so a reply is two lines and not three, and two and a half of them
-// stand in the lower half of a phone at once.
-function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, liking }) {
+// stand in the lower half of a phone at once. A reply of your own has no
+// flag, and a flag's room in its place, so every like down the thread
+// stands in the one column. `fresh` is a reply that came while the phone
+// was open (`Slide`), which arrives on its own rather than in the opening's
+// stagger.
+function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, liking, fresh = false }) {
   const rec = r.recipient
   const live = r.status === 'live'
   const down = reported && live
@@ -338,8 +348,8 @@ function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, lik
   const likes = r.likes || 0
   return (
     <li
-      className={`wl-rp-item${rec ? ' is-recipient' : ''}${r.mine ? ' is-mine' : ''}${live ? '' : ` is-${r.status}`}`}
-      style={{ '--i': Math.min(i, 6) }}
+      className={`wl-rp-item${rec ? ' is-recipient' : ''}${r.mine ? ' is-mine' : ''}${live ? '' : ` is-${r.status}`}${fresh ? ' is-new' : ''}`}
+      style={{ '--i': Math.min(i, 6) }} data-id={r.id}
     >
       <span className="wl-rp-pic">
         {rec ? <Face handle={letter.to} size={39} /> : <Creature who={r.who} size={39} mono />}
@@ -359,7 +369,9 @@ function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, lik
                 <PixIcon name={r.liked ? 'heart' : 'heartO'} scale={2} />
                 <span className="wl-rp-n">{likes ? likes : ''}</span>
               </button>
-              {r.mine ? null : (
+              {r.mine ? (
+                <span className="wl-rp-flag is-void" aria-hidden="true"><PixIcon name="flag" scale={2} /></span>
+              ) : (
                 <button type="button" className="wl-rp-flag" onClick={() => onReport(r)} aria-label="report this reply">
                   <PixIcon name="flag" scale={2} />
                 </button>
@@ -685,27 +697,45 @@ function Key({ side, k }) {
 // `back` while reading shuts the phone; anywhere else it goes back to
 // reading, the words kept. Letter.jsx owns open and shut (`onClose`), and
 // every time the phone is opened it opens on the thread.
-export function Slide({ letter, th, open = false, reduce = false, go = null, onClose, labelId }) {
+export function Slide({ letter, th, open = false, reduce = false, go = null, onClose }) {
   const phone = usePhone()
   const [mode, setMode] = useState('read')
   const [wasOpen, setWasOpen] = useState(open)
+  // the replies the phone opened on, which come up in the opening's stagger;
+  // one that comes after them while it is open arrives on its own (`fresh`)
+  const [first, setFirst] = useState(null)
   if (open !== wasOpen) {
     setWasOpen(open)
     if (open) setMode('read')
+    else setFirst(null)
   }
+  if (open && first === null && th.ok) setFirst(new Set(th.rows.map((r) => r.id)))
+  const low = useRef(null)
   const list = useRef(null)
   const field = useRef(null)
   const head = useRef(null)
 
   // the removed replies of theirs that were on the glass while it was open,
-  // remembered as read once it shuts (`goneSeen`, above)
-  const gone = useRef([])
+  // remembered as read once it shuts (`goneSeen`, above). On the glass means
+  // in the list's view, most of the row or as much of the list as it fills:
+  // the thread opens at its top, oldest first, and a reply taken down is
+  // usually further down than a glance goes
+  const gone = useRef(new Set())
+  const goneIds = th.rows.filter((r) => r.mine && r.status === 'removed').map((r) => r.id).join(' ')
   useEffect(() => {
-    if (open) gone.current = th.rows.filter((r) => r.mine && r.status === 'removed').map((r) => r.id)
-  }, [open, th.rows])
+    const el = list.current
+    if (!open || !goneIds || (mode !== 'read' && mode !== 'write') || !el || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      const need = Math.min(e.boundingClientRect.height, e.rootBounds ? e.rootBounds.height : Infinity) * 0.6
+      if (e.isIntersecting && e.intersectionRect.height >= need) gone.current.add(e.target.dataset.id)
+    }), { root: el, threshold: [0, 0.25, 0.5, 0.75, 1] })
+    el.querySelectorAll('.wl-rp-item.is-mine.is-removed[data-id]').forEach((row) => io.observe(row))
+    return () => io.disconnect()
+  }, [open, mode, goneIds])
   useEffect(() => {
     if (!open) return undefined
-    return () => { markGone(gone.current); gone.current = [] }
+    const seen = gone.current
+    return () => { markGone([...seen]); seen.clear() }
   }, [open])
 
   // ── the words ──
@@ -750,9 +780,23 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
     if (field.current) field.current.focus({ preventScroll: true })
     toEnd()
   }
+  // A step back inside the lower half takes away what had the focus when it
+  // was taken by a key on the keyboard (Escape in the field, or out of the
+  // terms), and the focus would fall to the page, out of the phone and out
+  // of the sheet. So it is kept in the lower half: on the field when the
+  // step is to the words, and on the list when it is to the thread, where a
+  // second Escape shuts the phone and hands the focus to its key.
+  const hadFocus = useRef(false)
+  const keepFocus = () => { hadFocus.current = !!(low.current && low.current.contains(document.activeElement)) }
   useEffect(() => {
     if (mode === 'terms' && head.current) head.current.focus({ preventScroll: true })
     if (mode === 'terms' || mode === 'school') { if (list.current) list.current.scrollTop = 0 }
+    if (hadFocus.current) {
+      hadFocus.current = false
+      const a = document.activeElement
+      const to = mode === 'write' ? field.current : list.current
+      if ((!a || a === document.body) && to) to.focus({ preventScroll: true })
+    }
   }, [mode])
 
   const send = async (accept = false) => {
@@ -836,6 +880,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
                 key={r.id} r={r} i={i} letter={letter} name={th.names.get(r.who) || ''}
                 onLike={th.like} onReport={th.report} onUndo={th.undo}
                 reported={th.reports[r.id] || (r.reported ? 'on' : '')} liking={!!th.liking[r.id]}
+                fresh={!!first && !first.has(r.id)}
               />
             ))}
           </ol>
@@ -858,7 +903,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
 
   // ── the keys, by mode ──
   const shutIt = () => onClose && onClose()
-  const toRead = () => { setMode('read'); if (said && said.tone !== 'no') setSaid(null) }
+  const toRead = () => { keepFocus(); setMode('read'); if (said && said.tone !== 'no') setSaid(null) }
   let keys
   if (mode === 'write') {
     keys = {
@@ -868,7 +913,7 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
   } else if (mode === 'terms') {
     keys = {
       l: { label: 'agree', onClick: () => send(true), busy, aria: 'agree to the terms for replying, and send' },
-      r: { label: 'not now', onClick: () => setMode('write'), aria: 'not now, back to the words' },
+      r: { label: 'not now', onClick: () => { keepFocus(); setMode('write') }, aria: 'not now, back to the words' },
     }
   } else if (mode === 'school') {
     keys = { r: { label: 'back', onClick: toRead, aria: 'back to the replies' } }
@@ -889,15 +934,17 @@ export function Slide({ letter, th, open = false, reduce = false, go = null, onC
 
   return (
     <div
-      className={`wl-low is-${mode}`} id={`wl-low-${letter.id}`}
+      className={`wl-low is-${mode}`} id={`wl-low-${letter.id}`} ref={low}
       inert={open ? undefined : true} aria-hidden={open ? undefined : 'true'}
     >
       <div className="wl-low-in">
         <span className="wl-low-bg" aria-hidden="true" />
+        {/* named for what it holds, and not by the key that opens it: the
+            key's name ends in what pressing it does, and while the options
+            are up the key is `back` and not there to name anything */}
         <div
           className="wl-low-list" ref={list} tabIndex={-1} role="region"
-          aria-labelledby={mode === 'read' ? labelId : undefined}
-          aria-label={mode === 'terms' ? 'the terms for replying' : mode === 'school' ? 'your school' : undefined}
+          aria-label={mode === 'terms' ? 'the terms for replying' : mode === 'school' ? 'your school' : threadName(th)}
         >
           {inside}
         </div>
