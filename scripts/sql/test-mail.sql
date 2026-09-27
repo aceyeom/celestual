@@ -387,8 +387,15 @@ select ml_proof('ml_pb', 'proof-ml-pb');
 select ml_proof('ml_pc', 'proof-ml-pc');
 
 select celestual_submit('ml_pa', 'ml_pb', null, 'proof-ml-pa', '{"words":"you first"}'::jsonb);
-select ml_ok('the ping resolves mutual',
-  (celestual_submit('ml_pb', 'ml_pa', 'PB@Example.com', 'proof-ml-pb', null)->>'mutual')::boolean);
+-- since 0069 a pair is sealed until its reveal and told then; the reveal is
+-- brought forward here rather than waited for
+select ml_ok('the pair is sealed, not told, when the second note is placed',
+  not (celestual_submit('ml_pb', 'ml_pa', 'PB@Example.com', 'proof-ml-pb', null)->>'mutual')::boolean
+  and not exists (select 1 from celestual_mail_outbox where kind = 'mutual' and handle in ('ml_pa', 'ml_pb')));
+update celestual_entries set reveal_at = now() - interval '1 second' where sealed_with is not null;
+select celestual_reveal_due();
+select ml_ok('and at the reveal it resolves mutual',
+  exists (select 1 from celestual_matches where handle_a = 'ml_pa' and handle_b = 'ml_pb'));
 select ml_ok('the side with a confirmed address is queued from the match itself',
   (select count(*) = 1 and bool_and(to_email = 'pa@berkeley.edu' and other_handle = 'ml_pb' and not has_card)
      from celestual_mail_outbox where kind = 'mutual' and handle = 'ml_pa'));
@@ -402,6 +409,8 @@ select ml_ok('the old queue''s row is stamped, so the old drain never sends it t
 
 select celestual_submit('ml_pc', 'ml_pa', 'pc-ping@example.com', 'proof-ml-pc', null);
 select celestual_submit('ml_pa', 'ml_pc', null, 'proof-ml-pa', null);
+update celestual_entries set reveal_at = now() - interval '1 second' where sealed_with is not null;
+select celestual_reveal_due();
 select ml_ok('a person who turned the mutual alert off is not mailed',
   not exists (select 1 from celestual_mail_outbox where kind = 'mutual' and handle = 'ml_pc')
   and (select bool_and(last_error = 'alerts_off') from celestual_notifications where self_handle = 'ml_pc'));
