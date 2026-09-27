@@ -164,7 +164,8 @@ export function shapeAllowance(a) {
     next,
   }
 }
-function learnAllowance(h, raw) {
+function learnAllowance(handle, raw) {
+  const h = normHandle(handle)
   const a = shapeAllowance(raw)
   if (a && h) patch({ allowance: { h, at: Date.now(), a } })
   return a

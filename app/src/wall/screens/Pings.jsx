@@ -39,7 +39,7 @@ import { Sheet, SheetHead, Display, Label, Pill } from '../parts.jsx'
 import { Screen, ScreenNote, RoomLight } from '../screen.jsx'
 import { colourOf } from '../looks.js'
 import { atHandle } from '../data.js'
-import { heldProof } from '../auth.js'
+import { heldProof, proofFor } from '../auth.js'
 import { checkout, confirm, price, PING_CENTS, MAX_BUY } from '../../api/billing.js'
 import '../buy.css'
 import {
@@ -117,7 +117,9 @@ export function BuyPings({ out = false, onBack, backLabel = 'not now', headId = 
     if (busy || !me) return
     setBusy(true)
     setSaid('')
-    const got = await checkout({ handle: me, proof: heldProof(me), quantity: n })
+    // the proof held here, or the one the server gives back to the person
+    // signed in (auth.js `proofFor`), the same the note itself would spend
+    const got = await checkout({ handle: me, proof: heldProof(me) || await proofFor(me), quantity: n })
     if (got && got.ok && got.url) {
       // the browser leaves for Stripe's own page; what was waiting is kept
       window.location.assign(got.url)

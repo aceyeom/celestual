@@ -56,7 +56,7 @@ import { signOut as dropProof } from '../../api/auth.js'
 import { cardStep } from '../seed.js'
 import {
   myHandle, canPlace, readyToPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords, endsWords, nextReveal,
-  heldAllowance, pingWords, waitForPings, waitingNote, dropWaiting,
+  heldAllowance, loadAllowance, pingWords, waitForPings, waitingNote, dropWaiting,
 } from '../pings.js'
 import { BuyPings } from './Pings.jsx'
 
@@ -407,6 +407,16 @@ export default function Ping({
     return () => { on = false }
   }, [rev, own])
   const pingOf = useCallback((x) => (pings?.pings || []).find((p) => p.to === normHandle(x)) || null, [pings])
+  // the week's pings: what this device was last told, then the server's own
+  // answer, asked again each time the note's screen comes up, so a ping
+  // bought on another phone is not met with the paywall here
+  const [weekNow, setWeekNow] = useState(() => heldAllowance(own))
+  useEffect(() => {
+    if (step !== 'line' || !own) return undefined
+    let on = true
+    loadAllowance(own).then((a) => { if (on && a) setWeekNow(a) })
+    return () => { on = false }
+  }, [step, own])
 
   const h = normHandle(to)
   const people = writtenTo(own)
@@ -417,10 +427,10 @@ export default function Ping({
   const total = ready || adopted ? 2 : 3
   // this week's pings, as the server last said them, and whether sending to
   // this person spends one: a note already out on them is only new words
-  const week = heldAllowance(own)
-  const out = pingOf(h)
-  const spends = !(out && (out.state === 'standing' || out.state === 'mutual'))
-  const spent = !!(week && spends && week.left <= 0)
+  const week = weekNow
+  const onThem = pingOf(h)
+  const spends = !(onThem && (onThem.state === 'standing' || onThem.state === 'mutual'))
+  const noneLeft = !!(week && spends && week.left <= 0)
 
   // ── who ──
   const them = useResolver(to)
@@ -521,6 +531,7 @@ export default function Ping({
     }
     clearOurs('ping')
     forgetPings()
+    if (out.allowance) setWeekNow(out.allowance)
     if (waitingNote()?.to === h) dropWaiting()
     setAdopted(null)
     setEnds(out.expires_at ? Date.parse(out.expires_at) || nextReveal() : nextReveal())
@@ -555,7 +566,7 @@ export default function Ping({
       if (pingOf(h)?.state === 'mutual') { go('reveal', h); return }
       // none left this week, as far as this device was last told: the
       // paywall now, rather than a send the server would refuse
-      if (spent && canPlace()) {
+      if (noneLeft && canPlace()) {
         waitForPings({ kind: 'send', to: h, line: line.trim() || (shown.current === h ? '' : null) })
         setStep('buy')
         return
@@ -753,7 +764,7 @@ export default function Ping({
         tone="light" onClick={next} disabled={!validHandle(h)} aria-busy={placing || undefined}
         icon={!ready && !adopted && !placing ? <Provider size={17} /> : null}
       >
-        {placing ? 'sending' : adopted ? `send it as ${atHandle(adopted.handle)}` : spent && ready ? 'get more pings' : ready ? 'send it privately' : 'next'}
+        {placing ? 'sending' : adopted ? `send it as ${atHandle(adopted.handle)}` : noneLeft && ready ? 'get more pings' : ready ? 'send it privately' : 'next'}
       </Pill>
     )
     quiet = adopted ? (
