@@ -61,9 +61,11 @@
 //
 // Since 0072 a handle can be on the list twice, a mutual and a new note to
 // the same person beside it, so everything here that picks a ping picks it by
-// what it is asking: the note a row opens is the handle's live one
-// (pings.js `liveOf`), each person's mutual is shown once (`mutualOf`), and
-// the rows, the landing and the counts go by the ping's own `key`.
+// what it is asking: the note a row opens is that row's own, by its `key`,
+// and never the handle's first (two linked @s can each have a note on the
+// same person, one running and one not this time), each person's mutual is
+// shown once (`mutualOf`), and the rows, the landing and the counts go by
+// the ping's own `key` too.
 //
 // ── and they run for a week ─────────────────────────────────────────────────
 // A note ends at Saturday's reveal, nine at night in California, and that
@@ -137,7 +139,7 @@ import { loadPending } from '../handoff.js'
 import {
   myHandle, myPings, heldPings, forgetPings, renew, release, sendAgain, stateWords,
   nextReveal, lastReveal, revealStamp, countdown, endsWords, endedWords, keptAhead, revealWaiting, sawReveal,
-  heldAllowance, waitForPings, forgetWeek, liveOf, mutualOf,
+  heldAllowance, waitForPings, forgetWeek, mutualOf,
 } from '../pings.js'
 import { takeReturn } from '../revealfrom.js'
 import { Aerial } from '../aerial.jsx'
@@ -762,7 +764,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // runs this twice, and spent once the sheet is up.
   const [want] = useState(() => !!(held && held.alerts) || FOR_ALERTS)
   useEffect(() => { FOR_ALERTS = false }, [])
-  // null · 'prove' · 'settings' · the handle of the ping whose screen is up
+  // null · 'prove' · 'settings' · the key of the note whose screen is up
   const [view, setView] = useState(() => (held || want ? 'prove' : null))
   // 'notes' · 'letters', the two tabs under the person. A reveal waiting to
   // be seen opens the notes, whichever was open last. It is asked again as
@@ -937,8 +939,13 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
     )
   }
 
-  // the handle's live note, and never its mutual, which is the reveal's
-  const opened = view ? liveOf(list.pings, view) : null
+  // The row's own note, by its key, and never a mutual, which is the
+  // reveal's: a handle can carry two notes (a running one and one that was
+  // not this time, from two linked @s), and the one pressed is the one meant.
+  // A key outlives the reads (sent again and kept, a note is the same row),
+  // so one gone from the list is a note gone, let go elsewhere or told on
+  // the night, and the card is back.
+  const opened = view ? list.pings.find((x) => x.key === view && x.state !== 'mutual') : null
   if (opened) {
     return (
       <Sheet onClose={up} labelledBy="wl-you-h" className="is-you">
@@ -1016,7 +1023,9 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // the end, drawn as not sent. On the night itself (`fresh`) each row lands
   // a beat after the one above, the first time the rows are shown, as it
   // comes into sight (`useSeen`). A note's row is its press and its `edit`,
-  // two keys side by side.
+  // two keys side by side, and the key's name starts with the word on it, so
+  // a voice asking for `edit` finds every one, then says what it is for in
+  // the words the note's own menu uses.
   const row = (p, cls, onClick, aria) => (
     <div
       key={p.key} data-key={p.key}
@@ -1034,7 +1043,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
         </span>
         <Aerial state={aerialOf(p)} land={landing} />
       </button>
-      <EditKey onClick={() => editNote(go, p.to, p.line)} label={`change or let go your note to ${atHandle(p.to)}`} />
+      <EditKey
+        onClick={() => editNote(go, p.to, p.line)}
+        label={`edit your note to ${atHandle(p.to)}: ${p.state === 'lapsed' ? 'send it with new words' : 'change the words'} or let it go`}
+      />
     </div>
   )
   const notes = (
@@ -1067,7 +1079,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           ) : null}
           {standing.length || waiting ? (
             <div className="wl-vault-list">
-              {standing.map((p) => row(p, 'is-standing', () => { leave(); setView(p.to) },
+              {standing.map((p) => row(p, 'is-standing', () => { leave(); setView(p.key) },
                 `your private note to ${atHandle(p.to)}, sealed, ${stateWords(p)}`))}
               {waiting ? (
                 <div className="wl-vault-row is-draft">
@@ -1085,7 +1097,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           {lapsed.length ? (
             <div className="wl-vault-past">
               <span className="wl-vault-past-h">{endedWords(Math.max(...lapsed.map((p) => p.expires)))}</span>
-              {lapsed.map((p) => row(p, 'is-lapsed', () => { leave(); setView(p.to) },
+              {lapsed.map((p) => row(p, 'is-lapsed', () => { leave(); setView(p.key) },
                 `your private note to ${atHandle(p.to)}, not this time. open it to send it again`))}
             </div>
           ) : null}

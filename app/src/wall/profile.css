@@ -250,11 +250,13 @@
 @keyframes wl-row-land { from, to { background: var(--chalk); box-shadow: none; } }
 @keyframes wl-row-ink { from, to { color: #000; filter: none; } }
 /* and not before it is in sight (You.jsx `useSeen`): held searching, its
-   landing waiting where it starts, the waves still going */
+   landing waiting where it starts, the aerial's blink held with the row's
+   whatever its state, the waves still going (they are the paths', and a
+   pause on the Y does not reach them) */
 .wl-vault-row.is-landing:not(.is-seen) .wl-vault-open,
 .wl-vault-row.is-landing:not(.is-seen) .wl-vault-open :is(.wl-wrote-name, .wl-wrote-meta),
 .wl-vault-row.is-landing:not(.is-seen) :is(.wl-vault-seek, .wl-vault-said, .wl-aerial-x),
-.wl-vault-row.is-landing:not(.is-seen) .wl-vault-open .wl-aerial.is-landing:not(.is-seek) { animation-play-state: paused; }
+.wl-vault-row.is-landing:not(.is-seen) .wl-vault-open .wl-aerial.is-landing { animation-play-state: paused; }
 .wl-vault-row.is-landing:not(.is-seen) .wl-aerial:not(.is-seek) :is(.wl-aerial-in, .wl-aerial-out) { animation-play-state: running, paused; }
 
 /* the notes that were not this time, under a seam of their own, a step
@@ -316,8 +318,11 @@
    `skinVars`: the night until it has been opened here, the rose letter
    after), square to the camera like every screen with a story on it, and
    with no filter on it, so nothing under the moving notes is drawn again.
-   The row round it does not invert: the glass is the thing pressed, and it
-   answers the way a phone does. */
+   Round it, opened or not, the rose letter's edge light (`--s-edge`, which
+   Slot.jsx gives the night too): a hairline and a trace of glow, so the
+   night asleep at .38 is a mutual and not a key greyed out, and nothing on
+   it is a second bright thing. The row round it does not invert: the glass
+   is the thing pressed, and it answers the way a phone does. */
 .wl-vault-row.wl-slot { padding: 8px; }
 .wl-slot-open {
   flex: 1 1 auto; min-width: 0; height: 60px;
@@ -325,7 +330,7 @@
   padding: 0; border: 0; border-radius: var(--r-lcd); overflow: hidden; overflow: clip;
   background: var(--s-bot); color: var(--s-lit);
   font-family: var(--f-s40); text-align: left; cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 10px -3px var(--s-edge);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--s-edge), 0 0 14px -2px var(--s-edge);
 }
 .wl-slot-open:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
 .wl-slot-band {
@@ -338,7 +343,10 @@
   font-size: var(--t-small); line-height: 1; white-space: nowrap;
   text-shadow: 0 0 1px var(--s-lit), 0 0 6px var(--s-bloom);
 }
-.wl-slot-at { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* the @ gives way to the night, cut short with an ellipsis; the box that
+   cuts it stands 6px clear of the words (its padding, its margin taking it
+   back), so their glow fades out and is never boxed in */
+.wl-slot-at { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 6px; margin: -6px; }
 /* the night at the right, and while it lands the searching in its place */
 .wl-slot-when { flex: 0 0 auto; display: grid; justify-items: end; margin-left: auto; opacity: 0.82; }
 .wl-slot-when > * { grid-area: 1 / 1; }
@@ -373,8 +381,9 @@
 .wl-slot-ink { left: 0; }
 .wl-slot-ghost { opacity: 0; }
 .wl-slot-lane.is-playing .wl-slot-note { will-change: transform; }
-/* the backlight asleep, over the panel only; the pointer or the focus
-   wakes it, in two steps as a backlight comes up */
+/* the backlight asleep, over the panel only; the pointer wakes it, in two
+   steps as a backlight comes up, and the focus at once, since nothing a key
+   does is ever animated */
 .wl-slot-veil {
   position: absolute; inset: 0; background: #000; opacity: 0.38; pointer-events: none;
   transition: opacity 120ms steps(2, end);
@@ -382,7 +391,7 @@
 @media (hover: hover) and (pointer: fine) {
   .wl-slot-open:hover .wl-slot-veil { opacity: 0; }
 }
-.wl-slot-open:focus-visible .wl-slot-veil { opacity: 0; }
+.wl-slot-open:focus-visible .wl-slot-veil { opacity: 0; transition: none; }
 /* the press: the phone's inversion, the panel in its ink and the notes,
    the dots and the face's frame in its light, on the frame it goes down,
    and the backlight with it, as a key pressed on a phone lights it */

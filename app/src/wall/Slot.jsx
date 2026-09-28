@@ -21,8 +21,9 @@
 // ── before it is opened, and after ──
 // Until its telling has been watched once on this device (pings.js
 // `wasOpened`), the slot is the night glass with its backlight asleep (the
-// veil, black at .38 over the panel), the aerial searching, and the two notes
-// on their way. After, it is the rose letter the film ends on, the backlight
+// veil, black at .38 over the panel), the rose letter's edge light round it
+// as the one trace of what it is, the aerial searching, and the two notes on
+// their way. After, it is the rose letter the film ends on, the backlight
 // still asleep, one note in the middle of the glass and nothing moving: the
 // two became one there, and a keepsake does not keep asking to be opened.
 //
@@ -32,19 +33,20 @@
 // transform on `steps(n)`, so it is the compositor's, and nothing is drawn
 // per frame), trailing three ghosts of what it has just left, one, two and
 // three cells behind at .30, .15 and .07, the way a slow LCD leaves a moving
-// thing on the glass for a beat. They arrive two cells apart, the ghosts catch up farthest first,
-// one every 110ms, the notes hold 700ms, go out at .45, .15 and nothing, and
-// the glass stays dark 440ms before they set out again. One loop is
-// n·110 + 1470ms, n being how far each travels (19 cells, 3.56s, on a phone),
-// and each slot starts at its own place in it (its key's hash), so two
-// mutuals never pulse together.
+// thing on the glass for a beat. They arrive two cells apart, the ghosts
+// catch up farthest first, one every 110ms, the notes hold 700ms, go out in
+// three steps 110ms apart (.45, .15, nothing), and the glass stays dark
+// 550ms before they set out again. One loop is n·110 + 1470ms, n being how
+// far each travels (19 cells, 3.56s, on a phone), and each slot starts at
+// its own place in it (its key's hash), so two mutuals never pulse together.
 //
 // Under the pointer the backlight wakes (the veil goes, 120ms in two steps)
 // and the notes lean in, twice as fast, from wherever they are: the rate is
-// changed, never the clock. Focus wakes the backlight too, without the lean.
-// A press is the phone's inversion, the panel in its ink and the notes in its
-// light, the backlight on and the notes held still where the press caught
-// them; let go anywhere else, or scrolled away under a finger, they go on.
+// changed, never the clock. Focus wakes the backlight too, at once, since a
+// key's doing is never animated, and without the lean. A press is the
+// phone's inversion, the panel in its ink and the notes in its light, the
+// backlight on and the notes held still where the press caught them; let go
+// anywhere else, or scrolled away under a finger, they go on.
 //
 // ── what it costs ──
 // No canvas, and nothing restyled per frame: two transforms and eight
@@ -116,12 +118,14 @@ function Note({ className, style, k, d = NOTE_D }) {
 }
 
 // ── the loop ──
-// a cell a step; the hold two cells apart; the three steps out; the dark
+// a cell a step; the hold two cells apart; the three steps out, a step
+// apart from the hold's end, the last of them to nothing; and the dark from
+// there to the loop's end
 const STEP = 110
 const HOLD = 700
 const OUT = [0.45, 0.15, 0]
-const DARK = 440
-const TAIL = HOLD + OUT.length * STEP + DARK
+const DARK = 550
+const TAIL = HOLD + (OUT.length - 1) * STEP + DARK
 // the ghosts, one, two and three cells behind
 const GHOSTS = [0.3, 0.15, 0.07]
 // how long after its `--land` a slot on the night sets out: the flicker's length
@@ -129,10 +133,12 @@ const WOKEN = 500
 
 // The glass in the colour of what it is: the night screen until it has been
 // opened here, the rose letter after. Only the screen's own properties, the
-// ones the band and the panel read.
+// ones the band and the panel read. The night wears the rose letter's edge
+// light, the trace of it round the glass: asleep at .38 the night alone read
+// as a key greyed out, and nothing on it said mutual until it was watched.
 const skin = (c) => Object.fromEntries(Object.entries(skinVars(c)).filter(([k]) => k.startsWith('--s-')))
-const NIGHT = skin('night')
 const ROSE = skin('rose')
+const NIGHT = { ...skin('night'), '--s-edge': ROSE['--s-edge'] }
 
 // where in its loop a slot starts, off its key: FNV-1a, as a fraction
 function phaseOf(key) {
@@ -228,10 +234,12 @@ export function MutualSlot({ p, me, go, still = false, landing = false, land = n
         { transform: `translate3d(${dx}px, 0, 0)`, offset: at(A) },
         { transform: `translate3d(${dx}px, 0, 0)` },
       ], timing))
+      // a `steps(1, end)` segment holds its first value to its end, so each
+      // step out is the keyframe it lands on: 1 to the hold's end, then .45,
+      // .15 and nothing, 110ms apart
       made.push(note.querySelector('.wl-slot-ink').animate([
         { opacity: 1, easing: 'steps(1, end)' },
-        { opacity: 1, offset: at(A + HOLD), easing: 'steps(1, end)' },
-        ...OUT.map((o, i) => ({ opacity: o, offset: at(A + HOLD + (i + 1) * STEP), easing: 'steps(1, end)' })),
+        ...OUT.map((o, i) => ({ opacity: o, offset: at(A + HOLD + i * STEP), easing: 'steps(1, end)' })),
         { opacity: 0 },
       ], timing))
       for (const g of note.querySelectorAll('.wl-slot-ghost')) {
