@@ -11,7 +11,19 @@
 // the cap, the window, the suppression list and the matching live, and this
 // shapes what they answer into what the two sheets draw. It does not
 // reimplement any of it.
-import { placePing, fetchMyPings, fetchAllowance, renewPing, retirePing, normHandle, PING_DAYS, SLOT_CAP } from '../api/celestual.js'
+//
+// Since 0072 a handle is no longer one ping. A mutual is kept on both lists
+// as it was told, so the person can write to the same somebody again
+// (`celestual_mutual_again`, `placeAgain`), and the list can carry, for one
+// handle, the mutual and a new note beside it; and a mutual can be taken off
+// one's own list (`celestual_mutual_forget`, `forgetMutual`). So a ping has
+// a `key` of its own, and the two questions a screen asks of a handle have
+// two answers: what is my note on them doing (`liveOf`), and are we mutual
+// (`mutualOf`).
+import {
+  placePing, placePingAgain, forgetMutualPing, fetchMyPings, fetchAllowance, renewPing, retirePing, normHandle,
+  PING_DAYS, SLOT_CAP,
+} from '../api/celestual.js'
 import { PING_CENTS, MAX_BUY } from '../api/billing.js'
 import { getSession } from '../api/auth.js'
 import { learnHandle, avatarUrl } from '../api/handles.js'
@@ -86,9 +98,12 @@ export async function myPings({ handle, proof }) {
     if (!out || out.ok === false) {
       return { ok: false, error: out?.error || 'network', pings: [], mutuals: [] }
     }
-    const pings = (Array.isArray(out.pings) ? out.pings : []).map(shapePing)
+    // `pings` can carry one handle twice since 0072, a mutual and a new note
+    // to the same person; `mutuals` carries each handle once, the mutual
+    // `mutualOf` answers, however many of a person's @s were told on it
+    const pings = keyed((Array.isArray(out.pings) ? out.pings : []).map(shapePing))
     const allowance = learnAllowance(h, out.allowance)
-    const answer = { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual'), allowance }
+    const answer = { ok: true, pings, mutuals: mutualsOf(pings), allowance }
     HELD.set(h, { at: Date.now(), answer })
     keepSpans(pings)
     return answer
@@ -121,6 +136,24 @@ export function heldPings(handle) {
 
 export function forgetPings() {
   HELD.clear()
+}
+
+// What this device's own two acts on a mutual do to the held answer, so the
+// next sheet's first frame is already true. Writing again puts a note on the
+// list the held answer does not have, so this person's answer goes and the
+// next sheet asks; taking a mutual off takes it out of the held answer at
+// once, since a list that drew it again for the length of a round trip would
+// be drawing somebody the person has just let go of.
+function dropHeld(handle) {
+  HELD.delete(normHandle(handle))
+}
+function dropHeldMutual(handle, them) {
+  const h = normHandle(handle)
+  const t = normHandle(them)
+  const held = h && HELD.get(h)
+  if (!held || !t) return
+  const pings = held.answer.pings.filter((p) => !(p.state === 'mutual' && normHandle(p.to) === t))
+  HELD.set(h, { at: held.at, answer: { ...held.answer, pings, mutuals: mutualsOf(pings) } })
 }
 
 // ── this week's pings ───────────────────────────────────────────────────────
@@ -235,9 +268,16 @@ function shapePing(p) {
     })
   }
   return {
-    // A ping is one per pair, so the handle is its identity. There is no id on
-    // the wire and inventing one would only be inventing a key for React.
+    // The handle, as it always was, for anything that took it for one. It is
+    // not the ping's identity any more: since 0072 one handle can carry a
+    // mutual and a new note to the same person, so React keys on `key`.
     id: to,
+    // Unique, and the same on every read: which kind of row it is, the handle,
+    // and when its note went out, which neither a keep nor a reveal moves. A
+    // note that turns mutual at its reveal becomes a mutual, and a different
+    // thing on the screen, so its key changes with it. `keyed` makes the rare
+    // two alike (two linked @s, one note each in one instant) unique.
+    key: `${p.mutual ? 'mutual' : 'note'}:${to}:${Number(p.time) || 0}`,
     to,
     // standing until its reveal; then mutual, or lapsed: not this time, and
     // listed for a week so it can be sent again (0069)
@@ -255,6 +295,53 @@ function shapePing(p) {
     // pretending to know when the pair closed.
     openedAt: 0,
   }
+}
+function keyed(pings) {
+  const seen = new Map()
+  return pings.map((p) => {
+    const n = seen.get(p.key) || 0
+    seen.set(p.key, n + 1)
+    return n ? { ...p, key: `${p.key}~${n}` } : p
+  })
+}
+
+// ── one handle, two questions ───────────────────────────────────────────────
+// A handle can carry a mutual and a new note to the same person at once
+// (0072), and a screen that asks `.find((p) => p.to === them)` gets whichever
+// the list happened to put first. So each question has its own answer. Both
+// take the list, or an answer with the list on it, and a handle as typed.
+//
+// liveOf: what is my note on them doing. The one that is not a mutual, a note
+// still running before one that was not this time, and the latest of those.
+// mutualOf: are we mutual. The mutual, the most recently told, which the
+// server already answers one of for each @ a person has.
+const listOf = (pings) => (Array.isArray(pings) ? pings : Array.isArray(pings?.pings) ? pings.pings : [])
+export function liveOf(pings, handle) {
+  const h = normHandle(handle)
+  if (!h) return null
+  const rank = (p) => (p.state === 'standing' ? 1 : 0)
+  let best = null
+  for (const p of listOf(pings)) {
+    if (!p || p.state === 'mutual' || normHandle(p.to) !== h) continue
+    if (!best || rank(p) > rank(best) || (rank(p) === rank(best) && (p.at || 0) > (best.at || 0))) best = p
+  }
+  return best
+}
+export function mutualOf(pings, handle) {
+  const h = normHandle(handle)
+  if (!h) return null
+  let best = null
+  for (const p of listOf(pings)) {
+    if (!p || p.state !== 'mutual' || normHandle(p.to) !== h) continue
+    if (!best || (p.revealedAt || 0) > (best.revealedAt || 0)
+        || ((p.revealedAt || 0) === (best.revealedAt || 0) && (p.at || 0) > (best.at || 0))) best = p
+  }
+  return best
+}
+// `answer.mutuals`: the pings that are mutual, one for each handle, the one
+// mutualOf answers, in the list's own order
+function mutualsOf(pings) {
+  return pings.filter((p) => p.state === 'mutual' && mutualOf(pings, p.to) === p)
 }
 
 // ── the slots ───────────────────────────────────────────────────────────────
@@ -288,9 +375,36 @@ export function slotCap() {
 // Words sent empty are words taken off, and the server clears them until the
 // reveal (0069); no words at all, which is how a note is sent again, keeps
 // what it had.
-export async function place({ me: mineNow, them, email, proof, words }) {
+export async function place(note) {
+  return placing(placePing, note)
+}
+
+// ── writing again, to a mutual ──────────────────────────────────────────────
+// A new private note to somebody this person is already mutual with
+// (`celestual_mutual_again`, 0072). The mutual they have is kept, on both
+// lists, exactly as it was told, both notes and its night; the new note goes
+// out as any new note does, on a ping of its own, sealed, and is told at a
+// Saturday reveal only if they write a new one too. Nothing about it reaches
+// them before that: to them the mutual is what it was. `place` cannot do it,
+// and is not meant to: the ordinary placement on a mutual answers as the
+// mutual (it's mutual, their words, nothing spent), whether or not the pair
+// was kept, which is what keeps a keep from being seen.
+//
+// It answers exactly what `place` answers, with the same refusals, and a
+// refusal keeps nothing on the server. `words` left out is a note with no
+// words. The held list goes on a yes, since it has no new note in it.
+export async function placeAgain(note) {
+  const out = await placing(placePingAgain, note)
+  if (out.ok) dropHeld(note?.me)
+  return out
+}
+
+// The placement both of them go through: the proof, sent again once renewed
+// when the server refuses it, the week learned from whatever came back, and
+// the answer's own refusals named rather than read as the network.
+async function placing(rpc, { me: mineNow, them, email, proof, words } = {}) {
   try {
-    const send = (spend) => placePing({
+    const send = (spend) => rpc({
       me: mineNow,
       them,
       email: email || null,
@@ -315,6 +429,33 @@ export async function place({ me: mineNow, them, email, proof, words }) {
     const msg = String(e?.message || '')
     if (/same handle/i.test(msg)) return { ok: false, error: 'self' }
     if (/invalid handle/i.test(msg)) return { ok: false, error: 'invalid' }
+    return { ok: false, error: 'network' }
+  }
+}
+
+// ── taking a mutual off ─────────────────────────────────────────────────────
+// This person's mutual with somebody, off their own list for good
+// (`celestual_mutual_forget`, 0072). The other person keeps theirs, unchanged,
+// and is told nothing; a note to them afterwards is simply a new note. A new
+// note already out to them is not touched: it is let go the way any note is
+// (`release`). Answers { ok: true }, or { ok: false, error } where
+// 'unverified' is a proof the server refused even renewed, 'none' is no
+// mutual there to take off (taken off already, on another phone), and
+// 'network' is the rest. The held list loses the mutual on a yes and on a
+// 'none', since either way it is not on the server's.
+export async function forgetMutual({ me: mineNow, them } = {}) {
+  try {
+    const send = (spend) => forgetMutualPing({ me: mineNow, them, proof: spend })
+    const key = await proofFor(mineNow)
+    let out = await send(key)
+    if (out && out.ok === false && out.error === 'unverified') {
+      const fresh = await renewProof(mineNow, key)
+      if (fresh) out = await send(fresh)
+    }
+    if (!out) return { ok: false, error: 'network' }
+    if (out.ok === true || out.error === 'none') dropHeldMutual(mineNow, them)
+    return out.ok === true ? { ok: true } : { ok: false, error: out.error || 'network' }
+  } catch {
     return { ok: false, error: 'network' }
   }
 }
@@ -369,7 +510,10 @@ export async function release({ me: mineNow, them }) {
 // Handles only. A letter to a first name was a choice not to name the @, and
 // the wall never asks for it or keeps one beside a name (WALL-FEATURES.md),
 // so a `~sofia` key is not a person a ping can find and is left out rather
-// than guessed at. And never this person's own @.
+// than guessed at. And never this person's own @. It knows nothing of the
+// pings, and need not: somebody this person is mutual with stays on it,
+// since a note to them is written again now (`placeAgain`, 0072) rather than
+// answered with the mutual they already have.
 export function writtenTo(self = myHandle()) {
   const me = normHandle(self)
   const seen = new Set()
@@ -547,7 +691,10 @@ export function daysLeftWords(expires) {
 }
 
 // What a note is doing, in the words a row carries under the name: that it
-// is mutual, that it was not this time, or when its reveal is.
+// is mutual, that it was not this time, or when its reveal is. Asked of one
+// ping, never of a handle: since 0072 a handle can carry a mutual and a new
+// note, so a screen that starts from a handle picks the ping first, `liveOf`
+// for what the note is doing and `mutualOf` for whether they are mutual.
 export function stateWords(p) {
   if (!p) return ''
   if (p.state === 'mutual') return mutualWords(p)
