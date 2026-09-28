@@ -47,13 +47,14 @@
 // mutual with a note running beside it is only that note, and a running note
 // is its own settings however its person was reached (below).
 //
-// The quiet key keeps the words on the screen for the way back (`AWAY`), and
-// a sheet the mutual itself raised (the keepsake's "send … a new note")
-// steps back down onto it rather than stacking a second telling over the
-// first, where the browser can say what stands under this sheet (the
-// Navigation API; where it cannot, a second one opens, and back unwinds
-// both). The words were lost there, and the mutual stacked on itself, until
-// the review of 28 September.
+// The quiet key keeps the words on the screen for the way back (`AWAY`),
+// which finds them by the person in the sheet's address, put there as they
+// are chosen however they were reached (`choose`), and a sheet the mutual
+// itself raised (the keepsake's "send … a new note") steps back down onto it
+// rather than stacking a second telling over the first, where the browser
+// can say what stands under this sheet (the Navigation API; where it cannot,
+// a second one opens, and back unwinds both). The words were lost there, and
+// the mutual stacked on itself, until the review of 28 September.
 //
 // ── what this sheet never does ──────────────────────────────────────────────
 // It does not say whether the person is on celestual. It does not say whether
@@ -186,7 +187,7 @@ export function editNote(go, to, line, note = null) {
   const words = String(line || '')
   EDIT = {
     to: normHandle(to), line: words,
-    note: note && note.state !== 'mutual' ? { to: normHandle(to), state: note.state, expires: note.expires || 0, at: note.at || 0, line: words } : null,
+    note: note && note.state !== 'mutual' ? { to: normHandle(to), key: note.key || '', state: note.state, expires: note.expires || 0, at: note.at || 0, line: words } : null,
   }
   go('ping', to)
 }
@@ -194,6 +195,18 @@ function takeEdit(prefill) {
   const e = EDIT
   EDIT = null
   return e && e.to === normHandle(prefill) ? e : null
+}
+// And the way back: a note's settings closed onto the private notes (sent,
+// "your private notes", let go) say which row's note they were, so the
+// account puts the focus back on that row's `edit` (screens/You.jsx), or on
+// the frame's title when the row has gone. Fresh for as long as a press is,
+// as the mutual's way back is (revealfrom.js `takeReturn`), so a sheet that
+// closed somewhere else leaves nothing for the next time the account opens.
+let NOTE_BACK = null
+export function takeNoteBack() {
+  const b = NOTE_BACK
+  NOTE_BACK = null
+  return b && performance.now() - b.at <= 1500 ? b.key : ''
 }
 // the words on a new note to a mutual, kept while the mutual is open over
 // them, for the one mount after it
@@ -472,11 +485,20 @@ export default function Ping({
   const lineRef = useRef(null)
   // the sheet's own way out, taken by this screen once the ping is out, and
   // how the sheet said it was leaving. `notes` is back onto the private notes
-  // a note's settings were opened from: one step up, which is that sheet,
-  // or the account raised afresh when nothing stands under this one
+  // a note's settings were opened from: one step up, which is that sheet, or
+  // the account raised afresh when nothing stands under this one, or when
+  // what stands under it is something else (the keepsake's "your new note
+  // to …", where one step up was the keepsake under a key that said "your
+  // private notes"). Where the browser cannot say what is under it, up.
   const sheet = useRef(null)
   const by = useRef('')
-  const leave = () => (by.current === 'sent' ? back() : by.current === 'notes' && !nested ? go('you') : up())
+  const leave = () => {
+    if (pinned && edit.note?.key) NOTE_BACK = { key: edit.note.key, at: performance.now() }
+    if (by.current === 'sent') return back()
+    if (by.current !== 'notes') return up()
+    const under = nested ? underThis() : ''
+    return !nested || (under && under !== href('you')) ? go('you') : up()
+  }
 
   // ── the door, taken ──
   // The funnel step a card is judged on last (seed.js `cardStep`, 0047):
@@ -532,8 +554,14 @@ export default function Ping({
   const pinned = !!edit && edit.to === h
   // what this person has on the one on the screen: their note, running or
   // not this time, off the list, or as the screen that opened its settings
-  // drew it until the list comes; and whether the two are mutual
-  const live = liveOf(pings, h) || (pinned && !pings ? edit.note : null)
+  // drew it until the list comes; and whether the two are mutual. Opened on
+  // a note, it is that note, by its key: a handle can have one that was not
+  // this time beside one running, and `liveOf` answers the running one, so
+  // a lapsed note's edit opened the running note's settings and sent the
+  // lapsed words over it
+  const mine = pinned && edit.note?.key && pings
+    ? (Array.isArray(pings) ? pings : pings.pings || []).find((p) => p && p.key === edit.note.key) : null
+  const live = mine || liveOf(pings, h) || (pinned && !pings ? edit.note : null)
   // the again mode: mutual, and no note of theirs running, so what goes out
   // is a new note (`placeAgain`), under words that say so
   const again = !!mutualOf(pings, h) && live?.state !== 'standing'
@@ -584,12 +612,17 @@ export default function Ping({
   // on them if there is one, running or not this time, and a running one's
   // screen is its settings. Somebody this person is mutual with is their
   // screen too, for a new note; it used to open onto the reveal, when a
-  // mutual could not be written to again.
+  // mutual could not be written to again. The person goes into the sheet's
+  // address as they are chosen (the reverse of "send another"), so a way back
+  // to this sheet, from the mutual its quiet key opened, comes back on their
+  // screen with its words (`AWAY`), where an address with nobody in it came
+  // back on "who is it for?" with the words gone.
   const choose = (x) => {
     const k = normHandle(x)
     if (!validHandle(k)) return
     if (k === myHandle()) { setSaid('self'); return }
     const n = liveOf(pings, k)
+    window.history.replaceState(window.history.state, '', window.location.pathname.replace(/\/ping(?:\/[^/]*)?$/, `/ping/${k}`))
     setTo(k)
     setSaid('')
     if (n && n.line && !line.trim()) { setLine(n.line); shown.current = k }

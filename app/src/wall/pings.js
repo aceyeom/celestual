@@ -340,9 +340,10 @@ export function mutualOf(pings, handle) {
   }
   return best
 }
-// `answer.mutuals`: the pings that are mutual, one for each handle, the one
-// mutualOf answers, in the list's own order
-function mutualsOf(pings) {
+// `answer.mutuals`, and the account's mutual slots (screens/You.jsx): the
+// pings that are mutual, one for each handle, the one mutualOf answers, in
+// the list's own order
+export function mutualsOf(pings) {
   return pings.filter((p) => p.state === 'mutual' && mutualOf(pings, p.to) === p)
 }
 
@@ -743,9 +744,11 @@ export function mutualWhen(p, at = Date.now()) {
 // plays the whole film only the first time (screens/Reveal.jsx). What is kept
 // is a hash of whose list it is on and the mutual's own key, never the handle
 // it is with: the store is this device's, and a shared laptop should not
-// carry a list of who anybody is mutual with. The last sixty four, which is
-// more mutuals than anybody has. Storage switched off reads every mutual as
-// not yet opened, which is the right way to be wrong.
+// carry a list of who anybody is mutual with, and it goes at sign out with
+// the rest of the person (auth.js `signOut`), so the next person on it does
+// not inherit a count of the mutuals the last one watched. The last sixty
+// four, which is more mutuals than anybody has. Storage switched off reads
+// every mutual as not yet opened, which is the right way to be wrong.
 const OPENED = 64
 function openedMark(me, p) {
   const s = `${normHandle(me)}>${p && p.key ? p.key : ''}`

@@ -171,9 +171,11 @@ export async function signedIn() {
 // next person on the same laptop is not shown a count that was somebody
 // else's, and so do when their notes went out and the reveal they last
 // opened (pings.js `revealWaiting`), so the next person is not given a
-// light for somebody else's night.
+// light for somebody else's night, and so do the mutuals they watched told
+// (pings.js `wasOpened`), hashes that the proof and the note times held
+// beside them could once be matched against.
 export function signOut() {
-  patch({ member: null, reader: false, verified: [], pingCap: 0, edu: null, noteSpans: [], revealSeen: null })
+  patch({ member: null, reader: false, verified: [], pingCap: 0, edu: null, noteSpans: [], revealSeen: null, toldSeen: [] })
   forgetSession()
   dropProof()
   clearPending()
