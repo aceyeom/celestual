@@ -1210,6 +1210,16 @@ async function fulfil(route) {
 // under a letter (Nudge.jsx), which counts them
 const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`opened-${i}`, true]))
 
+// a mutual this browser has watched told (store.js `toldSeen`), as pings.js
+// `markOpened` files it: a hash of whose list it is and the mutual's key,
+// FNV-1a in base 36, for the slot drawn opened (`you-slot-opened`)
+function toldSeen(me, key) {
+  const s = `${me}>${key}`
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) }
+  return (h >>> 0).toString(36)
+}
+
 // ── the routes ──────────────────────────────────────────────────────────────
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
@@ -1340,6 +1350,25 @@ const ROUTES = [
   // the same person beside it, and the reveal, which is the mutual's still
   { label: 'you-again',     path: '/berkeley/you', again: true, settle: 900 },
   { label: 'reveal-again',  path: '/reveal/jules.k?beat=4', again: true, settle: 4200 },
+  // the mutual's slot (Slot.jsx): the night glass with the two notes on
+  // their way, held on one moment of the loop (`?slot=`, ms into it: 1500 is
+  // part way, the ghosts behind them; 2400 is the hold, two cells apart);
+  // under the pointer, the backlight up; pressed, the phone's inversion; once
+  // opened on this device, the rose letter with the one note; on the night,
+  // dark and searching before it lands (`-landing`) and after (`-landed`);
+  // and still, under reduced motion. `you-slot-again` is the slot with a new
+  // note to the same person beside it, and `you-edit` the key on every note,
+  // the running one's under the keyboard's focus
+  { label: 'you-slot',       path: '/berkeley/you?slot=1500', settle: 900 },
+  { label: 'you-slot-hold',  path: '/berkeley/you?slot=2400', settle: 900 },
+  { label: 'you-slot-hover', path: '/berkeley/you?slot=1500', acts: [['wait', 1400], ['mouse', '.wl-slot-open', 0, 'hover']], settle: 400 },
+  { label: 'you-slot-press', path: '/berkeley/you?slot=1500', acts: [['wait', 1400], ['mouse', '.wl-slot-open', 0, 'hold']], settle: 300 },
+  { label: 'you-slot-opened', path: '/berkeley/you', store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${now - 9 * DAY}`)] }, settle: 900 },
+  { label: 'you-slot-landing', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 0 },
+  { label: 'you-slot-landed', path: '/berkeley/you?slot=900', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 2600 },
+  { label: 'you-slot-still', path: '/berkeley/you', still: true, settle: 900 },
+  { label: 'you-slot-again', path: '/berkeley/you?slot=1500', again: true, settle: 900 },
+  { label: 'you-edit',       path: '/berkeley/you?slot=2400', acts: [['wait', 1400], ['focus', '.wl-vault-row.is-standing .wl-vault-edit']], settle: 400 },
   // the three stories and the deck under prefers-reduced-motion, where each
   // is drawn on its last frame and has to be whole as a still
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
