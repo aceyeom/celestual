@@ -79,6 +79,7 @@ import { atHandle } from './data.js'
 import { skinVars } from './looks.js'
 import { stateWords, mutualWhen, wasOpened } from './pings.js'
 import { openReveal } from './revealfrom.js'
+import { primeFilm } from './Film.jsx'
 import { Aerial } from './aerial.jsx'
 
 // the note, sealed, as the stories draw it (pixmark.js `NOTE`), one string
@@ -301,6 +302,11 @@ export function MutualSlot({ p, me, go, still = false, landing = false, land = n
   // tap quicker than that is pressed as it lifts.
   const press = (e) => {
     if (e.button !== 0) return
+    // what the film needs before its first frame (the names, their faces,
+    // the words cut into cells, the story's heavy start), begun as the finger
+    // comes down, so the push-in pays for none of it (Film.jsx `primeFilm`).
+    // Once a mutual has been watched there is no film to prime
+    if (!opened) primeFilm(me, p.to)
     const s = live.current
     const el = glass.current
     if (s.off) s.off()

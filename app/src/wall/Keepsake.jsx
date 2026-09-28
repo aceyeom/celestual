@@ -332,7 +332,7 @@ export default function Keepsake({
   const n0 = names[0]
   const optionItems = [
     standing
-      ? { t: `your new note to ${n0}`, run: () => editNote(go, them, standing.line) }
+      ? { t: `your new note to ${n0}`, run: () => editNote(go, them, standing.line, standing) }
       : { t: `send ${n0} a new note`, run: () => go('ping', them) },
     { t: 'take it off my list', run: () => setView({ kind: 'confirm' }) },
   ]

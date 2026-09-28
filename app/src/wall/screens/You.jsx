@@ -1046,7 +1046,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
         <Aerial state={aerialOf(p)} land={landing} />
       </button>
       <EditKey
-        onClick={() => editNote(go, p.to, p.line)}
+        onClick={() => editNote(go, p.to, p.line, p)}
         label={`edit your note to ${atHandle(p.to)}: ${p.state === 'lapsed' ? 'send it with new words' : 'change the words'} or let it go`}
       />
     </div>

@@ -41,12 +41,14 @@ export function takeRevealFrom(handle) {
   return f.rect ? { ...f.rect, menu: f.menu } : { x: 0, y: 0, w: 0, h: 0, menu: f.menu }
 }
 
+// Fresh for as long as a press is: a reveal that closed somewhere other than
+// the account sheet leaves nothing here for the next time the sheet opens.
 export function returnTo(handle) {
-  BACK = handle || null
+  BACK = handle ? { handle, at: performance.now() } : null
 }
 
 export function takeReturn() {
   const b = BACK
   BACK = null
-  return b
+  return b && performance.now() - b.at <= FRESH_MS ? b.handle : null
 }
