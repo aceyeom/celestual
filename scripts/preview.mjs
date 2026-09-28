@@ -1019,6 +1019,14 @@ const RPC = {
         ...(NOTES === 'long' ? {
           card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.' },
           their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.' },
+        } : NOTES === 'faces' ? {
+          // each note on the face its writer left it on (0073): a line of
+          // their own across the top, and the battery where they set it
+          card: { words: 'i have wanted to say this since the second week of term.', greet: 'to the one with my pen', bat: 1 },
+          their_card: { words: 'i kept nearly saying something after class and then not saying it.', greet: 'to the girl in row four', bat: 3 },
+        } : NOTES === 'faces-long' ? {
+          card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.', greet: 'to the one who lent me a pen in the tides', bat: 0 },
+          their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.', greet: 'to whoever sits two rows behind me', bat: 4 },
         } : NOTES === 'none' ? { card: { words: '' }, their_card: { words: '' } }
           : NOTES === 'cjk' ? {
             card: { words: 'i have wanted to say this since the second week of term.' },
@@ -1044,7 +1052,7 @@ const RPC = {
         time: now - 2 * DAY,
         expires_at: new Date(NEXT_REVEAL).toISOString(),
         mutual: false,
-        card: { words: 'you were the one singing on the 51B that night.' },
+        card: { words: 'you were the one singing on the 51B that night.', greet: 'to the one singing on the 51B', bat: 2 },
       },
       ...(TWICE ? [{
         handle: 'ren.tanaka',
@@ -1466,6 +1474,10 @@ const ROUTES = [
   { label: 'reveal-share',     path: '/reveal/jules.k?beat=4&keep=share', settle: 1800 },
   { label: 'reveal-long',      path: '/reveal/jules.k?beat=4&keep', notes: 'long', settle: 1400, full: true },
   { label: 'reveal-empty',     path: '/reveal/jules.k?beat=4&keep', notes: 'none', settle: 1400 },
+  // each note on its own face (0073): the line its writer set across its
+  // top and the battery they left it on, short and at their longest
+  { label: 'reveal-faces',     path: '/reveal/jules.k?beat=4&keep', notes: 'faces', settle: 1400 },
+  { label: 'reveal-faces-long', path: '/reveal/jules.k?beat=4&keep', notes: 'faces-long', settle: 1400, full: true },
   { label: 'reveal-cjk',       path: '/reveal/seoyeon.kim?beat=4&keep', notes: 'cjk', settle: 2400 },
   { label: 'reveal-short',     path: '/reveal/jules.k?beat=4&slot=67,318,256,60',
     store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },

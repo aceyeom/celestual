@@ -491,6 +491,13 @@ function Press({ id, colour, q }) {
 // letter: two names, centred, one weight each, a point between them (the
 // mutual's keepsake, Keepsake.jsx, since 28 September).
 //
+// `bat` is the battery's charge, 0 to 4, and `null` for a phone that draws
+// none. With `onBat` (and `live`) the battery is a key its writer presses to
+// set it, a bar at a time and round again, named by `batLabel` (a private
+// note's face, 0073). `mail` puts the envelope by the aerial, steady: the
+// phone's own light for something having come in (a letter the person it
+// is to has answered, Replies.jsx).
+//
 // `sticker` is a school (schools.js `schoolOf`), for a letter posted from a
 // verified school address: the phone is on that school's network, its name
 // in the status row beside the aerial (`Network`, below), and the phone
@@ -519,7 +526,13 @@ export function Screen({
   // this phone's own pixels, up close (looks.js `rgbTile`), when they are
   // made; a print and the square are paper, and have none
   const rgb = useRgbTile(s.paper ? '' : seed)
-  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4, salutation = '', greet = null, tag = '', pair = null } = top
+  const {
+    name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat: charge = 4, onBat = null, batLabel = '',
+    mail = false, salutation = '', greet = null, tag = '', pair = null,
+  } = top
+  // a battery of `null` is a phone that draws none (the keepsake, whose two
+  // notes carry their own); anything else out of range is a full one
+  const bat = charge === null ? null : Number.isInteger(charge) && charge >= 0 && charge <= 4 ? charge : 4
   const said = salutation || (dear && name ? `dear ${name}` : name)
   // a line the writer set is set smaller when it is long (`lineSize`); the
   // name the screen makes itself keeps its size and its cut, as it always did
@@ -590,14 +603,35 @@ export function Screen({
               <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
                 <Pix name="ant" h={9} />
               </span>
+              {/* the message light: the envelope the phone showed by the aerial
+                  when something had come in, steady, since a blink would be
+                  urgency (`mail`, a letter the person it is to has answered) */}
+              {mail ? (
+                <span className="wl-scr-env wl-lit-g" aria-hidden="true">
+                  <Pix name="env" h={6.4} />
+                </span>
+              ) : null}
               {sticker ? <Network school={sticker} /> : null}
               {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
               {stamp
                 ? <span className="wl-scr-cnt wl-scr-stamp wl-lit">{stamp}</span>
                 : counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
-              <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
-                <Pix name={`bata${bat}`} h={8} />
-              </span>
+              {bat === null ? null : live && onBat ? (
+                // the battery its writer sets, a key of its own on the status
+                // row: each press takes a bar off, and the empty one comes
+                // round to full. The focus stays where the writing is
+                <button
+                  type="button" className={`wl-scr-bat wl-lit-g is-key${bat ? '' : ' is-low'}`}
+                  onClick={onBat} onMouseDown={(e) => e.preventDefault()}
+                  aria-label={batLabel || `the battery, ${bat} of 4. press to change it`}
+                >
+                  <Pix name={`bata${bat}`} h={8} />
+                </button>
+              ) : (
+                <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
+                  <Pix name={`bata${bat}`} h={8} />
+                </span>
+              )}
             </div>
             {/* the line's language, for its face (type.js `langOf`): the
                 greeting its writer chose where there is one, else the name */}

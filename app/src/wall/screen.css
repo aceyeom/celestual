@@ -132,6 +132,22 @@
    beside them stay centred */
 .wl-scr-r2 > .wl-scr-nm, .wl-scr-r2 > .wl-scr-hd { align-self: baseline; }
 .wl-scr-bat.is-low { animation: wl-blink 1.06s steps(1) infinite; }
+/* the envelope by the aerial (screen.jsx `mail`), in the status's own light
+   and steady */
+.wl-scr-env { display: flex; align-items: center; margin-left: 0.4cqw; }
+/* the battery its writer sets (screen.jsx `onBat`): a key on the status row,
+   drawn as the battery and nothing more. A press dims it as a soft key's
+   does, and its reach is a finger's, larger than the glyph. The focus ring
+   is the status's light */
+.wl-root .wl-scr-bat.is-key {
+  position: relative; display: flex; align-items: center;
+  margin-top: 0; margin-bottom: 0; padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity 140ms var(--ease, ease);
+}
+.wl-scr-bat.is-key::after { content: ''; position: absolute; inset: -2.6cqw -1.8cqw; }
+.wl-root .wl-scr-bat.is-key:active { opacity: 0.45; transition-duration: 0ms; }
+.wl-root .wl-scr-bat.is-key:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: 0.6cqw; border-radius: 0.6cqw; }
 .wl-px { display: block; flex: 0 0 auto; fill: currentColor; }
 /* the words on the glass bloom, the way a lit word does in a photograph of
    a dark room; the glyphs beside them bloom with them, as a drop shadow,
