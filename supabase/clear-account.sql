@@ -161,6 +161,15 @@ begin
         get diagnostics n = row_count;
         per := per + n;
         raise notice '  %  mutuals with them kept on other people''s lists', lpad(n::text, 5);
+        -- and their words where a keepsake names another @ linked with
+        -- theirs (0036): the keepsake is the other person's and stays, with
+        -- nothing of this handle's left in it
+        update celestual_keepsakes
+           set their_card = null, their_photo = null, their_handle = null
+         where their_handle = nh and handle <> nh;
+        get diagnostics n = row_count;
+        per := per + n;
+        raise notice '  %  of their notes kept under another @ of theirs', lpad(n::text, 5);
       end if;
     end if;
 

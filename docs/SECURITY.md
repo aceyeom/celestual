@@ -281,10 +281,11 @@ the other side writes a new one too).
   names and that @'s salted hash, the owner's own words and the other side's
   words as they were told (both cards, with the photograph under each where
   one was ever stored), when the note went out, the end it carried, and the
-  night it was told. One row per person per told mutual. Nothing a keepsake
-  holds was not already on the owner's list, and the other side's words in it
-  are the words their `celestual_counterpart_card` already returned to the
-  owner at the reveal.
+  night it was told, and the @ the other side's words were read off (with two
+  handles linked as one, 0036, not always the @ it names). One row per person
+  per told mutual. Nothing a keepsake holds was not already on the owner's
+  list, and the other side's words in it are the words their
+  `celestual_counterpart_card` already returned to the owner at the reveal.
 - **Who can read it.** Its owner, and nobody else: RLS on, zero policies,
   every grant revoked, and read only inside the owner's proof gated
   functions (`celestual_my_pings`, `celestual_ping_status`,
@@ -300,12 +301,22 @@ the other side writes a new one too).
   list (the same in every field), the status, an ordinary placement on the
   pair (it's mutual, their words, nothing spent, nothing written), letting go
   ('mutual'), keeping for next week, the photographs, and the week's pings.
-  The new note is sealed like any other (0069), so even when both write
-  again nothing is said before the night. `scripts/sql/test-mutual-kept.sql`
-  compares every one of those answers byte for byte.
+  With two handles linked as one (0036), a placement from the @ that was not
+  told, or to the other side's other @, was told again at once while the pair
+  was told, and on a kept pair it still is, into a keepsake of its own, with
+  the same ping spent and given back and the same refusals, so the one
+  placing cannot learn from it that the other side wrote again or took
+  theirs off. The new note is sealed like any other (0069), so even when both
+  write again nothing is said before the night.
+  `scripts/sql/test-mutual-kept.sql` compares every one of those answers byte
+  for byte, before and after.
 - **Taking one off is one person's.** `celestual_mutual_forget` removes the
   caller's keepsakes of the pair, and the news of it still on its way to
-  them; the other person keeps theirs and is told nothing.
+  them; the other person keeps theirs and is told nothing. It takes only the
+  nights the caller could have been shown (told before the call, and none
+  after the night their list drew), so a mutual told since, which the other
+  side is being told of, is never taken off unseen; and a 'none' changes
+  nothing.
 - **A pair told twice is told twice.** `celestual_matches` is unique on the
   pair among the rows not kept (`kept_at`), so a second mutual writes its own
   row and its own mail and DM to both, and a kept pair's row, with any news
@@ -313,8 +324,10 @@ the other side writes a new one too).
 - **Erasure.** Keepsakes follow the rows they were: the erase, the opt out
   and the desk's delete take the person's own and every other person's
   keepsake about them, their words with it (through
-  `celestual_billing_forget`, with the ping ledger). The broom takes none;
-  a keepsake lasts, as a mutual did, until its owner takes it off.
+  `celestual_billing_forget`, with the ping ledger), and their words and
+  photograph out of a keepsake that names another @ linked with theirs, which
+  stays with nothing of theirs in it. The broom takes none; a keepsake lasts,
+  as a mutual did, until its owner takes it off.
 
 ### §card — What a ping carries, and what holds it shut (0022)
 Every ping now carries a **card**: a short message on a ground, in one of three

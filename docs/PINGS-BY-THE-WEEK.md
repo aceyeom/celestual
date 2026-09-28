@@ -285,10 +285,13 @@ celestual_mutual_again(p_from, p_to, p_proof, p_card default null,
   { recorded: false, error: 'card', reasons }
   raises 'invalid handle' and 'same handle', as celestual_submit does
 
-celestual_mutual_forget(p_from, p_to, p_proof) -> jsonb               anon, authenticated
-  0072: the caller's mutual with them, off the caller's own list
+celestual_mutual_forget(p_from, p_to, p_proof, p_told default null) -> jsonb
+                                                                       anon, authenticated
+  0072: the caller's mutual with them, off the caller's own list: the nights
+  told before the call, and none after p_told (the revealed_at the list drew),
+  so a mutual told since stays, with its news
   { ok: true }
-  { ok: false, error: 'unverified' | 'none' }
+  { ok: false, error: 'unverified' | 'none' }, and 'none' changes nothing
 
 celestual_slots_for(p_handle, p_proof) -> jsonb                      anon, authenticated
   { standing, cap, allowance }

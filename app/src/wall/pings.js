@@ -276,7 +276,9 @@ function shapePing(p) {
     // and when its note went out, which neither a keep nor a reveal moves. A
     // note that turns mutual at its reveal becomes a mutual, and a different
     // thing on the screen, so its key changes with it. `keyed` makes the rare
-    // two alike (two linked @s, one note each in one instant) unique.
+    // two alike (two linked @s, one note each in one instant) unique, and
+    // the server lists those two in one order on every read (0072), so the
+    // one numbered is the same one each time.
     key: `${p.mutual ? 'mutual' : 'note'}:${to}:${Number(p.time) || 0}`,
     to,
     // standing until its reveal; then mutual, or lapsed: not this time, and
@@ -443,9 +445,17 @@ async function placing(rpc, { me: mineNow, them, email, proof, words } = {}) {
 // mutual there to take off (taken off already, on another phone), and
 // 'network' is the rest. The held list loses the mutual on a yes and on a
 // 'none', since either way it is not on the server's.
+//
+// What goes is the mutual this device has drawn: the night the held list
+// carries for it rides along, and a mutual told after it (on the night the
+// call itself lands, or one this list was read too early to have) stays on
+// the server, its news still on the way, and turns up on the next read
+// rather than going before it was ever seen.
 export async function forgetMutual({ me: mineNow, them } = {}) {
   try {
-    const send = (spend) => forgetMutualPing({ me: mineNow, them, proof: spend })
+    const shown = mutualOf(HELD.get(normHandle(mineNow))?.answer, them)
+    const told = shown?.revealedAt ? new Date(shown.revealedAt).toISOString() : null
+    const send = (spend) => forgetMutualPing({ me: mineNow, them, proof: spend, told })
     const key = await proofFor(mineNow)
     let out = await send(key)
     if (out && out.ok === false && out.error === 'unverified') {

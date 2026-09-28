@@ -19,8 +19,9 @@
 -- `celestual_keepsakes`, holding everything that side's list shows for it
 -- (whose list it is on, the @ it names and its hash, their own words and the
 -- other side's as they were told, the photograph under each (0025), when it
--- went out, the end it carried and the night it was told), and then both rows
--- leave celestual_entries. Nothing is left there for the pair, so a note from
+-- went out, the end it carried and the night it was told), and whose @ the
+-- other side's words were read from, and then both rows leave
+-- celestual_entries. Nothing is left there for the pair, so a note from
 -- either side is a new note in every way: it spends a ping (0071), it is
 -- sealed if the other side has written a new one too, and it is told at a
 -- reveal only then (0069).
@@ -38,10 +39,16 @@
 --                  the words caught, the hourly limits) keeps nothing: the pair
 --                  is as it was and the answer says why. With nothing told or
 --                  kept between them it is simply a note.
---   taking it off  `celestual_mutual_forget(from, to, proof)`: the pair kept if
---                  it is still told, then this person's keepsakes of it gone,
---                  and the news of it still on its way to them (a mail not
---                  sent, a DM not handed over). The other side's keepsake is
+--   taking it off  `celestual_mutual_forget(from, to, proof, told)`: the pair
+--                  kept if it is still told, then this person's keepsakes of
+--                  it gone, and the news of it still on its way to them (a
+--                  mail not sent, a DM not handed over). Only the nights they
+--                  could have been shown go: those told before the call, and
+--                  no later than the one their list drew (`told`, as the list
+--                  said it), so a mutual told since, by this call's own
+--                  reveal or on a list not yet drawn, stays with its news and
+--                  is found on the next read. Nothing to take off answers
+--                  'none' and changes nothing. The other side's keepsake is
 --                  not touched, and they are told nothing. After it a note to
 --                  them is a new note, as above.
 --   a second one   told at a reveal as the first was, and to both people the
@@ -70,7 +77,15 @@
 --                  nothing written but the attempt. Only
 --                  `celestual_mutual_again` writes a new note to a mutual, so
 --                  the ordinary placement cannot tell anybody the pair was
---                  kept by answering differently once it was.
+--                  kept by answering differently once it was. With two
+--                  handles linked as one (0036) a told pair placed on from
+--                  the @ that was not told, or to the other side's other @,
+--                  was told again at once, a ping spent and given back, and
+--                  a mutual more on the list; on a kept pair it still is,
+--                  straight into a keepsake of its own, the words the pair
+--                  was told with in it. A note of that @'s from before the
+--                  keeping is the round that was: placed on, it is told the
+--                  same way, and written again, it is let go for the new one.
 --   letting go     celestual_withdraw answers 'mutual' for a kept pair as for a
 --                  told one, and no longer takes a match row it did not
 --                  un-tell (a new note let go took the kept pair's row, and
@@ -78,7 +93,9 @@
 --   the status     celestual_ping_status answers from the keepsake where there
 --                  is no row.
 --   the photograph celestual_card_photo reads a keepsake where there is no row,
---                  and celestual_card_photo_put writes onto a running note
+--                  and says which of a person's own two it means (`mutual`)
+--                  when a new note runs beside the mutual; and
+--                  celestual_card_photo_put writes onto a running note
 --                  only: a told note's photograph stays what the other side
 --                  saw, as its words have since 0069, kept or not.
 --   the ledger     keeping spends and gives back nothing, so the allowance
@@ -89,17 +106,22 @@
 -- out and the desk's delete (and so the ban) take every row from the handle
 -- and every row about it (0038, 0046), and they take the keepsakes the same
 -- way: the person's own, and every other person's keepsake about them, their
--- words in it with it, as the other person's row about them always went. All
--- of them come through celestual_billing_forget after the rows, which 0071
--- taught the ping ledger and this file teaches the keepsakes. The broom takes
--- none: a keepsake lasts, as a mutual row did, until its owner takes it off or
--- an erasure takes it.
+-- words in it with it, as the other person's row about them always went. And
+-- their words in a keepsake that names another of their @s (two handles
+-- linked as one, the words read off the @ that was told): those go and the
+-- keepsake stays, as a list read the words off their row, and found none
+-- once it was gone. All of them come through celestual_billing_forget after
+-- the rows, which 0071 taught the ping ledger and this file teaches the
+-- keepsakes. The broom takes none: a keepsake lasts, as a mutual row did,
+-- until its owner takes it off or an erasure takes it.
 --
 -- ── the desk ────────────────────────────────────────────────────────────────
--- The desk counted mutuals as matched rows. A kept pair is two keepsakes, and
--- is counted and listed as the two mutual rows it was (celestual_desk_pings,
--- celestual_desk_overview). The pairs, and a week's mutuals, come from
--- celestual_matches, where a pair told twice is two rows, as it should be.
+-- The desk counted mutuals and pings as rows. A kept pair is two keepsakes,
+-- and is counted and listed as the two rows it was (celestual_desk_pings,
+-- celestual_desk_overview, the pings of celestual_desk_growth, and the older
+-- desk's celestual_admin_overview), so no figure shrinks when a pair is kept.
+-- The pairs, and a week's mutuals, come from celestual_matches, where a pair
+-- told twice is two rows, as it should be.
 --
 -- Idempotent, like every migration here.
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -114,6 +136,7 @@ create table if not exists celestual_keepsakes (
   photo        text        check (photo is null or length(photo) <= 1400000),
   their_card   jsonb,
   their_photo  text        check (their_photo is null or length(their_photo) <= 1400000),
+  their_handle text,
   placed_at    timestamptz not null,
   expires_at   timestamptz not null,
   told_at      timestamptz not null,
@@ -132,12 +155,19 @@ comment on column celestual_keepsakes.card is
   '0072: the owner''s own words as the list said them, the photograph''s flag in it.';
 comment on column celestual_keepsakes.their_card is
   '0072: the other side''s words as they were told (celestual_counterpart_card at the keeping).';
+comment on column celestual_keepsakes.their_handle is
+  '0072: the @ whose told row their_card and their_photo were read from, which with two handles linked as one (0036) need not be other_handle; erasing it takes its words out of here.';
 comment on column celestual_keepsakes.told_at is
   '0072: the night it was told: the row''s matched_at.';
+comment on column celestual_keepsakes.kept_at is
+  '0072: when the pair was kept, and for a note told at once onto a kept pair (two handles linked as one) the keeping of the pair it joined: the line between a note from before it and a new one.';
 -- a person's own are found by the unique key's front, (handle, other_hash);
--- the two below are erasure's, by the @ and by its hash
+-- the three below are erasure's, by the @, by its hash, and by the @ the
+-- other side's words came from
 create index if not exists celestual_keepsakes_hash_idx  on celestual_keepsakes (other_hash);
 create index if not exists celestual_keepsakes_other_idx on celestual_keepsakes (other_handle);
+create index if not exists celestual_keepsakes_their_idx on celestual_keepsakes (their_handle)
+  where their_handle is not null;
 alter table celestual_keepsakes enable row level security;
 revoke all on celestual_keepsakes from anon, authenticated;
 
@@ -174,7 +204,9 @@ create index if not exists celestual_matches_pair_idx
 -- many keepsakes it wrote; nothing told between the two is 0 and writes
 -- nothing. The rows are locked in the order they were placed in, so two
 -- people keeping the same pair at once take turns, and the second finds the
--- rows gone and keeps nothing more.
+-- rows gone and keeps nothing more. Every row it takes out has its keepsake
+-- or nothing is taken: a keepsake already there for the same night raises,
+-- rather than a told row leaving the notes with nothing left of it.
 create or replace function celestual_mutual_keep(p_me text, p_them text)
 returns integer
 language plpgsql security definer set search_path = public as $$
@@ -184,7 +216,9 @@ declare
   e celestual_entries%rowtype;
   v_other text;
   v_ids uuid[];
-  v_one int;
+  v_their_card jsonb;
+  v_their_photo text;
+  v_their_handle text;
   v_n int := 0;
 begin
   if nf is null or nt is null then return 0; end if;
@@ -201,22 +235,32 @@ begin
   if cardinality(v_ids) = 0 then return 0; end if;
 
   -- each side's list as celestual_my_pings drew it: its own words with the
-  -- photograph's flag, and the other side's through the one door to them,
-  -- read while both rows are still here
+  -- photograph's flag, and the other side's as the one door to them reads
+  -- them (celestual_counterpart_card and _photo, 0025: the earliest told row
+  -- from any of their @s to any of this side's), read here in one go with
+  -- the @ that row was from, while both rows are still here
   for e in select * from celestual_entries where id = any(v_ids) order by created_at, id loop
     v_other := coalesce(e.matched_handle, e.to_handle);
-    insert into celestual_keepsakes (handle, other_hash, other_handle, card, photo, their_card, their_photo,
+    select case when c.card is null then null
+                else c.card || jsonb_build_object('photo', c.photo is not null) end,
+           c.photo, c.from_handle
+      into v_their_card, v_their_photo, v_their_handle
+      from celestual_entries c
+     where c.from_handle in (select celestual_group(v_other))
+       and c.to_hash in (select celestual_hash_handle(g) from celestual_group(e.from_handle) g)
+       and c.matched_at is not null
+     order by c.created_at asc
+     limit 1;
+    insert into celestual_keepsakes (handle, other_hash, other_handle, card, photo,
+                                     their_card, their_photo, their_handle,
                                      placed_at, expires_at, told_at)
     values (e.from_handle, coalesce(e.to_hash, celestual_hash_handle(v_other)), v_other,
             case when e.card is null then null
                  else e.card || jsonb_build_object('photo', e.photo is not null) end,
             e.photo,
-            celestual_counterpart_card(e.from_handle, v_other),
-            celestual_counterpart_photo(e.from_handle, v_other),
-            e.created_at, e.expires_at, e.matched_at)
-    on conflict (handle, other_hash, told_at) do nothing;
-    get diagnostics v_one = row_count;
-    v_n := v_n + v_one;
+            v_their_card, v_their_photo, v_their_handle,
+            e.created_at, e.expires_at, e.matched_at);
+    v_n := v_n + 1;
   end loop;
 
   delete from celestual_entries where id = any(v_ids);
@@ -342,11 +386,19 @@ $$;
 
 -- ── 5. placing one ───────────────────────────────────────────────────────────
 -- celestual_submit, as 0071 wrote it, moves whole into celestual_place, with
--- the one thing a keepsake asks of it: a pair that is kept, and with no note
--- of this person's to it since, placed again answers as a told pair placed
--- again always has (see the header) unless the placement is the new note
--- `celestual_mutual_again` writes (`p_again`). Internal; celestual_submit is
--- the browser's door to it, and answers what it answers.
+-- the two things a keepsake asks of it, unless the placement is the new note
+-- `celestual_mutual_again` writes (`p_again`). A pair this @ was told on and
+-- that is kept, with no note of this @'s to it since, placed again answers as
+-- a told pair placed again always has (see the header). And a pair told on
+-- another @ of either person's (two handles linked as one, 0036) and kept
+-- since, placed on from an @ with no note to it or only one from before the
+-- keeping, is told again at once, as it was while the pair was told: the ping
+-- spent and given back, the same refusals, the same answer, and the mutual it
+-- would have been written as a keepsake with the words the pair was told
+-- with, so the list grows by what it would have grown by. Either way the one
+-- placing learns nothing from the other side having written again or taken
+-- theirs off. Internal; celestual_submit is the browser's door to it, and
+-- answers what it answers.
 create or replace function celestual_place(
   p_from text, p_to text, p_email text, p_proof text, p_card jsonb, p_again boolean)
 returns jsonb
@@ -364,7 +416,11 @@ declare
   v_ton   int;
   v_existing_id uuid;
   v_live boolean := false;
+  v_open boolean := false;
+  v_placed timestamptz;
   v_kept celestual_keepsakes%rowtype;
+  v_kept_at timestamptz;
+  v_once boolean := false;
   v_spent text;
   v_allowance jsonb;
   v_mine uuid;
@@ -428,34 +484,61 @@ begin
   -- a pair being kept by the other side in this same moment is waited for,
   -- and read as the keepsake it became, rather than the insert below finding
   -- the told row gone and writing a new note nobody paid for.
-  select id, (matched_at is not null or expires_at > now())
-    into v_existing_id, v_live
+  select id, (matched_at is not null or expires_at > now()), matched_at is null, created_at
+    into v_existing_id, v_live, v_open, v_placed
     from celestual_entries where from_handle = nf and to_hash = nh limit 1
      for update;
 
-  -- A mutual that was kept, and no note of this person's to them since: it
-  -- answers as the told pair it was, with the words the other side's row
-  -- answered, the end this side's carried, nothing spent and nothing written
-  -- but the attempt, which a told pair placed again records too.
-  if v_existing_id is null and not coalesce(p_again, false) then
-    select * into v_kept from celestual_keepsakes k
-     where k.handle in (select celestual_group(nf))
-       and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g)
-     order by k.told_at desc, k.placed_at desc
-     limit 1;
-    if found then
-      insert into celestual_attempts (ip, from_handle, to_handle) values (v_ip, nf, nh);
-      v_allowance := celestual_ping_allowance_for(nf);
-      return jsonb_build_object(
-        'recorded', true,
-        'mutual', true,
-        'match', nt,
-        'match_card', v_kept.their_card - 'photo',
-        'reachable', true,
-        'expires_at', to_char(v_kept.expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-        'reveal_at', to_char(celestual_next_reveal(now()) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-        'slots', celestual_ping_slots(v_allowance),
-        'allowance', v_allowance);
+  if not coalesce(p_again, false) then
+    -- A mutual this @ was told on that was kept, and no note of this @'s to
+    -- them since: it answers as the told pair it was, with the words the other
+    -- side's row answered, the end this side's carried, nothing spent and
+    -- nothing written but the attempt, which a told pair placed again records
+    -- too.
+    if v_existing_id is null then
+      select * into v_kept from celestual_keepsakes k
+       where k.handle = nf and k.other_hash = nh
+       order by k.told_at desc, k.placed_at desc
+       limit 1;
+      if found then
+        insert into celestual_attempts (ip, from_handle, to_handle) values (v_ip, nf, nh);
+        v_allowance := celestual_ping_allowance_for(nf);
+        return jsonb_build_object(
+          'recorded', true,
+          'mutual', true,
+          'match', nt,
+          'match_card', v_kept.their_card - 'photo',
+          'reachable', true,
+          'expires_at', to_char(v_kept.expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+          'reveal_at', to_char(celestual_next_reveal(now()) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+          'slots', celestual_ping_slots(v_allowance),
+          'allowance', v_allowance);
+      end if;
+    end if;
+
+    -- A mutual told on another @ of one person or the other (linked, 0036),
+    -- kept, and nothing of the pair told in the notes now: this @ with no note
+    -- to them, or only one placed before the keeping, is placed as it was
+    -- while their half was told (below), and is told at once. The last
+    -- keeping is the line: a note placed after it, the new note of writing
+    -- again, is a note like any other.
+    if v_existing_id is null or v_open then
+      select max(k.kept_at) into v_kept_at from celestual_keepsakes k
+       where k.handle in (select celestual_group(nf))
+         and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g);
+      if v_kept_at is not null
+         and (v_existing_id is null or v_placed < v_kept_at)
+         and not exists (select 1 from celestual_entries e
+                          where e.from_handle in (select celestual_group(nt))
+                            and e.to_hash in (select celestual_hash_handle(g) from celestual_group(nf) g)
+                            and e.matched_at is not null) then
+        select * into v_kept from celestual_keepsakes k
+         where k.handle in (select celestual_group(nf))
+           and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g)
+         order by k.told_at desc, k.placed_at desc
+         limit 1;
+        v_once := true;
+      end if;
     end if;
   end if;
 
@@ -500,6 +583,42 @@ begin
 
   if v_existing_id is null then
     insert into celestual_placements (handle) values (nf);
+  end if;
+
+  -- ── the other half, kept ──
+  -- Told at once, as a note whose other half was told is below, and straight
+  -- into a keepsake, since the pair it joins is kept: this row's words and
+  -- photograph, the other side's as the pair was told, the night now and the
+  -- keeping the pair's own (so a note placed after that keeping is still a
+  -- new one). Anything a new note of theirs had sealed to a note of this @'s
+  -- from before the keeping lets go of it, and the ping spent goes back.
+  if v_once then
+    insert into celestual_keepsakes (handle, other_hash, other_handle, card, photo,
+                                     their_card, their_photo, their_handle,
+                                     placed_at, expires_at, told_at, kept_at)
+    select e.from_handle, e.to_hash, nt,
+           case when e.card is null then null
+                else e.card || jsonb_build_object('photo', e.photo is not null) end,
+           e.photo,
+           v_kept.their_card, v_kept.their_photo, v_kept.their_handle,
+           e.created_at, e.expires_at, now(), v_kept_at
+      from celestual_entries e where e.id = v_mine
+    returning expires_at into v_expires;
+    update celestual_entries set sealed_with = null, sealed_at = null, reveal_at = null
+     where sealed_with = v_mine;
+    delete from celestual_entries where id = v_mine;
+    perform celestual_ping_refund(nf, nh, now());
+    v_allowance := celestual_ping_allowance_for(nf);
+    return jsonb_build_object(
+      'recorded', true,
+      'mutual', true,
+      'match', nt,
+      'match_card', v_kept.their_card - 'photo',
+      'reachable', true,
+      'expires_at', to_char(v_expires at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+      'reveal_at', to_char(celestual_next_reveal(now()) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+      'slots', celestual_ping_slots(v_allowance),
+      'allowance', v_allowance);
   end if;
 
   -- ── the other half, by hash ──
@@ -578,7 +697,12 @@ $$;
 -- Answers celestual_submit's shapes: { recorded: true, mutual, match,
 -- match_card, reachable, expires_at, reveal_at, slots, allowance }, or
 -- { recorded: false, error, ... }. A new note is sealed like any other, so it
--- answers mutual: false until its night.
+-- answers mutual: false until its night. A note of this @'s to them from
+-- before the pair was kept (two handles linked as one, 0036, the pair told on
+-- the other) belongs to the round that was, and goes first, as letting go
+-- takes one, its ping given back: the new note is new in every way, its
+-- words, its photograph and when it went out, and a placement on it after is
+-- a note like any other, never the old round told at once (section 5).
 create or replace function celestual_mutual_again(
   p_from text, p_to text, p_proof text default null,
   p_card jsonb default null, p_email text default null)
@@ -587,6 +711,8 @@ language plpgsql security definer set search_path = public as $$
 declare
   nf text := celestual_norm(p_from);
   nt text := celestual_norm(p_to);
+  v_kept_at timestamptz;
+  v_old uuid[];
   v_out jsonb;
 begin
   if nf is null or nt is null then raise exception 'invalid handle'; end if;
@@ -598,6 +724,20 @@ begin
 
   begin
     perform celestual_mutual_keep(nf, nt);
+    select max(k.kept_at) into v_kept_at from celestual_keepsakes k
+     where k.handle in (select celestual_group(nf))
+       and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g);
+    with gone as (
+      delete from celestual_entries
+       where from_handle = nf and to_hash = celestual_hash_handle(nt)
+         and matched_at is null and created_at < v_kept_at
+      returning id
+    ) select array_agg(id) into v_old from gone;
+    if v_old is not null then
+      perform celestual_ping_refund(nf, celestual_hash_handle(nt), now());
+      update celestual_entries set sealed_with = null, sealed_at = null, reveal_at = null
+       where sealed_with = any(v_old);
+    end if;
     v_out := celestual_place(nf, nt, p_email, p_proof, p_card, true);
     if not coalesce((v_out->>'recorded')::boolean, false) then
       raise exception using errcode = 'CX072', message = 'the note was refused, so the pair stays told';
@@ -618,13 +758,28 @@ $$;
 -- over, a mail not sent (marked skipped, the way the outbox marks a mail it
 -- will not send). The other side's news and keepsake are not touched, and
 -- nothing is said to them. Answers { ok: true }, or { ok: false, error:
--- 'unverified' | 'none' }, 'none' when there was no mutual to take off.
-create or replace function celestual_mutual_forget(p_from text, p_to text, p_proof text default null)
+-- 'unverified' | 'none' }, 'none' when there was no mutual to take off, and
+-- then nothing is kept or taken.
+--
+-- Only what the person could have been shown goes. A mutual told by this
+-- call's own reveal (the night come, and nothing run it yet), or told since
+-- the list they are looking at was drawn, is one they have never seen, and
+-- taking it off with the one they did would leave them never knowing it
+-- happened while the other side was told. So the nights that go are those
+-- told before this call, and, when the list's own night for the mutual is
+-- sent (`p_told`, the revealed_at it carried, to the second), none after it;
+-- the news that goes is that of the match rows before the first night that
+-- stays (a pair's match row is written at its night and before the next can
+-- be sealed), so a night that stays keeps its mail and its DM.
+create or replace function celestual_mutual_forget(
+  p_from text, p_to text, p_proof text default null, p_told timestamptz default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   nf text := celestual_norm(p_from);
   nt text := celestual_norm(p_to);
+  v_seen timestamptz;
+  v_next timestamptz;
   v_n int;
   v_matches uuid[];
 begin
@@ -632,21 +787,49 @@ begin
   if not celestual_consume_ig_proof(nf, p_proof) then
     return jsonb_build_object('ok', false, 'error', 'unverified');
   end if;
-  perform celestual_reveal_due();
-  perform celestual_mutual_keep(nf, nt);
 
-  delete from celestual_keepsakes k
-   where k.handle in (select celestual_group(nf))
-     and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g);
-  get diagnostics v_n = row_count;
-  if v_n = 0 then
+  -- the latest night this person's side of the pair was told before now,
+  -- read before the reveal runs, and no later than the one their list drew
+  select max(x.t) into v_seen
+    from (select e.matched_at as t from celestual_entries e
+           where e.from_handle in (select celestual_group(nf))
+             and e.to_hash in (select celestual_hash_handle(g) from celestual_group(nt) g)
+             and e.matched_at is not null
+          union all
+          select k.told_at from celestual_keepsakes k
+           where k.handle in (select celestual_group(nf))
+             and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g)) x;
+  if v_seen is not null and p_told is not null then
+    v_seen := least(v_seen, date_trunc('second', p_told) + interval '1 second' - interval '1 microsecond');
+  end if;
+  perform celestual_reveal_due();
+  if v_seen is null then
     return jsonb_build_object('ok', false, 'error', 'none');
   end if;
 
+  -- kept, and the nights shown taken off, together, or neither
+  begin
+    perform celestual_mutual_keep(nf, nt);
+    delete from celestual_keepsakes k
+     where k.handle in (select celestual_group(nf))
+       and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g)
+       and k.told_at <= v_seen;
+    get diagnostics v_n = row_count;
+    if v_n = 0 then
+      raise exception using errcode = 'CX072', message = 'nothing shown to take off, so the pair stays as it was';
+    end if;
+  exception when sqlstate 'CX072' then
+    return jsonb_build_object('ok', false, 'error', 'none');
+  end;
+
+  select min(k.told_at) into v_next from celestual_keepsakes k
+   where k.handle in (select celestual_group(nf))
+     and k.other_hash in (select celestual_hash_handle(g) from celestual_group(nt) g);
   select coalesce(array_agg(m.id), '{}') into v_matches
     from celestual_matches m
-   where (m.handle_a in (select celestual_group(nf)) and m.handle_b in (select celestual_group(nt)))
-      or (m.handle_a in (select celestual_group(nt)) and m.handle_b in (select celestual_group(nf)));
+   where ((m.handle_a in (select celestual_group(nf)) and m.handle_b in (select celestual_group(nt)))
+       or (m.handle_a in (select celestual_group(nt)) and m.handle_b in (select celestual_group(nf))))
+     and (v_next is null or m.matched_at < v_next);
   delete from celestual_dm_outbox
    where match_id = any(v_matches) and handle in (select celestual_group(nf)) and sent_at is null;
   delete from celestual_notifications
@@ -668,7 +851,10 @@ $$;
 -- night. Two @s linked as one person, told on one night, list one each, as
 -- they did (test-weekly-reveal.sql, section 14). Every running or lapsed note
 -- is listed beside it as before, so a handle can come back twice, a mutual
--- and a new note, and only ever to the person who wrote the new one.
+-- and a new note, and only ever to the person who wrote the new one. The
+-- order is total (when it went out, a mutual first, its night, whose @ it
+-- is on, the @ it names), so two pings alike in all a screen keys them by
+-- come back in the same order on every read.
 create or replace function celestual_my_pings(p_handle text, p_proof text)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -702,11 +888,11 @@ begin
      order by t.owner, t.other_hash, t.told_at desc, t.here desc, t.placed_at desc
   ),
   shown as (
-    select l.handle, l.placed_at, l.expires_at, true as mutual, false as lapsed, l.told_at,
-           l.card, l.their_card
+    select l.owner, l.other_hash, l.handle, l.placed_at, l.expires_at, true as mutual, false as lapsed,
+           l.told_at, l.card, l.their_card
       from latest l
     union all
-    select coalesce(e.matched_handle, e.to_handle), e.created_at, e.expires_at, false,
+    select e.from_handle, e.to_hash, coalesce(e.matched_handle, e.to_handle), e.created_at, e.expires_at, false,
            e.sealed_with is null and e.expires_at <= now(), null::timestamptz,
            case when e.card is null then null
                 else e.card || jsonb_build_object('photo', e.photo is not null) end,
@@ -730,7 +916,7 @@ begin
            'display_name', coalesce(p.display_name, ''),
            'is_verified',  coalesce(p.is_verified, false),
            'avatar_path',  p.avatar_path
-         ) order by s.placed_at, s.mutual desc), '[]'::jsonb)
+         ) order by s.placed_at, s.mutual desc, s.told_at, s.owner, s.other_hash), '[]'::jsonb)
     into v_pings
     from shown s
     left join ig_profiles p on p.handle = s.handle;
@@ -934,9 +1120,17 @@ end;
 $$;
 
 -- celestual_card_photo, as 0038 wrote it, and a keepsake read where there is
--- no row: their own photograph, or the other side's as it was told.
+-- no row: their own photograph, or the other side's as it was told. A person
+-- can have two of their own on one @ now, the mutual's and a new note's
+-- running beside it, so `p_mutual` says which: true the mutual's (a told row,
+-- else the latest keepsake), false the note's, and left out whichever row
+-- there is, else the keepsake, as it read before. The other side's is only
+-- ever a mutual's, and `p_mutual` does not change it. The four argument form
+-- is dropped for this one, so a call naming four finds the one door.
+drop function if exists celestual_card_photo(text, text, text, boolean);
 create or replace function celestual_card_photo(
-  p_me text, p_them text, p_proof text default null, p_mine boolean default true)
+  p_me text, p_them text, p_proof text default null, p_mine boolean default true,
+  p_mutual boolean default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -957,7 +1151,12 @@ begin
       from celestual_entries e
      where e.from_handle in (select celestual_group(nf))
        and e.to_hash = celestual_hash_handle(nt)
+       and (p_mutual is null or (e.matched_at is not null) = p_mutual)
      limit 1;
+    -- a note asked for is a note or nothing: a keepsake is never one
+    if p_mutual is not null and not p_mutual then
+      v_found := true;
+    end if;
   else
     v_photo := celestual_counterpart_photo(nf, nt);
     v_found := exists (select 1 from celestual_entries e
@@ -981,7 +1180,12 @@ $$;
 
 -- ── 12. erasure ──────────────────────────────────────────────────────────────
 -- Every keepsake of the handle and every keepsake about it, as erasure takes
--- every row from it and about it (0038). Internal.
+-- every row from it and about it (0038). And its words and photograph out of
+-- a keepsake that names another @ of the same person (two handles linked as
+-- one, 0036): the keepsake was read off the row this handle wrote, which
+-- erasure takes, and a list drawn from the rows found nothing there after,
+-- so the keepsake stays with nothing of theirs in it, and no trace of the @.
+-- Internal.
 create or replace function celestual_keepsake_forget(p_handle text) returns void
 language plpgsql security definer set search_path = public as $$
 declare
@@ -990,6 +1194,9 @@ begin
   if nh is null then return; end if;
   delete from celestual_keepsakes
    where handle = nh or other_hash = celestual_hash_handle(nh) or other_handle = nh;
+  update celestual_keepsakes
+     set their_card = null, their_photo = null, their_handle = null
+   where their_handle = nh;
 end;
 $$;
 
@@ -1010,7 +1217,7 @@ $$;
 
 -- ── 13. the desk ─────────────────────────────────────────────────────────────
 -- 0060's wrapper, word for word, and a kept pair counted as the two mutual
--- rows it was, its owners among the senders.
+-- rows it was, placed when they were, its owners among the senders.
 create or replace function celestual_desk_overview()
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -1027,6 +1234,9 @@ begin
   v := jsonb_set(v, '{counts,pings_mutual}', to_jsonb(
          (select count(*) from celestual_entries where matched_at is not null)
        + (select count(*) from celestual_keepsakes)), true);
+  v := jsonb_set(v, '{counts,pings_7d}', to_jsonb(
+         (select count(*) from celestual_entries where created_at > now() - interval '7 days')
+       + (select count(*) from celestual_keepsakes where placed_at > now() - interval '7 days')), true);
   v := jsonb_set(v, '{counts,senders}', to_jsonb(
          (select count(distinct s.h) from (select from_handle as h from celestual_entries
                                            union all select handle from celestual_keepsakes) s)), true);
@@ -1120,14 +1330,93 @@ begin
 end;
 $$;
 
+-- celestual_desk_growth (0039) and the older desk's celestual_admin_overview
+-- (0034) count pings off the rows too, so a series would lose two pings back
+-- in its history every time a pair was kept. Neither is written out again for
+-- it: each is renamed once, to say which sitting wrote it, and the name the
+-- desk calls becomes a wrapper that asks it and adds the keepsakes where it
+-- counted rows, by when their notes went out (0050 did the same to the
+-- overview). The renames are guarded so this file runs twice without
+-- complaint. The older desk's log of recent rows is left as it is: it is the
+-- last few of each kind, and a kept pair leaves it as a lapsed ping always has.
+do $$
+begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'celestual_desk_growth')
+     and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                      where n.nspname = 'public' and p.proname = 'celestual_desk_growth_0039') then
+    alter function celestual_desk_growth(integer, text) rename to celestual_desk_growth_0039;
+  end if;
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'celestual_admin_overview')
+     and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                      where n.nspname = 'public' and p.proname = 'celestual_admin_overview_0034') then
+    alter function celestual_admin_overview() rename to celestual_admin_overview_0034;
+  end if;
+end $$;
+
+-- each bucket's pings, and the keepsakes whose notes went out in it; the
+-- bucket is read back off its own date, which is where 0039 cut it
+create or replace function celestual_desk_growth(p_days integer default 30, p_grain text default 'day')
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v jsonb := celestual_desk_growth_0039(p_days, p_grain);
+  v_step interval := case v->>'grain' when 'week' then interval '7 days'
+                                      when 'month' then interval '1 month'
+                                      else interval '1 day' end;
+begin
+  return jsonb_set(v, '{rows}', coalesce((
+    select jsonb_agg(x.r || jsonb_build_object('pings', (x.r->>'pings')::int + (
+             select count(*)::int from celestual_keepsakes k
+              where k.placed_at >= (x.r->>'t')::timestamptz
+                and k.placed_at < (x.r->>'t')::timestamptz + v_step)) order by x.n)
+      from jsonb_array_elements(v->'rows') with ordinality as x(r, n)), '[]'::jsonb));
+end;
+$$;
+
+-- each person's pings placed and received, and when they last placed one,
+-- the thirty days' pings, and the two totals, with the keepsakes in them
+create or replace function celestual_admin_overview()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v jsonb := celestual_admin_overview_0034();
+begin
+  v := jsonb_set(v, '{users}', coalesce((
+    select jsonb_agg(x.u || jsonb_build_object(
+             'pings',    (x.u->>'pings')::int
+                         + (select count(*)::int from celestual_keepsakes k where k.handle = x.u->>'handle'),
+             'received', (x.u->>'received')::int
+                         + (select count(*)::int from celestual_keepsakes k where k.other_handle = x.u->>'handle'),
+             'last_ping_at', (select to_jsonb(max(y.t)) from (
+                                select (x.u->>'last_ping_at')::timestamptz as t
+                                union all
+                                select k.placed_at from celestual_keepsakes k where k.handle = x.u->>'handle') y))
+           order by x.n)
+      from jsonb_array_elements(v->'users') with ordinality as x(u, n)), '[]'::jsonb));
+  v := jsonb_set(v, '{growth}', coalesce((
+    select jsonb_agg(x.g || jsonb_build_object('pings', (x.g->>'pings')::int + (
+             select count(*)::int from celestual_keepsakes k where k.placed_at::date = (x.g->>'day')::date))
+           order by x.n)
+      from jsonb_array_elements(v->'growth') with ordinality as x(g, n)), '[]'::jsonb));
+  v := jsonb_set(v, '{counts,pings}', to_jsonb(
+         (select count(*) from celestual_entries) + (select count(*) from celestual_keepsakes)), true);
+  v := jsonb_set(v, '{counts,pings_7d}', to_jsonb(
+         (select count(*) from celestual_entries where created_at > now() - interval '7 days')
+       + (select count(*) from celestual_keepsakes where placed_at > now() - interval '7 days')), true);
+  return v;
+end;
+$$;
+
 -- ── 14. grants ───────────────────────────────────────────────────────────────
 -- The browser's: the two new doors, and the ones this file re-created, as
 -- they were. The service role's: the reveal and the desk. Nobody's from
 -- outside: keeping, placing underneath the door, and forgetting on erasure.
 revoke all on function celestual_mutual_again(text, text, text, jsonb, text) from public;
 grant execute on function celestual_mutual_again(text, text, text, jsonb, text) to anon, authenticated;
-revoke all on function celestual_mutual_forget(text, text, text) from public;
-grant execute on function celestual_mutual_forget(text, text, text) to anon, authenticated;
+revoke all on function celestual_mutual_forget(text, text, text, timestamptz) from public;
+grant execute on function celestual_mutual_forget(text, text, text, timestamptz) to anon, authenticated;
 
 revoke all on function celestual_submit(text, text, text, text, jsonb) from public;
 grant execute on function celestual_submit(text, text, text, text, jsonb) to anon, authenticated;
@@ -1135,7 +1424,7 @@ grant execute on function celestual_my_pings(text, text) to anon, authenticated;
 grant execute on function celestual_ping_status(text, text[], text) to anon, authenticated;
 grant execute on function celestual_withdraw(text, text, text) to anon, authenticated;
 grant execute on function celestual_card_photo_put(text, text, text, text) to anon, authenticated;
-grant execute on function celestual_card_photo(text, text, text, boolean) to anon, authenticated;
+grant execute on function celestual_card_photo(text, text, text, boolean, boolean) to anon, authenticated;
 
 revoke all on function celestual_reveal_due() from public;
 revoke all on function celestual_reveal_due() from anon, authenticated;
@@ -1144,6 +1433,14 @@ revoke all on function celestual_desk_overview() from public, anon, authenticate
 grant execute on function celestual_desk_overview() to service_role;
 revoke all on function celestual_desk_pings(text, text, integer, integer) from public, anon, authenticated;
 grant execute on function celestual_desk_pings(text, text, integer, integer) to service_role;
+revoke all on function celestual_desk_growth(integer, text)      from public, anon, authenticated;
+revoke all on function celestual_desk_growth_0039(integer, text) from public, anon, authenticated;
+grant execute on function celestual_desk_growth(integer, text)      to service_role;
+grant execute on function celestual_desk_growth_0039(integer, text) to service_role;
+revoke all on function celestual_admin_overview()      from public, anon, authenticated;
+revoke all on function celestual_admin_overview_0034() from public, anon, authenticated;
+grant execute on function celestual_admin_overview()      to service_role;
+grant execute on function celestual_admin_overview_0034() to service_role;
 
 revoke all on function celestual_mutual_keep(text, text)                          from public, anon, authenticated;
 revoke all on function celestual_place(text, text, text, text, jsonb, boolean)    from public, anon, authenticated;

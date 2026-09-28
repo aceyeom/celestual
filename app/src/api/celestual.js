@@ -197,10 +197,13 @@ export async function placePingAgain({ me, them, email, proof, card }) {
 // Take a mutual off this person's own list, for good (0072). The other
 // person keeps theirs, exactly as it was, and is told nothing; the news of it
 // still on its way to this person does not go; and a note to them afterwards
-// is a new note. Answers { ok:true }, or { ok:false, error } where
-// 'unverified' is a proof the server refused and 'none' is no mutual there to
-// take off.
-export async function forgetMutualPing({ me, them, proof }) {
+// is a new note. `told` is the night of the mutual the screen is showing, as
+// the list said it (`revealed_at`): only nights up to it go, so one told
+// since, which this person has not seen, stays and is found on the next read.
+// Left out, the server takes the nights told before the call. Answers
+// { ok:true }, or { ok:false, error } where 'unverified' is a proof the
+// server refused and 'none' is no mutual there to take off.
+export async function forgetMutualPing({ me, them, proof, told }) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { ok: true };
@@ -209,6 +212,7 @@ export async function forgetMutualPing({ me, them, proof }) {
     p_from: me,
     p_to: them,
     p_proof: proof || null,
+    p_told: told || null,
   });
   if (error) throw error;
   return data;
