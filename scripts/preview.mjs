@@ -266,6 +266,10 @@ const toldSeen = (me, key) => {
   return (h >>> 0).toString(36)
 }
 const MUTUAL_AT = now - 9 * DAY
+// Whether two linked @s of the fixture browser's each have a note on the
+// same person (0072 lists both): ren.tanaka carries the running note and,
+// beside it, one that was not this time at the last reveal.
+let TWICE = false
 // Whether the fixture browser signed in with google, and nothing else: a
 // reader on any wall since 0057, and not a writer on the campus wall. It is
 // the person whose heart never counted, because this browser drew them as
@@ -1042,6 +1046,14 @@ const RPC = {
         mutual: false,
         card: { words: 'you were the one singing on the 51B that night.' },
       },
+      ...(TWICE ? [{
+        handle: 'ren.tanaka',
+        time: now - 12 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        mutual: false,
+        lapsed: true,
+        card: { words: 'the one with the headphones on the steps, always.' },
+      }] : []),
       {
         handle: 'maya.okafor',
         time: now - 11 * DAY,
@@ -1378,11 +1390,11 @@ const ROUTES = [
   // nobody at all, which is the door.
   { label: 'you',           path: '/berkeley/you' },
   { label: 'you-bar',       path: '/berkeley', acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-memberbtn']], settle: 1400 },
-  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing']], settle: 1200 },
+  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open']], settle: 1200 },
   { label: 'you-options',   path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
   { label: 'you-let-go',    path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'you-unproved',  path: '/berkeley/you', verified: false },
   { label: 'you-door',      path: '/berkeley/you', anon: true },
@@ -1397,12 +1409,14 @@ const ROUTES = [
   { label: 'you-reveal-bar', path: '/', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, acts: [['click', '.wl-mast-go'], ['wait', 3400]], settle: 1600 },
   { label: 'you-reveal',    path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
   { label: 'you-revealed',  path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
-  { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed']], settle: 900 },
+  { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
   // the mutual under the pointer, on any visit and after the night has
-  // landed: the phone's inversion, chalk with everything on it black
-  { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+  // landed: its slot's backlight awake (Slot.jsx), the notes leaning in.
+  // A row's press and its `edit` are two keys now, so the rows above are
+  // pressed on the press itself, never on the row round both
+  { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
   { label: 'you-revealed-hover', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] },
-    acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+    acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
 
   // the addresses Main used to draw, landing on the wall
   { label: 'legacy-sky',    path: '/sky' },
@@ -1457,6 +1471,30 @@ const ROUTES = [
     store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },
   { label: 'reveal-edit',      path: '/reveal/jules.k?beat=4&slot=67,318,256,60&slotmenu=options', settle: 1600 },
   { label: 'reveal-keep-still', path: '/reveal/jules.k', still: true, settle: 1400 },
+  // the mutual's slot (Slot.jsx): the night glass with the two notes on
+  // their way, held on one moment of the loop (`?slot=`, ms into it: 1500 is
+  // part way, the ghosts behind them; 2400 is the hold, two cells apart);
+  // under the pointer, the backlight up; pressed, the phone's inversion; once
+  // opened on this device, the rose letter with the one note; on the night,
+  // dark and searching before it lands (`-landing`) and after (`-landed`);
+  // and still, under reduced motion. `you-slot-again` is the slot with a new
+  // note to the same person beside it, and `you-edit` the key on every note,
+  // the running one's under the keyboard's focus
+  { label: 'you-slot',       path: '/berkeley/you?slot=1500', settle: 900 },
+  { label: 'you-slot-hold',  path: '/berkeley/you?slot=2400', settle: 900 },
+  { label: 'you-slot-hover', path: '/berkeley/you?slot=1500', acts: [['wait', 1400], ['mouse', '.wl-slot-open', 0, 'hover']], settle: 400 },
+  { label: 'you-slot-press', path: '/berkeley/you?slot=1500', acts: [['wait', 1400], ['mouse', '.wl-slot-open', 0, 'hold']], settle: 300 },
+  { label: 'you-slot-opened', path: '/berkeley/you', store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 900 },
+  { label: 'you-slot-landing', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 0 },
+  { label: 'you-slot-landed', path: '/berkeley/you?slot=900', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 2600 },
+  { label: 'you-slot-still', path: '/berkeley/you', still: true, settle: 900 },
+  { label: 'you-slot-again', path: '/berkeley/you?slot=1500', again: true, settle: 900 },
+  { label: 'you-edit',       path: '/berkeley/you?slot=2400', acts: [['wait', 1400], ['focus', '.wl-vault-row.is-standing .wl-vault-edit']], settle: 400 },
+  // two notes on one person, a running one and one that was not this time
+  // (two linked @s): the lapsed row's press opens the lapsed note, its own,
+  // and not the running one the handle would find
+  { label: 'you-twice',      path: '/berkeley/you?slot=2400', twice: true,
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
   // the three stories and the deck under prefers-reduced-motion, where each
   // is drawn on its last frame and has to be whole as a still
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
@@ -1930,6 +1968,7 @@ for (const r of list) {
   WEEK = r.week || 'credits'
   AGAIN = r.again === true
   NOTES = r.notes || ''
+  TWICE = r.twice === true
   GOOGLE = r.google === true
   NOCAL = r.nocal === true
   INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })
