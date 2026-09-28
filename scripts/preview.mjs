@@ -244,6 +244,10 @@ let FULL = false
 // 'free' (the free one still there, none bought), or 'none' (all spent).
 // A `full` route is 'none'.
 let WEEK = 'credits'
+// Whether the fixture browser has written again to somebody it is mutual with
+// (0072): the list carries, for jules.k, the mutual and a new note beside it,
+// sealed and running to the next reveal.
+let AGAIN = false
 // Whether the fixture browser signed in with google, and nothing else: a
 // reader on any wall since 0057, and not a writer on the campus wall. It is
 // the person whose heart never counted, because this browser drew them as
@@ -916,6 +920,11 @@ const RPC = {
       expires_at: new Date(NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY).toISOString(), slots: { standing: 2, cap: 3 },
       allowance: ALLOWANCE(),
     }),
+  // 0072: writing again to a mutual, answered as a placement is (the pair
+  // kept, and a new note out that nobody has answered yet), or refused the
+  // same way with the week spent; and taking a mutual off a list
+  celestual_mutual_again: () => RPC.celestual_submit(),
+  celestual_mutual_forget: () => ({ ok: true }),
   // 0071: this week's pings, on their own read and on the list
   celestual_ping_allowance: () => ({ ok: true, allowance: ALLOWANCE() }),
   // The front door's notice reads this.
@@ -970,7 +979,9 @@ const RPC = {
   }),
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
   // the week (0069): a mutual told at the last reveal, a note running to the
-  // next, and one that was not this time at the last
+  // next, and one that was not this time at the last. The mutual carries both
+  // notes, this person's and jules.k's, so the reveal draws the two letters.
+  // An `again` route (0072) has a new note to jules.k beside the mutual.
   celestual_my_pings: () => ({
     ok: true,
     allowance: ALLOWANCE(),
@@ -987,6 +998,16 @@ const RPC = {
         their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
         ...faceOf('jules.k'),
       },
+      ...(AGAIN ? [{
+        handle: 'jules.k',
+        time: now - 1 * DAY,
+        expires_at: new Date(NEXT_REVEAL).toISOString(),
+        mutual: false,
+        lapsed: false,
+        card: { words: 'and again, after all of it: the same seat, thursday.' },
+        their_card: null,
+        ...faceOf('jules.k'),
+      }] : []),
       {
         handle: 'ren.tanaka',
         time: now - 2 * DAY,
@@ -1315,6 +1336,10 @@ const ROUTES = [
   { label: 'reveal',        path: '/reveal/jules.k?beat=4', settle: 4200 },
   { label: 'reveal-berkeley', path: '/berkeley/reveal/jules.k?beat=4', settle: 4200 },
   { label: 'reveal-none',   path: '/berkeley/reveal/sofiaaa.reyes?beat=4' },
+  // written again (0072): the private notes with the mutual and a new note to
+  // the same person beside it, and the reveal, which is the mutual's still
+  { label: 'you-again',     path: '/berkeley/you', again: true, settle: 900 },
+  { label: 'reveal-again',  path: '/reveal/jules.k?beat=4', again: true, settle: 4200 },
   // the three stories and the deck under prefers-reduced-motion, where each
   // is drawn on its last frame and has to be whole as a still
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
@@ -1786,6 +1811,7 @@ for (const r of list) {
   PASS = r.pass === true
   FULL = r.full === true
   WEEK = r.week || 'credits'
+  AGAIN = r.again === true
   GOOGLE = r.google === true
   NOCAL = r.nocal === true
   INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })

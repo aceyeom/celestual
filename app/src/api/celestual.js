@@ -7,7 +7,11 @@
 // week's reveal and can be kept for the next, which spends that week's;
 // letting one go gives its ping back. Matching and suppression run on salted hashes, and
 // since migration 0010 the server also keeps the normalised target so the
-// owner's pings restore BY NAME on any device they verify on.
+// owner's pings restore BY NAME on any device they verify on. Since 0072 a
+// mutual is kept on both lists as it was told, so a person can write to
+// somebody they are mutual with again (placePingAgain) and take a mutual off
+// their own list (forgetMutualPing), and the other person is told nothing
+// either way.
 //
 // All matching and anonymity logic lives in SECURITY DEFINER RPCs (RLS on,
 // zero client read policies; see supabase/migrations). This file used to carry
@@ -73,7 +77,9 @@ export async function placePing({ me, them, email, proof, card }) {
 // or { ok:false, error } where error is 'unverified' (the RPC refused the
 // proof: it has lapsed, or it is not this handle's) or 'network'. It used to
 // answer a bare [] for all of those, which left every caller drawing an empty
-// sky over a full one. `theirCard` only ever arrives on a matched row.
+// sky over a full one. `theirCard` only ever arrives on a matched row. Since
+// 0072 one handle can come back twice, a mutual and a new note to the same
+// person, and never two mutuals from one @ to one person.
 export async function fetchMyPings({ handle, proof } = {}) {
   if (!hasSupabase) return { ok: true, pings: [] };
   if (!normHandle(handle) || !proof) return { ok: false, error: 'unverified', pings: [] };
@@ -149,7 +155,9 @@ export async function renewPing({ me, them, proof }) {
 // "Let it go" — retire a ping. This frees the slot; nothing was ever revealed.
 // Owner-gated by the DM proof since 0036. Since 0069 a mutual is not let go
 // at all: it has been told to both at its reveal, and the answer is
-// { withdrawn:false, error:'mutual' }, with nothing changed.
+// { withdrawn:false, error:'mutual' }, with nothing changed. A new note to
+// somebody this person is already mutual with (0072) is let go like any
+// other, and the mutual stays.
 export async function retirePing({ me, them, proof }) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
@@ -159,6 +167,52 @@ export async function retirePing({ me, them, proof }) {
     p_from: me,
     p_to: them,
     p_proof: proof || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Write again to somebody this person is mutual with (0072). The mutual they
+// have is kept, on both lists, exactly as it was told, and a new note goes
+// out: sealed, on a ping of its own, and told at a Saturday reveal only if
+// they write a new one too. Nothing about it reaches them before that. It
+// answers exactly what placePing answers, and a refusal (no pings, the words,
+// the hourly limits) keeps nothing, so the pair is as it was. Always proof
+// gated. `card` null is a new note with no words.
+//
+// With no backend configured it answers as placePing does, locally.
+export async function placePingAgain({ me, them, email, proof, card }) {
+  if (!hasSupabase) return placePing({ me, them, email, proof, card });
+  const { data, error } = await supabase.rpc('celestual_mutual_again', {
+    p_from: me,
+    p_to: them,
+    p_proof: proof || null,
+    p_card: card || null,
+    p_email: email ? email.trim() : null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Take a mutual off this person's own list, for good (0072). The other
+// person keeps theirs, exactly as it was, and is told nothing; the news of it
+// still on its way to this person does not go; and a note to them afterwards
+// is a new note. `told` is the night of the mutual the screen is showing, as
+// the list said it (`revealed_at`): only nights up to it go, so one told
+// since, which this person has not seen, stays and is found on the next read.
+// Left out, the server takes the nights told before the call. Answers
+// { ok:true }, or { ok:false, error } where 'unverified' is a proof the
+// server refused and 'none' is no mutual there to take off.
+export async function forgetMutualPing({ me, them, proof, told }) {
+  if (!hasSupabase) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { ok: true };
+  }
+  const { data, error } = await supabase.rpc('celestual_mutual_forget', {
+    p_from: me,
+    p_to: them,
+    p_proof: proof || null,
+    p_told: told || null,
   });
   if (error) throw error;
   return data;

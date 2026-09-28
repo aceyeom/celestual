@@ -243,6 +243,53 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0072_the_mutual_kept.sql`: **a mutual is kept, and the pair
+  can be found again** (the owner's ruling of 28 September). A person can
+  write a new private note to somebody they are mutual with, and take a
+  mutual off their own list, and neither tells the other person anything.
+  `celestual_keepsakes` is new, RLS on and every grant revoked: one row per
+  person per told mutual, holding what that person's list shows for it (their
+  @ as owner, the other's @ and its hash, both cards as they were told, the
+  photograph under each, when it went out, its end and its night), and the @
+  the other side's words were read off (`their_handle`). Keeping a
+  told pair (`celestual_mutual_keep`, internal) freezes both sides into
+  keepsakes, group-aware, and takes the two rows out of `celestual_entries`,
+  so a new note from either side spends a ping, is sealed, and is told only
+  if the other writes a new one too. `celestual_mutual_again(from, to, proof,
+  card, email)` keeps the pair and places the new note in one transaction,
+  answering exactly as `celestual_submit` does (a refusal keeps nothing);
+  `celestual_mutual_forget(from, to, proof, told)` keeps it if still told and
+  removes the caller's keepsakes and the news still on its way to them, only
+  for the nights told before the call and none after `told` (the night the
+  list drew), so a mutual told since stays with its news; `{ ok }` or
+  `'unverified'` / `'none'`, and 'none' changes nothing. `celestual_submit`
+  moves whole into `celestual_place` (internal), and a kept pair placed on the
+  ordinary way answers as the told pair it was; with two handles linked as one
+  (0036), a placement from the @ that was not told, or to the other side's
+  other @, is told at once straight into a keepsake, spending and giving back
+  a ping as it did while the pair was told, and a note of that @'s from before
+  the keeping is let go when it writes again. `celestual_my_pings` lists
+  keepsakes as mutuals in the same shape, one for each person on the other
+  side per @, the latest told, beside any running note, so a handle can come
+  back twice, in a total order. `celestual_ping_status`, `celestual_withdraw`
+  ('mutual' for a kept pair), `celestual_card_photo` (which gains `p_mutual`,
+  to read a person's own mutual or new note on one @) and
+  `celestual_card_photo_put` (a running note only) answer a kept pair as a
+  told one, so the other side learns nothing.
+  `celestual_matches` gains `kept_at` and is unique on the pair among the
+  rows not kept, so a pair told a second time gets its own row, mail and DM
+  (`celestual_reveal_due`), and a kept pair's row and its unsent news stand;
+  `celestual_withdraw` takes a match row only when it un-tells a half from
+  before 0069. Erasure, the opt out and the desk's delete take a person's
+  keepsakes and every keepsake about them (`celestual_keepsake_forget`,
+  through `celestual_billing_forget`), and a linked @'s words out of a
+  keepsake that names its twin; the broom takes none. A keeping that would
+  leave a told row with no keepsake raises instead. The desk
+  (`celestual_desk_pings`, `celestual_desk_overview`, `celestual_desk_growth`
+  and the older `celestual_admin_overview`, the last two now wrappers over
+  `_0039` and `_0034`) counts and lists a kept pair as the two rows it was.
+  Re-runnable. **Tested by `scripts/sql/test-mutual-kept.sql`.**
+
 - `migrations/0071_pings_by_the_week.sql`: **one free ping a week, and more
   for $2.99 each** (the owner's ruling of 27 September; the contract is
   [../docs/PINGS-BY-THE-WEEK.md](../docs/PINGS-BY-THE-WEEK.md)). The standing
@@ -870,7 +917,16 @@ the app uses Supabase Auth for Google alone. See
   `matched_handle` (plaintext only once mutual — both sides know by then),
   `renew_notified_at`. `intent` is a dead column kept for the pings placed
   before the card existed: nothing reads or writes it.
-- **`celestual_matches`** — one row per mutual pair (canonical ordering).
+- **`celestual_keepsakes`** (0072) — a told mutual as one side's list shows
+  it, once the pair is kept and its two rows have left `celestual_entries`:
+  the owner, the other @ and its hash, both cards as told and the photograph
+  under each, when it went out, its end and its night, and the @ the other
+  side's words were read off. Read only by its
+  owner's proof gated reads; lasts until its owner takes it off or an
+  erasure takes it.
+- **`celestual_matches`** — one row per mutual pair (canonical ordering),
+  unique among the rows not kept since 0072 (`kept_at`): a pair told again
+  after it was kept has a row of its own.
 - **`celestual_notifications`** — outbound mutual-mail queue (retry /
   dead-letter), drained by `celestual-notify`.
 - **`celestual_attempts`** — short-lived rate-limit log (targets hashed;
@@ -908,7 +964,10 @@ the app uses Supabase Auth for Google alone. See
 `celestual_submit` (place a ping: proof gate, hashed suppression check, the slot
 rule — per person since 0021 — the cadence cap, hashed group-aware matching,
 instant mutual result + reachability + slot snapshot) · `celestual_withdraw`
-("let it go"; frees the slot) · `celestual_renew` (another sixty days, free.
+("let it go"; frees the slot) · `celestual_mutual_again` (0072: write again to
+somebody you are mutual with; the pair kept on both lists, a new note placed,
+answered as a placement) · `celestual_mutual_forget` (0072: a mutual off your
+own list, and only yours) · `celestual_renew` (another sixty days, free.
 Six months on a plan) · `celestual_billing_status` (proof-gated: standing, cap,
 what was bought) ·
 `celestual_ping_status` (the status page: device sends its plaintext list up,

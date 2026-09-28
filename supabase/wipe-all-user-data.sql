@@ -8,8 +8,9 @@
 -- when you mean it.
 --
 -- WHAT IT ERASES: every registered account and everything any account produced.
--- Pings, matches, the mutual-mail queue, members, DM verifications (successful
--- and pending), .edu codes, email identities and login links, recovery
+-- Pings, matches and the mutuals kept on each list, the mutual-mail queue,
+-- members, DM verifications (successful and pending), .edu codes, email
+-- identities and login links, recovery
 -- bindings, magic-link tokens, multi-account links, the whole recruitment /
 -- trial program (competitors, link counters, credited signups, trial email
 -- codes), anything anyone bought (entitlements, the purchase ledger, the Stripe
@@ -45,6 +46,8 @@ declare
     'celestual_placements',
     -- the week's ledger of pings (migration 0071)
     'celestual_ping_spends',
+    -- the mutuals kept on each list (migration 0072)
+    'celestual_keepsakes',
     -- identity & verification
     'celestual_members',
     'celestual_handle_links',

@@ -96,6 +96,9 @@ declare
     ['celestual_entries',           'from_handle = %1$L'],
     -- and what each of them cost (0071)
     ['celestual_ping_spends',       'handle = %1$L'],
+    -- the mutuals kept on their own list (0072); the ones about them on
+    -- other people's lists go with the incoming step
+    ['celestual_keepsakes',         'handle = %1$L'],
     -- identity, membership, the ways back in
     ['celestual_members',           'handle = %1$L'],
     ['celestual_community_members', 'handle = %1$L'],
@@ -149,6 +152,24 @@ begin
         get diagnostics n = row_count;
         per := per + n;
         raise notice '  %  ledger rows of other people''s pings at them', lpad(n::text, 5);
+      end if;
+      -- (0072) the mutuals with them other people kept, their words in
+      -- them, as erasure takes them and as the rows above went
+      if to_regclass('public.celestual_keepsakes') is not null then
+        delete from celestual_keepsakes
+         where (other_hash = hh or other_handle = nh) and handle <> nh;
+        get diagnostics n = row_count;
+        per := per + n;
+        raise notice '  %  mutuals with them kept on other people''s lists', lpad(n::text, 5);
+        -- and their words where a keepsake names another @ linked with
+        -- theirs (0036): the keepsake is the other person's and stays, with
+        -- nothing of this handle's left in it
+        update celestual_keepsakes
+           set their_card = null, their_photo = null, their_handle = null
+         where their_handle = nh and handle <> nh;
+        get diagnostics n = row_count;
+        per := per + n;
+        raise notice '  %  of their notes kept under another @ of theirs', lpad(n::text, 5);
       end if;
     end if;
 
