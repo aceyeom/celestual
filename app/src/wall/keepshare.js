@@ -51,9 +51,20 @@ function sealed(g, x, y, h, color) {
   return NOTE[0].length * s
 }
 
+// ── its texture ──
+// The phone's quirks (its backlight's clouds, its bleed, its glare, its
+// grain) and its tile, seeded from what the picture prints and nothing
+// else: the night and the two first names, in one order, so the two phones
+// draw the same one. It was the keepsake's seed, which is the two handles
+// (Film.jsx `pairSeed`), and the bundle is public: anybody with a picture
+// of Jules and Ace could draw it for every Jules and Ace they could think of
+// and find the two accounts it was (the review of 28 September). The phone
+// on the page keeps the pair's seed; it is never passed round.
+const lookOf = (o) => `mutual:${o.stamp || ''}:${[...(o.names || [])].sort().join('·')}`
+
 // ── the phone ──
 function drawPhone(o, L, tile) {
-  const q = quirks(o.seed)
+  const q = quirks(lookOf(o))
   const ph = L.ph
   const cv = document.createElement('canvas')
   cv.width = PW
@@ -228,7 +239,7 @@ export async function renderMutual(o) {
     try { await document.fonts.load(`400 92px ${faceOf(words)}`, words) } catch { /* the fallback, then */ }
     try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
-  const tile = await imageOf(await rgbTileReady(o.seed))
+  const tile = await imageOf(await rgbTileReady(lookOf(o)))
   const cv = document.createElement('canvas')
   cv.width = W
   cv.height = H
@@ -265,7 +276,7 @@ export async function renderMutual(o) {
 // as it opens, so the share sheet can be asked for inside the tap on `to
 // someone`; the last few are kept, and one that failed is dropped.
 const READY = new Map()
-const keyOf = (o) => `${o.seed}|${o.stamp}|${(o.names || []).join('·')}|${o.notes ? o.notes.join('\u0001') : '-'}`
+const keyOf = (o) => `${o.stamp}|${(o.names || []).join('·')}|${o.notes ? o.notes.join('\u0001') : '-'}`
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }
   requestAnimationFrame(() => setTimeout(done, 0))

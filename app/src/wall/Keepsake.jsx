@@ -337,9 +337,10 @@ export default function Keepsake({
     { t: 'take it off my list', run: () => setView({ kind: 'confirm' }) },
   ]
   // The picture: first names only, or none; the notes unless they are left
-  // off; the mark on the frame the keepsake is drawn still on
+  // off; the mark on the frame the keepsake is drawn still on; and not the
+  // pair's seed, which is their handles (keepshare.js `lookOf`)
   const face = () => ({
-    seed, stamp, names: first, notes: notesOn ? [p.theirLine || '', p.line || ''] : null,
+    stamp, names: first, notes: notesOn ? [p.theirLine || '', p.line || ''] : null,
     frame: story ? story.frame(story.still) : null,
   })
   const sharing = !!view && view.kind === 'share'
@@ -406,6 +407,26 @@ export default function Keepsake({
     return true
   }, [view])
 
+  // ── where the focus goes ──
+  // What stands in the mark's place takes the key a reader pressed with it,
+  // and the menu's list goes when it does: after Escape, `keep it`, `ok`
+  // and a pick, the focus was left on the page's body, or on `share`, which
+  // is the button `keep it` was (the review of 28 September). So the glass
+  // coming back to rest puts it on the key that opened what was up, and a
+  // note that is done puts it on its `ok`. Not taken from anything outside
+  // the phone: a pick that opens the ping sheet keeps what that sheet gives.
+  const opener = useRef('wl-keep-options')
+  const wasUp = useRef(!!view)
+  useEffect(() => {
+    const was = wasUp.current
+    wasUp.current = !!view
+    const id = view ? (view.kind === 'note' && view.done ? 'wl-keep-ok' : '') : was ? opener.current : ''
+    const a = document.activeElement
+    if (!id || (a && a !== document.body && !(box.current && box.current.contains(a)))) return
+    const k = document.getElementById(id)
+    if (k) k.focus({ preventScroll: true })
+  }, [view])
+
   // ── the phone, as it stands ──
   const pos = (k, items) => `${Math.min(k.at || 0, items.length - 1) + 1}/${items.length}`
   let top = { stamp, bat: 4, pair: names }
@@ -444,15 +465,17 @@ export default function Keepsake({
     }
   } else if (view && view.kind === 'note') {
     over = <ScreenNote glyph={view.glyph} title={view.title}>{view.text || null}</ScreenNote>
-    keys = view.done ? { r: { label: 'ok', onClick: back, aria: 'back to the notes' } } : {}
+    keys = view.done ? { r: { label: 'ok', onClick: back, aria: 'back to the notes', id: 'wl-keep-ok' } } : {}
   } else {
     keys = {
       l: {
-        label: 'options', onClick: () => setView({ kind: 'options', at: 0 }),
+        label: 'options', id: 'wl-keep-options',
+        onClick: () => { opener.current = 'wl-keep-options'; setView({ kind: 'options', at: 0 }) },
         aria: `options: ${standing ? `your new note to ${n0}` : `send ${n0} a new note`}, or take it off your list`,
       },
       r: {
-        label: 'share', onClick: () => { if (story) prepareMutual(face()); setView({ kind: 'share', at: 0 }) },
+        label: 'share', id: 'wl-keep-share',
+        onClick: () => { opener.current = 'wl-keep-share'; if (story) prepareMutual(face()); setView({ kind: 'share', at: 0 }) },
         aria: 'share a picture of it, or save it',
       },
     }
@@ -505,4 +528,3 @@ export default function Keepsake({
     </div>
   )
 }
-

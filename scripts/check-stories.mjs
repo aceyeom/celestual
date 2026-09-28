@@ -33,11 +33,11 @@
 //      either body. The owner saw a note cut into him; this is the tripwire.
 //   6  the mutual's film (pixmark.js `filmStory`, since 28 September), on
 //      the glasses a phone, a desk and a phone on its side give it: nobody
-//      on the glass before 1900ms, not a cell of the names or the notes left
+//      on the glass before 2500ms, not a cell of the names or the notes left
 //      once somebody is, the two coming in on one frame, the names and the
 //      notes inside the glass, a name too long for it cut and dotted and
 //      not run off its edge; and the keepsake's mark (`keepStory`), handed
-//      the film's clock 5500ms on, drawing the frame the film would, from
+//      the film's clock 6490ms on, drawing the frame the film would, from
 //      the sentence said to where the camera has pulled all the way back.
 //   7  the keepsake's picture (keeplayout.js): with the notes on, however
 //      they were written, the phone and the signature under it inside the
@@ -330,7 +330,7 @@ function typed(text) {
   }
   pass('the film: on every glass the two come in within a frame of each other')
 
-  // the keepsake, on the film's clock 5500ms on, is the film's frame: the
+  // the keepsake, on the film's clock 6490ms on, is the film's frame: the
   // same tenth of the mark's life, as alive, and the same sentence and cursor
   const film = filmStory({ credit: { a: typed('Jules'), b: typed('Ace') }, say })
   const keep = keepStory({ say })

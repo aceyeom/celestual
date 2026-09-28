@@ -277,7 +277,7 @@ const BANDS_WAKE = [{ opacity: 0, offset: 0 }, { opacity: 0, offset: 0.4, easing
 // ── the screenshot loop's hold ──
 // Development only: `?film=5200` holds the film on 5200ms from its nought,
 // the glass, the phone's light and the veil as they are then; a moment in
-// the pull-back (6180 to 7080) holds the camera part way back, and a moment
+// the pull-back (7170 to 8070) holds the camera part way back, and a moment
 // before nought (-300) holds the push-in out of a slot that far from done.
 export function filmHold() {
   if (!import.meta.env.DEV) return null

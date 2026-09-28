@@ -20,27 +20,31 @@
 // and a canvas drawn sixty times a second under one for longer than it has
 // to be is what this is built not to be.
 //
-// A story that is `live` (the mutual's, pixmark.js `revealStory`) does not
-// stop: for a window of each telling (`live`, from its end) it is alive, a
-// loop that changes ten times a second, and it is asked twenty times a
-// second on a timer rather than sixty on the display's clock. It stops when
-// the tab is hidden and starts again, on the right frame, when it is shown:
-// the loop is a function of the clock, so nothing is lost by not drawing it.
+// A story that is `live` (the mutual's mark: the film's from the moment it
+// comes alive and the keepsake's all through, pixmark.js `filmStory` and
+// `keepStory`) does not stop: for its `live` window, which for those two
+// has no end, it is alive, a loop that changes ten times a second, and it
+// is asked twenty times a second on a timer rather than sixty on the
+// display's clock. It stops when the tab is hidden and starts again, on the
+// right frame, when it is shown: the loop is a function of the clock, so
+// nothing is lost by not drawing it.
 //
-// A story with a `loop` (the door's and the mutual's) is told again from
-// its first frame every `loop` ms, the clock taken round: at the display's
-// rate while it is being told, and past its end a still mark waits on one
-// timer for the next telling, and a live one ticks as above until it is
-// taken back, at the display's rate again. The door's screen is asleep
-// across the turn (Join.jsx), so the first frame of its next telling is not
-// seen to replace the last of this one; the mutual's is not, because its
-// last frame is its first (pixmark.js, `untell`).
+// A story with a `loop` (the door's, and `revealStory`, which the mails'
+// pictures are still made from) is told again from its first frame every
+// `loop` ms, the clock taken round: at the display's rate while it is being
+// told, and past its end a still mark waits on one timer for the next
+// telling, and a live one ticks as above until it is taken back, at the
+// display's rate again. The door's screen is asleep across the turn
+// (Join.jsx), so the first frame of its next telling is not seen to replace
+// the last of this one; `revealStory`'s last frame is its first (pixmark.js,
+// `untell`). The mutual on the page is told once, and never taken round.
 //
-// Before the clock's nought (the mutual's first telling, while its screen
-// comes on) a story is held on its first frame, and until the owner has a
-// nought at all it is held there by `at` (Intro.jsx, Reveal.jsx,
-// `useFirstFrame` below). The clock is read afresh on every frame, so
-// starting it, or moving it, does not lay the canvas out again.
+// Before the clock's nought (the film's, while its glass grows or wakes) a
+// story is held on its first frame, and until the owner has a nought at all
+// it is held there by `at` (Intro.jsx, `useFirstFrame` below); Film.jsx
+// lays its story in only once it has one. The clock is read afresh on
+// every frame, so starting it, or moving it, does not lay the canvas out
+// again.
 //
 // ── what a cell carries ─────────────────────────────────────────────────────
 // A cell is [x, y, ink, heat, alpha]. The ink is the screen's near ink, the

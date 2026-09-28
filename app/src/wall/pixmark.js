@@ -1455,17 +1455,19 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
 //    760   the note goes out a cell at a time, and the two names come on
 //          round it in blocks of the panel's cells, from the middle out:
 //          theirs over yours, in the phone's face (pixtype.js), as large as
-//          the glass will take them
-//   1620   the names go out, from the outside in, and the glass is the
+//          the glass will take them, all of them on by 1080
+//   2280   the names go out, from the outside in, and the glass is the
 //          ground and nobody on it, a beat
-//   2230   the two of them come over its edges on one frame, and it is the
+//   2890   the two of them come over its edges on one frame, and it is the
 //          intro's story from there, at a pace of its own (`FILM_PACE`): the
-//          catch, the hold, the pink, the rose, the mark, whole at 4710
-//   5210   the mark gathers up into the top of the glass (`markLife`), the
-//          pink going out onto the rose under it, and from 5370 `it's
-//          mutual.` is typed under it in cells, a character every 70ms, with
-//          the phone's cursor after it
-//   5830   the mark is alive, ten frames a second, and never taken back
+//          catch, the hold, the pink, the rose, the mark, whole at 5370
+//   5870   the mark gathers up into the top of the story's grid
+//          (`markLife`), which is the top of the glass on a desk and a
+//          little under half way down an upright phone's, the pink going
+//          out onto the rose under it, and from 6030 `it's mutual.` is typed
+//          under it in cells, a character every 70ms, with the phone's
+//          cursor after it
+//   6490   the mark is alive, ten frames a second, and never taken back
 //
 // Then the page pulls the camera back (Film.jsx), and the glass is the
 // middle of the keepsake, where the same mark goes on (`keepStory`).
@@ -1479,21 +1481,24 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
 // two to half its height. A name too long even at one is cut, a character
 // at a time, and three dots put after it.
 export const FILM_PACE = { wash: 1300, glide: 420, ring: 200, lag: 50, starAt: 60, star: 140, flight: 480 }
-// They come over the edges of a phone's glass at 2230 (introStory's `enter`
+// They come over the edges of a phone's glass at 2890 (introStory's `enter`
 // is its start and `I_ENTER`), 370ms after the last of the names has gone,
 // the intro's beat of the empty glass before they come. It was 1900, on the
 // heels of the names; but a desk's glass runs sixteen cells past the grid,
 // and on it the two of them are seen a quarter of a second sooner than on a
 // phone's (`ENTER`), which put them on the glass while the names were still
-// going out (scripts/check-stories.mjs, 6).
-const F_RUN = 2200
+// going out (scripts/check-stories.mjs, 6). The names stand whole for 1200ms
+// (`F_OUT_AT`), long enough to read two of them; they stood 540, and were
+// gone before the eye had got from the first to the second (the review of
+// 28 September), and every beat after moved on the 660ms that added.
+const F_RUN = 2860
 const F_WAKE = 300
 const F_SLIDE = 200
 const F_RING = 80
 const F_OPEN = 760
 const F_STEP = 40
 const F_IN_STEPS = 8
-const F_OUT_AT = 1620
+const F_OUT_AT = F_OPEN + F_IN_STEPS * F_STEP + 1200
 const F_OUT_STEPS = 7
 const F_MARK_HOLD = 500
 const F_SAY_LAG = 160

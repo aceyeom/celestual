@@ -6,8 +6,9 @@
 // of the thing pressed, so the slot hands the reveal where its glass was as
 // it goes, and the reveal takes it on its first frame. Held for the one
 // opening it is for: a reveal reached any other way (the mail's link, a
-// reload, the list of people written to) finds nothing here and opens from
-// the black, as it always has.
+// reload, the note sheet's `open the mutual`, Ping.jsx; the list of people
+// written to opens the note sheet since 0072) finds nothing here and opens
+// from the black, as it always has.
 //
 // A rect and not the element: the account sheet is gone by the time the
 // reveal draws, and a node that has left the page has no box.

@@ -174,6 +174,13 @@
   overflow: visible;
   padding-top: calc(14px + env(safe-area-inset-top, 0px));
 }
+/* The keepsake's room light is a square larger than the window, and it
+   stretched the sheet's scroll: on a desk or a phone on its side the phone
+   could be scrolled up into black with nothing under it (the review of 28
+   September). Cut at the column's foot, on the one axis, and clipped rather
+   than hidden, so the column is no scroller of its own and the lit key
+   still docks to the sheet's. */
+.wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { overflow-y: clip; }
 .wl-reveal .wl-head { position: relative; z-index: 2; padding-bottom: 6px; }
 /* the corner key is the keepsake's: the film has its own `back`, and the
    key comes with the lit one as the film lands */
@@ -348,7 +355,18 @@
    of the mark panel's width, which is the phone's own width on a phone
    and 400 on a desk, where the phone is the whole row. The Screen's own
    sizes are in `cqw` of its width, and on a desk that is the row's, so
-   the bands and the keys are set here in `--su` instead. */
+   the bands and the keys are set here in `--su` instead.
+   Upright, the phone is about 186 `--su` tall with two notes of a line or
+   two, and the corner key over it, the lit key under it and the gaps are
+   about 172 more pixels, so `--su` is also no more than what fits all of
+   that in the window: on a phone of 390 by 844 the width is the smaller,
+   and nothing changes; in a real phone's browser, its bars taking a
+   hundred and eighty of those pixels, the phone was as wide as the column,
+   the lit key docked over your note, and `options` and `share`, the only
+   ways to take it off or pass it on, were under the fold (the review of 28
+   September). The lit key stays as wide as the column allows up to 300,
+   so a narrower phone does not cut its words. A note of many lines still
+   makes it taller, and it scrolls. */
 @property --su { syntax: '<length>'; inherits: true; initial-value: 3.46px; }
 .wl-keep {
   position: relative; flex: 1 1 auto; isolation: isolate;
@@ -357,6 +375,14 @@
   container-type: inline-size;
 }
 :is(.wl-keep-strip, .wl-keep-foot) { --su: calc(min(100cqw, 400px) / 100); }
+@supports (height: 100dvh) {
+  :is(.wl-keep-strip, .wl-keep-foot) {
+    --su: min(
+      calc(min(100cqw, 400px) / 100),
+      calc((100dvh - 172px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 186)
+    );
+  }
+}
 .wl-keep-strip { position: relative; z-index: 1; width: calc(100 * var(--su)); transform-origin: 0 0; }
 /* laid out and out of sight while the film plays, so the film can land on
    it: at no strength and not hidden, so the page has it painted by the time
@@ -486,7 +512,7 @@
    the phone is taller than the window (not on a phone on its side, below) */
 .wl-keep-foot {
   position: sticky; bottom: 0; z-index: 2;
-  width: calc(100 * var(--su));
+  width: max(calc(100 * var(--su)), min(100cqw, 300px));
   padding: 18px 0 calc(6px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 18px);
 }

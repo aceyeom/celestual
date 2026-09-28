@@ -53,7 +53,12 @@
 // out of the black when there is no slot to grow from (the mail's link, a
 // reload, a new device). It is marked watched once `it's mutual.` has been
 // said, watched to there or skipped to it, and never before: a person who
-// closes it half way has not seen it.
+// closes it half way has not seen it. The keepsake that opens with no film
+// marks it too, the short way and the still one, but not the `edit` key's:
+// a person who reaches for the options of a mutual they have not watched
+// has not seen it told either, and it marked the film watched for good on
+// that device, the slot turned still and the takeover never played (the
+// review of 28 September), so the slot still tells it the next time.
 //
 // The screen reader hears the same facts from the first frame, from a
 // heading nobody sees and a line under it, and never waits on the film.
@@ -202,10 +207,11 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   }, [entry, mine, them])
 
   // ── watched ──
-  // on arriving any way but the film, and for the film once the sentence is
-  // said, whether it was watched to there or skipped to it (below)
+  // on arriving the short way or the still one (not with the options up, see
+  // the header), and for the film once the sentence is said, whether it was
+  // watched to there or skipped to it (below)
   useEffect(() => {
-    if (entry !== 'film' && hold.keep === null) markOpened(mine, p)
+    if ((entry === 'short' || entry === 'still') && hold.keep === null) markOpened(mine, p)
     // once, on arriving
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -314,7 +320,9 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   const keepFrom = entry === 'film' ? (from === null || !film ? null : from + film.times.live) : arrived
   const enter = entry === 'film' ? 'film' : (entry === 'short' || entry === 'options') && rect ? 'fly' : 'fade'
   const state = phase === 'film' ? 'hidden' : phase === 'landing' ? 'landing' : 'rest'
-  const menu = hold.keep ? hold.keep : entry === 'options' ? 'options' : null
+  // (asked of the slot and not of the entry, which under reduced motion is
+  // the still one, and the `edit` key opened the keepsake with no options)
+  const menu = hold.keep ? hold.keep : opened && opened.menu === 'options' ? 'options' : null
   const names = made ? made.names : namesNow(mine, them).names
   // a new note out on them since the mutual, running (the keepsake's options
   // open it as itself, and its question says it stays)
@@ -395,10 +403,15 @@ export default function Reveal({
   // to go (index.jsx `toWall`), as the ping's own way back does. A mutual
   // taken off the list closes onto the private notes, where it no longer is:
   // back down to them when they are what it was opened from, and up to them
-  // otherwise. And the slot it was opened from has the focus again
-  // (revealfrom.js `returnTo`). The old sheet also had a quiet way out to
-  // the wall under its key, whatever it was opened from; the keepsake has
-  // none, and its branch went with it (the review of 28 September).
+  // otherwise. And the slot has the focus again (revealfrom.js `returnTo`),
+  // named on every close and not only when this one was opened from it: a
+  // reveal mounted again under a ping sheet that was raised over it has no
+  // slot of its own, and closed onto the private notes it left the focus on
+  // the page's body. Only the account sheet takes it, and only for as long
+  // as a press is worth, so a close onto anything else leaves nothing. The
+  // old sheet also had a quiet way out to the wall under its key, whatever
+  // it was opened from; the keepsake has none, and its branch went with it
+  // (the review of 28 September).
   const way = useRef('')
   const fromSlot = !!opened
   const onClosing = useCallback((by) => {
@@ -413,7 +426,7 @@ export default function Reveal({
     go('you')
   }, [go])
   const onClose = useCallback(() => {
-    if (fromSlot || way.current === 'taken') returnTo(them)
+    returnTo(them)
     if (way.current === 'taken' && !fromSlot) { toYou(); return }
     up()
   }, [up, toYou, fromSlot, them])

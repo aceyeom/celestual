@@ -2,8 +2,9 @@
 // perf-reveal.mjs: how smooth the mutual's film is, counted in frames.
 //
 // The film is the one place in the product that draws the whole screen, a
-// canvas of two and a half million pixels on a phone at three to the point,
-// every frame while the two of them run and the mark gathers, and then
+// canvas of about a million and a quarter pixels on a phone at three to the
+// point (PixelStory.jsx `crispDpr` keeps it under two million, so that phone
+// draws it at two), every frame while the two of them run and the mark gathers, and then
 // flies the whole stage onto the keepsake with two transforms (Film.jsx),
 // which unfolds with two more (Keepsake.jsx). This is that, measured the
 // way a phone would feel it: the private notes are opened on a phone's
