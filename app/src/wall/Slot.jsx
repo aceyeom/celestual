@@ -23,9 +23,13 @@
 // `wasOpened`), the slot is the night glass with its backlight asleep (the
 // veil, black at .38 over the panel), the rose letter's edge light round it
 // as the one trace of what it is, the aerial searching, and the two notes on
-// their way. After, it is the rose letter the film ends on, the backlight
-// still asleep, one note in the middle of the glass and nothing moving: the
-// two became one there, and a keepsake does not keep asking to be opened.
+// their way. After, it is the rose letter the film ends on, backlit, one
+// note in the middle of the glass: the two became one there, and a keepsake
+// does not keep asking to be opened. So it does not travel; it blinks, the
+// way an LCD keeps something it holds, out and back in three steps 110ms
+// apart (.45, .15, .45) every four seconds, each slot at its own place in
+// that too. It was still, and dimmer under the veil than the plain rows
+// round it, until the review of 28 September.
 //
 // ── the two notes ──
 // On the phone's pitch, four of the page's pixels a cell with the gap an LCD
@@ -51,8 +55,9 @@
 // ── what it costs ──
 // No canvas, and nothing restyled per frame: two transforms and eight
 // opacities, all the compositor's. Only the three newest mutuals not yet
-// opened move (`movingOf`); the rest stand on the frame the loop holds, two
-// notes two cells apart. A slot scrolled out of the sheet, or on a hidden
+// opened move, and the three newest opened blink (`movingOf`); the rest
+// stand on the frame the loop holds, two notes two cells apart or the one
+// note lit. A slot scrolled out of the sheet, or on a hidden
 // tab, is paused, and `will-change` is only asked for while it plays. Nothing
 // is ever raised over this sheet (the router draws one sheet at a time), so a
 // sheet over the private notes is the notes gone, and the slot with them.
@@ -72,25 +77,21 @@
 // asked for one, to change a note or let it go): a mutual's opens the
 // keepsake landed with its options up, since writing them a new note and
 // taking it off one's own list are the keepsake's own menu and drawn there
-// once (revealfrom.js `menu`).
+// once (revealfrom.js `menu`). Its spoken name is that menu's, in the
+// keepsake's words: `your new note to …` while one to them is running
+// (You.jsx hands it `writing`), since that is what the menu offers then.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Face, prefersReducedMotion } from './parts.jsx'
 import { atHandle } from './data.js'
 import { skinVars } from './looks.js'
+import { NOTE } from './pixmark.js'
 import { stateWords, mutualWhen, wasOpened } from './pings.js'
 import { openReveal } from './revealfrom.js'
 import { primeFilm } from './Film.jsx'
 import { Aerial } from './aerial.jsx'
 
-// the note, sealed, as the stories draw it (pixmark.js `NOTE`), one string
-// per row with `X` lit, and each lit cell a dot with the gap round it
-const NOTE = [
-  'XXXXXXX',
-  'XX...XX',
-  'X.X.X.X',
-  'X..X..X',
-  'XXXXXXX',
-]
+// the note, sealed, as the stories draw it (pixmark.js `NOTE`, one string
+// per row with `X` lit), each lit cell a dot with the gap round it
 const PITCH = 4
 const DOT = 3
 const NOTE_W = NOTE[0].length
@@ -131,6 +132,10 @@ const TAIL = HOLD + (OUT.length - 1) * STEP + DARK
 const GHOSTS = [0.3, 0.15, 0.07]
 // how long after its `--land` a slot on the night sets out: the flicker's length
 const WOKEN = 500
+// an opened slot's blink: a loop, and the steps it goes out and back in at
+// its end, a step apart
+const BLINK = 4000
+const BLINKS = [0.45, 0.15, 0.45]
 
 // The glass in the colour of what it is: the night screen until it has been
 // opened here, the rose letter after. Only the screen's own properties, the
@@ -161,11 +166,14 @@ const HELD_AT = (() => {
 })()
 
 // ── which of them move ──
-// The three newest a person has not opened here yet; the rest hold still.
-// Handed the mutuals newest first, as the list draws them.
+// The three newest a person has not opened here yet, and the three newest
+// opened, which only blink; the rest hold still. Handed the mutuals newest
+// first, as the list draws them.
 const MOVING = 3
 export function movingOf(me, mutuals) {
-  return new Set(mutuals.filter((p) => !wasOpened(me, p)).slice(0, MOVING).map((p) => p.key))
+  const not = mutuals.filter((p) => !wasOpened(me, p)).slice(0, MOVING)
+  const kept = mutuals.filter((p) => wasOpened(me, p)).slice(0, MOVING)
+  return new Set([...not, ...kept].map((p) => p.key))
 }
 
 // What is playing, and whether it may: in sight, on a tab that is showing,
@@ -193,7 +201,7 @@ export function EditKey({ onClick, label }) {
   )
 }
 
-export function MutualSlot({ p, me, go, still = false, landing = false, land = null }) {
+export function MutualSlot({ p, me, go, still = false, landing = false, land = null, writing = false }) {
   const opened = wasOpened(me, p)
   const glass = useRef(null)
   const lane = useRef(null)
@@ -218,6 +226,7 @@ export function MutualSlot({ p, me, go, still = false, landing = false, land = n
   const n = cells > NOTE_W * 2 + 2 ? (cells - NOTE_W * 2 - 2) >> 1 : 0
   const seen = landing && land != null
   const moving = !opened && !still && !reduce && n > 0 && (!landing || seen)
+  const blinking = opened && !still && !reduce && cells > 0 && (!landing || seen)
 
   // ── the loop, set going ──
   useEffect(() => {
@@ -267,6 +276,33 @@ export function MutualSlot({ p, me, go, still = false, landing = false, land = n
       settle(s)
     }
   }, [moving, n, seen, land, p.key])
+
+  // ── the one note, blinking ──
+  // A `steps(1, end)` keyframe holds its value to the next, as the loop's
+  // step out does: lit to the loop's last 440ms, then .45, .15 and .45 a
+  // step apart and lit again. Set going on the night 500ms after the flicker,
+  // as the two notes are, and held and paused the way they are (`settle`).
+  useEffect(() => {
+    const one = lane.current?.querySelector('.wl-slot-one')
+    if (!blinking || !one) return undefined
+    const from = BLINK - (BLINKS.length + 1) * STEP
+    const delay = seen ? land + WOKEN : 0
+    const a = one.animate([
+      { opacity: 1, easing: 'steps(1, end)' },
+      ...BLINKS.map((o, i) => ({ opacity: o, offset: (from + i * STEP) / BLINK, easing: 'steps(1, end)' })),
+      { opacity: 1, offset: (from + BLINKS.length * STEP) / BLINK },
+      { opacity: 1 },
+    ], { duration: BLINK, iterations: Infinity, delay })
+    if (!seen || HELD_AT != null) a.currentTime = HELD_AT != null ? delay + (HELD_AT % BLINK) : phaseOf(p.key) * BLINK
+    const s = live.current
+    s.anims = [a]
+    settle(s)
+    return () => {
+      a.cancel()
+      s.anims = []
+      settle(s)
+    }
+  }, [blinking, seen, land, p.key])
 
   // ── and held when nobody can see it ──
   useEffect(() => {
@@ -390,7 +426,7 @@ export function MutualSlot({ p, me, go, still = false, landing = false, land = n
       </button>
       <EditKey
         onClick={() => openReveal(go, p.to, glass.current, { menu: 'options' })}
-        label={`edit: send ${at} a new note, or take it off your list`}
+        label={`edit: ${writing ? `your new note to ${at}` : `send ${at} a new note`}, or take it off your list`}
       />
     </div>
   )

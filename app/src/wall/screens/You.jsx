@@ -64,8 +64,8 @@
 // what it is asking: the note a row opens is that row's own, by its `key`,
 // and never the handle's first (two linked @s can each have a note on the
 // same person, one running and one not this time), each person's mutual is
-// shown once (`mutualOf`), and the rows, the landing and the counts go by
-// the ping's own `key` too.
+// shown once (pings.js `mutualsOf`), and the rows, the landing and the
+// counts go by the ping's own `key` too.
 //
 // ── and they run for a week ─────────────────────────────────────────────────
 // A note ends at Saturday's reveal, nine at night in California, and that
@@ -139,12 +139,12 @@ import { loadPending } from '../handoff.js'
 import {
   myHandle, myPings, heldPings, forgetPings, renew, release, sendAgain, stateWords,
   nextReveal, lastReveal, revealStamp, countdown, endsWords, endedWords, keptAhead, revealWaiting, sawReveal,
-  heldAllowance, waitForPings, forgetWeek, mutualOf,
+  heldAllowance, waitForPings, forgetWeek, liveOf, mutualsOf,
 } from '../pings.js'
 import { takeReturn } from '../revealfrom.js'
 import { Aerial } from '../aerial.jsx'
 import { MutualSlot, EditKey, movingOf } from '../Slot.jsx'
-import { useProve, ProveDoor, editNote } from './Ping.jsx'
+import { useProve, ProveDoor, editNote, takeNoteBack } from './Ping.jsx'
 import { useAlertLink, AlertEmail } from './Alerts.jsx'
 import Gate from './Gate.jsx'
 import { alertsGet, alertsSet } from '../../api/alerts.js'
@@ -822,21 +822,30 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   const landing = fresh && !landed
   const seen = useSeen(landing && tab === 'notes', scroller, list.pings)
 
-  // ── back from a mutual ──
+  // ── back from a mutual, or from a note's settings ──
   // A reveal closed onto this sheet names the slot it was opened from
   // (revealfrom.js `returnTo`), and the focus goes back to that slot's glass
   // once the notes are drawn, or to the frame's title when it has gone (taken
   // off the list on the keepsake), so a person on a keyboard is where they
-  // were. Taken in an effect, and held here, since a development mount runs
-  // the first effect twice and the second would find it spent.
-  const back = useRef('')
-  useEffect(() => { const h = takeReturn(); if (h) back.current = normHandle(h) }, [])
+  // were. A note's settings closed onto it name the row whose `edit` opened
+  // them (Ping.jsx `takeNoteBack`), and the focus goes back to that key, or
+  // to the title when the note was let go. Taken in an effect, and held
+  // here, since a development mount runs the first effect twice and the
+  // second would find it spent.
+  const back = useRef(null)
+  useEffect(() => {
+    const h = takeReturn()
+    const k = takeNoteBack()
+    if (h) back.current = { to: normHandle(h) }
+    else if (k) back.current = { key: k }
+  }, [])
   const drawn = tab === 'notes' && !view && !!scroller && !(list.loading && !list.pings.length)
   useEffect(() => {
     if (!drawn || !back.current) return
-    const h = back.current
-    back.current = ''
-    const slot = [...scroller.querySelectorAll('.wl-slot-open')].find((el) => el.dataset.to === h)
+    const { to: h, key } = back.current
+    back.current = null
+    const slot = h ? [...scroller.querySelectorAll('.wl-slot-open')].find((el) => el.dataset.to === h)
+      : [...scroller.querySelectorAll('.wl-vault-row')].find((el) => el.dataset.key === key)?.querySelector('.wl-vault-edit')
     const el = slot || document.getElementById('wl-vault-h')
     if (!el) return
     el.focus({ preventScroll: true })
@@ -966,7 +975,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // ── the card ──
   // each person's mutual once (two @s of this person's, linked, can each
   // carry theirs), newest first; the three newest not yet opened move
-  const mutuals = list.pings.filter((p) => p.state === 'mutual' && mutualOf(list.pings, p.to) === p)
+  const mutuals = mutualsOf(list.pings)
     .sort((x, y) => (y.revealedAt || 0) - (x.revealedAt || 0))
   const moving = movingOf(handle, mutuals)
   // this week's pings, off the list's own answer, or what this device was
@@ -1074,6 +1083,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               {mutuals.map((p) => (
                 <MutualSlot
                   key={p.key} p={p} me={handle} go={go} still={!moving.has(p.key)}
+                  writing={liveOf(list.pings, p.to)?.state === 'standing'}
                   landing={landing} land={landing && seen.has(p.key) ? seen.get(p.key) : null}
                 />
               ))}

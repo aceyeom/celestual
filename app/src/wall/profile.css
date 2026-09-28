@@ -383,9 +383,11 @@
 .wl-slot-lane.is-playing .wl-slot-note { will-change: transform; }
 /* the backlight asleep, over the panel only; the pointer wakes it, in two
    steps as a backlight comes up, and the focus at once, since nothing a key
-   does is ever animated */
+   does is ever animated. An opened slot is backlit (`--veil` nothing): under
+   the veil the keepsake read dimmer than the plain rows round it */
+.wl-slot.is-opened { --veil: 0; }
 .wl-slot-veil {
-  position: absolute; inset: 0; background: #000; opacity: 0.38; pointer-events: none;
+  position: absolute; inset: 0; background: #000; opacity: var(--veil, 0.38); pointer-events: none;
   transition: opacity 120ms steps(2, end);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -403,14 +405,15 @@
 
 /* the night (You.jsx `useSeen`): dark and searching until it is in sight,
    then the backlight comes up the way a screen wakes (screen.css
-   `wl-wake-light`'s flicker, landing on the veil's .38), the band's words
-   turn on one frame, and the notes come on 500ms after. The flicker holds
-   its first frame only while it waits, so the pointer can wake it after */
+   `wl-wake-light`'s flicker, landing on the veil, .38 or nothing), the
+   band's words turn on one frame, and the notes come on 500ms after. The
+   flicker holds its first frame only while it waits, so the pointer can
+   wake it after */
 .wl-slot.is-landing:not(.is-seen) .wl-slot-veil { opacity: 1; }
 .wl-slot.is-landing:not(.is-seen) .wl-slot-lane { visibility: hidden; }
 .wl-slot.is-landing.is-seen .wl-slot-veil { animation: wl-slot-wake 500ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--land, 700ms) backwards; }
 .wl-slot.is-landing.is-seen .wl-slot-lane { animation: wl-land-in 1ms linear calc(var(--land, 700ms) + 500ms) backwards; }
-@keyframes wl-slot-wake { 0% { opacity: 1; } 28% { opacity: 0.62; } 38% { opacity: 0.85; } 52% { opacity: 0.45; } 100% { opacity: 0.38; } }
+@keyframes wl-slot-wake { 0% { opacity: 1; } 28% { opacity: 0.62; } 38% { opacity: 0.85; } 52% { opacity: 0.45; } 100% { opacity: var(--veil, 0.38); } }
 .wl-slot.is-landing .wl-slot-seek { animation: wl-land-out 1ms linear var(--land, 700ms) both; }
 .wl-slot.is-landing .wl-slot-said { animation: wl-land-in 1ms linear var(--land, 700ms) both; }
 .wl-slot.is-landing:not(.is-seen) :is(.wl-slot-seek, .wl-slot-said) { animation-play-state: paused; }
@@ -543,7 +546,7 @@
      there: asleep at .38, its night in the band, its notes on the glass */
   .wl-slot.is-landing.is-seen .wl-slot-veil, .wl-slot.is-landing.is-seen .wl-slot-lane,
   .wl-slot.is-landing .wl-slot-said { animation: none; }
-  .wl-slot.is-landing:not(.is-seen) .wl-slot-veil { opacity: 0.38; }
+  .wl-slot.is-landing:not(.is-seen) .wl-slot-veil { opacity: var(--veil, 0.38); }
   .wl-slot.is-landing:not(.is-seen) .wl-slot-lane { visibility: visible; }
   .wl-slot.is-landing .wl-slot-seek { display: none; }
 }
