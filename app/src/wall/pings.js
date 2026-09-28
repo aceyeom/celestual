@@ -725,6 +725,47 @@ export function mutualWords(p, at = Date.now()) {
   return `mutual since ${MONTHS[w.m - 1]} ${w.d}`
 }
 
+// The night a mutual was told, in the few words its slot carries beside the
+// @ (Slot.jsx): the night itself while it is recent, `last night`, and the
+// day after that, `since sep 19`. A pair from before the weekly reveal has
+// no night, and the slot says nothing there.
+export function mutualWhen(p, at = Date.now()) {
+  const t = p && p.revealedAt
+  if (!t) return ''
+  if (at - t < 6 * DAY_MS) return endedWords(t, at)
+  const w = wallOf(t)
+  return `since ${MONTHS[w.m - 1]} ${w.d}`
+}
+
+// ── a mutual, seen told ─────────────────────────────────────────────────────
+// A mutual's slot in the private notes is suspense until its telling has been
+// watched once on this device, and calm after (Slot.jsx), and the reveal
+// plays the whole film only the first time (screens/Reveal.jsx). What is kept
+// is a hash of whose list it is on and the mutual's own key, never the handle
+// it is with: the store is this device's, and a shared laptop should not
+// carry a list of who anybody is mutual with. The last sixty four, which is
+// more mutuals than anybody has. Storage switched off reads every mutual as
+// not yet opened, which is the right way to be wrong.
+const OPENED = 64
+function openedMark(me, p) {
+  const s = `${normHandle(me)}>${p && p.key ? p.key : ''}`
+  // FNV-1a, 32 bits: short, the same on every device, and not a handle
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return (h >>> 0).toString(36)
+}
+export function wasOpened(me, p) {
+  if (!p || !p.key) return false
+  return (getState().opened || []).includes(openedMark(me, p))
+}
+export function markOpened(me, p) {
+  if (!p || !p.key || wasOpened(me, p)) return
+  patch({ opened: [...(getState().opened || []), openedMark(me, p)].slice(-OPENED) })
+}
+
 // The time left to a moment, as the phone's clock counted it: days and hours
 // while it is days away, then hours, minutes and seconds.
 export function countdown(to, at = Date.now()) {
