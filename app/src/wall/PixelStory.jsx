@@ -82,6 +82,27 @@
 // any frame for the screenshot loop). `from` is when the clock started, so a
 // story can be started by whoever owns the beats around it, and started
 // again from another moment by moving it.
+//
+// ── the whole screen ────────────────────────────────────────────────────────
+// Since 28 September the mutual is told over the whole screen (Film.jsx,
+// pixmark.js `filmStory`), and then kept, its mark alive, in the middle of a
+// phone (Keepsake.jsx, `keepStory`). Three things came with it, and none of
+// them changes a story told before it: `crisp` backs the canvas at a whole
+// number of device pixels to a point (`crispDpr`), which at full bleed is
+// the difference between a cell and a smear; `onLayout` tells the page where
+// the cells are each time the glass is laid out, so the film can pull back
+// onto exactly the keepsake's cells; and a frame's `edge` carries the
+// panel's first and last row as well as its columns, which the film sets
+// the names by. And `paintStill` draws one frame onto a canvas with no
+// screen round it, for the mutual's picture (keepshare.js).
+//
+// A glass the size of the screen is also the most a slow phone is asked to
+// draw anywhere in the product, and a crisp story is drawn for it: at no
+// more than two million device pixels (`CRISP_MAX`, so a phone at three to
+// the point is drawn at two), over only the part of the glass that changed
+// (`paintCrisp`), its pink a pixel to a block of four cells and painted
+// when the page is idle (`spreadBlocks`), and the unlit dots laid as one
+// tile (`ghostGrid`, which every story now does, to the same pixels).
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
@@ -310,6 +331,17 @@ function glowOn(g, gl, s) {
   g.fillRect(0, 0, s.W, s.H)
 }
 
+// How much an ancestor's transform has scaled the host, across and down,
+// read off its box against its own size. The two are one number, the
+// width's, unless they differ by more than a box's rounding does: only a
+// glass pushed in out of a slot (Film.jsx) is scaled one way more than the
+// other, and every other screen is measured as it always was.
+function scaleOf(host, hr) {
+  const kx = hr.width ? host.clientWidth / hr.width : 1
+  const ky = hr.height ? host.clientHeight / hr.height : kx
+  return Math.abs(ky - kx) > 0.02 * kx ? [kx, ky] : [kx, kx]
+}
+
 // The pink panel for this size: the screen's own backlight gradient, an
 // ellipse 120% by 95% of the screen round its hot spot (screen.css
 // `.wl-scr-bg`), in the three pinks, on a canvas the size of this one. The
@@ -323,15 +355,18 @@ function pinkPanel(s, host, el, dpr) {
   const hy = pct(cs.getPropertyValue('--q-hy'), 0.66)
   const hr = host.getBoundingClientRect()
   const sr = scr ? scr.getBoundingClientRect() : hr
-  // a scale on some ancestor (a sheet arriving) scales both rects alike
-  const k = hr.width ? host.clientWidth / hr.width : 1
-  const cx = ((sr.left - hr.left) + hx * sr.width) * k * dpr
-  const cy = ((sr.top - hr.top) + hy * sr.height) * k * dpr
-  const rx = Math.max(1, 1.2 * sr.width * k * dpr)
-  const ry = Math.max(1, 0.95 * sr.height * k * dpr)
+  // a scale on some ancestor (a sheet arriving) scales both rects alike, and
+  // one that is not the same both ways (the film pushed in out of the slot,
+  // Film.jsx) is undone each way on its own
+  const [kx, ky] = scaleOf(host, hr)
+  const cx = ((sr.left - hr.left) + hx * sr.width) * kx * dpr
+  const cy = ((sr.top - hr.top) + hy * sr.height) * ky * dpr
+  const rx = Math.max(1, 1.2 * sr.width * kx * dpr)
+  const ry = Math.max(1, 0.95 * sr.height * ky * dpr)
   // (the backlight's ellipse, kept for a spectrum, which is lit round the
   // same hot spot block by block)
   s.lamp = { cx, cy, rx, ry }
+  if (s.blocks) { blockPink(s); return }
   const cv = document.createElement('canvas')
   cv.width = s.W
   cv.height = s.H
@@ -349,6 +384,86 @@ function pinkPanel(s, host, el, dpr) {
   tmp.width = s.W
   tmp.height = s.H
   s.tmp = tmp
+}
+
+// ── the pink, a block to a pixel ──
+// On a glass the size of the screen (a `crisp` story) the pink is not two
+// more canvases as large as the glass, laid three times a step: it is a
+// canvas with one pixel for each block of the panel, the pink the panel's
+// gradient has at the middle of that block, and it is laid on the glass
+// scaled up whole, a block to a square of cells, with no smoothing. A block
+// that has just turned is its lighter step in the same pixel. So each block
+// is one pink, where the smaller glasses' blocks each hold a sliver of the
+// gradient; at the film's size a block is two of its cells, and the steps
+// between them are the phone's own.
+function blockPink(s) {
+  const bw = Math.ceil(s.pc / SPREAD)
+  const bh = Math.ceil(s.pr / SPREAD)
+  const px = SPREAD * s.cell
+  const stops = (s.panel || PANEL).map(rgbOf)
+  const { cx, cy, rx, ry } = s.lamp
+  const base = new Uint8ClampedArray(bw * bh * 4)
+  for (let j = 0; j < bh; j++) {
+    for (let i = 0; i < bw; i++) {
+      const r = Math.min(1, Math.hypot((s.mx + (i + 0.5) * px - cx) / rx, (s.my + (j + 0.5) * px - cy) / ry))
+      const [a, b, e] = r < 0.52 ? [0, 1, r / 0.52] : [1, 2, (r - 0.52) / 0.48]
+      const k = (j * bw + i) * 4
+      for (let c = 0; c < 3; c++) base[k + c] = Math.round(stops[a][c] + (stops[b][c] - stops[a][c]) * e)
+      base[k + 3] = 255
+    }
+  }
+  const cv = document.createElement('canvas')
+  cv.width = bw
+  cv.height = bh
+  s.pink = cv
+  s.pinkBase = base
+  s.pinkImg = cv.getContext('2d').createImageData(bw, bh)
+  s.pinkAt = ''
+}
+function spreadBlocks(g, w, s) {
+  if (!s.pink) return
+  const bw = s.pink.width
+  const bh = s.pink.height
+  const level = Math.max(0, Math.min(1, w.level ?? 1))
+  const m = w.p == null ? null : spreadMap(s, w)
+  const at = m ? `${m.key}|${w.p}|${w.p1}|${w.p2}|${w.back ? 'b' : 's'}` : 'all'
+  if (s.pinkAt !== at) {
+    const d = s.pinkImg.data
+    const src = s.pinkBase
+    const front = String(s.front || FRONT_RGB).split(',').map(Number)
+    const p1 = w.p1 ?? w.p
+    const p2 = w.p2 ?? p1
+    for (let k = 0; k < bw * bh; k++) {
+      const o = k * 4
+      let lit = 1
+      let a = 0
+      if (m) {
+        const v = m.th[k]
+        if (w.back) lit = v < w.p ? 1 : 0
+        else if (v > w.p) lit = 0
+        else a = v > p1 ? 0.55 : v > p2 ? 0.22 : 0
+      }
+      for (let c = 0; c < 3; c++) d[o + c] = src[o + c] + (front[c] - src[o + c]) * a
+      d[o + 3] = lit ? 255 : 0
+    }
+    s.pink.getContext('2d').putImageData(s.pinkImg, 0, 0)
+    s.pinkAt = at
+  }
+  // a block to a square of cells, and the blocks at the panel's edges run on
+  // to the canvas's, as `spreadOn`'s do
+  const px = SPREAD * s.cell
+  const x1 = s.mx + bw * px
+  const y1 = s.my + bh * px
+  g.save()
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.globalAlpha = level
+  g.imageSmoothingEnabled = false
+  g.drawImage(s.pink, 0, 0, bw, bh, s.mx, s.my, bw * px, bh * px)
+  if (s.mx > 0) g.drawImage(s.pink, 0, 0, 1, bh, 0, s.my, s.mx, bh * px)
+  if (x1 < s.W) g.drawImage(s.pink, bw - 1, 0, 1, bh, x1, s.my, s.W - x1, bh * px)
+  if (s.my > 0) g.drawImage(s.pink, 0, 0, bw, 1, s.mx, 0, bw * px, s.my)
+  if (y1 < s.H) g.drawImage(s.pink, 0, bh - 1, bw, 1, s.mx, y1, bw * px, s.H - y1)
+  g.restore()
 }
 
 // ── the pink, a few cells at a time ──
@@ -703,22 +818,49 @@ function paint(g, f, s) {
 // given up is the dot left out under a pixel between cells: on this grid a
 // pixel on its way somewhere is small enough that the dot under it is lost
 // in it.
+// The dots are one dot, a cell apart, so they are laid as a tile of one cell
+// repeated over the panel: a path of every dot was twenty thousand of them
+// at the size of the screen, a tenth of a second on a slow phone before the
+// mutual's film could show its first frame, for the same pixels.
 function ghostGrid(s) {
   const cv = document.createElement('canvas')
   cv.width = s.W
   cv.height = s.H
   const g = cv.getContext('2d')
   const d = s.cell - s.gap
-  g.fillStyle = s.ghost
-  g.beginPath()
-  for (let y = 0; y < s.pr; y++) for (let x = 0; x < s.pc; x++) g.rect(s.mx + x * s.cell, s.my + y * s.cell, d, d)
-  g.fill()
+  const tile = document.createElement('canvas')
+  tile.width = s.cell
+  tile.height = s.cell
+  const tg = tile.getContext('2d')
+  if (tg) {
+    tg.fillStyle = s.ghost
+    tg.fillRect(0, 0, d, d)
+  }
+  const pat = tg && g.createPattern(tile, 'repeat')
+  if (pat) {
+    g.translate(s.mx, s.my)
+    g.fillStyle = pat
+    g.fillRect(0, 0, s.pc * s.cell, s.pr * s.cell)
+    g.setTransform(1, 0, 0, 1, 0, 0)
+  } else {
+    g.fillStyle = s.ghost
+    g.beginPath()
+    for (let y = 0; y < s.pr; y++) for (let x = 0; x < s.pc; x++) g.rect(s.mx + x * s.cell, s.my + y * s.cell, d, d)
+    g.fill()
+  }
   s.grid = cv
 }
-function paintFine(g, f, s) {
+function paintFine(g, f, s, region = null) {
   const { pc, pr, ox, oy, cell, gap, W, H, mx, my } = s
   g.setTransform(1, 0, 0, 1, 0, 0)
-  g.clearRect(0, 0, W, H)
+  // (only the part of the glass that changed, for a crisp story: `paintCrisp`)
+  if (region) {
+    g.save()
+    g.beginPath()
+    g.rect(region[0], region[1], region[2], region[3])
+    g.clip()
+    g.clearRect(region[0], region[1], region[2], region[3])
+  } else g.clearRect(0, 0, W, H)
   if (f.ink && f.ink !== s.inkNow) {
     s.inkNow = f.ink
     s.rgb = rgbOf(f.ink)
@@ -729,7 +871,8 @@ function paintFine(g, f, s) {
   // for each step of the ink toward the rose's: at that strength the two
   // inks are one grey)
   if (!s.grid) ghostGrid(s)
-  if (f.wash) spreadOn(g, f.wash, s)
+  if (f.wash && s.blocks) spreadBlocks(g, f.wash, s)
+  else if (f.wash) spreadOn(g, f.wash, s)
   if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
   g.drawImage(s.grid, 0, 0)
   // the lit cells, by their fill; a cell lit twice keeps the stronger
@@ -771,6 +914,66 @@ function paintFine(g, f, s) {
     for (let k = 0; k < list.length; k += 2) g.rect(list[k], list[k + 1], d, d)
     g.fill()
   }
+  if (region) g.restore()
+}
+
+// ── only what changed ──
+// A glass the size of the screen (a `crisp` story, the mutual's film) is
+// most of it the panel's unlit dots and, once it has turned, its pink, and
+// nothing there changes from one frame to the next while the two of them
+// run in the middle of it: clearing and laying the whole of it sixty times
+// a second was most of what a slow phone spent on each frame. So a frame
+// is drawn over the part of the glass its lit cells and its light cover,
+// and the part the last frame's covered, a cell round both, and the rest
+// is left as it is; unless the pink or the ink has changed since the last,
+// which is the whole glass again. What is drawn is what `paintFine` would
+// draw there, so the glass is the same glass, frame for frame.
+function washKeyOf(w) {
+  if (!w) return ''
+  if (w.p == null) return `P${w.level ?? 1}`
+  return `${w.x}|${w.y}|${w.p}|${w.p1}|${w.p2}|${w.back ? 'b' : 's'}`
+}
+function regionOf(f, s) {
+  const { ox, oy, cell, mx, my, W, H } = s
+  let x0 = Infinity
+  let y0 = Infinity
+  let x1 = -Infinity
+  let y1 = -Infinity
+  for (const c of f.cells) {
+    if (c[0] < x0) x0 = c[0]
+    if (c[0] > x1) x1 = c[0]
+    if (c[1] < y0) y0 = c[1]
+    if (c[1] > y1) y1 = c[1]
+  }
+  let r = x0 <= x1
+    ? [mx + Math.floor((x0 + ox - 1) * cell), my + Math.floor((y0 + oy - 1) * cell), mx + Math.ceil((x1 + ox + 2) * cell), my + Math.ceil((y1 + oy + 2) * cell)]
+    : null
+  for (const gl of [].concat(f.glow || [])) {
+    const x = mx + (gl.x + ox + 0.5) * cell
+    const y = my + (gl.y + oy + 0.5) * cell
+    const q = Math.max(cell, gl.r * cell * 1.3) + cell
+    const b = [Math.floor(x - q), Math.floor(y - q), Math.ceil(x + q), Math.ceil(y + q)]
+    r = r ? [Math.min(r[0], b[0]), Math.min(r[1], b[1]), Math.max(r[2], b[2]), Math.max(r[3], b[3])] : b
+  }
+  if (!r) return null
+  return [Math.max(0, r[0]), Math.max(0, r[1]), Math.min(W, r[2]), Math.min(H, r[3])]
+}
+function paintCrisp(g, f, s) {
+  if (f.wash && !s.pink && s.later) s.later()
+  const r = regionOf(f, s)
+  const wash = washKeyOf(f.wash)
+  const last = s.last
+  const whole = !last || wash !== last.wash || (f.ink && f.ink !== s.inkNow)
+  s.last = { r, wash }
+  let region = null
+  if (!whole) {
+    const a = r || last.r
+    const b = last.r || r
+    if (!a) return
+    const u = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]
+    region = [u[0], u[1], u[2] - u[0], u[3] - u[1]]
+  }
+  paintFine(g, f, s, region)
 }
 
 // ── the photograph, on the story's own cells ──
@@ -794,12 +997,13 @@ function onCells(el, host, s, dpr) {
   if (!scr) return
   const hr = host.getBoundingClientRect()
   const sr = scr.getBoundingClientRect()
-  // a scale on some ancestor (a sheet arriving) scales both rects alike
-  const k = hr.width ? host.clientWidth / hr.width : 1
+  // a scale on some ancestor (a sheet arriving) scales both rects alike, and
+  // one that is not the same both ways is undone each way (`pinkPanel`)
+  const [kx, ky] = scaleOf(host, hr)
   const px = (v) => `${Math.round(v * 1000) / 1000}px`
   scr.style.setProperty('--q-pitch', px(s.cell / dpr))
-  scr.style.setProperty('--story-x', px((hr.left - sr.left) * k + s.mx / dpr))
-  scr.style.setProperty('--story-y', px((hr.top - sr.top) * k + s.my / dpr))
+  scr.style.setProperty('--story-x', px((hr.left - sr.left) * kx + s.mx / dpr))
+  scr.style.setProperty('--story-y', px((hr.top - sr.top) * ky + s.my / dpr))
   scr.style.setProperty('--story-lit', px((s.cell - s.gap) / dpr))
   scr.setAttribute('data-cells', '')
 }
@@ -807,9 +1011,67 @@ function onCells(el, host, s, dpr) {
 // how often a live story is asked for its frame, while it is alive
 const LIVE_TICK = 50
 
-export default function PixelStory({ story, at = null, from = null, mode = 'pixel', className = '' }) {
+// ── a whole number of device pixels to a cell, on any screen ──
+// A story's canvas is backed at the device's own pixels up to two to a
+// point, whatever the device's are, and a cell is a whole number of those.
+// A `crisp` story (the mutual's film, Film.jsx, a glass the size of the
+// screen) is backed at a whole number of device pixels to a point, the most
+// the device has up to three, while the canvas stays under two million of
+// them, and what is left of the device's own is an upscale the canvas makes
+// without smoothing (story.css `image-rendering`). It was to be four and a
+// half million, which on a phone at three to the point is the film at its
+// own pixels; measured (scripts/perf-reveal.mjs), that glass was a third of
+// a slow phone's frames dropped while the two of them ran and the pink
+// spread, and backed at two to the point, as every story on the wall is,
+// a seventh (and with the rest of the header's `the whole screen`, about a
+// tenth). A desk and a phone at two keep every pixel whole.
+const CRISP_MAX = 2e6
+export function crispDpr(w, h) {
+  let d = Math.min(3, Math.max(1, Math.round((typeof window !== 'undefined' && window.devicePixelRatio) || 1)))
+  while (d > 1 && w * d * h * d > CRISP_MAX) d--
+  return d
+}
+
+// ── the story's glass, laid out ──
+// Everything `size` works out, for a page that has to put something where a
+// cell of the story is (the film pulling back onto the keepsake's mark,
+// Film.jsx): the cell and its gap in device pixels, the device pixels to a
+// point, the panel's cells, where the story's grid is in it, and the part of
+// a cell left over at its edges.
+const layoutOf = (s, dpr) => ({ cell: s.cell, gap: s.gap, dpr, pc: s.pc, pr: s.pr, ox: s.ox, oy: s.oy, mx: s.mx, my: s.my })
+
+// ── a frame, still, on a canvas of its own ──
+// One frame of a story drawn once onto a canvas the caller has sized, with
+// no screen round it, no pink and nothing to measure: the mark on the
+// mutual's picture (keepshare.js). The cell is the largest whole number of
+// the canvas's pixels that fits the story's grid, the panel's unlit dots run
+// edge to edge round it, and it is drawn the fine way (`paintFine`), its
+// light behind the mark included.
+export function paintStill(canvas, frame, { cols, rows, ink = '#131313' } = {}) {
+  const g = canvas && canvas.getContext('2d')
+  if (!g) return null
+  const W = canvas.width
+  const H = canvas.height
+  const cell = Math.max(1, Math.floor(Math.min(W / cols, H / rows)))
+  const pc = Math.max(cols, Math.floor(W / cell))
+  const pr = Math.max(rows, Math.floor(H / cell))
+  const rgb = rgbOf(ink)
+  const s = {
+    pc, pr, ox: (pc - cols) >> 1, oy: (pr - rows) >> 1, cell,
+    gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
+    ink, rgb, fills: new Map(), W, H, mx: (W - pc * cell) >> 1, my: (H - pr * cell) >> 1,
+  }
+  s.ghost = faint(rgb)
+  paintFine(g, frame, s)
+  return layoutOf(s, 1)
+}
+
+export default function PixelStory({ story, at = null, from = null, mode = 'pixel', className = '', crisp = false, onLayout = null }) {
   const box = useRef(null)
   const cv = useRef(null)
+  // told where the glass is laid out, whenever it is laid out again
+  const laidOut = useRef(onLayout)
+  laidOut.current = onLayout
   // when the clock started: the owner's, or this mount's
   const mounted = useRef(typeof performance !== 'undefined' ? performance.now() : 0)
   // The clock, read afresh on every frame: a clock that starts (Intro.jsx
@@ -840,7 +1102,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       const h = host.clientHeight
       if (!w || !h) return false
       laid = `${w}x${h}x${window.devicePixelRatio}`
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      const dpr = crisp ? crispDpr(w, h) : Math.min(2, window.devicePixelRatio || 1)
       const cell = Math.max(1, Math.floor(Math.min((w * dpr) / story.cols, (h * dpr) / story.rows)))
       const cs = getComputedStyle(el)
       const pc = Math.max(story.cols, Math.floor((w * dpr) / cell))
@@ -852,11 +1114,16 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
         spectrum: story.spectrum || null, front: story.spectrum ? null : story.front || FRONT_RGB,
         face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
+        // a crisp story's pink a block to a pixel (`spreadBlocks`), unless it is
+        // every colour at once, which is the intro's and is never crisp
+        blocks: crisp && !story.spectrum,
       }
       s.ghost = faint(s.rgb)
       // the first and last column of the panel, on the story's own grid, for
-      // a story that sets its runners by the glass (pixmark.js `shiftFor`)
-      s.edge = { l: -s.ox, r: pc - s.ox - 1 }
+      // a story that sets its runners by the glass (pixmark.js `shiftFor`),
+      // and its first and last row, for one that sets its names by it
+      // (`filmStory`)
+      s.edge = { l: -s.ox, r: pc - s.ox - 1, t: -s.oy, b: pr - s.oy - 1 }
       s.W = Math.round(w * dpr)
       s.H = Math.round(h * dpr)
       s.mx = (s.W - pc * cell) >> 1
@@ -865,7 +1132,17 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       el.height = s.H
       el.style.width = `${w}px`
       el.style.height = `${h}px`
-      pinkPanel(s, host, el, dpr)
+      // A crisp story's pink is painted when the page is next idle and not
+      // with the glass: at the size of the screen it is two canvases as
+      // large as the glass, the heaviest thing its first frame would carry,
+      // and the pink is seconds away. A frame that wants it sooner paints it
+      // there and then (`paintCrisp`).
+      if (crisp) {
+        const mine = s
+        mine.later = () => { if (!mine.pink) pinkPanel(mine, host, el, dpr) }
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(() => mine.later(), { timeout: 1500 })
+        else setTimeout(() => mine.later(), 600)
+      } else pinkPanel(s, host, el, dpr)
       // a spectrum is painted now, from where the pink will leave, while the
       // glass is still dark, and not on the frame the pink starts
       if (s.spectrum && story.times) {
@@ -874,6 +1151,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       }
       onCells(el, host, s, dpr)
       key = null
+      if (laidOut.current) laidOut.current(layoutOf(s, dpr))
       return true
     }
     // The story's own clock, taken round if it is told again. Before its
@@ -887,7 +1165,8 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       last = f
       if (!s || f.key === key) return
       key = f.key
-      if (s.fine) paintFine(g, f, s)
+      if (s.fine && crisp) paintCrisp(g, f, s)
+      else if (s.fine) paintFine(g, f, s)
       else paint(g, f, s)
     }
     const now = () => {
@@ -948,7 +1227,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       document.removeEventListener('visibilitychange', onVis)
       if (ro) ro.disconnect()
     }
-  }, [story, mode])
+  }, [story, mode, crisp])
 
   return (
     <div className={`wl-story ${className}`} ref={box} aria-hidden="true">

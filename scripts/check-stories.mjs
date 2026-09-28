@@ -31,6 +31,14 @@
 //   5  on the door, a note never touches either of them: at every 4ms of the
 //      telling, not one cell of a note is lit on or beside a lit cell of
 //      either body. The owner saw a note cut into him; this is the tripwire.
+//   6  the mutual's film (pixmark.js `filmStory`, since 28 September), on
+//      the glasses a phone, a desk and a phone on its side give it: nobody
+//      on the glass before 1900ms, not a cell of the names or the notes left
+//      once somebody is, the two coming in on one frame, the names and the
+//      notes inside the glass, a name too long for it cut and dotted and
+//      not run off its edge; and the keepsake's mark (`keepStory`), handed
+//      the film's clock 5500ms on, drawing the frame the film would, from
+//      the sentence said to where the camera has pulled all the way back.
 //
 // It reads the stories as functions of the clock, in node, with no page and
 // no canvas: the bodies and the notes are arithmetic until they are drawn,
@@ -45,7 +53,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const wall = (f) => pathToFileURL(join(root, 'app/src/wall', f)).href
 const { introFolk, drawBody, cellsOf, sheet } = await import(wall('folk.js'))
 const {
-  joinStory, introStory, revealStory, I_COLS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, I_QUICK, R_EMPTY,
+  joinStory, introStory, revealStory, filmStory, keepStory, I_COLS, I_ROWS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, I_QUICK, R_EMPTY,
   ENTER, shiftFor,
 } = await import(wall('pixmark.js'))
 
@@ -236,5 +244,97 @@ for (let t = 0; t <= T.run + 800; t += 4) {
 }
 if (near <= 1) fail(`on the door a note comes within ${near} cell of a body, at ${when}ms`)
 else pass(`on the door no note comes nearer either of them than ${near} cells`)
+
+// ── 6. the film ──
+// Words as pixtype.js `typeCells` answers them, made here without a canvas:
+// each character six cells wide, a capital ten tall on the baseline and a
+// stem two wide, which is Jersey 10's own grid
+function typed(text) {
+  const cells = []
+  const ends = []
+  ;[...text].forEach((ch, i) => {
+    const x0 = i * 6
+    if (ch !== ' ') for (let y = -10; y < 0; y++) for (const dx of [0, 1, 3, 4]) cells.push([x0 + dx, y])
+    ends.push(x0 + 6)
+  })
+  return { cells, w: ends[ends.length - 1] || 0, ends }
+}
+{
+  // the glasses of Film.jsx's table: a phone of 390 at three, a desk of 1440
+  // at two and at one, a phone on its side, and the grid alone
+  const GLASSES = [
+    ['a phone', { l: -1, r: 95, t: -55, b: 129 }],
+    ['a desk at two', { l: -15, r: 110, t: 0, b: 75 }],
+    ['a desk at one', { l: -16, r: 110, t: -2, b: 76 }],
+    ['a phone on its side', { l: -10, r: 105, t: -1, b: 75 }],
+    ['the grid', { l: 0, r: I_COLS - 1, t: 0, b: I_ROWS - 1 }],
+  ]
+  const say = typed('it’s mutual.')
+  for (const [who, credit] of [
+    ['two first names', { a: typed('Jules'), b: typed('Ace') }],
+    ['two @s', { a: typed('@seoyeon.kim'), b: typed('@ace03d') }],
+    ['a name longer than any glass', { a: typed('@a.very.long.handle.of.thirty'), b: typed('@ace03d') }],
+  ]) {
+    const film = filmStory({ credit, say })
+    const T = film.times
+    for (const [name, e] of GLASSES) {
+      const where = `${who} on ${name}`
+      const inside = (c) => c[0] >= e.l && c[0] <= e.r && c[1] >= e.t && c[1] <= e.b
+      const bodyAt = (t) => film.layers.base(t, e).cells.filter((c) => c[2] === 1 && inside(c) && (c[4] ?? 1) > 0)
+      const wordsAt = (t) => [...film.layers.names(t, e).cells, ...film.layers.notes(t, e).cells]
+      // the first frame of either of them on this glass, the last frame with
+      // a cell of the names or the notes, and a beat of the empty glass
+      // between: a glass that runs further past the grid sees them sooner
+      let first = null
+      for (let t = 0; t < T.enter + 400 && first === null; t += 1) if (bodyAt(t).length) first = t
+      if (first === null) { fail(`the film, ${where}: nobody came in`); continue }
+      let last = 0
+      for (let t = 0; t < T.enter + 400; t += 1) if (wordsAt(t).length) last = t
+      const beat = first - last
+      const edge = e.l >= -3 && e.r <= I_COLS + 2
+      if (beat < BEAT_ANY) fail(`the film, ${where}: they are on the glass at ${first}ms, ${beat}ms after the last of the names and the notes`)
+      // and on a glass three cells past the grid or less, on the moment
+      if (edge && Math.abs(first - T.enter) > 2 * FRAME) fail(`the film, ${where}: they come in at ${first}ms and not at ${T.enter}`)
+      // the names and the notes on the glass, every frame they are there
+      let out = null
+      for (let t = 0; t < T.enter && out === null; t += 8) {
+        const off = wordsAt(t).find((c) => !inside(c))
+        if (off) out = [t, off]
+      }
+      if (out) fail(`the film, ${where}: a cell of the names or the notes is off the glass at ${out[0]}ms (${out[1][0]}, ${out[1][1]})`)
+      // the names stand whole between coming on and going out
+      const standing = film.layers.names(T.credit + 100, e).cells
+      if (!standing.length) fail(`the film, ${where}: the names are not on the glass at ${T.credit + 100}ms`)
+      if (beat >= BEAT_ANY && !out && standing.length) pass(`the film, ${where}: the names and the notes on the glass and gone at ${last}ms, and nobody until ${first}ms`)
+    }
+    // the two of them come in together on every glass (as section 3 asks
+    // of the intro and the loop), off the film's own story
+    const panels = GLASSES.slice(0, 4).map(([, e]) => e)
+    const got = entriesOf({ frame: (t, g) => film.layers.base(t, g) }, T.enter - 40, T.enter + 400, panels)
+    GLASSES.slice(0, 4).forEach(([name], i) => {
+      const g = got[i]
+      const gaps = Object.keys(LEVELS).map((k) => Math.abs((g[k].him ?? Infinity) - (g[k].her ?? -Infinity)))
+      const worst = Math.max(...gaps)
+      if (!(worst <= FRAME)) fail(`the film, ${who} on ${name}: the two come in ${worst}ms apart`)
+    })
+  }
+  pass('the film: on every glass the two come in within a frame of each other')
+
+  // the keepsake, on the film's clock 5500ms on, is the film's frame: the
+  // same tenth of the mark's life, as alive, and the same sentence and cursor
+  const film = filmStory({ credit: { a: typed('Jules'), b: typed('Ace') }, say })
+  const keep = keepStory({ say })
+  const T = film.times
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  let odd = null
+  for (let t = T.said; t <= T.land + 420 && odd === null; t += 5) {
+    const u = t - T.live
+    const fs = film.layers.sentence(t).cells
+    const ks = keep.layers.sentence(u).cells
+    if (!same(film.layers.life(t), keep.layers.life(u)) || !same(fs, ks)) odd = t
+  }
+  if (odd !== null) fail(`the keepsake's mark is not the film's at ${odd}ms`)
+  else pass(`the keepsake, handed the film's clock ${T.live}ms on, draws the film's frame from ${T.said}ms to ${T.land + 420}ms`)
+}
 
 process.exit(bad ? 1 : 0)

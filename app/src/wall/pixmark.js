@@ -11,13 +11,18 @@
 // breathe. The phone's backlight turns pink, from where they hold each
 // other out to the edges of the glass and no further, a cell at a time,
 // the whole phone becomes a letter lit in rose, and the two of them glide
-// together into the mark. The mutual's then takes itself back, to the
-// empty glass it opened on, and tells it again. This file is how that
-// story is told, and none of it is a picture: the mark is rasterised from
-// mark.js, the two people are bodies posed and laid on the grid cell by
-// cell (folk.js), and the door's notes are drawn a pixel at a time, the way
-// looks.js draws the aerial and the pen. PixelStory.jsx puts it on the
-// glass.
+// together into the mark. The mutual's is a film now (28 September, the
+// owner asked for the animation over the whole screen, with both names):
+// told once over the whole glass, the two names credited on it before the
+// two of them run in (`filmStory`), and the mark it ends on stays alive in
+// the keepsake the film pulls back into (`keepStory`). The loop that took
+// the telling back and told it again (`revealStory`) is the mail's now,
+// which still photographs it. This file is how the stories are told, and
+// none of it is a picture: the mark is rasterised from mark.js, the two
+// people are bodies posed and laid on the grid cell by cell (folk.js), the
+// notes are drawn a pixel at a time, the way looks.js draws the aerial and
+// the pen, and the words are the phone's own face in cells (pixtype.js).
+// PixelStory.jsx puts them on the glass.
 //
 // Nothing here touches the page. A story is a function of the clock that
 // answers with a list of lit cells, so it can be held on any frame, drawn
@@ -175,7 +180,7 @@ export const ROSE = '#C93F76'
 // mark. There used to be hearts as well, the one two notes became on the
 // door and the small ones that floated up off the mutual's mark; the owner
 // took them out (26 September), and nothing in the stories is a heart now.
-const NOTE = [
+export const NOTE = [
   'XXXXXXX',
   'XX...XX',
   'X.X.X.X',
@@ -207,6 +212,15 @@ function twice(cells, x, y) {
   const out = []
   for (const [cx, cy, ink, h, a] of cells) {
     for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) out.push([x + 2 * cx + dx, y + 2 * cy + dy, ink, h || 0, a ?? 1])
+  }
+  return out
+}
+// and at `k` times, for a note or a name drawn larger on a taller glass
+// (the film's): `twice` is this at two
+export function scaled(cells, k, x, y) {
+  const out = []
+  for (const [cx, cy, ink, h, a] of cells) {
+    for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) out.push([x + k * cx + dx, y + k * cy + dy, ink, h || 0, a ?? 1])
   }
   return out
 }
@@ -578,7 +592,10 @@ function glideAt(m, t, dx = 0) {
 // `spectrum` is a list of panels, from where they hold each other out to
 // the farthest corner, for a pink that is every colour at once
 // (PixelStory.jsx `pinkOf`). `pace` is the pink's and the glide's
-// (`TOLD`, `I_QUICK`).
+// (`TOLD`, `I_QUICK`). `stillPrep` is how long a frame of the empty glass
+// may spend working out the glide ahead: the intro's glass has nothing on
+// it then, and the film's has the notes and the names moving on it, so it
+// takes a little less (`F_PREP_MS`).
 //
 // ── the intro's own clock ──
 // Nought is the first frame the page can paint (Intro.jsx): the screen
@@ -733,7 +750,7 @@ function mixHex(a, b, k) {
   const B = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16))
   return `#${A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
 }
-export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null, pace = TOLD, front = null, spectrum = null } = {}) {
+export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null, pace = TOLD, front = null, spectrum = null, stillPrep = I_STILL_PREP_MS } = {}) {
   // the two of them: the intro's run, or a story's own way to the same hold
   // (the door's, `joinStory`), which answers the same `at`, `times`, `pair`
   // and `hug`
@@ -792,7 +809,7 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
   }
   const frame = (t, edge = null) => {
     if (!given && t - start < I_OFF) {
-      warm(I_STILL_PREP_MS)
+      warm(stillPrep)
       return empty
     }
     warm(t >= morphs ? Infinity : I_PREP_MS)
@@ -825,8 +842,8 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
     frame,
     empty,
     // the heavy start of the glide, and `budget` ms more of it, before the
-    // clock starts
-    prime: (budget = 0) => warm(budget),
+    // clock starts; answers whether all of it is done
+    prime: (budget = 0) => { warm(budget); return !!morph },
   }
 }
 
@@ -1053,10 +1070,14 @@ export function joinStory({ you = 900, them = 2300, both = 3600, panel = PANEL, 
   return s
 }
 
-// ── the mutual ──────────────────────────────────────────────────────────────
-// The intro's story, the same two on the same grid with the same ending; and
-// then the screen does not stop, and it is told again, and the end of one
-// telling is the beginning of the next, with no seam between them.
+// ── the mutual, told on a loop ──────────────────────────────────────────────
+// The mutual's screen as it was until 28 September, and as the mail still
+// photographs it (scripts/darkroom.mjs, scripts/export-mail.mjs): the page
+// tells it once now, as a film (`filmStory`, below), and this is kept for
+// the picture in the mail, whose GIF loops. The intro's story, the same two
+// on the same grid with the same ending; and then the screen does not stop,
+// and it is told again, and the end of one telling is the beginning of the
+// next, with no seam between them.
 //
 // Each telling opens on the lit, empty glass, the dashed ground on the
 // night's grey, and holds it a beat (`R_EMPTY`); then the two of them come
@@ -1187,21 +1208,22 @@ function along(keys, t) {
   return keys[keys.length - 1][1]
 }
 
-export function revealStory({ panel = PANEL, ink = null } = {}) {
-  // they come over the edges of the glass `R_EMPTY` into each telling
-  const told = introStory(R_EMPTY - I_ENTER, { panel, ink })
-  const T = told.times
+// ── the mark, alive ─────────────────────────────────────────────────────────
+// What the mark does once it has stood whole, the same on every glass it is
+// on: it gathers up into the top of the glass at two thirds of its size
+// (`small`, `gatherOf`), the story's pink going out onto the phone's own
+// rose under it (`fadeAt`), and then it is alive (`live`). Factored out of
+// the mutual's loop (`revealStory`, the mail's) for the film and the
+// keepsake, which draw the same mark on the same clock, so the mark the
+// film pulls back from and the one the keepsake holds are one mark, frame
+// for frame. `live(i, e)` is its `i`th tenth of a second, `e` of the way
+// alive (the loop comes up out of nothing and goes back into it; the
+// keepsake only comes up).
+export function markLife({ ink = null } = {}) {
   const inkEnd = ink ? ink[1] : null
-  const gatherAt = T.done + R_MARK_HOLD
-  const liveAt = gatherAt + R_GATHER_MS
-  const quietAt = liveAt + R_LIVE
-  const nightAt = quietAt + R_RECEDE_AT + R_RECEDE_MS + 2 * WASH_STEP
-  const loop = nightAt + R_TAIL
   const MX = (I_COLS - I_MARK) >> 1
   const MY = (I_ROWS - I_MARK) >> 1
-  let gather = null
   let small = null
-  let unmake = null
   const smallMark = () => {
     if (!small) {
       small = markOn(R_SMALL, (I_COLS - R_SMALL) >> 1, 2, I_CUT)
@@ -1209,9 +1231,10 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
     }
     return small
   }
-  // the story's pink, going out onto the panel's own light under it
-  const fade = (t) => {
-    const k = (t - gatherAt) / R_FADE_MS
+  // the story's pink, going out onto the panel's own light under it, `u`
+  // after the mark starts to gather
+  const fadeAt = (u) => {
+    const k = u / R_FADE_MS
     if (k >= 1) return null
     return { p: null, level: 1 - Math.max(0, k) * Math.max(0, k) * (3 - 2 * Math.max(0, k)) }
   }
@@ -1225,13 +1248,8 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
     star.forEach(([a, b], i) => bits.push(bitOf(a.x, a.y, b.x, b.y, 1, 20 + hash(i, 5) * 90, R_GATHER_MS - 110)))
     return bits
   }
-  const live = (t) => {
-    const i = Math.floor((t - liveAt) / LIVE_MS)
+  const live = (i, e) => {
     const m = smallMark()
-    // how alive it is, on the frame's own moment: up out of nothing, and
-    // back into it before the telling is taken back
-    const tq = liveAt + i * LIVE_MS
-    const e = smooth01(Math.min((tq - liveAt) / R_LIVE_IN, (quietAt - tq) / R_LIVE_OUT))
     const breath = (1 - Math.cos((2 * Math.PI * (i % BREATH)) / BREATH)) / 2
     const cells = []
     // the glint, going round the ring by its own angle
@@ -1247,12 +1265,37 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
       cells.push([p.x, p.y, 1, Math.max(tw, 0.24 * breath * e)])
     })
     return {
-      key: `L${i}`,
       cells,
-      ink: inkEnd,
       // the breath: the backlight behind the mark going brighter, and back
       glow: { x: m.cx, y: m.cy, r: 22 + 6 * breath, a: (0.14 + 0.46 * breath) * e, inner: 0.9, light: true },
     }
+  }
+  return { small: smallMark, gatherOf, fadeAt, live, ink: inkEnd }
+}
+
+export function revealStory({ panel = PANEL, ink = null } = {}) {
+  // they come over the edges of the glass `R_EMPTY` into each telling
+  const told = introStory(R_EMPTY - I_ENTER, { panel, ink })
+  const T = told.times
+  const inkEnd = ink ? ink[1] : null
+  const gatherAt = T.done + R_MARK_HOLD
+  const liveAt = gatherAt + R_GATHER_MS
+  const quietAt = liveAt + R_LIVE
+  const nightAt = quietAt + R_RECEDE_AT + R_RECEDE_MS + 2 * WASH_STEP
+  const loop = nightAt + R_TAIL
+  const life = markLife({ ink })
+  let gather = null
+  let unmake = null
+  const smallMark = life.small
+  const fade = (t) => life.fadeAt(t - gatherAt)
+  const live = (t) => {
+    const i = Math.floor((t - liveAt) / LIVE_MS)
+    // how alive it is, on the frame's own moment: up out of nothing, and
+    // back into it before the telling is taken back
+    const tq = liveAt + i * LIVE_MS
+    const e = smooth01(Math.min((tq - liveAt) / R_LIVE_IN, (quietAt - tq) / R_LIVE_OUT))
+    const l = life.live(i, e)
+    return { key: `L${i}`, cells: l.cells, ink: inkEnd, glow: l.glow }
   }
   // The telling taken back: the ring's way down into the ground, each of
   // its pixels to a dash, as the ground rose into it, left to right and the
@@ -1321,7 +1364,7 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
   const frame = (t, edge = null) => {
     if (t < gatherAt) return told.frame(t, edge)
     if (t < liveAt) {
-      if (!gather) gather = gatherOf()
+      if (!gather) gather = life.gatherOf()
       const u = t - gatherAt
       return { key: `G${Math.round(u)}`, cells: gather.map((b) => bitAt(b, u)), wash: fade(t), ink: inkEnd }
     }
@@ -1392,5 +1435,333 @@ export function revealStory({ panel = PANEL, ink = null } = {}) {
     phone, lightAt,
     // the heavy start of the story, before the clock starts
     prime: (budget = 0) => { told.prime(budget); smallMark() },
+  }
+}
+
+// ── the mutual, as a film ───────────────────────────────────────────────────
+// The telling the page plays now (screens/Reveal.jsx, Film.jsx), once, over
+// the whole screen, when a mutual is opened for the first time. The owner
+// asked for the animation to take the entire screen and to carry both of
+// their names, and for the thing it ends on to be worth keeping; the loop
+// above read as the intro laid over the message. So it is the story with a
+// beginning of its own and an end that stays:
+//
+//      0   the glass, lit (the screen has just come on round it): the
+//          ground, and over the middle two sealed notes, dim, two cells apart,
+//          which is where the slot in the private notes left them, stepping
+//          toward each other and never meeting (Slot.jsx)
+//    300   they wake on one frame and slide into one note, lit
+//    500   the ring of light a cell out round it, a frame long, as on the door
+//    760   the note goes out a cell at a time, and the two names come on
+//          round it in blocks of the panel's cells, from the middle out:
+//          theirs over yours, in the phone's face (pixtype.js), as large as
+//          the glass will take them
+//   1620   the names go out, from the outside in, and the glass is the
+//          ground and nobody on it, a beat
+//   2230   the two of them come over its edges on one frame, and it is the
+//          intro's story from there, at a pace of its own (`FILM_PACE`): the
+//          catch, the hold, the pink, the rose, the mark, whole at 4710
+//   5210   the mark gathers up into the top of the glass (`markLife`), the
+//          pink going out onto the rose under it, and from 5370 `it's
+//          mutual.` is typed under it in cells, a character every 70ms, with
+//          the phone's cursor after it
+//   5830   the mark is alive, ten frames a second, and never taken back
+//
+// Then the page pulls the camera back (Film.jsx), and the glass is the
+// middle of the keepsake, where the same mark goes on (`keepStory`).
+//
+// The names are the story's and not the page's: `credit` is the two as
+// typeCells answers them, and `say` the sentence. Both are set against the
+// glass the frame is for (`edge`, all four sides of the panel on the story's
+// grid, PixelStory.jsx): the notes three times the door's on a glass taller
+// than 110 cells and twice on any other, and the names the largest of three
+// sizes that keeps each line to four fifths of the glass's width and the
+// two to half its height. A name too long even at one is cut, a character
+// at a time, and three dots put after it.
+export const FILM_PACE = { wash: 1300, glide: 420, ring: 200, lag: 50, starAt: 60, star: 140, flight: 480 }
+// They come over the edges of a phone's glass at 2230 (introStory's `enter`
+// is its start and `I_ENTER`), 370ms after the last of the names has gone,
+// the intro's beat of the empty glass before they come. It was 1900, on the
+// heels of the names; but a desk's glass runs sixteen cells past the grid,
+// and on it the two of them are seen a quarter of a second sooner than on a
+// phone's (`ENTER`), which put them on the glass while the names were still
+// going out (scripts/check-stories.mjs, 6).
+const F_RUN = 2200
+const F_WAKE = 300
+const F_SLIDE = 200
+const F_RING = 80
+const F_OPEN = 760
+const F_STEP = 40
+const F_IN_STEPS = 8
+const F_OUT_AT = 1620
+const F_OUT_STEPS = 7
+const F_MARK_HOLD = 500
+const F_SAY_LAG = 160
+const F_TYPE_MS = 70
+const F_SAID_HOLD = 300
+const F_PULL_MS = 900
+// how long a frame before they come in may spend working out the glide
+// ahead (introStory `stillPrep`): the notes and the names draw only the
+// part of the glass they are on (PixelStory.jsx `paintCrisp`), which leaves
+// a frame room for it, and the glide has to be done by 3980 on a slow phone
+const F_PREP_MS = 6
+// the cursor's beat, half of the phone's 1060ms (screen.css `wl-blink`)
+const BLINK = 530
+// the sentence's baseline on the story's grid, under the gathered mark
+const SAY_Y = 68
+// the cursor: two cells wide, a stem of the face, from a capital's top to
+// the foot of a descender
+const CUR_W = 2
+const CUR_TOP = SAY_Y - 10
+const CUR_ROWS = 12
+// the story's grid, for a frame asked of it with no glass (the checks)
+const GRID = { l: 0, r: I_COLS - 1, t: 0, b: I_ROWS - 1 }
+const edgeOf = (edge) => (edge ? { l: edge.l, r: edge.r, t: edge.t ?? GRID.t, b: edge.b ?? GRID.b } : GRID)
+
+// The sentence and its cursor, as the frames of both the film and the
+// keepsake draw them: the characters in (`typed` of them) and the cursor
+// after the last, lit or not. Each cell knows which character it is of.
+function sayingOf(say) {
+  const x0 = ((I_COLS - 1) >> 1) - Math.floor(say.w / 2)
+  const ends = say.ends || []
+  const cells = say.cells.map(([x, y]) => {
+    let j = 0
+    while (j < ends.length - 1 && x >= ends[j]) j++
+    return [x0 + x, SAY_Y + y, 1, 0, 1, j]
+  })
+  const n = ends.length
+  const at = (typed, lit) => {
+    const out = typed >= n ? cells : cells.filter((c) => c[5] < typed)
+    if (!lit) return out
+    const cx = x0 + (typed > 0 ? ends[Math.min(n, typed) - 1] : 0) + 1
+    const cur = []
+    for (let y = CUR_TOP; y < CUR_TOP + CUR_ROWS; y++) for (let x = cx; x < cx + CUR_W; x++) cur.push([x, y, 1])
+    return [...out, ...cur]
+  }
+  return { n, at }
+}
+
+export function filmStory({ credit = null, say = { cells: [], w: 0, ends: [] }, panel = PANEL, ink = null } = {}) {
+  const told = introStory(F_RUN, { panel, ink, pace: FILM_PACE, stillPrep: F_PREP_MS })
+  const T = told.times
+  const life = markLife({ ink })
+  const inkEnd = life.ink
+  const gatherAt = T.done + F_MARK_HOLD
+  const liveAt = gatherAt + R_GATHER_MS
+  const sayAt = gatherAt + F_SAY_LAG
+  const saying = sayingOf(say)
+  const saidAt = sayAt + saying.n * F_TYPE_MS
+  const pullAt = saidAt + F_SAID_HOLD
+  const mid = (I_COLS - 1) >> 1
+  let gather = null
+
+  // ── the two notes ──
+  const notes = (t, e) => {
+    if (t >= F_OPEN + J_OUT) return { cells: [], key: '' }
+    const kn = e.b - e.t + 1 >= 110 ? 3 : 2
+    const NW = NOTE[0].length * kn
+    const top = 30 - Math.floor((NOTE.length * kn) / 2)
+    const a = mid - 1 - NW
+    const b = mid + 1
+    const one = mid - Math.floor(NW / 2)
+    const at = (x, k) => scaled(cellsOf(NOTE, { ink: k }), kn, x, top)
+    if (t < F_WAKE) return { cells: [...at(a, 2), ...at(b, 2)], key: `|s${kn}` }
+    if (t < F_WAKE + F_SLIDE) {
+      const k = smooth01((t - F_WAKE) / F_SLIDE)
+      const xa = Math.round(a + (one - a) * k)
+      const xb = Math.round(b + (one - b) * k)
+      return { cells: [...at(xa, 1), ...at(xb, 1)], key: `|w${kn}.${xa}.${xb}` }
+    }
+    const lit = at(one, 1)
+    const found = F_WAKE + F_SLIDE
+    if (t < found + F_RING) {
+      const ring = []
+      const h = NOTE.length * kn
+      for (let y = top - 1; y <= top + h; y++) {
+        for (let x = one - 1; x <= one + NW; x++) {
+          if (y === top - 1 || y === top + h || x === one - 1 || x === one + NW) ring.push([x, y, 1, 0, 0.3])
+        }
+      }
+      return { cells: [...lit, ...ring], key: `|N+${kn}` }
+    }
+    if (t < F_OPEN) return { cells: lit, key: `|N${kn}` }
+    // out a cell at a time, each a step dimmer on its way, as the door's
+    const q = Math.floor((t - F_OPEN) / F_STEP)
+    const left = []
+    lit.forEach((c, i) => {
+      const o = hash(i, 11) * (J_OUT - 80)
+      if (q * F_STEP >= o + 80) return
+      left.push(q * F_STEP >= o ? [c[0], c[1], 1, 0, 0.45] : c)
+    })
+    return { cells: left, key: `|n${kn}.${q}` }
+  }
+
+  // ── the names ──
+  // Laid out once for each glass: the size, the two lines centred on the
+  // middle column round the row the notes stood on, and the blocks of two by
+  // two cells they come on and go out in, each with its place in the order,
+  // from where the note was out to the far ends of the names, a little early
+  // or late by its own number so the edge of it is ragged and never a circle.
+  const layouts = new Map()
+  const layoutOf = (e) => {
+    const key = `${e.l}|${e.r}|${e.t}|${e.b}`
+    if (layouts.has(key)) return layouts.get(key)
+    const wide = e.r - e.l + 1
+    const tall = e.b - e.t + 1
+    const lines = credit ? [credit.a, credit.b] : []
+    const most = Math.max(0, ...lines.map((l) => l.w))
+    let k = 1
+    for (const c of [3, 2]) if (most * c <= 0.8 * wide && 30 * c <= 0.5 * tall) { k = c; break }
+    const cells = []
+    lines.forEach((l, n) => {
+      const base = n === 0 ? 30 - 5 * k : 30 + 12 * k
+      let lit = l.cells
+      let w = l.w
+      let dots = false
+      if (w * k > 0.8 * wide && l.ends.length) {
+        let c = l.ends.length
+        while (c > 1 && l.ends[c - 1] + 7 > 0.8 * wide) c--
+        w = l.ends[c - 1]
+        lit = l.cells.filter(([x]) => x < w)
+        dots = true
+      }
+      const span = dots ? w + 6 : w
+      const x0 = mid - Math.floor((span * k) / 2)
+      cells.push(...scaled(lit.map(([x, y]) => [x, y, 1]), k, x0, base))
+      if (dots) for (const d of [1, 3, 5]) cells.push([x0 + w + d, base - 1, 1, 0, 1])
+    })
+    // the blocks, and each one's place in the order
+    const blocks = new Map()
+    for (const c of cells) {
+      const bx = Math.floor(c[0] / 2)
+      const by = Math.floor(c[1] / 2)
+      const bk = bx * 4096 + by
+      if (!blocks.has(bk)) {
+        const d = Math.hypot(2 * bx + 1 - mid, 2 * by + 1 - 30) + 4 * (hash(bx * 97 + by, 23) - 0.5)
+        blocks.set(bk, { d, cells: [] })
+      }
+      blocks.get(bk).cells.push(c)
+    }
+    let lo = Infinity
+    let hi = -Infinity
+    for (const b of blocks.values()) { lo = Math.min(lo, b.d); hi = Math.max(hi, b.d) }
+    for (const b of blocks.values()) b.d = (b.d - lo) / (hi - lo || 1)
+    const out = { k, blocks: [...blocks.values()] }
+    layouts.set(key, out)
+    return out
+  }
+  const names = (t, e) => {
+    if (!credit || t < F_OPEN || t >= F_OUT_AT + F_OUT_STEPS * F_STEP) return { cells: [], key: '' }
+    const { blocks } = layoutOf(e)
+    const cells = []
+    const lay = (b, a) => { for (const c of b.cells) cells.push(a < 1 ? [c[0], c[1], 1, 0, 0.45] : c) }
+    if (t < F_OUT_AT) {
+      // on, from the middle out, a block lit dim on the step it comes on
+      const n = Math.floor((t - F_OPEN) / F_STEP)
+      for (const b of blocks) {
+        if (n < F_IN_STEPS - 1 && b.d > (n + 1) / F_IN_STEPS) continue
+        lay(b, n < F_IN_STEPS && b.d > n / F_IN_STEPS ? 0.45 : 1)
+      }
+      return { cells, key: `|c${Math.min(n, F_IN_STEPS)}` }
+    }
+    // and off, from the outside in, a block dim on the step before it goes
+    const m = Math.floor((t - F_OUT_AT) / F_STEP)
+    for (const b of blocks) {
+      if (1 - b.d <= (m + 1) / F_OUT_STEPS) continue
+      lay(b, 1 - b.d <= (m + 2) / F_OUT_STEPS ? 0.45 : 1)
+    }
+    return { cells, key: `|o${m}` }
+  }
+
+  // ── the sentence ──
+  const sentence = (t) => {
+    if (t < sayAt) return { cells: [], key: '' }
+    const typed = Math.min(saying.n, Math.floor((t - sayAt) / F_TYPE_MS))
+    // standing still while the characters come, and on the phone's beat
+    // once they have stopped
+    const lit = t < saidAt || Math.floor((t - liveAt) / BLINK) % 2 === 0
+    return { cells: saying.at(typed, lit), key: `|t${typed}${lit ? 1 : 0}` }
+  }
+
+  const frame = (t, edge = null) => {
+    if (t < T.enter) {
+      const e = edgeOf(edge)
+      const base = told.frame(t, edge)
+      const n = notes(t, e)
+      const c = names(t, e)
+      return { key: `${base.key}${n.key}${c.key}`, cells: [...base.cells, ...n.cells, ...c.cells], ink: base.ink }
+    }
+    if (t < gatherAt) return told.frame(t, edge)
+    const s = sentence(t)
+    if (t < liveAt) {
+      if (!gather) gather = life.gatherOf()
+      const u = t - gatherAt
+      return { key: `G${Math.round(u)}${s.key}`, cells: [...gather.map((b) => bitAt(b, u)), ...s.cells], wash: life.fadeAt(u), ink: inkEnd }
+    }
+    const i = Math.floor((t - liveAt) / LIVE_MS)
+    const l = life.live(i, smooth01(Math.min(1, (t - liveAt) / R_LIVE_IN)))
+    return { key: `L${i}${s.key}`, cells: [...l.cells, ...s.cells], ink: inkEnd, glow: l.glow }
+  }
+
+  return {
+    cols: I_COLS, rows: I_ROWS, panel, fine: true, frame,
+    // drawn at the display's rate until the mark is alive, and ten times a
+    // second from then on, for as long as it is on the glass
+    end: liveAt, live: [liveAt, Infinity], still: pullAt + 120,
+    times: {
+      wake: F_WAKE, one: F_WAKE + F_SLIDE, found: F_WAKE + F_SLIDE + F_RING, open: F_OPEN,
+      credit: F_OPEN + F_IN_STEPS * F_STEP, creditOut: F_OUT_AT,
+      enter: T.enter, catch: T.catch, glow: T.glow, hold: T.hold, top: T.top, morphs: T.morphs,
+      bottom: T.bottom, done: T.done, covered: T.covered,
+      gather: gatherAt, say: sayAt, live: liveAt, said: saidAt, pull: pullAt, land: pullAt + F_PULL_MS,
+    },
+    // the layers apart, for the frame checks (scripts/check-stories.mjs):
+    // the intro's story, the notes, the names, the sentence, and which
+    // tenth of a second of the mark's life a frame is and how alive
+    layers: {
+      base: (t, edge) => told.frame(t, edge),
+      notes: (t, edge) => notes(t, edgeOf(edge)),
+      names: (t, edge) => names(t, edgeOf(edge)),
+      sentence,
+      life: (t) => (t < liveAt ? null : { i: Math.floor((t - liveAt) / LIVE_MS), e: smooth01(Math.min(1, (t - liveAt) / R_LIVE_IN)) }),
+    },
+    // the heavy start, and `budget` ms more of it, before the clock starts;
+    // answers whether all of it is done
+    prime: (budget = 0) => { life.small(); return told.prime(budget) },
+  }
+}
+
+// ── the keepsake's mark ─────────────────────────────────────────────────────
+// The mark the film ends on, alive for as long as the keepsake is open
+// (Keepsake.jsx): gathered at the top of the glass, `it's mutual.` under it
+// whole, and the cursor after it on the phone's beat. Nought is the moment
+// the film's mark came alive (its `times.live`), so a keepsake handed the
+// film's clock that far on draws the frame the film would
+// (scripts/check-stories.mjs);
+// one opened with no film comes alive over its first 700ms, as the film's
+// did. Never taken back and never told again: what stays is what was told.
+export function keepStory({ ink = null, say = { cells: [], w: 0, ends: [] } } = {}) {
+  const life = markLife({ ink })
+  const saying = sayingOf(say)
+  const lifeAt = (u) => ({ i: Math.floor(u / LIVE_MS), e: smooth01(Math.min(1, u / R_LIVE_IN)) })
+  const sentence = (u) => {
+    const lit = Math.floor(u / BLINK) % 2 === 0
+    return { cells: saying.at(saying.n, lit), key: `|${lit ? 1 : 0}` }
+  }
+  const frame = (t) => {
+    const u = Math.max(0, t)
+    const { i, e } = lifeAt(u)
+    const s = sentence(u)
+    const l = life.live(i, e)
+    return { key: `K${i}${s.key}`, cells: [...l.cells, ...s.cells], ink: life.ink, glow: l.glow }
+  }
+  return {
+    cols: I_COLS, rows: I_ROWS, fine: true, frame,
+    end: 0, live: [0, Infinity],
+    // (the frame checks, as the film's)
+    layers: { sentence: (t) => sentence(Math.max(0, t)), life: (t) => lifeAt(Math.max(0, t)) },
+    // a frame of it alive, the cursor lit, for reduced motion and the picture
+    still: 11 * LIVE_MS,
+    prime: () => { life.small() },
   }
 }

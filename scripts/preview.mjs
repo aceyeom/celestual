@@ -248,6 +248,24 @@ let WEEK = 'credits'
 // (0072): the list carries, for jules.k, the mutual and a new note beside it,
 // sealed and running to the next reveal.
 let AGAIN = false
+// The mutual's two notes, which its keepsake holds side by side (Keepsake.jsx):
+// 'long' is two of 280 characters, the most a note carries, 'none' two sent
+// without a word, and 'cjk' a mutual with somebody whose name and note are in
+// Korean (EXTRA, below), for the faces the film and the picture hand a canvas.
+let NOTES = ''
+// a person the resolver knows only on the `cjk` route, so the wall and every
+// other route keep the names they have
+const EXTRA = [['seoyeon.kim', '서연 김', false]]
+const known = (h) => HANDLES.find(([x]) => x === h) || (NOTES === 'cjk' ? EXTRA.find(([x]) => x === h) : null)
+// The mark a device keeps for a mutual it has watched told (pings.js
+// `wasOpened`): the same hash of whose list it is and the mutual's key
+const toldSeen = (me, key) => {
+  const s = `${me}>${key}`
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) }
+  return (h >>> 0).toString(36)
+}
+const MUTUAL_AT = now - 9 * DAY
 // Whether the fixture browser signed in with google, and nothing else: a
 // reader on any wall since 0057, and not a writer on the campus wall. It is
 // the person whose heart never counted, because this browser drew them as
@@ -989,14 +1007,23 @@ const RPC = {
     last_reveal: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
     pings: [
       {
-        handle: 'jules.k',
-        time: now - 9 * DAY,
+        handle: NOTES === 'cjk' ? 'seoyeon.kim' : 'jules.k',
+        time: MUTUAL_AT,
         expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
         mutual: true,
         revealed_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
-        card: { words: 'i have wanted to say this since the second week of term.' },
-        their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
-        ...faceOf('jules.k'),
+        ...(NOTES === 'long' ? {
+          card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.' },
+          their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.' },
+        } : NOTES === 'none' ? { card: { words: '' }, their_card: { words: '' } }
+          : NOTES === 'cjk' ? {
+            card: { words: 'i have wanted to say this since the second week of term.' },
+            their_card: { words: '수업 끝나고 매번 말을 걸고 싶었어. 금요일에 도서관 계단에서 기다릴게.' },
+          } : {
+            card: { words: 'i have wanted to say this since the second week of term.' },
+            their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
+          }),
+        ...(NOTES === 'cjk' ? { known: true, display_name: EXTRA[0][1], is_verified: false, avatar_path: null } : faceOf('jules.k')),
       },
       ...(AGAIN ? [{
         handle: 'jules.k',
@@ -1041,7 +1068,7 @@ async function fulfil(route) {
       const results = {}
       for (const raw of body.handles) {
         const h = String(raw || '').toLowerCase()
-        const row = HANDLES.find(([x]) => x === h)
+        const row = known(h)
         results[h] = row
           ? { ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2], avatar: faceUrl(row[0]), cached: true }
           : { ok: true, found: false, handle: h, cached: true }
@@ -1049,7 +1076,7 @@ async function fulfil(route) {
       return route.fulfill({ json: { ok: true, results } })
     }
     const h = String(body.handle || '').toLowerCase()
-    const row = HANDLES.find(([x]) => x === h)
+    const row = known(h)
     // a handle the fixture does not carry is an account the resolver did not
     // find, which is a state worth drawing, and not a reason to stop the run
     if (!row) return route.fulfill({ json: { ok: true, found: false, handle: h, cached: true } })
@@ -1340,6 +1367,42 @@ const ROUTES = [
   // the same person beside it, and the reveal, which is the mutual's still
   { label: 'you-again',     path: '/berkeley/you', again: true, settle: 900 },
   { label: 'reveal-again',  path: '/reveal/jules.k?beat=4', again: true, settle: 4200 },
+  // ── the mutual as a film, and the keepsake it lands in (28 September) ──
+  // The film held on its beats (Film.jsx `?film=`): pushed in out of a
+  // slot's glass part way (`?slot=` stands in for the slot pressed, and a
+  // moment before nought holds the push-in), the two notes, the one note
+  // opening into the names, the names, the two of them running in, the
+  // pink, the mark with the sentence typed under it, and the camera part way
+  // back onto the keepsake. Then the whole of it played and landed, and a
+  // skip. Then the keepsake at rest (`?keep`), its options, the question
+  // before taking it off, its picture's menu, the longest and the emptiest
+  // notes, a name in Korean, a visit after the film has been watched (out
+  // of the slot's glass, no film) and from the slot's `edit` key, and under
+  // reduced motion.
+  { label: 'reveal-push',      path: '/reveal/jules.k?beat=4&slot=67,318,256,60&film=-460', settle: 1200 },
+  { label: 'reveal-film-200',  path: '/reveal/jules.k?beat=4&film=200', settle: 1200 },
+  { label: 'reveal-film-560',  path: '/reveal/jules.k?beat=4&film=560', settle: 1200 },
+  { label: 'reveal-film-900',  path: '/reveal/jules.k?beat=4&film=900', settle: 1200 },
+  { label: 'reveal-film-1300', path: '/reveal/jules.k?beat=4&film=1300', settle: 1200 },
+  { label: 'reveal-film-2400', path: '/reveal/jules.k?beat=4&film=2400', settle: 1200 },
+  { label: 'reveal-film-3000', path: '/reveal/jules.k?beat=4&film=3000', settle: 1200 },
+  { label: 'reveal-film-3700', path: '/reveal/jules.k?beat=4&film=3700', settle: 1200 },
+  { label: 'reveal-film-4400', path: '/reveal/jules.k?beat=4&film=4400', settle: 1200 },
+  { label: 'reveal-film-5900', path: '/reveal/jules.k?beat=4&film=5900', settle: 1200 },
+  { label: 'reveal-film-pull', path: '/reveal/jules.k?beat=4&film=6900', settle: 1600 },
+  { label: 'reveal-played',    path: '/reveal/jules.k?beat=4', settle: 9800 },
+  { label: 'reveal-skipped',   path: '/reveal/jules.k?beat=4', acts: [['wait', 2600], ['click', '.wl-film-stage .wl-scr-bg']], settle: 1600 },
+  { label: 'reveal-keep',      path: '/reveal/jules.k?beat=4&keep', settle: 1400 },
+  { label: 'reveal-options',   path: '/reveal/jules.k?beat=4&keep=options', settle: 1400 },
+  { label: 'reveal-confirm',   path: '/reveal/jules.k?beat=4&keep=confirm', settle: 1400 },
+  { label: 'reveal-share',     path: '/reveal/jules.k?beat=4&keep=share', settle: 1800 },
+  { label: 'reveal-long',      path: '/reveal/jules.k?beat=4&keep', notes: 'long', settle: 1400, full: true },
+  { label: 'reveal-empty',     path: '/reveal/jules.k?beat=4&keep', notes: 'none', settle: 1400 },
+  { label: 'reveal-cjk',       path: '/reveal/seoyeon.kim?beat=4&keep', notes: 'cjk', settle: 2400 },
+  { label: 'reveal-short',     path: '/reveal/jules.k?beat=4&slot=67,318,256,60',
+    store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },
+  { label: 'reveal-edit',      path: '/reveal/jules.k?beat=4&slot=67,318,256,60&slotmenu=options', settle: 1600 },
+  { label: 'reveal-keep-still', path: '/reveal/jules.k', still: true, settle: 1400 },
   // the three stories and the deck under prefers-reduced-motion, where each
   // is drawn on its last frame and has to be whole as a still
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
@@ -1812,6 +1875,7 @@ for (const r of list) {
   FULL = r.full === true
   WEEK = r.week || 'credits'
   AGAIN = r.again === true
+  NOTES = r.notes || ''
   GOOGLE = r.google === true
   NOCAL = r.nocal === true
   INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })

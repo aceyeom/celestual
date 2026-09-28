@@ -34,6 +34,8 @@ equivalent.
 | standing, waiting | active, pending, in progress |
 | it's mutual | match found, congratulations, you matched |
 | let it go (a private note of your own) | delete, withdraw |
+| take it off my list (a mutual, from your own list only) | delete, remove, unmatch, let it go |
+| send them a new note (writing to a mutual again) | message, reply, ping again |
 | remove it (a letter about you, by the owner of its @) | delete, take it down |
 | keep it standing, renew | extend, refresh, resubscribe |
 | lapses | expires |
@@ -70,6 +72,18 @@ for passing one on. The composer's act is `send anonymously`; the key on a
 letter that hands its picture to somebody, saves it or copies its link is
 `share`. That key read `send` until 24 September: one word for two acts, a few
 centimetres apart.
+
+**A mutual is kept, and taken off one list.** It never lapses and is not let
+go: a mutual is the two notes, and neither person can take the other's back.
+So the one way to be rid of it is `take it off my list`, asked once as `take
+it off your list?`, and the question says what it does and does not do: "it
+leaves your list for good. Jules keeps theirs and is not told." The keys are
+`take it off` and `keep it`, and after it, `taken off.`. Writing to them
+again is `send Jules a new note`, a new note and not a reply to the old one.
+The picture of a mutual is shared like a letter's (`share`, `to someone`,
+`save the picture`), and carries both notes unless the person says `leave the
+notes off`, which then reads `put the notes back`. It names the two by their
+first names or not at all, never by an @, and it carries no link.
 
 ---
 
