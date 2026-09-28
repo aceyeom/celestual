@@ -86,7 +86,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0071, in order. 0029 onward is the rebuild; 0038 is
+  migrations/       0001 to 0072, in order. 0029 onward is the rebuild; 0038 is
                     the audit; 0057 is the wall at the root and the login;
                     0058 gives every letter a colour of the screens; 0063 is
                     the one wall; 0065 is the login by our own mailed link,
@@ -98,7 +98,10 @@ supabase/
                     then; 0070 makes the link enough, with no number, by
                     signing in only the browser that opens it; 0071 is
                     pings by the week, one free ping for every reveal and
-                    more bought at $2.99 each, ten a reveal at most
+                    more bought at $2.99 each, ten a reveal at most; 0072
+                    keeps a mutual on both lists as it was told, so a person
+                    can write to the same somebody again or take a mutual off
+                    their own list, and the other is told nothing
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -wall-reply, -edu-verify, -ig-webhook,
                     -manychat, -mutual-dm, -notify, -remind, -stripe,

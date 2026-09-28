@@ -54,7 +54,10 @@
 .wl-scr[data-cells] .wl-scr-fx.is-rgb { background-position: var(--story-x) var(--story-y); }
 
 /* No story names anybody in its status row any more: the door's two are
-   told apart by the steps under it and the mutual's by the row under it
-   (Join.jsx, Reveal.jsx), so the second row, the pen, the name and the
-   handle, is a letter's and is off on every story's screen. */
+   told apart by the steps under it and the mutual's film credits them on
+   its glass (Join.jsx, Film.jsx), so the second row, the pen, the name and
+   the handle, is a letter's and is off on every story's screen. Except the
+   keepsake's, where the row is the two of them (screen.jsx `pair`), which
+   the phone says it is: a class on the scene, and no second `:has()` */
 .wl-scene:has(.wl-story) .wl-scr-r2 { display: none; }
+.wl-scene.is-pair .wl-scr-r2 { display: flex; }

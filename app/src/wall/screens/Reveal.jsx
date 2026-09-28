@@ -3,65 +3,65 @@
 // The screen the whole product exists to reach. Two people each sent the
 // other a note without knowing the other had, and this is where each of them
 // is told, on the same phone the letters are written on, that the other did,
-// and reads what the other wrote.
+// and reads what both of them wrote.
 //
 // It was Main's (/reveal), in the room's language: a liquid metal seal, the
-// sentence in the serif, two chalk cards. It is a sheet on the wall now, and
-// the wall is the phone (DESIGN.md 2.6), so it is told the way the intro and
-// the door tell the mechanic: on a letter's screen, the night one, in the black
-// room a letter is read in.
+// sentence in the serif, two chalk cards. Then it was a sheet on the wall, a
+// letter's night screen telling the intro's story in a loop over a column of
+// the pair, their note and a key, and the owner saw that and said it looked
+// like the intro animation slapped on top of the message (28 September). He
+// asked for the animation to take over the entire screen, for both names and
+// both letters, and for it to become something the two of them would keep
+// and share. So it is two things now, in one black room:
 //
-// ── the order is the meaning ────────────────────────────────────────────────
+//   1  the film      (Film.jsx) the first time a mutual is opened on this
+//                    device: the slot that was pressed in the private notes
+//                    (Slot.jsx) grows until its glass is the whole screen,
+//                    and the story is told on it once, in the phone's own
+//                    pixels (pixmark.js `filmStory`): two sealed notes that
+//                    meet and become one, the one note opening into the two
+//                    names, theirs over yours, and the names going as a boy
+//                    and a girl run in from either edge; the catch, the
+//                    phone turning rose, the two of them becoming the mark,
+//                    and `it's mutual.` typed under it. Then the camera pulls
+//                    back, and the glass closes down onto the middle of one
+//                    rose phone
+//   2  the keepsake  (Keepsake.jsx) that phone: the night it was told and
+//                    the two names on its status rows, their note, the mark,
+//                    still alive, and your note, one strip of glass. Its keys
+//                    are the phone's: `options` (write them a new note, or
+//                    take it off your list) and `share` (a picture of all of
+//                    it, keepshare.js), and under it the one lit key, their
+//                    Instagram. It is what opens on every visit after the
+//                    first, out of the slot's glass, with no film
 //
-//   1  the phone         the screen comes on, lit and empty, the ground and
-//                        nobody on it, and holds a beat; then a boy and a
-//                        girl run in from out past either edge of the
-//                        glass, onto it on the same frame, the intro's two
-//                        (folk.js), and her run carries her on into his arms
-//                        and half behind him; the backlight turns pink and
-//                        the phone becomes a letter lit in rose, and they
-//                        glide together into the mark (pixmark.js
-//                        `revealStory`). The mark gathers up into the top of
-//                        the glass, and under it, IN the phone, in its own
-//                        face and with its own cursor, "it's mutual." is
-//                        typed a character at a time. Exactly those words:
-//                        no congratulations, no match (VOICE.md 2). And the
-//                        phone never stops: its backlight breathes, a light
-//                        goes round the ring, the star twinkles, the phone
-//                        itself rises and settles in its own light, the way
-//                        a thing that is on and alive does, and that light
-//                        drifts, slowly, from the rose toward the corals and
-//                        home again (`drift`). Then the telling takes itself
-//                        back: the words are deleted the way the phone
-//                        deleted, the mark comes down into the ground and
-//                        goes out, and the pink leaves the glass for it, until
-//                        the glass is the empty one it opened on, and the two
-//                        of them run in again (`STORY.loop`), for as long as
-//                        the sheet is open, with no seam anywhere in it; the
-//                        sheet under it stays as it is. There is no heart in
-//                        it: the backlight used to beat, lub and dub, and a
-//                        heart floated up off the star now and then, and the
-//                        owner took them out.
-//   2  the two of them   the pair, face and handle, one beside the other and
-//                        never one before the other: a stagger would say one
-//                        of them mattered more, and the whole premise is that
-//                        neither did. Then one plain line of what happened.
-//   3  their note        what they wrote to you, set like a letter: the one
-//                        thing on the sheet that is theirs, so it is the
-//                        largest thing under the phone. Yours is behind a
-//                        quiet key, because you know what you wrote.
-//   4  the way on        the lit key, to their account, and a quiet way back
-//                        to the wall that says nothing to anybody.
+// What stayed from before: the room, and nothing but the phone lit in it;
+// no heart anywhere (the owner took the beat and the floating heart out on
+// 26 September), and the words exactly `it's mutual.`, no congratulations
+// and no match (VOICE.md 2). What went, and why: the telling taken back and
+// told again for as long as the sheet was open, and the phone rising and
+// drifting through the corals (the owner cut the drift and the float, and a
+// loop reads as a screen saver and not as a thing that happened once); their
+// note under the phone and yours behind a key (a keepsake of two people is
+// both of them); and the handles in a row with a `+` between them.
 //
-// It used to set the two handles in the phone's status row, type the sentence
-// under the phone in the display face, stack two panels of the two notes at
-// one weight, and close with a line about the product's part being done, the
-// key, and "keep this to yourself": six things at one volume, and the
-// sentence the page is for standing outside the phone it was told on.
+// Which it opens as, once the mutual is in hand, in this order: under
+// reduced motion, the keepsake, still; from the slot's `edit` key, the
+// keepsake with its options up (revealfrom.js `menu`); a mutual this device
+// has already watched told (pings.js `wasOpened`), the keepsake, out of the
+// slot's glass; and otherwise the film, pushed in from the slot, or woken
+// out of the black when there is no slot to grow from (the mail's link, a
+// reload, a new device). It is marked watched once `it's mutual.` has been
+// said, watched to there or skipped to it, and never before: a person who
+// closes it half way has not seen it. The keepsake that opens with no film
+// marks it too, the short way and the still one, but not the `edit` key's:
+// a person who reaches for the options of a mutual they have not watched
+// has not seen it told either, and it marked the film watched for good on
+// that device, the slot turned still and the takeover never played (the
+// review of 28 September), so the slot still tells it the next time.
 //
-// A tap anywhere that is not a control lands the whole thing, and under
-// reduced motion it is drawn landed and still. The screen reader hears the
-// same facts in order, from a heading nobody sees and the page itself.
+// The screen reader hears the same facts from the first frame, from a
+// heading nobody sees and a line under it, and never waits on the film.
 //
 // ── where the facts come from ───────────────────────────────────────────────
 // Who this is, off the server's row (main/data.js `me`), and the handle the
@@ -72,13 +72,16 @@
 // this browser holds), and a copy of that answer held for a couple of
 // minutes, so a tap on a mutual lands on a drawn screen and not a bare one
 // while the server is asked again. A read that fails does not unsay a mutual
-// already in hand.
+// already in hand. Since 0072 a handle can carry a mutual and a new note to
+// the same person, and the mutual is `mutualOf` the list, never the first
+// row that happens to name them.
 //
 // ── and when there is nothing to show ───────────────────────────────────────
 // "nothing here." is said the same way whatever the reason, and its one key
 // is the account sheet (screens/You.jsx), which is where each reason has its
 // own words and its own way on: a proof this browser does not hold, one the
-// server no longer takes, or no @ at all.
+// server no longer takes, or no @ at all. Neither it nor "sign in" ever
+// plays the film.
 //
 // Except to somebody this device does not know at all. The mutual mail's link
 // is opened wherever the mail is read, often a phone or a laptop nobody ever
@@ -91,30 +94,20 @@
 // anybody: every visitor who is not signed in reads the same line, mutual or
 // not.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Pill, CloseQuiet, Face, useProfile } from '../parts.jsx'
-import { Screen, Wait } from '../screen.jsx'
-import { skinOf, skinVars } from '../looks.js'
-import { TURNS, turnStyle } from '../turn.js'
-import PixelStory, { SQUARE, underPink, useStoryClock, heldAt, useFirstFrame } from '../PixelStory.jsx'
-import { revealStory, R_WAKE } from '../pixmark.js'
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
+import { Sheet, SheetHead, SheetFoot, Display, Pill, useSheet } from '../parts.jsx'
+import { Wait } from '../screen.jsx'
 import { normHandle, atHandle } from '../data.js'
 import { heldProof } from '../auth.js'
 import { href } from '../router.js'
 import { setAfterGate } from '../store.js'
 import { getSession } from '../../api/auth.js'
 import { me } from '../../main/data.js'
-import { myHandle, myPings, heldPings, sinceAgo } from '../pings.js'
+import { myHandle, myPings, heldPings, mutualOf, liveOf, revealStamp, wasOpened, markOpened, REVEAL_TZ } from '../pings.js'
+import { takeRevealFrom, returnTo } from '../revealfrom.js'
+import Film, { pairSeed, namesOf, namesNow, primeFilm, filmFor, keepFor, wordsReady, faceCame, filmHold } from '../Film.jsx'
+import Keepsake, { FLY_OPENS } from '../Keepsake.jsx'
 import '../mutual.css'
-
-// The mutual this address names, out of an answer already in hand. Null when
-// there is none to read, which is not the same as "not a mutual".
-function fromHeld(handle, them) {
-  if (!handle || !them) return null
-  const held = heldPings(handle)
-  if (!held) return null
-  return held.mutuals.find((m) => normHandle(m.to) === them) || null
-}
 
 // Who this browser is before the server has said: the handle its own proof
 // is for, which is enough to read a held copy on the first frame.
@@ -123,341 +116,247 @@ function guessHandle() {
   return s && s.handle ? normHandle(s.handle) : ''
 }
 
-const SAY = 'it’s mutual.'
-const NIGHT = skinOf('night')
-const ROSE = skinOf('rose')
-const STORY = revealStory({ panel: [ROSE.hi, ROSE.mid, ROSE.lo], ink: [NIGHT.ink, ROSE.ink] })
-const T = STORY.times
-// The sentence, typed on the glass as the mark gathers up to make room for
-// it, a character every 70ms, which is how fast the phone put a message on
-// its screen.
-const SAY_AT = T.gather + 160
-const TYPE_MS = 70
-// and the rest of the sheet once it is said: the pair and the line, their
-// note, then the keys, each a beat after the last (mutual.css `is-said`)
-const SAID_AT = SAY_AT + SAY.length * TYPE_MS + 180
-// And taken off it again, when the telling is taken back (pixmark.js
-// `quiet`), the way the phone deleted: the clear key pressed, a character
-// goes; held, a moment later they go one after another, quicker than anybody
-// types, the cursor stepping back with them. The last goes as the mark
-// starts to come down into the ground (pixmark.js `R_UNMAKE_AT`).
-const UNSAY_HELD = 200
-const UNSAY_MS = 42
-const TYPED = Array.from(SAY, (c, i) => SAY_AT + (i + 1) * TYPE_MS)
-const UNTYPED = Array.from(SAY, (c, i) => T.quiet + (i ? UNSAY_HELD + (i - 1) * UNSAY_MS : 0))
-// The moments a telling passes, in order: the pink leaving the two of them,
-// each character of the sentence typed, the sentence said, each character
-// taken off again, the pink coming back over the panel's own to leave it,
-// and the telling back at the empty glass it opened on. Everything the page
-// does round the phone changes on one of them, and is read off the clock
-// at it (below), so a held frame is drawn the same way as a running one.
-const MARKS = [T.glow, ...TYPED, SAID_AT, ...UNTYPED, T.going, T.night].sort((a, b) => a - b)
-const count = (list, u) => list.reduce((n, ms) => (u >= ms ? n + 1 : n), 0)
-// how much of the sentence is on the glass, `u` into a telling
-const typedAt = (u) => Math.min(SAY.length, count(TYPED, u)) - count(UNTYPED, u)
-
-const LOOK = { tint: 'night' }
-const NO_KEYS = {}
-const NO_TOP = {}
-
-// ── the phone's light ──
-// It starts as the night's, and as the pink spreads on the glass the whole
-// phone becomes a letter lit in rose, as the intro's does (turn.js), the
-// panel under the pink once the pink has covered it; and the rose it turns
-// to is the one the drift below moves on from and comes home to. When the
-// telling is taken back it goes back to the night's the same way round:
-// the panel under the pink once the pink is whole over it again, unseen, and
-// the bands and the light round the phone as the pink leaves the top of the
-// glass. The moments are the story's (pixmark.js `phone`).
-const PHONE = underPink(turnStyle('night', 'rose', SQUARE))
-const TURN = {
-  '--mu-turn-at': `${T.top - T.glow}ms`, '--mu-pan-at': `${T.covered - T.glow}ms`,
-  '--mu-back-at': `${T.back - T.going}ms`,
+// The mutual this address names, out of an answer in hand, with the list
+// it came in (for whether a new note to them is standing)
+function found(answer, them) {
+  const m = mutualOf(answer, them)
+  return m ? { mutual: m, list: answer } : null
 }
-// The light the phone throws in the room, and the phone rising and
-// settling in it, on the story's own clock: the page used to run them on
-// clocks of their own, from when it opened, so a telling found them
-// wherever they had got to. They are laid on the telling now (pixmark.js
-// `phone`), a telling long and taken round with it, from its nought: the
-// light comes up with the rose and breathes a whole number of times, the
-// phone rises only while the mark is whole, and each telling ends with
-// both where it began. Web animations, so they are the compositor's
-// (opacity and transform), and not a frame of script.
-const onLoop = (keys, style) => keys.map(([t, v, e]) => ({ offset: t / STORY.loop, easing: e || 'linear', ...style(v) }))
-const HALO = onLoop(STORY.phone.halo, ([o, s]) => ({ opacity: o, transform: `translate3d(-50%, -50%, 0) scale(${s})` }))
-const FLOAT = onLoop(STORY.phone.float, (y) => ({ transform: `translate3d(0, ${y}px, 0)` }))
 
-// ── the screenshot loop's hold ──
-// Development only, as the intro's `?t=` is: `?story=5200` holds the glass,
-// the words, the phone's light, the light it throws and the phone itself on
-// 5200ms into a telling.
-function devHold() {
+// the night it was told, as a sentence says it: "saturday, september 26",
+// in California, where the reveal is
+let NIGHT_WORDS = null
+function nightWords(ms) {
+  if (!ms) return ''
+  if (!NIGHT_WORDS) NIGHT_WORDS = new Intl.DateTimeFormat('en-US', { timeZone: REVEAL_TZ, weekday: 'long', month: 'long', day: 'numeric' })
+  return NIGHT_WORDS.format(new Date(ms)).toLowerCase()
+}
+
+// ── the screenshot loop's holds ──
+// Development only, as the intro's `?t=` is: `?film=5200` holds the film
+// (Film.jsx), and `?keep` lands on the keepsake at rest, `?keep=options`,
+// `?keep=confirm` or `?keep=share` with that up in the mark's place.
+function keepHold() {
   if (!import.meta.env.DEV) return null
-  const v = new URLSearchParams(window.location.search).get('story')
-  return v === null ? null : Math.max(0, Number(v) || 0) % STORY.loop
+  const v = new URLSearchParams(window.location.search).get('keep')
+  return v === null ? null : ['options', 'confirm', 'share'].includes(v) ? v : ''
+}
+// and `?slot=67,210,256,60` stands in for a slot's glass pressed at that
+// rect (with `&slotmenu=options` for its `edit` key), since the screenshot
+// loop opens the reveal by its address and not by a press
+function slotHold() {
+  if (!import.meta.env.DEV) return null
+  const q = new URLSearchParams(window.location.search)
+  const v = (q.get('slot') || '').split(',').map(Number)
+  if (v.length !== 4 || v.some((n) => !Number.isFinite(n))) return null
+  return { x: v[0], y: v[1], w: v[2], h: v[3], menu: q.get('slotmenu') || '' }
 }
 
-// ── the drift ──
-// Once the mark is alive the light does not stay rose. It drifts, a shade at
-// a time, through the pinks toward the corals, as a letter lit in each of
-// those colours would be (looks.js `skinOf`, the lit arithmetic), so the
-// words on it are always the dark of the light they are on, and comes home
-// to the rose as the mark goes quiet, so the telling is taken back from the
-// rose it was told in. The colours are laid round a circle of 24 seconds
-// (`DRIFT`), and a telling goes out along it and back (`DRIFT_OUT` of the
-// way at the most, half way through its life) on an ease with no corner at
-// either end. A function of the glass's own clock, set ten times a second,
-// still with the tab, and never under reduced motion, which keeps the rose.
-// On the rose itself it is nothing at all: the phone's own rose shows, so
-// the light going to drifting and back is never seen to change. The light
-// it throws in the room is the story's glow on the rose, and the drift's
-// own further out.
-const DRIFT = [
-  [0, '#DF93AF'], [0.13, '#E88DAE'], [0.27, '#EE9A82'], [0.4, '#E0A95A'],
-  [0.55, '#A3BB6B'], [0.68, '#86C29B'], [0.8, '#A3BB6B'], [0.9, '#E6A267'], [1, '#DF93AF'],
-]
-const DRIFT_STEPS = 480
-const DRIFT_OUT = 0.24
-// the story's glow on the rose (story.css `--story-glow-rgb`)
-const GLOW_RGB = [255, 150, 194]
-const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-const mixHex = (a, b, k) => `#${hexRgb(a).map((v, i) => Math.round(v + (hexRgb(b)[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
-// the drift `u` into its window, `span` long: null on the rose
-function drift(u, span) {
-  const out = DRIFT_OUT * ((1 - Math.cos((2 * Math.PI * Math.max(0, Math.min(span, u))) / span)) / 2)
-  const q = Math.round(out * DRIFT_STEPS)
-  if (q <= 0) return null
-  const k = q / DRIFT_STEPS
-  let j = 0
-  while (j < DRIFT.length - 2 && DRIFT[j + 1][0] <= k) j++
-  const [a, ha] = DRIFT[j]
-  const [b, hb] = DRIFT[j + 1]
-  const e = Math.min(1, Math.max(0, (k - a) / (b - a)))
-  const hue = mixHex(ha, hb, e * e * (3 - 2 * e))
-  // a letter in this light, made once for each of the steps and kept
-  const v = skinVars({ slug: `mutual-drift-${q}`, kind: 'lit', hue })
-  const far = k / DRIFT_OUT
-  const own = hexRgb(mixHex(hue, '#FFFFFF', 0.25))
-  const glow = GLOW_RGB.map((c, i) => Math.round(c + (own[i] - c) * far * far * (3 - 2 * far))).join(', ')
-  return { v, glow }
-}
+// ── the mutual ──────────────────────────────────────────────────────────────
+// Which way it opens, the two names frozen once, the film's clock and the
+// keepsake's, and a skip. `opened` is where the reveal was opened from, if
+// it was a slot (revealfrom.js).
+function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
+  const sheet = useSheet()
+  const [hold] = useState(() => {
+    const film = filmHold()
+    const keep = keepHold()
+    return { film, keep }
+  })
+  // how it opens, decided once: a mutual marked watched a moment from now
+  // is still being watched now
+  const [entry] = useState(() => {
+    if (hold.keep !== null) return 'rest'
+    if (hold.film !== null) return 'film'
+    if (reduce) return 'still'
+    if (opened && opened.menu === 'options') return 'options'
+    if (wasOpened(mine, p)) return 'short'
+    return 'film'
+  })
+  const rect = opened && opened.w > 0 && opened.h > 0 ? opened : null
+  const seed = pairSeed(mine, them)
+  const stamp = p.revealedAt ? revealStamp(p.revealedAt) : ''
 
-// One of the two: the face and the handle, with the name under it when the
-// resolver has one.
-function One({ handle, fallback }) {
-  const p = useProfile(handle)
-  return (
-    <span className="wl-mutual-one">
-      <Face handle={handle || fallback} size={34} resolve={!!handle} />
-      <span className="wl-mutual-id">
-        <span className="wl-mutual-at">{handle ? atHandle(handle) : fallback}</span>
-        {p?.name ? <span className="wl-mutual-name">{p.name}</span> : null}
-      </span>
-    </span>
-  )
-}
-
-function Mutual({ mine, them, mutual, reduce }) {
-  const hold = useRef(devHold()).current
-  const still = !!reduce || hold !== null
-  const [mineOpen, setMineOpen] = useState(false)
-  const theirs = useProfile(them)
-  // The glass's nought: the first frame the page can paint, after the
-  // story's heavy start, with the screen's wake set on it (PixelStory.jsx
-  // `useFirstFrame`); and the first telling starts once the screen is on, a
-  // wake after it, on the empty glass. Until then it is dark and empty.
-  const fig = useRef(null)
-  const t0 = useFirstFrame(fig, STORY.prime, still)
-  // Once landed, the clock is from far enough back that the sentence is
-  // said, and it goes on round from there.
-  const [landedAt, setLandedAt] = useState(null)
-  const landed = landedAt !== null
-  const from = landed ? landedAt : t0 === null ? null : t0 + R_WAKE
-  const clock = useStoryClock(STORY, from, MARKS, still)
-  const now = reduce ? heldAt(MARKS, SAID_AT) : hold !== null ? heldAt(MARKS, hold) : clock
-  // everything round the phone, as it is `u` into this telling
-  const u = Math.max(0, now.u)
-  const typed = Math.max(0, typedAt(u))
-  // the sheet under the phone, once it has been said, stays
-  const said = !!reduce || now.n > 0 || landed || u >= SAID_AT
-  const glow = u >= T.glow && u < T.going
-  const going = !reduce && u >= T.going && u < T.night
-  // the cursor stands still while the sentence is being typed or taken off,
-  // as the phone's did, and blinks while it waits
-  const typing = (u >= SAY_AT && u < SAID_AT) || (u >= T.quiet && typed > 0)
-  // a landing is for the telling it lands, up to where it is taken back,
-  // and the next one is told whole
-  const skip = landed && now.n === 0 && !going && u < T.night
-
-  const land = useCallback(() => setLandedAt(performance.now() - SAID_AT), [])
-
-  // a tap on the room, or a key, lands it; a press on a control is that
-  // control's, and Escape is the sheet's way out. Once the telling is said
-  // there is nothing to land.
-  const told = u >= SAID_AT
+  // ── the names, frozen ──
+  // Once the resolver has said them or 400ms after the reveal opened,
+  // whichever is first, and the words cut into cells in the phone's face.
+  // The keepsake and every line wait for them; nothing is drawn with one
+  // pair of names and then another. A keepsake whose sentence was cut
+  // before the phone's face had come (a cold link on a slow network) has it
+  // cut again once the face is there, and a film that was is let play.
+  const [made, setMade] = useState(null)
   useEffect(() => {
-    if (still || told) return undefined
-    const onKey = (e) => { if (e.key !== 'Escape') land() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [still, told, land])
-  const onPress = (e) => { if (!still && !told && !e.target.closest('a, button')) land() }
-
-  // The light the phone throws, and the phone rising and settling, laid on
-  // the story's clock from its nought (`HALO`, `FLOAT`): before it, and
-  // under a held frame, stood on the moment it is. Under reduced motion,
-  // neither moves (mutual.css `.is-still`). A hidden tab draws neither, and
-  // shown again they are where the clock is, with the glass.
-  const halo = useRef(null)
-  const float = useRef(null)
-  useEffect(() => {
-    const h = halo.current
-    const f = float.current
-    if (reduce || !h || !f || !h.animate) return undefined
-    const opts = { duration: STORY.loop, iterations: Infinity, fill: 'both' }
-    const all = [h.animate(HALO, opts), f.animate(FLOAT, opts)]
-    for (const a of all) {
-      if (hold !== null || from === null) {
-        a.pause()
-        a.currentTime = hold ?? 0
-      } else a.startTime = from
+    let alive = true
+    let done = false
+    const settle = async (pair) => {
+      if (done) return
+      done = true
+      const ok = await wordsReady(pair.names)
+      if (!alive) return
+      const credit = ok ? pair.names : [atHandle(them), atHandle(mine)]
+      const keep = keepFor()
+      setMade({ ...pair, film: entry === 'film' ? filmFor(credit) : null, keep })
+      if (keep.sure) return
+      const came = await faceCame()
+      if (alive && came) setMade((m) => (m ? { ...m, keep: keepFor() } : m))
     }
-    return () => all.forEach((a) => a.cancel())
-  }, [reduce, hold, from])
+    if (entry === 'film') primeFilm(mine, them)
+    namesOf(mine, them).then(settle, () => settle(namesNow(mine, them)))
+    const t = setTimeout(() => settle(namesNow(mine, them)), 400)
+    return () => { alive = false; clearTimeout(t) }
+  }, [entry, mine, them])
 
-  // The light, drifting while the mark is alive (see `drift`), from the
-  // rose and home to it; on the rose, and outside that window, nothing is
-  // set and the phone's own rose shows. Stops with the tab, and a held frame
-  // is lit as it would be at that moment.
-  const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
+  // ── watched ──
+  // on arriving the short way or the still one (not with the options up, see
+  // the header), and for the film once the sentence is said, whether it was
+  // watched to there or skipped to it (below)
   useEffect(() => {
-    const on = () => setHidden(document.hidden)
-    document.addEventListener('visibilitychange', on)
-    return () => document.removeEventListener('visibilitychange', on)
+    if ((entry === 'short' || entry === 'still') && hold.keep === null) markOpened(mine, p)
+    // once, on arriving
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useEffect(() => {
-    const el = fig.current
-    if (!el || reduce || hidden || (from === null && hold === null)) return undefined
-    let on = false
-    const off = () => {
-      if (!on) return
-      for (const k of TURNS) el.style.removeProperty(`--mu${k}`)
-      el.style.removeProperty('--story-glow-rgb')
-      on = false
-    }
-    const [a, b] = STORY.phone.drift
-    const step = () => {
-      const t = hold ?? performance.now() - from
-      const d = t < 0 ? null : drift((t % STORY.loop) - a, b - a)
-      if (!d) { off(); return }
-      for (const k of TURNS) el.style.setProperty(`--mu${k}`, d.v[k])
-      el.style.setProperty('--story-glow-rgb', d.glow)
-      on = true
-    }
-    step()
-    if (hold !== null) return off
-    const id = setInterval(step, 100)
-    return () => {
-      clearInterval(id)
-      off()
-    }
-  }, [reduce, hidden, from, hold])
 
-  const ago = sinceAgo(mutual.at)
-  const theirName = theirs?.name ? `${theirs.name}, ${atHandle(them)}` : atHandle(them)
-  const note = mutual.theirLine
-  const yours = mutual.line
-  // a held frame holds the phone's light where it is at that moment too
-  const lit = hold === null ? null : STORY.lightAt(hold)
-  const figStyle = lit ? { ...TURN, '--held-turn': lit.turn, '--held-pan': lit.pan } : TURN
-  // `is-landed` is for the sheet under the phone, which does not rise again
-  // once a tap has put it there; `is-skip` for the phone, which is lit at
-  // once on the telling the tap landed and goes back as it always does
-  const cls = [
-    'wl-mutual', said && 'is-said', glow && 'is-glow', going && 'is-going', (landed || reduce) && 'is-landed',
-    skip && 'is-skip', reduce && 'is-still',
-  ].filter(Boolean).join(' ')
+  // ── the film's clock ──
+  // `from` is the film's nought; a skip moves it so the sentence is said, and
+  // says when it came (`skipAt`). A skip before the glass is there waits for
+  // it. Every beat after is the film's (Film.jsx).
+  const [phase, setPhase] = useState(entry === 'film' ? 'film' : 'rest')
+  const [from, setFrom] = useState(null)
+  const [skipAt, setSkipAt] = useState(null)
+  const [queued, setQueued] = useState(false)
+  const clock = useRef({ from: null, skipAt: null, pulling: false })
+  const film = made && made.film
+  const skip = useCallback(() => {
+    const c = clock.current
+    const now = performance.now()
+    if (c.from === null || now < c.from) { setQueued(true); return }
+    if (c.skipAt !== null && !c.pulling) return
+    if (!c.pulling && film && now - c.from < film.times.said) {
+      c.from = now - film.times.said
+      setFrom(c.from)
+    }
+    c.skipAt = now
+    setSkipAt(now)
+  }, [film])
+  const onFrom = useCallback((t) => {
+    const c = clock.current
+    if (c.from !== null) return
+    c.from = t
+    setFrom(t)
+  }, [])
+  // A skip that came during the push-in or the wake is taken at nought. It
+  // was a flag on the clock, read when the nought was set, and the push-in
+  // sets its nought on its first frame, so a tap any later than that was
+  // held for a nought that had already been read, and never taken. (The
+  // wait is rounded up and a millisecond over: a timer is set in whole
+  // milliseconds, and one that came a fraction short of the nought was held
+  // again, and lost.)
+  useEffect(() => {
+    if (from === null || !queued) return undefined
+    const id = setTimeout(() => { setQueued(false); skip() }, Math.max(0, Math.ceil(from - performance.now()) + 1))
+    return () => clearTimeout(id)
+  }, [from, queued, skip])
+  // The film is watched when its sentence is said, and written down then:
+  // in the beat the glass holds before the camera pulls back, where the page
+  // has nothing else to do. Written on the pull-back's first frame, the
+  // store's change woke the wall under the sheet on it, a long frame on a
+  // slow phone just as the glass began to move. A skip moves the nought so
+  // the sentence is said now, and it is written a moment after the jump.
+  useEffect(() => {
+    if (entry !== 'film' || from === null || !film || hold.film !== null) return undefined
+    const id = setTimeout(() => markOpened(mine, p), Math.max(0, from + film.times.said - performance.now()))
+    return () => clearTimeout(id)
+  }, [entry, from, film, hold.film, mine, p])
+
+  // ── the keepsake, behind the film ──
+  // Laid out and hidden while the film plays, since the camera pulls back
+  // onto it; but not on the press, which has the glass to put up. It comes
+  // once the glass has begun to grow or wake (its nought is known) and the
+  // page is next idle, which the push-in and the wake leave it, both of them
+  // the compositor's to draw, and always before the nought: on a phone
+  // slowed four times the press was half a second before anything moved,
+  // and half of that was this.
+  const [behind, setBehind] = useState(entry !== 'film')
+  useEffect(() => {
+    if (behind || from === null) return undefined
+    const on = () => setBehind(true)
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(on, { timeout: 240 })
+      return () => cancelIdleCallback(id)
+    }
+    const id = setTimeout(on, 60)
+    return () => clearTimeout(id)
+  }, [behind, from])
+
+  const keep = useRef(null)
+  const onPull = useCallback((ms, paused) => {
+    clock.current.pulling = true
+    if (keep.current) keep.current.lightUp(ms, paused)
+    // (already written when it was said, and so nothing, but for a film
+    // whose sentence came sooner than its timer)
+    if (paused === null) markOpened(mine, p)
+  }, [mine, p])
+  const onLand = useCallback(() => setPhase('landing'), [])
+  const onGone = useCallback(() => setPhase('rest'), [])
+  const onBack = useCallback(() => sheet && sheet.dismiss('film'), [sheet])
+  // (before the frame is painted, so the corner key is never seen over the
+  // film for a frame)
+  useLayoutEffect(() => { onPhase(phase) }, [phase, onPhase])
+
+  // Escape takes down what stands in the mark's place first; during the
+  // film it is the sheet's, and puts the screen to sleep
+  const keepEsc = useRef(null)
+  useImperativeHandle(escRef, () => (e) => (phase === 'rest' && keepEsc.current ? keepEsc.current(e) : false), [phase])
+
+  // the keepsake's clock: the film's, at the moment its mark came alive, so
+  // the two draw one mark; or from when it arrives, and out of the slot from
+  // when the phone opens under the glass flying in (Keepsake.jsx
+  // `FLY_OPENS`); or held on one frame of it alive, under reduced motion and
+  // for the screenshot loop
+  const [arrived] = useState(() => performance.now() + (entry === 'short' || entry === 'options' ? (rect ? FLY_OPENS : 0) : 0))
+  const keepStory = made && made.keep
+  const keepAt = entry === 'still' || hold.keep !== null ? keepStory && keepStory.still
+    : hold.film !== null && film ? Math.max(0, hold.film - film.times.live) : null
+  const keepFrom = entry === 'film' ? (from === null || !film ? null : from + film.times.live) : arrived
+  const enter = entry === 'film' ? 'film' : (entry === 'short' || entry === 'options') && rect ? 'fly' : 'fade'
+  const state = phase === 'film' ? 'hidden' : phase === 'landing' ? 'landing' : 'rest'
+  // (asked of the slot and not of the entry, which under reduced motion is
+  // the still one, and the `edit` key opened the keepsake with no options)
+  const menu = hold.keep ? hold.keep : opened && opened.menu === 'options' ? 'options' : null
+  const names = made ? made.names : namesNow(mine, them).names
+  // a new note out on them since the mutual, running (the keepsake's options
+  // open it as itself, and its question says it stays)
+  const live = liveOf(list, them)
+  const standing = live && live.state === 'standing' ? live : null
+  const night = nightWords(p.revealedAt)
 
   return (
-    <div className={cls} onPointerDown={onPress}>
+    <div className={`wl-mutual is-${phase}`}>
       {/* what the page is, for a reader that never sees the phone */}
-      <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual with {theirName}</h2>
+      <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual with {names[0]}</h2>
       <p className="wl-sr">
-        you both sent a note, and nobody else was told.
-        {theirs?.verified ? ` ${atHandle(them)} is verified on Instagram.` : ''}
-        {ago ? ` you sent yours ${ago}.` : ''}
+        you both sent a note, and nobody else was told.{night ? ` told ${night}.` : ''}
       </p>
-
-      <div className={`wl-mutual-fig${hold !== null ? ' is-held' : ''}`} style={figStyle} aria-hidden="true" ref={fig}>
-        <span className="wl-mutual-halo" ref={halo} />
-        <div className="wl-mutual-float" ref={float}>
-          {/* dark until the page can paint, then waking, once (mutual.css) */}
-          <Screen
-            look={LOOK} seed={`mutual:${mine}:${them}`} top={NO_TOP}
-            keys={NO_KEYS} live={false} state={still ? '' : t0 === null ? 'dark' : 'waking'}
-            className="wl-mutual-scr" style={PHONE}
-          >
-            <PixelStory story={STORY} at={reduce ? STORY.still : hold ?? (from === null ? 0 : null)} from={from} />
-            {/* The sentence, on the glass, in the phone's face and its ink,
-                laid out whole from the first frame so it never moves as it
-                fills or empties, with the phone's cursor after the last
-                character in. */}
-            <p className={`wl-mutual-say${typing ? ' is-typing' : ''}`}>
-              {SAY.slice(0, typed)}
-              {typed > 0 ? <span className="wl-scr-cur" /> : null}
-              <span className="wl-mutual-rest">{SAY.slice(typed)}</span>
-            </p>
-          </Screen>
-        </div>
-      </div>
-
-      <div className="wl-mutual-text">
-        {/* the two of them, at one size, in one row */}
-        <div className="wl-mutual-pair">
-          <One handle={mine} fallback="you" />
-          <span className="wl-mutual-and" aria-hidden="true">+</span>
-          <One handle={them} fallback={atHandle(them)} />
-        </div>
-        {/* what happened, as it happened: nobody was asked a question, each
-            of them sent the other a note */}
-        <p className="wl-mutual-plain">you both sent a note. nobody else was told.</p>
-
-        {note ? (
-          <figure className="wl-mutual-note">
-            <figcaption className="wl-mutual-kick">their note to you</figcaption>
-            <blockquote className="wl-mutual-words">{note}</blockquote>
-            <p className="wl-mutual-sign" aria-hidden="true">{atHandle(them)}</p>
-          </figure>
-        ) : null}
-
-        {yours ? (
-          <div className={`wl-mutual-yours${mineOpen ? ' is-open' : ''}`}>
-            <button
-              type="button" className="wl-quiet wl-mutual-toggle"
-              aria-expanded={mineOpen} aria-controls="wl-mutual-mine"
-              onClick={() => setMineOpen((o) => !o)}
-            >
-              {mineOpen ? 'hide your note' : 'your note'}
-            </button>
-            <p id="wl-mutual-mine" className="wl-mutual-mine" hidden={!mineOpen}>{yours}</p>
-          </div>
-        ) : null}
-
-        <SheetFoot className="wl-mutual-foot">
-          <Pill tone="light" wide href={`https://instagram.com/${them}`} rel="noreferrer noopener" target="_blank">
-            message {atHandle(them)} on Instagram
-          </Pill>
-          {/* The quiet way out closes onto the wall and says nothing to
-              anybody (`onClosing` in Reveal below). */}
-          <CloseQuiet>back to the wall</CloseQuiet>
-        </SheetFoot>
-      </div>
+      {made && behind ? (
+        <Keepsake
+          me={mine} them={them} p={p} names={made.names} first={made.first} seed={seed} stamp={stamp}
+          story={made.keep} from={keepFrom} at={keepAt} state={state} enter={enter} fly={rect}
+          menu={menu} standing={standing} go={go} apiRef={keep} escRef={keepEsc}
+          onGone={() => sheet && sheet.dismiss('taken')}
+        />
+      ) : null}
+      {film && phase !== 'rest' ? (
+        <Film
+          story={film} seed={seed} stamp={stamp} rect={rect} hold={hold.film} from={from} skipAt={skipAt}
+          onFrom={onFrom} onSkip={skip} onPull={onPull} onLand={onLand} onGone={onGone} onBack={onBack} keep={keep}
+        />
+      ) : null}
     </div>
   )
 }
 
 export default function Reveal({
-  id, go, up, back, upLabel = 'back to the wall', nested = false, reduce, toWall = null,
+  id, go, up, upLabel = 'back to the wall', nested = false, reduce, toWall = null,
 }) {
   const them = normHandle(id)
   // who this is: null until the server has said, then the row (main/data.js)
@@ -465,7 +364,9 @@ export default function Reveal({
   // and nobody at all: whoami has answered, and there is no session here by
   // any proof, so there is no one whose private notes these could be
   const stranger = !!who && !who.signedIn
-  const [mutual, setMutual] = useState(() => fromHeld(guessHandle(), them) || undefined)
+  const [got, setGot] = useState(() => found(heldPings(guessHandle()), them) || undefined)
+  // where it was opened from, taken once, on the first frame (revealfrom.js)
+  const [opened] = useState(() => takeRevealFrom(them) || slotHold())
 
   useEffect(() => {
     let alive = true
@@ -482,34 +383,53 @@ export default function Reveal({
   // until whoami has answered.
   useEffect(() => {
     if (!who) return undefined
-    if (!handle || !them) { setMutual(null); return undefined }
+    if (!handle || !them) { setGot(null); return undefined }
     let alive = true
-    const held = fromHeld(handle, them)
-    setMutual(held || undefined)
+    const held = found(heldPings(handle), them)
+    setGot((g) => held || g || undefined)
     myPings({ handle, proof: heldProof(handle) }).then((out) => {
       if (!alive) return
       if (!out.ok && held) return
-      setMutual(out.mutuals.find((m) => normHandle(m.to) === them) || null)
+      setGot(found(out, them))
     })
     return () => { alive = false }
   }, [who, handle, them])
 
-  // The quiet way out closes onto the wall, whatever the sheet was opened
-  // from, and onto its names: a link that brought somebody here before the
-  // wall was ever opened has its poster still up under the sheet, and it is
-  // dropped as the sheet starts to go (index.jsx `toWall`), as the ping's
-  // own way back does. The close mark, the scrim and Escape go back one
-  // step, as every sheet's do, and when that step is the wall (the mark
-  // says "back to the wall" then, and not "back") they drop the poster too.
-  // They did not, and on a reveal opened from the mail the mark landed on
-  // the poster and its `view the wall` while the line under the note, with
-  // the same words on it, landed on the names.
+  // Every way out goes back one step, as every sheet's does: the close
+  // mark, the scrim, Escape and the film's `back`. When that step is the
+  // wall (the mark says "back to the wall" then, and not "back"), a link
+  // that brought somebody here before the wall was ever opened has its
+  // poster still up under the sheet, and it is dropped as the sheet starts
+  // to go (index.jsx `toWall`), as the ping's own way back does. A mutual
+  // taken off the list closes onto the private notes, where it no longer is:
+  // back down to them when they are what it was opened from, and up to them
+  // otherwise. And the slot has the focus again (revealfrom.js `returnTo`),
+  // named on every close and not only when this one was opened from it: a
+  // reveal mounted again under a ping sheet that was raised over it has no
+  // slot of its own, and closed onto the private notes it left the focus on
+  // the page's body. Only the account sheet takes it, and only for as long
+  // as a press is worth, so a close onto anything else leaves nothing. The
+  // old sheet also had a quiet way out to the wall under its key, whatever
+  // it was opened from; the keepsake has none, and its branch went with it
+  // (the review of 28 September).
   const way = useRef('')
+  const fromSlot = !!opened
   const onClosing = useCallback((by) => {
     way.current = by
-    if (toWall && (by === 'quiet' || !nested)) toWall()
+    if (by === 'taken') return
+    if (toWall && !nested) toWall()
   }, [toWall, nested])
-  const onClose = useCallback(() => (way.current === 'quiet' ? back() : up()), [back, up])
+  const toYou = useCallback(() => {
+    if (!window.history.state?.wallPushed) {
+      window.history.replaceState({ ...window.history.state, wall: 'wall', wallDepth: 0 }, '', href('wall'))
+    }
+    go('you')
+  }, [go])
+  const onClose = useCallback(() => {
+    returnTo(them)
+    if (way.current === 'taken' && !fromSlot) { toYou(); return }
+    up()
+  }, [up, toYou, fromSlot, them])
   // Not signed in: the gate, with this reveal as the way back once it has
   // let them in (Gate.jsx `finish`). Closing the gate without signing in
   // comes back here too, one step up, as every sheet over a sheet does.
@@ -517,30 +437,33 @@ export default function Reveal({
     setAfterGate({ name: 'reveal', id: them })
     go('gate')
   }, [go, them])
-  // Nothing to show, and the account sheet is where the reason is. A reveal
-  // the browser opened on directly has nothing behind it, so its entry is
-  // given to the wall first, as the door gives its own (Join.jsx `place`),
-  // and the account sheet closes onto the names and not back onto this.
-  const toYou = useCallback(() => {
-    if (!window.history.state?.wallPushed) {
-      window.history.replaceState({ ...window.history.state, wall: 'wall', wallDepth: 0 }, '', href('wall'))
-    }
-    go('you')
-  }, [go])
-  const mine = handle || guessHandle()
 
+  // what the room is doing: the film over it, landing, or at rest
+  const [phase, setPhase] = useState('rest')
+  const esc = useRef(null)
+  const onEscape = useCallback((e) => (esc.current ? esc.current(e) === true : false), [])
+  const mine = handle || guessHandle()
+  const mutual = got && got.mutual
+  // Out of a slot the room is black from its first frame, a cut: the other
+  // screens go out and the glass grows in the dark. Any other way it fades
+  // up, as the letter's room does.
+  const cut = !!(opened && opened.w > 0 && !reduce && mutual)
+  const cls = ['is-reveal', cut && 'is-cut', mutual && phase !== 'rest' && `is-${phase}`].filter(Boolean).join(' ')
+
+  // (`is-mutual`: the room is the keepsake's, as wide as the window, and
+  // every other state keeps the column in the middle of it, mutual.css)
   return (
-    <Sheet onClose={onClose} onClosing={onClosing} labelledBy="wl-reveal-h" className="is-reveal">
-      <div className="wl-sheet-in wl-reveal">
+    <Sheet onClose={onClose} onClosing={onClosing} onEscape={onEscape} labelledBy="wl-reveal-h" className={cls} room>
+      <div className={`wl-sheet-in wl-reveal${mutual ? ' is-mutual' : ''}`}>
         <SheetHead onClose={up} label={upLabel} />
-        {mutual === undefined ? (
+        {got === undefined ? (
           // asked, and not answered yet: the phone's hourglass, and nothing
           // said about it
           <div className="wl-reveal-wait">
             <h2 id="wl-reveal-h" className="wl-sr">it&#8217;s mutual</h2>
             <Wait scale={3} />
           </div>
-        ) : mutual === null && stranger ? (
+        ) : got === null && stranger ? (
           // Nobody this device knows: the same words to every such visitor,
           // and the one key is the gate, which comes back here.
           <div className="wl-reveal-none">
@@ -550,7 +473,7 @@ export default function Reveal({
               <Pill tone="light" wide onClick={toGate}>sign in</Pill>
             </SheetFoot>
           </div>
-        ) : mutual === null ? (
+        ) : got === null ? (
           // Not a mutual, or not this person's to see. Said flatly and
           // without a reason, because every reason this screen could give is
           // a fact about somebody else. The one key is this person's own
@@ -563,7 +486,10 @@ export default function Reveal({
             </SheetFoot>
           </div>
         ) : (
-          <Mutual mine={mine} them={them} mutual={mutual} reduce={reduce} />
+          <Mutual
+            mine={mine} them={them} p={mutual} list={got.list} reduce={reduce} opened={opened}
+            go={go} onPhase={setPhase} escRef={esc}
+          />
         )}
       </div>
     </Sheet>

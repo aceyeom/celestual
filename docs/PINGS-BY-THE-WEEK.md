@@ -32,6 +32,7 @@ always the allowance of the reveal a note sent now would run to.
 | Keep a note for next week | one ping for the reveal it is kept to | |
 | Change the words of a running note | nothing | |
 | Send the same pair again in the same week | nothing (the ping is already spent on them) | |
+| Write again to somebody you are mutual with (0072) | one ping for its reveal, as a new note | |
 | Let a running note go | | every ping it holds for a reveal still to come |
 | A note that turns out mutual | | any ping it held for a reveal after the one that told it |
 | A note that was not this time | | nothing: the ping was used |
@@ -149,14 +150,17 @@ strips and logs as a scan.
 * The composer (`screens/Ping.jsx`) says, on its last step, which ping this
   is: `your free ping this week`, or `1 of your 3 pings`, or, with none left,
   it shows the paywall in place of the send key.
-* The paywall (`screens/Pings.jsx`) is one screen of the phone, lit in rose:
-  the week's free ping and when the next one comes, a stepper from one to ten,
-  the total, and one lit key, `get 3 pings · $8.97`. Under it, in the quiet
-  line, that a bought ping never lapses and comes back if its note is let go.
+* The paywall (`screens/Pings.jsx`) is one screen of the phone, lit in rose,
+  and nothing else: the price of one across its top, the count and the total
+  on its glass, its two soft keys the stepper from one to ten, and one lit
+  key under it, `get 3 pings · $8.97`, with a quiet way back. Since 28
+  September there is no heading over it in sight, no line under it and no
+  fine print: the owner asked for the phone alone. A failure still takes the
+  line under the phone, since a key that did nothing has to say why.
 * It is reached two ways: on its own when a note cannot be paid for (sending,
   sending again, keeping), with the note waiting behind it and sent the
   moment the pings land; and from `add more pings` on the private notes tab,
-  beside what is left this week.
+  beside the week's pings, which is there only once none is left to spend.
 * Coming back from Stripe (`/paid`), the wall confirms the session, says how
   many landed, and sends the note that was waiting, if one was.
 
@@ -270,6 +274,27 @@ celestual_withdraw(p_from, p_to, p_proof) -> jsonb                   anon, authe
 celestual_my_pings(p_handle, p_proof) -> jsonb                       anon, authenticated
   { ok: true, pings, next_reveal, last_reveal, allowance }
   { ok: false, pings: [] }
+  since 0072 one handle can come back twice, a mutual (a told row or a
+  keepsake, the latest told) and a new note to the same person
+
+celestual_mutual_again(p_from, p_to, p_proof, p_card default null,
+  p_email default null) -> jsonb                                       anon, authenticated
+  0072: the pair kept and a new note placed, in one transaction; answered as
+  celestual_submit answers, and a refusal keeps nothing
+  { recorded: true, mutual: false, match: null, match_card: null, reachable,
+    expires_at, reveal_at, slots, allowance }
+  { recorded: false, error: 'no_pings' | 'week_full', slots, allowance }
+  { recorded: false, error: 'unverified' | 'suppressed' | 'rate_limited' }
+  { recorded: false, error: 'card', reasons }
+  raises 'invalid handle' and 'same handle', as celestual_submit does
+
+celestual_mutual_forget(p_from, p_to, p_proof, p_told default null) -> jsonb
+                                                                       anon, authenticated
+  0072: the caller's mutual with them, off the caller's own list: the nights
+  told before the call, and none after p_told (the revealed_at the list drew),
+  so a mutual told since stays, with its news
+  { ok: true }
+  { ok: false, error: 'unverified' | 'none' }, and 'none' changes nothing
 
 celestual_slots_for(p_handle, p_proof) -> jsonb                      anon, authenticated
   { standing, cap, allowance }

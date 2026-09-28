@@ -29,6 +29,7 @@ import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
 import { letterMarks } from './schools.js'
 import { langOf, s40Face, ensureCjk } from './type.js'
+import { wrap, fit } from './wrap.js'
 
 const W = 1080
 const H = 1350
@@ -37,14 +38,16 @@ const H = 1350
 // (`drawScreen`, `renderLetter`) as the page works it out by `lang`
 const faceOf = (o) => s40Face(`${o.text} ${o.salutation || ''} ${o.name || ''}`)
 // the word's face, with the fallbacks wall.css gives `--f-display`
-const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
+export const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
 
-const rgba = (hex, a) => {
+export const rgba = (hex, a) => {
   const [r, g, b] = hexRgb(hex)
   return `rgba(${r}, ${g}, ${b}, ${a})`
 }
 
-function glyph(g, name, x, y, h, color) {
+// (the drawing helpers below are the mutual's picture's too, keepshare.js,
+// which draws another phone with the same hand: exported for it, unchanged)
+export function glyph(g, name, x, y, h, color) {
   const rows = PIX[name]
   if (!rows) return 0
   const s = h / rows.length
@@ -55,7 +58,7 @@ function glyph(g, name, x, y, h, color) {
   return rows[0].length * s
 }
 
-function roundRect(g, x, y, w, h, r) {
+export function roundRect(g, x, y, w, h, r) {
   g.beginPath()
   g.moveTo(x + r, y)
   g.arcTo(x + w, y, x + w, y + h, r)
@@ -65,37 +68,9 @@ function roundRect(g, x, y, w, h, r) {
   g.closePath()
 }
 
-// words wrapped to a width, the way the screen wraps them: at spaces, and
-// through a word that is longer than the line. `widthAt` is a width, or the
-// width of line i, since the lines beside a picture are shorter
-function wrap(g, text, widthAt) {
-  const wAt = typeof widthAt === 'function' ? widthAt : () => widthAt
-  const out = []
-  for (const para of String(text).split('\n')) {
-    let line = ''
-    for (const word of para.split(/\s+/).filter(Boolean)) {
-      const next = line ? `${line} ${word}` : word
-      if (g.measureText(next).width <= wAt(out.length)) { line = next; continue }
-      if (line) out.push(line)
-      if (g.measureText(word).width <= wAt(out.length)) { line = word; continue }
-      let chunk = ''
-      for (const ch of word) {
-        if (g.measureText(chunk + ch).width > wAt(out.length)) { out.push(chunk); chunk = ch } else chunk += ch
-      }
-      line = chunk
-    }
-    out.push(line)
-  }
-  return out
-}
-
-// a line cut to a width with an ellipsis, as the status rows cut theirs
-function fit(g, text, max) {
-  if (g.measureText(text).width <= max) return text
-  let t = Array.from(text)
-  while (t.length > 1 && g.measureText(`${t.join('')}…`).width > max) t = t.slice(0, -1)
-  return `${t.join('')}…`
-}
+// (the words wrapped to a width, and a line cut to one, are wrap.js's: the
+// mutual's picture lays its notes out with them where no canvas is, in
+// scripts/check-stories.mjs, as well as here)
 
 // ── the press, by hand ──────────────────────────────────────────────────────
 // a gaussian blur of `sd` pixels, across then down, of the luminance and of
@@ -277,7 +252,7 @@ function square(cv, sw, sh, q, clip, topH, botH) {
 // draws as `--q-mura` (looks.js `quirks`), from the same numbers. A CSS
 // radial gradient's size is a share of the box's width and of its height,
 // so each is a circle drawn squashed.
-function backlight(g, light, sw, sh) {
+export function backlight(g, light, sw, sh) {
   const oval = (x, y, rx, ry, stops) => {
     g.save()
     g.translate(x, y)
@@ -611,7 +586,7 @@ function drawScreen(o, tile = null) {
   return { cv, s, q, sw, sh }
 }
 
-function imageOf(url) {
+export function imageOf(url) {
   if (!url) return Promise.resolve(null)
   return new Promise((done) => {
     const im = new Image()
@@ -639,11 +614,11 @@ function imageOf(url) {
 // canvas in the browser most letters are shared from, and a tainted canvas
 // cannot be made into a file. The drawing itself is pixmark.js `markCanvas`,
 // the same one the pixel mark on the intro's screen is rasterised from.
-const WORD = 46
+export const WORD = 46
 const SIGN_Y = H - 86
 const SIGN_ALPHA = 0.9
 
-function signature(g, cx, cy) {
+export function signature(g, cx, cy) {
   const mark = Math.round(WORD * 1.13)
   const gap = WORD * 0.38
   g.save()
@@ -735,12 +710,21 @@ export async function renderLetter(o) {
   // the signature, in the dark under it
   signature(g, cx, SIGN_Y)
   // and the sensor's grain over the whole photograph
+  grainOver(g, W, H, q.grainSeed)
+  // a JPEG: a PNG of a photograph this size took seconds to make on a phone
+  return new Promise((done) => cv.toBlob((b) => done(b), 'image/jpeg', 0.92))
+}
+
+// The sensor's grain, over a whole photograph `w` by `h`, off a seed of its
+// own so the picture is the same picture every time it is drawn. The
+// letter's picture's, and the mutual's (keepshare.js).
+export function grainOver(g, w, h, seed) {
   const n = document.createElement('canvas')
   n.width = 128
   n.height = 128
   const ng = n.getContext('2d')
   const nd = ng.createImageData(128, 128)
-  let t = (q.grainSeed * 40503) >>> 0
+  let t = (seed * 40503) >>> 0
   for (let i = 0; i < nd.data.length; i += 4) {
     t = (Math.imul(t, 1664525) + 1013904223) >>> 0
     const v = t >>> 24
@@ -749,10 +733,8 @@ export async function renderLetter(o) {
   ng.putImageData(nd, 0, 0)
   g.globalCompositeOperation = 'screen'
   g.fillStyle = g.createPattern(n, 'repeat')
-  g.fillRect(0, 0, W, H)
+  g.fillRect(0, 0, w, h)
   g.globalCompositeOperation = 'source-over'
-  // a JPEG: a PNG of a photograph this size took seconds to make on a phone
-  return new Promise((done) => cv.toBlob((b) => done(b), 'image/jpeg', 0.92))
 }
 
 // What the picture says, off a letter: the same rows the screen shows. The

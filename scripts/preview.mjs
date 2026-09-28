@@ -244,6 +244,32 @@ let FULL = false
 // 'free' (the free one still there, none bought), or 'none' (all spent).
 // A `full` route is 'none'.
 let WEEK = 'credits'
+// Whether the fixture browser has written again to somebody it is mutual with
+// (0072): the list carries, for jules.k, the mutual and a new note beside it,
+// sealed and running to the next reveal.
+let AGAIN = false
+// The mutual's two notes, which its keepsake holds side by side (Keepsake.jsx):
+// 'long' is two of 280 characters, the most a note carries, 'none' two sent
+// without a word, and 'cjk' a mutual with somebody whose name and note are in
+// Korean (EXTRA, below), for the faces the film and the picture hand a canvas.
+let NOTES = ''
+// a person the resolver knows only on the `cjk` route, so the wall and every
+// other route keep the names they have
+const EXTRA = [['seoyeon.kim', '서연 김', false]]
+const known = (h) => HANDLES.find(([x]) => x === h) || (NOTES === 'cjk' ? EXTRA.find(([x]) => x === h) : null)
+// The mark a device keeps for a mutual it has watched told (pings.js
+// `wasOpened`): the same hash of whose list it is and the mutual's key
+const toldSeen = (me, key) => {
+  const s = `${me}>${key}`
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) }
+  return (h >>> 0).toString(36)
+}
+const MUTUAL_AT = now - 9 * DAY
+// Whether two linked @s of the fixture browser's each have a note on the
+// same person (0072 lists both): ren.tanaka carries the running note and,
+// beside it, one that was not this time at the last reveal.
+let TWICE = false
 // Whether the fixture browser signed in with google, and nothing else: a
 // reader on any wall since 0057, and not a writer on the campus wall. It is
 // the person whose heart never counted, because this browser drew them as
@@ -916,6 +942,11 @@ const RPC = {
       expires_at: new Date(NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY).toISOString(), slots: { standing: 2, cap: 3 },
       allowance: ALLOWANCE(),
     }),
+  // 0072: writing again to a mutual, answered as a placement is (the pair
+  // kept, and a new note out that nobody has answered yet), or refused the
+  // same way with the week spent; and taking a mutual off a list
+  celestual_mutual_again: () => RPC.celestual_submit(),
+  celestual_mutual_forget: () => ({ ok: true }),
   // 0071: this week's pings, on their own read and on the list
   celestual_ping_allowance: () => ({ ok: true, allowance: ALLOWANCE() }),
   // The front door's notice reads this.
@@ -970,7 +1001,9 @@ const RPC = {
   }),
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
   // the week (0069): a mutual told at the last reveal, a note running to the
-  // next, and one that was not this time at the last
+  // next, and one that was not this time at the last. The mutual carries both
+  // notes, this person's and jules.k's, so the reveal draws the two letters.
+  // An `again` route (0072) has a new note to jules.k beside the mutual.
   celestual_my_pings: () => ({
     ok: true,
     allowance: ALLOWANCE(),
@@ -978,15 +1011,34 @@ const RPC = {
     last_reveal: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
     pings: [
       {
-        handle: 'jules.k',
-        time: now - 9 * DAY,
+        handle: NOTES === 'cjk' ? 'seoyeon.kim' : 'jules.k',
+        time: MUTUAL_AT,
         expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
         mutual: true,
         revealed_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
-        card: { words: 'i have wanted to say this since the second week of term.' },
-        their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
-        ...faceOf('jules.k'),
+        ...(NOTES === 'long' ? {
+          card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.' },
+          their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.' },
+        } : NOTES === 'none' ? { card: { words: '' }, their_card: { words: '' } }
+          : NOTES === 'cjk' ? {
+            card: { words: 'i have wanted to say this since the second week of term.' },
+            their_card: { words: '수업 끝나고 매번 말을 걸고 싶었어. 금요일에 도서관 계단에서 기다릴게.' },
+          } : {
+            card: { words: 'i have wanted to say this since the second week of term.' },
+            their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
+          }),
+        ...(NOTES === 'cjk' ? { known: true, display_name: EXTRA[0][1], is_verified: false, avatar_path: null } : faceOf('jules.k')),
       },
+      ...(AGAIN ? [{
+        handle: 'jules.k',
+        time: now - 1 * DAY,
+        expires_at: new Date(NEXT_REVEAL).toISOString(),
+        mutual: false,
+        lapsed: false,
+        card: { words: 'and again, after all of it: the same seat, thursday.' },
+        their_card: null,
+        ...faceOf('jules.k'),
+      }] : []),
       {
         handle: 'ren.tanaka',
         time: now - 2 * DAY,
@@ -994,6 +1046,14 @@ const RPC = {
         mutual: false,
         card: { words: 'you were the one singing on the 51B that night.' },
       },
+      ...(TWICE ? [{
+        handle: 'ren.tanaka',
+        time: now - 12 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        mutual: false,
+        lapsed: true,
+        card: { words: 'the one with the headphones on the steps, always.' },
+      }] : []),
       {
         handle: 'maya.okafor',
         time: now - 11 * DAY,
@@ -1020,7 +1080,7 @@ async function fulfil(route) {
       const results = {}
       for (const raw of body.handles) {
         const h = String(raw || '').toLowerCase()
-        const row = HANDLES.find(([x]) => x === h)
+        const row = known(h)
         results[h] = row
           ? { ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2], avatar: faceUrl(row[0]), cached: true }
           : { ok: true, found: false, handle: h, cached: true }
@@ -1028,7 +1088,7 @@ async function fulfil(route) {
       return route.fulfill({ json: { ok: true, results } })
     }
     const h = String(body.handle || '').toLowerCase()
-    const row = HANDLES.find(([x]) => x === h)
+    const row = known(h)
     // a handle the fixture does not carry is an account the resolver did not
     // find, which is a state worth drawing, and not a reason to stop the run
     if (!row) return route.fulfill({ json: { ok: true, found: false, handle: h, cached: true } })
@@ -1272,6 +1332,57 @@ const ROUTES = [
   { label: 'ping-cold-home', path: '/@pilar.echevarria',
     acts: [['wait', 3200], ['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1400],
            ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1600]], settle: 1200 },
+  // a note's settings (screens/Ping.jsx `editNote`), opened off its own
+  // screen on the account: a running note's words to change, the key lit
+  // once they have, the phone asking whether to let it go, and the new words
+  // sent; and one that was not this time, going out again on a ping
+  { label: 'ping-edit',     path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)']], settle: 1400 },
+  { label: 'ping-edit-changed', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', 'you were the one singing on the 51B that night. i hoped it was for me.']], settle: 900 },
+  { label: 'ping-edit-let-go', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet']], settle: 900 },
+  { label: 'ping-edit-gone', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet'], ['wait', 500],
+           ['click', '.wl-ping .wl-sk.is-l']], settle: 1600 },
+  { label: 'ping-edit-done', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', 'you were the one singing on the 51B that night. i hoped it was for me.'],
+           ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-edit-lapsed', path: '/berkeley/you',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)']], settle: 1400 },
+  { label: 'ping-edit-lapsed-let-go', path: '/berkeley/you',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet']], settle: 900 },
+  // and a running note's words all taken off, which the key says, and the
+  // screen it ends on does not call new words
+  { label: 'ping-edit-bare', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', '']], settle: 900 },
+  { label: 'ping-edit-bare-done', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', ''], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // somebody this person is mutual with, written to again (0072): on the
+  // list of the people written to, from a link, and sent, which is "sent
+  // privately." as any note; the mutual opened off it and come back from,
+  // with the words where they were (`back`); and with a note of theirs
+  // running beside the mutual, which is that note's settings, as any running
+  // note chosen is, with its dot back to who it is for (`again`)
+  { label: 'ping-again-who', path: '/berkeley/ping', settle: 1400 },
+  { label: 'ping-again',    path: '/berkeley/ping/jules.k', settle: 1400 },
+  { label: 'ping-again-done', path: '/berkeley/ping/jules.k',
+    acts: [['wait', 900], ['fill', '.wl-ping textarea', 'still the same seat on thursdays, if you want it.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-again-back', path: '/berkeley/ping/jules.k',
+    acts: [['wait', 900], ['fill', '.wl-ping textarea', 'still the same seat on thursdays, if you want it.'], ['click', '.wl-ping .wl-write-foot .wl-quiet'],
+           ['wait', 1600], ['back', 1400]], settle: 1400 },
+  { label: 'ping-again-both', path: '/berkeley/ping/jules.k', again: true, settle: 1400 },
+  { label: 'ping-again-both-changed', path: '/berkeley/ping/jules.k', again: true,
+    acts: [['wait', 900], ['fill', '.wl-ping textarea', 'and again, after all of it: the same seat, thursday, the one by the window.']], settle: 900 },
   // ── the person ──
   // The bar's face opens it: the pings, the drafts, the letters. A standing
   // ping opened onto its own screen, its options, and letting it go asked.
@@ -1279,11 +1390,11 @@ const ROUTES = [
   // nobody at all, which is the door.
   { label: 'you',           path: '/berkeley/you' },
   { label: 'you-bar',       path: '/berkeley', acts: [['click', '.wl-mast-go'], ['wait', 3400], ['click', '.wl-memberbtn']], settle: 1400 },
-  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing']], settle: 1200 },
+  { label: 'you-ping',      path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open']], settle: 1200 },
   { label: 'you-options',   path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
   { label: 'you-let-go',    path: '/berkeley/you',
-    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'you-unproved',  path: '/berkeley/you', verified: false },
   { label: 'you-door',      path: '/berkeley/you', anon: true },
@@ -1298,12 +1409,14 @@ const ROUTES = [
   { label: 'you-reveal-bar', path: '/', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, acts: [['click', '.wl-mast-go'], ['wait', 3400]], settle: 1600 },
   { label: 'you-reveal',    path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
   { label: 'you-revealed',  path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
-  { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed']], settle: 900 },
+  { label: 'you-lapsed',    path: '/berkeley/you', acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
   // the mutual under the pointer, on any visit and after the night has
-  // landed: the phone's inversion, chalk with everything on it black
-  { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+  // landed: its slot's backlight awake (Slot.jsx), the notes leaning in.
+  // A row's press and its `edit` are two keys now, so the rows above are
+  // pressed on the press itself, never on the row round both
+  { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
   { label: 'you-revealed-hover', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] },
-    acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual', 0, 'hover']], settle: 300 },
+    acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
 
   // the addresses Main used to draw, landing on the wall
   { label: 'legacy-sky',    path: '/sky' },
@@ -1315,6 +1428,73 @@ const ROUTES = [
   { label: 'reveal',        path: '/reveal/jules.k?beat=4', settle: 4200 },
   { label: 'reveal-berkeley', path: '/berkeley/reveal/jules.k?beat=4', settle: 4200 },
   { label: 'reveal-none',   path: '/berkeley/reveal/sofiaaa.reyes?beat=4' },
+  // written again (0072): the private notes with the mutual and a new note to
+  // the same person beside it, and the reveal, which is the mutual's still
+  { label: 'you-again',     path: '/berkeley/you', again: true, settle: 900 },
+  { label: 'reveal-again',  path: '/reveal/jules.k?beat=4', again: true, settle: 4200 },
+  // and its options with that new note out: the row is the note, and not a
+  // new one over it
+  { label: 'reveal-again-options', path: '/reveal/jules.k?beat=4&keep=options', again: true, settle: 1400 },
+  // ── the mutual as a film, and the keepsake it lands in (28 September) ──
+  // The film held on its beats (Film.jsx `?film=`): pushed in out of a
+  // slot's glass part way (`?slot=` stands in for the slot pressed, and a
+  // moment before nought holds the push-in), the two notes, the one note
+  // opening into the names, the names, the two of them running in, the
+  // pink, the mark with the sentence typed under it, and the camera part way
+  // back onto the keepsake. Then the whole of it played and landed, and a
+  // skip. Then the keepsake at rest (`?keep`), its options, the question
+  // before taking it off, its picture's menu, the longest and the emptiest
+  // notes, a name in Korean, a visit after the film has been watched (out
+  // of the slot's glass, no film) and from the slot's `edit` key, and under
+  // reduced motion.
+  { label: 'reveal-push',      path: '/reveal/jules.k?beat=4&slot=67,318,256,60&film=-460', settle: 1200 },
+  { label: 'reveal-film-200',  path: '/reveal/jules.k?beat=4&film=200', settle: 1200 },
+  { label: 'reveal-film-560',  path: '/reveal/jules.k?beat=4&film=560', settle: 1200 },
+  { label: 'reveal-film-900',  path: '/reveal/jules.k?beat=4&film=900', settle: 1200 },
+  { label: 'reveal-film-1300', path: '/reveal/jules.k?beat=4&film=1300', settle: 1200 },
+  { label: 'reveal-film-2400', path: '/reveal/jules.k?beat=4&film=2400', settle: 1200 },
+  { label: 'reveal-film-3000', path: '/reveal/jules.k?beat=4&film=3000', settle: 1200 },
+  { label: 'reveal-film-3700', path: '/reveal/jules.k?beat=4&film=3700', settle: 1200 },
+  { label: 'reveal-film-4400', path: '/reveal/jules.k?beat=4&film=4400', settle: 1200 },
+  { label: 'reveal-film-5900', path: '/reveal/jules.k?beat=4&film=5900', settle: 1200 },
+  { label: 'reveal-film-pull', path: '/reveal/jules.k?beat=4&film=6900', settle: 1600 },
+  { label: 'reveal-played',    path: '/reveal/jules.k?beat=4', settle: 9800 },
+  { label: 'reveal-skipped',   path: '/reveal/jules.k?beat=4', acts: [['wait', 2600], ['click', '.wl-film-stage .wl-scr-bg']], settle: 1600 },
+  { label: 'reveal-keep',      path: '/reveal/jules.k?beat=4&keep', settle: 1400 },
+  { label: 'reveal-options',   path: '/reveal/jules.k?beat=4&keep=options', settle: 1400 },
+  { label: 'reveal-confirm',   path: '/reveal/jules.k?beat=4&keep=confirm', settle: 1400 },
+  { label: 'reveal-share',     path: '/reveal/jules.k?beat=4&keep=share', settle: 1800 },
+  { label: 'reveal-long',      path: '/reveal/jules.k?beat=4&keep', notes: 'long', settle: 1400, full: true },
+  { label: 'reveal-empty',     path: '/reveal/jules.k?beat=4&keep', notes: 'none', settle: 1400 },
+  { label: 'reveal-cjk',       path: '/reveal/seoyeon.kim?beat=4&keep', notes: 'cjk', settle: 2400 },
+  { label: 'reveal-short',     path: '/reveal/jules.k?beat=4&slot=67,318,256,60',
+    store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },
+  { label: 'reveal-edit',      path: '/reveal/jules.k?beat=4&slot=67,318,256,60&slotmenu=options', settle: 1600 },
+  { label: 'reveal-keep-still', path: '/reveal/jules.k', still: true, settle: 1400 },
+  // the mutual's slot (Slot.jsx): the night glass with the two notes on
+  // their way, held on one moment of the loop (`?slot=`, ms into it: 1500 is
+  // part way, the ghosts behind them; 2400 is the hold, two cells apart);
+  // under the pointer, the backlight up; pressed, the phone's inversion; once
+  // opened on this device, the rose letter with the one note; on the night,
+  // dark and searching before it lands (`-landing`) and after (`-landed`);
+  // and still, under reduced motion. `you-slot-again` is the slot with a new
+  // note to the same person beside it, and `you-edit` the key on every note,
+  // the running one's under the keyboard's focus
+  { label: 'you-slot',       path: '/berkeley/you?slot=1500', settle: 900 },
+  { label: 'you-slot-hold',  path: '/berkeley/you?slot=2400', settle: 900 },
+  { label: 'you-slot-hover', path: '/berkeley/you?slot=1500', acts: [['wait', 1400], ['mouse', '.wl-slot-open', 0, 'hover']], settle: 400 },
+  { label: 'you-slot-press', path: '/berkeley/you?slot=1500', acts: [['wait', 1400], ['mouse', '.wl-slot-open', 0, 'hold']], settle: 300 },
+  { label: 'you-slot-opened', path: '/berkeley/you', store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 900 },
+  { label: 'you-slot-landing', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 0 },
+  { label: 'you-slot-landed', path: '/berkeley/you?slot=900', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 2600 },
+  { label: 'you-slot-still', path: '/berkeley/you', still: true, settle: 900 },
+  { label: 'you-slot-again', path: '/berkeley/you?slot=1500', again: true, settle: 900 },
+  { label: 'you-edit',       path: '/berkeley/you?slot=2400', acts: [['wait', 1400], ['focus', '.wl-vault-row.is-standing .wl-vault-edit']], settle: 400 },
+  // two notes on one person, a running one and one that was not this time
+  // (two linked @s): the lapsed row's press opens the lapsed note, its own,
+  // and not the running one the handle would find
+  { label: 'you-twice',      path: '/berkeley/you?slot=2400', twice: true,
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
   // the three stories and the deck under prefers-reduced-motion, where each
   // is drawn on its last frame and has to be whole as a still
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
@@ -1786,6 +1966,9 @@ for (const r of list) {
   PASS = r.pass === true
   FULL = r.full === true
   WEEK = r.week || 'credits'
+  AGAIN = r.again === true
+  NOTES = r.notes || ''
+  TWICE = r.twice === true
   GOOGLE = r.google === true
   NOCAL = r.nocal === true
   INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })
@@ -1931,6 +2114,9 @@ for (const r of list) {
     // whatever the last one drew.
     for (const [act, sel, arg, more] of r.acts || []) {
       if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      // the browser's own back, as a person takes it off a sheet another
+      // opened over this one, and then `sel` to let what it lands on settle
+      if (act === 'back') { await page.goBack().catch(() => {}); await page.waitForTimeout(Number(sel) || 900); continue }
       // until the page says so, for a frame inside a movement nothing
       // pressed started: `sel` is the expression, `arg` how long to wait
       if (act === 'until') { await page.waitForFunction(sel, null, { timeout: Number(arg) || 6000 }).catch(() => {}); continue }

@@ -486,7 +486,10 @@ function Press({ id, colour, q }) {
 // as before. `greet` is the same line on the composer, where it is the
 // writer's to edit: `{ value, onChange, max, label, inputRef, onFocus }`,
 // set in the line's own face, size and colour. `tag` stands where the
-// handle does, for a name note carrying a school.
+// handle does, for a name note carrying a school. `pair` is the whole of
+// the second row for a phone that belongs to two people and not to a
+// letter: two names, centred, one weight each, a point between them (the
+// mutual's keepsake, Keepsake.jsx, since 28 September).
 //
 // `sticker` is a school (schools.js `schoolOf`), for a letter posted from a
 // verified school address: the phone is on that school's network, its name
@@ -516,7 +519,7 @@ export function Screen({
   // this phone's own pixels, up close (looks.js `rgbTile`), when they are
   // made; a print and the square are paper, and have none
   const rgb = useRgbTile(s.paper ? '' : seed)
-  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4, salutation = '', greet = null, tag = '' } = top
+  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4, salutation = '', greet = null, tag = '', pair = null } = top
   const said = salutation || (dear && name ? `dear ${name}` : name)
   // a line the writer set is set smaller when it is long (`lineSize`); the
   // name the screen makes itself keeps its size and its cut, as it always did
@@ -556,9 +559,13 @@ export function Screen({
   // styling the whole page again for every element any screen put on it or
   // took off, on every turn of the letters (screen.css, the wake)
   const menu = isValidElement(children) && children.type === ScreenMenu
+  // two names, one of each of two people, on the second row and at one
+  // weight, with a point between them: the mutual's keepsake (Keepsake.jsx),
+  // where the row is theirs and not a letter's greeting
+  const two = Array.isArray(pair) && pair.length === 2
   return (
     <div
-      className={`wl-scene ${className}`} data-kind={s.kind} data-colour={colour.slug}
+      className={`wl-scene${two ? ' is-pair' : ''} ${className}`} data-kind={s.kind} data-colour={colour.slug}
       data-state={state || undefined} style={{ ...vars, ...style }}
     >
       <span className="wl-scene-halo" aria-hidden="true" />
@@ -594,11 +601,19 @@ export function Screen({
             </div>
             {/* the line's language, for its face (type.js `langOf`): the
                 greeting its writer chose where there is one, else the name */}
-            <div className="wl-scr-r2" lang={langOf(greet ? `${greet.value || ''}${name}` : said) || undefined}>
-              {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
-              {greet ? <Greet {...greet} id={nameId} style={nmStyle} /> : <span className="wl-scr-nm wl-lit" id={nameId} style={nmStyle}>{said}</span>}
-              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
-            </div>
+            {two ? (
+              <div className="wl-scr-r2" id={nameId}>
+                <span className="wl-scr-nm wl-lit" lang={langOf(pair[0]) || undefined}>{pair[0]}</span>
+                <span className="wl-scr-mid wl-lit" aria-hidden="true">·</span>
+                <span className="wl-scr-nm wl-lit" lang={langOf(pair[1]) || undefined}>{pair[1]}</span>
+              </div>
+            ) : (
+              <div className="wl-scr-r2" lang={langOf(greet ? `${greet.value || ''}${name}` : said) || undefined}>
+                {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
+                {greet ? <Greet {...greet} id={nameId} style={nmStyle} /> : <span className="wl-scr-nm wl-lit" id={nameId} style={nmStyle}>{said}</span>}
+                <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
+              </div>
+            )}
           </div>
           <div className={`wl-scr-body${menu ? ' is-menu' : ''}`}>{children}</div>
           <div className="wl-scr-bot">

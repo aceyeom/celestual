@@ -31,11 +31,29 @@
 //   5  on the door, a note never touches either of them: at every 4ms of the
 //      telling, not one cell of a note is lit on or beside a lit cell of
 //      either body. The owner saw a note cut into him; this is the tripwire.
+//   6  the mutual's film (pixmark.js `filmStory`, since 28 September), on
+//      the glasses a phone, a desk and a phone on its side give it: nobody
+//      on the glass before 2500ms, not a cell of the names or the notes left
+//      once somebody is, the two coming in on one frame, the names and the
+//      notes inside the glass, a name too long for it cut and dotted and
+//      not run off its edge; and the keepsake's mark (`keepStory`), handed
+//      the film's clock 6490ms on, drawing the frame the film would, from
+//      the sentence said to where the camera has pulled all the way back.
+//   7  the keepsake's picture (keeplayout.js): with the notes on, however
+//      they were written, the phone and the signature under it inside the
+//      feed's crop, y 285 to 1635, with the mark at least five pixels to a
+//      cell: two notes of 280 characters, notes of many short lines, forty
+//      lines of a letter each, notes empty, and with nobody named. Nine
+//      short lines put the signature under the crop until the review of 28
+//      September, and forty took the foot of the phone off the picture.
 //
 // It reads the stories as functions of the clock, in node, with no page and
 // no canvas: the bodies and the notes are arithmetic until they are drawn,
-// and nothing asked for here is past the moment the mark is rasterised.
-// Exits non-zero on a failure.
+// and nothing asked for here is past the moment the mark is rasterised. The
+// picture is laid out with a measure that stands in for the face, each
+// character wider than most of Jersey 10's, so the notes here run to more
+// lines than the face would give them and the picture is tried harder than
+// the page tries it. Exits non-zero on a failure.
 //
 // Run: node scripts/check-stories.mjs
 import { join, dirname } from 'node:path'
@@ -45,7 +63,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const wall = (f) => pathToFileURL(join(root, 'app/src/wall', f)).href
 const { introFolk, drawBody, cellsOf, sheet } = await import(wall('folk.js'))
 const {
-  joinStory, introStory, revealStory, I_COLS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, I_QUICK, R_EMPTY,
+  joinStory, introStory, revealStory, filmStory, keepStory, I_COLS, I_ROWS, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS, I_QUICK, R_EMPTY,
   ENTER, shiftFor,
 } = await import(wall('pixmark.js'))
 
@@ -236,5 +254,140 @@ for (let t = 0; t <= T.run + 800; t += 4) {
 }
 if (near <= 1) fail(`on the door a note comes within ${near} cell of a body, at ${when}ms`)
 else pass(`on the door no note comes nearer either of them than ${near} cells`)
+
+// ── 6. the film ──
+// Words as pixtype.js `typeCells` answers them, made here without a canvas:
+// each character six cells wide, a capital ten tall on the baseline and a
+// stem two wide, which is Jersey 10's own grid
+function typed(text) {
+  const cells = []
+  const ends = []
+  ;[...text].forEach((ch, i) => {
+    const x0 = i * 6
+    if (ch !== ' ') for (let y = -10; y < 0; y++) for (const dx of [0, 1, 3, 4]) cells.push([x0 + dx, y])
+    ends.push(x0 + 6)
+  })
+  return { cells, w: ends[ends.length - 1] || 0, ends }
+}
+{
+  // the glasses of Film.jsx's table: a phone of 390 at three, a desk of 1440
+  // at two and at one, a phone on its side, and the grid alone
+  const GLASSES = [
+    ['a phone', { l: -1, r: 95, t: -55, b: 129 }],
+    ['a desk at two', { l: -15, r: 110, t: 0, b: 75 }],
+    ['a desk at one', { l: -16, r: 110, t: -2, b: 76 }],
+    ['a phone on its side', { l: -10, r: 105, t: -1, b: 75 }],
+    ['the grid', { l: 0, r: I_COLS - 1, t: 0, b: I_ROWS - 1 }],
+  ]
+  const say = typed('it’s mutual.')
+  for (const [who, credit] of [
+    ['two first names', { a: typed('Jules'), b: typed('Ace') }],
+    ['two @s', { a: typed('@seoyeon.kim'), b: typed('@ace03d') }],
+    ['a name longer than any glass', { a: typed('@a.very.long.handle.of.thirty'), b: typed('@ace03d') }],
+  ]) {
+    const film = filmStory({ credit, say })
+    const T = film.times
+    for (const [name, e] of GLASSES) {
+      const where = `${who} on ${name}`
+      const inside = (c) => c[0] >= e.l && c[0] <= e.r && c[1] >= e.t && c[1] <= e.b
+      const bodyAt = (t) => film.layers.base(t, e).cells.filter((c) => c[2] === 1 && inside(c) && (c[4] ?? 1) > 0)
+      const wordsAt = (t) => [...film.layers.names(t, e).cells, ...film.layers.notes(t, e).cells]
+      // the first frame of either of them on this glass, the last frame with
+      // a cell of the names or the notes, and a beat of the empty glass
+      // between: a glass that runs further past the grid sees them sooner
+      let first = null
+      for (let t = 0; t < T.enter + 400 && first === null; t += 1) if (bodyAt(t).length) first = t
+      if (first === null) { fail(`the film, ${where}: nobody came in`); continue }
+      let last = 0
+      for (let t = 0; t < T.enter + 400; t += 1) if (wordsAt(t).length) last = t
+      const beat = first - last
+      const edge = e.l >= -3 && e.r <= I_COLS + 2
+      if (beat < BEAT_ANY) fail(`the film, ${where}: they are on the glass at ${first}ms, ${beat}ms after the last of the names and the notes`)
+      // and on a glass three cells past the grid or less, on the moment
+      if (edge && Math.abs(first - T.enter) > 2 * FRAME) fail(`the film, ${where}: they come in at ${first}ms and not at ${T.enter}`)
+      // the names and the notes on the glass, every frame they are there
+      let out = null
+      for (let t = 0; t < T.enter && out === null; t += 8) {
+        const off = wordsAt(t).find((c) => !inside(c))
+        if (off) out = [t, off]
+      }
+      if (out) fail(`the film, ${where}: a cell of the names or the notes is off the glass at ${out[0]}ms (${out[1][0]}, ${out[1][1]})`)
+      // the names stand whole between coming on and going out
+      const standing = film.layers.names(T.credit + 100, e).cells
+      if (!standing.length) fail(`the film, ${where}: the names are not on the glass at ${T.credit + 100}ms`)
+      if (beat >= BEAT_ANY && !out && standing.length) pass(`the film, ${where}: the names and the notes on the glass and gone at ${last}ms, and nobody until ${first}ms`)
+    }
+    // the two of them come in together on every glass (as section 3 asks
+    // of the intro and the loop), off the film's own story
+    const panels = GLASSES.slice(0, 4).map(([, e]) => e)
+    const got = entriesOf({ frame: (t, g) => film.layers.base(t, g) }, T.enter - 40, T.enter + 400, panels)
+    GLASSES.slice(0, 4).forEach(([name], i) => {
+      const g = got[i]
+      const gaps = Object.keys(LEVELS).map((k) => Math.abs((g[k].him ?? Infinity) - (g[k].her ?? -Infinity)))
+      const worst = Math.max(...gaps)
+      if (!(worst <= FRAME)) fail(`the film, ${who} on ${name}: the two come in ${worst}ms apart`)
+    })
+  }
+  pass('the film: on every glass the two come in within a frame of each other')
+
+  // the keepsake, on the film's clock 6490ms on, is the film's frame: the
+  // same tenth of the mark's life, as alive, and the same sentence and cursor
+  const film = filmStory({ credit: { a: typed('Jules'), b: typed('Ace') }, say })
+  const keep = keepStory({ say })
+  const T = film.times
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+  let odd = null
+  for (let t = T.said; t <= T.land + 420 && odd === null; t += 5) {
+    const u = t - T.live
+    const fs = film.layers.sentence(t).cells
+    const ks = keep.layers.sentence(u).cells
+    if (!same(film.layers.life(t), keep.layers.life(u)) || !same(fs, ks)) odd = t
+  }
+  if (odd !== null) fail(`the keepsake's mark is not the film's at ${odd}ms`)
+  else pass(`the keepsake, handed the film's clock ${T.live}ms on, draws the film's frame from ${T.said}ms to ${T.land + 420}ms`)
+}
+
+// ── 7. the picture ──
+{
+  const { layoutOf, topOf, CROP_TOP, CROP_BOT, SIGN_GAP, SIGN_H } = await import(wall('keeplayout.js'))
+  // a canvas's measure, for the face: every character 0.6 of the size wide
+  // (Jersey 10's own run nearer half), a CJK one the whole size
+  const measure = {
+    font: '',
+    measureText(t) {
+      const f = Number((/(\d+(?:\.\d+)?)px/.exec(this.font) || [])[1]) || 16
+      return { width: [...t].reduce((w, ch) => w + (/[\u3000-\u9fff\uac00-\ud7af]/.test(ch) ? f : 0.6 * f), 0) }
+    },
+  }
+  const LONG = 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read. see you'
+  const lines = (n, w) => Array.from({ length: n }, (_, i) => 'abcdefghijklmnopqrstuvwxyz'.slice(0, w).padEnd(w, String(i % 10))).join('\n')
+  const NOTES = [
+    ['two notes of 280 characters', [LONG.slice(0, 280), LONG.slice(0, 280)]],
+    ['a line each', ['hi', 'i have wanted to say this since the second week of term.']],
+    ['nine short lines, and a note', [lines(9, 36), 'hi']],
+    ['nine short lines each', [lines(9, 36), lines(9, 36)]],
+    ['forty letters, one to a line, each', [lines(40, 1), lines(40, 1)]],
+    ['forty letters one to a line, and a long note', [lines(40, 1), LONG.slice(0, 280)]],
+    ['a hundred and forty blank lines', ['\n'.repeat(140), 'hi']],
+    ['both empty', ['', '']],
+    ['one empty, one of many lines', ['', lines(40, 1)]],
+    ['Korean, long', ['수업 끝나고 매번 말을 걸고 싶었어. '.repeat(10).slice(0, 280), LONG.slice(0, 280)]],
+  ]
+  let worst = null
+  for (const names of [['Jules', 'Ace'], null]) {
+    for (const [what, notes] of NOTES) {
+      for (const on of [true, false]) {
+        const L = layoutOf(measure, { names, notes: on ? notes : null })
+        const top = topOf(L)
+        const bottom = top + L.ph + SIGN_GAP + SIGN_H
+        const where = `the picture, ${what}${names ? '' : ', nobody named'}${on ? '' : ', the notes left off'}`
+        if (top < CROP_TOP || bottom > CROP_BOT) fail(`${where}: the phone and its signature run from y ${top} to ${bottom}, outside ${CROP_TOP} to ${CROP_BOT}`)
+        else if (L.mark < 5 * 75) fail(`${where}: the mark's panel is ${L.mark} tall, under five pixels to a cell`)
+        else if (!worst || bottom > worst[1]) worst = [where, bottom]
+      }
+    }
+  }
+  if (worst) pass(`the picture: every shape of notes inside the crop, the lowest ${worst[0]} at y ${worst[1]} of ${CROP_BOT}`)
+}
 
 process.exit(bad ? 1 : 0)

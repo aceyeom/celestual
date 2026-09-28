@@ -20,17 +20,23 @@
 // at once, and read each other's. That is all of it, and it is said in that
 // order, in one read, top to bottom:
 //
-//   how it works                 a kicker, small and dim, so the headline
-//                                is not the thing that has to say what this is
 //   find out if it's mutual.     the headline: what pressing the key gets you
 //   the phone                    the three steps, drawn
-//   1  2  3                      the three steps, said: each one strong line,
-//                                and one quieter line under it that answers
-//                                the question the first one raises. The step
-//                                the phone is on is lit, the ones it has told
-//                                stay lit, and the one it has not reached
-//                                waits, dim
+//   1  2  3                      the three steps, said, one short line each.
+//                                The step the phone is on is lit, the ones
+//                                it has told stay lit, and the one it has
+//                                not reached waits, dim
 //   send one privately           the one key, there from the first frame
+//
+// Until 28 September there was more of it. A kicker, `how it works`, stood
+// small and dim over the headline, and each step had a quieter line under
+// its strong one, answering the question the first raised: they're never
+// told, and one a week is free; on their own, not knowing you did; and if it
+// isn't mutual nobody ever knows, keep it for next week or let it go. The
+// third step's own line went on to say you read each other's note. The owner
+// asked for it short and direct, with no subtext: the phone tells it, and
+// three lines of a few words say it. `privately` already says they are never
+// told, and which ping a note spends is said by the composer as it spends it.
 //
 // The key used to wait for the story to reach its third step, four and a
 // half seconds in, and then read "write one", which is the wall's verb for
@@ -105,12 +111,12 @@ import { href } from '../router.js'
 import '../mutual.css'
 
 // The third step is the night (migration 0069): a note runs to Saturday's
-// reveal, and everybody finds out then, together. The sub line answers the
-// two questions the night raises: what if it was not, and what then.
+// reveal, and everybody finds out then, together. One line each, and nothing
+// under it (the header says what used to be).
 const STEPS = [
-  { line: 'you send them a note, privately.', sub: 'they’re never told. one a week is free.' },
-  { line: 'they send you one too.', sub: 'on their own, not knowing you did.' },
-  { line: 'saturday at 9pm pacific, you both find out, and read each other’s note.', sub: 'if it isn’t mutual, nobody ever knows. keep it for next week, or let it go.' },
+  'you send them a note, privately.',
+  'they send you one too.',
+  'saturday at 9pm pacific, you both find out.',
 ]
 
 // The story's beats are the steps': each is lit as its part of the story
@@ -235,7 +241,6 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
 
       <div className="wl-join-in">
         <div className="wl-join-head">
-          <p className="wl-join-kick">how it works</p>
           {/* The offer, said as the offer: what pressing the key gets you, in
               the words a person would use for it. */}
           <Display size="l" className="wl-join-h">find out if it&#8217;s mutual.</Display>
@@ -260,17 +265,14 @@ export default function Join({ go, up, upLabel = 'back to the wall', setField, r
         </div>
 
         <ol className="wl-join-steps">
-          {STEPS.map((s, i) => (
+          {STEPS.map((line, i) => (
             <li
-              key={s.line}
+              key={line}
               className={`wl-join-step${i === on ? ' is-on' : ''}${told > i ? ' is-told' : ''}`}
               aria-current={i === on ? 'step' : undefined}
             >
               <span className="wl-join-n" aria-hidden="true">{i + 1}</span>
-              <span className="wl-join-say">
-                <span className="wl-join-line">{s.line}</span>
-                <span className="wl-join-sub">{s.sub}</span>
-              </span>
+              <span className="wl-join-line">{line}</span>
             </li>
           ))}
         </ol>

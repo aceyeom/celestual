@@ -9,8 +9,10 @@
    The phone's tokens (`--lcd`, `--lcd-2`, `--lcd-edge`, `--lcd-edge-hi`,
    `--r-lcd`) are phone.css's, and the sheet's padding is wall.css's
    (`--sheet-pad`). Nothing here is lit: the key at the foot is the sheet's
-   one bright thing, and a mutual is set apart by its bezel and its signal,
-   not by a second chalk plate. */
+   one bright thing. A mutual was set apart by a rose bezel and its signal;
+   it is a small phone of its own now (Slot.jsx, `.wl-slot` below), the one
+   screen on the sheet, and it stands with its backlight asleep so it is
+   never a second bright thing until the pointer or a press wakes it. */
 
 /* ── the person ─────────────────────────────────────────────────────────────
    The face, the @ as the heading and the address under it, and at the end
@@ -120,6 +122,10 @@
   color: var(--ash); white-space: nowrap;
 }
 .wl-vault-seal { flex: 0 0 auto; display: block; color: var(--chalk); }
+/* where the focus goes back to when a mutual it came from has been taken
+   off the list (You.jsx, back from a mutual): a place, not a key */
+.wl-vault-title:focus { outline: none; }
+.wl-vault-title:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 4px; }
 /* ── the reveal, in the strip ──
    You.jsx `RevealStrip`: how long, in chalk figures with a breath of rose
    round them, and when, a step back at the strip's end. On the last day the
@@ -157,37 +163,40 @@
 .wl-vault-list { display: flex; flex-direction: column; }
 
 /* a row: the letters' row (wall.css `.wl-wrote-row`), with the signal at its
-   end, and the phone's inversion under the pointer and the press */
-.wl-vault-row {
+   end, and the phone's inversion under the pointer and the press. It was
+   one button; since every note carries its `edit` key (the owner asked for
+   one, to change a note or let it go) a row is two keys side by side, the
+   press that opens the note's own screen (`.wl-vault-open`, which inverts)
+   and the key to its settings (`.wl-vault-edit`, below), and never a key
+   inside a key. The keys stand in one column with the mutual slot's. */
+.wl-vault-row { display: flex; align-items: stretch; gap: 8px; width: 100%; padding-right: 8px; }
+.wl-vault-open {
+  flex: 1 1 auto; min-width: 0;
   display: flex; align-items: center; gap: 12px;
-  width: 100%; padding: 8px;
+  padding: 8px;
   border: 0; border-radius: var(--r-lcd); background: none;
   color: var(--chalk); text-align: left; cursor: pointer;
 }
 .wl-vault-row .wl-wrote-meta { color: var(--ash); }
-.wl-vault-row.is-mutual {
-  background: rgba(244, 241, 234, 0.035);
-  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi);
-}
-.wl-vault-row.is-mutual .wl-wrote-meta { color: var(--chalk); }
 .wl-vault-row.is-draft .wl-wrote-meta { color: var(--ash-dim); }
-.wl-vault-row:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: -1px; }
+.wl-vault-open:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: -1px; }
 /* not sent: the face and the name a step back, since nothing is out yet */
 :is(.wl-vault-row, .wl-wrote-row).is-draft .wl-face { opacity: 0.5; }
 :is(.wl-vault-row, .wl-wrote-row).is-draft .wl-wrote-name { color: var(--ash); }
 
 /* ── the aerial ─────────────────────────────────────────────────────────────
-   The Y from the phone's status row, alone (You.jsx `Aerial`), two of the
-   page's pixels to each of its cells, and the two waves a phone drew off it
-   while it was sending. Searching, the inner wave and then the outer come on
-   and go, on the phone's half beat (530ms, the caret's 1060 halved), in the
-   dim chalk every unlit thing on the sheet is in; kept for the week after,
-   the waves stand, a step dimmer, since nothing is searching that has
-   already been told to wait. A mutual is the one colour on the frame: rose,
-   both waves out and still, with the light it throws. Not this time: the Y
-   dark and the phone's small cross at its foot. Opacity on three paths,
-   nothing else, so it costs the compositor nothing, and under reduced
-   motion the searching Y holds its inner wave. */
+   The Y from the phone's status row, alone (aerial.jsx `Aerial`), two of
+   the page's pixels to each of its cells at a row's end and one in a slot's
+   band, and the two waves a phone drew off it while it was sending.
+   Searching, the inner wave and then the outer come on and go, on the
+   phone's half beat (530ms, the caret's 1060 halved), in the dim chalk
+   every unlit thing on the sheet is in; kept for the week after, the waves
+   stand, a step dimmer, since nothing is searching that has already been
+   told to wait. Mutual: both waves out and still, with the light it throws,
+   in rose, and in the band's own light on a slot (below). Not this time:
+   the Y dark and the phone's small cross at its foot. Opacity on three
+   paths, nothing else, so it costs the compositor nothing, and under
+   reduced motion the searching Y holds its inner wave. */
 .wl-aerial { flex: 0 0 auto; display: block; margin-right: 2px; color: var(--ash); overflow: visible; }
 .wl-aerial path { transition: opacity 160ms steps(2, end); }
 .wl-aerial-in, .wl-aerial-out, .wl-aerial-x { opacity: 0; }
@@ -206,13 +215,14 @@
    On the first look after a reveal every row searches once more, the
    words under the name saying so, and lands on what it is a beat after the
    one above (`--land`, You.jsx): the searching goes, the aerial and the
-   words come up as they are, and the row blinks inverted once, the way the
-   phone lit a line that had just arrived. A mutual's blink is rose. The
-   blink is the row's for its 150ms and no longer, the words on it black for
-   as long: before it the row is at rest and searching, and after it the row
-   is itself again, under the press and the pointer too. Until it lands the
-   aerial searches as a running note's does, in ash with its waves going,
-   and then stands as its state has it. */
+   words come up as they are, and the row's press blinks inverted once, the
+   way the phone lit a line that had just arrived. The blink is the press's
+   for its 150ms and no longer, the words on it black for as long: before it
+   the row is at rest and searching, and after it the row is itself again,
+   under the press and the pointer too. Until it lands the aerial searches
+   as a running note's does, in ash with its waves going, and then stands
+   as its state has it. A mutual's row blinked rose; the slot wakes its
+   backlight instead (below). */
 .wl-vault-meta, .wl-wrote-meta { position: relative; }
 .wl-vault-seek { display: none; }
 .wl-vault-row.is-landing .wl-vault-seek {
@@ -234,18 +244,19 @@
 @keyframes wl-land-kept-in { to { opacity: 0.75; } }
 @keyframes wl-land-kept-out { to { opacity: 0.4; } }
 @keyframes wl-land-full { to { opacity: 1; } }
-.wl-vault-row.is-landing { animation: wl-row-land 150ms linear var(--land, 700ms); }
-.wl-vault-row.is-landing.is-mutual { animation-name: wl-row-land-rose; }
-.wl-vault-row.is-landing :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial) { animation: wl-row-ink 150ms linear var(--land, 700ms); }
-.wl-vault-row.is-landing .wl-aerial.is-landing:not(.is-seek) { animation: wl-seek-ink 1ms linear var(--land, 700ms) backwards, wl-row-ink 150ms linear var(--land, 700ms); }
+.wl-vault-row.is-landing .wl-vault-open { animation: wl-row-land 150ms linear var(--land, 700ms); }
+.wl-vault-row.is-landing .wl-vault-open :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial) { animation: wl-row-ink 150ms linear var(--land, 700ms); }
+.wl-vault-row.is-landing .wl-vault-open .wl-aerial.is-landing:not(.is-seek) { animation: wl-seek-ink 1ms linear var(--land, 700ms) backwards, wl-row-ink 150ms linear var(--land, 700ms); }
 @keyframes wl-row-land { from, to { background: var(--chalk); box-shadow: none; } }
-@keyframes wl-row-land-rose { from, to { background: var(--rose); box-shadow: none; } }
 @keyframes wl-row-ink { from, to { color: #000; filter: none; } }
 /* and not before it is in sight (You.jsx `useSeen`): held searching, its
-   landing waiting where it starts, the waves still going */
-.wl-vault-row.is-landing:not(.is-seen),
-.wl-vault-row.is-landing:not(.is-seen) :is(.wl-wrote-name, .wl-wrote-meta, .wl-vault-seek, .wl-vault-said, .wl-aerial-x),
-.wl-vault-row.is-landing:not(.is-seen) .wl-aerial.is-landing { animation-play-state: paused; }
+   landing waiting where it starts, the aerial's blink held with the row's
+   whatever its state, the waves still going (they are the paths', and a
+   pause on the Y does not reach them) */
+.wl-vault-row.is-landing:not(.is-seen) .wl-vault-open,
+.wl-vault-row.is-landing:not(.is-seen) .wl-vault-open :is(.wl-wrote-name, .wl-wrote-meta),
+.wl-vault-row.is-landing:not(.is-seen) :is(.wl-vault-seek, .wl-vault-said, .wl-aerial-x),
+.wl-vault-row.is-landing:not(.is-seen) .wl-vault-open .wl-aerial.is-landing { animation-play-state: paused; }
 .wl-vault-row.is-landing:not(.is-seen) .wl-aerial:not(.is-seek) :is(.wl-aerial-in, .wl-aerial-out) { animation-play-state: running, paused; }
 
 /* the notes that were not this time, under a seam of their own, a step
@@ -263,20 +274,149 @@
 .wl-vault-row.is-lapsed .wl-face { opacity: 0.55; filter: grayscale(0.6); }
 .wl-vault-row.is-lapsed .wl-wrote-name { color: var(--ash); }
 .wl-vault-row.is-lapsed .wl-wrote-meta { color: var(--ash-dim); }
-.wl-vault-row.is-mutual { --rose-edge: rgba(233, 162, 189, 0.42); box-shadow: inset 0 0 0 1px var(--rose-edge); background: rgba(233, 162, 189, 0.05); }
-.wl-vault-row.is-mutual .wl-wrote-meta { color: var(--rose); }
 
 /* the phone's inversion under the press and the pointer, after every state
    above so it is the same in all of them: a chalk row, and everything on it
-   black, the rose and the dimmed included */
-.wl-vault-row:active { background: var(--chalk); box-shadow: none; }
-.wl-vault-row:active :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial, .wl-aerial-x) { color: #000; }
-.wl-vault-row:active .wl-aerial { filter: none; }
+   black, the dimmed included. The row's own press, never its key */
+.wl-vault-open:active { background: var(--chalk); box-shadow: none; }
+.wl-vault-open:active :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial, .wl-aerial-x) { color: #000; }
+.wl-vault-open:active .wl-aerial { filter: none; }
 @media (hover: hover) and (pointer: fine) {
-  .wl-vault-row:hover { background: var(--chalk); box-shadow: none; }
-  .wl-vault-row:hover :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial, .wl-aerial-x) { color: #000; }
-  .wl-vault-row:hover .wl-aerial { filter: none; }
+  .wl-vault-open:hover { background: var(--chalk); box-shadow: none; }
+  .wl-vault-open:hover :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial, .wl-aerial-x) { color: #000; }
+  .wl-vault-open:hover .wl-aerial { filter: none; }
 }
+
+/* ── the key beside a note ──────────────────────────────────────────────────
+   `edit` (Slot.jsx `EditKey`), on every note in the frame: the note's own
+   settings, to change its words or let it go, and on a mutual the
+   keepsake's options. The settings key's plate, 44 by 32, in the row's full
+   height so a thumb has 44 across and the row's height down; its bezel and
+   its word lit under the pointer, and inverted under the press, as a key on
+   the phone is. At once, as the phone's keys were. */
+.wl-vault-edit {
+  flex: 0 0 44px; align-self: stretch;
+  display: grid; place-items: center;
+  padding: 0; border: 0; background: none; cursor: pointer;
+}
+.wl-vault-edit > span {
+  display: grid; place-items: center;
+  width: 44px; height: 32px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-vault-edit:hover > span { border-color: var(--lcd-edge-hi); color: var(--chalk); }
+}
+.wl-vault-edit:active > span { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-vault-edit:focus-visible { outline: none; }
+.wl-vault-edit:focus-visible > span { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
+
+/* ── a mutual: THE SLOT ─────────────────────────────────────────────────────
+   Slot.jsx. A small phone laid along the row: the band over the panel, 20
+   and 40 of the page's pixels, in the screen's own properties (looks.js
+   `skinVars`: the night until it has been opened here, the rose letter
+   after), square to the camera like every screen with a story on it, and
+   with no filter on it, so nothing under the moving notes is drawn again.
+   Round it, opened or not, the rose letter's edge light (`--s-edge`, which
+   Slot.jsx gives the night too): a hairline and a trace of glow, so the
+   night asleep at .38 is a mutual and not a key greyed out, and nothing on
+   it is a second bright thing. The row round it does not invert: the glass
+   is the thing pressed, and it answers the way a phone does. */
+.wl-vault-row.wl-slot { padding: 8px; }
+.wl-slot-open {
+  flex: 1 1 auto; min-width: 0; height: 60px;
+  display: flex; flex-direction: column;
+  padding: 0; border: 0; border-radius: var(--r-lcd); overflow: hidden; overflow: clip;
+  background: var(--s-bot); color: var(--s-lit);
+  font-family: var(--f-s40); text-align: left; cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--s-edge), 0 0 14px -2px var(--s-edge);
+}
+.wl-slot-open:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
+.wl-slot-band {
+  flex: 0 0 20px; display: flex; align-items: center; gap: 6px; min-width: 0;
+  padding: 0 6px;
+  background: linear-gradient(180deg, var(--s-top), var(--s-top-2));
+}
+.wl-slot-band .wl-aerial { margin: 0; color: var(--s-lit); filter: drop-shadow(0 0 2px var(--s-bloom)); }
+.wl-slot-at, .wl-slot-when {
+  font-size: var(--t-small); line-height: 1; white-space: nowrap;
+  text-shadow: 0 0 1px var(--s-lit), 0 0 6px var(--s-bloom);
+}
+/* the @ gives way to the night, cut short with an ellipsis; the box that
+   cuts it stands 6px clear of the words (its padding, its margin taking it
+   back), so their glow fades out and is never boxed in */
+.wl-slot-at { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 6px; margin: -6px; }
+/* the night at the right, and while it lands the searching in its place */
+.wl-slot-when { flex: 0 0 auto; display: grid; justify-items: end; margin-left: auto; opacity: 0.82; }
+.wl-slot-when > * { grid-area: 1 / 1; }
+
+.wl-slot-panel {
+  position: relative; flex: 1 1 auto; display: block;
+  background: radial-gradient(120% 95% at 70% 40%, var(--s-hi), var(--s-mid) 52%, var(--s-lo));
+}
+/* the person, a picture on this screen: framed in the panel's own ink
+   rather than lit as a square of its own */
+.wl-slot-panel .wl-face {
+  position: absolute; left: 4px; top: 6px;
+  --face-ink: var(--s-ink);
+  background: transparent; box-shadow: inset 0 0 0 1px var(--s-ink);
+}
+/* The lane, from the face to 4 short of the glass's end, on the phone's
+   pitch: the unlit cells as a tile of four, a dot of the ink at 7 percent
+   (a mask, so the press can turn them), lined up with the notes' own. */
+.wl-slot-lane {
+  position: absolute; left: 36px; right: 4px; top: 2px; bottom: 2px;
+  overflow: hidden; overflow: clip; color: var(--s-ink);
+}
+.wl-slot-lane::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--s-ink); opacity: 0.07;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='3' height='3'/%3E%3C/svg%3E") 0 0 / 4px 4px repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='3' height='3'/%3E%3C/svg%3E") 0 0 / 4px 4px repeat;
+}
+.wl-slot-note, .wl-slot-one { position: absolute; top: 8px; display: block; }
+.wl-slot-note { width: 28px; height: 20px; }
+.wl-slot-note svg { position: absolute; top: 0; display: block; }
+.wl-slot-ink { left: 0; }
+.wl-slot-ghost { opacity: 0; }
+.wl-slot-lane.is-playing .wl-slot-note { will-change: transform; }
+/* the backlight asleep, over the panel only; the pointer wakes it, in two
+   steps as a backlight comes up, and the focus at once, since nothing a key
+   does is ever animated. An opened slot is backlit (`--veil` nothing): under
+   the veil the keepsake read dimmer than the plain rows round it */
+.wl-slot.is-opened { --veil: 0; }
+.wl-slot-veil {
+  position: absolute; inset: 0; background: #000; opacity: var(--veil, 0.38); pointer-events: none;
+  transition: opacity 120ms steps(2, end);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-slot-open:hover .wl-slot-veil { opacity: 0; }
+}
+.wl-slot-open:focus-visible .wl-slot-veil { opacity: 0; transition: none; }
+/* the press: the phone's inversion, the panel in its ink and the notes,
+   the dots and the face's frame in its light, on the frame it goes down,
+   and the backlight with it, as a key pressed on a phone lights it */
+.wl-slot-open.is-pressed .wl-slot-panel { background: var(--s-ink); }
+.wl-slot-open.is-pressed .wl-slot-lane { color: var(--s-mid); }
+.wl-slot-open.is-pressed .wl-slot-lane::before { background: var(--s-mid); opacity: 0.16; }
+.wl-slot-open.is-pressed .wl-slot-panel .wl-face { --face-ink: var(--s-mid); box-shadow: inset 0 0 0 1px var(--s-mid); }
+.wl-slot-open.is-pressed .wl-slot-veil { opacity: 0; transition: none; }
+
+/* the night (You.jsx `useSeen`): dark and searching until it is in sight,
+   then the backlight comes up the way a screen wakes (screen.css
+   `wl-wake-light`'s flicker, landing on the veil, .38 or nothing), the
+   band's words turn on one frame, and the notes come on 500ms after. The
+   flicker holds its first frame only while it waits, so the pointer can
+   wake it after */
+.wl-slot.is-landing:not(.is-seen) .wl-slot-veil { opacity: 1; }
+.wl-slot.is-landing:not(.is-seen) .wl-slot-lane { visibility: hidden; }
+.wl-slot.is-landing.is-seen .wl-slot-veil { animation: wl-slot-wake 500ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--land, 700ms) backwards; }
+.wl-slot.is-landing.is-seen .wl-slot-lane { animation: wl-land-in 1ms linear calc(var(--land, 700ms) + 500ms) backwards; }
+@keyframes wl-slot-wake { 0% { opacity: 1; } 28% { opacity: 0.62; } 38% { opacity: 0.85; } 52% { opacity: 0.45; } 100% { opacity: var(--veil, 0.38); } }
+.wl-slot.is-landing .wl-slot-seek { animation: wl-land-out 1ms linear var(--land, 700ms) both; }
+.wl-slot.is-landing .wl-slot-said { animation: wl-land-in 1ms linear var(--land, 700ms) both; }
+.wl-slot.is-landing:not(.is-seen) :is(.wl-slot-seek, .wl-slot-said) { animation-play-state: paused; }
 
 /* the way to how it works, at the strip's end: a square key with the
    phone's `i`, the size of the strip's own line, quieter than the close */
@@ -296,9 +436,11 @@
 /* the week's pings, at the frame's foot, under the notes they are for
    (You.jsx `Week`): a cell for the free ping, lit while it is still to
    spend, and one for each bought, lit rose since a bought one waits; what
-   they are in words; and the way to more at the end, the settings key's
-   shape, so it is a key and never a banner */
-.wl-vault-week { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+   they are in words; and, once none is left to spend, the way to more at
+   the end, the settings key's shape, so it is a key and never a banner.
+   The row is as tall as that key whether it is there or not, so the foot
+   does not change its height when the week is spent. */
+.wl-vault-week { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; min-height: 28px; }
 .wl-vault-pings { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
 .wl-vault-pings .wl-slots-cells { flex: 0 0 auto; flex-wrap: wrap; max-width: 60px; }
 .wl-slots-cells i.is-lit { background: var(--chalk); box-shadow: 0 0 5px rgba(244, 241, 234, 0.3); }
@@ -394,10 +536,17 @@
   .wl-you-id, .wl-you-panel, .wl-set-group { animation: none; }
   .wl-aerial.is-seek .wl-aerial-in { animation: none; opacity: 1; }
   .wl-aerial.is-seek .wl-aerial-out { animation: none; opacity: 0.18; }
-  .wl-vault-row.is-landing, .wl-vault-row.is-landing :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial),
-  .wl-vault-row.is-landing .wl-aerial.is-landing:not(.is-seek),
+  .wl-vault-row.is-landing .wl-vault-open, .wl-vault-row.is-landing .wl-vault-open :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial),
+  .wl-vault-row.is-landing .wl-vault-open .wl-aerial.is-landing:not(.is-seek),
   .wl-aerial.is-landing:not(.is-seek) :is(.wl-aerial-in, .wl-aerial-out, .wl-aerial-x), .wl-memberbtn.has-news { animation: none; }
   .wl-aerial.is-landing.is-full :is(.wl-aerial-in, .wl-aerial-out) { opacity: 1; }
   .wl-vault-row.is-landing .wl-vault-seek { display: none; }
   .wl-vault-row.is-landing .wl-vault-said { animation: none; position: static; }
+  /* a slot is its held frame (Slot.jsx), and on the night it is simply
+     there: asleep at .38, its night in the band, its notes on the glass */
+  .wl-slot.is-landing.is-seen .wl-slot-veil, .wl-slot.is-landing.is-seen .wl-slot-lane,
+  .wl-slot.is-landing .wl-slot-said { animation: none; }
+  .wl-slot.is-landing:not(.is-seen) .wl-slot-veil { opacity: var(--veil, 0.38); }
+  .wl-slot.is-landing:not(.is-seen) .wl-slot-lane { visibility: visible; }
+  .wl-slot.is-landing .wl-slot-seek { display: none; }
 }

@@ -17,7 +17,8 @@ database."* Every control below exists to make both worthless.
 ## The controls
 
 ### §1 — No client access to the data
-All tables (`celestual_entries`, `celestual_matches`, `celestual_notifications`,
+All tables (`celestual_entries`, `celestual_keepsakes`, `celestual_matches`,
+`celestual_notifications`, `celestual_ping_spends`,
 `celestual_attempts`, `celestual_suppressions`, `celestual_placements`,
 `celestual_members`, `celestual_handle_links`, `celestual_ig_verifications`,
 `celestual_recovery`, `celestual_relogin_tokens`, `celestual_settings`,
@@ -26,14 +27,17 @@ All tables (`celestual_entries`, `celestual_matches`, `celestual_notifications`,
 policies**, and all privileges are revoked from `anon`/`authenticated`. The
 browser literally cannot `select` from them. The only entry points are the
 `SECURITY DEFINER` RPCs (`celestual_submit`, `celestual_withdraw`,
-`celestual_renew`, `celestual_ping_status`, `celestual_my_pings`,
+`celestual_renew`, `celestual_mutual_again`, `celestual_mutual_forget`,
+`celestual_ping_status`, `celestual_my_pings`,
 `celestual_slots_for`, `celestual_suppress`, `celestual_link`,
 `celestual_set_worlds`, `celestual_world_counts`, `celestual_campus`,
 `celestual_campus_preregister`, `celestual_start_ig_verification`,
 `celestual_poll_ig_verification`, `celestual_bind_recovery`), which return only
 small status objects — never other people's rows. Internal helpers
 (`celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
-`celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`)
+`celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`,
+and since 0072 `celestual_place`, `celestual_mutual_keep` and
+`celestual_keepsake_forget`)
 and the operator / service-role paths (`celestual_complete_ig_verification`,
 `celestual_relogin_store`, `celestual_relogin_redeem`, `celestual_campus_reveal`,
 `celestual_purge_expired`) are **not** granted to clients.
@@ -258,9 +262,72 @@ key on a proven identity.
 entrant is emailed **only at the address they themselves stored** — never the
 address on the triggering request — via the `celestual_notifications` queue
 (retry + dead-letter in celestual-notify). Withdrawal tears down the match row
-and any still-pending notification, but never un-tells anyone already mailed.
-A blocked/opted-out handle can never match: suppression is checked (by hash)
-before anything records.
+and any still-pending notification, but never un-tells anyone already mailed;
+since 0069 a mutual is not withdrawn at all, and since 0072 withdrawal takes a
+match row only when it un-tells the half of a pair from before the weekly
+reveal, never a kept pair's. A blocked/opted-out handle can never match:
+suppression is checked (by hash) before anything records.
+
+### §keep — A mutual kept, and written to again (0072)
+A mutual used to be two matched rows in `celestual_entries`, forever, and a
+table of one row per pair can hold a note or a mutual, never both, so nobody
+could write to somebody they were mutual with again. Now a told pair can be
+**kept**: each side's row is frozen into `celestual_keepsakes` and the two
+rows leave `celestual_entries`, so a new note from either side is a new note
+in every way (a ping spent, sealed until the Saturday reveal, told only if
+the other side writes a new one too).
+
+- **What a keepsake holds.** Whose list it is on (the from handle), the @ it
+  names and that @'s salted hash, the owner's own words and the other side's
+  words as they were told (both cards, with the photograph under each where
+  one was ever stored), when the note went out, the end it carried, and the
+  night it was told, and the @ the other side's words were read off (with two
+  handles linked as one, 0036, not always the @ it names). One row per person
+  per told mutual. Nothing a keepsake holds was not already on the owner's
+  list, and the other side's words in it are the words their
+  `celestual_counterpart_card` already returned to the owner at the reveal.
+- **Who can read it.** Its owner, and nobody else: RLS on, zero policies,
+  every grant revoked, and read only inside the owner's proof gated
+  functions (`celestual_my_pings`, `celestual_ping_status`,
+  `celestual_card_photo`, and the answer `celestual_submit` gives a told
+  pair). The operator reads it as they read `celestual_entries`, and it is
+  the same crown jewel: a keepsake joins the @ in plaintext to the words,
+  which a told pair's `matched_handle` already did.
+- **Writing again tells the other person nothing.** Keeping happens only
+  inside `celestual_mutual_again` (which places the new note in the same
+  transaction, and keeps nothing when the note is refused) and
+  `celestual_mutual_forget`. After it, every door the other person can knock
+  on about the pair answers exactly as it did while the pair was told: their
+  list (the same in every field), the status, an ordinary placement on the
+  pair (it's mutual, their words, nothing spent, nothing written), letting go
+  ('mutual'), keeping for next week, the photographs, and the week's pings.
+  With two handles linked as one (0036), a placement from the @ that was not
+  told, or to the other side's other @, was told again at once while the pair
+  was told, and on a kept pair it still is, into a keepsake of its own, with
+  the same ping spent and given back and the same refusals, so the one
+  placing cannot learn from it that the other side wrote again or took
+  theirs off. The new note is sealed like any other (0069), so even when both
+  write again nothing is said before the night.
+  `scripts/sql/test-mutual-kept.sql` compares every one of those answers byte
+  for byte, before and after.
+- **Taking one off is one person's.** `celestual_mutual_forget` removes the
+  caller's keepsakes of the pair, and the news of it still on its way to
+  them; the other person keeps theirs and is told nothing. It takes only the
+  nights the caller could have been shown (told before the call, and none
+  after the night their list drew), so a mutual told since, which the other
+  side is being told of, is never taken off unseen; and a 'none' changes
+  nothing.
+- **A pair told twice is told twice.** `celestual_matches` is unique on the
+  pair among the rows not kept (`kept_at`), so a second mutual writes its own
+  row and its own mail and DM to both, and a kept pair's row, with any news
+  still owed, is never dropped to make room.
+- **Erasure.** Keepsakes follow the rows they were: the erase, the opt out
+  and the desk's delete take the person's own and every other person's
+  keepsake about them, their words with it (through
+  `celestual_billing_forget`, with the ping ledger), and their words and
+  photograph out of a keepsake that names another @ linked with theirs, which
+  stays with nothing of theirs in it. The broom takes none; a keepsake lasts,
+  as a mutual did, until its owner takes it off.
 
 ### §card — What a ping carries, and what holds it shut (0022)
 Every ping now carries a **card**: a short message on a ground, in one of three
@@ -303,6 +370,11 @@ burns with. It lives in `celestual_entries.card`.
   go", "delete everything" and the opt-out all work on whole rows, and the
   photograph is a column on the row — so none of them needed a line of new
   cleanup. Letting a ping go also drops both cached copies from IndexedDB.
+  Since 0072 a told pair that is kept copies both cards, and the photograph
+  under each, into the two sides' keepsakes (§keep), and every erasure takes
+  those as it takes the rows; and `celestual_card_photo_put` writes onto a
+  running note only, so a told note's photograph stays what the other side
+  saw, as its words have since 0069.
 
 Two things follow that are worth stating rather than discovering. A card is
 plaintext at rest in `celestual_entries` — the target handle beside it is a
@@ -356,6 +428,7 @@ recorded on the server (`wall_reply_terms`).
 `celestual_suppress` is the opt-out any handle owner — user or not — can use
 without an account: it hashes the handle into the block list and erases
 **everything** referencing it (pings both directions, matches, pending mail,
+the mutuals kept on its own list and on anybody else's about it (0072),
 membership, worlds, campus preregistrations, the identity row). Free,
 immediate, never behind a login, rate-limited against griefing. Since 0039 it
 takes the same one-DM proof placing a ping takes: anybody who holds the
