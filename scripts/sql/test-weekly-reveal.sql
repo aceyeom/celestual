@@ -6,12 +6,15 @@
 -- two notes nobody answered, in every answer the server gives, until the
 -- reveal, when it is mutual. Letting one half go unseals the other. A note
 -- that lapsed is listed as lapsed for a week, cannot be kept, is sent again
--- through the slot rule, and is then swept. The words change until the
--- reveal and not after. One reveal runs at a time (the race itself is in
--- test-weekly-reveal-race.sql), and a sealed row is never read as lapsed. A
--- note from before the week is moved onto a reveal, so a seal moves no end,
--- and one person noting somebody from two linked handles is told on both.
--- Time is moved by moving the rows' own timestamps back. Run through
+-- on the week's ping (0071, which replaced the slot rule of two standing:
+-- the sections that send more than one note a reveal from one person give
+-- that person bought pings, and say so), and is then swept. The words change
+-- until the reveal and not after. One reveal runs at a time (the race itself
+-- is in test-weekly-reveal-race.sql), and a sealed row is never read as
+-- lapsed. A note from before the week is moved onto a reveal, so a seal moves
+-- no end, and one person noting somebody from two linked handles is told on
+-- both. Time is moved by moving the rows' own timestamps back, and since 0071
+-- the ledger's with them where a section needs it. Run through
 -- scripts/verify-migrations.sh --test; everything is rolled back at the end.
 -- ─────────────────────────────────────────────────────────────────────────────
 \set ON_ERROR_STOP on
@@ -115,8 +118,13 @@ select wr_ok('the words can still change before the reveal',
   and (wr_row('wr_a', 'wr_b')).card->>'words' = 'the bus stop, every tuesday'
   and (wr_row('wr_a', 'wr_b')).sealed_with = (wr_row('wr_b', 'wr_a')).id);
 select wr_ok('the reveal does nothing before its night', celestual_reveal_due() = 0);
+-- The reveal's lock is of the one key kind. Since 0071 a ping spent takes a
+-- lock of the two key kind (one spend at a time per person), held to the end
+-- of the transaction that sent it, which here is the whole file; so the
+-- question is asked of the reveal's kind alone.
 select wr_ok('and takes no lock to do nothing, so a week of reads never queue',
-  not exists (select 1 from pg_locks where locktype = 'advisory' and pid = pg_backend_pid()));
+  not exists (select 1 from pg_locks where locktype = 'advisory' and pid = pg_backend_pid()
+                 and objsubid = 1));
 
 -- ── 4. the night ────────────────────────────────────────────────────────────
 select wr_ok('at the reveal the pair is made mutual', wr_night() = 1);
@@ -173,6 +181,12 @@ select wr_ok('and goes no further, however often it is kept',
 
 -- ── 8. a note that lapsed ───────────────────────────────────────────────────
 update celestual_entries set expires_at = now() - interval '2 days' where from_handle = 'wr_e';
+-- (0071) and the ping it was sent on moves back with it, to the reveal it
+-- lapsed at; the one its keep spent on a later reveal goes, since it never
+-- ran to that one
+update celestual_ping_spends set reveal_at = now() - interval '2 days'
+ where handle = 'wr_e' and reveal_at = celestual_note_ends(now());
+delete from celestual_ping_spends where handle = 'wr_e' and reveal_at > now();
 select wr_ok('it is listed, and said to have lapsed',
   (wr_item('wr_e', 'wr_f')->>'lapsed')::boolean and not (wr_item('wr_e', 'wr_f')->>'mutual')::boolean);
 select wr_ok('it cannot be kept, only sent again',
@@ -180,13 +194,17 @@ select wr_ok('it cannot be kept, only sent again',
   and celestual_renew('wr_e', 'wr_f', 'proof-wr_e')->>'error' = 'lapsed');
 select wr_ok('and it no longer holds a slot',
   (celestual_slots_for('wr_e', 'proof-wr_e')->>'standing')::int = 0);
--- two others take both free slots
+-- two others take this week's pings. Until 0071 these were the free two
+-- standing slots and the refusal was no_slots; now it is the week's free
+-- ping and one bought, and the refusal is no_pings.
+insert into celestual_entitlements (handle, ping_credits) values ('wr_e', 1)
+on conflict (handle) do update set ping_credits = 1;
 select celestual_submit('wr_e', 'wr_g', null, 'proof-wr_e', null);
 select celestual_submit('wr_e', 'wr_h', null, 'proof-wr_e', null);
-select wr_ok('sending it again with both slots taken is refused',
-  celestual_submit('wr_e', 'wr_f', null, 'proof-wr_e', null)->>'error' = 'no_slots');
+select wr_ok('sending it again with this week''s pings spent is refused',
+  celestual_submit('wr_e', 'wr_f', null, 'proof-wr_e', null)->>'error' = 'no_pings');
 select celestual_withdraw('wr_e', 'wr_h', 'proof-wr_e');
-select wr_ok('with a slot free it goes out again',
+select wr_ok('with a ping given back it goes out again',
   (celestual_submit('wr_e', 'wr_f', null, 'proof-wr_e', null)->>'recorded')::boolean);
 select wr_ok('for a new week',
   (wr_row('wr_e', 'wr_f')).expires_at = celestual_note_ends(now())
@@ -255,6 +273,9 @@ begin
 end; $$;
 
 select wr_proof(h) from unnest(array['wr_k', 'wr_l', 'wr_m', 'wr_n', 'wr_o']) h;
+-- (0071) wr_k sends two notes this reveal and keeps both for the next: the
+-- free ping of each reveal, and two bought for the others
+insert into celestual_entitlements (handle, ping_credits) values ('wr_k', 2);
 select celestual_submit('wr_k', 'wr_l', null, 'proof-wr_k', null);
 select celestual_submit('wr_k', 'wr_m', null, 'proof-wr_k', null);
 select celestual_submit('wr_n', 'wr_o', null, 'proof-wr_n', null);
@@ -315,6 +336,9 @@ with g as (select gen_random_uuid() as s, gen_random_uuid() as u)
 insert into celestual_handle_links (handle, group_id)
 select h, case when h like 'wr\_s%' then g.s else g.u end
   from g, unnest(array['wr_s1', 'wr_s2', 'wr_u1', 'wr_u2']) h;
+-- (0071) each person sends from both handles in one reveal: one free ping
+-- between the two, and one bought
+insert into celestual_entitlements (handle, ping_credits) values ('wr_s1', 1), ('wr_u1', 1);
 -- s1 and t are sealed, then s2 notes t
 select celestual_submit('wr_s1', 'wr_t', null, 'proof-wr_s1', null);
 select celestual_submit('wr_t', 'wr_s1', null, 'proof-wr_t', '{"words":"the green coat"}'::jsonb);

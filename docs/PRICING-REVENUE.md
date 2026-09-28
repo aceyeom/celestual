@@ -1,4 +1,45 @@
-# CELESTUAL — Monetization posture
+# CELESTUAL · Monetization posture
+
+## 27 September 2026: pings by the week (the owner's ruling)
+
+**One free ping a week, and more for $2.99 each, as many as a person
+chooses.** This is the posture now, and it supersedes §1's "keep Stripe
+plumbed and dormant. Nothing in the production product mentions money" and
+§2's list as the statement of what is free, where §2 counted renewing (keeping
+a note) among the things free forever. Everything from "What celestual charges
+for" down is the history of how the posture stood before the ruling, kept as
+it was written.
+
+- **What a ping is.** One private note in one Saturday reveal (the weekly
+  reveal, migration 0069). Everybody gets one free ping for every reveal,
+  forever. More are bought, $2.99 each, one to ten at a time, the number
+  chosen in the app. A bought ping never lapses and is spent only when used,
+  after the week's free one. Nobody has more than ten in one reveal.
+- **What spends one.** Sending a note to somebody new, sending again a note
+  that was not this time, and keeping a note for next week (so keeping is no
+  longer free by definition: it takes the week's free ping, or a bought one).
+  Changing the words of a running note spends nothing.
+- **What gives one back.** Letting a running note go gives back every ping it
+  holds for a reveal still to come, free or bought, and a note that turns out
+  mutual gives back what it held for a reveal after the one that told it.
+- **What stays free, whatever anybody buys.** The free ping every reveal, the
+  reveal itself, finding out it is mutual, letting a note go, the wall, the
+  opt out, erasure and every proof (Instagram, a school address, an alert
+  address). Nothing is charged to the person a note is about.
+- **What the words are.** VOICE.md section 6 still bans the paywall voice. A
+  ping is bought, and the screen says exactly that and exactly what it costs:
+  `get 3 pings · $8.97`.
+- **Refunds.** Unused bought pings are refundable on request within 14 days;
+  a refund or a chargeback takes back the pings it covers, never below none,
+  and never touches a note already sent (its absence would say it had been
+  sent).
+
+The contract is [PINGS-BY-THE-WEEK.md](./PINGS-BY-THE-WEEK.md); the database
+is migration 0071; the runbook is [STRIPE-SETUP.md](./STRIPE-SETUP.md), which
+now sells one product, **celestual · pings**, and not the steady plan. The
+in-app privacy screen and `/terms` must say the list above, not §2's.
+
+---
 
 What celestual charges for: **nothing, deliberately, until density is proven.**
 This document replaces the earlier pricing strategy (Nova subscription,

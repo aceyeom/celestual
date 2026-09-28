@@ -237,9 +237,13 @@ let ANON = false
 // (0043): proved on the spot, with no code drawn, which is the one way to
 // walk the whole of a ping to "it's out." without an Instagram behind it.
 let PASS = false
-// Whether every slot this person holds is already standing, so the placing
-// is refused and the sheet says so (0023 `no_slots`).
+// Whether this week's pings are all spent, so the placing is refused and
+// the paywall stands in the send's place (0071 `no_pings`).
 let FULL = false
+// This week's pings (0071): 'credits' (the free one spent, two bought),
+// 'free' (the free one still there, none bought), or 'none' (all spent).
+// A `full` route is 'none'.
+let WEEK = 'credits'
 // Whether the fixture browser signed in with google, and nothing else: a
 // reader on any wall since 0057, and not a writer on the campus wall. It is
 // the person whose heart never counted, because this browser drew them as
@@ -835,6 +839,19 @@ const DESK = {
   }),
 }
 
+// 0071: the week's pings, in the shape every answer about the notes carries
+// (docs/PINGS-BY-THE-WEEK.md), for whichever week the route says
+function ALLOWANCE() {
+  const at = NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY
+  const w = FULL ? 'none' : WEEK
+  return {
+    reveal_at: new Date(at).toISOString(),
+    free: 1, free_left: w === 'free' ? 1 : 0, credits: w === 'credits' ? 2 : 0,
+    sent: w === 'free' ? 0 : 1, ceiling: 10, price_cents: 299,
+    next: { reveal_at: new Date(at + 7 * DAY).toISOString(), free_left: 1, sent: 0 },
+  }
+}
+
 const RPC = {
   celestual_whoami: () => whoami(),
   // 0065: the @'s proof, back from the session, for the person who holds one
@@ -893,11 +910,14 @@ const RPC = {
   // against. Or refused, with every slot already standing. It ends at the
   // first reveal a day or more away (0069 `celestual_note_ends`)
   celestual_submit: () => (FULL
-    ? { recorded: false, error: 'no_slots', slots: { standing: 2, cap: 2 } }
+    ? { recorded: false, error: 'no_pings', slots: { standing: 1, cap: 1 }, allowance: ALLOWANCE() }
     : {
       recorded: true, mutual: false, match: null, match_card: null, reachable: false,
-      expires_at: new Date(NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY).toISOString(), slots: { standing: 2, cap: 2 },
+      expires_at: new Date(NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY).toISOString(), slots: { standing: 2, cap: 3 },
+      allowance: ALLOWANCE(),
     }),
+  // 0071: this week's pings, on their own read and on the list
+  celestual_ping_allowance: () => ({ ok: true, allowance: ALLOWANCE() }),
   // The front door's notice reads this.
   wall_pulse: () => ({
     ok: true, campus: 'berkeley', name: 'UC Berkeley', open: true,
@@ -953,6 +973,7 @@ const RPC = {
   // next, and one that was not this time at the last
   celestual_my_pings: () => ({
     ok: true,
+    allowance: ALLOWANCE(),
     next_reveal: new Date(NEXT_REVEAL).toISOString(),
     last_reveal: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
     pings: [
@@ -1131,6 +1152,19 @@ async function fulfil(route) {
     return route.fulfill({ json: { ok: false, error: 'bad_input' } })
   }
 
+  // 0071: buying pings. The checkout's page is this dev server's own /paid,
+  // with a session, so a route can walk the whole way round; the confirm
+  // grants what was asked for.
+  if (url.includes('/functions/v1/celestual-stripe')) {
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    if (b.action === 'checkout') return route.fulfill({ json: { ok: true, url: `${BASE}/paid?session=cs_test_preview${Number(b.quantity) || 1}` } })
+    if (b.action === 'confirm') {
+      const q = Number(String(b.session_id || '').replace(/\D/g, '')) || 1
+      return route.fulfill({ json: { ok: true, paid: true, applied: true, kind: 'pings', quantity: q, credits: q } })
+    }
+    return route.fulfill({ json: { ok: false, error: 'bad_input' } })
+  }
+
   // Every other edge function.
   if (url.includes('/functions/v1/')) {
     return route.fulfill({ json: { ok: true } })
@@ -1186,6 +1220,25 @@ const ROUTES = [
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class and then not saying it and then the term ended and i still had not said it']] },
   { label: 'ping-full',     path: '/berkeley/ping/pilar.echevarria', full: true,
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // 0071: which ping a note spends, said under the screen; and the paywall,
+  // in the send's place once the week's are spent, its count moved by the
+  // phone's own soft keys; the paywall asked for from the account; and the
+  // way back from Stripe, the note that waited sent, or nothing bought
+  { label: 'ping-week-free', path: '/ping/pilar.echevarria', week: 'free',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.']], settle: 900 },
+  { label: 'ping-week-credits', path: '/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.']], settle: 900 },
+  { label: 'ping-buy',      path: '/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1200 },
+  { label: 'ping-buy-three', path: '/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'],
+           ['wait', 900], ['click', '.wl-buy-card .wl-sk.is-r'], ['click', '.wl-buy-card .wl-sk.is-r']], settle: 700 },
+  { label: 'ping-buy-paid', path: '/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'],
+           ['wait', 900], ['click', '.wl-buy-card .wl-sk.is-r'], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 2600]], settle: 1600 },
+  { label: 'pings',         path: '/pings', week: 'none', settle: 1400 },
+  { label: 'paid',          path: '/paid?session=cs_test_preview3', store: { waiting: { kind: 'send', to: 'pilar.echevarria', line: 'the library steps.', at: now } }, settle: 2400 },
+  { label: 'paid-turned',   path: '/paid?c=1', store: { waiting: { kind: 'send', to: 'pilar.echevarria', line: 'the library steps.', at: now } }, settle: 1400 },
   { label: 'ping-proof',    path: '/berkeley/ping/pilar.echevarria', verified: false,
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']] },
   { label: 'ping-code',     path: '/berkeley/ping/pilar.echevarria', verified: false,
@@ -1604,7 +1657,7 @@ const ROUTES = [
   { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
   { label: 'replies-write',    path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
   { label: 'replies-empty',    path: '/letter/pilar.echevarria', thread: 'empty',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
@@ -1620,22 +1673,22 @@ const ROUTES = [
   { label: 'replies-closed-owner', path: '/letter/pilar.echevarria', thread: 'closed-owner',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-school-open', path: '/letter/pilar.echevarria', thread: 'school',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500]], settle: 500 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-tray-key.is-lit', null, 500]], settle: 500 },
   { label: 'replies-school-sent', path: '/letter/pilar.echevarria', thread: 'empty-school',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-tray-key.is-lit', null, 500],
            ['fill', '.wl-rp-school .wl-addr-in', 'you@berkeley.edu'], ['click', '.wl-rp-school .wl-pill.is-light']], settle: 600 },
   { label: 'replies-terms',    path: '/letter/pilar.echevarria', thread: 'terms',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
-           ['fill', '.wl-rp-field textarea', 'this made my whole week'], ['click', '.wl-low-sk.is-l']], settle: 700 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
+           ['fill', '.wl-rp-field textarea', 'this made my whole week'], ['click', '.wl-tray-send']], settle: 700 },
   { label: 'replies-caught',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'i bet Maria Delgado wrote this']], settle: 500 },
   { label: 'replies-held',     path: '/letter/pilar.echevarria', thread: 'held',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
-           ['fill', '.wl-rp-field textarea', 'wait until they see this'], ['click', '.wl-low-sk.is-l']], settle: 900 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
+           ['fill', '.wl-rp-field textarea', 'wait until they see this'], ['click', '.wl-tray-send']], settle: 900 },
   { label: 'replies-refused',  path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-low-sk.is-l', null, 500],
-           ['fill', '.wl-rp-field textarea', 'refuse this one please'], ['click', '.wl-low-sk.is-l']], settle: 900 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
+           ['fill', '.wl-rp-field textarea', 'refuse this one please'], ['click', '.wl-tray-send']], settle: 900 },
   { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
   // a shut phone taken sideways and held, the chins in a line across the gap
@@ -1645,6 +1698,13 @@ const ROUTES = [
   // neighbour coming up out of the dark
   { label: 'replies-carry',    path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['swipe', '.wl-letter-card .wl-scr', -90, 'hold']], settle: 200 },
+  // the tray on the other glasses: a negative, where the ink is the light,
+  // and a poster's print
+  { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
+           ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
+  { label: 'replies-poster', path: '/letter/jules.k', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   // the recipient's reply lit in the letter's own colour, one of each kind
   { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
@@ -1725,6 +1785,7 @@ for (const r of list) {
   ANON = r.anon === true
   PASS = r.pass === true
   FULL = r.full === true
+  WEEK = r.week || 'credits'
   GOOGLE = r.google === true
   NOCAL = r.nocal === true
   INDEX.forEach((row) => { row.berkeley = NOCAL ? 0 : FROM_CAL[row.target_handle] || 0 })

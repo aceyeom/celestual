@@ -115,16 +115,31 @@
   background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
 }
 .wl-vault-title {
-  display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+  flex: 1 1 auto; display: inline-flex; align-items: center; gap: 9px; min-width: 0;
   font-family: var(--f-util); font-size: var(--t-small); line-height: 1;
   color: var(--ash); white-space: nowrap;
 }
 .wl-vault-seal { flex: 0 0 auto; display: block; color: var(--chalk); }
-.wl-slots { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; }
+/* ── the reveal, in the strip ──
+   You.jsx `RevealStrip`: how long, in chalk figures with a breath of rose
+   round them, and when, a step back at the strip's end. On the last day the
+   figures are the phone's clock and lit rose; once the night is in, the
+   strip is backlit rose from its far corner and says what the night said. */
+.wl-vault-now { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wl-vault-now b {
+  font-weight: 400; color: var(--chalk); font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 1px rgba(244, 241, 234, 0.5), 0 0 12px rgba(233, 162, 189, 0.3);
+}
+.wl-vault-when { flex: 0 0 auto; font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash-dim); white-space: nowrap; }
+.wl-vault-bar.is-soon .wl-vault-now b { color: var(--rose); }
+.wl-vault-bar.is-told {
+  background-image: radial-gradient(90% 160% at 100% 0%, rgba(233, 162, 189, 0.16), rgba(233, 162, 189, 0.05) 45%, transparent 75%);
+}
+.wl-vault-bar.is-told .wl-vault-now { color: var(--rose); }
+.wl-vault-bar.is-told .wl-vault-now b { color: var(--rose); }
+.wl-vault-bar.is-told .wl-vault-seal { color: var(--rose); }
 .wl-slots-cells { display: inline-flex; gap: 3px; }
 .wl-slots-cells i { width: 7px; height: 7px; box-shadow: inset 0 0 0 1px var(--lcd-edge-hi); }
-.wl-slots-cells i.is-used { background: var(--ash); box-shadow: none; }
-.wl-slots-say { font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash-dim); white-space: nowrap; }
 
 .wl-vault-body { display: flex; flex-direction: column; padding: 6px 6px 7px; background-image: var(--lcd-grid); }
 .wl-vault-body > .wl-you-ask { padding: 10px 8px 8px; }
@@ -243,6 +258,8 @@
 .wl-vault-past-h {
   padding: 2px 8px 4px; font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash-dim);
 }
+/* the mutuals' own head: they never lapse, and stay here, dated */
+.wl-vault-past-h.is-rose { padding-top: 6px; color: var(--rose); opacity: 0.85; }
 .wl-vault-row.is-lapsed .wl-face { opacity: 0.55; filter: grayscale(0.6); }
 .wl-vault-row.is-lapsed .wl-wrote-name { color: var(--ash); }
 .wl-vault-row.is-lapsed .wl-wrote-meta { color: var(--ash-dim); }
@@ -261,62 +278,6 @@
   .wl-vault-row:hover .wl-aerial { filter: none; }
 }
 
-/* ── the week ───────────────────────────────────────────────────────────────
-   The countdown, inside the frame under its title strip (You.jsx
-   `RevealWeek`), in the frame's own materials: the unlit panel with its
-   pixel grid, a dashed seam under it like the strip's, and the frame's one
-   colour, rose, as a backlight coming up faintly from its far corner. What it
-   counts to and when on a line in the strip's small face; the time left in
-   the large one, the figures in chalk with a breath of rose round them and
-   the marks between them a step back; then the week as seven cells, drawn as
-   the slots are, the days gone filled, today lit rose and breathing, and
-   Saturday's cell ringed in rose since it is the night. */
-.wl-week {
-  position: relative;
-  padding: 12px 11px 13px;
-  background-color: var(--lcd);
-  background-image:
-    radial-gradient(90% 130% at 100% 0%, rgba(233, 162, 189, 0.13), rgba(233, 162, 189, 0.04) 45%, transparent 75%),
-    var(--lcd-grid);
-}
-.wl-week::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-  background: repeating-linear-gradient(90deg, var(--lcd-edge) 0 2px, transparent 2px 6px);
-}
-.wl-week-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.wl-week-lab, .wl-week-when {
-  font-family: var(--f-util); font-size: var(--t-small); line-height: 1; white-space: nowrap;
-}
-.wl-week-lab { color: var(--ash); }
-.wl-week-when { color: var(--ash-dim); }
-.wl-week-left {
-  margin: 9px 0 0;
-  font-family: var(--f-s40); font-size: 38px; line-height: 0.9; letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--chalk);
-}
-.wl-week-left b { font-weight: 400; text-shadow: 0 0 1px rgba(244, 241, 234, 0.6), 0 0 14px rgba(233, 162, 189, 0.28); }
-.wl-week-left i { font-style: normal; color: var(--ash-dim); }
-.wl-week-left b + i { margin: 0 1px; }
-.wl-week-told { margin: 9px 0 0; font-family: var(--f-util); line-height: 1.15; color: var(--ash); text-wrap: pretty; }
-.wl-week-told b { display: block; margin-bottom: 4px; font-weight: 400; font-size: var(--t-subject); line-height: 1; color: var(--rose); text-shadow: 0 0 14px rgba(233, 162, 189, 0.35); }
-.wl-week-told span { font-size: var(--t-small); }
-.wl-week.is-told .wl-week-lab { color: var(--rose); }
-.wl-week-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 12px 0 0; padding: 0; list-style: none; }
-.wl-week-days li { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.wl-week-days i { display: block; width: 100%; height: 8px; box-shadow: inset 0 0 0 1px var(--lcd-edge-hi); }
-.wl-week-days span { font-family: var(--f-util); font-size: 13px; line-height: 1; color: var(--ash-dim); }
-.wl-week-days li.is-gone i { background: rgba(233, 162, 189, 0.32); box-shadow: none; }
-.wl-week-days li.is-now i {
-  background: var(--rose); box-shadow: 0 0 8px rgba(233, 162, 189, 0.55);
-  animation: wl-week-now 2400ms ease-in-out infinite;
-}
-.wl-week-days li.is-now span { color: var(--rose); }
-.wl-week-days li:last-child i { box-shadow: inset 0 0 0 1px var(--rose), 0 0 6px rgba(233, 162, 189, 0.35); }
-.wl-week-days li:last-child.is-gone i, .wl-week-days li:last-child.is-now i { box-shadow: 0 0 8px rgba(233, 162, 189, 0.55); }
-.wl-week-days li:last-child span { color: var(--rose); }
-.wl-week.is-told .wl-week-days i { background: var(--rose); box-shadow: 0 0 6px rgba(233, 162, 189, 0.4); }
-@keyframes wl-week-now { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-
 /* the way to how it works, at the strip's end: a square key with the
    phone's `i`, the size of the strip's own line, quieter than the close */
 .wl-vault-info {
@@ -332,7 +293,33 @@
 .wl-vault-info:active { background: var(--chalk); border-color: var(--chalk); color: #000; }
 .wl-vault-info:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
 
-/* the slots, at the frame's foot now, under the notes they are for */
+/* the week's pings, at the frame's foot, under the notes they are for
+   (You.jsx `Week`): a cell for the free ping, lit while it is still to
+   spend, and one for each bought, lit rose since a bought one waits; what
+   they are in words; and the way to more at the end, the settings key's
+   shape, so it is a key and never a banner */
+.wl-vault-week { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.wl-vault-pings { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.wl-vault-pings .wl-slots-cells { flex: 0 0 auto; flex-wrap: wrap; max-width: 60px; }
+.wl-slots-cells i.is-lit { background: var(--chalk); box-shadow: 0 0 5px rgba(244, 241, 234, 0.3); }
+.wl-slots-cells i.is-bought { background: var(--rose); box-shadow: 0 0 5px rgba(233, 162, 189, 0.4); }
+.wl-vault-pings-say {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.05; color: var(--ash);
+}
+.wl-vault-pings-say .is-dim { color: var(--ash-dim); }
+.wl-vault-more {
+  flex: 0 0 auto; display: inline-flex; align-items: center;
+  min-height: 34px; margin: -3px -3px -3px 0; padding: 0 11px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--chalk);
+  white-space: nowrap; cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-vault-more:hover { border-color: var(--lcd-edge-hi); }
+}
+.wl-vault-more:active { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-vault-more:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
 .wl-vault-foot {
   position: relative; display: flex; align-items: center;
   padding: 10px 11px 9px; background-color: var(--lcd-2);
@@ -362,9 +349,10 @@
 
 /* a note that was not this time, opened: its screen with the backlight
    down, the way a phone dims one that is done, and the light it throws down
-   with it */
+   with it (the scene says so, screen.jsx `data-state`, since a `:has()`
+   here styled the whole page again for every class changed anywhere) */
 .wl-you-ping .wl-scr.is-dim { filter: blur(0.35px) brightness(0.62) saturate(0.55); }
-.wl-you-ping .wl-scene:has(.wl-scr.is-dim) :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0.35; }
+.wl-you-ping .wl-scene[data-state='dim'] :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0.35; }
 
 /* ── the letters ────────────────────────────────────────────────────────────
    Unlit rows, as the wall's are, and the letter the composer is holding
@@ -404,7 +392,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wl-you-id, .wl-you-panel, .wl-set-group { animation: none; }
-  .wl-week-days li.is-now i { animation: none; }
   .wl-aerial.is-seek .wl-aerial-in { animation: none; opacity: 1; }
   .wl-aerial.is-seek .wl-aerial-out { animation: none; opacity: 0.18; }
   .wl-vault-row.is-landing, .wl-vault-row.is-landing :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial),

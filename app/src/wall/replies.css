@@ -136,14 +136,107 @@
   animation: wl-low-said 220ms var(--ease, ease) both;
 }
 @keyframes wl-low-said { from { opacity: 0; transform: translate3d(0, 1.6cqw, 0); } }
-/* the band of soft keys at its foot: the screen's own (screen.css
-   `.wl-scr-bot`), the act on the left and the way back on the right */
-.wl-low-foot {
-  position: relative; z-index: 1; flex: 0 0 auto; height: 14cqw; padding: 0 1.6cqw 0.6cqw;
-  display: grid; grid-template-columns: 1fr 1fr; align-items: center;
-  background: var(--s-bot); color: var(--s-lit);
+/* ── the tray ──
+   The foot of the thread, drawn on its own glass (Replies.jsx, the head of
+   `Slide` says why it has no band): the phone's message editor, a text box
+   with who you reply as beside it and `send` at its end. A rule of the
+   panel's pixels over it, the same rule that stands between two replies, so
+   the tray reads as the thread's last row and not as a second phone. */
+.wl-tray {
+  position: relative; z-index: 1; flex: 0 0 auto;
+  padding: 3cqw var(--lo-pad) 0;
 }
-.wl-low-sk .wl-pxi { display: block; }
+.wl-tray::before {
+  content: ''; position: absolute; top: 0; left: var(--lo-pad); right: var(--lo-pad); height: 0.6cqw;
+  background: repeating-linear-gradient(90deg, var(--lo-faint) 0 0.6cqw, transparent 0.6cqw 1.8cqw);
+  pointer-events: none;
+}
+.wl-tray-write { display: flex; flex-direction: column; gap: 2cqw; }
+.wl-tray-row { display: flex; align-items: flex-end; gap: 2.4cqw; }
+/* who the reply goes up as, the size of a line of the field, sat on its
+   floor so it stays by the last line as the field grows */
+.wl-tray-me {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 9.4cqw; height: calc(var(--lo-read) * 1.12 + 4.8cqw); line-height: 0;
+}
+.wl-tray-me > * { max-width: 100%; }
+.wl-tray .wl-rp-field { flex: 1 1 auto; min-width: 0; }
+/* send: a key the field's height, the phone's arrow on it. Framed in the
+   faint rule while there is nothing to send, and struck out of the ink the
+   moment there is, the one lit thing in the tray */
+.wl-tray-send {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: calc(var(--lo-read) * 1.12 + 4.8cqw); height: calc(var(--lo-read) * 1.12 + 4.8cqw);
+  min-width: 40px; min-height: 40px;
+  margin: 0; padding: 0; border: 0; border-radius: 0.6cqw;
+  background: var(--lo-ink); color: var(--s-mid);
+  box-shadow: 0 0 1.6cqw -0.2cqw var(--s-soft);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms var(--ease, ease), color 160ms var(--ease, ease), box-shadow 160ms var(--ease, ease), transform 160ms var(--ease, ease);
+}
+.wl-tray-send .wl-pxi { display: block; }
+.wl-tray-send:disabled {
+  background: none; color: var(--lo-faint); cursor: default;
+  box-shadow: inset 0 0 0 0.5cqw var(--lo-faint);
+}
+.wl-tray-send[aria-busy] { background: var(--lo-ink); color: var(--s-mid); box-shadow: none; }
+.wl-tray-send:not(:disabled):active { transform: scale(0.94); transition-duration: 60ms; }
+.wl-tray-send:focus-visible { outline: 0.5cqw solid var(--lo-ink); outline-offset: 0.6cqw; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-tray-send:not(:disabled):hover { filter: brightness(1.12); }
+}
+/* the line over the field while it is being written in: who, and how much
+   is left, as the phone's editor counted it down in its corner */
+.wl-tray .wl-low-as { min-height: 0; padding-left: calc(9.4cqw + 2.4cqw); animation: wl-tray-as 200ms var(--ease, ease) both; }
+@keyframes wl-tray-as { from { opacity: 0; transform: translate3d(0, 1.2cqw, 0); } }
+
+/* a line in place of the field, with the way on where there is one */
+.wl-tray-note {
+  display: flex; align-items: center; gap: 2.6cqw; min-height: 12cqw;
+  font-size: var(--lo-meta); line-height: 1.24; color: var(--lo-dim);
+}
+.wl-tray-note > .wl-pxi { flex: 0 0 auto; display: block; color: var(--lo-ink); }
+.wl-tray-note > span { flex: 1 1 auto; min-width: 0; text-wrap: pretty; }
+.wl-tray-keys { display: flex; gap: 2.4cqw; }
+.wl-tray-keys > .wl-tray-key { flex: 1 1 0; }
+.wl-tray-key {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 2cqw;
+  min-height: max(40px, 11cqw); padding: 0 3.6cqw; margin: 0; border: 0; border-radius: 0.6cqw;
+  background: none; color: var(--lo-ink); white-space: nowrap;
+  font-family: var(--f-s40); font-size: var(--lo-read); line-height: 1; text-shadow: inherit;
+  box-shadow: inset 0 0 0 0.5cqw var(--lo-faint);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.wl-tray-key .wl-pxi { display: block; flex: 0 0 auto; }
+.wl-tray-key.is-lit { background: var(--lo-ink); color: var(--s-mid); text-shadow: none; box-shadow: 0 0 1.6cqw -0.2cqw var(--s-soft); }
+.wl-tray-key:disabled { opacity: 0.6; cursor: default; }
+.wl-tray-key:not(:disabled):active { background: var(--lo-ink); color: var(--s-mid); transition-duration: 0ms; }
+.wl-tray-key.is-lit:not(:disabled):active { background: var(--lo-dim); }
+.wl-tray-key:focus-visible { outline: 0.5cqw solid var(--lo-ink); outline-offset: 0.6cqw; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-tray-key:not(.is-lit):not(:disabled):hover { box-shadow: inset 0 0 0 0.5cqw var(--lo-ink); }
+  .wl-tray-key.is-lit:not(:disabled):hover { filter: brightness(1.12); }
+}
+
+/* ── the lip ──
+   The edge of the slider's lower half, which a thumb pushes to fold the
+   phone shut: the phone's chevron in the faint rule, and under a finger the
+   ink. Its box is a thumb's; what is drawn is small, since it is the edge
+   of a thing and not a key on it. */
+.wl-low-lip {
+  position: relative; z-index: 1; flex: 0 0 auto; align-self: center;
+  display: grid; place-items: center;
+  width: 34cqw; height: max(30px, 8.6cqw); margin: 0.6cqw 0 0; padding: 0 0 0.8cqw; border: 0;
+  background: none; color: var(--lo-faint); border-radius: 1cqw 1cqw 0 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: color 160ms var(--ease, ease), transform 200ms var(--ease, ease);
+}
+.wl-low-lip .wl-pxi { display: block; }
+.wl-low-lip:active { color: var(--lo-ink); transform: translate3d(0, -0.8cqw, 0); transition-duration: 80ms; }
+.wl-low-lip:focus-visible { outline: 0.5cqw solid var(--lo-ink); outline-offset: -0.8cqw; color: var(--lo-ink); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-low-lip:hover { color: var(--lo-dim); }
+}
 
 /* ── the way it comes out ──
    The glass slides out from under the band with the phone (Letter.jsx
@@ -153,7 +246,11 @@
    A reply that comes while it is open (Replies.jsx `fresh`, one just sent
    from this phone above all) arrives at once, on its own, and does not
    wait its turn in a stagger that is over. */
-.wl-letter.is-thread .wl-low-list > :not(.wl-rp-list) { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
+/* every row of the list but the replies' own list is `.wl-low-row`
+   (Replies.jsx): a selector that ended in `:not()` or `*` here made every
+   toggle of `.is-thread` restyle the whole letter, some five hundred
+   elements, on the press that opens the phone */
+.wl-letter.is-thread .wl-low-list > .wl-low-row { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
 .wl-letter.is-thread .wl-rp-list > .wl-rp-item { animation: wl-low-row 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
 .wl-letter.is-thread .wl-rp-list > .wl-rp-item.is-new { animation: wl-rp-new 260ms var(--ease, ease) both; }
 @keyframes wl-low-row {
@@ -162,25 +259,10 @@
 }
 
 /* ── writing ──
-   The field rises from behind the keys, over a rule of the ink's pixels:
-   who the reply goes up as, and how much is left, then the field, then
-   whatever the reading caught while it was typed. The field is the
-   composer's, drawn on this glass: a well a step into the panel, the words
-   in the ink, and the phone's own caret (caret.jsx, `screen`). */
-.wl-low-write {
-  position: relative; z-index: 1; flex: 0 0 auto;
-  display: flex; flex-direction: column; gap: 2.2cqw;
-  padding: 3.2cqw var(--lo-pad) 3cqw;
-  animation: wl-low-write 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-.wl-low-write::before {
-  content: ''; position: absolute; top: 0; left: var(--lo-pad); right: var(--lo-pad); height: 0.6cqw;
-  background: repeating-linear-gradient(90deg, var(--lo-faint) 0 0.6cqw, transparent 0.6cqw 1.8cqw);
-}
-@keyframes wl-low-write {
-  from { opacity: 0; transform: translate3d(0, 40%, 0); }
-  to   { opacity: 1; transform: none; }
-}
+   The field is the composer's, drawn on this glass: a well a step into the
+   panel, the words in the ink, and the phone's own caret (caret.jsx,
+   `screen`). It stands in the tray (above) and grows with its words, up to
+   three lines, and then scrolls. */
 .wl-low-as {
   display: flex; align-items: center; gap: 2.4cqw; min-height: 7.6cqw;
   font-size: var(--lo-meta); line-height: 1.1; color: var(--lo-dim);
@@ -206,7 +288,7 @@
   field-sizing: content;
 }
 .wl-root .wl-rp-field textarea:focus, .wl-root .wl-rp-field textarea:focus-visible { outline: none; }
-.wl-rp-field textarea::placeholder { color: var(--lo-ink); opacity: 0.4; }
+.wl-rp-field textarea::placeholder { color: var(--lo-ink); opacity: 0.5; }
 .wl-rp-field textarea::selection { background: var(--lo-ink); color: var(--s-mid); }
 /* the caret on this glass is the screen's: the ink, with the letter it
    stands on struck out of it in the panel's colour */
@@ -540,9 +622,10 @@
    coming up row by row; the field is simply there. */
 @media (prefers-reduced-motion: reduce) {
   .wl-letter.is-thread .wl-low-in { animation: wl-fade 120ms linear both; }
-  .wl-letter.is-thread .wl-low-list > *, .wl-letter.is-thread .wl-rp-list > .wl-rp-item,
+  .wl-letter.is-thread .wl-low-list > .wl-low-row, .wl-letter.is-thread .wl-low-list > .wl-rp-list, .wl-letter.is-thread .wl-rp-list > .wl-rp-item,
   .wl-letter.is-thread .wl-rp-list > .wl-rp-item.is-new { animation: none; }
-  .wl-low-write, .wl-rp-terms, .wl-low-said { animation: none; }
+  .wl-tray .wl-low-as, .wl-rp-terms, .wl-low-said { animation: none; }
+  .wl-tray-send, .wl-low-lip { transition: none; }
   .wl-rp-like.is-on .wl-pxi { animation: none; }
   .wl-root .wl-sk.is-thread.is-open { transition: none; }
 }

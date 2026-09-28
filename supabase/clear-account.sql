@@ -94,6 +94,8 @@ declare
     ['celestual_matches',           'handle_a = %1$L or handle_b = %1$L'],
     -- the pings THEY placed (the incoming ones are a separate, flagged step)
     ['celestual_entries',           'from_handle = %1$L'],
+    -- and what each of them cost (0071)
+    ['celestual_ping_spends',       'handle = %1$L'],
     -- identity, membership, the ways back in
     ['celestual_members',           'handle = %1$L'],
     ['celestual_community_members', 'handle = %1$L'],
@@ -136,6 +138,18 @@ begin
       get diagnostics n = row_count;
       per := per + n;
       raise notice '  %  incoming pings (other people''s rows)', lpad(n::text, 5);
+      -- (0071) what those notes cost their senders: a ping held for a reveal
+      -- still to come goes back to them, as erasure does it, and the rest of
+      -- the rows about this handle go
+      if to_regclass('public.celestual_ping_spends') is not null then
+        perform celestual_ping_refund(s.handle, hh, now())
+           from (select distinct handle from celestual_ping_spends
+                  where to_hash = hh and handle <> nh and reveal_at > now()) s;
+        delete from celestual_ping_spends where to_hash = hh and handle <> nh;
+        get diagnostics n = row_count;
+        per := per + n;
+        raise notice '  %  ledger rows of other people''s pings at them', lpad(n::text, 5);
+      end if;
     end if;
 
     -- Their trial code takes its own counters with it: a code that outlives its

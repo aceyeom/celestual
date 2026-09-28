@@ -173,10 +173,13 @@
    `useFirstFrame`), as the wake's own first frame has it, and then it comes
    on, once, a letter's whole wake, onto the empty glass the first telling
    opens on; the light it throws comes on with it. Both are set on the
-   clock's nought, and the telling starts once they are done. */
+   clock's nought, and the telling starts once they are done. The scene
+   carries its screen's state (screen.jsx `data-state`): read off the screen
+   with a `:has()`, it cost a style pass over the whole page whenever any
+   element anywhere changed a class, the wall's blinking screens included. */
 .wl-mutual-scr .wl-scr.is-dark { filter: blur(9px) brightness(0); }
-.wl-mutual-scr:has(.wl-scr.is-dark) :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0; }
-.wl-mutual-scr:has(.wl-scr.is-waking) :is(.wl-scene-halo, .wl-scene-halo-2) {
+.wl-mutual-scr.wl-scene[data-state='dark'] :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: 0; }
+.wl-mutual-scr.wl-scene[data-state='waking'] :is(.wl-scene-halo, .wl-scene-halo-2) {
   animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -232,7 +235,7 @@
    as starting over; it takes its telling back instead, on the glass, and
    never sleeps (pixmark.js `revealStory`). */
 .wl-join-scr .wl-scr.is-asleep { animation: wl-sleep 560ms cubic-bezier(0.4, 0, 1, 1) both; }
-.wl-join-scr:has(.wl-scr.is-asleep) :is(.wl-scene-halo, .wl-scene-halo-2),
+.wl-join-scr.wl-scene[data-state='asleep'] :is(.wl-scene-halo, .wl-scene-halo-2),
 .wl-join-fig.is-asleep .wl-join-light {
   animation: none; opacity: 0; transition: opacity 420ms var(--ease-out);
 }

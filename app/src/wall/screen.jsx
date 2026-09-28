@@ -25,7 +25,7 @@
 // is looks.js `skinOf`; what makes this screen this one and no other is
 // looks.js `quirks`, off the letter's id.
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { isValidElement, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS, alpha } from './looks.js'
 import { Caret } from './caret.jsx'
 import { stickerLabel } from './schools.js'
@@ -549,10 +549,17 @@ export function Screen({
       </button>
     )
   }
+  // What the stylesheet needs to know about what is on the glass, said on
+  // the elements it styles: the screen's state on the scene round it (the
+  // light it throws wakes and sleeps with it), and a menu on the body that
+  // holds it. Both were asked with a `:has()`, and Chrome answered those by
+  // styling the whole page again for every element any screen put on it or
+  // took off, on every turn of the letters (screen.css, the wake)
+  const menu = isValidElement(children) && children.type === ScreenMenu
   return (
     <div
       className={`wl-scene ${className}`} data-kind={s.kind} data-colour={colour.slug}
-      style={{ ...vars, ...style }}
+      data-state={state || undefined} style={{ ...vars, ...style }}
     >
       <span className="wl-scene-halo" aria-hidden="true" />
       <span className="wl-scene-halo-2" aria-hidden="true" />
@@ -593,7 +600,7 @@ export function Screen({
               <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
             </div>
           </div>
-          <div className="wl-scr-body">{children}</div>
+          <div className={`wl-scr-body${menu ? ' is-menu' : ''}`}>{children}</div>
           <div className="wl-scr-bot">
             {key('l', 'is-l')}
             {key('c', 'is-c')}

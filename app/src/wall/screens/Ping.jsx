@@ -56,7 +56,9 @@ import { signOut as dropProof } from '../../api/auth.js'
 import { cardStep } from '../seed.js'
 import {
   myHandle, canPlace, readyToPlace, myPings, heldPings, forgetPings, place, writtenTo, stateWords, endsWords, nextReveal,
+  heldAllowance, loadAllowance, pingWords, waitForPings, waitingNote, dropWaiting,
 } from '../pings.js'
+import { BuyPings } from './Pings.jsx'
 
 // The card's own ceilings, which are the server's (celestual_card_clean):
 // eighty words and 280 characters since 0063, when a note sent privately
@@ -80,9 +82,9 @@ const SHOWN = 4
 // rest and offer the way to them.
 const SAY = {
   self: 'that is your own @',
-  slots: 'every slot is in use. let one of your private notes go to free one.',
+  full: 'ten private notes in one week is the most. the next week starts after saturday’s reveal.',
   suppressed: 'that person has opted out of private notes.',
-  rate: 'that is a lot of private notes for one month. try again later.',
+  rate: 'that is a lot of new private notes for now. try again later.',
   invalid: 'that handle does not look right.',
   night: 'it did not go through. give it a moment, then send it again.',
   // the card is read by the same list as a letter (0063): a link, an
@@ -338,16 +340,21 @@ export default function Ping({
   const own = myHandle()
   const [held] = useState(() => resume(pre))
   const [edit] = useState(() => takeEdit(pre))
+  // a note that waited on pings and was not sent (pings.js `waitForPings`):
+  // opened again on its person, it has its words back
+  const [kept] = useState(() => { const w = waitingNote(); return w && w.kind === 'send' && w.to === pre ? w : null })
   const [to, setTo] = useState(() => held?.to || pre)
-  const [line, setLine] = useState(() => held?.line || edit?.line || '')
+  const [line, setLine] = useState(() => held?.line || edit?.line || kept?.line || '')
   // whose note had its words put on the screen (`editNote`, or a name chosen
   // with a note out on it): a line cleared of them takes them off the note.
   // A line that was only ever empty sends no words, and keeps what was there
   const shown = useRef(edit?.line ? edit.to : '')
   // when the note that just went out reveals (0069), off the placement's answer
   const [ends, setEnds] = useState(0)
-  // who · line · proof · done. A link with a person in it opens on that
-  // person's screen, and one with this person's own @ in it on the field.
+  // who · line · proof · buy · done. A link with a person in it opens on
+  // that person's screen, and one with this person's own @ in it on the
+  // field. `buy` is the paywall, raised in place of the send when this
+  // week's pings are spent (screens/Pings.jsx), the note waiting behind it.
   const [step, setStep] = useState(() => (held ? 'proof' : validHandle(pre) && pre !== own ? 'line' : 'who'))
   // Whether the resolver's answer is standing WHERE THE FIELD WAS (parts.jsx
   // `Addressed`), as on the composer: set by the press that commits a handle,
@@ -400,6 +407,16 @@ export default function Ping({
     return () => { on = false }
   }, [rev, own])
   const pingOf = useCallback((x) => (pings?.pings || []).find((p) => p.to === normHandle(x)) || null, [pings])
+  // the week's pings: what this device was last told, then the server's own
+  // answer, asked again each time the note's screen comes up, so a ping
+  // bought on another phone is not met with the paywall here
+  const [weekNow, setWeekNow] = useState(() => heldAllowance(own))
+  useEffect(() => {
+    if (step !== 'line' || !own) return undefined
+    let on = true
+    loadAllowance(own).then((a) => { if (on && a) setWeekNow(a) })
+    return () => { on = false }
+  }, [step, own])
 
   const h = normHandle(to)
   const people = writtenTo(own)
@@ -408,6 +425,12 @@ export default function Ping({
   const floor = tooLong ? `eighty words, and that is ${words(line).length}` : ''
   const ready = canPlace()
   const total = ready || adopted ? 2 : 3
+  // this week's pings, as the server last said them, and whether sending to
+  // this person spends one: a note already out on them is only new words
+  const week = weekNow
+  const onThem = pingOf(h)
+  const spends = !(onThem && (onThem.state === 'standing' || onThem.state === 'mutual'))
+  const noneLeft = !!(week && spends && week.left <= 0)
 
   // ── who ──
   const them = useResolver(to)
@@ -487,8 +510,15 @@ export default function Ping({
         proof.setSaid('your Instagram check has lapsed. one more DM confirms it again.')
         return
       }
+      // no ping left to spend on this week: the paywall, in the send's
+      // place, with the note kept for when the pings land
+      if (out.error === 'no_pings' || out.error === 'no_slots' || out.error === 'cap') {
+        waitForPings({ kind: 'send', to: h, line: line.trim() || (shown.current === h ? '' : null) })
+        setStep('buy')
+        return
+      }
       setSaid(
-        out.error === 'no_slots' || out.error === 'cap' ? 'slots'
+        out.error === 'week_full' ? 'full'
           : out.error === 'self' ? 'self'
           : out.error === 'suppressed' ? 'suppressed'
           : out.error === 'rate_limited' ? 'rate'
@@ -501,6 +531,8 @@ export default function Ping({
     }
     clearOurs('ping')
     forgetPings()
+    if (out.allowance) setWeekNow(out.allowance)
+    if (waitingNote()?.to === h) dropWaiting()
     setAdopted(null)
     setEnds(out.expires_at ? Date.parse(out.expires_at) || nextReveal() : nextReveal())
     setStep('done')
@@ -532,6 +564,13 @@ export default function Ping({
       // a link to somebody who has already placed one back is a mutual,
       // and a mutual is read on the reveal, not placed again
       if (pingOf(h)?.state === 'mutual') { go('reveal', h); return }
+      // none left this week, as far as this device was last told: the
+      // paywall now, rather than a send the server would refuse
+      if (noneLeft && canPlace()) {
+        waitForPings({ kind: 'send', to: h, line: line.trim() || (shown.current === h ? '' : null) })
+        setStep('buy')
+        return
+      }
       if (adopted) { send(adopted.handle, adopted.proof); return }
       if (canPlace()) { send(myHandle()); return }
       // An @ this person claimed before, on another device or a month ago:
@@ -602,7 +641,14 @@ export default function Ping({
   const seed = `ping:${h || 'wall'}`
 
   let body
-  if (step === 'who') {
+  if (step === 'buy') {
+    body = (
+      <BuyPings
+        out headId="wl-ping-h" backLabel="back to the note"
+        onBack={() => { dropWaiting(); setStep('line') }}
+      />
+    )
+  } else if (step === 'who') {
     body = (
       <>
         <Display size="s" as="h2" id="wl-ping-h" className="wl-write-h">who is<br />it for?</Display>
@@ -688,7 +734,11 @@ export default function Ping({
             <div className="wl-write-floor" aria-live="polite">
               {floor || said ? <Label className="wl-write-caught">{floor || SAY[said]}</Label>
                 : adopted ? <Label className="wl-ping-ask">the code came from {atHandle(adopted.handle)}. send it from that account?</Label>
-                : null}
+                : !done && week ? (
+                  <Label tone="dim" className="wl-ping-which">
+                    {spends ? pingWords(week) : 'already out. new words cost nothing.'}
+                  </Label>
+                ) : null}
             </div>
           </div>
         </div>
@@ -714,12 +764,12 @@ export default function Ping({
         tone="light" onClick={next} disabled={!validHandle(h)} aria-busy={placing || undefined}
         icon={!ready && !adopted && !placing ? <Provider size={17} /> : null}
       >
-        {placing ? 'sending' : adopted ? `send it as ${atHandle(adopted.handle)}` : ready ? 'send it privately' : 'next'}
+        {placing ? 'sending' : adopted ? `send it as ${atHandle(adopted.handle)}` : noneLeft && ready ? 'get more pings' : ready ? 'send it privately' : 'next'}
       </Pill>
     )
     quiet = adopted ? (
       <button type="button" className="wl-quiet" onClick={() => { setAdopted(null); setStep('proof') }}>not that account</button>
-    ) : said === 'slots' ? (
+    ) : said === 'full' ? (
       <button type="button" className="wl-quiet" onClick={() => go('you')}>your private notes</button>
     ) : null
   } else if (step === 'proof') {
@@ -741,13 +791,15 @@ export default function Ping({
       <div className={`wl-sheet-in wl-write wl-ping is-${step}`}>
         <SheetHead
           onClose={leave} label={upLabel}
-          lead={step === 'done' ? null : <Dots n={total} at={dotAt} onGo={goDot} />}
+          lead={step === 'done' || step === 'buy' ? null : <Dots n={total} at={dotAt} onGo={goDot} />}
         />
         {body}
-        <div className="wl-write-foot">
-          {act}
-          {quiet}
-        </div>
+        {step === 'buy' ? null : (
+          <div className="wl-write-foot">
+            {act}
+            {quiet}
+          </div>
+        )}
         {step === 'proof' ? <DoorFoot /> : null}
       </div>
     </Sheet>

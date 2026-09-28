@@ -108,7 +108,7 @@ import '../mutual.css'
 // reveal, and everybody finds out then, together. The sub line answers the
 // two questions the night raises: what if it was not, and what then.
 const STEPS = [
-  { line: 'you send them a note, privately.', sub: 'they’re never told.' },
+  { line: 'you send them a note, privately.', sub: 'they’re never told. one a week is free.' },
   { line: 'they send you one too.', sub: 'on their own, not knowing you did.' },
   { line: 'saturday at 9pm pacific, you both find out, and read each other’s note.', sub: 'if it isn’t mutual, nobody ever knows. keep it for next week, or let it go.' },
 ]

@@ -41,7 +41,8 @@ equivalent.
 | sealed, shut | locked, hidden, private |
 | reachable | registered, signed up, on the app |
 | count me in | sign up, join the waitlist, register |
-| slot | credit, token, quota |
+| a ping (what a note spends: one free every week, more bought) | credit, token, quota, slot |
+| get pings, add more pings | buy now, top up, unlock more |
 
 A ping is a ping in the code, on the desk and in the docs, and never a "lil
 ping". On the wall it is what it now literally is: a note sent privately
@@ -132,7 +133,7 @@ The linter enforces all of these on the canonical copy.
 | Banned | Why |
 | --- | --- |
 | something went wrong, oops, uh oh, whoops | generic error voice |
-| unlock, premium, pro tier, upgrade, go pro, subscribe now | paywall voice. Nothing is for sale |
+| unlock, premium, pro tier, upgrade, go pro, subscribe now | paywall voice. Pings are sold (docs/PINGS-BY-THE-WEEK.md), and a sale says exactly what it gets and what it costs: `get 3 pings · $8.97` |
 | hurry, expires soon, last chance, don't miss, act now | urgency. A ping lapses, calmly |
 | find out who likes you, see who entered you | the fishing frame |
 | someone entered you, someone pinged you, people are talking about you | implied activity, in any phrasing |
@@ -172,7 +173,8 @@ to rather than guessing at one.
 | no profiles. no browsing. nothing happens unless it's mutual. | Your privacy is our top priority. |
 | it's waiting. | We couldn't find them. Invite them to join. |
 | lapses in 4 days. still feel it? | Your entry expires soon. Renew now. |
-| this frees the slot. they never find out you sent it. | Are you sure you want to delete? |
+| this gives its ping back. they never find out you sent it. | Are you sure you want to delete? |
+| this week’s ping is spent. get 3 pings · $8.97 | You’ve hit your limit. Upgrade to Premium! |
 | the rest is yours. celestual's part is done. | Start chatting now. |
 | celestual opens at reed when 300 are in. current count: 214. | Join the hottest new app on campus. |
 

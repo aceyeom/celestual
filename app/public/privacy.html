@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#08070B" />
     <title>Privacy · celestual</title>
-    <meta name="description" content="What celestual holds, what it deliberately cannot hold, how long any of it lasts, and how to take a handle off. Who you pinged is stored only as a salted hash." />
+    <meta name="description" content="What celestual holds, what it shows nobody, how long any of it lasts, what paying for pings shares with Stripe, and how to take a handle off." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://celestual.us/privacy" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
@@ -27,13 +27,14 @@
 
       <p class="lead">
         celestual is built to hold as little as possible about who you are
-        interested in. The handle you pinged is stored as a salted one way hash
-        and never as a name, so a database dump, an employee and a subpoena all
-        come back with a string nobody can read.
+        interested in, and to show it to nobody. A private note is matched on a
+        salted one way hash of the handle it is to, it is shown to nobody but
+        you unless it turns out to be mutual, and a note that is not mutual is
+        deleted a week after its reveal.
       </p>
       <p>
-        This page is Celestual LLC's privacy policy, and it covers celestual.us
-        and the campus wall. It is the whole of what we hold.
+        This page is Celestual LLC's privacy policy, and it covers celestual.us,
+        the wall on it, and paying for pings. It is the whole of what we hold.
       </p>
 
       <nav class="toc" aria-label="the legal pages, and this one's sections">
@@ -44,7 +45,7 @@
         </div>
         <ol>
           <li><a href="#hold"><span class="n">01</span> What we hold</a></li>
-          <li><a href="#cannot"><span class="n">02</span> What we cannot produce</a></li>
+          <li><a href="#cannot"><span class="n">02</span> What nobody is shown</a></li>
           <li><a href="#long"><span class="n">03</span> How long it lasts</a></li>
           <li><a href="#why"><span class="n">04</span> Why we hold it</a></li>
           <li><a href="#lookup"><span class="n">05</span> Looking a handle up</a></li>
@@ -65,43 +66,71 @@
         <dl class="defs">
           <div>
             <dt>your handle</dt>
-            <dd>In plain text, once you have proved it with the code you send our Instagram account. It is the identity the whole product runs on.</dd>
+            <dd>In plain text, once you have proved it with the code you send our Instagram account. Private notes, the reveal, and removing letters about you all run on it.</dd>
           </div>
           <div>
-            <dt>who you pinged</dt>
-            <dd>As a salted one way hash, never as a handle. Two pings are matched by comparing hashes. Nothing in that column can be turned back into a name, by us or by anybody who takes the database.</dd>
+            <dt>who you sent a note to</dt>
+            <dd>Twice. As a salted one way hash, which is what matching, the opt out list and the rate limits run on, and as the handle itself, kept beside the hash so that your own notes come back to you on another device. No screen, ours included, shows that handle to anybody but you, and it is deleted with the note.</dd>
           </div>
           <div>
-            <dt>your twenty words</dt>
-            <dd>The line you put with a ping, if you wrote one. It is sealed unless the ping turns out to be mutual, and if the ping lapses it is purged with it a week later.</dd>
+            <dt>your note</dt>
+            <dd>The words you send with a private note, up to 280 characters. They are sealed unless the note turns out to be mutual, and if it lapses they are deleted with it a week later.</dd>
           </div>
           <div>
             <dt>an email address</dt>
-            <dd>If you leave one, so we can tell you about a mutual or a ping coming up on its reveal. Optional everywhere except the campus wall, which needs an address at that campus.</dd>
+            <dd>If you leave one with a note, or confirm one for alerts, so we can tell you it is mutual, that a note is coming up on its reveal, or, if you turn it on, that somebody wrote you a letter. It is optional.</dd>
           </div>
           <div>
-            <dt>a campus address</dt>
-            <dd>The address that opened the wall, and when it was proved. It is held apart from anything you write, and the composer never sees it.</dd>
+            <dt>a sign in address</dt>
+            <dd>The address you sign in with by a mailed link, and when you first confirmed it.</dd>
+          </div>
+          <div>
+            <dt>a Google account</dt>
+            <dd>If you sign in with Google, the email address Google gives us, an identifier for that account, and when you first used it.</dd>
+          </div>
+          <div>
+            <dt>a school address</dt>
+            <dd>A school address you confirmed, the school it opens, and when. It lets you reply under letters and, at Berkeley, post as a student. Nobody reading the wall ever sees it. The people who run the desk can, when they review something you wrote.</dd>
           </div>
           <div>
             <dt>what you wrote</dt>
-            <dd>A letter, the handle it is addressed to, and the record of the screening it passed. No author is stored against it.</dd>
+            <dd>A letter, the handle or name it is written to, its greeting and its look, the record of the screening it passed, and who wrote it: the account or the device it came from. Who wrote it is never shown to anybody reading, including the person it is to.</dd>
           </div>
           <div>
-            <dt>a heart</dt>
-            <dd>That a letter was hearted, and by how many. Nothing anywhere returns who.</dd>
+            <dt>a reply</dt>
+            <dd>A reply, the letter it is under, whether it came from the person the letter is to, the record of its screening, and who wrote it, which is never shown to anybody reading. Readers see a small creature and a one word name made from a salted hash of the letter and the writer, so it is different under every letter. We also keep that you accepted the terms for replying, and when.</dd>
+          </div>
+          <div>
+            <dt>a heart, and a like</dt>
+            <dd>One record for each person who hearted a letter or liked a reply, so nobody counts twice. Every read answers with the count, and nothing anywhere returns who.</dd>
+          </div>
+          <div>
+            <dt>alerts</dt>
+            <dd>Which alerts you have on, and a record of each alert mail queued or sent. The links in a mail are stored only as hashes.</dd>
+          </div>
+          <div>
+            <dt>a mailed link</dt>
+            <dd>A hash of the link and a hash of the browser that asked for it. A school link also holds the letter waiting on it, or which letter a reply is waiting under, until the link is used or runs out.</dd>
+          </div>
+          <div>
+            <dt>a stop</dt>
+            <dd>An email address that pressed stop on a kind of mail, so that nothing of that kind is sent to it again until its owner turns it back on.</dd>
           </div>
           <div>
             <dt>a session</dt>
-            <dd>The hash of a token your browser makes. The token itself never leaves your device, so reading that table does not let anybody sign in as you.</dd>
+            <dd>Only the hash of a token your browser makes. The token stays on your device and travels with each request, so reading that table does not let anybody sign in as you. A device that hearts, likes or writes without signing in is given one too, with nothing else attached.</dd>
           </div>
           <div>
-            <dt>five reads</dt>
-            <dd>At most five rows saying that a browser opened a letter, so the first five on the wall can be free without the count being the reader's to keep. They carry no identity, cannot be joined to a session, and are deleted the moment that browser passes a gate.</dd>
+            <dt>pings</dt>
+            <dd>How many bought pings you hold. For each note, which reveal its ping was spent in and whether it was the free one or a bought one, kept against the same salted hash the note is matched on, never a name.</dd>
+          </div>
+          <div>
+            <dt>a purchase</dt>
+            <dd>One record each time you buy pings: its own id, how many pings, the amount and the currency, whether it is waiting, paid, refunded or void, when it was made, paid and refunded, Stripe's ids for the checkout, the payment and, where Stripe makes one, the customer, and the handle the pings were bought for. Never a card number. Stripe takes the card on its own page, and it never reaches us.</dd>
           </div>
           <div>
             <dt>operational records</dt>
-            <dd>Timestamps, rate limit counters, the IP address a request came from, and the record of a screening, a report or a takedown.</dd>
+            <dd>Timestamps, rate limit counters, the IP address a request came from, the record of a screening, a report or a takedown, and the id of each notice Stripe sends us about a payment.</dd>
           </div>
           <div>
             <dt>a bar</dt>
@@ -111,18 +140,20 @@
       </section>
 
       <section id="cannot">
-        <h2><span class="n">02</span> What we cannot produce</h2>
-        <p>Some of this is a promise. Some of it is arithmetic, and the arithmetic comes first.</p>
+        <h2><span class="n">02</span> What nobody is shown</h2>
+        <p>Some of this is how the service is built, and some of it is a promise. How it is built comes first.</p>
         <ul>
-          <li>A one sided ping is revealed to nobody. Not to the person it points at, not to another user, not to us.</li>
-          <li>Nobody who breaches the database reads the map of who wanted whom, because it is not written down. The plain handle exists only on the sender's own device.</li>
-          <li>We cannot hand anybody the list of people you have pinged. Not you, not a parent, not a court. There is nothing to read. A mutual is the exception, and it is not a secret: once two people have found each other, both handles are on the record.</li>
+          <li>A note that is not mutual is shown to nobody but the person who sent it. Not to the person it is to, not to another user, and not on any screen of ours. No part of the site can return it to anybody else.</li>
+          <li>The words of a note are shown to the other person only if it turns out to be mutual, on the night of the reveal.</li>
+          <li>Matching runs on salted hashes, not names. The handle is kept beside the hash only so that your own notes come back to you on another device, and it goes when the note does. The people who run the company can reach the database directly, so they could read it there, and that is why a note does not stay.</li>
+          <li>A note that is not mutual is deleted a week after its reveal, and one you let go is deleted the same day. A mutual is the exception, and it is not a secret: once two people have found each other, both handles are on the record.</li>
         </ul>
         <p>And the promises:</p>
         <ul>
-          <li>Nothing is posted, messaged, followed or liked on your behalf, and the person you pinged is not told. The one message celestual ever sends about another person is the one that says it is mutual, to both of you.</li>
-          <li>There is no browsing, no profile, no ranking, no feed, and no list of who is on the service.</li>
-          <li>The single fact shown after you place a ping is whether that handle has reached celestual. It is never a hint about anybody's feelings or activity, and we do not build one.</li>
+          <li>Nothing is posted, messaged, followed or liked on your behalf, and the person you sent a note to is not told. The one message celestual ever sends that names another person is the one that says it is mutual, to both of you.</li>
+          <li>There is no profile, and no list of who is on the service or of who has sent anybody a note.</li>
+          <li>The single fact shown after you send a note is whether that handle has reached celestual. It is never a hint about anybody's feelings or activity, and we do not build one.</li>
+          <li>Buying pings shows nothing to anybody. Nobody on celestual is told that you bought them, and Stripe is never told which handle they were for.</li>
         </ul>
       </section>
 
@@ -130,28 +161,44 @@
         <h2><span class="n">03</span> How long it lasts</h2>
         <dl class="defs">
           <div>
-            <dt>a standing ping</dt>
-            <dd>Until the Saturday reveal, 9pm California time, at least a day after it was placed. If it is not mutual it lapses that night, stays listed to you for seven more days so that you can send it again, and then the row is deleted outright. You can keep one for the following week, one week ahead at a time. Letting one go deletes it the same day.</dd>
+            <dt>a private note</dt>
+            <dd>Until its reveal: Saturday at 9pm California time, the first one at least a day after it was sent. If it is not mutual it lapses that night, stays listed to you for seven more days so that you can send it again, and then it is deleted outright, words, handle and all. You can keep one for the following week, one week ahead at a time. Letting one go deletes it the same day.</dd>
           </div>
           <div>
             <dt>a mutual</dt>
-            <dd>A pair is sealed from the moment the second ping is placed until the next reveal, and both people are told that night. From then, while both people hold it. It goes when either of them takes their handle off.</dd>
+            <dd>A pair is sealed from the moment the second note is sent until the next reveal, and both people are told that night. From then, while both people hold it. It goes when either of them takes their handle off.</dd>
+          </div>
+          <div>
+            <dt>bought pings</dt>
+            <dd>They never lapse. They stay until you spend them, until a refund or a chargeback takes them back, or until the handle they were bought for is taken off.</dd>
+          </div>
+          <div>
+            <dt>a purchase</dt>
+            <dd>As long as tax and accounting law require us to keep a record of a payment. When a handle is taken off, the handle is removed from its purchases and the rest of each record stays.</dd>
           </div>
           <div>
             <dt>a letter</dt>
-            <dd>Thirty days on the wall, and sooner if it is reported or if the person it is about takes their handle off. A letter that came down is held out of sight rather than published, so that the decision can be looked at again.</dd>
+            <dd>Thirty days on the wall, and sooner if it is reported, if the person it is to removes it, or if they take their handle off. A letter that came down, or ran its thirty days, is held out of sight rather than shown, so that a decision can be looked at again. It is deleted when its writer's account is.</dd>
           </div>
           <div>
-            <dt>a code</dt>
-            <dd>The code mailed to a campus address lasts ten minutes, dies after six wrong guesses, and is stored only as a hash. The code you send our Instagram account lasts until you send it or it lapses, and all it does is tie one message to one browser.</dd>
+            <dt>a reply</dt>
+            <dd>As long as the letter it is under is kept. A reply that was refused or taken down is held out of sight, for the desk. It is deleted with the letter, or when its writer's account is.</dd>
+          </div>
+          <div>
+            <dt>a mailed link</dt>
+            <dd>Thirty minutes, and it works once. A letter waiting on a school link is let go when the link is used or runs out. The code you send our Instagram account lasts until you send it or it lapses, and all it does is tie one message to one browser.</dd>
+          </div>
+          <div>
+            <dt>alert mail</dt>
+            <dd>The record of a mail that was sent, or failed, is kept sixty days. The link in it that removes a letter lasts thirty days, and the link that stops a kind of mail lasts a year.</dd>
           </div>
           <div>
             <dt>a session</dt>
-            <dd>Until it lapses or you sign out.</dd>
+            <dd>A year, and the year starts again each time it is used. Signing out drops the token from your device. Its hash stays until the year runs out, and is then deleted.</dd>
           </div>
           <div>
             <dt>rate limit records</dt>
-            <dd>About two hours, which is the window they exist to enforce.</dd>
+            <dd>About two hours for sending notes, and two days for looking handles up, which is the window each exists to enforce.</dd>
           </div>
           <div>
             <dt>a bar</dt>
@@ -167,13 +214,16 @@
       <section id="why">
         <h2><span class="n">04</span> Why we hold it</h2>
         <p>
-          Each of the things in section 1 is there for one of four reasons: to
+          Each of the things in section 1 is there for one of five reasons: to
           run the service you asked for, to keep it from being turned against
-          somebody, to keep it secure and working, or because you handed it to
-          us and can take it back. If you are in the United Kingdom or the
-          European Union, those are contract, legitimate interests, legitimate
-          interests, and consent, in that order. Consent is withdrawn by taking
-          the address off or by writing to us.
+          somebody, to keep it secure and working, because you handed it to us
+          and can take it back, or because the law makes us keep it. If you are
+          in the United Kingdom or the European Union, those are contract,
+          legitimate interests, legitimate interests, consent, and legal
+          obligation, in that order. Consent is withdrawn by taking the address
+          off or by writing to us. The record of a purchase is the last of
+          these: tax and accounting law is why it outlives the handle that made
+          it.
         </p>
       </section>
 
@@ -188,25 +238,36 @@
         <p>
           We keep the name, the badge and a copy of the picture on our own
           storage, so a screen keeps working and the same account is not looked
-          up twice. It is public profile information and nothing else. Looking a
-          handle up proves nothing about who is holding a browser and it never
-          signs anybody in. Write to us if you want a cached profile dropped.
+          up twice. The wall shows them beside a name that carries letters, and
+          a letter to a handle can open with the first name on its profile. It
+          is public profile information and nothing else. Looking a handle up
+          proves nothing about who is holding a browser and it never signs
+          anybody in.
+        </p>
+        <p>
+          When a lookup reaches Apify we also note which handle it was and the
+          account, device or address it came from, and keep that for two days,
+          because it is what the limits on looking handles up count. Write to us
+          if you want a cached profile dropped.
         </p>
       </section>
 
       <section id="others">
         <h2><span class="n">06</span> Who else handles it</h2>
         <p>
-          Each of these handles data only to do a job for us, under a contract
-          that says so.
+          Each of these handles data to do a job for us, under a contract that
+          says so. Stripe and Google also hold what you give them directly under
+          their own privacy policies.
         </p>
         <ul>
-          <li><strong>Supabase</strong>, the database, the server functions and the file storage.</li>
+          <li><strong>Supabase</strong>, the database, the server functions, the file storage and the sign in service.</li>
           <li><strong>Vercel</strong>, which serves the site.</li>
           <li><strong>Resend</strong>, which sends the mail.</li>
           <li><strong>Apify</strong>, for the public profile lookups above.</li>
-          <li><strong>Anthropic</strong>, which screens wall letters before they are published. A letter is sent to be read by a model and is not used to train one.</li>
+          <li><strong>Anthropic</strong>, which screens letters and replies on the wall. Each one is sent to be read by a model, a reply with the letter it answers, and is not used to train one.</li>
           <li><strong>Meta and ManyChat</strong>, for the Instagram direct messages that prove a handle and carry a mutual. Your use of Instagram stays under Instagram's own terms.</li>
+          <li><strong>Stripe</strong>, which takes payment for pings, on its own page. Stripe is told what is being bought, how many, the price, and an opaque purchase number. It is never told which handle the pings are for, or anything about anybody's notes. What you type on Stripe's page, your card and whatever else it asks for, such as your name, email address or billing address, goes to Stripe and not to us, and Stripe handles it under its own privacy policy as well as for us.</li>
+          <li><strong>Google</strong>, if you sign in with a Google account. Google tells us the account's email address and an identifier for it, through the sign in service Supabase runs for us, and Google knows that you signed in here. It may also pass on the name and picture on that account. celestual does not read or show them.</li>
         </ul>
         <p>
           We do not sell personal information, and we do not share it for cross
@@ -221,13 +282,14 @@
         <h2><span class="n">07</span> What we send you</h2>
         <ul>
           <li>That it is mutual, on the night of the reveal. By email if there is an address on file, and by Instagram direct message inside the window Meta allows.</li>
-          <li>That a ping is coming up on its reveal. Once for each week it runs, in the five days before.</li>
-          <li>A code, when you are proving a campus address.</li>
-          <li>A link back in, when you ask for one.</li>
+          <li>That somebody wrote you a letter, if you have proved your handle, confirmed an address and turned it on. At most three a day. It never says who wrote it, and it carries a link that removes the letter.</li>
+          <li>That a note is coming up on its reveal, if you left an address with it. Once for each week it runs, in the five days before.</li>
+          <li>A link, when you sign in by email or confirm a school address or an alert address.</li>
         </ul>
         <p>
-          There is no newsletter and no marketing mail. Every message above is
-          about something you did.
+          Every alert mail carries a link that stops that kind of mail. There is
+          no newsletter and no marketing mail. Every message above is about
+          something you did or asked for.
         </p>
       </section>
 
@@ -239,11 +301,18 @@
           It carries nothing about you.
         </p>
         <p>
-          Your browser also keeps things that never reach us: the plain text of
-          the handles you have pinged, a draft letter, which letters you have
-          opened, and the token that keeps you signed in. Clearing your browser
-          storage clears all of it. There is no analytics cookie, no advertising
-          cookie, and no third party tag on this site.
+          Your browser also keeps some things itself: the handles you sent notes
+          to, a letter you have not put up yet, which letters you have opened,
+          and the token that keeps you signed in. Which letters you opened stays
+          on your device, and so does the draft, unless a school link carries it
+          to the browser that opens the link. The token travels with each
+          request, and we store only its hash. Clearing your browser storage clears all of it
+          from your device. There is no analytics cookie, no advertising cookie,
+          and no third party tag on this site.
+        </p>
+        <p>
+          Stripe's payment page is on Stripe's own site, not ours, and Stripe
+          sets its own cookies there under its own policy.
         </p>
       </section>
 
@@ -260,30 +329,36 @@
           <span class="at">celestual.us/optout</span>
         </div>
         <p>
-          That is the deletion path as well, and it is one act across both
-          surfaces: it bars the handle, erases everything that referenced it on
-          either side, and takes every letter about it off the wall. The
+          That is the deletion path as well, and it is one act across the whole
+          product: it bars the handle, erases everything that referenced it, and
+          takes every letter about it off the wall. The
           <a href="/data-deletion">deletion page</a> says exactly what goes and
-          what does not.
+          what does not, including what happens to pings you bought.
         </p>
         <p>
           You can also write to
           <a href="mailto:contact@celestual.app">contact@celestual.app</a> and
-          ask what we hold about a handle, ask us to correct it, ask for a copy
-          in a portable file, or ask us to delete it. We answer within thirty
-          days, and asking costs you nothing and changes nothing about how the
-          service treats you. If we say no, you can appeal by replying to that
-          answer. Because a handle is the identity here, we check a request the
-          way the product checks everything else, with one direct message from
-          the account.
+          ask what we hold about you, under a handle or an email address, ask us
+          to correct it, ask for a copy in a portable file, or ask us to delete
+          it. We answer within thirty days, and asking costs you nothing and
+          changes nothing about how the service treats you. If we say no, you
+          can appeal by replying to that answer. We check that a request comes
+          from the person it is about the way the product does: with one direct
+          message from the account for a handle, and with a reply from the
+          address for an email address.
+        </p>
+        <p>
+          Bought pings you have not used can be refunded if you ask within
+          fourteen days of buying them. The <a href="/terms#cost">terms</a> say
+          how.
         </p>
         <p>
           Depending on where you live, those rights may come from California,
           Colorado, Connecticut, Virginia or Utah law, or from the United
           Kingdom and European Union rules, and you may complain to your own
-          regulator. Since celestual sells nothing and carries no advertising,
-          there is no sale or targeted advertising for a browser signal such as
-          Global Privacy Control to switch off.
+          regulator. Since celestual does not sell personal information and
+          carries no advertising, there is no sale or targeted advertising for a
+          browser signal such as Global Privacy Control to switch off.
         </p>
       </section>
 
@@ -291,11 +366,15 @@
         <h2><span class="n">10</span> How it is kept</h2>
         <p>
           The browser cannot read any table in the database. Every path into the
-          data is a small server function that returns a status and never
-          somebody else's row. Targets are hashed, codes are hashed, sessions
-          are hashed, and traffic is encrypted in transit. Production access
-          belongs to the people who run the company and to nobody else. No
-          system is perfect and we will not pretend this one is.
+          data is a small server function that hands back only what that caller
+          may see: the letters on the wall without their writers, your own
+          notes, and somebody else's note only once it is mutual with yours.
+          Matching runs on salted hashes, links and
+          codes are stored only as hashes, sessions are stored only as hashes,
+          a card number never reaches us, and traffic is encrypted in transit.
+          Production access belongs to the people who run the company and to
+          nobody else. No system is perfect and we will not pretend this one
+          is.
         </p>
       </section>
 
@@ -304,8 +383,10 @@
         <p>
           A valid legal demand can require us to hand over what we hold, and
           section 1 is that list. We will tell you when it happens unless we are
-          forbidden to. What we cannot hand over is what was never written down:
-          who you pinged, in a form anybody can read, does not exist here.
+          forbidden to. What we cannot hand over is what is no longer here, and
+          we keep little on purpose: a note that is not mutual is deleted a week
+          after its reveal, a note you let go is deleted the same day, and a
+          card number never reaches us at all.
         </p>
       </section>
 

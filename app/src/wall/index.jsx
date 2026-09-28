@@ -69,6 +69,7 @@ import Verify from './screens/Verify.jsx'
 import Claim from './screens/Claim.jsx'
 import Unwrite from './screens/Unwrite.jsx'
 import Alerts from './screens/Alerts.jsx'
+import Pings from './screens/Pings.jsx'
 import Intro from './Intro.jsx'
 
 // What the field is doing under each screen. A screen may override its own
@@ -226,6 +227,17 @@ export default function WallApp() {
     const was = tc && tc.content
     if (tc) tc.content = '#000000'
     return () => { if (tc && was) tc.content = was }
+  }, [])
+  // ── and the page behind it ──
+  // The html is a full-bleed room with no scrollbar, black down to the
+  // page (styles.css `wl-bleed`, `wl-dark`), from the frame this root is
+  // first drawn on. It is told here rather than finding out with a `:has()`
+  // over the root, which Chrome paid for with a style pass over the whole
+  // document for every element any screen put on the page or took off it.
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    html.classList.add('wl-bleed', 'wl-dark')
+    return () => html.classList.remove('wl-bleed', 'wl-dark')
   }, [])
 
   // ── the scan ──
@@ -457,6 +469,8 @@ export default function WallApp() {
   if (route.name === 'claim') sheet = <Claim handle={route.id} {...shared} />
   if (route.name === 'r') sheet = <Unwrite {...shared} />
   if (route.name === 'alerts') sheet = <Alerts {...shared} />
+  if (route.name === 'pings') sheet = <Pings {...shared} />
+  if (route.name === 'paid') sheet = <Pings paid {...shared} />
 
   let base
   switch (route.name) {

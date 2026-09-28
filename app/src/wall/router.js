@@ -43,13 +43,13 @@ export function setBase(b) { BASE = String(b || '') }
 // and it closes back onto the wall it was raised over; the account is a look
 // at what this person has out, taken without leaving the names. The mutual
 // is the end of that same story, so it is raised over the wall too.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal', 'verify', 'claim', 'r', 'alerts'])
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'ping', 'you', 'reveal', 'verify', 'claim', 'r', 'alerts', 'pings', 'paid'])
 
 // Every address under a wall's base, by its first segment. At the root this
 // is also what decides which addresses are the wall's at all: `/optout` is
 // Main's, `/letter/x` is the wall's, and nothing under `/` is claimed by
 // the wall on the strength of not being anybody else's.
-const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal', 'verify', 'claim', 'r', 'alerts'])
+const HEADS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report', 'join', 'ping', 'you', 'reveal', 'verify', 'claim', 'r', 'alerts', 'pings', 'paid'])
 
 const norm = (pathname) => String(pathname || '/').replace(/\/+$/, '') || '/'
 const rootOf = (base) => base || '/'
@@ -82,6 +82,10 @@ export function parse(pathname) {
     case 'claim':  return id ? { name: 'claim', id } : { name: 'wall' }
     case 'r':      return { name: 'r' }
     case 'alerts': return { name: 'alerts' }
+    // more pings, bought (docs/PINGS-BY-THE-WEEK.md): chosen at /pings, and
+    // /paid is where Stripe sends the buyer back to
+    case 'pings':  return { name: 'pings' }
+    case 'paid':   return { name: 'paid' }
     // /orbit was a drawn stand-in for the core service with a seeded ledger
     // in it, reachable by anybody who typed the address. The ping is a sheet
     // on the wall now, and the stand-in is gone.

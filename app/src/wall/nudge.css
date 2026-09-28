@@ -25,12 +25,14 @@
    is up, so nothing is taken out from under the card after it has moved.
    The gap between the card and the note is inside the fold, and so is the
    foot's own spacing when the note is all the foot holds, so a shut fold is
-   no room at all. */
-.wl-letter .wl-foot:has(> .wl-signnote-fold) {
+   no room at all. The letter tells the foot both (Letter.jsx `has-fold`,
+   `is-folded`): asked with a `:has()` over `:only-child`, Chrome styled the
+   whole page again for every element added or taken away anywhere on it. */
+.wl-letter .wl-foot.has-fold {
   padding-top: 0;
   transition: padding-bottom 420ms var(--ease);
 }
-.wl-letter .wl-foot:has(> .wl-signnote-fold.is-shut:only-child) { padding-bottom: 0; }
+.wl-letter .wl-foot.has-fold.is-folded { padding-bottom: 0; }
 .wl-signnote-fold {
   display: grid; grid-template-rows: 1fr;
   transition: grid-template-rows 420ms var(--ease), opacity 260ms var(--ease);
@@ -104,6 +106,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wl-signnote { animation: none; }
-  .wl-signnote-fold, .wl-letter .wl-foot:has(> .wl-signnote-fold),
+  .wl-signnote-fold, .wl-letter .wl-foot.has-fold,
   .wl-letter .wl-foot > .wl-signnote-fold + .wl-letter-out { transition: none; }
 }

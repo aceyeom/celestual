@@ -3,8 +3,9 @@
 // The mechanism: placePing records a one-way ping at @them. It resolves ONLY
 // if they independently ping you back, and then both of you learn at the same
 // moment: the weekly reveal, Saturday at nine at night in California (0069).
-// Two standing pings; each runs to its week's reveal and can be kept for the
-// next; letting one go frees the slot. Matching and suppression run on salted hashes, and
+// One free ping for every reveal, and more bought (0071); each runs to its
+// week's reveal and can be kept for the next, which spends that week's;
+// letting one go gives its ping back. Matching and suppression run on salted hashes, and
 // since migration 0010 the server also keeps the normalised target so the
 // owner's pings restore BY NAME on any device they verify on.
 //
@@ -35,7 +36,7 @@ const iso = (ms) => new Date(ms).toISOString();
 
 // Place a ping. Returns the RPC's own shape:
 //   { recorded:true, mutual, match, match_card, reachable, expires_at, slots }
-//   { recorded:false, error:'rate_limited'|'suppressed'|'no_slots'|'unverified' }
+//   { recorded:false, error:'rate_limited'|'suppressed'|'no_pings'|'week_full'|'unverified', allowance }
 // `proof` is the Instagram DM ownership secret (api/igverify.js); `card` is the
 // line the ping carries, sealed server-side until both sides exist.
 //
@@ -48,7 +49,7 @@ export async function placePing({ me, them, email, proof, card }) {
       mutual: false,
       match: null,
       match_card: null,
-      reachable: normHandle(them).length % 2 === 0,
+      reachable: false,
       expires_at: iso(Date.now() + PING_DAYS * 864e5),
       slots: { standing: 0, cap: SLOT_CAP },
       local: true,
@@ -100,13 +101,34 @@ export async function fetchMyPings({ handle, proof } = {}) {
           ? { name: String(p.display_name || ''), verified: !!p.is_verified, avatarPath: String(p.avatar_path || '') }
           : null,
       })),
+      // since 0071: this week's pings, the free one and the ones bought
+      // (docs/PINGS-BY-THE-WEEK.md), for the list's foot to say
+      allowance: data.allowance || null,
     };
   } catch {
     return { ok: false, error: 'network', pings: [] };
   }
 }
 
-// One tap keeps a note for the week after its own, once ahead (0069). Free.
+// This week's pings (0071, docs/PINGS-BY-THE-WEEK.md): the free one, the
+// ones bought, and how many are spent on the reveal a note sent now would run
+// to, and on the one after it. Proof gated, like the list. Answers
+// { ok, allowance } or { ok:false, allowance } with nobody's numbers in it.
+export async function fetchAllowance({ handle, proof } = {}) {
+  if (!hasSupabase) return { ok: false, allowance: null };
+  if (!normHandle(handle) || !proof) return { ok: false, allowance: null };
+  try {
+    const { data, error } = await supabase.rpc('celestual_ping_allowance', { p_handle: handle, p_proof: proof });
+    if (error || !data) return { ok: false, error: 'network', allowance: null };
+    return { ok: !!data.ok, allowance: data.allowance || null };
+  } catch {
+    return { ok: false, error: 'network', allowance: null };
+  }
+}
+
+// One tap keeps a note for the week after its own, once ahead (0069). It
+// spends a ping for that week (0071), and answers 'no_pings' with this
+// week's allowance when there is none to spend.
 // Answers { ok, expires_at }, or { ok:false, error } where 'lapsed' is a
 // note whose reveal has passed (it is sent again instead, placePing) and
 // 'none' is one that went mutual or was let go elsewhere.

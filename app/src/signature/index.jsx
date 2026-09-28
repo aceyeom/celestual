@@ -26,7 +26,7 @@
 // a face or a duration; signature.css only says how these two surfaces are laid
 // out with them.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import '../wall/wall.css'
 import './signature.css'
 import { mountField } from './field.js'
@@ -49,6 +49,13 @@ export default function SignatureApp() {
   const root = useRef(null)
   const canvas = useRef(null)
   const still = useRef(prefersReducedMotion()).current
+  // a full-bleed room with no scrollbar (styles.css `wl-bleed`), said on the
+  // html as this root is first drawn rather than asked with a `:has()`
+  useLayoutEffect(() => {
+    const html = document.documentElement
+    html.classList.add('wl-bleed')
+    return () => html.classList.remove('wl-bleed')
+  }, [])
 
   // ── the faces ──
   // Local, and preloaded rather than merely linked: the display face is the
