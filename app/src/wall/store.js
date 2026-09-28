@@ -87,7 +87,7 @@ const EMPTY = {
   noteSpans: [],      // when each of this person's private notes went out and
                       // when it ended or was told, as the list last said it
                       // (pings.js `revealWaiting`). Never who it was to
-  toldSeen: [],      // the mutuals this device has watched told, each a hash
+  toldSeen: [],       // the mutuals this device has watched told, each a hash
                       // of whose list it is on and the mutual's key, never a
                       // handle (pings.js `wasOpened`): the slot is suspense
                       // until its telling has been seen once, and calm after
