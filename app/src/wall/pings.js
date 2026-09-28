@@ -759,11 +759,11 @@ function openedMark(me, p) {
 }
 export function wasOpened(me, p) {
   if (!p || !p.key) return false
-  return (getState().opened || []).includes(openedMark(me, p))
+  return (getState().toldSeen || []).includes(openedMark(me, p))
 }
 export function markOpened(me, p) {
   if (!p || !p.key || wasOpened(me, p)) return
-  patch({ opened: [...(getState().opened || []), openedMark(me, p)].slice(-OPENED) })
+  patch({ toldSeen: [...(getState().toldSeen || []), openedMark(me, p)].slice(-OPENED) })
 }
 
 // The time left to a moment, as the phone's clock counted it: days and hours
