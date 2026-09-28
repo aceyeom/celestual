@@ -326,10 +326,18 @@ function RevealStrip({ fresh, told, onInfo }) {
 // (docs/PINGS-BY-THE-WEEK.md). The words say the same for a person who does
 // not read cells, and `add more pings` is the way to the paywall when it is
 // wanted rather than when a note meets it.
+//
+// It is there only once the week has none left to spend (pings.js
+// `shapeAllowance`, `left`), the same test on which the composer raises the
+// paywall in place of its send, and never while the week is not known. It
+// used to stand at the foot whatever the week held, a key to buy more beside
+// a free ping still unspent, and the owner asked that it wait until the
+// week's pings are spent.
 const SHOW_BOUGHT = 9
 function Week({ a, onMore }) {
   const bought = a ? a.credits : 0
   const free = a ? (a.freeLeft ? 'free ping this week' : 'free ping used this week') : 'one free ping every week'
+  const spent = !!a && a.left <= 0
   return (
     <div className="wl-vault-week">
       <span className="wl-vault-pings">
@@ -342,7 +350,7 @@ function Week({ a, onMore }) {
           {bought ? <span className="is-dim">{bought === 1 ? '1 bought, waiting' : `${bought} bought, waiting`}</span> : null}
         </span>
       </span>
-      <button type="button" className="wl-vault-more" onClick={onMore}>add more pings</button>
+      {spent ? <button type="button" className="wl-vault-more" onClick={onMore}>add more pings</button> : null}
     </div>
   )
 }

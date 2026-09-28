@@ -296,9 +296,11 @@
 /* the week's pings, at the frame's foot, under the notes they are for
    (You.jsx `Week`): a cell for the free ping, lit while it is still to
    spend, and one for each bought, lit rose since a bought one waits; what
-   they are in words; and the way to more at the end, the settings key's
-   shape, so it is a key and never a banner */
-.wl-vault-week { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+   they are in words; and, once none is left to spend, the way to more at
+   the end, the settings key's shape, so it is a key and never a banner.
+   The row is as tall as that key whether it is there or not, so the foot
+   does not change its height when the week is spent. */
+.wl-vault-week { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; min-height: 28px; }
 .wl-vault-pings { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
 .wl-vault-pings .wl-slots-cells { flex: 0 0 auto; flex-wrap: wrap; max-width: 60px; }
 .wl-slots-cells i.is-lit { background: var(--chalk); box-shadow: 0 0 5px rgba(244, 241, 234, 0.3); }

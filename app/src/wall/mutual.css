@@ -11,23 +11,18 @@
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-in { flex: 1 1 auto; display: flex; flex-direction: column; }
 
-/* how it works, and what it gets you: a kicker small and dim over the
-   headline, so the headline is the offer and not a label */
-.wl-join-head { display: grid; gap: 6px; padding-top: clamp(4px, 2svh, 22px); }
-.wl-join-kick {
-  margin: 0;
-  font-family: var(--f-util); font-size: var(--t-label); line-height: 1; letter-spacing: var(--tr-open);
-  color: var(--ash);
-  animation: wl-fade 700ms var(--ease) both;
-}
+/* what it gets you, and nothing over it: the kicker that stood small and
+   dim above the headline went on 28 September (Join.jsx says why) */
+.wl-join-head { padding-top: clamp(4px, 2svh, 22px); }
 .wl-join-h { margin: 0; animation: wl-rise 900ms var(--ease) 60ms both; }
 
 /* ── the figure ──
    As wide as the column allows up to 290, and narrower on a short window so
-   the three steps and the key under it are in view without a scroll: 500 is
-   the bar, the head, the steps and the key. */
+   the three steps and the key under it are in view without a scroll: 440 is
+   the bar, the head, the steps and the key. It was 500 while the kicker and
+   the steps' quiet lines were there, and a short phone gets the difference. */
 .wl-join-fig { position: relative; display: grid; place-items: center; margin: clamp(14px, 2.6svh, 26px) 0; }
-.wl-join-scr { width: clamp(160px, calc((100svh - 500px) / 1.16), 290px); }
+.wl-join-scr { width: clamp(160px, calc((100svh - 440px) / 1.16), 290px); }
 /* When the backlight turns pink on the glass the phone's light on the room
    turns pink with it, as it does in the intro: out past the phone as the
    pink reaches the glass's top edge (Join.jsx `TURN`), and resting at a
@@ -58,11 +53,11 @@
 .wl-join-scr .wl-scene-halo-2 { animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 180ms both; }
 
 /* ── the steps ──
-   A number, one strong line and one quiet line under it that answers the
-   question the first raises. The step the phone is on is lit the way the
-   phone lights a chosen row, its number struck out of a chalk key, on the
-   frame it starts: on or off, not faded. What the phone has told stays at
-   full strength, and what it has not reached waits at a third. */
+   A number and one short line; the quiet line that stood under each went
+   with the kicker. The step the phone is on is lit the way the phone lights
+   a chosen row, its number struck out of a chalk key, on the frame it
+   starts: on or off, not faded. What the phone has told stays at full
+   strength, and what it has not reached waits at a third. */
 .wl-join-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .wl-join-step {
   display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; align-items: start;
@@ -80,20 +75,16 @@
   background: var(--chalk); color: #000;
   box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.22), 0 0 18px -6px rgba(244, 241, 234, 0.55);
 }
-.wl-join-say { display: grid; gap: 3px; min-width: 0; padding-top: 1px; }
 .wl-join-line {
+  min-width: 0; padding-top: 1px;
   font-family: var(--f-display); font-size: var(--t-read); line-height: 1.1;
   color: var(--chalk); text-wrap: pretty;
 }
-.wl-join-sub {
-  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.15;
-  color: var(--ash); text-wrap: pretty;
-}
 
-/* The key is there with the page, fading in with the kicker over the
-   headline, a beat behind it. It used to stay out of sight until the story
-   had told its third step, and the foot of the page stood empty for four
-   and a half seconds with nothing on it to press (Join.jsx says why). */
+/* The key is there with the page, fading in a beat behind the headline. It
+   used to stay out of sight until the story had told its third step, and
+   the foot of the page stood empty for four and a half seconds with nothing
+   on it to press (Join.jsx says why). */
 .wl-join-foot {
   flex: 0 0 auto; margin-top: auto; padding-top: 24px;
   animation: wl-fade 700ms var(--ease) 180ms both;
@@ -102,16 +93,20 @@
 
 /* on a spread the phone stands on the right, as large as the window's
    height leaves it, and the head, the steps and the key read down the
-   left beside it */
+   left beside it, one block centred on the phone's height between two
+   empty rows. The three rows used to share out the height of the phone
+   they stand beside, and with one short line to a step that pulled the
+   steps a line's height apart from each other. */
 @media (min-width: 900px) {
   .wl-page.wl-join { max-width: 1000px; }
   .wl-join-in {
     display: grid; align-content: center; column-gap: 72px;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: 'head fig' 'steps fig' 'foot fig';
+    grid-template-rows: 1fr auto auto auto 1fr;
+    grid-template-areas: '. fig' 'head fig' 'steps fig' 'foot fig' '. fig';
     padding-bottom: 6svh;
   }
-  .wl-join-head { grid-area: head; align-self: end; padding-top: 0; gap: 10px; }
+  .wl-join-head { grid-area: head; align-self: end; padding-top: 0; }
   .wl-root.is-room .wl-join .wl-join-h.wl-display { font-size: clamp(40px, 3.6vw, 52px); }
   .wl-join-steps { grid-area: steps; margin-top: 30px; gap: 18px; }
   .wl-join-fig { grid-area: fig; margin: 0; }

@@ -150,14 +150,17 @@ strips and logs as a scan.
 * The composer (`screens/Ping.jsx`) says, on its last step, which ping this
   is: `your free ping this week`, or `1 of your 3 pings`, or, with none left,
   it shows the paywall in place of the send key.
-* The paywall (`screens/Pings.jsx`) is one screen of the phone, lit in rose:
-  the week's free ping and when the next one comes, a stepper from one to ten,
-  the total, and one lit key, `get 3 pings · $8.97`. Under it, in the quiet
-  line, that a bought ping never lapses and comes back if its note is let go.
+* The paywall (`screens/Pings.jsx`) is one screen of the phone, lit in rose,
+  and nothing else: the price of one across its top, the count and the total
+  on its glass, its two soft keys the stepper from one to ten, and one lit
+  key under it, `get 3 pings · $8.97`, with a quiet way back. Since 28
+  September there is no heading over it in sight, no line under it and no
+  fine print: the owner asked for the phone alone. A failure still takes the
+  line under the phone, since a key that did nothing has to say why.
 * It is reached two ways: on its own when a note cannot be paid for (sending,
   sending again, keeping), with the note waiting behind it and sent the
   moment the pings land; and from `add more pings` on the private notes tab,
-  beside what is left this week.
+  beside the week's pings, which is there only once none is left to spend.
 * Coming back from Stripe (`/paid`), the wall confirms the session, says how
   many landed, and sends the note that was waiting, if one was.
 
