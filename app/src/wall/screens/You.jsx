@@ -533,7 +533,7 @@ function PingScreen({ p, me, go, onBack, onChange }) {
 
   const items = [
     ...(gone ? [{ t: 'send it again', run: again }] : ahead ? [] : [{ t: 'keep it for next week', run: keep }]),
-    { t: gone ? 'send it with new words' : 'change the words', run: () => editNote(go, p.to, p.line) },
+    { t: gone ? 'send it with new words' : 'change the words', run: () => editNote(go, p.to, p.line, p) },
     { t: 'let it go', run: () => setMode('ask') },
   ]
   const sel = Math.min(at, items.length - 1)
@@ -558,7 +558,9 @@ function PingScreen({ p, me, go, onBack, onChange }) {
       r: { label: 'back', onClick: () => setMode('line'), aria: 'back to the note' },
     }
   } else if (mode === 'ask') {
-    body = <ScreenNote title="let it go?">this gives its ping back. they never find out you sent it.</ScreenNote>
+    // one that was not this time spent its ping on that night, and only a
+    // running one has a ping to give back (the note's settings ask the same)
+    body = <ScreenNote title="let it go?">{gone ? '' : 'this gives its ping back. '}they never find out you sent it.</ScreenNote>
     keys = {
       l: { label: 'let it go', onClick: drop, disabled: busy, aria: 'let it go' },
       r: { label: 'keep it', onClick: () => setMode('line'), aria: 'keep it' },

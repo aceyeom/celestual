@@ -60,7 +60,8 @@ import { heldProof, proofFor } from '../auth.js'
 import { checkout, confirm, price, PING_CENTS, MAX_BUY } from '../../api/billing.js'
 import '../buy.css'
 import {
-  myHandle, heldAllowance, loadAllowance, waitingNote, dropWaiting, place, renew, forgetPings, endsWords, nextReveal,
+  myHandle, heldAllowance, loadAllowance, waitingNote, dropWaiting, place, placeAgain, renew, forgetPings, endsWords, nextReveal,
+  myPings, liveOf, mutualOf,
 } from '../pings.js'
 
 const ROSE = { tint: 'rose' }
@@ -179,6 +180,16 @@ export function BuyPings({ out = false, onBack, backLabel = 'not now', headId = 
 // A note to send goes with the words it was kept with; a lapsed one is sent
 // again with its own; a running one is kept for next week. Answers what the
 // screen says: { ok, title, text } or a fault.
+//
+// A note to send to somebody this person is mutual with, and has nothing
+// running on, is a new note, and goes out through `placeAgain` (0072), as it
+// would have from the note's sheet: `place` on a mutual answers as the mutual
+// and writes nothing, and until the review of 28 September this said "sent
+// privately" over nothing, right after the payment, with the mutual's own
+// night for the date the note ran to. Which it is is asked of this person's
+// own list as it is now, and a list that cannot be read is the note not
+// gone, never a guess.
+const NOT_OUT = { ok: false, text: 'your note did not go out. open it and send it again.' }
 async function finish(w) {
   const me = myHandle()
   if (!w || !me) return null
@@ -187,8 +198,13 @@ async function finish(w) {
     if (!out.ok) return { ok: false, text: 'your note was not kept. open it on your private notes and keep it there.' }
     return { ok: true, title: 'kept for next week', text: `your note to ${atHandle(w.to)} runs to ${endsWords(out.expires) || 'next saturday'}.` }
   }
-  const out = await place({ me, them: w.to, proof: heldProof(me), words: w.kind === 'again' || w.line == null ? undefined : w.line })
-  if (!out.ok) return { ok: false, text: 'your note did not go out. open it and send it again.' }
+  const list = w.kind === 'send' ? await myPings({ handle: me, proof: heldProof(me) }) : null
+  if (list && !list.ok) return NOT_OUT
+  const anew = !!list && !!mutualOf(list, w.to) && liveOf(list, w.to)?.state !== 'standing'
+  const out = await (anew ? placeAgain : place)({
+    me, them: w.to, proof: heldProof(me), words: w.kind === 'again' || w.line == null ? undefined : w.line,
+  })
+  if (!out.ok) return NOT_OUT
   const ends = Date.parse(out.expires_at || 0) || nextReveal()
   return { ok: true, title: 'sent privately', text: `your note to ${atHandle(w.to)} runs to ${endsWords(ends) || 'saturday'}. if they send you one by then, you both find out at 9pm pacific.` }
 }
