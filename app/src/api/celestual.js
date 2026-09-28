@@ -49,7 +49,7 @@ export async function placePing({ me, them, email, proof, card }) {
       mutual: false,
       match: null,
       match_card: null,
-      reachable: normHandle(them).length % 2 === 0,
+      reachable: false,
       expires_at: iso(Date.now() + PING_DAYS * 864e5),
       slots: { standing: 0, cap: SLOT_CAP },
       local: true,

@@ -9,8 +9,9 @@
 -- refund takes them back, in proportion to the money, never below zero. The
 -- allowance is the proof's alone. Erasure takes the ledger, and a note to the
 -- erased @ gives its sender's ping back. The broom takes the ledger a
--- fortnight after its reveal, new pairs are bounded at thirty a week, and a
--- slot bought before is a ping on hand.
+-- fortnight after its reveal, a note can be sent and let go as often as
+-- anybody likes and learns nothing by it, and a slot bought before is a ping
+-- on hand.
 -- Time is moved by moving the rows' own timestamps back, the ledger's with
 -- the notes'. Run through scripts/verify-migrations.sh --test; everything is
 -- rolled back at the end.
@@ -495,15 +496,36 @@ select pw_ok('taking a ping a fortnight past its reveal, and not one sooner',
   not exists (select 1 from celestual_ping_spends where handle = 'pw_old' and to_hash = 'pw_hash_1')
   and exists (select 1 from celestual_ping_spends where handle = 'pw_old' and to_hash = 'pw_hash_2'));
 
--- ── 16. new pairs, a week ───────────────────────────────────────────────────
-insert into celestual_placements (handle, created_at)
-select 'pw_r', now() - interval '1 hour' from generate_series(1, 30);
-select pw_ok('thirty new pairs in a week is the most, refused as the hourly limits are, before a ping is spent',
-  pw_send('pw_r', 'pw_rt')->>'error' = 'rate_limited'
-  and pw_spends('pw_r') = 0);
-update celestual_placements set created_at = now() - interval '8 days' where handle = 'pw_r';
-select pw_ok('and a week on there is room again',
-  (pw_send('pw_r', 'pw_rt')->>'recorded')::boolean and pw_spends('pw_r') = 1);
+-- ── 16. sent and let go, as often as anybody likes ──────────────────────────
+-- There is no bound on new pairs beyond the hourly limits (the header of 0071
+-- says why): a note sent and let go learns nothing, whether the @ has an
+-- account included, which is said at the reveal and not before.
+insert into celestual_members (handle, handle_hash) values ('pw_rm', celestual_hash_handle('pw_rm'))
+on conflict (handle) do nothing;
+select pw_ok('a note to somebody with an account does not say so before the night',
+  (pw_send('pw_r', 'pw_rm')->>'recorded')::boolean
+  and (pw_send('pw_r', 'pw_rm')->>'reachable')::boolean = false);
+select pw_ok('nor does the status of it',
+  (celestual_ping_status('pw_r', array['pw_rm'], 'proof-pw_r')->'pings'->0->>'reachable')::boolean = false);
+select pw_proof('pw_rm') where not exists (select 1 from celestual_ig_verifications where handle = 'pw_rm');
+select pw_send('pw_rm', 'pw_r');
+select pw_ok('nor once they have sent one back and the pair is sealed for the night',
+  (pw_row('pw_r', 'pw_rm')).sealed_with is not null
+  and (celestual_ping_status('pw_r', array['pw_rm'], 'proof-pw_r')->'pings'->0->>'reachable')::boolean = false
+  and (celestual_ping_status('pw_r', array['pw_rm'], 'proof-pw_r')->'pings'->0->>'mutual')::boolean = false);
+do $$
+declare i int;
+begin
+  for i in 1..10 loop
+    perform celestual_withdraw('pw_r', 'pw_rm', 'proof-pw_r');
+    if not coalesce((pw_send('pw_r', 'pw_rm')->>'recorded')::boolean, false) then
+      raise exception 'FAIL  sent and let go % times, and refused', i;
+    end if;
+  end loop;
+  raise notice 'PASS  sent and let go ten times over, and never refused';
+end $$;
+select pw_ok('and all of it holds only the one ping the note stands on',
+  pw_spends('pw_r') = 1);
 
 -- ── 17. what was bought before ──────────────────────────────────────────────
 -- The fold in section 2 of the migration, copied here as it is written there.

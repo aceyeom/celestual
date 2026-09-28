@@ -174,17 +174,19 @@ Where this contract was silent, or would have cost somebody money or privacy
 if read literally, 0071 took the reading below. Each is in the migration's
 header too, and each is one place to change if the owner rules otherwise.
 
-* **New pairs are bounded at thirty a rolling week, per handle.** Section 5
-  drops the thirty day cadence cap and calls the ceiling of ten the cadence
-  cap now. But letting a note go gives its ping back, so the ceiling can be
-  cycled without end: send, read `reachable` off the answer, let go, send
-  again. SECURITY.md section 5 relies on that being bounded. So a new pair
-  (a target with no row for this handle) past thirty in seven days is refused
-  with `rate_limited`, the error the hourly limits already answer, checked
-  before the spend so it never costs a ping. Honest use never reaches it: ten
-  a reveal, and any seven days span the sending of at most two reveals, which
-  leaves ten let goes a week to spare. Sending again a note that was not this
-  time is not a new pair and is not counted.
+* **A note sent and let go learns nothing, so nothing bounds it but the hourly
+  limits.** Letting a note go gives its ping back, so a note can be sent and
+  let go again and again. The owner's question of 28 September was whether
+  that does anything, since nothing is told before the reveal and nothing can
+  be let go after it. It does nothing, with one exception that 0071 first
+  guarded with a bound of thirty new pairs a rolling week: a placement
+  answered `reachable`, whether the @ has an account (SECURITY.md section 5),
+  at once. That bit is said now only of a pair already told, by
+  `celestual_submit` and by `celestual_ping_status`, and the wall never drew
+  it; a sealed pair already answers as an unanswered note (0069). With that,
+  a cycle learns nothing a single note would not, and the bound came out.
+  The hourly limits (twenty from a handle, sixty to a target, forty from an
+  address) stand as they were.
 * **Notes already out when 0071 applies hold no spend.** They were sent under
   the old rule and cost nothing then. They count toward nothing this week,
   letting one go gives nothing back, and keeping one for next week spends a

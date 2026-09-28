@@ -70,11 +70,13 @@ use never feels it; a sweep trips it fast.
 
 **Since 0071 (pings by the week)** the standing slots are gone: one free ping
 a reveal, more bought, ten at most, and letting a note go gives its ping
-back. A bought ping has to be spendable, so the cap above became **30 new
-pairs per rolling 7 days** per handle, still counted in `celestual_placements`
-and still answered `rate_limited` before any ping is spent. Without it the
-ceiling of ten could be cycled for nothing (send, read `reachable`, let go,
-send again). docs/PINGS-BY-THE-WEEK.md section 8 has the reasoning.
+back. A bought ping has to be spendable, so the cadence cap above is gone
+too, with nothing in its place but the hourly limits (§4). What made the cap
+necessary was the one bit a placement answered at once, `reachable` (§5):
+with the ping given back, send, read, let go could be run without end. So
+the bit is answered only of a pair already told, and a note sent and let go
+before its reveal learns nothing a single note would not (a sealed pair
+answers as an unanswered one, 0069). docs/PINGS-BY-THE-WEEK.md section 8.
 
 ### §4 — Rate limiting
 `celestual_submit` enforces trailing-hour caps: **per-IP (40/hr)**,
@@ -99,8 +101,11 @@ After (and only after) placing a ping, the sender learns whether the target is
 out). Membership is the flattering receiver-side identity; still, it's a bit,
 so it is guarded: no lookup without a placed ping, three slots, the cadence
 cap, and the hourly limits make enumeration cost slots, time, and identity.
-(Since 0071: the week's pings, the ceiling of ten a reveal, and 30 new pairs
-a rolling week, in place of the slots and the thirty day cap.)
+**Since 0071 the bit is not answered before the reveal at all**: a placement
+and `celestual_ping_status` say `reachable` only of a pair already told, where
+it is true by definition. Before the night a note says nothing about whether
+its @ has an account, which is what lets a note be sent and let go for
+nothing (§3).
 `celestual_ping_status` returns reachability only for targets the caller has
 actually placed.
 

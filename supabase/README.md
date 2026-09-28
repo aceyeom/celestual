@@ -261,7 +261,9 @@ Idempotent migrations, applied in order:
   new or was not this time (free first, then bought, ten a reveal at most),
   refusing with `no_pings` or `week_full` and writing nothing; changing the
   words spends nothing; `slots` stays, drawn from the allowance. The thirty
-  day cadence cap is replaced by thirty new pairs a rolling week.
+  day cadence cap goes with nothing in its place but the hourly limits, and
+  `reachable` is answered only of a pair already told (here and in
+  `celestual_ping_status`), so a note sent and let go learns nothing.
   `celestual_renew` spends a ping for the reveal a note is kept to;
   `celestual_withdraw` gives back every ping a note holds for a reveal still
   to come; `celestual_reveal_due` gives back what a note made mutual held for

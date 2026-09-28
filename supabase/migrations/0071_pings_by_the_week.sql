@@ -52,15 +52,18 @@
 --
 -- ── where the contract was read the safe way (docs/PINGS-BY-THE-WEEK.md 8) ──
 --   new pairs      the thirty day cadence cap (six new pairs) goes, as the
---                  contract says. But letting go gives the ping back, so the
---                  ceiling of ten can be cycled (send, read `reachable`, let
---                  go, send again), and SECURITY.md section 5 relies on a
---                  bound there. So new pairs are bounded at thirty a rolling
---                  week per handle, answered `rate_limited` like the hourly
---                  limits. Nobody honest reaches it: any seven days span the
---                  sending of at most two reveals, twenty notes at the
---                  ceiling, which leaves ten let goes a week to spare. It is
---                  checked before the spend, so it never costs a ping.
+--                  contract says, and nothing takes its place but the hourly
+--                  limits. Letting go gives the ping back, so a note can be
+--                  sent and let go again and again, and that is safe only
+--                  because it tells the sender nothing: a sealed pair answers
+--                  as an unanswered note (0069), and `reachable`, whether the
+--                  @ has an account, which a placement used to answer at
+--                  once (SECURITY.md section 5), is answered at the reveal
+--                  and not before (`celestual_submit`, `celestual_ping_status`
+--                  below). The wall never drew it. With that bit gone before
+--                  the night, a cycle of sends and let goes learns nothing a
+--                  single note would not, and a bound on it would guard
+--                  nothing.
 --   notes already out when this applies hold no spend: they were sent under
 --                  the old rule and cost nothing. They count toward nothing
 --                  this week, letting one go returns nothing, and keeping one
@@ -487,8 +490,8 @@ $$;
 -- ping for the reveal it will run to. The spend is the last refusal before
 -- anything is written, so `no_pings` and `week_full` write nothing, and it is
 -- in the note's own transaction, so a note that fails after it spends nothing
--- either. The thirty day cadence cap is gone; new pairs are bounded at thirty
--- a rolling week instead (the header says why). `slots` stays, drawn from the
+-- either. The thirty day cadence cap is gone, and `reachable` is said only of
+-- a pair already told (the header says why). `slots` stays, drawn from the
 -- allowance (celestual_ping_slots), and `allowance` rides beside it.
 create or replace function celestual_submit(
   p_from text, p_to text, p_email text default null,
@@ -506,7 +509,6 @@ declare
   v_ipn   int;
   v_fromn int;
   v_ton   int;
-  v_placed7 int;
   v_existing_id uuid;
   v_live boolean := false;
   v_spent text;
@@ -523,7 +525,6 @@ declare
   c_ip_per_hour    constant int := 40;
   c_from_per_hour  constant int := 20;
   c_to_per_hour    constant int := 60;
-  c_new_per_week   constant int := 30;
 begin
   if nf is null or nt is null then raise exception 'invalid handle'; end if;
   if nf = nt then raise exception 'same handle'; end if;
@@ -573,15 +574,6 @@ begin
   select id, (matched_at is not null or expires_at > now())
     into v_existing_id, v_live
     from celestual_entries where from_handle = nf and to_hash = nh limit 1;
-
-  if v_existing_id is null then
-    select count(*) into v_placed7
-      from celestual_placements
-     where handle = nf and created_at > now() - interval '7 days';
-    if v_placed7 >= c_new_per_week then
-      return jsonb_build_object('recorded', false, 'error', 'rate_limited');
-    end if;
-  end if;
 
   if not coalesce(v_live, false) then
     v_spent := celestual_ping_spend(nf, nh, v_expires);
@@ -670,7 +662,9 @@ begin
     'mutual', v_mutual,
     'match', case when v_mutual then nt else null end,
     'match_card', case when v_mutual then reciprocal_card else null end,
-    'reachable', v_mutual or celestual_is_member(nt),
+    -- whether they have an account is theirs until the night: a placement
+    -- that could be let go and sent again for nothing must not answer it
+    'reachable', v_mutual,
     'expires_at', to_char(v_expires at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
     'reveal_at', to_char(celestual_next_reveal(now()) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
     'slots', celestual_ping_slots(v_allowance),
@@ -1178,6 +1172,60 @@ begin
   update celestual_purchases set handle = null where handle = nh;
 end;
 $$;
+
+-- ── 15b. the status of a few ─────────────────────────────────────────────────
+-- celestual_ping_status, as 0069 wrote it, and `reachable` said only of a
+-- pair already told, as the placement says it (section 9, and the header):
+-- whether an @ has an account is not a thing a note sent and let go for
+-- nothing may learn before its night.
+create or replace function celestual_ping_status(p_from text, p_to text[], p_proof text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  nf text := celestual_norm(p_from);
+  v_to text[];
+  v_out jsonb := '[]'::jsonb;
+  t text;
+  e record;
+begin
+  if nf is null or p_to is null then return jsonb_build_object('ok', false, 'pings', '[]'::jsonb); end if;
+  if not celestual_consume_ig_proof(nf, p_proof) then
+    return jsonb_build_object('ok', false, 'pings', '[]'::jsonb);
+  end if;
+  perform celestual_reveal_due();
+  v_to := p_to[1:10];
+
+  foreach t in array v_to loop
+    continue when celestual_norm(t) is null;
+    select e2.id, e2.created_at, e2.expires_at, e2.matched_at, e2.sealed_with, e2.card,
+           e2.photo is not null as has_photo
+      into e
+      from celestual_entries e2
+     where e2.from_handle in (select celestual_group(nf))
+       and e2.to_hash = celestual_hash_handle(t)
+     limit 1;
+    if not found then
+      v_out := v_out || jsonb_build_object('handle', celestual_norm(t), 'placed', false);
+    else
+      v_out := v_out || jsonb_build_object(
+        'handle', celestual_norm(t),
+        'placed', true,
+        'time', (extract(epoch from e.created_at) * 1000)::bigint,
+        'expires_at', to_char(e.expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        'mutual', e.matched_at is not null,
+        'lapsed', e.matched_at is null and e.sealed_with is null and e.expires_at <= now(),
+        'card', case when e.card is null then null
+                     else e.card || jsonb_build_object('photo', e.has_photo) end,
+        'their_card', case when e.matched_at is not null
+                           then celestual_counterpart_card(nf, t) end,
+        'reachable', e.matched_at is not null);
+    end if;
+  end loop;
+
+  return jsonb_build_object('ok', true, 'pings', v_out);
+end;
+$$;
+grant execute on function celestual_ping_status(text, text[], text) to anon, authenticated;
 
 -- ── 16. grants ───────────────────────────────────────────────────────────────
 -- The browser's: the allowance (new), and the doors this file re-created, as
