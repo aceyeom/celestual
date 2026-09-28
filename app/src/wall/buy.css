@@ -2,8 +2,11 @@
    screens/Pings.jsx, docs/PINGS-BY-THE-WEEK.md. The composer's own sheet and
    the composer's own screen, lit in rose, with the count on the glass and the
    phone's two soft keys as the stepper. Everything the sheet is made of is
-   the composer's (wall.css `.wl-write*`); this is the count, the line under
-   the screen, and the fine print under that. */
+   the composer's (wall.css `.wl-write*`); this is the count, and the
+   phone's size once nothing stands over it. There was a line under the
+   screen and fine print under that, and both went on 28 September, with
+   the heading over it, when the owner asked for the phone and its keys
+   alone (Pings.jsx says what each had said, and where it is said now). */
 
 /* ── the count ──
    The number in the screen's large figures, a line under it saying what it
@@ -31,11 +34,13 @@
   background: var(--s-ink); color: var(--s-mid); text-shadow: none;
 }
 
-/* ── under the screen ── */
-.wl-buy-say { text-align: center; text-wrap: balance; }
-.wl-buy-fine {
-  max-width: 42ch; margin: 12px auto 0; padding: 0 8px;
-  font-size: var(--t-small); line-height: 1.4; color: var(--ash); text-align: center; text-wrap: pretty;
+/* ── the phone, alone ──
+   The composer keeps 330 of a window's height for what stands round its
+   screen (wall.css), and the heading over it was sixty of that. With no
+   heading the phone takes them back, on a phone held upright, where a short
+   window was drawing it smaller than it had room to be. */
+@media (max-width: 639px) {
+  .wl-write-card.wl-buy-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 270px - var(--notch)) / 1.22))); }
 }
 
 /* the composer's line step, saying which ping a note spends */
