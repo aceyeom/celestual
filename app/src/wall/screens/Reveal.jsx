@@ -100,8 +100,8 @@ import { getSession } from '../../api/auth.js'
 import { me } from '../../main/data.js'
 import { myHandle, myPings, heldPings, mutualOf, liveOf, revealStamp, wasOpened, markOpened, REVEAL_TZ } from '../pings.js'
 import { takeRevealFrom, returnTo } from '../revealfrom.js'
-import Film, { pairSeed, namesOf, namesNow, primeFilm, filmFor, keepFor, wordsReady, filmHold } from '../Film.jsx'
-import Keepsake from '../Keepsake.jsx'
+import Film, { pairSeed, namesOf, namesNow, primeFilm, filmFor, keepFor, wordsReady, faceCame, filmHold } from '../Film.jsx'
+import Keepsake, { FLY_OPENS } from '../Keepsake.jsx'
 import '../mutual.css'
 
 // Who this browser is before the server has said: the handle its own proof
@@ -176,7 +176,9 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   // Once the resolver has said them or 400ms after the reveal opened,
   // whichever is first, and the words cut into cells in the phone's face.
   // The keepsake and every line wait for them; nothing is drawn with one
-  // pair of names and then another.
+  // pair of names and then another. A keepsake whose sentence was cut
+  // before the phone's face had come (a cold link on a slow network) has it
+  // cut again once the face is there, and a film that was is let play.
   const [made, setMade] = useState(null)
   useEffect(() => {
     let alive = true
@@ -187,7 +189,11 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
       const ok = await wordsReady(pair.names)
       if (!alive) return
       const credit = ok ? pair.names : [atHandle(them), atHandle(mine)]
-      setMade({ ...pair, film: entry === 'film' ? filmFor(credit) : null, keep: keepFor() })
+      const keep = keepFor()
+      setMade({ ...pair, film: entry === 'film' ? filmFor(credit) : null, keep })
+      if (keep.sure) return
+      const came = await faceCame()
+      if (alive && came) setMade((m) => (m ? { ...m, keep: keepFor() } : m))
     }
     if (entry === 'film') primeFilm(mine, them)
     namesOf(mine, them).then(settle, () => settle(namesNow(mine, them)))
@@ -211,12 +217,13 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   const [phase, setPhase] = useState(entry === 'film' ? 'film' : 'rest')
   const [from, setFrom] = useState(null)
   const [skipAt, setSkipAt] = useState(null)
-  const clock = useRef({ from: null, skipAt: null, queued: false, pulling: false })
+  const [queued, setQueued] = useState(false)
+  const clock = useRef({ from: null, skipAt: null, pulling: false })
   const film = made && made.film
   const skip = useCallback(() => {
     const c = clock.current
     const now = performance.now()
-    if (c.from === null || now < c.from) { c.queued = true; return }
+    if (c.from === null || now < c.from) { setQueued(true); return }
     if (c.skipAt !== null && !c.pulling) return
     if (!c.pulling && film && now - c.from < film.times.said) {
       c.from = now - film.times.said
@@ -231,13 +238,18 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
     c.from = t
     setFrom(t)
   }, [])
-  // a skip that came during the push-in is taken at nought
+  // A skip that came during the push-in or the wake is taken at nought. It
+  // was a flag on the clock, read when the nought was set, and the push-in
+  // sets its nought on its first frame, so a tap any later than that was
+  // held for a nought that had already been read, and never taken. (The
+  // wait is rounded up and a millisecond over: a timer is set in whole
+  // milliseconds, and one that came a fraction short of the nought was held
+  // again, and lost.)
   useEffect(() => {
-    if (from === null || !clock.current.queued) return undefined
-    clock.current.queued = false
-    const id = setTimeout(skip, Math.max(0, from - performance.now()))
+    if (from === null || !queued) return undefined
+    const id = setTimeout(() => { setQueued(false); skip() }, Math.max(0, Math.ceil(from - performance.now()) + 1))
     return () => clearTimeout(id)
-  }, [from, skip])
+  }, [from, queued, skip])
   // The film is watched when its sentence is said, and written down then:
   // in the beat the glass holds before the camera pulls back, where the page
   // has nothing else to do. Written on the pull-back's first frame, the
@@ -291,10 +303,11 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   useImperativeHandle(escRef, () => (e) => (phase === 'rest' && keepEsc.current ? keepEsc.current(e) : false), [phase])
 
   // the keepsake's clock: the film's, at the moment its mark came alive, so
-  // the two draw one mark; or from when it arrives, a beat in when it flies
-  // in out of the slot; or held on one frame of it alive, under reduced
-  // motion and for the screenshot loop
-  const [arrived] = useState(() => performance.now() + (entry === 'short' || entry === 'options' ? (rect ? 300 : 0) : 0))
+  // the two draw one mark; or from when it arrives, and out of the slot from
+  // when the phone opens under the glass flying in (Keepsake.jsx
+  // `FLY_OPENS`); or held on one frame of it alive, under reduced motion and
+  // for the screenshot loop
+  const [arrived] = useState(() => performance.now() + (entry === 'short' || entry === 'options' ? (rect ? FLY_OPENS : 0) : 0))
   const keepStory = made && made.keep
   const keepAt = entry === 'still' || hold.keep !== null ? keepStory && keepStory.still
     : hold.film !== null && film ? Math.max(0, hold.film - film.times.live) : null
@@ -303,7 +316,10 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   const state = phase === 'film' ? 'hidden' : phase === 'landing' ? 'landing' : 'rest'
   const menu = hold.keep ? hold.keep : entry === 'options' ? 'options' : null
   const names = made ? made.names : namesNow(mine, them).names
-  const standing = liveOf(list, them)?.state === 'standing'
+  // a new note out on them since the mutual, running (the keepsake's options
+  // open it as itself, and its question says it stays)
+  const live = liveOf(list, them)
+  const standing = live && live.state === 'standing' ? live : null
   const night = nightWords(p.revealedAt)
 
   return (
@@ -332,7 +348,7 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
 }
 
 export default function Reveal({
-  id, go, up, back, upLabel = 'back to the wall', nested = false, reduce, toWall = null,
+  id, go, up, upLabel = 'back to the wall', nested = false, reduce, toWall = null,
 }) {
   const them = normHandle(id)
   // who this is: null until the server has said, then the row (main/data.js)
@@ -371,23 +387,24 @@ export default function Reveal({
     return () => { alive = false }
   }, [who, handle, them])
 
-  // The quiet way out closes onto the wall, whatever the sheet was opened
-  // from, and onto its names: a link that brought somebody here before the
-  // wall was ever opened has its poster still up under the sheet, and it is
-  // dropped as the sheet starts to go (index.jsx `toWall`), as the ping's
-  // own way back does. The close mark, the scrim, Escape and the film's
-  // `back` go back one step, as every sheet's do, and when that step is the
-  // wall (the mark says "back to the wall" then, and not "back") they drop
-  // the poster too. A mutual taken off the list closes onto the private
-  // notes, where it no longer is: back down to them when they are what it
-  // was opened from, and up to them otherwise. And the slot it was opened
-  // from has the focus again (revealfrom.js `returnTo`).
+  // Every way out goes back one step, as every sheet's does: the close
+  // mark, the scrim, Escape and the film's `back`. When that step is the
+  // wall (the mark says "back to the wall" then, and not "back"), a link
+  // that brought somebody here before the wall was ever opened has its
+  // poster still up under the sheet, and it is dropped as the sheet starts
+  // to go (index.jsx `toWall`), as the ping's own way back does. A mutual
+  // taken off the list closes onto the private notes, where it no longer is:
+  // back down to them when they are what it was opened from, and up to them
+  // otherwise. And the slot it was opened from has the focus again
+  // (revealfrom.js `returnTo`). The old sheet also had a quiet way out to
+  // the wall under its key, whatever it was opened from; the keepsake has
+  // none, and its branch went with it (the review of 28 September).
   const way = useRef('')
   const fromSlot = !!opened
   const onClosing = useCallback((by) => {
     way.current = by
     if (by === 'taken') return
-    if (toWall && (by === 'quiet' || !nested)) toWall()
+    if (toWall && !nested) toWall()
   }, [toWall, nested])
   const toYou = useCallback(() => {
     if (!window.history.state?.wallPushed) {
@@ -396,11 +413,10 @@ export default function Reveal({
     go('you')
   }, [go])
   const onClose = useCallback(() => {
-    if (way.current === 'quiet') { back(); return }
     if (fromSlot || way.current === 'taken') returnTo(them)
     if (way.current === 'taken' && !fromSlot) { toYou(); return }
     up()
-  }, [back, up, toYou, fromSlot, them])
+  }, [up, toYou, fromSlot, them])
   // Not signed in: the gate, with this reveal as the way back once it has
   // let them in (Gate.jsx `finish`). Closing the gate without signing in
   // comes back here too, one step up, as every sheet over a sheet does.
@@ -421,9 +437,11 @@ export default function Reveal({
   const cut = !!(opened && opened.w > 0 && !reduce && mutual)
   const cls = ['is-reveal', cut && 'is-cut', mutual && phase !== 'rest' && `is-${phase}`].filter(Boolean).join(' ')
 
+  // (`is-mutual`: the room is the keepsake's, as wide as the window, and
+  // every other state keeps the column in the middle of it, mutual.css)
   return (
     <Sheet onClose={onClose} onClosing={onClosing} onEscape={onEscape} labelledBy="wl-reveal-h" className={cls} room>
-      <div className="wl-sheet-in wl-reveal">
+      <div className={`wl-sheet-in wl-reveal${mutual ? ' is-mutual' : ''}`}>
         <SheetHead onClose={up} label={upLabel} />
         {got === undefined ? (
           // asked, and not answered yet: the phone's hourglass, and nothing

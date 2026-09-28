@@ -4,15 +4,16 @@
 // The film is the one place in the product that draws the whole screen, a
 // canvas of two and a half million pixels on a phone at three to the point,
 // every frame while the two of them run and the mark gathers, and then
-// flies the whole stage onto the keepsake with a transform and a clip
-// (Film.jsx). This is that, measured the way a phone would feel it: the
-// private notes are opened on a phone's window (390 by 844 at three pixels
-// to the point, with touch) with the processor slowed four times, the
-// mutual is pressed, and the film is watched frame by frame to its rest
-// (a frame loop in the page, and the long tasks the page reports), in its
-// beats: the push-in or the wake before the glass's nought, the story, the
-// pull-back and the landing, and a few seconds of the keepsake at rest,
-// alive. A second run presses `skip` part way.
+// flies the whole stage onto the keepsake with two transforms (Film.jsx),
+// which unfolds with two more (Keepsake.jsx). This is that, measured the
+// way a phone would feel it: the private notes are opened on a phone's
+// window (390 by 844 at three pixels to the point, with touch) with the
+// processor slowed four times, the mutual is pressed, and the film is
+// watched frame by frame to its rest (a frame loop in the page, and the
+// long tasks the page reports), in its beats: the push-in or the wake
+// before the glass's nought, the story, the pull-back and the landing, and
+// a few seconds of the keepsake at rest, alive. A second run presses `skip`
+// part way.
 //
 //   node scripts/perf-reveal.mjs                    the film and a skip, on a phone
 //   node scripts/perf-reveal.mjs film               only the film

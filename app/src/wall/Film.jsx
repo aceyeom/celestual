@@ -46,12 +46,16 @@
 //              140ms, the strip unfolding from the mark (Keepsake.jsx); the
 //              film's canvases are let go 400ms later
 //
-// A tap that is not on a control, any key but Escape and Tab, or `skip`
-// jumps the story to the sentence said and pulls back 160ms later, in
-// 600ms; during the push-in it waits for the glass, and during the
-// pull-back it runs what is left two and a half times as fast. Every press
-// is answered inside a quarter of a second, and the whole of it can be left
-// at any moment by `back` or Escape, which puts the screen to sleep.
+// A tap that is not on a control, any key but Escape, Tab and a modifier
+// held alone, or `skip` jumps the story to the sentence said and pulls back
+// 160ms later, in 600ms; during the push-in or the wake it waits for the
+// glass, and during the pull-back it runs what is left two and a half times
+// as fast. Every press is answered inside a quarter of a second, and the
+// whole of it can be left at any moment by `back` or Escape, which puts the
+// screen to sleep. (Until the review of 28 September the listeners were
+// only there from the glass's nought to the pull-back, so a tap in the
+// push-in or the pull-back did nothing, and Shift on its way to Shift+Tab
+// skipped the film.)
 //
 // ── the glass, at any size ──────────────────────────────────────────────────
 // A cell of the story is a whole number of device pixels (PixelStory.jsx
@@ -129,21 +133,33 @@ export function namesOf(me, them) {
 // The film is made for the two names it credits and kept, so the one primed
 // while the slot was pressed is the one the reveal plays; the keepsake's is
 // the same for every pair. Both need the phone's face loaded before their
-// words are cut into cells (pixtype.js `readyType`).
+// words are cut into cells (pixtype.js `readyType`), and one made while the
+// face was still not there (`sure`, pixtype.js `typeCells`) is not kept:
+// kept, it said `it's mutual.` in the fallback face for the rest of the
+// visit. The reveal asks for the keepsake's again once the face has come
+// (`faceCame`).
 const FILMS = new Map()
 export function filmFor([a, b]) {
   const k = `${a}\n${b}`
-  if (!FILMS.has(k)) {
-    FILMS.set(k, filmStory({ credit: { a: typeCells(a), b: typeCells(b) }, say: typeCells(SAY), panel: PANEL, ink: INK }))
+  if (FILMS.has(k)) return FILMS.get(k)
+  const [ca, cb, say] = [typeCells(a), typeCells(b), typeCells(SAY)]
+  const film = { ...filmStory({ credit: { a: ca, b: cb }, say, panel: PANEL, ink: INK }), sure: ca.sure && cb.sure && say.sure }
+  if (film.sure) {
+    FILMS.set(k, film)
     while (FILMS.size > 4) FILMS.delete(FILMS.keys().next().value)
   }
-  return FILMS.get(k)
+  return film
 }
 let KEEP = null
 export function keepFor() {
-  if (!KEEP) KEEP = keepStory({ ink: INK, say: typeCells(SAY) })
-  return KEEP
+  if (KEEP) return KEEP
+  const say = typeCells(SAY)
+  const keep = { ...keepStory({ ink: INK, say }), sure: say.sure }
+  if (keep.sure) KEEP = keep
+  return keep
 }
+// the phone's face, however long after the reveal's ceiling it comes
+export const faceCame = () => readyType(SAY, 60000)
 // The film's words in their face. A name in Korean, Japanese or Chinese
 // whose face has not come by the time the glass wakes is credited as the
 // two @s, which the phone's own face always has
@@ -223,12 +239,19 @@ const PULL_MS = 900
 const PULL_SKIP_MS = 600
 const PULL_STEPS = 60
 const SKIP_LAG = 160
+const QUICKER = 2.5
+// keys that are only ever half of something (see skipping it)
+const ALONE = new Set([
+  'Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'OS', 'Hyper', 'Super', 'Fn', 'FnLock',
+  'CapsLock', 'NumLock', 'ScrollLock', 'Symbol', 'SymbolLock', 'Dead', 'Process', 'Unidentified',
+])
 const CENTRE_LEAD = 180
 const OUT_MS = 140
 const LET_GO = 400
 // A cubic-bezier as CSS draws one, for a script that needs the curve's
-// value part way along: how far along it is at `x` of the time
-function bezier(x1, y1, x2, y2) {
+// value part way along: how far along it is at `x` of the time (and the
+// keepsake's unfold, which is squeezed and undone the same way)
+export function bezier(x1, y1, x2, y2) {
   const at = (a, b, t) => 3 * a * (1 - t) * (1 - t) * t + 3 * b * (1 - t) * t * t + t * t * t
   return (x) => {
     if (x <= 0) return 0
@@ -392,11 +415,13 @@ export default function Film({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, skipAt, held])
   // a skip that comes while the camera is already pulling back runs what is
-  // left of it faster, without a jump
+  // left of it faster, without a jump, and the light the keepsake throws
+  // coming up with it
   useEffect(() => {
     if (skipAt === null || !pulled.current) return
-    for (const a of anims.current) { try { a.updatePlaybackRate(2.5) } catch { /* finished */ } }
-  }, [skipAt])
+    for (const a of anims.current) { try { a.updatePlaybackRate(QUICKER) } catch { /* finished */ } }
+    if (keep.current) keep.current.quicken(QUICKER)
+  }, [skipAt, keep])
 
   // ── the pull-back ──
   // Where the film's grid is, in the stage's own pixels, and where the
@@ -499,15 +524,22 @@ export default function Film({
   }, [])
 
   // ── skipping it ──
-  // A press anywhere that is not a control, or a key, from the glass's
-  // nought on (before it, the tap that opened it may still be arriving),
-  // until the camera is pulling back. A key on a control is the control's:
-  // Enter on `back` goes back.
-  const armed = from !== null && beat >= 1 && beat < 3 && !held
+  // A press anywhere that is not a control, or a key, from the moment the
+  // glass is up until it has landed: in the push-in or the wake the skip
+  // waits for the glass (Reveal.jsx `queued`), and in the pull-back it runs
+  // what is left faster. Only a press that begins after the film was put up
+  // counts, and never a key held down since, so the press that opened it,
+  // still arriving, is not taken for a skip. A key on a control is the
+  // control's (Enter on `back` goes back), and a modifier alone is on its
+  // way to something else: Shift before Shift+Tab skipped the film. `skip`
+  // stays a key through the pull-back for the same reason.
+  const [upAt] = useState(() => performance.now())
+  const armed = beat < 4 && !held
   useEffect(() => {
     if (!armed) return undefined
-    const onDown = (e) => { if (!e.target.closest('a, button')) onSkip() }
+    const onDown = (e) => { if (e.timeStamp >= upAt && !e.target.closest('a, button')) onSkip() }
     const onKey = (e) => {
+      if (e.repeat || e.timeStamp < upAt || ALONE.has(e.key)) return
       if (e.key === 'Escape' || e.key === 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.target.closest('a, button, input, textarea')) return
       onSkip()
@@ -518,7 +550,7 @@ export default function Film({
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [armed, onSkip])
+  }, [armed, onSkip, upAt])
 
   // the focus is the film's while it plays, so a reader is on the dialog and
   // a key lands here and not on the page behind it
@@ -538,7 +570,7 @@ export default function Film({
   }
   const keys = {
     l: { label: 'back', onClick: onBack, aria: 'back' },
-    r: { label: 'skip', onClick: onSkip, aria: 'skip to the notes', disabled: beat >= 3 },
+    r: { label: 'skip', onClick: onSkip, aria: 'skip to the notes', disabled: beat >= 4 },
   }
   const cls = [
     'wl-film', pushed && beat === 0 && 'is-pushing', !pushed && !held && beat === 0 && 'is-waking',

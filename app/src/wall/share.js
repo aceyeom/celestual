@@ -29,6 +29,7 @@ import { markCanvas } from './pixmark.js'
 import { copyText } from './handoff.js'
 import { letterMarks } from './schools.js'
 import { langOf, s40Face, ensureCjk } from './type.js'
+import { wrap, fit } from './wrap.js'
 
 const W = 1080
 const H = 1350
@@ -67,37 +68,9 @@ export function roundRect(g, x, y, w, h, r) {
   g.closePath()
 }
 
-// words wrapped to a width, the way the screen wraps them: at spaces, and
-// through a word that is longer than the line. `widthAt` is a width, or the
-// width of line i, since the lines beside a picture are shorter
-export function wrap(g, text, widthAt) {
-  const wAt = typeof widthAt === 'function' ? widthAt : () => widthAt
-  const out = []
-  for (const para of String(text).split('\n')) {
-    let line = ''
-    for (const word of para.split(/\s+/).filter(Boolean)) {
-      const next = line ? `${line} ${word}` : word
-      if (g.measureText(next).width <= wAt(out.length)) { line = next; continue }
-      if (line) out.push(line)
-      if (g.measureText(word).width <= wAt(out.length)) { line = word; continue }
-      let chunk = ''
-      for (const ch of word) {
-        if (g.measureText(chunk + ch).width > wAt(out.length)) { out.push(chunk); chunk = ch } else chunk += ch
-      }
-      line = chunk
-    }
-    out.push(line)
-  }
-  return out
-}
-
-// a line cut to a width with an ellipsis, as the status rows cut theirs
-export function fit(g, text, max) {
-  if (g.measureText(text).width <= max) return text
-  let t = Array.from(text)
-  while (t.length > 1 && g.measureText(`${t.join('')}…`).width > max) t = t.slice(0, -1)
-  return `${t.join('')}…`
-}
+// (the words wrapped to a width, and a line cut to one, are wrap.js's: the
+// mutual's picture lays its notes out with them where no canvas is, in
+// scripts/check-stories.mjs, as well as here)
 
 // ── the press, by hand ──────────────────────────────────────────────────────
 // a gaussian blur of `sd` pixels, across then down, of the luminance and of

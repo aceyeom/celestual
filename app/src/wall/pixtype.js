@@ -18,11 +18,20 @@
 // `s40Face`) shares the grid, and is loaded first (`readyType`), since a
 // canvas never asks for a face itself.
 //
-// Answers `{ cells, w, ends }`: the lit cells, each [x, y] from the pen's
-// start on the baseline (so a capital's top row is y -10), the width the
-// text advances, and the advance after each character, where a cursor
-// would stand once that character is typed. Worked out once for a text and
-// kept, and never in node, where there is no canvas to draw it on.
+// Answers `{ cells, w, ends, sure }`: the lit cells, each [x, y] from the
+// pen's start on the baseline (so a capital's top row is y -10), the width
+// the text advances, the advance after each character, where a cursor
+// would stand once that character is typed, and whether the phone's face
+// was there to cut them from. Worked out once for a text and kept, and
+// never in node, where there is no canvas to draw it on.
+//
+// Kept only when it is `sure`. A face that has not come within the reveal's
+// ceiling (`readyType`) is drawn in whatever the canvas falls back to, and
+// those cells were kept for the rest of the visit, and every story made
+// from them with them (Film.jsx), long after the face had come: on a cold
+// link on a slow network, `it's mutual.` in the wrong face until a reload.
+// Now a text cut without its face is cut again the next time it is asked
+// for, and the stories keep none of it either.
 
 import { s40Face, langOf, ensureCjk } from './type.js'
 
@@ -35,11 +44,28 @@ const TALL = 26
 
 const TYPED = new Map()
 
+// Whether the phone's face is there for a text. Asked of Jersey 10 alone,
+// for the reason `readyType` gives, and so a text in Korean, Japanese or
+// Chinese is taken as sure on Jersey's word: the film sets one only once
+// `readyType` has found its own face there, and credits the two @s
+// otherwise.
+export function faceIn(text) {
+  try {
+    return typeof document === 'undefined' || !document.fonts || !document.fonts.check
+      || document.fonts.check(`400 ${SIZE}px "Jersey 10"`, text)
+  } catch {
+    return true
+  }
+}
+
 export function typeCells(text) {
   const t = String(text ?? '')
   if (TYPED.has(t)) return TYPED.get(t)
-  const empty = { cells: [], w: 0, ends: [] }
+  const empty = { cells: [], w: 0, ends: [], sure: true }
   if (!t || typeof document === 'undefined') return empty
+  // (asked before it is drawn: a face that comes in between is then only
+  // cut again, and never kept from before it came)
+  const sure = faceIn(t)
   const cv = document.createElement('canvas')
   const g = cv.getContext('2d', { willReadFrequently: true })
   if (!g) return empty
@@ -66,8 +92,8 @@ export function typeCells(text) {
   for (let y = 0; y < cv.height; y++) {
     for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] >= 128) cells.push([x - X0, y - BASE])
   }
-  const out = { cells, w, ends }
-  TYPED.set(t, out)
+  const out = { cells, w, ends, sure }
+  if (out.sure) TYPED.set(t, out)
   return out
 }
 

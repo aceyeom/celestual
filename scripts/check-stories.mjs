@@ -39,11 +39,21 @@
 //      not run off its edge; and the keepsake's mark (`keepStory`), handed
 //      the film's clock 5500ms on, drawing the frame the film would, from
 //      the sentence said to where the camera has pulled all the way back.
+//   7  the keepsake's picture (keeplayout.js): with the notes on, however
+//      they were written, the phone and the signature under it inside the
+//      feed's crop, y 285 to 1635, with the mark at least five pixels to a
+//      cell: two notes of 280 characters, notes of many short lines, forty
+//      lines of a letter each, notes empty, and with nobody named. Nine
+//      short lines put the signature under the crop until the review of 28
+//      September, and forty took the foot of the phone off the picture.
 //
 // It reads the stories as functions of the clock, in node, with no page and
 // no canvas: the bodies and the notes are arithmetic until they are drawn,
-// and nothing asked for here is past the moment the mark is rasterised.
-// Exits non-zero on a failure.
+// and nothing asked for here is past the moment the mark is rasterised. The
+// picture is laid out with a measure that stands in for the face, each
+// character wider than most of Jersey 10's, so the notes here run to more
+// lines than the face would give them and the picture is tried harder than
+// the page tries it. Exits non-zero on a failure.
 //
 // Run: node scripts/check-stories.mjs
 import { join, dirname } from 'node:path'
@@ -335,6 +345,49 @@ function typed(text) {
   }
   if (odd !== null) fail(`the keepsake's mark is not the film's at ${odd}ms`)
   else pass(`the keepsake, handed the film's clock ${T.live}ms on, draws the film's frame from ${T.said}ms to ${T.land + 420}ms`)
+}
+
+// ── 7. the picture ──
+{
+  const { layoutOf, topOf, CROP_TOP, CROP_BOT, SIGN_GAP, SIGN_H } = await import(wall('keeplayout.js'))
+  // a canvas's measure, for the face: every character 0.6 of the size wide
+  // (Jersey 10's own run nearer half), a CJK one the whole size
+  const measure = {
+    font: '',
+    measureText(t) {
+      const f = Number((/(\d+(?:\.\d+)?)px/.exec(this.font) || [])[1]) || 16
+      return { width: [...t].reduce((w, ch) => w + (/[\u3000-\u9fff\uac00-\ud7af]/.test(ch) ? f : 0.6 * f), 0) }
+    },
+  }
+  const LONG = 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read. see you'
+  const lines = (n, w) => Array.from({ length: n }, (_, i) => 'abcdefghijklmnopqrstuvwxyz'.slice(0, w).padEnd(w, String(i % 10))).join('\n')
+  const NOTES = [
+    ['two notes of 280 characters', [LONG.slice(0, 280), LONG.slice(0, 280)]],
+    ['a line each', ['hi', 'i have wanted to say this since the second week of term.']],
+    ['nine short lines, and a note', [lines(9, 36), 'hi']],
+    ['nine short lines each', [lines(9, 36), lines(9, 36)]],
+    ['forty letters, one to a line, each', [lines(40, 1), lines(40, 1)]],
+    ['forty letters one to a line, and a long note', [lines(40, 1), LONG.slice(0, 280)]],
+    ['a hundred and forty blank lines', ['\n'.repeat(140), 'hi']],
+    ['both empty', ['', '']],
+    ['one empty, one of many lines', ['', lines(40, 1)]],
+    ['Korean, long', ['수업 끝나고 매번 말을 걸고 싶었어. '.repeat(10).slice(0, 280), LONG.slice(0, 280)]],
+  ]
+  let worst = null
+  for (const names of [['Jules', 'Ace'], null]) {
+    for (const [what, notes] of NOTES) {
+      for (const on of [true, false]) {
+        const L = layoutOf(measure, { names, notes: on ? notes : null })
+        const top = topOf(L)
+        const bottom = top + L.ph + SIGN_GAP + SIGN_H
+        const where = `the picture, ${what}${names ? '' : ', nobody named'}${on ? '' : ', the notes left off'}`
+        if (top < CROP_TOP || bottom > CROP_BOT) fail(`${where}: the phone and its signature run from y ${top} to ${bottom}, outside ${CROP_TOP} to ${CROP_BOT}`)
+        else if (L.mark < 5 * 75) fail(`${where}: the mark's panel is ${L.mark} tall, under five pixels to a cell`)
+        else if (!worst || bottom > worst[1]) worst = [where, bottom]
+      }
+    }
+  }
+  if (worst) pass(`the picture: every shape of notes inside the crop, the lowest ${worst[0]} at y ${worst[1]} of ${CROP_BOT}`)
 }
 
 process.exit(bad ? 1 : 0)

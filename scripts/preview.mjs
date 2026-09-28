@@ -1367,6 +1367,9 @@ const ROUTES = [
   // the same person beside it, and the reveal, which is the mutual's still
   { label: 'you-again',     path: '/berkeley/you', again: true, settle: 900 },
   { label: 'reveal-again',  path: '/reveal/jules.k?beat=4', again: true, settle: 4200 },
+  // and its options with that new note out: the row is the note, and not a
+  // new one over it
+  { label: 'reveal-again-options', path: '/reveal/jules.k?beat=4&keep=options', again: true, settle: 1400 },
   // ── the mutual as a film, and the keepsake it lands in (28 September) ──
   // The film held on its beats (Film.jsx `?film=`): pushed in out of a
   // slot's glass part way (`?slot=` stands in for the slot pressed, and a

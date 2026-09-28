@@ -323,6 +323,25 @@
   animation: none; opacity: 0; transition: opacity 420ms var(--ease-out);
 }
 
+/* ── the mails' line ──
+   The sentence the old reveal typed in the DOM under its mark, which the
+   reveal sets in the glass's own cells now (pixtype.js), but which every
+   mail's screen is still photographed with (scripts/darkroom.mjs, `say`):
+   `tap to sign in.` and the rest, in the phone's face and its ink, under
+   the mark gathered at the top of the glass, with the letter's cursor after
+   it. Taken out with the old reveal on 28 September, and every mail's
+   picture came out with its line in a corner and its mark pushed aside the
+   next time they were made; kept here for them, and for nothing on the
+   page. */
+.wl-mutual-say {
+  position: absolute; left: 0; right: 0; bottom: 5.5%; z-index: 1;
+  margin: 0; padding: 0 4cqw;
+  text-align: center; white-space: nowrap;
+  font: 400 12.4cqw/1 var(--f-s40); letter-spacing: 0.01em;
+  color: var(--s-ink); text-shadow: 0 0 0.35cqw var(--s-soft);
+}
+.wl-mutual-say .wl-scr-cur { margin-right: -0.214em; }
+
 /* ═══ the keepsake ════════════════════════════════════════════════════════
    Keepsake.jsx. One rose phone, held square, as wide as the column up to
    400 (346 on a phone of 390), and every size on it in `--su`, a hundredth
@@ -338,16 +357,34 @@
   container-type: inline-size;
 }
 :is(.wl-keep-strip, .wl-keep-foot) { --su: calc(min(100cqw, 400px) / 100); }
-.wl-keep-strip { position: relative; z-index: 1; width: calc(100 * var(--su)); }
+.wl-keep-strip { position: relative; z-index: 1; width: calc(100 * var(--su)); transform-origin: 0 0; }
 /* laid out and out of sight while the film plays, so the film can land on
    it: at no strength and not hidden, so the page has it painted by the time
    it lands (hidden, the whole phone was painted on the landing's frames, a
    third of them lost on a slow phone), and out of reach, since it is inert
-   and nothing presses through it; and out of sight while the slot's glass
-   flies in, until it unfolds */
-.wl-keep.is-hidden :is(.wl-keep-strip, .wl-keep-foot) { opacity: 0; pointer-events: none; }
-.wl-keep.is-flying:not(.is-landing) :is(.wl-keep-strip, .wl-keep-foot) { visibility: hidden; }
+   and nothing presses through it; and out of sight the same way while the
+   slot's glass flies in, until it unfolds. That one was hidden until the
+   review of 28 September, and the focus it is given on arriving, on their
+   note or the menu asked for, went nowhere */
+.wl-keep.is-hidden :is(.wl-keep-strip, .wl-keep-foot),
+.wl-keep.is-flying:not(.is-landing) :is(.wl-keep-strip, .wl-keep-foot) { opacity: 0; pointer-events: none; }
 .wl-keep.is-fading { animation: wl-fade 320ms var(--ease-out) both; }
+/* the unfold (Keepsake.jsx `unfold`): the strip's own edge is the cut while
+   it opens, and the lens in it has the squeeze undone. While the keepsake
+   waits for it, behind the film or under the slot's glass, the two are
+   layers of their own already and cut already, so the first frame of the
+   landing moves them and paints nothing; they go back into the page once
+   it has opened. The cut would take the phone's lit edge off with it, so it
+   leaves room for that where a browser can */
+.wl-keep-lens { transform-origin: 0 0; }
+.wl-keep:is(.is-hidden, .is-flying:not(.is-landing)) .wl-keep-strip,
+.wl-keep-strip.is-unfolding { overflow: hidden; will-change: transform; }
+.wl-keep:is(.is-hidden, .is-flying:not(.is-landing)) .wl-keep-lens,
+.wl-keep-strip.is-unfolding .wl-keep-lens { will-change: transform; }
+@supports (overflow-clip-margin: 1px) {
+  .wl-keep:is(.is-hidden, .is-flying:not(.is-landing)) .wl-keep-strip,
+  .wl-keep-strip.is-unfolding { overflow: clip; overflow-clip-margin: calc(1.6 * var(--su)); }
+}
 
 /* ── the light it throws ──
    Round the mark, where the film's glass lands: up as the camera pulls
@@ -446,7 +483,7 @@
 
 /* ── the lit key ──
    Under the phone, as wide as it, and docked to the foot of the window when
-   the phone is taller than the window */
+   the phone is taller than the window (not on a phone on its side, below) */
 .wl-keep-foot {
   position: sticky; bottom: 0; z-index: 2;
   width: calc(100 * var(--su));
@@ -456,13 +493,17 @@
 .wl-keep-foot a.wl-pill { text-decoration: none; }
 
 /* ── landing ──
-   Out of the film, or out of the slot's glass: the phone unfolds out of its
-   mark (Keepsake.jsx, a clip on the strip), both notes wake on one frame,
-   the backlight coming up under their words the way a screen's does, and
-   the corner key and the lit key come a beat after. Never one note before
-   the other. */
-.wl-keep.is-landing .wl-keep-note > * { animation: wl-wake-light 620ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both; }
+   Out of the film: the phone unfolds out of its mark (Keepsake.jsx, two
+   transforms on the strip), both notes wake on one frame, the backlight
+   coming up under their words the way a screen's does, and the corner key
+   and the lit key come a beat after. Never one note before the other. Out
+   of the slot's glass, the way somebody opens their keepsake most days, the
+   notes are simply there as the phone opens, and the lit key comes 80ms
+   behind it in 200: it had the film's landing too, after its flight, and the
+   notes were a second from the press. */
+.wl-keep.is-landing:not(.is-flying) .wl-keep-note > * { animation: wl-wake-light 620ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both; }
 .wl-keep.is-landing .wl-keep-foot { animation: wl-fade 260ms var(--ease-out) 240ms both; }
+.wl-keep.is-landing.is-flying .wl-keep-foot { animation-duration: 200ms; animation-delay: 80ms; }
 
 /* the slot's glass, flying to the mark: the rose panel under the slot's
    sleeping light, waking as it comes */
@@ -479,29 +520,50 @@
 
 /* ── on a desk ──
    The phone is the row: their note, the mark and yours side by side, the
-   notes as tall as the mark, and the lit key under the mark. The corner key
-   stands in the corner of the room, where every sheet's does on a spread. */
+   notes as tall as the mark and in the middle of their panels, and the lit
+   key under the mark. The corner key stands in the corner of the room,
+   where every sheet's does on a spread. The row stops at 960: at the width
+   of the room less its margins it was 1164 by 476 on a laptop, a banner with
+   its two notes in its top corners and its two soft keys a room apart, and
+   not a phone (the review of 28 September, which also had the notes stood
+   at the top of their panels, with the pink under them empty). Only the
+   keepsake takes the room's width: `sign in to read it.` and `nothing
+   here.` stand in the middle of it in the column they always had, since
+   the keepsake's width was given to every state of the sheet and those two
+   stood at the top of the room over a key as wide as it. */
 @media (min-width: 900px) {
-  .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: none; }
+  .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: 1000px; min-height: 0; margin: auto; padding-bottom: 40px; }
+  .wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { max-width: none; min-height: 100%; margin: 0 auto; padding-bottom: 0; }
   .wl-reveal .wl-head { position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); right: 28px; padding: 0; z-index: 4; }
   .wl-keep { padding: 40px 0 24px; }
   :is(.wl-keep-strip, .wl-keep-foot) { --su: 4px; }
-  .wl-keep-strip { width: min(1164px, calc(100vw - 80px)); }
+  .wl-keep-strip { width: min(960px, calc(100vw - 80px)); }
   .wl-keep-foot { width: 320px; padding-top: 24px; background: none; }
   .wl-keep-body { display: grid; grid-template-columns: minmax(0, 1fr) calc(100 * var(--su)) minmax(0, 1fr); }
   .wl-keep-mark { border-block: 0; border-inline: 2px solid var(--s-bot); }
-  .wl-keep-note { min-height: 0; }
+  .wl-keep-note { min-height: 0; justify-content: center; }
+  .wl-keep-words.is-none { flex: 0 0 auto; }
 }
-/* a phone on its side: the row, round a smaller mark, the column scrolling
-   under a docked key */
+/* A phone on its side: the row, round a smaller mark, and the whole of it
+   and the lit key inside a window 390 high, the corner key in the corner
+   beside the phone and not over it. The key is not docked here: docked, it
+   stood over the foot of the mark and `it's mutual.` on every way in, and
+   over the soft keys once the film had landed (the review of 28 September).
+   A phone whose notes are longer than the window scrolls to its key. */
 @media (max-height: 560px) and (min-width: 600px) and (orientation: landscape) {
-  .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: none; }
-  :is(.wl-keep-strip, .wl-keep-foot) { --su: 3px; }
-  .wl-keep-strip { width: min(1000px, calc(100vw - 40px)); }
-  .wl-keep-foot { width: 300px; }
+  .wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { max-width: none; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .wl-reveal .wl-head {
+    position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px));
+    padding: 0; z-index: 4;
+  }
+  .wl-keep { padding: 0; }
+  :is(.wl-keep-strip, .wl-keep-foot) { --su: 2.5px; }
+  .wl-keep-strip { width: min(1000px, calc(100vw - 128px)); }
+  .wl-keep-foot { position: static; width: 300px; padding: 10px 0 calc(4px + env(safe-area-inset-bottom, 0px)); background: none; }
   .wl-keep-body { display: grid; grid-template-columns: minmax(0, 1fr) calc(100 * var(--su)) minmax(0, 1fr); }
   .wl-keep-mark { border-block: 0; border-inline: 2px solid var(--s-bot); }
-  .wl-keep-note { min-height: 0; }
+  .wl-keep-note { min-height: 0; justify-content: center; }
+  .wl-keep-words.is-none { flex: 0 0 auto; }
 }
 
 /* ── still ──

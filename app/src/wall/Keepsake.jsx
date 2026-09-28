@@ -28,11 +28,12 @@
 //            its own (the owner cut all three)
 //
 // Its two soft keys are the phone's: `options` (write them a new note, or
-// take it off your list) and `share` (a picture of it). Every menu, the
-// question before taking it off and every note after a press stand in the
-// mark's place, as a phone put a menu on its screen, and the two notes stay
-// in view beside them. Under the phone, the one lit key: their Instagram,
-// which is where this product's part ends.
+// open the one already out on them since, or take it off your list) and
+// `share` (a picture of it). Every menu, the question before taking it off
+// and every note after a press stand in the mark's place, as a phone put a
+// menu on its screen, and the two notes stay in view beside them. Under the
+// phone, the one lit key: their Instagram, which is where this product's
+// part ends.
 //
 // ── taking it off ───────────────────────────────────────────────────────────
 // A mutual is kept on both lists for good (0072), and taking it off is
@@ -55,16 +56,25 @@ import { SheetFoot, Pill } from './parts.jsx'
 import { I_COLS, I_ROWS, NOTE } from './pixmark.js'
 import { atHandle } from './data.js'
 import { langOf } from './type.js'
+import { bezier } from './Film.jsx'
 import { forgetMutual } from './pings.js'
+import { editNote } from './screens/Ping.jsx'
 import { prepareMutual, isMutualReady, shareMutual, canShareFiles } from './keepshare.js'
 
 const LOOK = { tint: 'rose' }
 const EASE = 'cubic-bezier(0.16, 1, 0.30, 1)'
 const EASE_OUT = 'cubic-bezier(0.22, 0.61, 0.36, 1)'
-// how it unfolds out of its mark, and the beats after it (mutual.css)
+// How it unfolds out of its mark, on `--ease` read a step at a time, and the
+// beats after it (mutual.css): out of the film in 380ms; out of the slot's
+// glass, a flight of 360ms with the phone opening under it from 150ms, in
+// 280ms, and the glass gone into it 90ms after it lands, all of it in 450
+const UNFOLD_AT = bezier(0.16, 1, 0.30, 1)
+const UNFOLD_STEPS = 30
 const UNFOLD_MS = 380
-const FLY_MS = 480
-const FLY_OUT = 140
+const UNFOLD_FLY_MS = 280
+const FLY_MS = 360
+export const FLY_OPENS = 150
+const FLY_OUT = 90
 // how long `taken off.` stands before the screen sleeps
 const GONE_MS = 900
 
@@ -107,7 +117,7 @@ function Note({ who, text, size, side, innerRef }) {
 
 export default function Keepsake({
   me, them, p, names, first, seed, stamp, story, from = null, at = null,
-  state = 'rest', enter = 'fade', fly = null, menu = null, standing = false,
+  state = 'rest', enter = 'fade', fly = null, menu = null, standing = null,
   go, onGone, apiRef, escRef,
 }) {
   const box = useRef(null)
@@ -115,6 +125,8 @@ export default function Keepsake({
   const mark = useRef(null)
   const theirs = useRef(null)
   const light = useRef(null)
+  const coming = useRef(null)
+  const lens = useRef(null)
   const lay = useRef(null)
   const [view, setView] = useState(() => (menu ? { kind: menu, at: 0 } : null))
   const [notesOn, setNotesOn] = useState(true)
@@ -188,6 +200,11 @@ export default function Keepsake({
         { opacity: 0.75, transform: 'translate3d(-50%, -50%, 0) scale(1)' },
       ], { duration: ms, easing: EASE_OUT, fill: 'forwards' })
       if (paused !== null) { a.pause(); a.currentTime = Math.min(ms, paused) }
+      coming.current = a
+    },
+    // and as much faster as the film, when a skip quickens the pull-back
+    quicken(rate) {
+      try { if (coming.current) coming.current.updatePlaybackRate(rate) } catch { /* finished */ }
     },
   }), [])
 
@@ -196,28 +213,67 @@ export default function Keepsake({
   // of its mark as the film goes out over it, both notes waking on one frame
   // and the keys after (`landing`, mutual.css). Out of the slot, when the
   // film has been seen: the slot's glass flies to the mark and the phone
-  // unfolds out of it the same way (`fly`). Otherwise it comes up where it
-  // stands (`fade`), and under reduced motion that is all that moves.
+  // unfolds out of it while it is still arriving, the notes simply there as
+  // it opens and the lit key a beat behind, the whole of it in under half a
+  // second (`fly`); it was the film's landing again, after a flight, and a
+  // reader who opens their keepsake most days waited a second for its notes.
+  // Otherwise it comes up where it stands (`fade`), and under reduced motion
+  // that is all that moves.
+  //
+  // The unfold is two transforms, as the film's pull-back is (Film.jsx
+  // `pull`): the strip moved and squeezed onto its mark and cut by its own
+  // edge (`is-unfolding`), the lens in it squeezed back, so the phone stands
+  // still where it is and only the cut opens, worked out a step at a time
+  // along the curve. It was a clip-path, which the page draws again on every
+  // frame, until the review of 28 September held it to DESIGN.md's
+  // transforms and opacities.
   const [landing, setLanding] = useState(false)
-  const unfold = () => {
+  const unfold = (ms) => {
     const el = strip.current
+    const ln = lens.current
     const mk = mark.current
-    if (!el || !mk || !el.animate) return
+    if (!el || !ln || !mk || !el.animate) return
     const sr = el.getBoundingClientRect()
     const mr = mk.getBoundingClientRect()
-    const inset = `inset(${mr.top - sr.top}px ${sr.right - mr.right}px ${sr.bottom - mr.bottom}px ${mr.left - sr.left}px)`
-    el.animate([{ clipPath: inset }, { clipPath: 'inset(0px 0px 0px 0px)' }], { duration: UNFOLD_MS, easing: EASE })
+    const W = sr.width
+    const H = sr.height
+    if (!W || !H) return
+    const x0 = mr.left - sr.left
+    const y0 = mr.top - sr.top
+    const cut = []
+    const back = []
+    for (let i = 0; i <= UNFOLD_STEPS; i++) {
+      const offset = i / UNFOLD_STEPS
+      const e = UNFOLD_AT(offset)
+      // the part of the strip seen, `e` of the way from the mark to all of it
+      const x = x0 * (1 - e)
+      const y = y0 * (1 - e)
+      const kx = (mr.width + (W - mr.width) * e) / W
+      const ky = (mr.height + (H - mr.height) * e) / H
+      cut.push({ offset, transform: `translate(${x}px, ${y}px) scale(${kx}, ${ky})` })
+      back.push({ offset, transform: `scale(${1 / kx}, ${1 / ky}) translate(${-x}px, ${-y}px)` })
+    }
+    // (the strip's class is its own and never changes, so React leaves this
+    // one where it is put)
+    el.classList.add('is-unfolding')
+    const a = el.animate(cut, { duration: ms })
+    ln.animate(back, { duration: ms })
+    const done = () => el.classList.remove('is-unfolding')
+    a.finished.then(done, done)
   }
   useLayoutEffect(() => {
     if (state !== 'landing') return
-    unfold()
+    unfold(UNFOLD_MS)
     setLanding(true)
     // the focus the film had (its keys, or the dialog) goes to their note
     const a = document.activeElement
     if (theirs.current && (!a || a === document.body || a.closest('.wl-film'))) theirs.current.focus({ preventScroll: true })
   }, [state])
   // arriving any other way, a reader starts on their note too, unless a
-  // menu was asked for and has the focus already
+  // menu was asked for and has the focus already. Out of the slot the phone
+  // is there to be focused while the glass flies, at no strength and not
+  // hidden (mutual.css): hidden, the focus asked for on arriving went
+  // nowhere, and the keyboard was left on the page's body with the menu up
   useEffect(() => {
     if (enter === 'film' || menu || !theirs.current) return
     theirs.current.focus({ preventScroll: true })
@@ -225,7 +281,8 @@ export default function Keepsake({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // the slot's glass, flying to the mark: laid over where the mark is and
-  // scaled down onto the slot, then let go to its own size
+  // scaled down onto the slot, then let go to its own size, and the phone
+  // unfolding out from under it once it is most of the way there
   const flier = useRef(null)
   const [flying, setFlying] = useState(enter === 'fly' && !!fly)
   useLayoutEffect(() => {
@@ -239,7 +296,7 @@ export default function Keepsake({
     const a = el.animate([{ transform: start }, { transform: 'none' }], { duration: FLY_MS, easing: EASE, fill: 'both' })
     const veil = el.firstChild
     if (veil && veil.animate) veil.animate([{ opacity: 0.38 }, { opacity: 0 }], { duration: FLY_MS, easing: EASE_OUT, fill: 'both' })
-    const t = setTimeout(() => { unfold(); setLanding(true) }, 300)
+    const t = setTimeout(() => { unfold(UNFOLD_FLY_MS); setLanding(true) }, FLY_OPENS)
     a.finished.then(() => {
       const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FLY_OUT, easing: 'linear', fill: 'forwards' })
       out.finished.then(() => { if (here.current) setFlying(false) }, () => {})
@@ -266,10 +323,17 @@ export default function Keepsake({
   }, [rest])
 
   // ── the menus ──
+  // Writing to them again is a new note, unless one is already out on them
+  // since the mutual, and then it is that note, opened as itself to change
+  // its words or let it go (Ping.jsx `editNote`): offered as a new one, it
+  // opened a composer saying the note was already out, over the mutual's
+  // old words (the review of 28 September)
   const back = () => setView(null)
   const n0 = names[0]
   const optionItems = [
-    { t: `send ${n0} a new note`, run: () => go('ping', them) },
+    standing
+      ? { t: `your new note to ${n0}`, run: () => editNote(go, them, standing.line) }
+      : { t: `send ${n0} a new note`, run: () => go('ping', them) },
     { t: 'take it off my list', run: () => setView({ kind: 'confirm' }) },
   ]
   // The picture: first names only, or none; the notes unless they are left
@@ -385,7 +449,7 @@ export default function Keepsake({
     keys = {
       l: {
         label: 'options', onClick: () => setView({ kind: 'options', at: 0 }),
-        aria: `options: send ${n0} a new note, or take it off your list`,
+        aria: `options: ${standing ? `your new note to ${n0}` : `send ${n0} a new note`}, or take it off your list`,
       },
       r: {
         label: 'share', onClick: () => { if (story) prepareMutual(face()); setView({ kind: 'share', at: 0 }) },
@@ -410,21 +474,24 @@ export default function Keepsake({
     <div className={cls} ref={box} style={{ '--lx': `${spot.lx}px`, '--ly': `${spot.ly}px` }}>
       <span className="wl-keep-light" ref={light} aria-hidden="true" />
       <div className="wl-keep-strip" ref={strip} inert={hidden || undefined} aria-hidden={hidden || undefined}>
-        <Screen look={LOOK} seed={seed} top={top} keys={keys} live={!hidden} className="wl-keep-scr" style={phone}>
-          <div className="wl-keep-body">
-            <Note who={names[0]} text={p.theirLine} size={words} side="theirs" innerRef={theirs} />
-            <div className="wl-keep-mark" ref={mark}>
-              {story ? (
-                <PixelStory
-                  story={story} crisp from={from} at={over ? paused.current : at}
-                  onLayout={(l) => { lay.current = l }}
-                />
-              ) : null}
-              {over ? <div className="wl-keep-over">{over}</div> : null}
+        {/* the squeeze undone while the strip unfolds (`unfold`) */}
+        <div className="wl-keep-lens" ref={lens}>
+          <Screen look={LOOK} seed={seed} top={top} keys={keys} live={!hidden} className="wl-keep-scr" style={phone}>
+            <div className="wl-keep-body">
+              <Note who={names[0]} text={p.theirLine} size={words} side="theirs" innerRef={theirs} />
+              <div className="wl-keep-mark" ref={mark}>
+                {story ? (
+                  <PixelStory
+                    story={story} crisp from={from} at={over ? paused.current : at}
+                    onLayout={(l) => { lay.current = l }}
+                  />
+                ) : null}
+                {over ? <div className="wl-keep-over">{over}</div> : null}
+              </div>
+              <Note who={names[1]} text={p.line} size={words} side="yours" />
             </div>
-            <Note who={names[1]} text={p.line} size={words} side="yours" />
-          </div>
-        </Screen>
+          </Screen>
+        </div>
       </div>
       <SheetFoot className="wl-keep-foot">
         <Pill

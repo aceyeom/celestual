@@ -79,11 +79,14 @@ So the one way to be rid of it is `take it off my list`, asked once as `take
 it off your list?`, and the question says what it does and does not do: "it
 leaves your list for good. Jules keeps theirs and is not told." The keys are
 `take it off` and `keep it`, and after it, `taken off.`. Writing to them
-again is `send Jules a new note`, a new note and not a reply to the old one.
+again is `send Jules a new note`, a new note and not a reply to the old one;
+once one is out, the same row is `your new note to Jules`, and opens that
+note, since offering a new one over it said something that was not so.
 The picture of a mutual is shared like a letter's (`share`, `to someone`,
 `save the picture`), and carries both notes unless the person says `leave the
 notes off`, which then reads `put the notes back`. It names the two by their
-first names or not at all, never by an @, and it carries no link.
+first names or not at all, never by an @, and it carries no link; a picture
+that names nobody says whose each note is as `from them` and `from me`.
 
 ---
 

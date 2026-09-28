@@ -17,91 +17,30 @@
 // Never a handle and never a link: the picture is passed round among
 // people, and the reveal's own address says `nothing here.` to anybody but
 // the two of them. First names only, and none at all unless both are known,
-// so a picture never names one of them and not the other.
+// so a picture never names one of them and not the other; then the band has
+// the one status row, and the notes are `from them` and `from me`.
 //
 // 1080 by 1920, the size a story takes, with everything that matters inside
 // the middle 1080 by 1350 (y 285 to 1635), which is the size a feed crops a
 // post to: the phone and the signature under it are centred in that band,
-// and nothing is ever outside it.
+// and nothing is ever outside it, however the notes were written
+// (keeplayout.js, which lays it out, and says how).
 //
 // Drawn the way share.js draws a letter, with its own hand (`glyph`,
-// `wrap`, `backlight`, `signature`, `grainOver`): paths and text and one
+// `backlight`, `signature`, `grainOver`, and wrap.js): paths and text and one
 // canvas of cells, never an image the canvas could be tainted by, and made
 // on the phone that asks for it. The mark is the keepsake's still frame
 // (pixmark.js `keepStory`), painted by PixelStory.jsx `paintStill`.
 
 import { skinOf, quirks, rgbTileReady } from './looks.js'
-import { glyph, roundRect, wrap, fit, backlight, signature, grainOver, imageOf, rgba, SERIF, WORD } from './share.js'
+import { glyph, roundRect, backlight, signature, grainOver, imageOf, rgba, SERIF, WORD } from './share.js'
+import { fit } from './wrap.js'
+import { W, H, PX, PW, SU, GUTTER, SIGN_GAP, SIGN_H, PAD, CAP_GAP, LINE, capOf, faceOf, layoutOf, topOf } from './keeplayout.js'
 import { paintStill } from './PixelStory.jsx'
 import { I_COLS, I_ROWS, NOTE } from './pixmark.js'
-import { langOf, s40Face, ensureCjk } from './type.js'
+import { langOf, ensureCjk } from './type.js'
 
-const W = 1080
-const H = 1920
-// the feed's crop, the band everything that matters stands in
-const CROP_TOP = 285
-const CROP_BOT = 1635
-// the phone: 840 wide, and every size on it in the keepsake's own unit, a
-// hundredth of its width (mutual.css `--su`)
-const PX = 120
-const PW = 840
-const SU = PW / 100
-const TOP = Math.round(25.8 * SU)
-const GUTTER = 5
-// the signature under the phone, and the room between them
-const SIGN_GAP = 76
-const SIGN_H = 52
 const ROSE = skinOf('rose')
-
-// The notes' words, as large as both will go at one size: a line or two of
-// each at the largest, the whole of two notes of 280 characters at the least
-const WORDS = [56, 52, 48, 44, 40, 37, 34, 32, 30, 28, 26]
-const PAD = Math.round(4 * SU)
-const CAPTION = Math.round(5.2 * SU)
-// whose it is, never larger than what they wrote: at the smallest words the
-// caption comes down with them, to a size still read at a glance
-const capOf = (f) => Math.max(24, Math.min(CAPTION, Math.round(f * 0.8)))
-const CAP_GAP = Math.round(2.4 * SU)
-// the mark's panel: never smaller than five pixels to a cell of the story,
-// and no taller than it needs to be
-const MARK_MIN = 5 * I_ROWS + 10
-const MARK_MAX = 8 * I_ROWS + 38
-
-const faceOf = (text) => s40Face(text)
-const LINE = 1.02
-
-// A note's height at word size `f`, and its lines. An empty note is the
-// sealed note's glyph over a line saying so
-function noteOf(g, text, f, width) {
-  if (!text) return { lines: null, h: PAD + (capOf(f) + CAP_GAP) + Math.round(7 * SU + 2 * SU + 6.2 * SU) + PAD }
-  g.font = `400 ${f}px ${faceOf(text)}`
-  const lines = wrap(g, text, width)
-  return { lines, h: PAD + capOf(f) + CAP_GAP + Math.round(lines.length * f * LINE) + PAD }
-}
-
-// Where everything goes, for the picture with the notes and without them
-function layoutOf(g, o) {
-  const inner = PW - 2 * PAD
-  if (!o.notes) {
-    const foot = Math.round(14 * SU)
-    const mark = 663
-    const ph = TOP + mark + foot
-    return { f: 0, notes: null, mark, foot, ph }
-  }
-  const foot = Math.round(10 * SU)
-  const most = CROP_BOT - CROP_TOP - 30 - SIGN_GAP - SIGN_H
-  let pick = null
-  for (const f of WORDS) {
-    const a = noteOf(g, o.notes[0], f, inner)
-    const b = noteOf(g, o.notes[1], f, inner)
-    pick = { f, a, b }
-    if (TOP + a.h + b.h + 2 * GUTTER + MARK_MIN + foot <= most) break
-  }
-  const room = most - TOP - pick.a.h - pick.b.h - 2 * GUTTER - foot
-  const mark = Math.max(MARK_MIN, Math.min(MARK_MAX, room))
-  const ph = TOP + pick.a.h + GUTTER + mark + GUTTER + pick.b.h + foot
-  return { f: pick.f, notes: [pick.a, pick.b], mark, foot, ph }
-}
 
 // The sealed note, as the stories draw it, `h` tall with its top left at
 // (x, y)
@@ -124,7 +63,7 @@ function drawPhone(o, L, tile) {
   g.save()
   edge()
   // where the mark's panel is, whose middle the backlight is brightest at
-  const markY = TOP + (L.notes ? L.notes[0].h + GUTTER : 0)
+  const markY = L.top + (L.notes ? L.notes[0].h + GUTTER : 0)
   const my = markY + L.mark / 2
   // the panel: the rose, round that hot spot, an ellipse 120% by 95% of
   // the phone (screen.css `.wl-scr-bg`)
@@ -139,11 +78,11 @@ function drawPhone(o, L, tile) {
   g.fillRect(-PW, -4 * ph, 2 * PW, 8 * ph)
   g.restore()
   // the bands, and the two dark lines of glass between the notes and the mark
-  const tg = g.createLinearGradient(0, 0, 0, TOP)
+  const tg = g.createLinearGradient(0, 0, 0, L.top)
   tg.addColorStop(0, ROSE.top)
   tg.addColorStop(1, ROSE.top2)
   g.fillStyle = tg
-  g.fillRect(0, 0, PW, TOP)
+  g.fillRect(0, 0, PW, L.top)
   g.fillStyle = ROSE.bot
   g.fillRect(0, ph - L.foot, PW, L.foot)
   if (L.notes) {
@@ -168,7 +107,8 @@ function drawPhone(o, L, tile) {
       g.fillText(o.stamp, (ex + aw + PW - ex - bw) / 2, r1 + 0.4 * SU)
     }
     // the two of them, theirs first, each cut before it takes more than its
-    // share of the row; nobody when either first name is not known
+    // share of the row; nobody when either first name is not known, and then
+    // no row for them (keeplayout.js `TOP_ALONE`)
     if (o.names) {
       const [a, b] = o.names
       const size = 11 * SU
@@ -200,12 +140,10 @@ function drawPhone(o, L, tile) {
     g.shadowColor = ROSE.soft
     g.shadowBlur = 0.35 * SU * 2
     g.fillStyle = ink
-    if (who) {
-      g.globalAlpha = 0.72
-      g.font = `400 ${capOf(L.f)}px ${faceOf(who)}`
-      g.fillText(`from ${who}`, PAD, y + PAD)
-      g.globalAlpha = 1
-    }
+    g.globalAlpha = 0.72
+    g.font = `400 ${capOf(L.f)}px ${faceOf(who)}`
+    g.fillText(`from ${who}`, PAD, y + PAD)
+    g.globalAlpha = 1
     const wy = y + PAD + capOf(L.f) + CAP_GAP
     if (n.lines) {
       g.font = `400 ${L.f}px ${faceOf(text)}`
@@ -220,9 +158,13 @@ function drawPhone(o, L, tile) {
     }
     g.restore()
   }
+  // Whose each is: the two first names, or with nobody named, `them` and
+  // `me`, since the picture is only ever drawn by the one whose note is the
+  // lower. Until the review of 28 September a picture that named nobody
+  // said nothing over either note, and which was whose was lost
   if (L.notes) {
-    const [a, b] = o.names || [null, null]
-    drawNote(o.notes[0], a, L.notes[0], TOP)
+    const [a, b] = o.names || ['them', 'me']
+    drawNote(o.notes[0], a, L.notes[0], L.top)
     drawNote(o.notes[1], b, L.notes[1], markY + L.mark + GUTTER)
   }
 
@@ -293,9 +235,8 @@ export async function renderMutual(o) {
   const g = cv.getContext('2d')
   const L = layoutOf(g, o)
   // the phone and the signature under it, one block in the middle of the
-  // feed's crop (never above its top)
-  const block = L.ph + SIGN_GAP + SIGN_H
-  const top = Math.max(CROP_TOP + 15, Math.round(CROP_TOP + (CROP_BOT - CROP_TOP - block) / 2))
+  // feed's crop (keeplayout.js)
+  const top = topOf(L)
   const { cv: phone, my, q } = drawPhone(o, L, tile)
   g.fillStyle = '#000'
   g.fillRect(0, 0, W, H)
