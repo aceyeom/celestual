@@ -4354,6 +4354,21 @@ a.wl-lq { text-decoration: none; }
 .wl-ping-prove .wl-gate-fault { text-align: center; }
 .wl-ping.is-proof .wl-write-foot { padding-top: 14px; }
 .wl-ping.is-proof .wl-door { padding-top: 8px; }
+/* a new note to somebody this person is mutual with says one line more under
+   the screen, that the mutual stays theirs, over which ping the note spends:
+   the two in a column, and the screen gives up that line's height, so the key
+   under it stays in view on a short phone. Said on the column's own class and
+   not asked of it with a :has(), which restyles the page for every change */
+.wl-ping-floor { flex-direction: column; align-items: center; gap: 6px; }
+.wl-ping-kept { color: var(--ash); text-align: center; text-wrap: balance; }
+.wl-ping.is-again .wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 356px - var(--notch)) / 1.22))); }
+/* a note's settings, while its phone asks whether to let it go: the answer is
+   on the phone's own keys, so the foot keeps its place, and nothing under the
+   phone moves, but is not there to be seen, pressed or tabbed to */
+.wl-ping .wl-write-foot.is-held { visibility: hidden; }
+/* and the question on the glass set in balanced lines, since the shorter one
+   a note that was not this time asks left `it.` alone on the second */
+.wl-ping.is-line .wl-scr-note span { text-wrap: balance; }
 /* ── on a spread, one column ──
    The composer stands its screen beside the question on a spread, because
    the colours need the column beside it. The ping has no colours to choose,
@@ -4368,6 +4383,10 @@ a.wl-lq { text-decoration: none; }
   .wl-write.wl-ping:has(.wl-write-card) > .wl-write-step { display: block; }
   .wl-write.wl-ping:has(.wl-write-card) .wl-write-card .wl-scene {
     width: min(100%, 440px, max(250px, calc((100svh - 330px - var(--notch)) / 1.22)));
+  }
+  /* and a line less of it for a new note to a mutual, as on the phone */
+  .wl-write.wl-ping.is-again .wl-write-card .wl-scene {
+    width: min(100%, 440px, max(250px, calc((100svh - 356px - var(--notch)) / 1.22)));
   }
 }
 

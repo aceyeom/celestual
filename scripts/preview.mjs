@@ -1293,6 +1293,42 @@ const ROUTES = [
   { label: 'ping-cold-home', path: '/@pilar.echevarria',
     acts: [['wait', 3200], ['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1400],
            ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 1600]], settle: 1200 },
+  // a note's settings (screens/Ping.jsx `editNote`), opened off its own
+  // screen on the account: a running note's words to change, the key lit
+  // once they have, the phone asking whether to let it go, and the new words
+  // sent; and one that was not this time, going out again on a ping
+  { label: 'ping-edit',     path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)']], settle: 1400 },
+  { label: 'ping-edit-changed', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', 'you were the one singing on the 51B that night. i hoped it was for me.']], settle: 900 },
+  { label: 'ping-edit-let-go', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet']], settle: 900 },
+  { label: 'ping-edit-gone', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet'], ['wait', 500],
+           ['click', '.wl-ping .wl-sk.is-l']], settle: 1600 },
+  { label: 'ping-edit-done', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', 'you were the one singing on the 51B that night. i hoped it was for me.'],
+           ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-edit-lapsed', path: '/berkeley/you',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)']], settle: 1400 },
+  { label: 'ping-edit-lapsed-let-go', path: '/berkeley/you',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet']], settle: 900 },
+  // somebody this person is mutual with, written to again (0072): on the
+  // list of the people written to, from a link, and sent, which is "sent
+  // privately." as any note; and with a note of theirs running beside the
+  // mutual, which is only that note, its words changed in place (`again`)
+  { label: 'ping-again-who', path: '/berkeley/ping', settle: 1400 },
+  { label: 'ping-again',    path: '/berkeley/ping/jules.k', settle: 1400 },
+  { label: 'ping-again-done', path: '/berkeley/ping/jules.k',
+    acts: [['wait', 900], ['fill', '.wl-ping textarea', 'still the same seat on thursdays, if you want it.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-again-both', path: '/berkeley/ping/jules.k', again: true, settle: 1400 },
   // ── the person ──
   // The bar's face opens it: the pings, the drafts, the letters. A standing
   // ping opened onto its own screen, its options, and letting it go asked.
