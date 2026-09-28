@@ -1320,15 +1320,30 @@ const ROUTES = [
   { label: 'ping-edit-lapsed-let-go', path: '/berkeley/you',
     acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-write-foot .wl-quiet']], settle: 900 },
+  // and a running note's words all taken off, which the key says, and the
+  // screen it ends on does not call new words
+  { label: 'ping-edit-bare', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', '']], settle: 900 },
+  { label: 'ping-edit-bare-done', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', ''], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // somebody this person is mutual with, written to again (0072): on the
   // list of the people written to, from a link, and sent, which is "sent
-  // privately." as any note; and with a note of theirs running beside the
-  // mutual, which is only that note, its words changed in place (`again`)
+  // privately." as any note; the mutual opened off it and come back from,
+  // with the words where they were (`back`); and with a note of theirs
+  // running beside the mutual, which is that note's settings, as any running
+  // note chosen is, with its dot back to who it is for (`again`)
   { label: 'ping-again-who', path: '/berkeley/ping', settle: 1400 },
   { label: 'ping-again',    path: '/berkeley/ping/jules.k', settle: 1400 },
   { label: 'ping-again-done', path: '/berkeley/ping/jules.k',
     acts: [['wait', 900], ['fill', '.wl-ping textarea', 'still the same seat on thursdays, if you want it.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  { label: 'ping-again-back', path: '/berkeley/ping/jules.k',
+    acts: [['wait', 900], ['fill', '.wl-ping textarea', 'still the same seat on thursdays, if you want it.'], ['click', '.wl-ping .wl-write-foot .wl-quiet'],
+           ['wait', 1600], ['back', 1400]], settle: 1400 },
   { label: 'ping-again-both', path: '/berkeley/ping/jules.k', again: true, settle: 1400 },
+  { label: 'ping-again-both-changed', path: '/berkeley/ping/jules.k', again: true,
+    acts: [['wait', 900], ['fill', '.wl-ping textarea', 'and again, after all of it: the same seat, thursday, the one by the window.']], settle: 900 },
   // ── the person ──
   // The bar's face opens it: the pings, the drafts, the letters. A standing
   // ping opened onto its own screen, its options, and letting it go asked.
@@ -1993,6 +2008,9 @@ for (const r of list) {
     // whatever the last one drew.
     for (const [act, sel, arg, more] of r.acts || []) {
       if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      // the browser's own back, as a person takes it off a sheet another
+      // opened over this one, and then `sel` to let what it lands on settle
+      if (act === 'back') { await page.goBack().catch(() => {}); await page.waitForTimeout(Number(sel) || 900); continue }
       // until the page says so, for a frame inside a movement nothing
       // pressed started: `sel` is the expression, `arg` how long to wait
       if (act === 'until') { await page.waitForFunction(sel, null, { timeout: Number(arg) || 6000 }).catch(() => {}); continue }

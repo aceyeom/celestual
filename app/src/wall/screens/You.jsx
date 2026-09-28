@@ -533,7 +533,7 @@ function PingScreen({ p, me, go, onBack, onChange }) {
 
   const items = [
     ...(gone ? [{ t: 'send it again', run: again }] : ahead ? [] : [{ t: 'keep it for next week', run: keep }]),
-    { t: gone ? 'send it with new words' : 'change the words', run: () => editNote(go, p.to, p.line) },
+    { t: gone ? 'send it with new words' : 'change the words', run: () => editNote(go, p.to, p.line, p) },
     { t: 'let it go', run: () => setMode('ask') },
   ]
   const sel = Math.min(at, items.length - 1)

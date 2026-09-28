@@ -135,7 +135,9 @@ import { sendCampusCode, checkCampusCode, loadPending } from '../handoff.js'
 import { sendLink, linkStatus } from '../../api/eduverify.js'
 import { sessionToken } from '../../api/identity.js'
 import { signOut as dropProof } from '../../api/auth.js'
-import { myHandle, canPlace, readyToPlace, place, forgetPings, endsWords, waitForPings } from '../pings.js'
+import {
+  myHandle, canPlace, readyToPlace, place, placeAgain, myPings, liveOf, mutualOf, forgetPings, endsWords, waitForPings,
+} from '../pings.js'
 import { schoolOf, slugOfDomain } from '../schools.js'
 import { Sticker } from '../Sticker.jsx'
 import { useProve, ProveDoor } from './Ping.jsx'
@@ -642,6 +644,15 @@ export default function Write({
   }
 
   // ── sending it privately ──
+  // To somebody this person is already mutual with, and has nothing running
+  // on, the note is a new one, and goes out through `placeAgain` (0072), as
+  // it does from the note's own sheet (screens/Ping.jsx): `place` on a mutual
+  // answers as the mutual and writes nothing, and until the review of 28
+  // September this said "sent privately." over nothing, to exactly the
+  // person the owner asked to be able to write to again. Which it is is
+  // asked of this person's own list at the press, and a list that cannot be
+  // read is not guessed at: its no is the send's, the DM asked again for a
+  // proof refused and the line to try again for the rest.
   const [adopted, setAdopted] = useState(null)
   const proof = useProve({
     use: 'write', held: igHeld,
@@ -660,7 +671,11 @@ export default function Write({
     if (me && me === target) { setSaid(PING_SAY.self); setStep('how'); return }
     setSending(true)
     setSaid('')
-    const out = await place({ me, them: target, proof: spent || heldProof(me), words: body.trim() })
+    const proofNow = spent || heldProof(me)
+    const list = await myPings({ handle: me, proof: proofNow })
+    if (!alive.current) return
+    const anew = list.ok && !!mutualOf(list, target) && liveOf(list, target)?.state !== 'standing'
+    const out = !list.ok ? list : await (anew ? placeAgain : place)({ me, them: target, proof: proofNow, words: body.trim() })
     if (!alive.current) return
     setSending(false)
     if (!out.ok) {

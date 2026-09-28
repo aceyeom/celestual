@@ -44,8 +44,16 @@
 // to keep, and a quiet key that opens it. It spends a ping like any new note
 // and goes out through `placeAgain`, since `place` on a mutual answers as the
 // mutual and writes nothing, and it ends on the same "sent privately." A
-// mutual with a note running beside it is only that note, whose words change
-// in place as any running note's do.
+// mutual with a note running beside it is only that note, and a running note
+// is its own settings however its person was reached (below).
+//
+// The quiet key keeps the words on the screen for the way back (`AWAY`), and
+// a sheet the mutual itself raised (the keepsake's "send … a new note")
+// steps back down onto it rather than stacking a second telling over the
+// first, where the browser can say what stands under this sheet (the
+// Navigation API; where it cannot, a second one opens, and back unwinds
+// both). The words were lost there, and the mutual stacked on itself, until
+// the review of 28 September.
 //
 // ── what this sheet never does ──────────────────────────────────────────────
 // It does not say whether the person is on celestual. It does not say whether
@@ -69,6 +77,7 @@ import {
 import { Screen, ScreenDraft, ScreenNote, RoomLight } from '../screen.jsx'
 import { Dots, Ecliptic, Provider } from '../art.jsx'
 import { normHandle, validHandle, atHandle, loadMine } from '../data.js'
+import { href } from '../router.js'
 import { colourOf, stampOf } from '../looks.js'
 import { heldProof, refresh } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
@@ -153,15 +162,58 @@ function clearOurs(use) {
 // September this was only the words, sent again as if the note were new, and
 // letting one go was on another screen; the owner asked for one place where
 // a note is changed or taken down. Held for the one mount it is for.
+//
+// With the note as the screen that opened it drew it (`note`, the ping
+// itself, optional), so the first frame knows which of the two it is before
+// the list has come; the list, once it has, is the word on it. Opened with
+// neither, the sheet says nothing it cannot know: "change your note. they
+// only read it if it's mutual.", no date, no cost, and the key unlit until
+// the list says which. Until the review of 28 September it took the note to
+// be running, and a lapsed one opened after the held list had gone (pings.js
+// `heldPings`) was told "it stays sealed till saturday" and "new words cost
+// nothing" over a send that spent a ping.
+//
+// A running note reached any other way (the list of people written to, the
+// field, a link, the keepsake's "send … a new note") is the same settings,
+// since it is the same note and the owner asked for one place to change it:
+// until that review it was drawn as a new one to them, "write them a note."
+// and "send it privately", over words that only ever changed in place. It
+// keeps the dot back to who it is for, since they were chosen from among
+// others there, and a note let go from it closes the sheet onto whatever it
+// was raised over.
 let EDIT = null
-export function editNote(go, to, line) {
-  EDIT = { to: normHandle(to), line: String(line || '') }
+export function editNote(go, to, line, note = null) {
+  const words = String(line || '')
+  EDIT = {
+    to: normHandle(to), line: words,
+    note: note && note.state !== 'mutual' ? { to: normHandle(to), state: note.state, expires: note.expires || 0, at: note.at || 0, line: words } : null,
+  }
   go('ping', to)
 }
 function takeEdit(prefill) {
   const e = EDIT
   EDIT = null
   return e && e.to === normHandle(prefill) ? e : null
+}
+// the words on a new note to a mutual, kept while the mutual is open over
+// them, for the one mount after it
+let AWAY = null
+function takeAway(prefill) {
+  const a = AWAY
+  AWAY = null
+  return a && a.to === normHandle(prefill) ? a : null
+}
+// The address of the entry under this one, where the browser can say (the
+// Navigation API), and '' where it cannot or the entry is not the wall's.
+function underThis() {
+  try {
+    const nav = window.navigation
+    const at = nav && nav.currentEntry ? nav.currentEntry.index : -1
+    const e = at > 0 ? nav.entries()[at - 1] : null
+    return e && e.url ? new URL(e.url).pathname.replace(/\/+$/, '') : ''
+  } catch {
+    return ''
+  }
 }
 
 function resume(prefill) {
@@ -332,10 +384,10 @@ export function ProveDoor({ p, headId, title, say, onAsk }) {
 // list that stands under an empty field and the one that replaces it as a
 // name is typed are one object. Each row is one press, and every press is
 // that person's screen: a person with nothing out, for a note; a note that
-// is standing, carrying its line, since placing it again keeps it to its
-// reveal and takes a new line if one is written; and somebody this person is
-// mutual with and has nothing running on, for a new note, which the row
-// says (`rowOf`). That last one opened the reveal, until 0072 kept mutuals.
+// is standing, its settings, carrying its line, which changes in place to
+// its reveal; and somebody this person is mutual with and has nothing
+// running on, for a new note, which the row says (`rowOf`). That last one
+// opened the reveal, until 0072 kept mutuals.
 function Written({ people, rowOf, onPick }) {
   const [more, setMore] = useState(false)
   const [lit, setLit] = useState(-1)
@@ -379,8 +431,10 @@ export default function Ping({
   // a note that waited on pings and was not sent (pings.js `waitForPings`):
   // opened again on its person, it has its words back
   const [kept] = useState(() => { const w = waitingNote(); return w && w.kind === 'send' && w.to === pre ? w : null })
+  // and a new note to a mutual left for the mutual a moment ago (`AWAY`)
+  const [away] = useState(() => takeAway(pre))
   const [to, setTo] = useState(() => held?.to || pre)
-  const [line, setLine] = useState(() => held?.line || edit?.line || kept?.line || '')
+  const [line, setLine] = useState(() => held?.line || edit?.line || kept?.line || away?.line || '')
   // whose note had its words put on the screen (`editNote`, or a name chosen
   // with a note out on it): a line cleared of them takes them off the note.
   // A line that was only ever empty sends no words, and keeps what was there
@@ -473,21 +527,31 @@ export default function Ping({
   const floor = tooLong ? `eighty words, and that is ${words(line).length}` : ''
   const ready = canPlace()
   const total = ready || adopted ? 2 : 3
+  // whether the sheet was opened on this person's note (`editNote`), from
+  // the private notes
+  const pinned = !!edit && edit.to === h
   // what this person has on the one on the screen: their note, running or
-  // not this time, and whether the two are mutual
-  const live = liveOf(pings, h)
+  // not this time, off the list, or as the screen that opened its settings
+  // drew it until the list comes; and whether the two are mutual
+  const live = liveOf(pings, h) || (pinned && !pings ? edit.note : null)
   // the again mode: mutual, and no note of theirs running, so what goes out
   // is a new note (`placeAgain`), under words that say so
   const again = !!mutualOf(pings, h) && live?.state !== 'standing'
-  // a note's settings, while the note is there. A list read since that has
-  // no note of theirs on them (it went mutual at its reveal, or was let go
-  // on another phone) turns the sheet into a note to them, which is what is
-  // true; one not read yet is taken at `editNote`'s word
-  const editing = !!edit && edit.to === h && (!pings || !!live)
+  // a note's settings, while the note is there: opened on it, or a note
+  // running on the person chosen. A list read since that has no note of
+  // theirs on them (let go on another phone; one gone mutual is the reveal's,
+  // below) turns the sheet into a note to them, which is what is true
+  const editing = pinned ? !pings || !!live : step !== 'who' && live?.state === 'standing'
+  // and one opened on its note is to that one person: no way back to who
+  const alone = pinned && editing
+  // settings opened before the list, with nothing to say which note it is
+  const unsure = editing && !live
   const gone = editing && live?.state === 'lapsed'
   // a running note's own words, unchanged, are not sent, and the key that
-  // would send them is not lit
-  const same = editing && !gone && line.trim() === edit.line.trim()
+  // would send them is not lit; cleared, they come off the note
+  const was = live ? live.line || '' : pinned ? edit.line : ''
+  const same = editing && !gone && line.trim() === was.trim()
+  const bare = editing && !gone && !unsure && !line.trim() && !!was.trim()
   // this week's pings, as the server last said them, and whether sending to
   // this person spends one: a note already running on them is only new
   // words, and a new note to a mutual is a new note
@@ -517,9 +581,10 @@ export default function Ping({
   }, [])
 
   // A person, chosen: their screen, carrying the line of the note of theirs
-  // on them if there is one, running or not this time. Somebody this person
-  // is mutual with is their screen too, for a new note; it used to open onto
-  // the reveal, when a mutual could not be written to again.
+  // on them if there is one, running or not this time, and a running one's
+  // screen is its settings. Somebody this person is mutual with is their
+  // screen too, for a new note; it used to open onto the reveal, when a
+  // mutual could not be written to again.
   const choose = (x) => {
     const k = normHandle(x)
     if (!validHandle(k)) return
@@ -540,6 +605,18 @@ export default function Ping({
     const n = liveOf(pings, h)
     if (n && n.line) { setLine(n.line); shown.current = h }
   }, [pings, h, step]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A note's settings whose note went mutual after the screen that opened
+  // them drew it (its reveal came in between) are no note to change, and a
+  // mutual is not told by a line under a screen: the reveal tells it, as it
+  // always has, once, and the way back from it is their screen for a new
+  // note. It turned quietly into that screen, the words meant for the old
+  // note on it and "the mutual stays yours to keep." the first word of it.
+  const told = useRef(false)
+  useEffect(() => {
+    if (told.current || !pinned || !pings || liveOf(pings, h) || !mutualOf(pings, h)) return
+    told.current = true
+    go('reveal', h)
+  }, [pings, pinned, h, go])
 
   // ── the proof ──
   const proof = useProve({
@@ -573,20 +650,19 @@ export default function Ping({
   // pressed before it had one (or the note goes out under another @ than the
   // one it was read for): `place` on a mutual writes nothing and answers as
   // the mutual, so a guess would have said "sent privately." over nothing.
+  // A list that cannot be read is not guessed at either: the read's own no
+  // is the send's, the DM asked again for a proof refused and the line to
+  // send it again for the rest.
   async function send(from, spent) {
     const me = normHandle(from)
     if (placing) return
     setPlacing(true)
     setSaid('')
     const proofNow = spent || heldProof(me)
-    let list = me === myHandle() ? pings : null
-    if (!list) {
-      const got = await myPings({ handle: me, proof: proofNow })
-      if (!alive.current) return
-      if (got.ok) list = got
-    }
-    const anew = !!mutualOf(list, h) && liveOf(list, h)?.state !== 'standing'
-    const out = await (anew ? placeAgain : place)({
+    const list = (me === myHandle() && pings) || await myPings({ handle: me, proof: proofNow })
+    if (!alive.current) return
+    const anew = list.ok && !!mutualOf(list, h) && liveOf(list, h)?.state !== 'standing'
+    const out = !list.ok ? list : await (anew ? placeAgain : place)({
       me, them: h, proof: proofNow, words: line.trim() || (shown.current === h ? '' : undefined),
     })
     if (!alive.current) return
@@ -650,7 +726,7 @@ export default function Ping({
     }
     if (step === 'line') {
       if (tooLong) { shake(); return }
-      if (same || ask) return
+      if (same || unsure || ask) return
       // none left this week, as far as this device was last told: the
       // paywall now, rather than a send the server would refuse
       if (noneLeft && canPlace()) {
@@ -676,20 +752,20 @@ export default function Ping({
     if (step === 'proof') proof.ask(h)
   }
 
-  // the dots: back to the name, back to the line. A note's settings are to
-  // one person, so there they are the line and the proof, and none at all
-  // when there is no proof to ask for, since one dot is no steps
+  // the dots: back to the name, back to the line. A note's settings opened
+  // on it are to one person, so there they are the line and the proof, and
+  // none at all when there is no proof to ask for, since one dot is no steps
   const dotAt = step === 'who' ? 0 : step === 'line' ? 1 : 2
   const goDot = (i) => {
     if (placing) return
     if (step === 'proof') proof.drop()
     setSaid('')
     setAdopted(null)
-    if (i === 0 && !editing) { setSettled(false); setStep('who') }
+    if (i === 0 && !alone) { setSettled(false); setStep('who') }
     if (i === 1) setStep('line')
   }
   const dots = step === 'done' || step === 'buy' ? null
-    : !editing ? <Dots n={total} at={dotAt} onGo={goDot} />
+    : !alone ? <Dots n={total} at={dotAt} onGo={goDot} />
     : total > 2 ? <Dots n={total - 1} at={dotAt - 1} onGo={(i) => goDot(i + 1)} />
     : null
 
@@ -698,10 +774,11 @@ export default function Ping({
   // words its screen on the account asks it in (screens/You.jsx), with the
   // answer on the phone's soft keys, the keeping one first under the focus
   // and under Escape. Then the sheet goes back onto the private notes, where
-  // the note no longer is. A note that was not this time has spent its ping
-  // on the night it was not, so only a running one says it gives it back;
-  // and one that went mutual as it was let go is not let go (0069), which
-  // the list it lands on tells.
+  // the note no longer is, or, reached from anywhere else, back onto what it
+  // was raised over. A note that was not this time has spent its ping on the
+  // night it was not, so only a running one says it gives it back, and one
+  // not known yet to be either says nothing of it; and one that went mutual
+  // as it was let go is not let go (0069), which the list it lands on tells.
   const letGo = async () => {
     if (placing) return
     setPlacing(true)
@@ -712,11 +789,27 @@ export default function Ping({
     if (!out.ok && out.error !== 'mutual') { setAsk(false); setSaid('let'); shake(); return }
     forgetPings()
     if (waitingNote()?.to === h) dropWaiting()
-    toNotes()
+    if (pinned) toNotes()
+    else if (sheet.current) sheet.current.dismiss('let')
+    else up()
   }
   const toNotes = () => {
     if (sheet.current) sheet.current.dismiss('notes')
     else { by.current = 'notes'; leave() }
+  }
+
+  // ── the mutual, opened ──
+  // The quiet key on a new note to a mutual (the file's header says why it
+  // steps down rather than up when the mutual is what is under it). The
+  // words go with it and come back with the next screen on them.
+  const openMutual = () => {
+    AWAY = { to: h, line }
+    if (window.history.state?.wallPushed && underThis() === href('reveal', h)) {
+      if (sheet.current) sheet.current.dismiss('mutual')
+      else up()
+      return
+    }
+    go('reveal', h)
   }
   useEffect(() => {
     if (!ask) return
@@ -816,13 +909,19 @@ export default function Ping({
     // lines: a note to them; a new one to somebody this person is mutual
     // with, which only opens if they send a new one too; or, on a note's
     // settings, that it is that note being changed, running to its reveal,
-    // or going out again after a night that was not this time.
+    // or going out again after a night that was not this time, and before
+    // the list has said which, only what is true of both. A running note
+    // "stays sealed till this saturday" until the review of 28 September,
+    // which read as if it opened then; it runs till then, and opens only if
+    // it is mutual. And new words are new words: a note whose words were all
+    // taken off went out as "new words, sent privately." over none.
     body = (
       <>
         <Display size="s" as="h2" id="wl-ping-h" className="wl-write-h">
-          {done ? (editing && !gone ? <>new words,<br />sent privately.</> : <>sent privately.</>)
+          {done ? (editing && !gone && line.trim() ? <>new words,<br />sent privately.</> : <>sent privately.</>)
             : editing && gone ? <>send it again.<br />they only read it<br />if it&rsquo;s mutual.</>
-            : editing ? <>change your note.<br />it stays sealed<br />till {endsWords(live?.expires) || 'saturday'}.</>
+            : editing && unsure ? <>change your note.<br />they only read it<br />if it&rsquo;s mutual.</>
+            : editing ? <>change your note.<br />it runs till<br />{endsWords(live?.expires) || 'saturday'}.</>
             : again ? <>write them a new note.<br />they only read it<br />if they send one too.</>
             : <>write them a note.<br />they only read it<br />if it&rsquo;s mutual.</>}
         </Display>
@@ -844,8 +943,9 @@ export default function Ping({
                 is being written, and the day it was placed once it is out,
                 as on a letter that is up (screen.jsx `stamp`), or, for words
                 changed in place, the day the note itself went out. A note's
-                settings have no way back to the name, and ask on this glass
-                whether to let the note go, answered on its soft keys. */}
+                settings opened on it have no way back to the name, and any
+                note's settings ask on this glass whether to let the note go,
+                answered on its soft keys. */}
             <Screen
               look={null} seed={seed} live state={dip}
               top={{
@@ -858,7 +958,7 @@ export default function Ping({
               } : {
                 r: line
                   ? { label: 'clear', onClick: clearOne, keepFocus: true, aria: 'take a character back' }
-                  : editing ? null
+                  : alone ? null
                   : { label: 'back', onClick: () => goDot(0), aria: `for ${atHandle(h)}. change who it is for` },
               }}
             >
@@ -868,7 +968,7 @@ export default function Ping({
                 </ScreenNote>
               ) : ask ? (
                 <ScreenNote title="let it go?">
-                  {gone ? 'they never find out you sent it.' : 'this gives its ping back. they never find out you sent it.'}
+                  {live?.state === 'standing' ? 'this gives its ping back. they never find out you sent it.' : 'they never find out you sent it.'}
                 </ScreenNote>
               ) : (
                 <ScreenDraft
@@ -878,9 +978,11 @@ export default function Ping({
               )}
             </Screen>
             {/* Under the screen, what went wrong, or the question the DM
-                put, or which ping the note spends. A new note to a mutual
-                says first, in one line, that the mutual stays theirs as it
-                was: the note is a new one beside it, not in its place. */}
+                put, or which ping the note spends, and nothing of it while
+                a note's settings do not know yet whether it spends one. A
+                new note to a mutual says first, in one line, that the mutual
+                stays theirs as it was: the note is a new one beside it, not
+                in its place. */}
             <div className={`wl-write-floor${again && !editing && !done ? ' wl-ping-floor' : ''}`} aria-live="polite">
               {floor || said ? <Label className="wl-write-caught">{floor || SAY[said]}</Label>
                 : adopted ? <Label className="wl-ping-ask">the code came from {atHandle(adopted.handle)}. send it from that account?</Label>
@@ -890,7 +992,7 @@ export default function Ping({
                     <Label tone="dim" className="wl-ping-kept">the mutual stays yours to keep.</Label>
                     {week ? <Label tone="dim" className="wl-ping-which">{pingWords(week)}</Label> : null}
                   </>
-                ) : week ? (
+                ) : week && !unsure ? (
                   <Label tone="dim" className="wl-ping-which">
                     {spends ? pingWords(week) : 'already out. new words cost nothing.'}
                   </Label>
@@ -909,7 +1011,10 @@ export default function Ping({
   // key says what becomes of the words, and the quiet one lets the note go;
   // while the phone asks that, the foot keeps its place and shows nothing,
   // since the answer is on the phone's own keys. On a new note to a mutual
-  // the quiet key opens the mutual, which stays where it was.
+  // the quiet key opens the mutual, which stays where it was. A sheet opened
+  // from the private notes goes back down to them, whatever it ended on;
+  // the week full raised a second account over this one until the review of
+  // 28 September.
   let act = null
   let quiet = null
   if (step === 'who') {
@@ -921,25 +1026,25 @@ export default function Ping({
   } else if (step === 'line') {
     act = (
       <Pill
-        tone="light" onClick={next} disabled={!validHandle(h) || same} aria-busy={placing || undefined}
+        tone="light" onClick={next} disabled={!validHandle(h) || same || unsure} aria-busy={placing || undefined}
         icon={!ready && !adopted && !placing ? <Provider size={17} /> : null}
       >
         {placing ? 'sending'
           : adopted ? `send it as ${atHandle(adopted.handle)}`
           : noneLeft && ready ? 'get more pings'
           : !ready ? 'next'
-          : editing ? (gone ? 'send it again' : 'send the new words')
+          : editing ? (gone ? 'send it again' : bare ? 'send it with no words' : 'send the new words')
           : 'send it privately'}
       </Pill>
     )
     quiet = adopted ? (
       <button type="button" className="wl-quiet" onClick={() => { setAdopted(null); setStep('proof') }}>not that account</button>
     ) : said === 'full' ? (
-      <button type="button" className="wl-quiet" onClick={() => go('you')}>your private notes</button>
+      <button type="button" className="wl-quiet" onClick={pinned ? toNotes : () => go('you')}>your private notes</button>
     ) : editing ? (
       <button type="button" className="wl-quiet" onClick={() => { setSaid(''); setAsk(true) }} disabled={placing}>let it go</button>
     ) : again ? (
-      <button type="button" className="wl-quiet" onClick={() => go('reveal', h)}>open the mutual</button>
+      <button type="button" className="wl-quiet" onClick={openMutual}>open the mutual</button>
     ) : null
   } else if (step === 'proof') {
     quiet = proof.dm ? (
@@ -947,7 +1052,7 @@ export default function Ping({
     ) : (
       <button type="button" className="wl-quiet" onClick={() => goDot(1)}>back to the note</button>
     )
-  } else if (editing) {
+  } else if (pinned) {
     act = <Pill tone="light" onClick={toNotes}>your private notes</Pill>
     quiet = <button type="button" className="wl-quiet" onClick={another}>send another</button>
   } else {
