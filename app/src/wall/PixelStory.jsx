@@ -109,6 +109,11 @@
 // (`paintCrisp`), its pink a pixel to a block of four cells and painted
 // when the page is idle (`spreadBlocks`), and the unlit dots laid as one
 // tile (`ghostGrid`, which every story now does, to the same pixels).
+//
+// `dots` off leaves those unlit dots to the page: the keepsake's glass runs
+// on past the mark's panel, round the two notes, and lays the dots over all
+// of it itself (mutual.css `.wl-keep-body`), on the cells `onLayout` names,
+// so the panel the film lands on is no rectangle of dots on a plain glass.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
@@ -944,11 +949,13 @@ function paintFine(g, f, s, region = null) {
   // (the unlit dots are a few per cent of the ink, and are not drawn again
   // for each step of the ink toward the rose's: at that strength the two
   // inks are one grey)
-  if (!s.grid) ghostGrid(s)
+  // (and none at all where the page lays them itself, `dots`)
+  const dots = s.dots !== false
+  if (dots && !s.grid) ghostGrid(s)
   if (f.wash && s.blocks) spreadBlocks(g, f.wash, s)
   else if (f.wash) spreadOn(g, f.wash, s)
   if (f.glow) for (const gl of [].concat(f.glow)) glowOn(g, gl, s)
-  g.drawImage(s.grid, 0, 0)
+  if (dots) g.drawImage(s.grid, 0, 0)
   // the lit cells, by their fill; a cell lit twice keeps the stronger
   const d = cell - gap
   const seen = s.seen && s.seen.length === pc * pr ? s.seen : (s.seen = new Float32Array(pc * pr))
@@ -1140,7 +1147,7 @@ export function paintStill(canvas, frame, { cols, rows, ink = '#131313' } = {}) 
   return layoutOf(s, 1)
 }
 
-export default function PixelStory({ story, at = null, from = null, mode = 'pixel', className = '', crisp = false, onLayout = null }) {
+export default function PixelStory({ story, at = null, from = null, mode = 'pixel', className = '', crisp = false, dots = true, onLayout = null }) {
   const box = useRef(null)
   const cv = useRef(null)
   // told where the glass is laid out, whenever it is laid out again
@@ -1189,7 +1196,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         spectrum: story.spectrum || null, front: story.spectrum ? null : story.front || FRONT_RGB,
         // (a spectrum laid across the glass, or each colour an equal share)
         axis: story.axis ?? null, even: !!story.even,
-        face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
+        face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii', dots,
         // a crisp story's pink a block to a pixel (`spreadBlocks`), unless it is
         // two colours or more, which only the intro's is, and it is never crisp
         blocks: crisp && !story.spectrum,
@@ -1304,7 +1311,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       document.removeEventListener('visibilitychange', onVis)
       if (ro) ro.disconnect()
     }
-  }, [story, mode, crisp])
+  }, [story, mode, crisp, dots])
 
   return (
     <div className={`wl-story ${className}`} ref={box} aria-hidden="true">

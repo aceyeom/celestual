@@ -24,11 +24,13 @@
 //                    and a girl run in from either edge; the catch, the
 //                    phone turning rose, the two of them becoming the mark,
 //                    and `it's mutual.` typed under it. Then the camera pulls
-//                    back, and the glass closes down onto the middle of one
+//                    back, and the glass closes down onto the head of one
 //                    rose phone
-//   2  the keepsake  (Keepsake.jsx) that phone: the night it was told and
-//                    the two names on its status rows, their note, the mark,
-//                    still alive, and your note, one strip of glass. Its keys
+//   2  the keepsake  (Keepsake.jsx) that phone: the night it was told on
+//                    its status row, the mark still alive at the head of the
+//                    glass with the two names under it, and the two notes
+//                    under them, each on the face its writer left it on, one
+//                    glass with nothing cutting it. Its keys
 //                    are the phone's: `options` (write them a new note, or
 //                    take it off your list) and `share` (a picture of all of
 //                    it, keepshare.js), and under it the one lit key, their
