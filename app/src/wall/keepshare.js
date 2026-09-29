@@ -42,7 +42,7 @@
 // (pixmark.js `keepStory`), painted by PixelStory.jsx `paintStill`.
 
 import { skinOf, quirks, rgbTileReady } from './looks.js'
-import { glyph, roundRect, backlight, signature, grainOver, imageOf, rgba, SERIF, WORD } from './share.js'
+import { glyph, roundRect, backlight, signature, grainOver, imageOf, rgba } from './share.js'
 import {
   W, H, PX, PW, SU, BAND, SIDE, NOTE_W, INSET, HEAD, HEAD_END, BAT_H, BAT_W, WORDS_TOP, FROM_LOW,
   SEAL_H, SEAL_GAP, SEAL_SAY, NAME_UP, NAME_GAP, SIGN_GAP, SIGN_H, LINE, capOf, faceOf, layoutOf, topOf, storyFoot,
@@ -324,7 +324,6 @@ export async function renderMutual(o) {
   if (document.fonts && document.fonts.load) {
     if (langOf(words)) await ensureCjk()
     try { await document.fonts.load(`400 92px ${faceOf(words)}`, words) } catch { /* the fallback, then */ }
-    try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
   const tile = await imageOf(await rgbTileReady(lookOf(o)))
   const cv = document.createElement('canvas')

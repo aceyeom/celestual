@@ -37,10 +37,6 @@ const H = 1350
 // letter's own language (type.js `s40Face`), worked out per letter
 // (`drawScreen`, `renderLetter`) as the page works it out by `lang`
 const faceOf = (o) => s40Face(`${o.text} ${o.salutation || ''} ${o.name || ''}`)
-// the face the signature's word was set in, before it was drawn (below,
-// `signature`)
-export const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
-
 export const rgba = (hex, a) => {
   const [r, g, b] = hexRgb(hex)
   return `rgba(${r}, ${g}, ${b}, ${a})`
@@ -614,10 +610,9 @@ export function imageOf(url) {
 // and a tainted canvas cannot be made into a file. It lands on whole pixels,
 // so no cell is ever smeared across two.
 //
-// `WORD` and `SERIF` were the word's size and face. Nothing here sets type in
-// them now; they stay exported because the mutual's picture (keepshare.js)
-// still names them when it waits for its faces.
-export const WORD = 46
+// The word was set in the serif, at 46 pixels, until the brand moved onto
+// the grid; nothing sets type in it now, and the mutual's picture no longer
+// waits for it.
 const CELL = 2
 const SIGN_Y = H - 86
 const SIGN_ALPHA = 0.9
