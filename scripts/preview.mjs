@@ -1033,7 +1033,9 @@ const RPC = {
         } : NOTES === 'none' ? { card: { words: '' }, their_card: { words: '' } }
           : NOTES === 'cjk' ? {
             card: { words: 'i have wanted to say this since the second week of term.' },
-            their_card: { words: '수업 끝나고 매번 말을 걸고 싶었어. 금요일에 도서관 계단에서 기다릴게.' },
+            // and a line of their own across its top, in Korean, which is
+            // set at the size its width needs and the other note's with it
+            their_card: { words: '수업 끝나고 매번 말을 걸고 싶었어. 금요일에 도서관 계단에서 기다릴게.', greet: '금요일에 도서관 계단에서 기다리는 너에게', bat: 2 },
           } : {
             card: { words: 'i have wanted to say this since the second week of term.' },
             their_card: { words: 'i kept nearly saying something after class and then not saying it.' },

@@ -1127,8 +1127,10 @@ const layoutOf = (s, dpr) => ({ cell: s.cell, gap: s.gap, dpr, pc: s.pc, pr: s.p
 // mutual's picture (keepshare.js). The cell is the largest whole number of
 // the canvas's pixels that fits the story's grid, the panel's unlit dots run
 // edge to edge round it, and it is drawn the fine way (`paintFine`), its
-// light behind the mark included.
-export function paintStill(canvas, frame, { cols, rows, ink = '#131313' } = {}) {
+// light behind the mark included. `dots` off leaves the dots to the caller,
+// as the keepsake's glass does (the picture lays them over the whole of its
+// glass, on these cells).
+export function paintStill(canvas, frame, { cols, rows, ink = '#131313', dots = true } = {}) {
   const g = canvas && canvas.getContext('2d')
   if (!g) return null
   const W = canvas.width
@@ -1140,7 +1142,7 @@ export function paintStill(canvas, frame, { cols, rows, ink = '#131313' } = {}) 
   const s = {
     pc, pr, ox: (pc - cols) >> 1, oy: (pr - rows) >> 1, cell,
     gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
-    ink, rgb, fills: new Map(), W, H, mx: (W - pc * cell) >> 1, my: (H - pr * cell) >> 1,
+    ink, rgb, fills: new Map(), W, H, mx: (W - pc * cell) >> 1, my: (H - pr * cell) >> 1, dots,
   }
   s.ghost = faint(rgb)
   paintFine(g, frame, s)
