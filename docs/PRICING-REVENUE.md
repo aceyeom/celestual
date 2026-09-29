@@ -22,6 +22,13 @@ it was written.
 - **What gives one back.** Letting a running note go gives back every ping it
   holds for a reveal still to come, free or bought, and a note that turns out
   mutual gives back what it held for a reveal after the one that told it.
+  And since 29 September (migration 0075) a night that was not mutual gives
+  back every ping it held: a bought one comes back on hand, to keep, and a
+  free one comes back as one extra free ping for the week after, one a person
+  a week and never more. So a bought ping is used only by a mutual; what a
+  person buys is a chance at one, never a night that told nobody anything.
+  The revenue this costs is the point: paying for silence was the one thing
+  on the ledger nobody could call honest.
 - **What stays free, whatever anybody buys.** The free ping every reveal, the
   reveal itself, finding out it is mutual, letting a note go, the wall, the
   opt out, erasure and every proof (Instagram, a school address, an alert

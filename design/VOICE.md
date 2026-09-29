@@ -45,6 +45,9 @@ equivalent.
 | count me in | sign up, join the waitlist, register |
 | a ping (what a note spends: one free every week, more bought) | credit, token, quota, slot |
 | get pings, add more pings | buy now, top up, unlock more |
+| not this time (a night that was not mutual) | no match, rejected, unrequited, they didn't respond |
+| came back, an extra (a ping a night that was not mutual gave back) | refund, credit, bonus, reward |
+| share celestual (a generic invite: the wall's how it works door) | invite them, tell them to join, refer a friend |
 
 A ping is a ping in the code, on the desk and in the docs, and never a "lil
 ping". On the wall it is what it now literally is: a note sent privately
@@ -137,6 +140,13 @@ banned at the copy level, not only the policy level.
 **Resolution, never pursuit.** Copy is about settling a feeling, never about
 chasing a person. Silence is the product working, not a failure of it.
 
+A night that was not mutual is the test of all four at once (29 September,
+app/src/wall/Night.jsx). It says `not this time.` and then answers the one
+fear first (nobody was told), says both things the silence can mean and that
+celestual will never say which, and says exactly what came back of the ping.
+It never names or hints at the other person, never asks the reader to chase
+them, and its share is the wall's own door with nobody in it.
+
 ---
 
 ## 5. Errors
@@ -198,6 +208,9 @@ to rather than guessing at one.
 | lapses in 4 days. still feel it? | Your entry expires soon. Renew now. |
 | this gives its ping back. they never find out you sent it. | Are you sure you want to delete? |
 | this week’s ping is spent. get 3 pings · $8.97 | You’ve hit your limit. Upgrade to Premium! |
+| not this time. nobody was told you sent it, and nobody ever will. | They didn't match with you. Better luck next time! |
+| they didn't send you one by saturday 9pm, or they aren't reachable here yet. celestual never says which, on purpose. | @maya isn't on celestual yet. Invite her to join! |
+| your free ping came back as an extra for this week. | We've credited 1 bonus ping to your account. |
 | the rest is yours. celestual's part is done. | Start chatting now. |
 | celestual opens at reed when 300 are in. current count: 214. | Join the hottest new app on campus. |
 

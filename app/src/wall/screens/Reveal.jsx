@@ -79,11 +79,17 @@
 // row that happens to name them.
 //
 // ── and when there is nothing to show ───────────────────────────────────────
+// A note of this person's own to them that was not mutual on its night is
+// something to show, and since 29 September it is shown: the note's screen
+// as the private notes draw it (You.jsx `NoteScreen`), opened on its night's
+// report (Night.jsx): `not this time.`, nobody was told, they did not send
+// one or are not reachable here yet and celestual never says which, and what
+// came back of its ping (0075). It reads the person's own list and nothing
+// else, and says the same whoever the other person is. Anything else,
 // "nothing here." is said the same way whatever the reason, and its one key
 // is the account sheet (screens/You.jsx), which is where each reason has its
 // own words and its own way on: a proof this browser does not hold, one the
-// server no longer takes, or no @ at all. Neither it nor "sign in" ever
-// plays the film.
+// server no longer takes, or no @ at all. None of them ever plays the film.
 //
 // Except to somebody this device does not know at all. The mutual mail's link
 // is opened wherever the mail is read, often a phone or a laptop nobody ever
@@ -105,10 +111,11 @@ import { href } from '../router.js'
 import { setAfterGate } from '../store.js'
 import { getSession } from '../../api/auth.js'
 import { me } from '../../main/data.js'
-import { myHandle, myPings, heldPings, mutualOf, liveOf, revealStamp, wasOpened, markOpened, REVEAL_TZ } from '../pings.js'
+import { myHandle, myPings, heldPings, forgetPings, mutualOf, liveOf, revealStamp, wasOpened, markOpened, REVEAL_TZ } from '../pings.js'
 import { takeRevealFrom, returnTo } from '../revealfrom.js'
 import Film, { pairSeed, namesOf, namesNow, primeFilm, filmFor, keepFor, wordsReady, faceCame, filmHold } from '../Film.jsx'
 import Keepsake, { FLY_OPENS } from '../Keepsake.jsx'
+import { NoteScreen } from './You.jsx'
 import '../mutual.css'
 
 // Who this browser is before the server has said: the handle its own proof
@@ -123,6 +130,12 @@ function guessHandle() {
 function found(answer, them) {
   const m = mutualOf(answer, them)
   return m ? { mutual: m, list: answer } : null
+}
+// and this person's note to them that was not this time, if that is what
+// there is: its night's report stands where `nothing here.` did (Night.jsx)
+function endedOf(answer, them) {
+  const l = liveOf(answer, them)
+  return l && l.state === 'lapsed' ? l : null
 }
 
 // the night it was told, as a sentence says it: "saturday, september 26",
@@ -367,6 +380,7 @@ export default function Reveal({
   // any proof, so there is no one whose private notes these could be
   const stranger = !!who && !who.signedIn
   const [got, setGot] = useState(() => found(heldPings(guessHandle()), them) || undefined)
+  const [ended, setEnded] = useState(() => endedOf(heldPings(guessHandle()), them))
   // where it was opened from, taken once, on the first frame (revealfrom.js)
   const [opened] = useState(() => takeRevealFrom(them) || slotHold())
 
@@ -388,11 +402,13 @@ export default function Reveal({
     if (!handle || !them) { setGot(null); return undefined }
     let alive = true
     const held = found(heldPings(handle), them)
+    setEnded((e) => endedOf(heldPings(handle), them) || e)
     setGot((g) => held || g || undefined)
     myPings({ handle, proof: heldProof(handle) }).then((out) => {
       if (!alive) return
       if (!out.ok && held) return
       setGot(found(out, them))
+      setEnded(out.ok ? endedOf(out, them) : null)
     })
     return () => { alive = false }
   }, [who, handle, them])
@@ -474,6 +490,19 @@ export default function Reveal({
             <SheetFoot>
               <Pill tone="light" wide onClick={toGate}>sign in</Pill>
             </SheetFoot>
+          </div>
+        ) : got === null && ended ? (
+          // This person's own note to them, not mutual on its night: the
+          // note's screen as the private notes draw it (You.jsx
+          // `NoteScreen`), opened on what its night said, `not this time.`
+          // and what came back, with the note's own options on its keys and
+          // `back` to the private notes. Only ever their own note, off their
+          // own list, and the same whoever the other person is (0075).
+          <div className="wl-reveal-ended">
+            <h2 id="wl-reveal-h" className="wl-sr">not this time</h2>
+            <div className="wl-push" />
+            <NoteScreen key={ended.key} p={ended} me={handle} go={go} onBack={toYou} onChange={forgetPings} />
+            <div className="wl-push" />
           </div>
         ) : got === null ? (
           // Not a mutual, or not this person's to see. Said flatly and

@@ -56,6 +56,17 @@ hash-to-hash, group-aware. Consequences, by design:
 - Cross-device restore (`celestual_my_pings`) returns named rows only for
   mutual pings; unmatched pings restore as anonymous standing rows. This is a
   feature, not a gap.
+
+**Corrected 29 September: the bullets above are the design of 0006, and they
+stopped being true in 0010.** Since 0010 `celestual_entries.to_handle` keeps
+the normalised target in plaintext beside the hash, so a person's notes
+restore BY NAME on any device they verify on (`celestual_my_pings` names
+every row, running, not this time and mutual). Matching and suppression
+still run on the salted hash, and the plaintext is never returned to anybody
+but the note's own sender behind their proof, but a database dump does read
+who each running note is to, and the renewal mail could name one (none does:
+§mail). The row goes with the note: let go, erased, or swept a week after it
+was not this time. Read the bullets above with that in mind.
 - The opt-out registry (`celestual_suppressions`) is itself hashed.
 - The renewal email can name no handle — the server doesn't know one.
 
@@ -81,6 +92,20 @@ with the ping given back, send, read, let go could be run without end. So
 the bit is answered only of a pair already told, and a note sent and let go
 before its reveal learns nothing a single note would not (a sealed pair
 answers as an unanswered one, 0069). docs/PINGS-BY-THE-WEEK.md section 8.
+
+**Since 0075 (a night that was not mutual) a note costs a ping only when it
+is mutual.** Every ping a Saturday held for a note that was not mutual comes
+back at the night: a bought one on hand, a free one as one extra free ping
+for the week after, at most one a person a week across their linked @s, so
+it cannot compound (docs/PINGS-BY-THE-WEEK.md section 9). That makes a note
+free to send whatever it learns, which is why nothing it learns may be a bit
+about the other person: the night's answer (`celestual_my_pings`' `cost` and
+`returned`) is read only off the sender's own ledger and whether the pair was
+told, and is the same, byte for byte, whether the other person never wrote,
+wrote and let go before the night, or is not reachable here
+(scripts/sql/test-pings-by-the-week.sql section 11d). The settlement is not
+conditioned on membership, since a refund that depended on it would itself be
+the bit.
 
 ### §4 — Rate limiting
 `celestual_submit` enforces trailing-hour caps: **per-IP (40/hr)**,
@@ -112,6 +137,20 @@ its @ has an account, which is what lets a note be sent and let go for
 nothing (§3).
 `celestual_ping_status` returns reachability only for targets the caller has
 actually placed.
+
+**And it is never answered for a note that was not mutual (0075, the owner's
+ruling of 29 September).** The owner asked what happens when the other person
+is not on celestual. The ruling is that nobody is ever told whether they are:
+the wall says, on the night, that they didn't send one by saturday 9pm or
+aren't reachable here yet, and that celestual never says which, on purpose.
+Two reasons, either enough. Every ping of a night that was not mutual now
+comes back, so a bit answered at the night would be a free lookup of ten @s a
+week, the scan this section exists to prevent. And the answer would say
+something about a person who has agreed to nothing: that they are here and
+did not write back is a fact about them, told to somebody else. 0071's header
+said `reachable` was "answered at the reveal and not before"; no code ever
+answered it for a note that was not mutual, and none does now. It is said
+only of a pair already told, where both already know.
 
 ### §suggest — What a typeahead may list (0040)
 The wall's search and composer suggest names as a person types. They read
@@ -562,6 +601,10 @@ pages. If the doc viewer is ever removed, put this back to `'none'`.
   readout). The bound address is never returned in full — Postgres masks it to
   its first letter and domain before it leaves. The RPC is service-role only, so
   it is reachable only through the edge function, where rate limiting lives.
+  (Since 0071 `celestual_submit` answers `reachable` only of a pair already
+  told, and since 0075 a night that was not mutual never answers it at all,
+  §5; the router's answer to a person signing in is their own @, and stays
+  as bounded as it was.)
 - **A card is readable by the operator (0022)** — the words are stored in
   plaintext, because the person they were written to must be able to read them
   at a mutual and a hash cannot be un-hashed. The target handle beside them is

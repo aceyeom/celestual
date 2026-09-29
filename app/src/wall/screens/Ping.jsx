@@ -948,8 +948,10 @@ export default function Ping({
   // answer on the phone's soft keys, the keeping one first under the focus
   // and under Escape. Then the sheet goes back onto the private notes, where
   // the note no longer is, or, reached from anywhere else, back onto what it
-  // was raised over. A note that was not this time has spent its ping on the
-  // night it was not, so only a running one says it gives it back, and one
+  // was raised over. A note that was not this time gave back what it held at
+  // the night it was not (0075: a bought one on hand, a free one as next
+  // week's extra), so it has nothing more to give and only a running one
+  // says it gives its ping back, and one
   // not known yet to be either says nothing of it; and one that went mutual
   // as it was let go is not let go (0069), which the list it lands on tells.
   const letGo = async () => {
