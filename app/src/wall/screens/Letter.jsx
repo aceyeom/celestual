@@ -160,8 +160,8 @@ function LetterX({ label }) {
 // product they have seen: a screen, a close mark, and a black room, which
 // read as a confessions page anybody could be running. So a letter opened
 // that way (`cold`, index.jsx) signs itself the way every bar in the product
-// does: the mark and the word, small, in the corner opposite the close mark,
-// in the room's own hand (DESIGN.md 3.6 and 2.6), and under the card one line
+// does: the mark and the word, drawn on the phone's grid as the bar draws
+// them, in the corner opposite the close mark (DESIGN.md 3.6), and under the card one line
 // that says what else is here, `view the wall`. Both go to the wall and land
 // on the names, not on the poster (screens/Wall.jsx `open`). The close mark
 // keeps doing what it does. A letter opened from the wall carries neither:
@@ -177,7 +177,7 @@ function LetterBrand({ onWall }) {
   const sheet = useSheet()
   return (
     <Brand
-      className="wl-letter-brand is-small" mark={19} href={href('wall')}
+      className="wl-letter-brand is-small" href={href('wall')}
       label="celestual, the wall" title="the wall"
       onClick={(e) => wallClick(e, sheet, onWall)}
     />

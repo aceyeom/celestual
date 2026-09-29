@@ -21,7 +21,8 @@
 //   the keys       the lit key for each act, a chalk plate with the word in
 //                  black, and the bezel key for the second thing a mail
 //                  offers, each with the light it throws
-//   the signature  the lockup, the mark and `celestual.` in the room's serif
+//   the signature  the lockup, the mark and `celestual.` drawn on their grid
+//                  (app/src/wall/brand.js), at one pixel a cell
 //
 // The mails point at `${SITE}/mail/<name>`, so these go live with the site
 // (docs/launchsteps.md). `head.png`, the strip every mail opened on until
@@ -136,9 +137,10 @@ try {
     writeFileSync(join(out, `${name}.png`), png)
     made.push([`${name}.png`, png.length])
   }
-  // the signature, 150 by 48, the lockup at a word of 22 in the middle of it
+  // the signature, 150 by 48, the lockup at one pixel a cell (two in the
+  // file) in the middle of it
   if (!only || only === 'sign') {
-    const [sign] = await room.shoot({ w: 150, h: 48, sign: { word: 22, y: 24 } })
+    const [sign] = await room.shoot({ w: 150, h: 48, sign: { cell: 1, y: 24 } })
     writeFileSync(join(out, 'sign.png'), sign)
     made.push(['sign.png', sign.length])
   }

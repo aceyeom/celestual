@@ -209,10 +209,13 @@
   <section>
     <h2>The mark</h2>
     <p class="why">
-      Ecliptic. Nine constants and two path builders in <code style="font-family:var(--f-id);font-size:12px;color:var(--chalk)">app/src/wall/mark.js</code>,
-      so it is exact at any size and there is no asset to keep in sync. It takes
-      currentColor always, which is what lets one component be the bar's brand, a card's
-      letterhead and the overture's hero with no tone prop anywhere.
+      Ecliptic, in two hands from one geometry. The brand draws it on the phone's grid,
+      a cell at a time (<code style="font-family:var(--f-id);font-size:12px;color:var(--chalk)">app/src/wall/brand.js</code>,
+      25 cells, and the tab's own 15), always at a whole number of pixels a cell; the
+      vector, nine constants and two path builders in
+      <code style="font-family:var(--f-id);font-size:12px;color:var(--chalk)">app/src/wall/mark.js</code>,
+      stays where the mark is a material rather than the name: the door, the poured
+      metal, the stories' rasters. Both take currentColor always.
     </p>
 
     <div class="grid is-two">
@@ -220,23 +223,23 @@
       <div class="bed is-chalk" style="justify-content:center" id="mark-chalk"></div>
     </div>
 
-    <h3>The ladder · 96 down to 12</h3>
+    <h3>The ladder · whole pixels a cell, eight down to one, and the tab's own drawing at 32 and 16</h3>
     <div class="bed" style="align-items:flex-end" id="mark-ladder"></div>
 
-    <h3>The lockup · mark at 1.13 of the word, gap 0.38em</h3>
+    <h3>The lockup · the mark and the word on one grid and one baseline, two pixels a cell</h3>
     <div class="grid is-two">
-      <div class="bed is-void"><span class="wl-lockup" style="font-size:30px"><span id="lock-a"></span><span class="wl-lockup-word">celestual.</span></span></div>
-      <div class="bed is-chalk" style="color:var(--paper-ink)"><span class="wl-lockup" style="font-size:30px"><span id="lock-b"></span><span class="wl-lockup-word">celestual.</span></span></div>
+      <div class="bed is-void"><span id="lock-a"></span></div>
+      <div class="bed is-chalk" style="color:var(--paper-ink)"><span id="lock-b"></span></div>
     </div>
 
     <h3>The brand · the lockup as a control, on every bar in the product</h3>
     <div class="grid is-two">
-      <div class="bed is-void"><button class="wl-brand"><span id="brand-a" class="wl-brand-mark"></span><span class="wl-brand-word">celestual.</span></button></div>
-      <div class="bed is-void"><button class="wl-brand"><svg class="wl-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l-7 7 7 7"/></svg><span id="brand-b" class="wl-brand-mark"></span><span class="wl-brand-word">celestual.</span></button></div>
+      <div class="bed is-void"><button class="wl-brand"><span id="brand-a"></span></button></div>
+      <div class="bed is-void"><button class="wl-brand"><svg class="wl-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l-7 7 7 7"/></svg><span id="brand-b"></span></button></div>
     </div>
     <p class="note">
-      The mark at 26px and the name at 22px, both chalk while the row around them is
-      ash. The front door, Main's flow screens and the wall all carry this one; off the
+      The lockup drawn at one pixel a cell, 25 tall, both halves chalk while the row
+      around them is ash. The front door, Main's flow screens and the wall all carry this one; off the
       wall it grows the chevron, so back and home are the same target in the same place.
       Under 360px the word gives its room back and the mark stands alone.
     </p>
@@ -397,7 +400,7 @@
     <div class="bed is-col" style="padding:0;overflow:hidden">
       <div style="padding:0 22px">
         <div class="wl-top">
-          <span class="wl-top-mark"><button class="wl-brand"><span id="brand-mark" class="wl-brand-mark"></span><span class="wl-brand-word">celestual.</span></button><span class="wl-label is-dim">berkeley</span></span>
+          <span class="wl-top-mark"><button class="wl-brand"><span id="brand-mark"></span></button><span class="wl-label is-dim">berkeley</span></span>
           <span class="wl-top-acts"><button class="wl-iconbtn" id="ib5"></button><button class="wl-iconbtn is-on" id="ib6"></button></span>
         </div>
       </div>
@@ -473,7 +476,7 @@
     <div class="bed" style="display:block">
       <footer class="wl-colophon" style="border-top:0;padding-top:0">
         <div class="wl-colophon-brand">
-          <a class="wl-brand" href="#"><span id="brand-c" class="wl-brand-mark"></span><span class="wl-brand-word">celestual.</span></a>
+          <a class="wl-brand" href="#"><span id="brand-c"></span></a>
           <p class="wl-colophon-line">you both find out, or neither of you does.</p>
         </div>
         <nav class="wl-colophon-cols">
@@ -727,13 +730,13 @@
       <h3>The glyphs &middot; the chrome's own, beside the screen's (looks.js PIX)</h3>
       <div class="bed glyphs" id="phone-glyphs"></div>
 
-      <h3>The type &middot; one face, and the brand in the room's</h3>
+      <h3>The type &middot; one face, and the brand drawn in its cells</h3>
       <div class="bed is-col">
         <div class="spec"><span class="cap">wl-display is-m</span><p class="wl-display is-m" style="margin:0">tell them anyway.</p></div>
         <div class="spec"><span class="cap">--t-value-lg &middot; what was typed</span><span style="font-size:var(--t-value-lg);line-height:1.1">@jules.k</span></div>
         <div class="spec"><span class="cap">--t-read &middot; anything read or pressed</span><span style="font-size:var(--t-read);line-height:1.24">get notified if they put you up too.</span></div>
         <div class="spec"><span class="cap">--t-meta &middot; what stands under a name</span><span style="font-size:var(--t-meta);color:var(--ash);line-height:1.2">2 letters &middot; 3d</span></div>
-        <div class="spec"><span class="cap">the brand &middot; the room's serif, on the wall</span><button class="wl-brand"><span id="brand-d" class="wl-brand-mark"></span><span class="wl-brand-word">celestual.</span></button></div>
+        <div class="spec"><span class="cap">the brand &middot; drawn on the phone's grid, not set</span><button class="wl-brand"><span id="brand-d"></span></button></div>
       </div>
     </div>
   </section>
@@ -777,17 +780,24 @@
 // sheet openable straight off disk, where a module import would be refused, and
 // it means a reviewer is looking at the artifact a printer would be handed
 // rather than at a second drawing of it. Everything else here is a loop.
+//
+// Two marks, as the product has two (DESIGN.md 3): the brand on the phone's
+// grid, drawn only at a whole number of pixels a cell (`cells`, `lockup`),
+// and the vector, where the product still draws it (`at`: the door, the
+// bloom).
 const $ = (id) => document.getElementById(id)
-const at = (px, tone) => `<img src="logo/mark-${tone}.svg" width="${px}" height="${px}" alt="" style="display:block">`
+const at = (px, tone) => `<img src="logo/ecliptic-${tone}.svg" width="${px}" height="${px}" alt="" style="display:block">`
+const cells = (k, tone) => `<img src="logo/mark-${tone}.svg" width="${25 * k}" height="${25 * k}" alt="" style="display:block">`
+const lockup = (k, tone) => `<img src="logo/lockup-${tone}.svg" width="${113 * k}" height="${25 * k}" alt="celestual." style="display:block">`
 
-$('head-mark').innerHTML = at(52, 'chalk')
-$('lock-a').innerHTML = at(34, 'chalk')
-$('lock-b').innerHTML = at(34, 'ink')
-$('brand-mark').innerHTML = at(26, 'chalk')
-$('brand-a').innerHTML = at(26, 'chalk')
-$('brand-b').innerHTML = at(26, 'chalk')
-$('brand-c').innerHTML = at(26, 'chalk')
-$('brand-d').innerHTML = at(26, 'chalk')
+$('head-mark').innerHTML = cells(2, 'chalk')
+$('lock-a').innerHTML = lockup(2, 'chalk')
+$('lock-b').innerHTML = lockup(2, 'ink')
+$('brand-mark').innerHTML = lockup(1, 'chalk')
+$('brand-a').innerHTML = lockup(1, 'chalk')
+$('brand-b').innerHTML = lockup(1, 'chalk')
+$('brand-c').innerHTML = lockup(1, 'chalk')
+$('brand-d').innerHTML = lockup(1, 'chalk')
 
 // ── the phone's glyphs ──
 // The rows of looks.js PIX for the glyphs this page shows, drawn the way
@@ -834,11 +844,12 @@ document.querySelectorAll('.wl-light').forEach((frame) => {
 $('door-mark').innerHTML = at(38, 'chalk')
 $('art-bloom-mark').innerHTML = at(66, 'chalk')
 
-$('mark-void').innerHTML = at(132, 'chalk')
-$('mark-chalk').innerHTML = at(132, 'ink')
-$('mark-ladder').innerHTML = [96, 64, 48, 32, 24, 20, 16, 12].map((px) =>
+$('mark-void').innerHTML = cells(5, 'chalk') + at(125, 'chalk')
+$('mark-chalk').innerHTML = cells(5, 'ink') + at(125, 'ink')
+$('mark-ladder').innerHTML = [...[8, 4, 2, 1].map((k) => [cells(k, 'chalk'), 25 * k]),
+  ...[32, 16].map((px) => [`<img src="logo/mark-tab.svg" width="${px}" height="${px}" alt="" style="display:block;color:var(--chalk);filter:invert(1)">`, px])].map(([img, px]) =>
   `<figure style="display:flex;flex-direction:column;align-items:center;gap:8px;margin:0">
-     ${at(px, 'chalk')}
+     ${img}
      <figcaption style="font-family:var(--f-id);font-size:9px;color:var(--ash-dim)">${px}</figcaption>
    </figure>`).join('')
 

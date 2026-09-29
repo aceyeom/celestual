@@ -6,7 +6,7 @@ Three inputs made it, and they are all in the repo:
 
 | Input | What it settles |
 | --- | --- |
-| `design/source/eclipse.html` | the mark. Geometry, crossings, the size ladder, the lockup |
+| `design/source/eclipse.html` | the mark. Geometry, crossings, the size ladder. The mark and the lockup on the phone's grid are `app/src/wall/brand.js` (3.1a) |
 | `app/src/wall/wall.css` | the tokens, the type scale, the components, the motion |
 | `docs/rebuild-spec.md` section 7 | the bar this has to clear, and the list it must not touch |
 
@@ -349,9 +349,10 @@ has one, `save the picture` saves it, and `copy the link` copies the letter's
 link. The
 picture is drawn with a canvas (`share.js`), from the same table and the same
 quirks, at 1080 by 1350 on black, and signed under the screen with the lockup
-(3.3): the mark and `celestual.` in the room's serif, chalk at ninety percent,
-the mark in its own glow. The mark is built from `mark.js` in the layers
-`eclipticSVG()` draws, so it is the favicon's geometry and not a picture of it.
+(3.3): the mark and `celestual.` drawn on their grid at two pixels a cell,
+chalk at ninety percent, in the close bloom a lit thing has. It is `brand.js`'s
+own cells laid as rectangles, so the picture signs itself with the pixels on the
+bar, at twice their size, and not with a picture of them.
 The address stood there before, in the pixel face at 42 percent, and it was
 the only thing on the picture that said whose it was. The key read `send`
 until 24 September, which is the composer's word for putting a letter up
@@ -363,8 +364,8 @@ is the check on the quirks: five phones, and none of them a different design.
 
 A letter is a Series 40 screen (2.5), and the wall is where those screens are
 kept, so everything on the wall round them is the same phone: one pixel face,
-square keys, unlit panels and pixel glyphs. Only the brand (the mark and
-`celestual.`) stays the room's own object. The product's own events, the intro
+square keys, unlit panels and pixel glyphs. The brand is the phone's too: the
+mark and `celestual.` are drawn in its cells (3). The product's own events, the intro
 and the mutual, are told on the phone too, in its pixels (the stories, below).
 Main (`/optout`, `/copy`, `/signin`) and the desk are not the phone, and
 sections 4 and 8 describe them as written.
@@ -399,7 +400,7 @@ draws the phone on the wall and the system on Main.
 | Token | On the wall |
 | --- | --- |
 | `--f-display`, `--f-letter`, `--f-util`, `--f-id` | `var(--f-s40)`, Jersey 10 |
-| `--f-serif` | Newsreader, for the brand's word and nothing else |
+| `--f-serif` | gone. It named Newsreader for the brand's word and nothing else, and the word is drawn now (3.1a), so nothing read it. Newsreader itself stays in `faces.css`: it is Main's display face |
 | `--w-display`, `--track-display` | 400, and none |
 | `--tr-*` | 0 to `0.03em`: a pixel face carries its spacing in its grid |
 | `--t-label`, `--t-meta`, `--t-small` | 16px |
@@ -495,14 +496,17 @@ Under reduced motion every story is drawn on its last frame.
 `ArrowLink` and `Heart` draw pixel glyphs; `Light` draws nothing. Main never
 turns it on, so every one of them draws there as section 8 says.
 
-**What stays the room's.** `Brand` (the bar, the site's foot, a letter
-reached from a link), pinned to Newsreader at 22px, 500 and `-0.022em`
-whatever the tokens say; `Ecliptic` at the head of a door; `LiquidMark` on the
-root wall's poster; Instagram's and Google's own marks on their keys; and the
-lockup on the shared picture. They are the product's name, and a name is not
-set in a phone's font. The intro was on this list until 25 September, in
-liquid metal, and it was the one thing a person saw before either surface
-that belonged to neither of them.
+**What stays the room's.** `Ecliptic` at the head of a door; `LiquidMark` on
+the root wall's poster; and Instagram's and Google's own marks on their keys.
+The brand was on this list, `Brand` on the bar, the site's foot and a letter
+reached from a link, and the lockup on the shared picture, pinned to
+Newsreader at 22px, 500 and `-0.022em` whatever the tokens said, on the
+argument that a name is not set in a phone's font. It is not set in one now
+either: since 29 September it is drawn on the phone's grid (3.1a), which is the
+phone's language without being its type, and the room's serif sets nothing on
+the wall. The intro was on this list until 25 September, in liquid metal, and
+it was the one thing a person saw before either surface that belonged to
+neither of them.
 
 `design/components.html` draws the phone under its own heading, beside the
 system it remaps.
@@ -539,11 +543,19 @@ It is called Ecliptic. A four point star of four curves and no corners, inside a
 ring that passes behind it at the top of its circuit and in front of it at the
 bottom.
 
-It is not a drawn asset. It is nine constants and two path builders in
-`app/src/wall/mark.js`, which means it is exact at any size and there is no
-vector file to keep in sync. `design/source/eclipse.html` is its specimen sheet:
-four up positive and negative, the wordmark, a ladder from 128px to 12px, the
-four places the ring and the star cross, and the geometric argument for the band.
+It is drawn in two hands, from one geometry. The geometry is nine constants
+and two path builders in `app/src/wall/mark.js`, exact at any size, and that
+smooth drawing is kept where the mark is a material rather than the name: the
+poured metal (3.5), the head of a door, the desk, and the stories, which
+rasterise it for themselves (2.6). The brand, which is the mark and the word
+wherever the product signs its name, is drawn on the phone's grid, a cell at a
+time, in `app/src/wall/brand.js`. Everything round it is the phone (2.6), and a
+name in the room's hand over a surface in the phone's read as a second product
+laid on the first; the owner asked on 29 September for the logo to take the
+new digital style, and to be beautiful in it. `design/source/eclipse.html` is
+the specimen sheet of the geometry: four up positive and negative, a ladder from
+128px to 12px, the four places the ring and the star cross, and the geometric
+argument for the band.
 
 ### 3.1 The constants
 
@@ -566,36 +578,91 @@ inside it is notched off and left as a floating tip. On the shipped constants th
 edges come closest at 0.075, the side arms sit at 0.55 of the hole, and the
 vertical arms clear the outer edge by 3.86.
 
+### 3.1a The grids
+
+The pixel mark keeps the vector's idea and its geometry by coming from it: each
+grid is a raster of these constants, and then every cell of it is looked at.
+
+| | Grid | What |
+| --- | --- | --- |
+| `MARK` | 25 by 25 | the brand's mark: the bar, the site's foot, the pictures, the exports. It is the stories' own raster (`pixmark.js` `markCells` at 29, whose lit cells fill 25) with the two crossings drawn by hand. At the back the ring stops a cell short of the needle on either side, so the needle reads as passing in front of it; at the front the ring runs on unbroken and the needle stops a cell short of it above and below, which is the gutter. The star keeps its concave sides, a cell narrower on each row than the raster gave it, so it reads as a sparkle rather than a diamond, and the ring's right end loses a cell at each corner, so it is round and not a bracket. The near half stays two cells deep along the bottom and the far half one, which is the band's three to one |
+| `MARK_TAB` | 15 by 15 | the tab's, in a 16 pixel icon a cell in from the top and the left. Every cell is chosen by hand so the two crossings still read at one pixel a cell: at 16px the 25 scaled down is a grey blur, and so was the vector |
+| the stories' | 47, 51, 77 | the page's seal, the mail's gathered mark, and the mark on the stories' 95 by 75 glass (the intro, the film, the keepsake): `markCells` cut at `MARK_CUT`, drawn by `PixelStory`, and not touched by any of this |
+| `FACE` | x-height 11, ascenders 3 | the word's own letters: stems two cells wide and horizontals one, corners cut a cell, the `c` with a cell of terminal at each end, two cells between letters, the stop a two cell square on the baseline |
+
+**The word is drawn, not set.** Three were drawn before one was kept, each as a
+lockup at 25, 50 and 150 pixels on the room's black and on chalk: Jersey 10's
+own cells, the phone's face, at its own spacing and with a cell more; these drawn
+letters; and these letters with a small pixel star for the stop. Jersey was the
+most native and the least a name. It is the face every label on the wall is set
+in, so at the bar's size the brand read as one more label, and its two cell
+horizontals made the word twice the weight of a ring one cell wide. The star for
+a stop was a second star a word away from the first, and it cost the full stop,
+which is half of how the name is written. The drawn letters keep the phone's
+grid and its two cell stem, and their one cell horizontals give the word the
+thick and thin the ring has, so the mark and the word read as one drawing; they
+were the most beautiful of the three, and they stay legible at one pixel a cell.
+Being drawn, the word needs no face to load, and it is the same object on a
+canvas, in a mail and in a file as it is on the bar.
+
 ### 3.2 The exports
 
-`design/logo/`, all written by `node scripts/export-mark.mjs` from the constants
-above. Regenerate rather than edit.
+`design/logo/`, all written by `node scripts/export-mark.mjs` from `brand.js`.
+Regenerate rather than edit. Every file is whole cells at a whole number of
+pixels a cell: the SVGs say `crispEdges`, and the PNGs are written a pixel at a
+time in node, with no browser between the cells and the file, so nothing in them
+is anti-aliased.
 
 | File | For |
 | --- | --- |
-| `mark.svg` | embedding. Fills with `currentColor` |
-| `mark-chalk.svg`, `mark-ink.svg` | a fixed ground |
-| `mark-{chalk,ink}-{1024,512,128}.png` | transparent, for placement |
-| `mark-chalk-on-void-1024.png`, `mark-ink-on-chalk-1024.png` | on their ground |
-| `lockup-{chalk,ink}.png` | the mark and the word, rendered with the real face |
-| `lockup.html` | the lockup as live markup |
+| `mark.svg`, `lockup.svg` | embedding. Fill with `currentColor` |
+| `mark-chalk.svg`, `mark-ink.svg`, `lockup-chalk.svg`, `lockup-ink.svg` | a fixed ink |
+| `mark-{chalk,ink}-{1024,512,128}.png` | transparent, for placement: 40, 20 and 5 pixels a cell, centred |
+| `mark-chalk-on-void-1024.png`, `mark-ink-on-chalk-1024.png` | on their ground, 26 pixels a cell. The void is the room's `#000` now |
+| `lockup-{chalk,ink}.png` | transparent, 8 pixels a cell, cut to the drawing |
+| `lockup-chalk-on-void.png`, `lockup-ink-on-chalk.png` | on their ground, with the clear space round it (3.3) |
+| `mark-tab.svg` | the tab's own drawing, for the record of what a tab shows |
+| `ecliptic.svg`, `ecliptic-chalk.svg`, `ecliptic-ink.svg` | the vector, from `mark.js` (`eclipticSVG`), for where the product still draws it (3.5) and for the system's sheet |
 
-The favicon is the same drawing again, from `eclipticSVG()` in `mark.js`, struck
-in ink so it survives a near white tab strip and handed its chalk back by its own
-`prefers-color-scheme` rule.
+It writes into `app/public/` as well:
+
+| File | For |
+| --- | --- |
+| `icon.svg` | the tab, linked from `index.html` and the legal pages. `MARK_TAB` in a 16 by 16 icon, struck in ink so it survives a near white tab strip and handed its chalk back by its own `prefers-color-scheme` rule. The wall injects the same string at runtime (`brand.js` `tabSVG`, `index.jsx`) |
+| `apple-touch-icon.png` | a home screen, which takes a PNG and not an SVG: the mark in chalk on `#000` at six pixels a cell, 180 square, clear of the corners iOS rounds off |
+| `lockup.svg` | the lockup in chalk at one pixel a cell, which the legal pages sign themselves with (`legal.css` `.brand`) |
+| `mark.svg` | the mark in chalk, at the address it has always had |
+| `mark-chalk-256.png` | the mark a mail was signed with before the mails carried the lockup, kept at its address for the mails already sent, which now show the mark they would be sent today |
+
+`lockup.html`, the lockup as live markup while the word was type, is gone:
+`lockup.svg` is the whole of it.
 
 ### 3.3 Placing it
 
-- **Clear space.** Half the mark's height on every side. The star's vertical arms
-  already overrun the ring, so the square it is drawn in carries some of this.
-- **Smallest size.** 12px, which the ladder in the specimen sheet checks. Below
-  that the band's far side closes up.
-- **In the lockup**, the mark is 1.13 times the word's font size, and the gap is
-  `0.38em`. The word is lifted `-0.03em` because a Didone's optical centre sits
-  below its cap line.
-- **Colour.** It takes `currentColor` always. That is what lets one component be
-  the bar's brand, a card's letterhead and the overture's hero with no tone prop
-  anywhere.
+- **Whole pixels, always.** The mark and the lockup are drawn at a whole number
+  of pixels a cell with `crispEdges` and are never scaled by a fraction: on a
+  screen at one pixel a cell, 25 tall, and in the pictures and the exports at
+  two, three, five, six, eight and so on. A size between two steps is the
+  smaller step. A press drops the drawing a pixel; nothing scales it.
+- **Smallest size.** 25 pixels for the lockup and `MARK`, one a cell. Under that
+  the only drawing is the tab's, `MARK_TAB`, at 16 (its 15 cells in a 16 pixel
+  icon), which is where it stops. The old floor was 12px, below which the
+  vector's far band closed up; a pixel drawing does not close up, it loses
+  cells, so its floor is its own grid.
+- **Clear space.** Half the mark's height on every side, which is twelve of its
+  cells at whatever size it is drawn. The exports on a ground carry it. On a bar
+  the lockup is a control, and the row gives it its air.
+- **In the lockup**, the word stands six cells after the mark, on the mark's
+  grid and its baseline: the x-height is rows 7 to 17 of the mark's 25, centred
+  on the star's arms, so the stop sits on the ring's near band and the needle
+  runs past the word at both ends. The whole is 113 cells by 25.
+- **Light.** On a dark ground it has the close bloom a lit thing has on the
+  phone (`screen.css` `.wl-lit-g`): the room's glow as two drop shadows, 3
+  pixels at 30 percent and 9 at 10, and never a large soft shadow. On chalk it
+  has none.
+- **Colour.** It takes `currentColor` always. That is what lets one drawing be
+  the bar's brand, the foot's, a picture's signature and a file on a deck with
+  no tone prop anywhere.
 
 ### 3.4 The face is a different object
 
@@ -621,36 +688,49 @@ silhouette. It is spent on the room's few moments and on nothing else: the
 root wall's poster, the seal on the hero's scene and the seal on a mutual row
 on the sky. The intro and the reveal were its until they became the phone's
 (2.6), where the mark is drawn in the phone's pixels from the same nine
-constants (`pixmark.js`). Wherever the mark is a glyph
-rather than an event (the bar, a sheet's head, the favicon) it is `Ecliptic`,
-flat. Nothing glows behind the metal. The metal is the light.
+constants (`pixmark.js`). Wherever the mark is the brand (the bar, the site's
+foot, the tab, the pictures and the files) it is the pixel mark of 3.1a, and
+`Ecliptic`, flat, is kept for where it is the room's material rather than its
+name: the head of a door and the desk. Nothing glows behind the metal. The
+metal is the light.
 
 ### 3.6 The brand, on every bar
 
-`Brand` in `parts.jsx` is the lockup as a control: the mark at 26px and the
-name beside it in the display face at 22px, both chalk while the row around
-them is ash. It is the way home on every bar in the product, the front door's,
-Main's flow screens' and the wall's, and it stands again at the head of the
-site's foot. It used to be three things: the word alone on the front door, the
-mark alone on Main's other screens, and the mark alone on the wall, which is
-how one product came to sign itself three ways. Off the front door it grows
-the chevron the wall's sheets use, so "back" and "home" are the same target in
-the same place: on the wall it is a real anchor to `/`, the front, and on a
-sheet it is the way back to the wall under it. It used to scroll the wall to
-its top, which on a wall one screen tall was a control that did nothing.
+`Brand` in `parts.jsx` is the lockup as a control: the mark and the word drawn
+on their grid at one pixel a cell, 25 tall and 113 wide, both chalk while the
+row around them is ash, each in the close bloom a lit thing has. It is the way
+home on every bar in the product, the front door's, Main's flow screens' and
+the wall's, and it stands again at the head of the site's foot. It used to be
+three things: the word alone on the front door, the mark alone on Main's other
+screens, and the mark alone on the wall, which is how one product came to sign
+itself three ways. Off the front door it grows the chevron the wall's sheets
+use, so "back" and "home" are the same target in the same place: on the wall
+it is a real anchor to `/`, the front, and on a sheet it is the way back to
+the wall under it. It used to scroll the wall to its top, which on a wall one
+screen tall was a control that did nothing.
 
-On the wall it is the one object in the room's own hand (2.6): the lockup in
-Newsreader over a surface set in Jersey, so the name is the product's and
-everything round it is the phone. And a letter reached from a link carries it,
-until the tab has been to the wall: small, the mark at 19px and the word at
-17px, at the top left across from the close key, a real anchor to the wall;
-and under the letter, after the seal's `read it` on a sealed one, `view the
-wall`. Before that, a letter somebody was sent was a screen with a real
-handle on it, a close key and nothing else, which is what a confessions page
-run by anybody looks like. Both links drop the wall's poster and land on the
-names, so the letter closing reveals the wall rather than a second `view the
-wall`; the close key still lands on the poster (`index.jsx` `toWall`, the
-`celestual.cold` flag in `store.js`).
+It is two drawings, the mark and the word, six pixels apart, so the narrowest
+phones (under 360) can give the word back and keep the mark. Hover is a step
+brighter, the bloom and nothing else, since the drawing is chalk already. A
+press drops the whole of it a pixel and puts the bloom out, as the lit key
+does, and it never scales: a drawing on a pixel grid scaled by 0.97 is a blur,
+and on the wall nothing shrinks (9). The name is the anchor's label, and the
+drawings are hidden from a reader as a glyph is.
+
+Until 29 September it was the one object on the wall in the room's own hand
+(2.6): the vector mark and the word in Newsreader over a surface set in Jersey,
+on the argument that a name is not set in a phone's font. It is not set in one
+now either. It is drawn in the phone's cells, the same drawing on Main, the
+legal pages, the pictures and the mails. And a letter reached from a link
+carries it, until the tab has been to the wall: the same lockup at the top
+left across from the close key, a real anchor to the wall; and under the
+letter, after the seal's `read it` on a sealed one, `view the wall`. Before
+that, a letter somebody was sent was a screen with a real handle on it, a close
+key and nothing else, which is what a confessions page run by anybody looks
+like. Both links drop the wall's poster and land on the names, so the letter
+closing reveals the wall rather than a second `view the wall`; the close key
+still lands on the poster (`index.jsx` `toWall`, the `celestual.cold` flag in
+`store.js`).
 
 ---
 
@@ -661,8 +741,9 @@ Three faces, and the first does two jobs at two ends of one axis. Files are in
 face for Korean, Japanese and Chinese by `node scripts/fetch-cjk.mjs`, 4.0a)
 and served from this origin. Nothing renders from a CDN.
 
-This section is Main's type. On the wall one face carries every word but the
-brand's, Jersey 10 (4.0a), and the tokens below are remapped to it (2.6).
+This section is Main's type. On the wall one face carries every word, Jersey
+10 (4.0a), and the tokens below are remapped to it (2.6). The brand's word is
+not type anywhere: it is drawn (3.1a).
 
 | Token | Face | Job |
 | --- | --- | --- |
@@ -706,9 +787,8 @@ rather than synthesised.
 
 `--w-display: 500`, `--opsz-display: normal` and `--track-display: -0.022em`,
 declared on `.wl-root` and read by every rule that sets the display face: the
-scale below, the lockup, the intro and the overture, a card's title, the arrow
-link, the ledger line and the tab. The exporter sets the lockup PNGs at the
-same values.
+scale below, the intro and the overture, a card's title, the arrow link, the
+ledger line and the tab. The lockup read them until it was drawn (3.1a).
 
 Weight 500 because the 400 is a text weight and reads thin light on dark, and
 the 600 starts to clot at 48px. The optical size is left to the browser, which
@@ -742,7 +822,8 @@ the monogram on a small screen and on a face.
 
 On the wall it is every other word too: the headings, the labels, the
 controls, the fields and the explanations (2.6), because the wall is the
-phone and a phone has one font. The brand's word is the one exception. On
+phone and a phone has one font. The brand's word is not an exception: it is
+not set at all, but drawn in the phone's cells (3.1a). On
 Main it is never a headline, a label or a control outside a screen.
 
 It was twenty-four faces a writer chose between, one menu per paper. The
@@ -1119,7 +1200,8 @@ on a pale panel.
 | --- | --- |
 | `Sparkle` | the four point star. `twinkle` and `delay` |
 | `Verified` | Instagram's badge: twelve lobes on one radius, twelve valleys on another, a quadratic between each pair, and a check cut through in the ground (`ink`). It is the one glyph in the build that is another service's mark, and it is drawn here for the same reason everything else is — and because a claim about somebody's Instagram account has to read as that service's claim. The sparkle stood here and was this product's own mark doing another product's job. Struck in `--accent`, never in Instagram's blue: nothing outside the tokens names a hue, and the shape is what says whose badge it is |
-| `Ecliptic` | the mark. `size`, `sweep` |
+| `Ecliptic` | the mark as a vector, where it is a material rather than the name: the head of a door, the desk. `size`, `sweep` |
+| `Brand` | the lockup on the phone's grid, as a control (`parts.jsx`, from `brand.js`): the way home on every bar and at the head of the foot. See 3.6 |
 | `Provider`, `Google` | Instagram's mark and Google's, on the buttons that go to them, and both are the service's own mark rather than a drawing that resembles it. `Verified` is the precedent: a claim about another service reads as that service's claim, and a person scanning three sign in buttons is looking for the mark they know rather than reading the words. `Provider` was a hairline camera on the icon set's grid, which beside a four-colour G redrawn as a single arc read as a product that could not get the logos right. Still not pasted assets: both are paths in `art.jsx`, taking `currentColor`, so they wear the build's chalk and never a brand's blue or a four-colour fill |
 | `Envelope` | the third glyph on the same door, and solid for that reason alone. An address is not a brand and there is no logo for one, but an outline between two filled marks is the odd one out. The flap is cut through the body with `evenodd` rather than drawn over it in the button's colour, so it carries no ground |
 | `Face` | a small square of the night LCD beside a handle: the picture dithered into the screen's ink (`PixelPic`), or the monogram in `--f-s40`. Never round (2.5) |
@@ -1316,10 +1398,11 @@ every route shoots an empty wall reading `not connected here`.
 | `app/src/wall/wall.css` | the tokens and the components, in code |
 | `app/src/wall/phone.css` | the wall's phone: the tokens remapped for `.wl-root.is-room`, and the parts both surfaces share, drawn as the phone (2.6) |
 | `app/src/wall/mark.js` | the mark's geometry |
+| `app/src/wall/brand.js` | the brand on the phone's grid: the mark at 25, the tab's at 15, the word's letters, the lockup, and the SVG strings the tab, the pictures and the exports are made of (3.1a) |
 | `app/src/wall/pixmark.js` | the mark on a grid of the phone's cells, the two runners, and the stories they are in (2.6) |
 | `app/src/wall/art.jsx` | every drawn ornament |
 | `app/public/fonts/` | the three faces, and the `faces.css` that declares them |
-| `scripts/export-mark.mjs` | writes `design/logo/` |
+| `scripts/export-mark.mjs` | writes `design/logo/`, and the tab's icon, the home screen's, the legal pages' lockup and the chalk marks in `app/public/` |
 | `scripts/export-liquid.mjs` | writes `app/public/liquid-mark.png`, the shader's mask, from the same geometry |
 | `scripts/fetch-faces.mjs` | writes `app/public/fonts/` |
 | `scripts/shots.mjs` | the screenshot loop |

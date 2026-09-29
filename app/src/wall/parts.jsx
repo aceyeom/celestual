@@ -11,6 +11,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useImperative
 import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search, targetKey, isNameKey, nameFor } from './data.js'
 import { Ecliptic, Sparkle, Verified } from './art.jsx'
+import { LOCKUP } from './brand.js'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
@@ -341,17 +342,33 @@ export function Icon({ name, size = 20, className = '' }) {
 // product: the front door's, Main's flow screens', the wall's. It used to be
 // three things: the word alone on the front door, the mark alone on Main's
 // other screens, and the mark alone on the wall, which is how one product came
-// to sign itself three ways. The mark is chalk at all times and the word is
-// set in the display face at the size the lockup sets it (wall.css
-// `.wl-brand`). `back` grows the chevron the wall's sheets use, so "back" and
-// "home" stay the same target in the same place. A real anchor when it is
-// given an href, so it opens in a new tab and copies like one.
-export function Brand({ onClick, href, back = false, label = 'celestual, the front', title = 'the front', mark = 26, className = '' }) {
+// to sign itself three ways. `back` grows the chevron the wall's sheets use,
+// so "back" and "home" stay the same target in the same place. A real anchor
+// when it is given an href, so it opens in a new tab and copies like one.
+//
+// ── drawn on the phone's grid ──
+// It was Ecliptic as a smooth vector and the word set in Newsreader, the one
+// object on the wall in the room's hand. The owner asked for the logo to take
+// the phone's digital style and to be beautiful in it, so both halves are
+// drawn now, a cell at a time (brand.js): the mark on its grid of 25 and the
+// word in its own drawn letters on the same grid and baseline, at one pixel a
+// cell, 25 tall, with `crispEdges` so no cell is ever a blur. Two drawings and
+// not one, so the narrowest phones can give the word back and keep the mark
+// (wall.css). The name is the anchor's label; the drawings are hidden from a
+// reader, as a glyph is.
+export function Brand({ onClick, href, back = false, label = 'celestual, the front', title = 'the front', className = '' }) {
+  const { mark, word } = LOCKUP
   const body = (
     <>
       {back ? <Icon name="back" size={17} /> : null}
-      <Ecliptic size={mark} className="wl-brand-mark" />
-      <span className="wl-brand-word">celestual.</span>
+      <svg className="wl-brand-mark" viewBox={`0 0 ${mark.w} ${mark.h}`} width={mark.w} height={mark.h}
+        shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false">
+        <path d={mark.d} />
+      </svg>
+      <svg className="wl-brand-word" viewBox={`0 0 ${word.w} ${word.h}`} width={word.w} height={word.h}
+        shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false">
+        <path d={word.d} />
+      </svg>
     </>
   )
   const cls = `wl-brand ${className}`

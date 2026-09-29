@@ -690,7 +690,7 @@ ear (below):
 
 | | |
 | --- | --- |
-| ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
+| ✦ celestual. | **the brand**, top left. `Brand`: the mark and the name drawn on the phone's grid at one pixel a cell (`brand.js`, DESIGN.md 3), both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
 | write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: the metal capsule carrying the nib and the word (`wall/LiquidButton.jsx`), at the foot where a thumb is. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about; it was chalk with the running light inside it until the primary became a material |
 | ⚷ | **the person**: a keyhole while nobody is known here, and the face of the address or the @ that is, once somebody is. It opens `/you`, their pings, drafts and letters, for anybody known by any proof, and the gate for anybody else, with `/you` as where the gate lands |
 
@@ -735,7 +735,10 @@ ground.jsx   the room: the plasma, the halo, the field (field.js) and the
              grain. One component, mounted by this shell and by Main's
 wall.css     every rule scoped under .wl-root
 router.js    ten routes, no dependency
-art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
+brand.js     the brand on the phone's grid: the mark at 25 cells, the tab's
+             at 15, the word's drawn letters, the lockup, and the tab's
+             icon string (DESIGN.md 3)
+art.jsx      ECLIPTIC (the mark as a vector, for the door and the desk) and the
              ornaments: sparkle, halftone sphere, THE ORRERY, bloom,
              per-handle constellation (with its countdown gauge), the field
 looks.js     the colours a letter's screen can be lit in, what each is painted
