@@ -398,6 +398,20 @@ placed it, exactly as the plaintext handles already do. The card system's
 design record went with the retired design on 4 September; 0022's header
 carries the seal rule.
 
+### §take it back: the writer, told only to the writer (0074)
+A letter's writer can take it back down and put it back within a day
+(`wall_writer_remove`, `wall_writer_restore`). The proof is the session: the
+letter's `author_id` must be `celestual_session_user(p_token)`, and a caller
+who is not its author is answered `not_yours`, which says that it is not
+theirs and nothing about whose it is. The two reads carry `yours`, true only when the session asking is the
+author and false for every other caller, the signed out included, the same
+kind of answer as a reply's `mine`: a fact about the caller, never about
+anybody else. A letter its writer took back reads to everybody else exactly
+as any letter that came down (`gone`), so the person it was written to never
+learns whose hand it was. The desk's switch will not put such a letter back up,
+and a dismissed report no longer resurrects a letter its writer or its owner
+took down.
+
 ### §replies — Anonymous to readers, not to the desk (0068)
 A letter has a thread of replies under it, and a reply is the one place on the
 wall where one anonymous writer answers another in public, under a letter the

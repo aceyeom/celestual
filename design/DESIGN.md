@@ -183,9 +183,15 @@ aerial, the signal bars, the name, by the battery the day it went up as
 `09/24/26`, or on a draft the characters it has left, and never a second date
 beside the aerial, and after the aerial an envelope, steady, once the person
 the letter is to has answered it; the pen, the mode, the handle), the words,
-and the three soft keys at the foot (`options`, the heart and its count, the
-replies' speech bubble and its count, drawn exactly as the heart is, with no
-plate and no light on it; `share` where a letter has no thread), set in one
+and the soft keys at the foot: the heart and its count and the replies'
+speech bubble and its count, drawn exactly as the heart is, with no plate and
+no light on it, together on the left (the heart alone where a letter has no
+thread), and `options` alone on the right, whose first row is always `share`
+(the owner's ruling of 29 September: likes and comments under one thumb, the
+menu at the other end of the band, where a phone kept it; every count holds
+the room of two figures so a heart counted up does not push the bubble
+along, `screen.css` `.wl-sk-n`; while a menu is open the band is `select` and
+`back`, the key that opened it shutting it), set in one
 face, Jersey 10, the Series 40 grid (`--f-s40`). The only thing a writer
 chooses about how a letter looks is the COLOUR it is lit in (the greeting
 across its top is words, and theirs; a private note, lit in the colour its

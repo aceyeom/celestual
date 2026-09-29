@@ -97,7 +97,7 @@ function Card({ c, i, go }) {
     <article className="lk-card" data-colour={c.slug}>
       <Screen
         look={l.look} seed={l.id} top={top} live={false} sticker={face.sticker}
-        keys={{ l: { label: face.left }, c: { glyph: 'heartO', label: String(face.hearts) }, r: { label: face.right } }}
+        keys={{ l: [{ glyph: 'heartO', label: String(face.hearts), cls: 'is-heart' }, { glyph: 'bubbleO', label: '', cls: 'is-thread' }], r: { label: face.right, cls: 'is-options' } }}
       >
         <ScreenText text={face.text} />
       </Screen>

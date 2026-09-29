@@ -1,10 +1,12 @@
-// alerts.js: the claimed @, and what its owner can do with it.
+// alerts.js: the claimed @, and what its owner can do with it; and, beside
+// it, the one thing a letter's writer can do with their own letter.
 //
 // docs/ONE-WALL.md is the contract. Instagram verification is ownership: the
 // person who proved an @ can turn on an email for when somebody writes to it,
 // take a letter about them down in one tap with a day's undo, and stop the
 // emails from a link in any one of them. Every call those need is here and
-// nowhere else.
+// nowhere else. So is the writer's taking a letter back (0074), which is
+// not ownership of anything but the words, and is here for the answer below.
 //
 // ── read defensively ────────────────────────────────────────────────────────
 // These RPCs land with the backend that is being built beside this front end,
@@ -58,6 +60,21 @@ export const ownerRemove = (letterId) =>
 
 export const ownerRestore = (letterId) =>
   rpc('wall_owner_restore', { p_token: sessionToken(), p_letter: String(letterId || '') })
+
+// ── the letter, by the person who wrote it ──────────────────────────────────
+// Not the owner's power, and not in this file for the owner's reason: it is
+// here because it wants the same 'missing' answer. A writer takes their own
+// letter back down, up or still waiting on the desk, and puts it back where
+// it was within a day (0074). The session is the only proof: the letter's
+// author is the session that wrote it, and nobody else is told who that is.
+// There is no fallback for a database without these, as the owner's has the
+// old removal: a writer's row simply is not offered (data.js `canTakeBack`).
+// Errors: 'no_session', 'not_yours', 'gone' and, on the way back, 'expired'.
+export const writerRemove = (letterId) =>
+  rpc('wall_writer_remove', { p_token: sessionToken(), p_letter: String(letterId || '') })
+
+export const writerRestore = (letterId) =>
+  rpc('wall_writer_restore', { p_token: sessionToken(), p_letter: String(letterId || '') })
 
 // ── the letter, by the link in the email ────────────────────────────────────
 // `/r#t=`. Errors: 'invalid', 'expired' (30 days) and 'used'.

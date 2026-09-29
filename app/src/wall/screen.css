@@ -268,6 +268,29 @@
 .wl-sk.is-c.is-long { font-size: 9cqw; }
 .wl-sk.is-r { justify-self: end; }
 .wl-sk.is-empty { visibility: hidden; }
+/* ── the letter's band ──
+   The heart and the replies' bubble together on the left, each with its
+   count, and `options` alone on the right (screens/Letter.jsx, the owner's
+   ruling of 29 September): what a reader does with a letter under the thumb
+   that reads it, and what a phone did with the thing on its screen under
+   the key a phone kept for its menu. The two are one group at the start of
+   the band (screen.jsx `keys.l` as a list), set at the middle key's size,
+   and the middle of the band is empty. Every count keeps the room of two
+   figures, "12", whatever it holds, so the bubble does not move when the
+   heart's count grows by a figure, on the press or when the server
+   answers; three are a step smaller (`is-long`), as they always were. */
+.wl-scr-bot.is-grouped { grid-template-columns: auto 1fr auto; }
+.wl-sk-group {
+  justify-self: start; display: flex; align-items: center; height: 100%; min-width: 0;
+  gap: 2.2cqw;
+}
+/* a glyph and its count a hair further apart than a word's key keeps them,
+   so three figures set a step smaller do not touch the heart */
+.wl-root .wl-sk-group .wl-sk { gap: 1.4cqw; }
+.wl-root .wl-sk.is-heart { font-size: 11cqw; }
+.wl-root .wl-sk.is-heart.is-long { font-size: 9cqw; }
+.wl-sk-n { display: inline-block; min-width: 1.02em; }
+.wl-sk.is-long .wl-sk-n { min-width: 1.36em; }
 .wl-root .wl-sk:active { opacity: 0.45; transition-duration: 0ms; }
 .wl-root .wl-sk:disabled { opacity: 0.5; cursor: default; }
 .wl-sk:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: -0.5cqw; }

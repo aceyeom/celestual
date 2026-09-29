@@ -480,6 +480,14 @@ function Press({ id, colour, q }) {
 // `keys` is the three soft keys, `l`, `c` and `r`, each
 // `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
 // it was when the key is pressed with a pointer. The body is the children.
+// `l` can be a list instead, the keys that stand together at the left of the
+// band, and only a letter asks for one (screens/Letter.jsx, the owner's
+// ruling of 29 September): its heart and its replies' bubble side by side,
+// each with its count, and `options` alone on the right. The band says so
+// (`is-grouped`), and every count in the group keeps the room of two
+// figures whatever it holds (`.wl-sk-n`), so a heart going from nine to ten
+// does not push the bubble along. Every other screen hands one key or none
+// to each place and is drawn exactly as it was.
 //
 // `salutation` is the whole of that line when the writer set one of their
 // own ("to the girl on the 51B"), and with none it is "dear" and the name
@@ -551,24 +559,33 @@ export function Screen({
   // the light went to the status row (`mail`). A key that opens something
   // stays struck out of its band while that is open (`open`), as the phone
   // lit the tab it was on.
+  // `n` is a key in the left group, whose count keeps its room when it is
+  // empty (the list above)
+  const soft = (d, cls, n = false, k = undefined) => (
+    <button
+      key={k} type="button" id={live ? d.id : undefined}
+      className={`wl-sk${cls ? ` ${cls}` : ''}${d.on ? ' is-on' : ''}${d.open ? ' is-open' : ''}${d.cls ? ` ${d.cls}` : ''}`}
+      onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
+      onMouseDown={live && d.keepFocus ? (e) => e.preventDefault() : undefined}
+      aria-label={d.aria || undefined} aria-pressed={d.pressed}
+      aria-expanded={d.expanded} aria-controls={live ? d.controls : undefined}
+      tabIndex={live ? undefined : -1}
+    >
+      {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
+      {n && d.glyph ? <span className="wl-lit wl-sk-n">{d.label || ''}</span>
+        : d.label ? <span className="wl-lit">{d.label}</span> : null}
+    </button>
+  )
   const key = (k, cls) => {
     const d = keys[k]
+    if (Array.isArray(d)) {
+      const ds = d.filter((x) => x && (x.label || x.glyph))
+      return <span className={`wl-sk-group ${cls}`}>{ds.map((x, i) => soft(x, '', true, i))}</span>
+    }
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
-    return (
-      <button
-        type="button" id={live ? d.id : undefined}
-        className={`wl-sk ${cls}${d.on ? ' is-on' : ''}${d.open ? ' is-open' : ''}${d.cls ? ` ${d.cls}` : ''}`}
-        onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
-        onMouseDown={live && d.keepFocus ? (e) => e.preventDefault() : undefined}
-        aria-label={d.aria || undefined} aria-pressed={d.pressed}
-        aria-expanded={d.expanded} aria-controls={live ? d.controls : undefined}
-        tabIndex={live ? undefined : -1}
-      >
-        {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
-        {d.label ? <span className="wl-lit">{d.label}</span> : null}
-      </button>
-    )
+    return soft(d, cls)
   }
+  const grouped = Array.isArray(keys.l)
   // What the stylesheet needs to know about what is on the glass, said on
   // the elements it styles: the screen's state on the scene round it (the
   // light it throws wakes and sleeps with it), and a menu on the body that
@@ -642,7 +659,7 @@ export function Screen({
             </div>
           </div>
           <div className={`wl-scr-body${menu ? ' is-menu' : ''}`}>{children}</div>
-          <div className="wl-scr-bot">
+          <div className={`wl-scr-bot${grouped ? ' is-grouped' : ''}`}>
             {key('l', 'is-l')}
             {key('c', 'is-c')}
             {key('r', 'is-r')}

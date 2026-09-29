@@ -371,6 +371,13 @@ const SHOWN = 4
 // in the notice at the foot of the wall, and then it is gone from both
 // (store.js `noticed`): the owner asked for it, and a list that carries a
 // takedown for thirty days is a list that keeps saying so.
+//
+// A letter its writer took back themselves (`down_by` 'writer', 0074, the
+// owner's ruling of 29 September) is not "taken down", which is somebody
+// else's hand: it says `you took it back`, greyed as a letter off the wall
+// is, and goes from the list the same way once it has been seen. A letter
+// that is up opens on its own glass, where `take it back` is the second
+// row of its options, so the list carries no key of its own for it.
 const isDown = (l) => !!l.downBy && l.downBy !== 'held'
 function wroteRows() {
   const own = mine()
@@ -379,8 +386,9 @@ function wroteRows() {
     ? own.filter((l) => !(isDown(l) && read[l.id])).map((l) => ({
       id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
       held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
+      took: l.downBy === 'writer',
     }))
-    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true }))
+    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true, took: false }))
 }
 
 // A letter held to be read before it goes up (wall_mine's `down_by: 'held'`,
@@ -413,12 +421,12 @@ function Wrote({ go, rows }) {
             type="button" key={r.id || `${r.to}-${i}`}
             className={`wl-wrote-row${r.down ? ' is-down' : ''}`}
             onClick={() => open(r)} disabled={!r.live}
-            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.down ? ', taken down' : ''}`}
+            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.took ? ', you took it back' : r.down ? ', taken down' : ''}`}
           >
             <Face handle={r.to} size={30} />
             <span className="wl-wrote-who">
               <span className="wl-wrote-name">{labelFor(r.to)}</span>
-              <span className="wl-wrote-meta">{r.held ? 'being read' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
+              <span className="wl-wrote-meta">{r.held ? 'being read' : r.took ? 'you took it back' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
             </span>
             {r.hearts !== null && r.live ? (
               <span className="wl-wrote-n" aria-hidden="true">

@@ -192,8 +192,10 @@ function lettersFor(handle, open) {
       // 0042: how many hearted it, and whether this browser did. Two
       // figures on the first, as the hearts a letter began with (0059) left
       // most letters that were up
-      hearts: i === 0 ? 12 : i === 1 ? 3 : 0,
+      hearts: i === 0 ? (HEARTS ?? 12) : i === 1 ? 3 : 0,
       hearted: false,
+      // 0074: whether this browser wrote it, said to this browser alone
+      yours: YOURS && handle === 'pilar.echevarria',
     }
   })
 }
@@ -230,6 +232,16 @@ let DOWN = false
 // Whether this browser has put up more letters than the account sheet shows
 // at once, so the list's fade and its "see more" are drawn.
 let MANY = false
+// ── letterui (the owner's ruling of 29 September) ──
+// Whether the fixture browser wrote the letters under pilar.echevarria, so
+// the reads say `yours` on them (0074) and the letter's options are the
+// writer's: `share` and `take it back`. Whether this browser's own list has
+// a letter it took back beside one that is up and one being read (`took`).
+// And a heart count to draw in place of the fixture's twelve (`hearts`), for
+// the band with three figures on both of its counts.
+let YOURS = false
+let TOOK = false
+let HEARTS = null
 // Whether the fixture browser is nobody at all: signed in to nothing, so the
 // gates draw their doors rather than the account.
 let ANON = false
@@ -971,7 +983,7 @@ const RPC = {
   },
   wall_letter: () => ({
     ok: true, open: true,
-    letter: { ...lettersFor('pilar.echevarria', true)[0], mine: VERIFIED },
+    letter: { ...lettersFor('pilar.echevarria', true)[0], mine: VERIFIED && !YOURS },
     ...faceOf('pilar.echevarria'),
   }),
   // 0042: a heart on, or off, and the count back
@@ -1000,7 +1012,15 @@ const RPC = {
       body: 'you were the one singing on the 51B that night. i wanted the song to be about me.',
       status: 'rejected', down_by: 'screen', reasons: ['threat'], flagged: false,
       at: new Date(now - 2 * 3600000).toISOString(),
-    }] : [],
+    }] : TOOK ? [
+      { id: '11110111-2222-4333-8444-555566660000', handle: 'pilar.echevarria', status: 'live', down_by: null,
+        body: LINES[0], hearts: 12, reasons: [], flagged: false, at: new Date(now - 1 * DAY).toISOString() },
+      { id: '11110111-2222-4333-8444-555566660001', handle: 'ren.tanaka', status: 'removed', down_by: 'writer',
+        undo_until: new Date(now + 20 * 3600000).toISOString(),
+        body: LINES[1], hearts: 0, reasons: [], flagged: false, at: new Date(now - 4 * 3600000).toISOString() },
+      { id: '11110111-2222-4333-8444-555566660002', handle: '~sofia', kind: 'name', name: 'Sofia', status: 'pending', down_by: 'held',
+        body: LINES[2], hearts: 0, reasons: [], flagged: false, at: new Date(now - 1 * 3600000).toISOString() },
+    ] : [],
   }),
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
   // the week (0069): a mutual told at the last reveal, a note running to the
@@ -1731,18 +1751,21 @@ const ROUTES = [
   // the keyboard's rings on the deck: the letter after this one, which the
   // turn's own button covers, and a soft key on the card
   { label: 'letter-focus',  path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-turn.is-next']], settle: 500 },
-  { label: 'letter-focus-key', path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-letter-card .wl-sk.is-r']], settle: 500 },
+  { label: 'letter-focus-key', path: '/berkeley/letter/ren.tanaka', acts: [['focus', '.wl-letter-card .wl-sk.is-options']], settle: 500 },
   // the screen's two menus, and the screen in each of its treatments
-  { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
+  { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-options', settle: 700 },
   // the heart, pressed: by a campus reader, and by somebody signed in with
   // google and nothing else, whose press used to go to the gate and count
   // nothing (auth.js `refresh`)
-  { label: 'letter-heart',  path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-c', settle: 900 },
+  { label: 'letter-heart',  path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-heart', settle: 900 },
   { label: 'letter-heart-google', path: '/berkeley/letter/pilar.echevarria', google: true,
-    press: '.wl-letter-card .wl-sk.is-c', settle: 900 },
-  { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
+    press: '.wl-letter-card .wl-sk.is-heart', settle: 900 },
+  // `share` is the first row of the options on every letter (the owner's
+  // ruling of 29 September), so the share menu is two presses in
+  { label: 'letter-share',   path: '/berkeley/letter/pilar.echevarria',
+    acts: [['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)']], settle: 700 },
   { label: 'letter-shared',  path: '/berkeley/letter/pilar.echevarria',
-    acts: [['click', '.wl-letter-card .wl-sk.is-r'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
+    acts: [['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
   { label: 'letter-poster',  path: '/berkeley/letter/jules.k' },
   { label: 'letter-riso',    path: '/berkeley/letter/k.villarreal' },
   { label: 'letter-xerox',   path: '/berkeley/letter/m.okonkwo' },
@@ -1791,7 +1814,7 @@ const ROUTES = [
   { label: 'letter-close-out', path: '/berkeley/letter/pilar.echevarria',
     acts: [['wait', 900], ['click', '.wl-close'], ['wait', 1400]], settle: 600 },
   { label: 'letter-report-back', path: '/berkeley/letter/pilar.echevarria',
-    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 600], ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900],
+    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 600], ['click', '.wl-scr-menu li:nth-child(3)'], ['wait', 900],
            ['click', '.wl-close'], ['wait', 900]], settle: 600 },
   // 0066: nothing is sealed. A reader signed in to nothing reads the letter
   // whole, and once they have read a few (`store.opened`, eight of them
@@ -1807,9 +1830,9 @@ const ROUTES = [
   // the composer's mark comes back to the letter it was opened from
   // (index.jsx `up`)
   { label: 'letter-pen',    path: '/berkeley/letter/pilar.echevarria',
-    acts: [['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)']], settle: 1400 },
+    acts: [['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(2)']], settle: 1400 },
   { label: 'letter-pen-back', path: '/berkeley/letter/pilar.echevarria',
-    acts: [['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
+    acts: [['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
   // 0066: the one decision, for a letter to an @: the wall (anybody, read
   // first), as a Berkeley student (the sticker, at once) and privately;
@@ -1902,6 +1925,44 @@ const ROUTES = [
   { label: 'write-sent', path: '/berkeley',
     acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400],
       ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
+
+  // ── letterui: the letter's band, and the writer taking a letter back ──
+  // (the owner's ruling of 29 September). The band: the heart and the
+  // bubble together on the left, each with its count, and `options` alone on
+  // the right, on a letter with a thread, on one with three figures on both
+  // counts, on a print, and on one with no thread to read (the heart alone,
+  // the fixture's default). The options menu, which always starts with
+  // `share`; the writer's own menu (`yours`), its question, and the letter
+  // taken back with its undo; the card the wall stands at its foot after a
+  // post, and the same card taken back; the composer's held screen taken
+  // back; and the account's list with a letter its writer took back.
+  { label: 'lu-row',         path: '/berkeley/letter/pilar.echevarria', thread: 'full', settle: 900 },
+  { label: 'lu-row-long',    path: '/berkeley/letter/pilar.echevarria', thread: 'many', hearts: 12400, settle: 900 },
+  { label: 'lu-row-none',    path: '/berkeley/letter/pilar.echevarria', settle: 900 },
+  { label: 'lu-row-print',   path: '/berkeley/letter/jules.k', thread: 'full', hearts: 999, settle: 900 },
+  { label: 'lu-row-still',   path: '/berkeley/letter/pilar.echevarria', thread: 'full', still: true, settle: 900 },
+  { label: 'lu-options',     path: '/berkeley/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-options']], settle: 700 },
+  { label: 'lu-yours',       path: '/berkeley/letter/pilar.echevarria', thread: 'full', yours: true,
+    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-options']], settle: 700 },
+  { label: 'lu-yours-ask',   path: '/berkeley/letter/pilar.echevarria', thread: 'full', yours: true,
+    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(2)']], settle: 700 },
+  { label: 'lu-yours-taken', path: '/berkeley/letter/pilar.echevarria', thread: 'full', yours: true,
+    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-options'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(2)'],
+           ['wait', 500], ['click', '.wl-letter-card .wl-sk.is-l']], settle: 1200 },
+  { label: 'lu-up',          path: '/berkeley',
+    store: { justPosted: 'ren.tanaka', written: ['11110111-2222-4333-8444-555566660000'] },
+    acts: [['click', '.wl-mast-go'], ['wait', 4200]], settle: 900 },
+  { label: 'lu-up-taken',    path: '/berkeley',
+    store: { justPosted: 'ren.tanaka', written: ['11110111-2222-4333-8444-555566660000'] },
+    acts: [['click', '.wl-mast-go'], ['wait', 4200], ['click', '.wl-down.is-up .wl-down-ok.is-l']], settle: 1200 },
+  { label: 'lu-up-still',    path: '/berkeley', still: true,
+    store: { justPosted: 'ren.tanaka', written: ['11110111-2222-4333-8444-555566660000'] },
+    acts: [['click', '.wl-mast-go'], ['wait', 1600]], settle: 900 },
+  { label: 'lu-held-took',   path: '/write/sofiaaa.reyes', anon: true, held: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go'],
+           ['wait', 1400], ['click', '.wl-write-takeback']], settle: 1000 },
+  { label: 'lu-you-took',    path: '/berkeley/you', took: true, acts: [['wait', 1400], ['click', '#wl-you-tab-letters']], settle: 900 },
 
   // ── the replies (0068) ──
   // The thread, a sheet raised over the letter (app/src/wall/Replies.jsx
@@ -2055,6 +2116,9 @@ for (const r of list) {
   SPENT = r.spent === true
   DOWN = r.down === true
   MANY = r.many === true
+  YOURS = r.yours === true
+  TOOK = r.took === true
+  HEARTS = r.hearts ?? null
   ANON = r.anon === true
   PASS = r.pass === true
   FULL = r.full === true
