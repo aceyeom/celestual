@@ -175,12 +175,18 @@ export function useThread(letter) {
   if (was !== id) {
     setWas(id)
     setT(id ? KEPT.get(id) || null : null)
-    setLikes({}); setLiking({}); setReports({}); setNote('')
+    setLikes({}); setLiking({}); setReports({}); setNote(''); setSetting(false)
   }
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
   const at = useRef(id)
   at.current = id
+
+  // One hook reads every letter the card turns to (Letter.jsx), so what a
+  // press started on one letter and answered after a turn is that letter's,
+  // and says nothing on the next one's sheet: every line said after an
+  // answer names the letter it was for (`say`)
+  const say = (text, forId) => { if (forId === at.current) setNote(text) }
 
   const load = useCallback(async () => {
     if (!id) return null
@@ -225,12 +231,13 @@ export function useThread(letter) {
   // ── a report, one tap, with the way back ──
   const report = async (r) => {
     setReports((m) => ({ ...m, [r.id]: 'busy' }))
+    const was = id
     const out = await reportReply(r.id, true)
-    if (!alive.current) return
+    if (!alive.current || at.current !== was) return
     if (out && out.ok) setReports((m) => ({ ...m, [r.id]: 'on' }))
     else {
       setReports((m) => { const n = { ...m }; delete n[r.id]; return n })
-      setNote('the report did not go through. try again')
+      say('the report did not go through. try again', was)
     }
   }
   const undo = async (r) => {
@@ -247,16 +254,18 @@ export function useThread(letter) {
   const set = async (state) => {
     if (setting) return
     const before = t?.state
+    const was = id
     setSetting(true)
     const out = await setThread(id, state)
-    if (!alive.current) return
+    // turned to another letter meanwhile: that one's keys were never busy
+    if (!alive.current || at.current !== was) return
     setSetting(false)
     if (out && out.ok) {
-      setNote(state === 'locked' ? 'nobody else can reply now. the ones here stay.'
+      say(state === 'locked' ? 'nobody else can reply now. the ones here stay.'
         : state === 'closed' ? 'nobody else can see the replies now.'
-          : before === 'closed' ? 'everybody can see the replies again.' : 'people can reply again.')
+          : before === 'closed' ? 'everybody can see the replies again.' : 'people can reply again.', was)
       await load()
-    } else setNote('that did not go through. try again')
+    } else say('that did not go through. try again', was)
   }
 
   const retry = () => { setT(null); load() }
@@ -277,7 +286,7 @@ export function useThread(letter) {
     answered: !!(ok && t.recipient_replied && !hiddenFromMe),
     canWrite: !!me.can,
     toAt: !!letter && !isNameKey(letter.to),
-    like, report, undo, reports, liking, set, setting, note, setNote,
+    like, report, undo, reports, liking, set, setting, note, setNote, say,
   }
 }
 
@@ -732,7 +741,7 @@ function TrayKey({ lit = false, back = false, busy = false, disabled = false, on
 // every movement of it; every time it is raised it opens on the thread.
 // While it is down it is `inert`, and while it is up the keyboard's Tab goes
 // round inside it and never out onto the letter under it.
-export function ThreadSheet({ letter, th, open = false, reduce = false, go = null, onClose, style, kind, ref = null }) {
+export function ThreadSheet({ letter, th, open = false, resting = true, reduce = false, go = null, onClose, style, kind, ref = null }) {
   const phone = usePhone()
   const [mode, setMode] = useState('read')
   const [wasOpen, setWasOpen] = useState(open)
@@ -853,7 +862,7 @@ export function ThreadSheet({ letter, th, open = false, reduce = false, go = nul
       setMode('read')
       // the keys go down, so the reply that just went up is seen landing
       if (field.current) field.current.blur()
-      th.setNote(out.status === 'live' ? 'it’s up.' : (out.say || 'it’s being read. others see it once it passes.'))
+      th.say(out.status === 'live' ? 'it’s up.' : (out.say || 'it’s being read. others see it once it passes.'), letter.id)
       await th.load()
       requestAnimationFrame(() => toEnd())
       return
@@ -1062,7 +1071,13 @@ export function ThreadSheet({ letter, th, open = false, reduce = false, go = nul
     const a = document.activeElement
     const firstKey = keys[0]
     const lastKey = keys[keys.length - 1]
-    if (e.shiftKey ? (a === firstKey || !el.contains(a)) : a === lastKey) {
+    // the focus can stand on the sheet somewhere that is not a stop of its
+    // own (the list, which a press puts it on), and from there Tab went on
+    // out onto the letter under it: past the last stop forward, or before
+    // the first backward, is the end of the ring too
+    const past = !keys.includes(a) && el.contains(a) && !!(lastKey.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING)
+    const before = !keys.includes(a) && el.contains(a) && !!(firstKey.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING)
+    if (e.shiftKey ? (a === firstKey || before || !el.contains(a)) : (a === lastKey || past || !el.contains(a))) {
       e.preventDefault()
       ;(e.shiftKey ? lastKey : firstKey).focus({ preventScroll: true })
     }
@@ -1074,7 +1089,7 @@ export function ThreadSheet({ letter, th, open = false, reduce = false, go = nul
       className={`wl-th is-${mode}${open ? ' is-open' : ''}`} id={`wl-low-${letter.id}`}
       data-kind={kind} style={style}
       role="dialog" aria-modal={open ? 'true' : undefined} aria-labelledby={titleId}
-      inert={open ? undefined : true} aria-hidden={open ? undefined : 'true'}
+      inert={open || !resting ? undefined : true} aria-hidden={open ? undefined : 'true'}
       onKeyDown={onKey}
     >
       <div className="wl-th-head">

@@ -195,9 +195,9 @@ each colour carries its own treatment with it:
 
 | kind | colours | what it is |
 | --- | --- | --- |
-| lit | night, white, ice, green, amber, rose | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
+| lit | night, white, ice, green, amber, rose, lilac | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
 | negative | negative | the same screen with the panel dark and the words the bright thing |
-| poster | teal, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge. Its bands are laid in one of its inks, the status and the keys struck out in the palest |
+| poster | teal | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge. Its bands are laid in one of its inks, the status and the keys struck out in the palest |
 | riso | violet / yellow | two drum inks on warm paper, the second a hair out of register |
 | xerox | xerox | photocopied and blown out: one threshold between toner and paper, walked by the copier's heat |
 | brat | acid | the album cover's square: an acid lime panel between near black bands, black words a hair soft, photographed on cheap film. Painted, never pressed (below) |
@@ -224,7 +224,9 @@ the keys at the foot stand on two bands of the phone's glass above and below
 the panel, on all twelve: a lit screen's dark glass, the negative's, a copy's
 toner, a print's bands laid in one of its own inks with the status and the keys
 struck out in the palest (`bands` in `looks.js`: teal and violet / yellow in
-the second ink, lilac in the darkest), and acid's near black. Teal, lilac and
+the second ink), and acid's near black. Lilac is lit now, a lavender between
+rose and ice, and draws the lit screen's own dark glass (`looks.js`, lilac).
+Teal, lilac and
 acid were one poster edge to edge until 26 September, and beside nine screens
 with bands they read as three other objects rather than one phone in twelve
 colours. Each keeps its own light on the panel between the bands.
@@ -232,7 +234,6 @@ colours. Each keeps its own light on the panel between the bands.
 | colour | bands | the words on them |
 | --- | --- | --- |
 | teal | the second ink, `#3D6257` | the palest, `#E3A58C` |
-| lilac | the darkest, `#130F20`, so it is not violet / yellow's violet | the palest, `#F0D86D` |
 | violet / yellow | the violet drum, `#5A3DA8` | the paper, `#F4F0E4` |
 | acid | the lime 88 percent to black, `#111900`, with the grain across them | the lime a fifth towards `#F4F07A` |
 
@@ -270,7 +271,7 @@ picture draw the same one:
 | --- | --- | --- |
 | (none) | corner | the backlight's hot corner, caught in the palest ink round the point it is brightest at. It was on every print and read as the same white stain on each, then acid's alone; acid is the square now, and the corner stays as the press's default and `?light=corner` |
 | teal | keyline | no light on the panel, and a line of the palest ink round it, a hair inside the black rule and the bands |
-| lilac | dots | the light as a halftone: white cones on a forty five degree lattice, faded out from the hot corner, cut by the press into dots that are large where the light is strong and gone where it is not |
+| lilac | (none since it is lit) | it was the light as a halftone, white cones on a forty five degree lattice cut by the press into dots, until lilac left the press for the lit screens (`looks.js`, lilac) |
 | violet / yellow | plain | no light: the panel the yellow drum, flat. It was called `bands` while violet / yellow was the one print with the phone's bands |
 
 `/looks.html` on the dev server (`app/src/wall/proto/looks.jsx`) draws every

@@ -690,6 +690,12 @@ export default function Letter({
   // does not turn while they are up (the sheet, below).
   const [view, setView] = useState(null)
   const [thread, setThread] = useState(false)
+  // the sheet down and at rest, and not merely on its way down: until it has
+  // landed it is still on the glass and still takes a press (the hand that
+  // catches it going turns it round), and the black round it still swallows
+  // one, so a second tap as it goes lays nothing else down and never closes
+  // the letter under it
+  const [laid, setLaid] = useState(true)
   const threadRef = useRef(thread)
   threadRef.current = thread
 
@@ -792,6 +798,7 @@ export default function Letter({
     setArrived(!silentRef.current)
     setView(null)
     setThread(false)
+    setLaid(true)
   }
 
   // The letters under a name, when that is what the address named.
@@ -1561,11 +1568,15 @@ export default function Letter({
     hold()
     writeQ(q, 'none', 'none')
     const open = !!to
-    if (open !== threadRef.current) {
+    // laid down with the focus on it, the focus goes to the key first, before
+    // the sheet it is on stops taking it: by the grip, the black, Escape, a
+    // wheel or a hand pulling it down alike
+    if (!open) keyBack()
+    if (open !== threadRef.current || laid) {
       threadRef.current = open
-      flushSync(() => setThread(open))
+      flushSync(() => { setThread(open); setLaid(false) })
     }
-    if (reduce) { sliding.current = null; clearQ(true); return }
+    if (reduce) { sliding.current = null; clearQ(true); if (!open) setLaid(true); return }
     void liveSet()?.offsetWidth
     const travel = g.desk ? Math.max(Math.abs(g.dx), 120) : g.S
     const left = Math.abs(to - q)
@@ -1577,7 +1588,7 @@ export default function Letter({
       : `opacity 240ms ${EASE_OUT} ${Math.round(ms * 0.4)}ms`
     sliding.current = { to }
     writeQ(to, `${ms}ms ${ease}`, peers)
-    after(ms + (to ? 30 : 280), () => { sliding.current = null; clearQ(true) })
+    after(ms + (to ? 30 : 280), () => { sliding.current = null; clearQ(true); if (!to) setLaid(true) })
   }
   // one still under way, landed where it was going, for a turn of the deck
   // that comes as it lands
@@ -1586,6 +1597,7 @@ export default function Letter({
     hold()
     sliding.current = null
     clearQ(true)
+    if (!threadRef.current) setLaid(true)
   }
 
   // ── up, and down ──
@@ -1609,8 +1621,8 @@ export default function Letter({
       if (list) list.focus({ preventScroll: true })
     }
   }
-  const shutThread = () => {
-    if (!threadRef.current) return
+  // the focus, on the sheet or the black round it, handed to the key
+  const keyBack = () => {
     const sheet = sheetEl.current
     const a = document.activeElement
     if (a && ((sheet && sheet.contains(a)) || a.classList.contains('wl-th-room'))) {
@@ -1618,7 +1630,11 @@ export default function Letter({
       if (key && key.focus) key.focus({ preventScroll: true })
       else if (a.blur) a.blur()
     }
-    if (!canSlide()) { flushSync(() => setThread(false)); threadRef.current = false; return }
+  }
+  const shutThread = () => {
+    if (!threadRef.current) return
+    keyBack()
+    if (!canSlide()) { flushSync(() => { setThread(false); setLaid(true) }); threadRef.current = false; return }
     runQ(0)
   }
   const openRef = useRef(openThread)
@@ -2298,7 +2314,7 @@ export default function Letter({
   // only the next one reaches the room and closes the letter.
   // It never takes the focus itself (a press on a button does, and it goes
   // with the sheet), so the focus on the sheet is handed to the key.
-  const backdrop = thread ? (
+  const backdrop = thread || !laid ? (
     <button
       type="button" className="wl-th-room" tabIndex={-1} aria-label="shut the replies"
       onMouseDown={(e) => e.preventDefault()} onClick={shutThread}
@@ -2307,7 +2323,7 @@ export default function Letter({
   const sheet = threadOn && sheetSkin ? (
     <ThreadSheet
       key={one.id} ref={sheetEl} letter={one} th={th} open={thread} reduce={reduce} go={go}
-      onClose={shutThread} style={sheetSkin.vars} kind={sheetSkin.kind}
+      onClose={shutThread} style={sheetSkin.vars} kind={sheetSkin.kind} resting={laid}
     />
   ) : null
 

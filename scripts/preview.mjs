@@ -1970,7 +1970,7 @@ const ROUTES = [
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th-room', { x: 0.5, y: 0.18 }, 800]], settle: 200 },
   // the sheet under the other glasses: a negative, whose light is its
   // words, and a poster's print
-  { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
+  { label: 'replies-negative-write', path: '/letter/dani.arroyo', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
   { label: 'replies-poster', path: '/letter/jules.k', thread: 'full',

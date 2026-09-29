@@ -108,7 +108,7 @@ import { heldProof, refresh } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
 import { signOut as dropProof } from '../../api/auth.js'
 import { cardStep } from '../seed.js'
-import { fault } from '../moderate.js'
+import { fault, phoneAcross } from '../moderate.js'
 import { getState, patch } from '../store.js'
 import {
   myHandle, canPlace, readyToPlace, myPings, heldPings, forgetPings, place, placeAgain, release, liveOf, mutualOf,
@@ -159,6 +159,15 @@ const SAY = {
   greet: 'the greeting can’t go in a note as it is. take out links, addresses and numbers.',
   // a note let go from its settings, when the letting go did not go through
   let: 'it did not go through. give it a moment, then try again.',
+}
+
+// The line under the screen saying the face is the writer's takes a line's
+// height from the screen, which a window under 661 pixels tall has no more of
+// to give (wall.css `.has-tip` stops at its least width there), so on the
+// shortest phones it is not drawn and the lit key stays in view; the dotted
+// lines under the greeting and the battery still say they are theirs
+function tipFits() {
+  try { return !window.matchMedia('(max-height: 660px)').matches } catch { return true }
 }
 
 function words(s) {
@@ -519,9 +528,12 @@ export default function Ping({
   // kept with the note and read by the other person if it is ever mutual.
   const [greet, setGreet] = useState(() => faceOf([held, edit, kept, away]).greet)
   const [bat, setBat] = useState(() => faceOf([held, edit, kept, away]).bat)
-  // the face touched on this screen, so the list arriving late does not put
-  // a note's old face over one being set
-  const faced = useRef(false)
+  // which half of the face was touched on this person's screen, each on its
+  // own, so the list arriving late puts a note's old line and battery on the
+  // screen with its words except the half being set; a battery pressed does
+  // not keep the note's own line off it, and the words then go out with the
+  // line they had. Back to nothing when the person changes
+  const faced = useRef({ greet: false, bat: false })
   // the greeting is where the typing is: the right key takes a character
   // back from it, and there is something there to take
   const [atGreet, setAtGreet] = useState(false)
@@ -531,7 +543,7 @@ export default function Ping({
   // whether this screen made room for it, which it keeps after the line has
   // gone, so the line fades where it stood and nothing under it moves
   const [hint, setHint] = useState(() => !getState().faceSeen)
-  const [tipRoom, setTipRoom] = useState(() => !getState().faceSeen)
+  const [tipRoom, setTipRoom] = useState(() => !getState().faceSeen && tipFits())
   // whose note had its words put on the screen (`editNote`, or a name chosen
   // with a note out on it): a line cleared of them takes them off the note.
   // A line that was only ever empty sends no words, and keeps what was there
@@ -676,14 +688,16 @@ export default function Ping({
   // change, never new words
   const faceOnly = editing && !gone && sameWords && !sameFace
   // The line across the top, read at the keyboard by the list the server
-  // reads the words with (moderate.js `fault`), on its own and then with the
-  // words under it, since a number cut in two across them is still a number.
+  // reads the words with (moderate.js `fault`), on its own, and then for a
+  // phone number cut in two across it and the words (`phoneAcross`), which is
+  // still a number; only the number, since an address or a room read across
+  // the join is two sentences meeting, and the server reads each apart.
   // A caught line refuses the send here: the server would leave it off and
   // send the note without it (0073). The words alone are the server's to
   // refuse, as they always were (`card`), and are read here too, first
   const caught = greetOut && fault(greetOut) ? 'greet'
     : line.trim() && fault(line) ? 'card'
-    : greetOut && line.trim() && fault(`${greetOut}\n${line}`) ? 'greet'
+    : greetOut && line.trim() && phoneAcross(greetOut, line) ? 'greet'
     : ''
   // this week's pings, as the server last said them, and whether sending to
   // this person spends one: a note already running on them is only new
@@ -730,14 +744,16 @@ export default function Ping({
     window.history.replaceState(window.history.state, '', window.location.pathname.replace(/\/ping(?:\/[^/]*)?$/, `/ping/${k}`))
     setTo(k)
     setSaid('')
-    if (n && n.line && !line.trim()) { setLine(n.line); shown.current = k; putFace(n) }
+    // somebody else's screen is not the one a face was being set on
+    if (k !== h) faced.current = { greet: false, bat: false }
+    if (n && n.line && !line.trim()) { setLine(n.line); shown.current = k; putFace(n, k !== h) }
     setStep('line')
   }
-  // a note's face, put on the screen with its words, unless one is being set
-  const putFace = (n) => {
-    if (faced.current) return
-    setGreet(n.greet || null)
-    setBat(Number.isInteger(n.bat) ? n.bat : 4)
+  // a note's face, put on the screen with its words: each half unless the
+  // writer is setting it on this screen (`fresh` for a screen just chosen)
+  const putFace = (n, fresh = false) => {
+    if (fresh || !faced.current.greet) setGreet(n.greet || null)
+    if (fresh || !faced.current.bat) setBat(Number.isInteger(n.bat) ? n.bat : 4)
   }
   // A link to somebody with a note of theirs on them opens on that screen
   // before the list has come, and put nothing on it, so the note's words
@@ -1009,8 +1025,8 @@ export default function Ping({
     window.history.replaceState(window.history.state, '', window.location.pathname.replace(/\/ping\/[^/]*$/, '/ping'))
     setTo(''); setLine(''); setSettled(false); setSaid(''); setDip(''); setStep('who')
     setEdit(null); setAsk(false)
-    setGreet(null); setBat(4); setAtGreet(false); setTipRoom(!getState().faceSeen)
-    faced.current = false
+    setGreet(null); setBat(4); setAtGreet(false); setTipRoom(!getState().faceSeen && tipFits())
+    faced.current = { greet: false, bat: false }
     shown.current = ''
     setRev((n) => n + 1)
   }
@@ -1036,13 +1052,13 @@ export default function Ping({
     patch({ faceSeen: true })
   }
   const onGreet = (v) => {
-    faced.current = true
+    faced.current.greet = true
     setGreet(v === defaultGreet ? null : v)
     setSaid('')
   }
   const pressBat = () => {
     if (placing) return
-    faced.current = true
+    faced.current.bat = true
     seenFace()
     setBat((b) => (b + 4) % 5)
   }

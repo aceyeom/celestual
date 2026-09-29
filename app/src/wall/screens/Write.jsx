@@ -129,7 +129,7 @@ import {
   newNonce, postDraft, openCampuses, loadCampuses, targetKey,
 } from '../data.js'
 import { normaliseLook, freshLook, colourOf, stampOf } from '../looks.js'
-import { fault, whyNot } from '../moderate.js'
+import { fault, whyNot, phoneAcross } from '../moderate.js'
 import { campus } from '../campus.js'
 import { getState, patch, setAfterGate } from '../store.js'
 import { DOMAIN, eduBerkeley, eduDomain, refresh, validEmail, anyEmail, normEmail, heldProof } from '../auth.js'
@@ -678,13 +678,14 @@ export default function Write({
   // has no battery key (the letter's battery is the letter's, full on a
   // draft), so a note running on them keeps the battery its writer left it
   // on, and a new one goes out full, as the screen drew it; the screen it
-  // ends on draws the one that went (`sentBat`). The server replaces a card
+  // ends on draws the one that went (`sentBat`). A greeting left as it came
+  // keeps a running note's own line the same way. The server replaces a card
   // whole, so a send that left the face out would take a running note's off
   // without a word.
   const [sentBat, setSentBat] = useState(4)
   const greetOut = greet === null ? '' : greet.replace(/\s+/g, ' ').trim().slice(0, MAX_GREET)
   const greetCaught = () => {
-    if (!greetOut || !(fault(greetOut) || fault(`${greetOut}\n${body.trim()}`))) return false
+    if (!greetOut || !(fault(greetOut) || phoneAcross(greetOut, body.trim()))) return false
     setStep(1)
     setSaid(PING_SAY.greet)
     requestAnimationFrame(() => greetRef.current && greetRef.current.focus())
@@ -704,7 +705,7 @@ export default function Write({
     const running = list.ok && !anew ? liveOf(list, target) : null
     const bat = running && Number.isInteger(running.bat) ? running.bat : 4
     const out = !list.ok ? list : await (anew ? placeAgain : place)({
-      me, them: target, proof: proofNow, words: body.trim(), greet: greetOut || undefined, bat,
+      me, them: target, proof: proofNow, words: body.trim(), greet: greetOut || (running && running.greet) || undefined, bat,
     })
     if (!alive.current) return
     setSending(false)
