@@ -460,19 +460,18 @@
    there is no second row of a name and a handle: it is off here outright,
    and not left to story.css. The aerial at the start, the night it was
    told in the middle of the row and not of what the aerial leaves, since
-   no battery stands at the far end to balance it; a menu's name takes the
-   night's place, and where in the menu the chosen row is takes the far
-   end (Keepsake.jsx `top`). Every size in `--su`, the day's and the
-   count's included, which a desk read in `cqw` of the whole row */
+   no battery stands at the far end to balance it, and the row is the same
+   whatever is up: a menu names itself on its own small screen (Keepsake.jsx
+   `Pane`). Every size in `--su`, the night's included, which a desk read
+   in `cqw` of the whole row */
 .wl-root .wl-scene.wl-keep-scr .wl-scr-r2 { display: none; }
 .wl-keep-scr .wl-scr-r1 {
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
   height: calc(10.4 * var(--su)); gap: calc(1.4 * var(--su));
 }
 .wl-keep-scr .wl-scr-r1 > .wl-scr-ant { justify-self: start; }
-.wl-keep-scr .wl-scr-r1 > :is(.wl-scr-stamp, .wl-scr-dt) { grid-column: 2; margin: 0; }
-.wl-keep-scr .wl-scr-dt ~ .wl-scr-cnt { grid-column: 3; justify-self: end; margin: 0 calc(0.6 * var(--su)) 0 0; font-size: calc(7.4 * var(--su)); opacity: 0.82; }
-.wl-keep-scr :is(.wl-scr-cnt, .wl-scr-dt) { font-size: calc(11 * var(--su)); }
+.wl-keep-scr .wl-scr-r1 > .wl-scr-stamp { grid-column: 2; margin: 0; }
+.wl-keep-scr .wl-scr-cnt { font-size: calc(11 * var(--su)); }
 .wl-keep-scr .wl-scr-ant .wl-px { height: calc(9 * var(--su)) !important; width: auto !important; }
 .wl-keep-scr .wl-scr-bot { height: calc(14 * var(--su)); padding: 0 calc(1.6 * var(--su)) calc(0.6 * var(--su)); }
 .wl-root .wl-keep-scr .wl-sk { font-size: calc(13.4 * var(--su)); padding: 0 calc(0.8 * var(--su)); gap: var(--su); }
@@ -488,8 +487,12 @@
   .wl-root .wl-keep-scr .wl-sk:not(:disabled):hover { border-radius: var(--su); }
 }
 /* no dead pixel on this glass either: the pair's seed puts one on a band
-   for some pairs, and it read as a key that was not there */
+   for some pairs, and it read as a key that was not there. Nor the ghost
+   column a letter's phone can have down its glass (screen.css
+   `.is-streak`): on a glass that nothing cuts, a faint dark line down the
+   middle of the mark and the notes read as the old cut come back */
 .wl-keep-scr .wl-scr-fx.is-glass { background: var(--q-scratch, none), var(--q-dust, none); }
+.wl-keep-scr .wl-scr-fx.is-streak { display: none; }
 .wl-keep-scr .wl-scr-body { display: block; padding: 0; }
 
 /* ── the glass: the mark at its head, the two of them, their notes ──
@@ -502,7 +505,7 @@
    mark's canvas draws no dots now (PixelStory.jsx `dots`) and the glass
    lays them over the whole of itself, a tile of one cell at the story's own
    pitch, its lit part the dot, started where the canvas's first cell is
-   (Keepsake.jsx `dotsOn`): one grid from the band to the keys, lying under
+   (Keepsake.jsx `gridOf`): one grid from the band to the keys, lying under
    the camera's lines of it (story.css `[data-cells]`). The breath's light
    behind the mark ends well inside the panel's sides and foot, and its top
    is under the band, so it is never cut at an edge a reader can see. Until
@@ -520,12 +523,56 @@
   container-type: inline-size;
 }
 .wl-keep-mark .wl-story { position: absolute; inset: 0; }
-/* a menu, the question and every note stand in the mark's place, the mark
-   stood still and out of sight under them, on the same dots */
-.wl-keep.is-over .wl-keep-mark .wl-story { visibility: hidden; }
-.wl-keep-over { position: absolute; inset: 0; z-index: 1; display: flex; padding: 2.4cqw; }
-.wl-keep-over .wl-scr-note { font-size: 7.6cqw; gap: 2.6cqw; }
-.wl-keep-over .wl-scr-note b { font-size: 10cqw; line-height: 1; }
+/* A menu, the question and every note after a press stand in the mark's
+   place on a small screen of the notes' own kind (Keepsake.jsx `Pane`), the
+   mark stood still and out of sight under it and the two names with it, so
+   what is up is the one thing on the head of the glass: in the middle of
+   the mark's panel, as wide as a note and as tall as its rows. It filled
+   the whole panel, and with the focus on it its dotted ring drew a tall
+   empty box with the names standing under it (29 September). Sized in
+   `--su` like everything else on the phone. */
+.wl-keep.is-over :is(.wl-keep-mark .wl-story, .wl-keep-pair) { visibility: hidden; }
+.wl-keep-over {
+  /* over the panel and the names' line under it, which is out of sight
+     with it, down to where the first note starts, so what is up stands in
+     the middle of the space it has (the names at their largest, 8 units,
+     the 3 under them and the 2.4 before the note, less the 2.2 they stand
+     up into the panel by, and less their lift) */
+  position: absolute; inset: 0 0 calc(var(--pair-lift) - 11.2 * var(--su)); z-index: 1;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 calc(3.4 * var(--su));
+  pointer-events: none;
+}
+.wl-keep-over > * { pointer-events: auto; }
+/* (the small screen holds the focus only while a note that has no key is
+   up, and says what it says; it is not a thing pressed, and has no ring) */
+.wl-root .wl-keep-sheet:focus-visible { outline: none; }
+.wl-keep-count { flex: 0 0 auto; font-size: calc(5.2 * var(--su)); line-height: 1; opacity: 0.82; }
+/* the rows, at the size of a note's words, the chosen one inverted as the
+   phone chose one, a cell of the glass's grid of air round them */
+.wl-keep-sheet .wl-scr-menu {
+  flex: 0 0 auto; margin: 0; padding: calc(1.8 * var(--su)) calc(1.6 * var(--su));
+  font-size: calc(7.6 * var(--su)); line-height: 1.08;
+}
+.wl-keep-sheet .wl-scr-menu li { padding: calc(1.2 * var(--su)) calc(1.8 * var(--su)) calc(0.9 * var(--su)); border-radius: calc(0.5 * var(--su)); }
+/* The small screen that has the phone's keys is framed in the ink, its
+   hairline drawn in full, as a phone framed the screen in front: the menu
+   while its list has the focus, and a note while it holds it. That is the
+   focus ring here, recoloured and not removed; the list's own dashed ring
+   (screen.css), drawn inside the frame, was a second box in the first */
+.wl-root .wl-keep-sheet .wl-scr-menu:focus-visible { outline: none; }
+.wl-keep-sheet:focus-within::before {
+  box-shadow: inset 0 0 0 max(1px, calc(0.4 * var(--su))) var(--s-ink);
+}
+/* the question and the notes: what it is in the large face, and a line
+   under it at the size of a note's words */
+.wl-keep-sheet .wl-scr-note {
+  flex: 0 0 auto; gap: calc(2 * var(--su));
+  padding: calc(3.6 * var(--su)) calc(3.4 * var(--su)) calc(4 * var(--su));
+  font-size: calc(6.2 * var(--su)); line-height: 1.1;
+}
+.wl-keep-sheet .wl-scr-note b { font-size: calc(8.4 * var(--su)); line-height: 1; }
+.wl-keep-sheet .wl-scr-note .wl-px { height: calc(7 * var(--su)); }
 
 /* the two of them, once, under `it's mutual.`: both first names (or both
    @s) as one line in the notes' ink, the ampersand between them quieter,
@@ -554,21 +601,33 @@
 }
 .wl-keep-pair > .wl-keep-amp { flex: 0 0 auto; opacity: 0.56; }
 
-/* ── a note, as the phone's inbox showed a message ──
-   A small screen on the glass: a hairline of the ink round it, the panel a
-   little brighter inside it, and a strip across its top a darker band of
-   the rose, the phone's own band in miniature, with the line its writer
-   set there at the start and the battery they left it on at the end, both
-   in the note's ink. Then the words, at the one size both notes take, and
-   whose it is, signed under them. Nothing scrolls: a note of 280
-   characters fits at the smallest of the four sizes, and makes the phone
-   taller. */
-.wl-keep-note {
-  position: relative; margin: 0; display: flex; flex-direction: column; min-width: 0;
+/* ── a small screen on the glass ──
+   A note, as the phone's inbox showed a message, and whatever stands in
+   the mark's place: a panel of the glass a little brighter than the glass,
+   a hairline of the ink round it, and a strip across its top a darker band
+   of the rose, the phone's own band in miniature, with the line its writer
+   set there at the start and the battery they left it on at the end, or a
+   menu's name and where in it the chosen row is. The panel and the strip
+   are painted under what is on them and laid on the glass's own grid
+   (Keepsake.jsx `snapOf`): each edge, and the strip's foot, is one of the
+   grid's lines between the story's cells, drawn a little darker, and never
+   a line through a row of the phone's pixels, the panel moved by at most
+   half a cell from the box it is laid out in (`--sn-*`). The unlit dots
+   run on under it: it is drawn on the same glass, not laid over it. */
+.wl-keep-pane {
+  position: relative; z-index: 0; margin: 0; display: flex; flex-direction: column; min-width: 0;
   color: var(--s-ink); text-shadow: 0 0 calc(0.35 * var(--su)) var(--s-soft);
-  border-radius: calc(0.9 * var(--su)); overflow: hidden;
-  background: color-mix(in srgb, var(--s-hi) 30%, transparent);
-  box-shadow: inset 0 0 0 calc(0.35 * var(--su)) color-mix(in srgb, var(--s-lo) 72%, transparent);
+}
+.wl-keep-pane::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  inset: var(--sn-t, 0px) var(--sn-r, 0px) var(--sn-b, 0px) var(--sn-l, 0px);
+  border-radius: calc(0.9 * var(--su));
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--s-lo) 72%, transparent),
+      color-mix(in srgb, var(--s-lo) 90%, transparent)) 0 0 / 100% var(--sn-h, calc(7.6 * var(--su))) no-repeat,
+    color-mix(in srgb, var(--s-hi) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s-lo) 80%, transparent);
 }
 /* a place a reader is put, never a stop the tab key comes to, so it
    carries no ring */
@@ -577,18 +636,26 @@
   container-type: inline-size;
   display: flex; align-items: center; gap: calc(2.4 * var(--su));
   height: calc(7.6 * var(--su)); padding: 0 calc(2.6 * var(--su)) 0 calc(3 * var(--su));
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--s-lo) 72%, transparent),
-    color-mix(in srgb, var(--s-lo) 90%, transparent));
 }
-/* its writer's line, at 6.2 until it is too long for the strip, then set
-   smaller to fit it, down to 4.2, and only then cut: the strip less the
-   battery and the gap before it, over the line's length in the face's
-   widths (Keepsake.jsx `measureOf`), each near two fifths of an em */
+/* its writer's line, at 6.2 until the longer of the pair's two is too long
+   for the strip, then both set smaller to fit it, down to 4.2, and only
+   then cut: the strip less the battery and the gap before it, over the
+   longer line's length in the face's widths (Keepsake.jsx `titleSize`),
+   each near two fifths of an em */
 .wl-keep-title {
   flex: 1 1 auto; min-width: 0;
   font-size: max(calc(4.2 * var(--su)), min(calc(6.2 * var(--su)), calc((100cqw - 11.4 * var(--su)) / (0.39 * var(--n, 1)))));
   line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* the battery, a whole number of the screen's own pixels to each of the
+   glyph's eight rows where the page can round it (eight of the page's
+   pixels a step on a screen of one to the pixel, four on one of two and
+   three on one of three), so it is as crisp as the band's glyphs */
+.wl-keep-body { --keep-bat: calc(4.2 * var(--su)); }
+@supports (height: round(nearest, 1px, 1px)) {
+  .wl-keep-body { --keep-bat: round(nearest, calc(4.2 * var(--su)), 8px); }
+  @media (min-resolution: 2dppx) { .wl-keep-body { --keep-bat: round(nearest, calc(4.2 * var(--su)), 4px); } }
+  @media (min-resolution: 3dppx) { .wl-keep-body { --keep-bat: round(nearest, calc(4.2 * var(--su)), calc(8px / 3)); } }
 }
 .wl-keep-bat { flex: 0 0 auto; }
 /* the words keep the room's paragraph measure (phone.css), a little more
@@ -597,6 +664,8 @@
   margin: 0; padding: calc(2.6 * var(--su)) calc(3 * var(--su)) 0;
   white-space: pre-wrap; overflow-wrap: break-word;
 }
+/* Korean breaks between its words, as it is written, and not inside them */
+.wl-keep-words:lang(ko) { word-break: keep-all; }
 .wl-keep-words.is-l { font-size: calc(8.4 * var(--su)); }
 .wl-keep-words.is-m { font-size: calc(7.2 * var(--su)); }
 .wl-keep-words.is-s { font-size: calc(6.2 * var(--su)); }
@@ -731,6 +800,8 @@
   .wl-keep-inbox { padding: calc(3.4 * var(--su)) calc(3.4 * var(--su)) calc(3.4 * var(--su)) calc(1.2 * var(--su)); }
   .wl-keep-body { --pair-lift: 0px; }
   .wl-root.is-room .wl-keep-pair { margin: 0 0 calc(0.6 * var(--su)); }
+  /* (the names are beside the mark here, not under it) */
+  .wl-keep-over { inset: 0; }
 }
 
 /* ── still ──
