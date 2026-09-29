@@ -68,10 +68,12 @@
 // each turning on its own step (`spreadMap`, `spreadOn`), and never a soft
 // front. It is drawn first, under the dots.
 //
-// The intro's pink is not always pink: it is whichever letter's light the
-// intro drew for this load (Intro.jsx `TINTS`), and now and then all of
-// them at once, round the wheel from where they hold each other out to the
-// corners (a story's `spectrum`, `pinkOf`).
+// The intro's pink is seldom pink: it is whichever of its looks the intro
+// drew for this load (Intro.jsx `LOOKS`), one letter's light, or two or
+// three of them melting into each other, or all five, a rainbow: out from
+// where they hold each other to the corners, each colour an equal share of
+// the glass or not, or laid across it at an angle (a story's `spectrum`,
+// `axis` and `even`, `pinkOf`).
 //
 // A frame may carry a `glow` as well: a soft ring of light round a point,
 // brighter at its edge, for the mutual's breath behind the mark.
@@ -542,21 +544,72 @@ function spreadMap(s, w) {
   return out
 }
 
-// ── every colour at once ──
+// ── a look laid across the glass ──
+// A spectrum with an `axis` is laid by where a block is along it and not by
+// how far it is from them: the angle read as CSS reads a `linear-gradient`'s
+// (0 to the top, 90 to the right), on the story's own cells, with a slow
+// noise in it so the edge between two colours has the stain's lobes in it
+// and is never a ruled line. Worked out once for a size, beside the map it
+// goes with.
+function axisField(s, m) {
+  if (m.axisField) return m.axisField
+  const r = (s.axis * Math.PI) / 180
+  const dx = Math.sin(r)
+  const dy = -Math.cos(r)
+  const out = new Float32Array(m.bw * m.bh)
+  let lo = Infinity
+  let hi = -Infinity
+  for (let j = 0; j < m.bh; j++) {
+    for (let i = 0; i < m.bw; i++) {
+      const x = (i + 0.5) * SPREAD - s.ox
+      const y = (j + 0.5) * SPREAD - s.oy
+      out[j * m.bw + i] = x * dx + y * dy + 4 * noise(x, y, 19, 5)
+    }
+  }
+  // (the ends read back as they were kept, so nothing is a hair under the
+  // first colour or over the last)
+  for (const v of out) { if (v < lo) lo = v; if (v > hi) hi = v }
+  for (let k = 0; k < out.length; k++) out[k] = Math.min(1, Math.max(0, (out[k] - lo) / (hi - lo || 1)))
+  m.axisField = out
+  return out
+}
+// ── every colour a fair share ──
+// Laid out from them by distance, a spectrum's first colour is a sliver
+// round them and its last a sliver in the corners, and the middle ones take
+// the glass. `even` lays it by rank instead: the blocks in the order the
+// front meets them, each colour the next fifth of them (or third, or half),
+// so the lead is still where they hold each other and the last still in the
+// corners, and every colour between has as much of the glass as they do.
+function evenField(m) {
+  if (m.evenField) return m.evenField
+  const f = m.field
+  const idx = Array.from(f.keys()).sort((a, b) => f[a] - f[b])
+  const out = new Float32Array(f.length)
+  const n = idx.length - 1 || 1
+  for (let r = 0; r < idx.length; r++) out[idx[r]] = r / n
+  m.evenField = out
+  return out
+}
+
+// ── two colours or more ──
 // A story whose pink is a `spectrum` is lit in each of its panels in turn,
 // the first where the pink leaves from and the last in the far corners,
 // each melting into the next along the lobes the front grows in (`field`),
 // so the colour a block turns is the one the front has reached, and the
-// pink goes round the wheel as it goes out. Each block is lit as a panel
-// is, its hi, mid and lo round the backlight's hot spot, and the blocks are
-// laid down smoothed, so the colours are a light and not a mosaic. Made
-// once for a size and a place it leaves from; any other story's pink is the
-// one panel (`pinkPanel`).
+// pink goes round the wheel as it goes out; or, with an `axis`, the first on
+// one side of the glass and the last on the other (`axisField`), and, when
+// `even`, each of them an equal share (`evenField`). Each block is lit as a
+// panel is, its hi, mid and lo round the backlight's hot spot, and the
+// blocks are laid down smoothed, so the colours are a light and not a
+// mosaic. Made once for a size and a place it leaves from, with its lighter
+// step beside it (`lightOf`); any other story's pink is the one panel
+// (`pinkPanel`).
 function pinkOf(s, w) {
   if (!s.spectrum) return s.pink
   const m = spreadMap(s, w)
   if (m.pink) return m.pink
-  const { bw, bh, field } = m
+  const { bw, bh } = m
+  const field = s.axis != null ? axisField(s, m) : s.even ? evenField(m) : m.field
   const stops = s.spectrum.map((pan) => pan.map(rgbOf))
   const n = stops.length - 1
   const small = document.createElement('canvas')
@@ -568,7 +621,7 @@ function pinkOf(s, w) {
   for (let j = 0; j < bh; j++) {
     for (let i = 0; i < bw; i++) {
       const k = j * bw + i
-      const u = field[k] * n
+      const u = Math.max(0, Math.min(1, field[k])) * n
       const a = Math.min(n, Math.floor(u))
       const b = Math.min(n, a + 1)
       const f = u - a
@@ -593,6 +646,24 @@ function pinkOf(s, w) {
   g.imageSmoothingQuality = 'high'
   g.drawImage(small, 0, 0, s.W, s.H)
   m.pink = cv
+  m.light = lightOf(cv, s)
+  return cv
+}
+// A block of a spectrum that has just turned is its own colour a step
+// lighter: the colour screened on itself, at half, since a pale colour
+// screened on itself is nearly white. Made here, once, beside the pink, so a
+// frame lays it through the fresh blocks as a plain picture at their
+// strength (`spreadOn`) and does not screen the whole glass onto itself
+// twice on every frame the front is moving, which a slow phone felt.
+function lightOf(pink, s) {
+  const cv = document.createElement('canvas')
+  cv.width = s.W
+  cv.height = s.H
+  const g = cv.getContext('2d')
+  g.drawImage(pink, 0, 0)
+  g.globalCompositeOperation = 'screen'
+  g.globalAlpha = 0.5
+  g.drawImage(pink, 0, 0)
   return cv
 }
 
@@ -681,14 +752,13 @@ function spreadOn(g, w, s) {
       g.fill()
       continue
     }
-    // a spectrum has no one lighter step: each block is its own colour laid
-    // over itself, screened, which is that colour a step lighter; at half
-    // the strength, since a pale colour screened on itself is nearly white
+    // a spectrum has no one lighter step: each block is its own colour a
+    // step lighter, made once beside the pink (`lightOf`), laid over it at
+    // the step's strength
     g.save()
     g.clip()
-    g.globalCompositeOperation = 'screen'
-    g.globalAlpha = 0.5 * a * level
-    g.drawImage(pink, 0, 0)
+    g.globalAlpha = a * level
+    g.drawImage(m.light || pink, 0, 0)
     g.restore()
   }
   // the pink still in the blocks just left, the panel's own pink through them
@@ -1117,9 +1187,11 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
         ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
         spectrum: story.spectrum || null, front: story.spectrum ? null : story.front || FRONT_RGB,
+        // (a spectrum laid across the glass, or each colour an equal share)
+        axis: story.axis ?? null, even: !!story.even,
         face: cs.fontFamily || 'monospace', fine: !!story.fine && mode !== 'ascii',
         // a crisp story's pink a block to a pixel (`spreadBlocks`), unless it is
-        // every colour at once, which is the intro's and is never crisp
+        // two colours or more, which only the intro's is, and it is never crisp
         blocks: crisp && !story.spectrum,
       }
       s.ghost = faint(s.rgb)
@@ -1148,7 +1220,8 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         else setTimeout(() => mine.later(), 600)
       } else pinkPanel(s, host, el, dpr)
       // a spectrum is painted now, from where the pink will leave, while the
-      // glass is still dark, and not on the frame the pink starts
+      // glass is still dark, and not on the frame the pink starts: its
+      // field, its colours and its lighter step, all of it
       if (s.spectrum && story.times) {
         const w = story.frame(story.times.glow, s.edge).wash
         if (w) pinkOf(s, w)

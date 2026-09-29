@@ -1266,15 +1266,33 @@ const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`o
 const ROUTES = [
   // The intro, held on its last beat: the phone, and the mark in its pixels,
   // in the rose, as a held frame always is. Then held on the run, on the hug
-  // and on the glide by the clock (Intro.jsx `?t=`), the last beat in the
-  // wheel the intro turns one load in nine (`?tint=rainbow`), and the same
-  // last beat typed, for setting beside it (`?intro=ascii`).
+  // and on the glide by the clock (Intro.jsx `?t=`), the last beat in a
+  // rainbow (`?tint=rainbow`, the one round the wheel from the amber), and
+  // the same last beat typed, for setting beside it (`?intro=ascii`). Then
+  // the last beat in each of the looks a load may draw that is more than one
+  // colour (Intro.jsx `LOOKS`: the four wheels and the prism, then the
+  // gradients out from them and across), and the glide in one of each way of
+  // laying the colours on the glass, with the colour on its way out through
+  // it.
   { label: 'intro',         path: '/?beat=3' },
   { label: 'intro-run',     path: '/?t=1400' },
   { label: 'intro-hug',     path: '/?t=2100' },
   { label: 'intro-glide',   path: '/?t=2450' },
   { label: 'intro-rainbow', path: '/?beat=3&tint=rainbow' },
   { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
+  { label: 'intro-wheel-amber', path: '/?beat=3&tint=wheel-amber' },
+  { label: 'intro-wheel-green', path: '/?beat=3&tint=wheel-green' },
+  { label: 'intro-wheel-ice',   path: '/?beat=3&tint=wheel-ice' },
+  { label: 'intro-wheel-lilac', path: '/?beat=3&tint=wheel-lilac' },
+  { label: 'intro-prism',       path: '/?beat=3&tint=prism' },
+  { label: 'intro-peach',       path: '/?beat=3&tint=peach' },
+  { label: 'intro-seaglass',    path: '/?beat=3&tint=seaglass' },
+  { label: 'intro-twilight',    path: '/?beat=3&tint=twilight' },
+  { label: 'intro-dusk',        path: '/?beat=3&tint=dusk' },
+  { label: 'intro-lagoon',      path: '/?beat=3&tint=lagoon' },
+  { label: 'intro-glide-wheel', path: '/?t=2450&tint=wheel-ice' },
+  { label: 'intro-glide-peach', path: '/?t=2450&tint=peach' },
+  { label: 'intro-glide-dusk',  path: '/?t=2450&tint=dusk' },
   // ── the ping, on the wall ──
   // Raised over the Berkeley wall, from the tab, the bar and the foot, and
   // from every address Main used to draw it at. The people written to, with
@@ -1515,6 +1533,9 @@ const ROUTES = [
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
   { label: 'join-still',    path: '/berkeley/join', still: true, settle: 1600 },
   { label: 'intro-still',   path: '/?beat=3', still: true, settle: 900 },
+  // and in a rainbow and a look across the glass, whose lamps stand still
+  { label: 'intro-still-wheel', path: '/?beat=3&tint=wheel-green', still: true, settle: 900 },
+  { label: 'intro-still-dusk',  path: '/?beat=3&tint=dusk', still: true, settle: 900 },
   { label: 'letter-still',  path: '/berkeley/letter/ren.tanaka', still: true, settle: 1200 },
   // the veil over the field, with the flaps rolled into place (art.jsx
   // Flap), so the wall is shot once they have landed; then the field with
