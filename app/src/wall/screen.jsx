@@ -532,8 +532,9 @@ export function Screen({
     name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat: charge = 4, onBat = null, batLabel = '',
     mail = false, salutation = '', greet = null, tag = '',
   } = top
-  // a battery of `null` is a phone that draws none (the keepsake, whose two
-  // notes carry their own); anything else out of range is a full one
+  // a battery of `null` is a phone that draws none (the keepsake, until the
+  // pair's face has been said, Keepsake.jsx); anything else out of range is
+  // a full one
   const bat = charge === null ? null : Number.isInteger(charge) && charge >= 0 && charge <= 4 ? charge : 4
   const said = salutation || (dear && name ? `dear ${name}` : name)
   // the line has the row to itself where nothing stands on its right (no

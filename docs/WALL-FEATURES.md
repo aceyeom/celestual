@@ -113,6 +113,25 @@ proposal can be checked against each one by name.
 | a private @ stored beside a letter to a first name | no | no | | | | | | no | | **no**, plain or hashed. The @ is asked on the ping sheet, as the ping's target |
 | the search hears names, accents and misspellings | | | | | | | | | | **yes**, over the public index only. Migration 0054 |
 | a nickname table (Alex finds Alexandra) | no | | | | | | | | | **no**. An inference about a person, not a fact about a string |
+| on a mutual: whether the other has opened it, and a colour and a battery the two share | | | | | | | | | | **yes**, by the owner's call on 29 September, and not on the wall. Migration 0077. The ruling below says why G2 is not crossed |
+
+**The mutual's report, and G2 (29 September).** G2 names "whether the subject
+has seen their letters" as a thing never told, and the mutual's keepsake now
+says `opened` under your note once the other person has opened it. It is
+not the thing G2 forbids, and the difference is the whole of the ruling. G2
+guards the wall, where one side (the subject) never agreed to be there and
+the other (the reader, the writer) is anonymous to them: telling a writer
+that the subject has seen the letter is a nudge aimed at a person who did not
+ask for any of it. A told mutual is two people who each wrote privately and
+were each told, by name, at the same moment; the keepsake is one phone they
+both hold, and what either does to it (its colour, its battery, opening it)
+is between those two and nobody else. It is symmetric (each sees the same
+about the other, and nothing about themselves they do not know), it is
+never on the wall, the picture or a mail, it is one steady word and never a
+time or a count, and it is refused, byte for byte, to anybody who is not one
+of the two now, a person who took the mutual off included. So G2 still holds
+for the wall exactly as written, and the mutual is the one place in the
+product where two people have already agreed to be seen by each other.
 
 What follows is the argument behind each row, because a table is a verdict and
 not a reason.

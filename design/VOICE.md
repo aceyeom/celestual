@@ -36,6 +36,8 @@ equivalent.
 | let it go (a private note of your own) | delete, withdraw |
 | take it off my list (a mutual, from your own list only) | delete, remove, unmatch, let it go |
 | send them a new note (writing to a mutual again) | message, reply, ping again |
+| delivered, opened (the report under your note on a mutual) | seen, read, viewed, read receipt |
+| change its colour (the mutual's, for both of you) | theme, customise, design, style |
 | remove it (a letter about you, by the owner of its @) | delete, take it down |
 | keep it standing, renew | extend, refresh, resubscribe |
 | lapses | expires |
@@ -85,14 +87,33 @@ note, since offering a new one over it said something that was not so.
 The picture of a mutual is shared like a letter's (`share`, `to someone`,
 `save the picture`), and carries both notes unless the person says `leave the
 notes off`, which then reads `put the notes back` and takes each note's line
-and battery off with its words. It names the two by their first names or not
+off with its words. It names the two by their first names or not
 at all, never by an @, and it carries no link; a picture that names nobody
 says whose each note is as `from them` and `from me`, and a note's line that
 would have named the other by an @ is `dear you`. The keepsake says the two
 names once, `Jules & Ace`, under `it's mutual.`, and each note says the rest:
 the line its writer set across it, and `from Jules` under the words. A menu
-on it is named on its own small screen, `options` or `share`, with where in
-it the chosen row is, `1/2`.
+on it is named on its own small screen, `options`, `share` or `colour`, with
+where in it the chosen row is, `1/3`.
+
+**The mutual's face is the two of theirs, and says what happened, exactly.**
+The options carry `change its colour`, which puts the colours up by the names
+the letters' panel gives them (`rose`, `ice`, `lilac`), `select` and `back`;
+the phone is lit in each as it is chosen, and says nothing else, since the
+colour itself is the answer. The battery on its band says nothing at all: no
+line under it, no tip, and no word for what it does, since the owner asked
+for it as a mechanism nobody is told about (29 September); a screen reader
+hears it as `the battery, 3 of 4`, which is what it is. Under your own note,
+after your name, the phone's delivery report, one word: `delivered`, and once
+the other person has opened the mutual since it was told, `opened`, with the
+phone's tick. They are the words a phone used for a message it had sent, and
+each is exactly true (section 4): `delivered` because a told mutual is on
+both lists, `opened` only once their side has opened it, never inferred from
+a mail sent or a DM handed over. Never `seen`, `read`, `viewed` or a time
+("opened 2h ago"), which would turn a keepsake into a thing to watch; never
+a word under their note about you; and never either word on the picture.
+Where the server has not said, nothing is printed: no `delivered` it cannot
+stand behind.
 
 ---
 

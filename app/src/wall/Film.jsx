@@ -82,6 +82,7 @@ import { turnStyle } from './turn.js'
 import { normHandle, atHandle } from './data.js'
 import { langOf } from './type.js'
 import { peekHandle, peekServer } from '../api/handles.js'
+import { heatOf } from './keepface.js'
 
 export const SAY = 'it’s mutual.'
 const NIGHT = skinOf('night')
@@ -132,12 +133,12 @@ export function namesOf(me, them) {
 // ── the stories, made once for a pair of names ──────────────────────────────
 // The film is made for the two names it credits and kept, so the one primed
 // while the slot was pressed is the one the reveal plays; the keepsake's is
-// the same for every pair. Both need the phone's face loaded before their
-// words are cut into cells (pixtype.js `readyType`), and one made while the
-// face was still not there (`sure`, pixtype.js `typeCells`) is not kept:
-// kept, it said `it's mutual.` in the fallback face for the rest of the
-// visit. The reveal asks for the keepsake's again once the face has come
-// (`faceCame`).
+// the same for every pair whose keepsake is lit in one colour. Both need
+// the phone's face loaded before their words are cut into cells (pixtype.js
+// `readyType`), and one made while the face was still not there (`sure`,
+// pixtype.js `typeCells`) is not kept: kept, it said `it's mutual.` in the
+// fallback face for the rest of the visit. The reveal asks for the
+// keepsake's again once the face has come (`faceCame`).
 const FILMS = new Map()
 export function filmFor([a, b]) {
   const k = `${a}\n${b}`
@@ -150,12 +151,20 @@ export function filmFor([a, b]) {
   }
   return film
 }
-let KEEP = null
-export function keepFor() {
-  if (KEEP) return KEEP
+// The keepsake's mark is inked in the colour the pair's keepsake is lit in
+// (keepface.js, 0077), the film's night then that colour's ink, and its
+// glint in that colour's deep step (`heat`), one story a colour, made once
+// and kept for every pair that wears it. It was one story inked rose for
+// every pair, when every keepsake was rose; a keepsake of another colour
+// drew a rose mark on it until the page was loaded again.
+const KEEP = new Map()
+export function keepFor(tint = 'rose') {
+  const k = typeof tint === 'string' && tint ? tint : 'rose'
+  if (KEEP.has(k)) return KEEP.get(k)
   const say = typeCells(SAY)
-  const keep = { ...keepStory({ ink: INK, say }), sure: say.sure }
-  if (keep.sure) KEEP = keep
+  const ink = k === 'rose' ? INK : [NIGHT.ink, skinOf(k).ink]
+  const keep = { ...keepStory({ ink, say }), heat: k === 'rose' ? null : heatOf(k), sure: say.sure }
+  if (keep.sure) KEEP.set(k, keep)
   return keep
 }
 // the phone's face, however long after the reveal's ceiling it comes

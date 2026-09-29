@@ -30,6 +30,7 @@ import { learnHandle, avatarUrl } from '../api/handles.js'
 import { heldProof, verified, proofFor, renewProof } from './auth.js'
 import { isNameKey, validHandle, mine } from './data.js'
 import { getState, patch } from './store.js'
+import { seeFace } from './keepface.js'
 
 export { PING_DAYS, SLOT_CAP }
 
@@ -782,6 +783,14 @@ export function mutualWhen(p, at = Date.now()) {
 // not inherit a count of the mutuals the last one watched. The last sixty
 // four, which is more mutuals than anybody has. Storage switched off reads
 // every mutual as not yet opened, which is the right way to be wrong.
+//
+// And since 0077 the other person can see it was: the moment this device
+// marks a mutual watched, the server is told this side has opened it
+// (keepface.js `seeFace`), which turns `delivered` under their note into
+// `opened`. That is asked of the server whether or not this device had
+// marked it before, once a tab, so a mutual watched here before the server
+// could be told, or on a visit whose word did not get through, is told on
+// the next one; what the device keeps is unchanged.
 const OPENED = 64
 function openedMark(me, p) {
   const s = `${normHandle(me)}>${p && p.key ? p.key : ''}`
@@ -798,7 +807,9 @@ export function wasOpened(me, p) {
   return (getState().toldSeen || []).includes(openedMark(me, p))
 }
 export function markOpened(me, p) {
-  if (!p || !p.key || wasOpened(me, p)) return
+  if (!p || !p.key) return
+  seeFace(me, p)
+  if (wasOpened(me, p)) return
   patch({ toldSeen: [...(getState().toldSeen || []), openedMark(me, p)].slice(-OPENED) })
 }
 

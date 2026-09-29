@@ -17,7 +17,7 @@ database."* Every control below exists to make both worthless.
 ## The controls
 
 ### §1 — No client access to the data
-All tables (`celestual_entries`, `celestual_keepsakes`, `celestual_matches`,
+All tables (`celestual_entries`, `celestual_keepsakes`, `celestual_mutual_faces`, `celestual_matches`,
 `celestual_notifications`, `celestual_ping_spends`,
 `celestual_attempts`, `celestual_suppressions`, `celestual_placements`,
 `celestual_members`, `celestual_handle_links`, `celestual_ig_verifications`,
@@ -28,6 +28,7 @@ policies**, and all privileges are revoked from `anon`/`authenticated`. The
 browser literally cannot `select` from them. The only entry points are the
 `SECURITY DEFINER` RPCs (`celestual_submit`, `celestual_withdraw`,
 `celestual_renew`, `celestual_mutual_again`, `celestual_mutual_forget`,
+`celestual_mutual_face`, `celestual_mutual_face_set`, `celestual_mutual_seen`,
 `celestual_ping_status`, `celestual_my_pings`,
 `celestual_slots_for`, `celestual_suppress`, `celestual_link`,
 `celestual_set_worlds`, `celestual_world_counts`, `celestual_campus`,
@@ -37,7 +38,10 @@ small status objects — never other people's rows. Internal helpers
 (`celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
 `celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`,
 and since 0072 `celestual_place`, `celestual_mutual_keep` and
-`celestual_keepsake_forget`)
+`celestual_keepsake_forget`, and since 0077 `celestual_mutual_told`,
+`celestual_mutual_face_row`, `celestual_mutual_side`,
+`celestual_mutual_face_answer`, `celestual_mutual_face_none` and
+`celestual_mutual_tints`)
 and the operator / service-role paths (`celestual_complete_ig_verification`,
 `celestual_relogin_store`, `celestual_relogin_redeem`, `celestual_campus_reveal`,
 `celestual_purge_expired`) are **not** granted to clients.
@@ -328,6 +332,62 @@ the other side writes a new one too).
   photograph out of a keepsake that names another @ linked with theirs, which
   stays with nothing of theirs in it. The broom takes none; a keepsake lasts,
   as a mutual did, until its owner takes it off.
+
+### §face: a mutual's one face, and whether it was opened (0077)
+The owner, 29 September: the keepsake's colour and the one battery on its
+band are the two people's to change, "instantly viewable to the other
+person", and each can see whether the other has opened it. So a told mutual
+has one row in `celestual_mutual_faces`, the two people's, and it is the one
+piece of state in the product that one person writes and another reads.
+
+- **What it holds.** Two handles, one of each person's, the ones that first
+  asked; a colour off a fixed list (the lit screens, checked by a constraint
+  and by the door); a battery of 0 to 4; which side set either last, as the
+  letter `a` or `b`, never a handle; when; a random uuid, the `topic`; and
+  when each side first opened the mutual after its latest night. No words,
+  no names, no photograph, nothing about anybody outside the two.
+- **Who can read it.** Only the two people of a told mutual, each through
+  their own proof. Every door (`celestual_mutual_face`, `_face_set`,
+  `_seen`) takes the caller's @ and proof and the other @, runs the reveal,
+  and first finds a told mutual between the two people's groups on the
+  caller's own side (a told row or a keepsake, as `celestual_mutual_forget`
+  finds one); the browser never holds a key to the pair. Anybody without one
+  gets `{ ok: false, error: 'none' }`, the same bytes whether they never
+  wrote, wrote and are waiting, wrote and it lapsed, took the mutual off, or
+  named an @ nobody has ever proved, so none of it says whether the other
+  person is on celestual (§5 is untouched). RLS on, zero policies, every
+  grant revoked, the helpers the service role's alone.
+- **Why it is fine that one of them learns this about the other.** Both
+  wrote, both were told: this is between the two people a mutual already
+  joined, about the one thing they now share, and it is nothing a third
+  person, the wall or the picture ever sees. The answer tells the caller the
+  colour, the battery, when either last changed, the topic, and whether the
+  OTHER side has opened the mutual since the caller's own night, and when;
+  never which side set anything, never the caller's own opening, never a
+  list of openings. `opened` is kept as a moment, compared with the
+  reader's own night, so a pair told again starts at `delivered` on both
+  sides, and a browser that drew an older night than the server has now
+  marks nothing.
+- **Taking it off, writing again and keeping still tell nothing.**
+  `celestual_my_pings` is not touched, so `test-mutual-kept.sql` holds byte
+  for byte. The one who takes a mutual off has no told night left on their
+  side, so every door answers them `none`; the row is not touched by the
+  forgetting, so the other person reads exactly what they read before, their
+  view of whether the forgetter had opened it included, and the topic does
+  not change (a new one would be a change they could see). The face simply
+  stops changing. Writing again keeps the pair and the face; the new telling
+  resets only `opened`.
+- **The nudge.** A change reaches the other keepsake while it is open as a
+  Realtime broadcast on the public channel `mutual:<topic>` that says
+  `moved` and carries nothing; the other browser reads the face again
+  through its own proof. A person who learns a topic learns when somebody
+  touched that face, never what, and anybody can send `moved`, which costs
+  the listener one proof gated read, debounced. The browser that made the
+  change sends it: SQL cannot broadcast without pg_net. Keepsakes also ask
+  every five seconds while they can be seen, a proof lookup each.
+- **Erasure.** `celestual_keepsake_forget` (and so erasure, the opt out and
+  the desk's delete, through `celestual_billing_forget`) deletes every face
+  naming the handle. `scripts/sql/test-mutual-face.sql` holds all of it.
 
 ### §card — What a ping carries, and what holds it shut (0022)
 Every ping now carries a **card**: a short message on a ground, in one of three
