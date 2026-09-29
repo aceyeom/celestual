@@ -10,7 +10,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search, targetKey, isNameKey, nameFor } from './data.js'
-import { Ecliptic, Sparkle, Verified } from './art.jsx'
+import { Sparkle, Verified } from './art.jsx'
 import { LOCKUP } from './brand.js'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
@@ -333,6 +333,22 @@ export function Icon({ name, size = 20, className = '' }) {
       strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
       aria-hidden="true" focusable="false">
       <path d={PATHS[name]} />
+    </svg>
+  )
+}
+
+// The brand's mark alone, on its own grid (brand.js `LOCKUP.mark`), at a
+// whole number of the page's pixels to each of its cells, so it is never
+// drawn between them: the door's head, where the signature stands above a
+// question. `scale` 2 is fifty pixels
+export function PixMark({ scale = 2, className = '' }) {
+  const { mark } = LOCKUP
+  return (
+    <svg
+      className={`wl-pixmark ${className}`} viewBox={`0 0 ${mark.w} ${mark.h}`} width={mark.w * scale} height={mark.h * scale}
+      shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false"
+    >
+      <path d={mark.d} />
     </svg>
   )
 }
@@ -1249,13 +1265,16 @@ export function Waiting({ label = 'looking' }) {
 // different screens, so the one moment somebody is deciding whether to hand
 // this product an address was also the one moment it did not say who it was.
 //
-// The mark is `Ecliptic`, flat, and not `LiquidMark`. DESIGN.md 3.5 rations
-// the poured metal to the product's own events — the intro, a mutual, the
-// reveal — and a sign in is not one of them. Here it is a glyph.
+// The mark is the brand's own pixel mark (`PixMark`, brand.js), as the bar
+// draws it, and not `LiquidMark`. DESIGN.md 3.5 rations the poured metal to
+// the product's own events, the intro, a mutual, the reveal, and a sign in
+// is not one of them. Here it is a glyph. It was the smooth `Ecliptic` until
+// the brand moved onto the pixel grid, and stood as the one smooth mark on a
+// door drawn in pixels.
 export function DoorHead({ title, say = null, id, className = '', ref }) {
   return (
     <div className={`wl-door-head ${className}`}>
-      <Ecliptic size={38} className="wl-door-mark" />
+      <PixMark className="wl-door-mark" />
       <Display size="s" as="h2" id={id} ref={ref} className="wl-door-title">{title}</Display>
       {say ? <p className="wl-door-say">{say}</p> : null}
     </div>

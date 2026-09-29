@@ -4038,6 +4038,7 @@ a.wl-lq { text-decoration: none; }
    one moment somebody is deciding whether to hand this product an address is
    the one moment it has to say who it is */
 .wl-door-mark {
+  display: block; filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1));
   color: var(--chalk); margin-bottom: 18px;
   animation: wl-rise 520ms var(--ease) both;
 }

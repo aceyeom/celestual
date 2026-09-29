@@ -97,10 +97,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Display, Label, Pill, HandleField, Addressed, Light, Who, DmCode, VerifyHead,
-  DoorHead, DoorFoot, useResolver, confirmWord, useSuggest, Suggest, useProfile,
+  DoorHead, DoorFoot, PixMark, useResolver, confirmWord, useSuggest, Suggest, useProfile,
 } from '../parts.jsx'
 import { Screen, ScreenDraft, ScreenNote, RoomLight } from '../screen.jsx'
-import { Dots, Ecliptic, Provider } from '../art.jsx'
+import { Dots, Provider } from '../art.jsx'
 import { normHandle, validHandle, atHandle, loadMine } from '../data.js'
 import { href } from '../router.js'
 import { colourOf, stampOf } from '../looks.js'
@@ -431,7 +431,7 @@ export function ProveDoor({ p, headId, title, say, onAsk }) {
     <div className="wl-door">
       {p.dm ? (
         <div className="wl-door-head">
-          <Ecliptic size={38} className="wl-door-mark" />
+          <PixMark className="wl-door-mark" />
           <VerifyHead size="s" as="h2" id={headId} className="wl-door-title" />
         </div>
       ) : (
