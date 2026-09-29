@@ -1335,6 +1335,33 @@ const ROUTES = [
            ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light']] },
   { label: 'ping-done',     path: '/berkeley/ping/pilar.echevarria',
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // the face a note is written on (0073): the greeting changed in place, the
+  // battery pressed a bar at a time and down to the empty one, blinking, a
+  // greeting with a number in it refused at the send, and the note sent on
+  // the face its writer set. `ping-line` shows the line under the screen
+  // saying both are theirs, the first time
+  { label: 'ping-face',     path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping .wl-scr-greet input', 'to the one who laughed at the film'],
+           ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.']], settle: 900 },
+  { label: 'ping-bat',      path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'ping-bat-empty', path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+  // and under reduced motion, where the empty one stands still, and is drawn
+  { label: 'ping-bat-empty-still', path: '/berkeley/ping/pilar.echevarria', still: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'ping-face-caught', path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['fill', '.wl-ping .wl-scr-greet input', 'call me 510 555 0199'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'ping-face-done', path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping .wl-scr-greet input', 'to the one who laughed at the film'],
+           ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // the whole story from the wall: the tab, a name written to, a line, the
   // door passed on the spot, "it's out.", and back on the names
   { label: 'ping-story-tab',  path: '/berkeley', tab: true, verified: false, pass: true,
@@ -1396,6 +1423,14 @@ const ROUTES = [
   { label: 'ping-edit-bare-done', path: '/berkeley/you',
     acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', ''], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // and its face alone changed (0073): the battery pressed, the key lit as
+  // `send the change`, and what it ends on, which is not new words
+  { label: 'ping-edit-face', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 900 },
+  { label: 'ping-edit-face-done', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // somebody this person is mutual with, written to again (0072): on the
   // list of the people written to, from a link, and sent, which is "sent
   // privately." as any note; the mutual opened off it and come back from,
@@ -1788,6 +1823,15 @@ const ROUTES = [
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
   { label: 'write-how-edu', path: '/write/sofiaaa.reyes', anon: true,
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-cal .wl-how-go']], settle: 900 },
+  // sent privately from the composer: the greeting the writer set goes as
+  // the line across the note's top (0073), and one with a number in it
+  // brings them back to it before anything is asked
+  { label: 'write-private', path: '/write/sofiaaa.reyes',
+    draftOf: { greet: 'to the one in the front row' },
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-private .wl-how-go']], settle: 1600 },
+  { label: 'write-private-caught', path: '/write/sofiaaa.reyes',
+    draftOf: { greet: 'text me 510 555 0199' },
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-private .wl-how-go']], settle: 900 },
   { label: 'write-held',    path: '/write/sofiaaa.reyes', anon: true, held: true,
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go']], settle: 1200 },
   // the draft to an @ the resolver has no name for: "dear you", and the

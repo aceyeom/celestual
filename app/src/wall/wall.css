@@ -4347,7 +4347,15 @@ a.wl-lq { text-decoration: none; }
    not asked of it with a :has(), which restyles the page for every change */
 .wl-ping-floor { flex-direction: column; align-items: center; gap: 6px; }
 .wl-ping-kept { color: var(--ash); text-align: center; text-wrap: balance; }
-.wl-ping.is-again .wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 356px - var(--notch)) / 1.22))); }
+/* the line saying the face is the writer's, the first time (screens/Ping.jsx
+   `tipAt`), balanced like the line over it when a narrow phone breaks it, is
+   a second line under the screen too, and the screen gives up its height the
+   same way (`.has-tip`). Touched once, it fades where it stands and keeps
+   its room, so nothing under it moves while a finger is on the phone */
+.wl-ping-face { text-wrap: balance; transition: opacity 220ms var(--ease); }
+.wl-ping-face.is-gone { opacity: 0; }
+.wl-ping.is-again .wl-write-card .wl-scene,
+.wl-ping.has-tip .wl-write-card .wl-scene { width: min(100%, 440px, max(250px, calc((100svh - 356px - var(--notch)) / 1.22))); }
 /* a note's settings, while its phone asks whether to let it go: the answer is
    on the phone's own keys, so the foot keeps its place, and nothing under the
    phone moves, but is not there to be seen, pressed or tabbed to */
@@ -4370,8 +4378,10 @@ a.wl-lq { text-decoration: none; }
   .wl-write.wl-ping:has(.wl-write-card) .wl-write-card .wl-scene {
     width: min(100%, 440px, max(250px, calc((100svh - 330px - var(--notch)) / 1.22)));
   }
-  /* and a line less of it for a new note to a mutual, as on the phone */
-  .wl-write.wl-ping.is-again .wl-write-card .wl-scene {
+  /* and a line less of it for a new note to a mutual, as on the phone, and
+     for the line saying the face is the writer's */
+  .wl-write.wl-ping.is-again .wl-write-card .wl-scene,
+  .wl-write.wl-ping.has-tip .wl-write-card .wl-scene {
     width: min(100%, 440px, max(250px, calc((100svh - 356px - var(--notch)) / 1.22)));
   }
 }
@@ -4430,6 +4440,8 @@ a.wl-lq { text-decoration: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .wl-you-ping { animation: none; }
+  /* the ping's first line under its screen goes at once (screens/Ping.jsx) */
+  .wl-ping-face { transition: none; }
 }
 
 .wl-gate-beta {

@@ -57,6 +57,10 @@ const EMPTY = {
                       // lean toward the next letter is not shown again
   hinted: 0,          // how many times it has been shown the lean, which is
                       // twice at most (screens/Letter.jsx `nudge`)
+  faceSeen: false,    // the note's face has been touched once on this device:
+                      // its greeting or its battery (screens/Ping.jsx), so the
+                      // line under the screen saying both are the writer's
+                      // to set is not shown again. Never whose note it was
   tabHid: 0,          // when the tab at the foot of the wall was last put away,
                       // and how many letters this device had put up by then.
                       // The tab comes back after a while, and at once after

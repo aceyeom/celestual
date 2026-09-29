@@ -122,6 +122,10 @@
    "dear Pil" and most of one. The shared picture gives way the same way
    (share.js). The two names on a story are one weight and share the row */
 .wl-scene:not(.is-pair) .wl-scr-r2 > .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
+/* and with nothing on its right (screen.jsx `alone`: no handle, position or
+   school), the line has the row after the pen, and is cut only at its end,
+   as the shared picture has always set it (share.js) */
+.wl-scene:not(.is-pair) .wl-scr-r2.is-alone > .wl-scr-nm { flex-shrink: 1; max-width: none; }
 /* a phone that is two people's (screen.jsx `pair`): the two names in the
    middle of the row, each cut before it takes more than its share, and the
    point between them a little dimmer than either */
@@ -146,6 +150,17 @@
   transition: opacity 140ms var(--ease, ease);
 }
 .wl-scr-bat.is-key::after { content: ''; position: absolute; inset: -2.6cqw -1.8cqw; }
+/* and the dotted pixel line under it that the greeting beside it carries
+   (post.css `.wl-scr-greet`): on this row a thing with the line under it is
+   the writer's to set, and nothing else on the row has one */
+.wl-scr-bat.is-key::before {
+  content: ''; position: absolute; left: 0.4cqw; right: 0; bottom: -1.3cqw; height: 0.55cqw;
+  background: repeating-linear-gradient(90deg, currentColor 0 1.1cqw, transparent 1.1cqw 2.2cqw);
+  opacity: 0.5; pointer-events: none;
+}
+/* in the ink itself on a print, whose press keeps no greys (post.css, the
+   greeting's line) */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-scr-bat.is-key::before { opacity: 1; }
 .wl-root .wl-scr-bat.is-key:active { opacity: 0.45; transition-duration: 0ms; }
 .wl-root .wl-scr-bat.is-key:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: 0.6cqw; border-radius: 0.6cqw; }
 .wl-px { display: block; flex: 0 0 auto; fill: currentColor; }

@@ -441,9 +441,12 @@ function Wrote({ go, rows }) {
 // ── a note's own screen ─────────────────────────────────────────────────────
 // A note, opened: the screen it was placed on, lit in the colour its name
 // picks, with the line on it, the day it was placed by the battery as a
-// letter that is up carries its day (screen.jsx `stamp`), and the battery
-// running down with its week, the way the phone's did. Its left key is the
-// phone's own options, and what can be done to a note is the menu's rows:
+// letter that is up carries its day (screen.jsx `stamp`), and the face its
+// writer left it on (0073): the line across its top, and the battery where
+// they set it. A note from before has neither, and says `dear` and the name
+// over a battery running down with its week, the way the phone's did. Its
+// left key is the phone's own options, and what can be done to a note is the
+// menu's rows:
 //
 //   running      keep it for next week, change the words, let it go
 //   not this     send it again, send it with new words, let it go
@@ -538,9 +541,18 @@ function PingScreen({ p, me, go, onBack, onChange }) {
   const pick = (j) => { const it = items[j]; if (it) { setSaid(''); it.run() } }
 
   // the day it was placed by the battery, as a letter that is up carries
-  // its own, and the same row under the menu so nothing moves when it opens
-  const dated = { stamp: stampOf(p.at), bat: gone ? 0 : batOf(expires) }
-  let top = { ...dated, name: first || atHandle(p.to), handle: first ? atHandle(p.to) : '', dear: true, icon: 'pen' }
+  // its own, and the same row under the menu so nothing moves when it opens.
+  // The battery is the one its writer left it on (0073), which is the one
+  // the other person reads if it is ever mutual; a note from before, which
+  // has none, runs down with its week as it always did. And the line across
+  // the top is the note's own where its writer set one, whole, with the
+  // handle giving the row up to it as on the sheet that set it
+  // (screens/Ping.jsx); the menu keeps its own name, `options`
+  const dated = { stamp: stampOf(p.at), bat: Number.isInteger(p.bat) ? p.bat : gone ? 0 : batOf(expires) }
+  let top = {
+    ...dated, icon: 'pen',
+    ...(p.greet ? { salutation: p.greet } : { name: first || atHandle(p.to), handle: first ? atHandle(p.to) : '', dear: true }),
+  }
   let body
   let keys
   if (mode === 'menu') {

@@ -21,7 +21,9 @@
 //     send privately              only they'll ever know, and only if it's
 //                                 mutual. It asks "confirm this is your
 //                                 Instagram", the one DM, and goes to them as
-//                                 a ping with the note as its line. An @ only.
+//                                 a ping with the note as its line, and the
+//                                 greeting, where the writer changed it, as
+//                                 the line across its top (0073). An @ only.
 //
 // Three rows, each a title, what it does in one line, and what it asks, said
 // on its face and asked after the choice, so nobody has to learn which proof
@@ -176,6 +178,10 @@ const PING_SAY = {
   rate: 'that is a lot of new private notes for now. try again later.',
   invalid: 'that handle does not look right.',
   card: 'that can’t go in a note as it is. take out links, addresses and numbers.',
+  // the greeting goes with the note as the line across its top (0073), read
+  // here by the list the words are read by, since the server leaves a caught
+  // one off without a word (screens/Ping.jsx says the same)
+  greet: 'the greeting can’t go in a note as it is. take out links, addresses and numbers.',
   night: 'it did not go through. try again.',
 }
 
@@ -665,17 +671,41 @@ export default function Write({
     },
   })
 
+  // The note goes on the face the letter was written on (0073): the greeting,
+  // where the writer changed it, is the line across the note's top, read
+  // first by the list the words are read by (a number cut between the two is
+  // a number), and a caught one sends the writer back to it. The composer
+  // has no battery key (the letter's battery is the letter's, full on a
+  // draft), so a note running on them keeps the battery its writer left it
+  // on, and a new one goes out full, as the screen drew it; the screen it
+  // ends on draws the one that went (`sentBat`). The server replaces a card
+  // whole, so a send that left the face out would take a running note's off
+  // without a word.
+  const [sentBat, setSentBat] = useState(4)
+  const greetOut = greet === null ? '' : greet.replace(/\s+/g, ' ').trim().slice(0, MAX_GREET)
+  const greetCaught = () => {
+    if (!greetOut || !(fault(greetOut) || fault(`${greetOut}\n${body.trim()}`))) return false
+    setStep(1)
+    setSaid(PING_SAY.greet)
+    requestAnimationFrame(() => greetRef.current && greetRef.current.focus())
+    return true
+  }
   async function sendPrivately(from = '', spent = null) {
     const me = normHandle(from || myHandle())
     if (sending) return
     if (me && me === target) { setSaid(PING_SAY.self); setStep('how'); return }
+    if (greetCaught()) return
     setSending(true)
     setSaid('')
     const proofNow = spent || heldProof(me)
     const list = await myPings({ handle: me, proof: proofNow })
     if (!alive.current) return
     const anew = list.ok && !!mutualOf(list, target) && liveOf(list, target)?.state !== 'standing'
-    const out = !list.ok ? list : await (anew ? placeAgain : place)({ me, them: target, proof: proofNow, words: body.trim() })
+    const running = list.ok && !anew ? liveOf(list, target) : null
+    const bat = running && Number.isInteger(running.bat) ? running.bat : 4
+    const out = !list.ok ? list : await (anew ? placeAgain : place)({
+      me, them: target, proof: proofNow, words: body.trim(), greet: greetOut || undefined, bat,
+    })
     if (!alive.current) return
     setSending(false)
     if (!out.ok) {
@@ -690,7 +720,7 @@ export default function Write({
       // it and sent the moment the pings land (screens/Pings.jsx)
       if (out.error === 'no_pings' || out.error === 'no_slots' || out.error === 'cap') {
         setStep('how')
-        waitForPings({ kind: 'send', to: target, line: body.trim() })
+        waitForPings({ kind: 'send', to: target, line: body.trim(), greet: greetOut, bat })
         go('pings')
         return
       }
@@ -707,6 +737,7 @@ export default function Write({
     }
     forgetPings()
     setAdopted(null)
+    setSentBat(bat)
     patch({ draft: null })
     try { window.history.replaceState({ ...window.history.state, wallSent: target }, '') } catch { /* a sandbox */ }
     setEnds(out.expires_at ? Date.parse(out.expires_at) || 0 : 0)
@@ -744,6 +775,8 @@ export default function Write({
       requestAnimationFrame(() => atRef.current && atRef.current.focus())
       return
     }
+    // a greeting the note cannot carry is changed before any DM is asked for
+    if (greetCaught()) return
     if (canPlace()) { sendPrivately(); return }
     // a person signed in a beat ago holds their @ already and its proof is
     // on its way back (pings.js `readyToPlace`, 0065): wait for it rather
@@ -786,8 +819,11 @@ export default function Write({
   const toWho = useCallback(() => { setStyling(false); setStep(0) }, [])
 
   // ── the key that takes a character back ──
+  // from the greeting while the typing is in it (the private note's screen
+  // does the same, screens/Ping.jsx), and from the letter otherwise
   const clearOne = () => {
-    const el = letterRef.current
+    const g = greetRef.current
+    const el = g && document.activeElement === g ? g : letterRef.current
     if (!el || document.activeElement !== el) {
       setBody(body.replace(/(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S])$/, ''))
       return
@@ -928,10 +964,15 @@ export default function Write({
               look={look} seed={seed} live
               top={fin ? {
                 salutation: greeting, icon: 'pen', stamp: stampOf(Date.now()),
+                // a note sent privately, on the battery it went with
+                ...(done === 'private' ? { bat: sentBat } : null),
               } : {
                 greet: {
                   value: greeting, onChange: onGreet, max: MAX_GREET, placeholder: defaultGreet,
                   label: 'the greeting. tap to change it', inputRef: greetRef, onFocus: seenHint,
+                  // done with the line, the typing goes on to the letter,
+                  // where it let go of the field and the focus fell to the page
+                  onEnter: () => { if (letterRef.current) letterRef.current.focus({ preventScroll: true }) },
                 },
                 icon: 'pen',
                 counter: `${MAX_BODY - body.length}/1`,
