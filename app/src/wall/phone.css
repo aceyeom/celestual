@@ -10,7 +10,7 @@
    and the one people had come to read was the one the chrome did not speak.
 
    So the whole wall speaks the phone's. One face, the phone's (Jersey 10,
-   `--f-s40`), for every word but the product's own name; the phone's pixel
+   `--f-s40`), for every word; the phone's pixel
    glyphs for every icon (looks.js PIX, drawn by screen.jsx `PixIcon`);
    square LCD corners; an UNLIT panel for anything that holds type, a black a
    step off the room's with a one pixel bezel round it; and the one lit
@@ -18,11 +18,13 @@
    a chalk plate with the word struck out of it in black. Nothing new is
    BACKLIT, so a letter's screen is still the one bright thing in the room.
 
-   What stays the room's, and only this: the mark and the word `celestual.`
-   (the bar, the site's foot, a letter reached from a link, the shared
-   picture), the mark at the head of the door, and the poured mark of the
-   root wall's poster. The product signs its name in its own
-   hand; everything else on the wall is the phone.
+   The product's own name is the phone's too. The mark and the word
+   `celestual.` used to be the room's, a smooth vector and the room's serif;
+   they are drawn a cell at a time on one grid now (brand.js), on the bar,
+   the site's foot, a letter reached from a link and the shared picture.
+   What stays the room's, and only this: the smooth mark at the head of the
+   door and the poured mark of the root wall's poster, which are materials
+   rather than the name.
 
    ── how it is scoped ──
    Main (/optout, /copy, /signin) shares these parts and keeps the room's
@@ -36,11 +38,6 @@
    search, the ear, the veil, the dock, the letter's keys, the room's sheets)
    are drawn in place in wall.css; this file is for the parts both surfaces
    share. */
-
-.wl-root {
-  /* the room's serif, named once, for the one word on the wall set in it */
-  --f-serif: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-}
 
 /* ═══ THE FACE IN KOREAN, JAPANESE AND CHINESE ═════════════════════════════
    Jersey 10 is latin. Past it, `--f-s40` (wall.css) falls to `--f-cjk`: the
@@ -132,13 +129,11 @@
 }
 
 /* ═══ THE NAME ═════════════════════════════════════════════════════════════
-   The one word on the wall that keeps the room's hand. It reads
-   `--f-display` and `--t-value` on Main, and both are the phone's here. */
-.wl-root.is-room .wl-brand-word {
-  font-family: var(--f-serif); font-weight: 500; font-size: 22px;
-  letter-spacing: -0.022em; font-variation-settings: normal;
-}
-.wl-root.is-room .wl-brand-mark { color: var(--chalk); }
+   Nothing here now. The name used to be the one word on the wall in the
+   room's hand, restyled here from Main's display tokens into Newsreader at
+   22px under a token of its own, `--f-serif`. It is drawn on the phone's
+   grid instead (brand.js, parts.jsx `Brand`, wall.css `.wl-brand`), the same
+   drawing on both surfaces, so no token reaches it and the token has gone. */
 
 /* ═══ TYPE ═════════════════════════════════════════════════════════════════
    The display steps restated for the pixel face: it holds a line at a size

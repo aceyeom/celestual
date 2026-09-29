@@ -25,7 +25,7 @@
 
 import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady } from './looks.js'
 import { CHALK } from './mark.js'
-import { markCanvas } from './pixmark.js'
+import { LOCKUP } from './brand.js'
 import { copyText } from './handoff.js'
 import { letterMarks } from './schools.js'
 import { langOf, s40Face, ensureCjk } from './type.js'
@@ -37,7 +37,8 @@ const H = 1350
 // letter's own language (type.js `s40Face`), worked out per letter
 // (`drawScreen`, `renderLetter`) as the page works it out by `lang`
 const faceOf = (o) => s40Face(`${o.text} ${o.salutation || ''} ${o.name || ''}`)
-// the word's face, with the fallbacks wall.css gives `--f-display`
+// the face the signature's word was set in, before it was drawn (below,
+// `signature`)
 export const SERIF = "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
 
 export const rgba = (hex, a) => {
@@ -597,53 +598,45 @@ export function imageOf(url) {
 }
 
 // ── the signature ───────────────────────────────────────────────────────────
-// The picture is signed the way every bar in the product is: the mark and
-// the word (parts.jsx `Brand`), in the lockup's own proportions (DESIGN.md
-// 3.3): the mark 1.13 times the word, 0.38em between them, the word lifted
-// 0.03em because a serif's optical centre sits below its cap line. It was
-// `celestual.us` in the screen's pixel face at 42 per cent, which on a feed
-// read as an address set in a phone's type and not as the name of anything.
+// The picture is signed the way every bar in the product is: the brand's own
+// lockup (brand.js, parts.jsx `Brand`), the mark and the word drawn a cell at
+// a time on one grid, here at two pixels a cell, 50 tall. It used to be the
+// vector mark beside `celestual.` set in Newsreader, and before that
+// `celestual.us` in the screen's pixel face; the brand is drawn on the phone's
+// grid now, so the picture signs itself with exactly the pixels the bar shows,
+// at twice their size.
 //
-// The mark is drawn from mark.js's own paths and layered the way
-// `eclipticSVG` layers them: the ring, then the star with the gutter cut out
-// of it where the ring passes in front, then the ring's near half again on
-// top. It is drawn opaque on a canvas of its own and laid on the picture
-// once, at the lockup's strength, so no layer is counted twice where two
-// overlap and the glow belongs to the whole mark rather than to each piece.
-// Paths and not an SVG image: a picture drawn from an image can taint the
-// canvas in the browser most letters are shared from, and a tainted canvas
-// cannot be made into a file. The drawing itself is pixmark.js `markCanvas`,
-// the same one the pixel mark on the intro's screen is rasterised from.
+// Drawn opaque on a canvas of its own and laid on the picture once, at the
+// lockup's strength, with the close bloom a lit thing has on the phone
+// (wall.css `.wl-brand-mark`), so the light belongs to the whole of it and no
+// cell is counted twice. Rectangles, not an SVG image: a picture drawn from
+// an image can taint the canvas in the browser most letters are shared from,
+// and a tainted canvas cannot be made into a file. It lands on whole pixels,
+// so no cell is ever smeared across two.
+//
+// `WORD` and `SERIF` were the word's size and face. Nothing here sets type in
+// them now; they stay exported because the mutual's picture (keepshare.js)
+// still names them when it waits for its faces.
 export const WORD = 46
+const CELL = 2
 const SIGN_Y = H - 86
 const SIGN_ALPHA = 0.9
 
 export function signature(g, cx, cy) {
-  const mark = Math.round(WORD * 1.13)
-  const gap = WORD * 0.38
+  const w = LOCKUP.w * CELL
+  const h = LOCKUP.h * CELL
+  const cv = document.createElement('canvas')
+  cv.width = w
+  cv.height = h
+  const s = cv.getContext('2d')
+  s.fillStyle = CHALK
+  s.scale(CELL, CELL)
+  s.fill(new Path2D(LOCKUP.d))
   g.save()
-  g.font = `500 ${WORD}px ${SERIF}`
-  // the display tracking, where the canvas has it; measured after, so the
-  // pair is centred on the word as it is drawn either way
-  if ('letterSpacing' in g) g.letterSpacing = `${(-0.022 * WORD).toFixed(2)}px`
-  const m = g.measureText('celestual.')
-  const x0 = Math.round(cx - (mark + gap + m.width) / 2)
-  // the word's baseline where CSS puts it in a line box one em tall centred
-  // on the mark (`.wl-brand`), then lifted
-  const fa = m.fontBoundingBoxAscent
-  const fd = m.fontBoundingBoxDescent
-  const base = fa > 0 && fd >= 0 ? cy - WORD / 2 + (WORD - fa - fd) / 2 + fa : cy + WORD * 0.3
   g.globalAlpha = SIGN_ALPHA
-  // the mark keeps the bar's hair of light round it (wall.css `.wl-brand-mark`)
-  g.shadowColor = 'rgba(244, 241, 234, 0.18)'
-  g.shadowBlur = 20
-  g.drawImage(markCanvas(mark), x0, Math.round(cy - mark / 2))
-  g.shadowColor = 'transparent'
-  g.shadowBlur = 0
-  g.fillStyle = CHALK
-  g.textAlign = 'left'
-  g.textBaseline = 'alphabetic'
-  g.fillText('celestual.', x0 + mark + gap, base - WORD * 0.03)
+  g.shadowColor = 'rgba(255, 244, 228, 0.3)'
+  g.shadowBlur = 10
+  g.drawImage(cv, Math.round(cx - w / 2), Math.round(cy - h / 2))
   g.restore()
 }
 
@@ -675,7 +668,6 @@ export async function renderLetter(o) {
     const words = `${o.text}${o.name || ''}${o.handle || ''}${o.salutation || ''}`
     if (langOf(words)) await ensureCjk()
     try { await document.fonts.load(`400 40px ${faceOf(o)}`, words) } catch { /* the fallback, then */ }
-    try { await document.fonts.load(`500 ${WORD}px ${SERIF}`, 'celestual.') } catch { /* the fallback, then */ }
   }
   // the letter's own pixels, up close, as an image the canvas can lay down;
   // a print and the square are paper and have none

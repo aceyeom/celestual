@@ -32,9 +32,10 @@ import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
 import { introFolk, standing, sheet, drawBody, together, mixPose, body, SCALE } from './folk.js'
 
 // ── the mark, on a canvas ───────────────────────────────────────────────────
-// Moved here out of share.js, which signs the shared picture with it, so the
-// signature and the pixel mark are one drawing: the ring, then the star with
-// the gutter cut out of it where the ring passes in front, then the ring's
+// Moved here out of share.js, which signed the shared picture with it until
+// the brand was drawn on the phone's grid (brand.js, whose mark starts from
+// this raster at 29). It is what `markCells` rasterises: the ring, then the
+// star with the gutter cut out of it where the ring passes in front, then the ring's
 // near half again on top, which is the order `eclipticSVG` layers them in.
 // Paths and not an SVG image, because a canvas that has drawn an image can be
 // tainted and a tainted canvas cannot be read back or made into a file.

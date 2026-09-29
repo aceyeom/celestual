@@ -450,8 +450,9 @@
    browser where it does not. */
 /* ── the display cut ──
    The face is Newsreader, a transitional serif with an optical size axis, and
-   the display settings are three tokens so the lockup, the intro and every
-   surface that sets a headline agree on them. Weight 500: the 400 is a text
+   the display settings are three tokens so the intro and every surface that
+   sets a headline agree on them (the lockup read them too, until it was drawn
+   on the phone's grid, brand.js). Weight 500: the 400 is a text
    weight and reads thin light on dark, the 600 starts to clot at 48px. The
    optical size is left to the browser, which hands a 48px line the 48 cut and
    a 22px card title the 22 cut, each drawn for its size; pinning it was only
@@ -1477,47 +1478,48 @@ a.wl-lq { text-decoration: none; }
 .wl-top-mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .wl-top-acts { display: flex; align-items: center; gap: 4px; }
 
-/* the mark, which is also the way home. On the wall it is the star alone; off
-   it, the star grows a chevron, so "back" and "home" are the same target in
-   the same place on every screen rather than two controls to tell apart.
+/* the brand, which is also the way home. Off the wall's own root it grows a
+   chevron, so "back" and "home" are the same target in the same place on
+   every screen rather than two controls to tell apart.
 
-   ── the mark does not take the bar's colour ──
+   ── the brand does not take the bar's colour ──
    The row it sits in is ash, because a nav is secondary to what it is on top
-   of. The MARK is not part of that argument: it is the one object on the
-   screen that says which product this is, and at ash on a blue-black ground it
-   was the faintest thing in the corner. So the button stays ash, the chevron
-   beside it stays ash, and the mark alone is chalk at all times, one step
-   larger than the glyphs it sits beside. */
+   of. The BRAND is not part of that argument: it is the one object on the
+   screen that says which product this is. So the button stays ash, the
+   chevron beside it stays ash, and the mark and the word are chalk at all
+   times.
+
+   ── drawn, not set (parts.jsx `Brand`, brand.js) ──
+   Both halves are drawings on one grid, at one pixel a cell and 25 tall, so
+   they are sized by their own attributes and never by a font size; the six
+   pixels between them are the lockup's six cells. Each is lit the way a lit
+   thing on the phone is lit: a close bloom of the screen's own light round
+   the cells (screen.css `.wl-lit-g`), and never a large soft shadow. Hover is
+   a step brighter, the bloom and nothing else. A press drops the whole of it
+   a pixel and puts the bloom out, as the lit key does: a drawing on a pixel
+   grid scaled by 0.97 is a blur, and on the wall nothing shrinks
+   (DESIGN.md 9). */
 .wl-brand {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 0;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px 6px 0;
   color: var(--ash);
   text-decoration: none;
-  transform-origin: 0 50%;
-  transition: color 200ms var(--ease), transform 200ms var(--ease);
+  transition: color 200ms var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
   .wl-brand:hover { color: var(--chalk); }
+  .wl-brand:hover :is(.wl-brand-mark, .wl-brand-word) {
+    filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.42)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.16));
+  }
 }
-.wl-brand:active { transform: scale(0.97); transition-duration: 120ms; }
+.wl-brand:active { transform: translateY(1px); }
+.wl-brand:active :is(.wl-brand-mark, .wl-brand-word) { filter: none; transition-duration: 0ms; }
 .wl-brand .wl-spark { color: currentColor; }
 .wl-brand > .wl-icon { margin-right: -2px; }
-.wl-brand-mark {
+.wl-brand-mark, .wl-brand-word {
+  display: block; flex: 0 0 auto;
   color: var(--chalk);
-  /* a hair of lift off the ground, so 26px of flat white does not read as a
-     sticker sitting on the page */
-  filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18));
-}
-/* the name, beside the mark, on every bar. The lockup's own proportions: the
-   mark is 1.13 times the word's size and the word is lifted a hair, because a
-   serif's optical centre sits below its cap line. It is chalk like the mark
-   and unlike the row it sits in, because between them they are the one thing
-   on the screen that says which product this is. */
-.wl-brand-word {
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: var(--t-value); line-height: 1; letter-spacing: var(--track-display);
-  color: var(--chalk); white-space: nowrap;
-  transform: translateY(-0.03em);
+  filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1));
+  transition: filter 220ms var(--ease);
 }
 /* the narrowest phones keep the mark and give the word back: three glyphs
    and a chip on the right want the room */
@@ -2570,9 +2572,9 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-unfade 160ms var(--ease-in) both; }
 /* ── a letter reached from a link (screens/Letter.jsx `LetterBrand`) ──
-   The name, small, in the corner opposite the way out, on the same line as
-   it: the lockup in the room's own hand (it is the one thing on the wall
-   that keeps it, DESIGN.md 2.6), and the way to the wall. Its word is never
+   The name, in the corner opposite the way out, on the same line as it: the
+   lockup as every bar draws it, on the phone's grid at one pixel a cell
+   (DESIGN.md 3.6), and the way to the wall. Its word is never
    given back on a narrow phone as the bar's is, since here nothing else
    wants the row. And under the card, the one line that says there is more
    than this letter. */
@@ -2582,8 +2584,8 @@ a.wl-lq { text-decoration: none; }
   animation: wl-fade 300ms var(--ease) 80ms both;
 }
 .wl-sheet-wrap.is-closing .wl-letter-brand { animation: wl-unfade 160ms var(--ease-in) both; }
-.wl-brand.is-small { gap: 7px; min-height: 40px; padding: 0 8px 0 0; }
-.wl-root .wl-brand.is-small .wl-brand-word { display: inline; font-size: 17px; }
+.wl-brand.is-small { min-height: 40px; padding: 0 8px 0 0; }
+.wl-root .wl-brand.is-small .wl-brand-word { display: block; }
 .wl-letter .wl-letter-out { align-self: center; margin-top: 2px; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
 

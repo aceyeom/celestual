@@ -1,159 +1,179 @@
 #!/usr/bin/env node
 // export-mark.mjs - the logo, out of the code that draws it.
 //
-// The mark is not a drawn asset. It is nine constants and two path builders in
-// app/src/wall/mark.js, so there is no vector file to hunt for and no risk that
-// an exported one falls behind the build. This script imports those exports and
-// writes design/logo/ from them, which means the file a printer is handed and
-// the shape on the screen cannot disagree.
+// The brand is not a drawn asset kept somewhere. It is a few grids of cells
+// in app/src/wall/brand.js: the mark on its grid of 25, the tab's mark on its
+// grid of 15, and the word's own letters, locked on one grid and one baseline
+// (design/DESIGN.md 3). This script imports those and writes design/logo/,
+// the tab's icon and the few pictures app/public serves from them, which
+// means the file a printer is handed and the brand on the bar cannot
+// disagree.
 //
-// SVG is written straight from the geometry. PNG is rendered by the same
-// headless Chromium the screenshot loop uses, so the anti-aliasing on a 1024px
-// export is a browser's rather than a rasteriser nobody configured.
+// Every file is whole cells at a whole number of pixels a cell. The SVGs say
+// `crispEdges`; the PNGs are written a pixel at a time, here, with no browser
+// and no smoothing in between, so a cell is a square of one colour in every
+// one of them and nothing is anti-aliased. It used to render the smooth mark
+// through headless Chromium for its anti-aliasing; a pixel mark wants the
+// opposite, and needs nothing but node.
 //
 // Run: node scripts/export-mark.mjs
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { chromium } from 'playwright'
-import { eclipticSVG, INK, CHALK } from '../app/src/wall/mark.js'
+import { fileURLToPath } from 'node:url'
+import { deflateSync } from 'node:zlib'
+import { INK, CHALK, eclipticSVG } from '../app/src/wall/mark.js'
+import { MARK, LOCKUP, cellsOf, wordCells, markSVG, lockupSVG, tabSVG } from '../app/src/wall/brand.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, 'design/logo')
 mkdirSync(out, { recursive: true })
 
-// Which Chromium to drive. Playwright's own by default. Where the machine
-// already has one (a CI image, this repository's cloud sandbox), point
-// CHROMIUM_PATH at it, or let PLAYWRIGHT_BROWSERS_PATH be found: a playwright
-// that expects a build the image does not carry otherwise fails at launch with
-// a message about downloading browsers, which is the wrong advice there.
-function chromiumPath() {
-  if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH
-  const dir = process.env.PLAYWRIGHT_BROWSERS_PATH
-  if (dir && existsSync(join(dir, 'chromium'))) return join(dir, 'chromium')
-  return undefined
-}
-const exe = chromiumPath()
-
-// The mark, at a size, on a ground. `currentColor` is the one the app embeds:
-// the component takes its colour from whatever it is inside, and the file
-// should be able to do the same.
-function svg(fill, px) {
-  const body = eclipticSVG(fill)
-    .replace('<svg ', `<svg width="${px}" height="${px}" `)
-  return body
-}
-
+// The room's black, which is what the wall stands on now (DESIGN.md 2.1)
+const ROOM = '#000000'
 const GROUNDS = [
-  { name: 'chalk', fill: CHALK, on: 'void', behind: '#08070B' },
-  { name: 'ink', fill: INK, on: 'chalk', behind: '#F4F1EA' },
+  { name: 'chalk', fill: CHALK, on: 'void', behind: ROOM },
+  { name: 'ink', fill: INK, on: 'chalk', behind: CHALK },
 ]
 
-// The vector. One file per ground plus the one that inherits, which is three
-// files and covers every placement this brand has.
-writeFileSync(join(out, 'mark.svg'), svg('currentColor', 512) + '\n')
-for (const g of GROUNDS) writeFileSync(join(out, `mark-${g.name}.svg`), svg(g.fill, 512) + '\n')
-
-// The lockup, as markup rather than as geometry: the word is type, and type in
-// a vector file is either a live font reference or an outline nobody can edit.
-// It stays live, and the PNG beside it is the one to hand somebody who does not
-// have the face installed.
-function lockup(fill, px) {
-  const mark = eclipticSVG(fill).replace('<svg ', `<svg width="${px}" height="${px}" `)
-  return `<div class="lock" style="color:${fill}">${mark}<span class="w">celestual.</span></div>`
+// ── a PNG, by hand ──────────────────────────────────────────────────────────
+const CRC = new Uint32Array(256).map((_, n) => {
+  let c = n
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1
+  return c >>> 0
+})
+function crc32(buf) {
+  let c = 0xFFFFFFFF
+  for (const b of buf) c = CRC[(c ^ b) & 0xFF] ^ (c >>> 8)
+  return (c ^ 0xFFFFFFFF) >>> 0
 }
-
-const faces = readFileSync(join(root, 'app/public/fonts/faces.css'), 'utf8')
-  .replace(/url\('\.\//g, `url('${pathToFileURL(join(root, 'app/public/fonts')).href}/`)
-
-function page(html, behind) {
-  return `<!doctype html><meta charset="utf-8"><style>
-    ${faces}
-    html,body{margin:0;padding:0;background:${behind === 'none' ? 'transparent' : behind}}
-    body{display:inline-block}
-    /* the specimen sheet sets the mark one eighth larger than the word it
-       stands beside, and design/source/eclipse.html is where that ratio comes
-       from. 106 and 120 is the same 1.13 at export scale. */
-    .lock{display:inline-flex;align-items:center;gap:0.38em;line-height:1;font-size:106px}
-    .lock svg{display:block;flex:0 0 auto}
-    .w{font-family:'Newsreader','Iowan Old Style',Palatino,Georgia,serif;font-weight:500;font-optical-sizing:auto;letter-spacing:-0.022em;
-       line-height:1;white-space:nowrap;transform:translateY(-0.03em)}
-    .m{display:block}
-  </style>${html}`
+function chunk(type, data) {
+  const len = Buffer.alloc(4)
+  len.writeUInt32BE(data.length)
+  const td = Buffer.concat([Buffer.from(type, 'ascii'), data])
+  const crc = Buffer.alloc(4)
+  crc.writeUInt32BE(crc32(td))
+  return Buffer.concat([len, td, crc])
 }
-
-const browser = await chromium.launch({ executablePath: exe })
-const made = []
-
-for (const g of GROUNDS) {
-  // The mark alone, transparent, at the three sizes anything ever asks for.
-  for (const px of [1024, 512, 128]) {
-    const p = await browser.newPage({ viewport: { width: px, height: px }, deviceScaleFactor: 1 })
-    await p.setContent(page(`<div class="m">${svg(g.fill, px)}</div>`, 'none'))
-    const file = `mark-${g.name}-${px}.png`
-    await p.locator('.m').screenshot({ path: join(out, file), omitBackground: true })
-    await p.close()
-    made.push(file)
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+// `cells` at `scale` pixels a cell, `pad` pixels of `ground` (or of nothing)
+// round them: [left, top, right, bottom], or one number for all four
+function png(cells, w, h, { scale, pad = 0, fill, ground = null }) {
+  const [pl, pt, pr, pb] = Array.isArray(pad) ? pad : [pad, pad, pad, pad]
+  const W = w * scale + pl + pr
+  const H = h * scale + pt + pb
+  const px = Buffer.alloc(W * H * 4)
+  if (ground) {
+    const [r, g, b] = rgb(ground)
+    for (let i = 0; i < W * H; i++) px.set([r, g, b, 255], i * 4)
   }
+  const [r, g, b] = rgb(fill)
+  for (const [cx, cy] of cells) {
+    for (let y = 0; y < scale; y++) {
+      for (let x = 0; x < scale; x++) {
+        const i = ((pt + cy * scale + y) * W + (pl + cx * scale + x)) * 4
+        px.set([r, g, b, 255], i)
+      }
+    }
+  }
+  const raw = Buffer.alloc((W * 4 + 1) * H)
+  for (let y = 0; y < H; y++) px.copy(raw, y * (W * 4 + 1) + 1, y * W * 4, (y + 1) * W * 4)
+  const head = Buffer.alloc(13)
+  head.writeUInt32BE(W, 0)
+  head.writeUInt32BE(H, 4)
+  head.set([8, 6, 0, 0, 0], 8)
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+    chunk('IHDR', head), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0)),
+  ])
+}
+// padding that centres `n` pixels in `size`, the odd pixel on the right
+const centre = (n, size) => [Math.floor((size - n) / 2), Math.ceil((size - n) / 2)]
 
-  // And on its own ground, which is what a deck or a favicon preview wants.
-  const p = await browser.newPage({ viewport: { width: 1024, height: 1024 }, deviceScaleFactor: 1 })
-  await p.setContent(page(`<div class="m" style="padding:180px;background:${g.behind}">${svg(g.fill, 664)}</div>`, g.behind))
-  const onGround = `mark-${g.name}-on-${g.on}-1024.png`
-  await p.locator('.m').screenshot({ path: join(out, onGround) })
-  await p.close()
-  made.push(onGround)
-
-  // The lockup, twice: transparent for placement, and on its ground.
-  const l = await browser.newPage({ viewport: { width: 1600, height: 400 }, deviceScaleFactor: 2 })
-  await l.setContent(page(lockup(g.fill, 120), 'none'))
-  await l.evaluate(() => document.fonts.ready)
-  const lockFile = `lockup-${g.name}.png`
-  await l.locator('.lock').screenshot({ path: join(out, lockFile), omitBackground: true })
-  await l.close()
-  made.push(lockFile)
+const mark = cellsOf(MARK)
+const N = MARK.length
+const word = wordCells()
+const lock = [...mark, ...word.cells.map(([x, y]) => [x + LOCKUP.word.x, y])]
+const made = []
+const put = (dir, file, data) => {
+  writeFileSync(join(dir, file), data)
+  made.push(join(dir === out ? 'design/logo' : 'app/public', file))
 }
 
+// ── the vectors ─────────────────────────────────────────────────────────────
+// The mark and the lockup, each once in `currentColor` for embedding and once
+// on each fixed ink, at twenty and eight pixels a cell; the tab's own drawing
+// beside them, for the record of what the tab shows.
+put(out, 'mark.svg', markSVG('currentColor', { scale: 20 }) + '\n')
+put(out, 'lockup.svg', lockupSVG('currentColor', { scale: 8 }) + '\n')
+for (const g of GROUNDS) {
+  put(out, `mark-${g.name}.svg`, markSVG(g.fill, { scale: 20 }) + '\n')
+  put(out, `lockup-${g.name}.svg`, lockupSVG(g.fill, { scale: 8 }) + '\n')
+}
+put(out, 'mark-tab.svg', tabSVG('currentColor').replace('<svg ', '<svg width="160" height="160" ') + '\n')
+// And the vector, Ecliptic from mark.js's constants, for where the product
+// still draws it as a material rather than as the name: the head of a door,
+// the desk, the poured metal's mask (DESIGN.md 3.5). The system's sheet
+// (design/components.html) shows it from here.
+put(out, 'ecliptic.svg', eclipticSVG('currentColor').replace('<svg ', '<svg width="512" height="512" ') + '\n')
+for (const g of GROUNDS) put(out, `ecliptic-${g.name}.svg`, eclipticSVG(g.fill).replace('<svg ', '<svg width="512" height="512" ') + '\n')
 
-// ── the mark a MAIL can draw ─────────────────────────────────────────────────
-// _shared/mail.ts signed every mail with the wordmark in type and nothing else,
-// because the SVG data URI it used to carry rendered in almost no client: Gmail
-// does not draw SVG in an <img> and proxies every image through a cache that
-// drops `data:`. A raster at a public URL is the one thing all of them draw, so
-// the mail pointed at this file, written from the same constants as every
-// other export. 256 because a mail drew it at 26 to 30 CSS pixels and a retina
-// client asks for two of those. The mails are signed with the whole lockup now
-// (scripts/export-mail.mjs, `sign.png`), and this is kept for the mails
-// already sent that point at it.
-const mailMark = await browser.newPage({ viewport: { width: 256, height: 256 }, deviceScaleFactor: 1 })
-await mailMark.setContent(page(`<div class="m">${svg(CHALK, 256)}</div>`, 'none'))
-await mailMark.locator('.m').screenshot({ path: join(root, 'app/public/mark-chalk-256.png'), omitBackground: true })
-await mailMark.close()
+// ── the pictures ────────────────────────────────────────────────────────────
+for (const g of GROUNDS) {
+  // the mark alone, transparent, at the three sizes anything ever asks for:
+  // forty, twenty and five pixels a cell, centred in the square
+  for (const [px, scale] of [[1024, 40], [512, 20], [128, 5]]) {
+    const [a, b] = centre(N * scale, px)
+    put(out, `mark-${g.name}-${px}.png`, png(mark, N, N, { scale, pad: [a, a, b, b], fill: g.fill }))
+  }
+  // and on its own ground, which is what a deck or a favicon preview wants:
+  // twenty six pixels a cell, 650 of the 1024, the rest its air
+  const [a, b] = centre(N * 26, 1024)
+  put(out, `mark-${g.name}-on-${g.on}-1024.png`, png(mark, N, N, { scale: 26, pad: [a, a, b, b], fill: g.fill, ground: g.behind }))
+  // the lockup, transparent for placement, at eight pixels a cell
+  put(out, `lockup-${g.name}.png`, png(lock, LOCKUP.w, LOCKUP.h, { scale: 8, fill: g.fill }))
+  // and on its ground with its clear space round it: half the mark, twelve
+  // cells, on every side (DESIGN.md 3.3)
+  put(out, `lockup-${g.name}-on-${g.on}.png`, png(lock, LOCKUP.w, LOCKUP.h, { scale: 8, pad: 12 * 8, fill: g.fill, ground: g.behind }))
+}
 
-await browser.close()
+// the lockup as markup is gone: the word is a drawing now, and lockup.svg
+// is the whole of it
+if (existsSync(join(out, 'lockup.html'))) rmSync(join(out, 'lockup.html'))
 
-// The lockup as markup, for anywhere the face is available.
-writeFileSync(join(out, 'lockup.html'), page(lockup('currentColor', 120), 'transparent') + '\n')
+// ── what app/public serves ──────────────────────────────────────────────────
+const pub = join(root, 'app/public')
 
-// ── the tab's icon ───────────────────────────────────────────────────────────
-// Phase 8. The wall injects this drawing as a data URI at runtime, which means
-// every route that is not the wall showed `star.svg`, the retired mark, and
-// showed it before any JavaScript ran on every route including the wall's.
-//
-// It is a static file now, linked from app/index.html, so the tab is right on
-// the first paint of every address and the injection is a no-op that agrees
-// with it. Ink with a prefers-color-scheme rule handing it chalk on a dark tab
-// strip: a browser reports the scheme to an icon document the same way it does
-// to a page, and one drawing has to be visible on both.
-writeFileSync(join(root, 'app/public/icon.svg'), eclipticSVG(INK, CHALK) + '\n')
+// The tab's icon, linked from app/index.html and every legal page, so the tab
+// is right on the first paint of every address (the wall draws the same
+// string again at runtime, index.jsx). Ink, with a prefers-color-scheme rule
+// handing it chalk on a dark tab strip: a browser reports the scheme to an
+// icon document the same way it does to a page, and one drawing has to be
+// visible on both.
+put(pub, 'icon.svg', tabSVG(INK, CHALK) + '\n')
 
-// And the same drawing in chalk, for use ON A PAGE rather than on a tab strip.
-// The two are not interchangeable and the screenshot pass is what showed it:
-// icon.svg is ink first, so used as an <img> on the void it rendered a mark
-// nobody could see. Its dark-mode rule does not save it there, because that
-// media query is evaluated against the IMAGE document's own scheme, not the
-// page's. The legal pages read this one.
-writeFileSync(join(root, 'app/public/mark.svg'), eclipticSVG(CHALK) + '\n')
+// The home screen's icon. iOS takes a PNG and not an SVG, and fills what is
+// transparent with black anyway, so it is the room: the mark in chalk at six
+// pixels a cell on #000, 150 of the 180, clear of the corners iOS rounds off.
+{
+  const [a, b] = centre(N * 6, 180)
+  put(pub, 'apple-touch-icon.png', png(mark, N, N, { scale: 6, pad: [a, a, b, b], fill: CHALK, ground: ROOM }))
+}
 
-console.log(`design/logo/\n  ${['mark.svg', 'mark-chalk.svg', 'mark-ink.svg', 'lockup.html', ...made].join('\n  ')}`)
-console.log('app/public/icon.svg\napp/public/mark.svg')
+// The lockup in chalk, for use ON A PAGE rather than on a tab strip: the legal
+// pages sign themselves with it (legal.css `.brand`), at one pixel a cell, as
+// every bar does. icon.svg will not do there: it is ink first, and its dark
+// rule answers the image's own scheme, not the page's.
+put(pub, 'lockup.svg', lockupSVG(CHALK) + '\n')
+// and the mark alone in chalk, kept at the address it has always had
+put(pub, 'mark.svg', markSVG(CHALK) + '\n')
+
+// The mark a mail could draw, at a public address, from when a mail was
+// signed with the mark alone. The mails are signed with the whole lockup now
+// (scripts/export-mail.mjs, `sign.png`); this stays for the mails already in
+// people's inboxes, which now show the mark they would be sent today.
+{
+  const [a, b] = centre(N * 10, 256)
+  put(pub, 'mark-chalk-256.png', png(mark, N, N, { scale: 10, pad: [a, a, b, b], fill: CHALK }))
+}
+
+console.log(made.join('\n'))

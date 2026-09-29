@@ -34,7 +34,8 @@
 //   THE ACCENT, ONCE.    #74C7DE, spent on the one fact a mail most needs
 //                        read, and on nothing else: the day a lapsing note's
 //                        slot opens (the lapse note in mails.ts).
-//   THE SIGNATURE.       the lockup, the mark and `celestual.` in Newsreader,
+//   THE SIGNATURE.       the lockup, the mark and `celestual.` drawn on the
+//                        phone's grid (app/src/wall/brand.js), a picture,
 //                        at the foot over the colophon, as the shared
 //                        picture is signed under its screen (share.js).
 //
