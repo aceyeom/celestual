@@ -8,9 +8,10 @@
 // blue black. Neither was the product anybody arriving from the link would
 // land in, which is a black room with a phone screen left on in it. So each
 // of these is that room: #000, one screen lit in it with the pixel mark on
-// its glass, the light it throws on the dark, and the lockup in the room's
-// own hand. The owner's word for the Instagram ones: the retro screen with
-// the logo, and nothing else.
+// its glass, the light it throws on the dark, and the lockup, drawn on the
+// phone's grid as the product signs itself everywhere (app/src/wall/brand.js).
+// The owner's word for the Instagram ones: the retro screen with the logo,
+// and nothing else.
 //
 // The screen is the frame the intro ends on (pixmark.js `introStory`,
 // Intro.jsx): the two of them gone into the mark and the whole phone a
@@ -67,22 +68,22 @@ const phone = (w, x, y, story = 'intro') => ({ w, x, y, tint: 'rose', seed: 'int
 // as the mark when the card is a thumbnail.
 const PHOTO = { quiet: ['rgb'], grain: 0.07 }
 const PICTURES = {
-  // the card: the screen and the lockup beside it, set as everywhere
-  // (DESIGN.md 3.3), 88 apart and the two centred as one across the card;
-  // the light it throws is the room's, wide, as a letter is read in
+  // the card: the screen and the lockup beside it, the lockup at five pixels
+  // a cell (DESIGN.md 3.3), 88 apart and the two centred as one across the
+  // card; the light it throws is the room's, wide, as a letter is read in
   'app/public/og.png': {
-    scene: { w: 1200, h: 630, room: 3.4, quiet: ['rgb', 'shine'], phone: phone(334, 267, 315, 'mark'), sign: { word: 104, x: 522, y: 315 } },
+    scene: { w: 1200, h: 630, room: 3.4, quiet: ['rgb', 'shine'], phone: phone(334, 273, 315, 'mark'), sign: { cell: 5, x: 528, y: 315 } },
     small: true,
   },
   // a post: the phone above the middle and the name under it, as far below
   // it as the shared picture signs itself
   'design/instagram/post.jpg': {
-    scene: { w: 1080, h: 1080, room: 3.2, ...PHOTO, phone: phone(560, 540, 470), sign: { word: 46, y: 930 } },
+    scene: { w: 1080, h: 1080, room: 3.2, ...PHOTO, phone: phone(560, 540, 470), sign: { cell: 2, y: 930 } },
   },
   // a story: the same phone and name, larger, the two centred on the middle
   // of the part of the frame Instagram leaves clear
   'design/instagram/story.jpg': {
-    scene: { w: 1080, h: 1920, room: 3.2, ...PHOTO, phone: phone(700, 540, 895), sign: { word: 56, y: 1415 } },
+    scene: { w: 1080, h: 1920, room: 3.2, ...PHOTO, phone: phone(700, 540, 895), sign: { cell: 3, y: 1415 } },
   },
 }
 

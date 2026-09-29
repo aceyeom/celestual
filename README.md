@@ -33,14 +33,18 @@ printed on a letter or its picture: a letter to a handle says `dear` and the
 writer's greeting, or the first name the resolver has for the handle, or
 `dear you`, and the handle stays the key it is filed and found under.
 
-Every letter is a slider phone, and its thread of replies (migration 0068) is
-the phone's lower half, slid out from under the screen by its right soft key,
-`replies`, which carries the count (sharing is the first row of the options),
-and lit on the same glass in the letter's own colours: anonymous to everybody
-reading, each writer a small creature drawn in the panel's ink with one old
-word for a name (`kairos`, `aporia`), written from a proved school address or
-by the person the letter is to, whose replies are struck out of the ink, and
-read before
+Every letter's thread of replies (migration 0068) is a sheet raised from the
+foot of the glass by its right soft key, a speech bubble and its count drawn
+as the heart beside it is (sharing is the first row of the options), with the
+letter's phone rising and stepping back to stand whole over it, as a reel
+stands over its comments; in a wide room the letter slides aside and the
+replies stand beside it as a panel. When the person the letter is to has
+answered, an envelope stands by the letter's aerial. The sheet is the wall's
+unlit panel, lit only where the letter's own light falls on it: anonymous to
+everybody reading, each writer a small creature in chalk with one old word
+for a name (`kairos`, `aporia`), written from a proved school address or by
+the person the letter is to, whose replies carry a badge lit in the letter's
+colour, and read before
 they go up (`supabase/functions/celestual-wall-reply`). A heart on a letter,
 and a like on a reply, is anybody's. The field of names can be looked at four
 ways, all, newest, most liked and Berkeley, from a key at the end of its search
@@ -86,7 +90,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0072, in order. 0029 onward is the rebuild; 0038 is
+  migrations/       0001 to 0073, in order. 0029 onward is the rebuild; 0038 is
                     the audit; 0057 is the wall at the root and the login;
                     0058 gives every letter a colour of the screens; 0063 is
                     the one wall; 0065 is the login by our own mailed link,
@@ -101,7 +105,9 @@ supabase/
                     more bought at $2.99 each, ten a reveal at most; 0072
                     keeps a mutual on both lists as it was told, so a person
                     can write to the same somebody again or take a mutual off
-                    their own list, and the other is told nothing
+                    their own list, and the other is told nothing; 0073 keeps
+                    the line across a private note's top and its battery,
+                    which its writer sets on its screen
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -wall-reply, -edu-verify, -ig-webhook,
                     -manychat, -mutual-dm, -notify, -remind, -stripe,
@@ -139,7 +145,8 @@ scripts/verify-migrations.sh --test    apply every migration to a bare
 node scripts/preview.mjs               screenshot every route, with fixtures
 node scripts/mail-preview.mjs          screenshot every email template
 node scripts/perf-letter.mjs           the letter's frames, measured: open, swipe,
-                                       keys, a name, close and the replies, on a
+                                       keys, a name, close, and the replies
+                                       raised and laid down by the grip, on a
                                        phone at 4x cpu (PERF_MODE=phone|desk)
 node scripts/check-stories.mjs         the stories on the glass, checked on
                                        every frame: the two come on together,

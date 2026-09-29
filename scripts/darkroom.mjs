@@ -30,8 +30,9 @@
 //           letter is read in round it as well (`.wl-room-light`), that many
 //           times the phone's width across
 //   sign    the lockup, as the shared picture is signed (share.js
-//           `signature`): the mark and `celestual.` in the room's serif at
-//           `word` pixels, centred at `y`, and across the room or from `x`
+//           `signature`): the mark and `celestual.` drawn on their grid
+//           (app/src/wall/brand.js), `cell` pixels a cell, centred at `y`,
+//           and across the room or from `x`
 //   grain   the sensor's grain over the whole photograph, at this strength,
 //           as the shared picture and the share card have it
 //   key     a key on its own, for a mail: the lit key (`lit`) or the bezel
@@ -103,7 +104,7 @@ import { Screen } from '/src/wall/screen.jsx'
 import PixelStory, { SQUARE } from '/src/wall/PixelStory.jsx'
 import { introStory, revealStory, markCells, MARK_CUT, I_QUICK } from '/src/wall/pixmark.js'
 import { skinOf, skinVars, mix, hexRgb } from '/src/wall/looks.js'
-import { eclipticSVG, CHALK } from '/src/wall/mark.js'
+import { lockupSVG, LOCKUP } from '/src/wall/brand.js'
 import '/src/wall/mutual.css'
 
 const NIGHT = skinOf('night')
@@ -185,11 +186,8 @@ function Glass({ glass, tint, t }) {
   return kids
 }
 
-function Sign({ word }) {
-  const mark = Math.round(word * 1.13)
-  return h('div', { className: 'dr-sign', style: { gap: Math.round(word * 0.38) + 'px' } },
-    h('span', { className: 'dr-sign-mark', style: { width: mark + 'px', height: mark + 'px' }, dangerouslySetInnerHTML: { __html: eclipticSVG(CHALK) } }),
-    h('span', { className: 'dr-sign-word', style: { fontSize: word + 'px' } }, 'celestual.'))
+function Sign({ cell }) {
+  return h('div', { className: 'dr-sign', dangerouslySetInnerHTML: { __html: lockupSVG('currentColor', { scale: cell }) } })
 }
 
 function Room({ scene, frame }) {
@@ -214,7 +212,11 @@ function Room({ scene, frame }) {
   }
   if (scene.sign) {
     const s = scene.sign
-    kids.push(h('div', { key: 's', className: 'dr-signed', style: s.x == null ? { top: s.y + 'px' } : { top: s.y + 'px', left: s.x + 'px', right: 'auto', transform: 'translateY(-50%)' } }, h(Sign, { word: s.word })))
+    // centred on \`y\`, and across the room unless it is given an \`x\`, to
+    // a whole pixel either way, so no cell is ever split across two
+    const top = Math.round(s.y - (LOCKUP.h * s.cell) / 2)
+    const left = s.x ?? Math.round((scene.w - LOCKUP.w * s.cell) / 2)
+    kids.push(h('div', { key: 's', className: 'dr-signed', style: { top: top + 'px', left: left + 'px' } }, h(Sign, { cell: s.cell })))
   }
   if (scene.grain) {
     kids.push(h('svg', { key: 'g', className: 'dr-grain', style: { opacity: scene.grain }, xmlns: 'http://www.w3.org/2000/svg', width: '100%', height: '100%' },
@@ -298,14 +300,9 @@ const HTML = `<!doctype html><html><head><meta charset="utf-8">
   /* the sensor's grain over the whole photograph, as the shared picture has */
   .dr-grain { position: absolute; inset: 0; z-index: 6; pointer-events: none; mix-blend-mode: screen; }
   /* the lockup, as the shared picture signs itself (share.js \`signature\`) */
-  .dr-signed { position: absolute; left: 0; right: 0; display: flex; justify-content: center; transform: translateY(-50%); }
-  .dr-sign { display: inline-flex; align-items: center; color: #F4F1EA; opacity: 0.9; }
-  .dr-sign-mark { display: block; filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18)); }
-  .dr-sign-mark svg { display: block; width: 100%; height: 100%; }
-  .dr-sign-word {
-    font-family: 'Newsreader', 'Iowan Old Style', Palatino, Georgia, serif;
-    font-weight: 500; line-height: 1; letter-spacing: -0.022em; transform: translateY(-0.03em);
-  }
+  .dr-signed { position: absolute; }
+  .dr-sign { display: block; color: #F4F1EA; opacity: 0.9; line-height: 0; }
+  .dr-sign svg { display: block; filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1)); }
   /* a key, as the wall draws its two (phone.css, THE KEYS) */
   .dr-key {
     position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);

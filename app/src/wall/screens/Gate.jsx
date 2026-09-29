@@ -76,7 +76,7 @@ import {
   Sheet, SheetHead, SheetFoot, Pill,
   HandleField, DmCode, VerifyHead, DoorHead, DoorFoot, Or,
 } from '../parts.jsx'
-import { Ecliptic, Envelope, Google, Provider } from '../art.jsx'
+import { Envelope, Google, Provider } from '../art.jsx'
 import { normHandle, validHandle, heart } from '../data.js'
 import { takeAfterGate, peekAfterGate, setAfterGate } from '../store.js'
 import {
@@ -91,7 +91,7 @@ import { useLinkWait, LinkWaiting, ResendLink } from '../linkdoor.jsx'
 import { href } from '../router.js'
 import { cardStep } from '../seed.js'
 import { Caret } from '../caret.jsx'
-import { usePhone } from '../parts.jsx'
+import { usePhone, PixMark } from '../parts.jsx'
 import You from './You.jsx'
 
 // The composer's own field, reused: a bare baseline with the constant part of
@@ -511,7 +511,7 @@ export default function Gate({ go, up, upLabel = 'back to the wall', after = nul
                     the sky's sign in, the opt out, the takedown — so it is
                     reused rather than restated inside a `DoorHead`. */}
                 <div className="wl-door-head">
-                  <Ecliptic size={38} className="wl-door-mark" />
+                  <PixMark className="wl-door-mark" />
                   <VerifyHead size="s" as="h2" id="wl-gate-h" className="wl-door-title" />
                 </div>
                 <div className="wl-door-ways">

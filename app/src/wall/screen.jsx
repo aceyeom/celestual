@@ -484,12 +484,21 @@ function Press({ id, colour, q }) {
 // `salutation` is the whole of that line when the writer set one of their
 // own ("to the girl on the 51B"), and with none it is "dear" and the name
 // as before. `greet` is the same line on the composer, where it is the
-// writer's to edit: `{ value, onChange, max, label, inputRef, onFocus }`,
-// set in the line's own face, size and colour. `tag` stands where the
-// handle does, for a name note carrying a school. `pair` is the whole of
-// the second row for a phone that belongs to two people and not to a
-// letter: two names, centred, one weight each, a point between them (the
-// mutual's keepsake, Keepsake.jsx, since 28 September).
+// writer's to edit: `{ value, onChange, max, label, inputRef, onFocus,
+// onBlur, onEnter }`, set in the line's own face, size and colour; the
+// composer's letter and a private note's screen (screens/Ping.jsx, 0073).
+// Either line has the row to itself where nothing stands on its right
+// (`alone`). `tag` stands where the handle does, for a name note carrying a
+// school. (A phone that belonged to two people had the two names on this
+// row, `pair`, from 28 September; the keepsake names them on its glass
+// since 29 September, and the row is a letter's again, Keepsake.jsx.)
+//
+// `bat` is the battery's charge, 0 to 4, and `null` for a phone that draws
+// none. With `onBat` (and `live`) the battery is a key its writer presses to
+// set it, a bar at a time and round again, named by `batLabel` (a private
+// note's face, 0073). `mail` puts the envelope by the aerial, steady: the
+// phone's own light for something having come in (a letter the person it
+// is to has answered, Replies.jsx).
 //
 // `sticker` is a school (schools.js `schoolOf`), for a letter posted from a
 // verified school address: the phone is on that school's network, its name
@@ -519,15 +528,29 @@ export function Screen({
   // this phone's own pixels, up close (looks.js `rgbTile`), when they are
   // made; a print and the square are paper, and have none
   const rgb = useRgbTile(s.paper ? '' : seed)
-  const { name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat = 4, salutation = '', greet = null, tag = '', pair = null } = top
+  const {
+    name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat: charge = 4, onBat = null, batLabel = '',
+    mail = false, salutation = '', greet = null, tag = '',
+  } = top
+  // a battery of `null` is a phone that draws none (the keepsake, whose two
+  // notes carry their own); anything else out of range is a full one
+  const bat = charge === null ? null : Number.isInteger(charge) && charge >= 0 && charge <= 4 ? charge : 4
   const said = salutation || (dear && name ? `dear ${name}` : name)
+  // the line has the row to itself where nothing stands on its right (no
+  // handle, no position, no school), as the shared picture has always given
+  // it (share.js): a letter's greeting, and a private note's own line, which
+  // the handle gives the row up to (screens/Ping.jsx, 0073)
+  const alone = !(pos || handle || tag)
   // a line the writer set is set smaller when it is long (`lineSize`); the
   // name the screen makes itself keeps its size and its cut, as it always did
-  const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '') : salutation ? lineSize(salutation) : undefined
-  // A key can carry a count, set small at its shoulder the way the phone
-  // counted what was waiting behind a key (`badge`), and the message light
-  // under it (`dot`); and a key that opens something stays struck out of
-  // its band while that is open (`open`), as the phone lit the tab it was on.
+  const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '', alone) : salutation ? lineSize(salutation, alone) : undefined
+  // A key is a word, or a glyph with its count after it in the key's own
+  // ink (the heart, the replies' bubble), and nothing is ever stuck on it:
+  // the count at a key's shoulder, a lit plate with the message light
+  // stacked under it, was the one badge on the band and read as one, so
+  // the light went to the status row (`mail`). A key that opens something
+  // stays struck out of its band while that is open (`open`), as the phone
+  // lit the tab it was on.
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -543,12 +566,6 @@ export function Screen({
       >
         {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
         {d.label ? <span className="wl-lit">{d.label}</span> : null}
-        {d.badge || d.dot ? (
-          <span className="wl-sk-n" aria-hidden="true">
-            {d.dot ? <i className="wl-sk-dot" /> : null}
-            {d.badge ? <b>{d.badge}</b> : null}
-          </span>
-        ) : null}
       </button>
     )
   }
@@ -559,13 +576,9 @@ export function Screen({
   // styling the whole page again for every element any screen put on it or
   // took off, on every turn of the letters (screen.css, the wake)
   const menu = isValidElement(children) && children.type === ScreenMenu
-  // two names, one of each of two people, on the second row and at one
-  // weight, with a point between them: the mutual's keepsake (Keepsake.jsx),
-  // where the row is theirs and not a letter's greeting
-  const two = Array.isArray(pair) && pair.length === 2
   return (
     <div
-      className={`wl-scene${two ? ' is-pair' : ''} ${className}`} data-kind={s.kind} data-colour={colour.slug}
+      className={`wl-scene ${className}`} data-kind={s.kind} data-colour={colour.slug}
       data-state={state || undefined} style={{ ...vars, ...style }}
     >
       <span className="wl-scene-halo" aria-hidden="true" />
@@ -590,30 +603,43 @@ export function Screen({
               <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
                 <Pix name="ant" h={9} />
               </span>
+              {/* the message light: the envelope the phone showed by the aerial
+                  when something had come in, steady, since a blink would be
+                  urgency (`mail`, a letter the person it is to has answered) */}
+              {mail ? (
+                <span className="wl-scr-env wl-lit-g" aria-hidden="true">
+                  <Pix name="env" h={6.4} />
+                </span>
+              ) : null}
               {sticker ? <Network school={sticker} /> : null}
               {date ? <span className="wl-scr-dt wl-lit">{date}</span> : null}
               {stamp
                 ? <span className="wl-scr-cnt wl-scr-stamp wl-lit">{stamp}</span>
                 : counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
-              <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
-                <Pix name={`bata${bat}`} h={8} />
-              </span>
+              {bat === null ? null : live && onBat ? (
+                // the battery its writer sets, a key of its own on the status
+                // row: each press takes a bar off, and the empty one comes
+                // round to full. The focus stays where the writing is
+                <button
+                  type="button" className={`wl-scr-bat wl-lit-g is-key${bat ? '' : ' is-low'}`}
+                  onClick={onBat} onMouseDown={(e) => e.preventDefault()}
+                  aria-label={batLabel || `the battery, ${bat} of 4. press to change it`}
+                >
+                  <Pix name={`bata${bat}`} h={8} />
+                </button>
+              ) : (
+                <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
+                  <Pix name={`bata${bat}`} h={8} />
+                </span>
+              )}
             </div>
             {/* the line's language, for its face (type.js `langOf`): the
                 greeting its writer chose where there is one, else the name */}
-            {two ? (
-              <div className="wl-scr-r2" id={nameId}>
-                <span className="wl-scr-nm wl-lit" lang={langOf(pair[0]) || undefined}>{pair[0]}</span>
-                <span className="wl-scr-mid wl-lit" aria-hidden="true">·</span>
-                <span className="wl-scr-nm wl-lit" lang={langOf(pair[1]) || undefined}>{pair[1]}</span>
-              </div>
-            ) : (
-              <div className="wl-scr-r2" lang={langOf(greet ? `${greet.value || ''}${name}` : said) || undefined}>
-                {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
-                {greet ? <Greet {...greet} id={nameId} style={nmStyle} /> : <span className="wl-scr-nm wl-lit" id={nameId} style={nmStyle}>{said}</span>}
-                <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
-              </div>
-            )}
+            <div className={`wl-scr-r2${alone ? ' is-alone' : ''}`} lang={langOf(greet ? `${greet.value || ''}${name}` : said) || undefined}>
+              {icon ? <Pix name={icon} h={icon === 'pen' ? 8.6 : 7} className="wl-lit-g" /> : null}
+              {greet ? <Greet {...greet} id={nameId} style={nmStyle} /> : <span className="wl-scr-nm wl-lit" id={nameId} style={nmStyle}>{said}</span>}
+              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle || tag}</span>
+            </div>
           </div>
           <div className={`wl-scr-body${menu ? ' is-menu' : ''}`}>{children}</div>
           <div className="wl-scr-bot">
@@ -660,12 +686,14 @@ function netVars(fg) {
 // ── a long line, set smaller ────────────────────────────────────────────────
 // A greeting the writer set can run to forty characters, and the line holds
 // seventy per cent of the row (screen.css), about seventeen characters of the
-// face at its own size, a third of an em and a little more each. So a longer
-// line is set smaller, down to half the row's size, before anything is cut;
-// the shared picture does the same with the canvas's own measure (share.js).
-function lineSize(text) {
+// face at its own size, a third of an em and a little more each; with nothing
+// on its right (`alone`) it holds the row after the pen, about twenty two.
+// So a longer line is set smaller, down to half the row's size, before
+// anything is cut; the shared picture does the same with the canvas's own
+// measure (share.js).
+function lineSize(text, alone = false) {
   const n = [...String(text || '')].length
-  const fits = 64 / (0.36 * Math.max(1, n))
+  const fits = (alone ? 80 : 64) / (0.36 * Math.max(1, n))
   return fits < 11 ? { fontSize: `${Math.max(5.6, fits).toFixed(2)}cqw` } : undefined
 }
 
@@ -674,8 +702,10 @@ function lineSize(text) {
 // face, size, colour and bloom, sized to what is in it (the value is mirrored
 // into the box it stands in, post.css `.wl-scr-greet`), so the handle beside
 // it stays where it was. The screen's own caret, in the line's colour, while
-// it is being typed in.
-function Greet({ value, onChange, max = 40, label = 'the greeting', placeholder = '', inputRef = null, onFocus = null, onBlur = null, id, style }) {
+// it is being typed in. Enter is done with the line, never a send: it takes
+// the typing on to the words (`onEnter`), and where there is nowhere given
+// it lets go of the field.
+function Greet({ value, onChange, max = 40, label = 'the greeting', placeholder = '', inputRef = null, onFocus = null, onBlur = null, onEnter = null, id, style }) {
   const ref = useRef(null)
   return (
     <span className="wl-scr-nm wl-scr-greet wl-lit" data-value={value || placeholder || ' '} style={style}>
@@ -686,7 +716,12 @@ function Greet({ value, onChange, max = 40, label = 'the greeting', placeholder 
         size={1}
         onChange={(e) => onChange(e.target.value.slice(0, max))}
         onFocus={onFocus || undefined} onBlur={onBlur || undefined}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return
+          e.preventDefault()
+          if (onEnter) onEnter()
+          else e.currentTarget.blur()
+        }}
         autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="done"
       />
       <Caret of={ref} screen />

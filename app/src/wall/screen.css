@@ -120,18 +120,44 @@
 /* a screen is addressed to a person, and when the name and the @ will not
    both fit it is the @ that gives way: "dear Pilar" and a cut handle, not
    "dear Pil" and most of one. The shared picture gives way the same way
-   (share.js). The two names on a story are one weight and share the row */
-.wl-scene:not(.is-pair) .wl-scr-r2 > .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
-/* a phone that is two people's (screen.jsx `pair`): the two names in the
-   middle of the row, each cut before it takes more than its share, and the
-   point between them a little dimmer than either */
-.wl-scene.is-pair .wl-scr-r2 { justify-content: center; }
-.wl-scene.is-pair .wl-scr-r2 > .wl-scr-nm { max-width: 45%; }
-.wl-scr-mid { flex: 0 0 auto; font-size: 11cqw; line-height: 1; opacity: 0.72; }
+   (share.js). (The two names the keepsake had on this row, and the point
+   between them, went with the row on 29 September, Keepsake.jsx) */
+.wl-scene .wl-scr-r2 > .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
+/* and with nothing on its right (screen.jsx `alone`: no handle, position or
+   school), the line has the row after the pen, and is cut only at its end,
+   as the shared picture has always set it (share.js) */
+.wl-scene .wl-scr-r2.is-alone > .wl-scr-nm { flex-shrink: 1; max-width: none; }
 /* the words in a row share a baseline, whatever their size; the glyphs
    beside them stay centred */
 .wl-scr-r2 > .wl-scr-nm, .wl-scr-r2 > .wl-scr-hd { align-self: baseline; }
 .wl-scr-bat.is-low { animation: wl-blink 1.06s steps(1) infinite; }
+/* the envelope by the aerial (screen.jsx `mail`), in the status's own light
+   and steady */
+.wl-scr-env { display: flex; align-items: center; margin-left: 0.4cqw; }
+/* the battery its writer sets (screen.jsx `onBat`): a key on the status row,
+   drawn as the battery and nothing more. A press dims it as a soft key's
+   does, and its reach is a finger's, larger than the glyph. The focus ring
+   is the status's light */
+.wl-root .wl-scr-bat.is-key {
+  position: relative; display: flex; align-items: center;
+  margin-top: 0; margin-bottom: 0; padding: 0; border: 0; background: none;
+  color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity 140ms var(--ease, ease);
+}
+.wl-scr-bat.is-key::after { content: ''; position: absolute; inset: -2.6cqw -1.8cqw; }
+/* and the dotted pixel line under it that the greeting beside it carries
+   (post.css `.wl-scr-greet`): on this row a thing with the line under it is
+   the writer's to set, and nothing else on the row has one */
+.wl-scr-bat.is-key::before {
+  content: ''; position: absolute; left: 0.4cqw; right: 0; bottom: -1.3cqw; height: 0.55cqw;
+  background: repeating-linear-gradient(90deg, currentColor 0 1.1cqw, transparent 1.1cqw 2.2cqw);
+  opacity: 0.5; pointer-events: none;
+}
+/* in the ink itself on a print, whose press keeps no greys (post.css, the
+   greeting's line) */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-scr-bat.is-key::before { opacity: 1; }
+.wl-root .wl-scr-bat.is-key:active { opacity: 0.45; transition-duration: 0ms; }
+.wl-root .wl-scr-bat.is-key:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: 0.6cqw; border-radius: 0.6cqw; }
 .wl-px { display: block; flex: 0 0 auto; fill: currentColor; }
 /* the words on the glass bloom, the way a lit word does in a photograph of
    a dark room; the glyphs beside them bloom with them, as a drop shadow,

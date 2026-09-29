@@ -32,9 +32,10 @@ import { ECL, NEAR, CHALK, ringPath, starPath, rad } from './mark.js'
 import { introFolk, standing, sheet, drawBody, together, mixPose, body, SCALE } from './folk.js'
 
 // ── the mark, on a canvas ───────────────────────────────────────────────────
-// Moved here out of share.js, which signs the shared picture with it, so the
-// signature and the pixel mark are one drawing: the ring, then the star with
-// the gutter cut out of it where the ring passes in front, then the ring's
+// Moved here out of share.js, which signed the shared picture with it until
+// the brand was drawn on the phone's grid (brand.js, whose mark starts from
+// this raster at 29). It is what `markCells` rasterises: the ring, then the
+// star with the gutter cut out of it where the ring passes in front, then the ring's
 // near half again on top, which is the order `eclipticSVG` layers them in.
 // Paths and not an SVG image, because a canvas that has drawn an image can be
 // tainted and a tainted canvas cannot be read back or made into a file.
@@ -568,7 +569,7 @@ function glideAt(m, t, dx = 0) {
 //          its edges and no further, over a second and a half; the phone's
 //          own bands and the light it throws turning with it as it reaches
 //          them (Intro.jsx, intro.css), until the whole phone is a letter
-//          lit in rose
+//          lit in rose (the intro's in whichever look it drew for the load)
 //   2310   THE MARK: the two of them into the star and the ground into the
 //          ring, gliding, while the last of the glass turns; whole at 3170
 //
@@ -587,15 +588,21 @@ function glideAt(m, t, dx = 0) {
 // `panel` is the rose letter's three panel colours and `ink` the night's
 // ink and the rose's, which the pink carries the one to the other; the
 // intro hands in another letter's for the pink, the one it drew for this
-// load (Intro.jsx `TINTS`). `front` is the lighter colour a block of the
+// load (Intro.jsx `LOOKS`). `front` is the lighter colour a block of the
 // panel flashes as it turns, as the three numbers of an rgb, and
-// `spectrum` is a list of panels, from where they hold each other out to
-// the farthest corner, for a pink that is every colour at once
-// (PixelStory.jsx `pinkOf`). `pace` is the pink's and the glide's
-// (`TOLD`, `I_QUICK`). `stillPrep` is how long a frame of the empty glass
-// may spend working out the glide ahead: the intro's glass has nothing on
-// it then, and the film's has the notes and the names moving on it, so it
-// takes a little less (`F_PREP_MS`).
+// `spectrum` is a list of panels for a pink that is two colours or more
+// (PixelStory.jsx `pinkOf`): from where they hold each other out to the
+// farthest corner, or, with an `axis`, across the glass at that angle, read
+// as CSS reads a `linear-gradient`'s (0 to the top, 90 to the right), the
+// first panel on the side it leaves and the last on the side it points to,
+// whichever of them the front reaches first. `even` gives each panel of a
+// spectrum laid out from them an equal share of the glass: laid by distance
+// alone, the middle ones take most of it and the first and the last a
+// sliver each. `pace` is the pink's and the glide's (`TOLD`, `I_QUICK`).
+// `stillPrep` is how long a frame of the empty glass may spend working out
+// the glide ahead: the intro's glass has nothing on it then, and the film's
+// has the notes and the names moving on it, so it takes a little less
+// (`F_PREP_MS`).
 //
 // ── the intro's own clock ──
 // Nought is the first frame the page can paint (Intro.jsx): the screen
@@ -750,7 +757,7 @@ function mixHex(a, b, k) {
   const B = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16))
   return `#${A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
 }
-export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null, pace = TOLD, front = null, spectrum = null, stillPrep = I_STILL_PREP_MS } = {}) {
+export function introStory(start = 0, { panel = PANEL, ink = null, folk: given = null, pace = TOLD, front = null, spectrum = null, axis = null, even = false, stillPrep = I_STILL_PREP_MS } = {}) {
   // the two of them: the intro's run, or a story's own way to the same hold
   // (the door's, `joinStory`), which answers the same `at`, `times`, `pair`
   // and `hug`
@@ -827,7 +834,7 @@ export function introStory(start = 0, { panel = PANEL, ink = null, folk: given =
   }
   const T = folk.times
   return {
-    cols: I_COLS, rows: I_ROWS, end, panel, front, spectrum, fine: true,
+    cols: I_COLS, rows: I_ROWS, end, panel, front, spectrum, axis, even, fine: true,
     times: {
       run: start + T.run, slow: start + T.slow, stop: start + T.stop, meet: start + T.meet, hold: start + T.hold,
       // the frame they come over the edges of a phone's glass

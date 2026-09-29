@@ -84,9 +84,15 @@ once one is out, the same row is `your new note to Jules`, and opens that
 note, since offering a new one over it said something that was not so.
 The picture of a mutual is shared like a letter's (`share`, `to someone`,
 `save the picture`), and carries both notes unless the person says `leave the
-notes off`, which then reads `put the notes back`. It names the two by their
-first names or not at all, never by an @, and it carries no link; a picture
-that names nobody says whose each note is as `from them` and `from me`.
+notes off`, which then reads `put the notes back` and takes each note's line
+and battery off with its words. It names the two by their first names or not
+at all, never by an @, and it carries no link; a picture that names nobody
+says whose each note is as `from them` and `from me`, and a note's line that
+would have named the other by an @ is `dear you`. The keepsake says the two
+names once, `Jules & Ace`, under `it's mutual.`, and each note says the rest:
+the line its writer set across it, and `from Jules` under the words. A menu
+on it is named on its own small screen, `options` or `share`, with where in
+it the chosen row is, `1/2`.
 
 ---
 

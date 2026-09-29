@@ -333,6 +333,9 @@ function thread() {
   const full = { ...base, count: rows.length, replies: rows, me }
   switch (THREAD) {
     case 'full': return full
+    // a thread of three figures, which the key counts at a step smaller
+    // (replies.css `.is-long`); the rows drawn are the same six
+    case 'many': return { ...full, count: 128 }
     case 'terms': return { ...full, me: { ...me, terms: false } }
     case 'held': return { ...full, count: rows.length, replies: [...rows,
       { id: 'r0000007-2222-4333-8444-555566660007', who: 'c74d97b01eae257e', recipient: false, status: 'held', mine: true,
@@ -1019,10 +1022,20 @@ const RPC = {
         ...(NOTES === 'long' ? {
           card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.' },
           their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.' },
+        } : NOTES === 'faces' ? {
+          // each note on the face its writer left it on (0073): a line of
+          // their own across the top, and the battery where they set it
+          card: { words: 'i have wanted to say this since the second week of term.', greet: 'to the one with my pen', bat: 1 },
+          their_card: { words: 'i kept nearly saying something after class and then not saying it.', greet: 'to the girl in row four', bat: 3 },
+        } : NOTES === 'faces-long' ? {
+          card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.', greet: 'to the one who lent me a pen in the tides', bat: 0 },
+          their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.', greet: 'to whoever sits two rows behind me', bat: 4 },
         } : NOTES === 'none' ? { card: { words: '' }, their_card: { words: '' } }
           : NOTES === 'cjk' ? {
             card: { words: 'i have wanted to say this since the second week of term.' },
-            their_card: { words: '수업 끝나고 매번 말을 걸고 싶었어. 금요일에 도서관 계단에서 기다릴게.' },
+            // and a line of their own across its top, in Korean, which is
+            // set at the size its width needs and the other note's with it
+            their_card: { words: '수업 끝나고 매번 말을 걸고 싶었어. 금요일에 도서관 계단에서 기다릴게.', greet: '금요일에 도서관 계단에서 기다리는 너에게', bat: 2 },
           } : {
             card: { words: 'i have wanted to say this since the second week of term.' },
             their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
@@ -1044,7 +1057,7 @@ const RPC = {
         time: now - 2 * DAY,
         expires_at: new Date(NEXT_REVEAL).toISOString(),
         mutual: false,
-        card: { words: 'you were the one singing on the 51B that night.' },
+        card: { words: 'you were the one singing on the 51B that night.', greet: 'to the one singing on the 51B', bat: 2 },
       },
       ...(TWICE ? [{
         handle: 'ren.tanaka',
@@ -1255,15 +1268,33 @@ const OPENED = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`o
 const ROUTES = [
   // The intro, held on its last beat: the phone, and the mark in its pixels,
   // in the rose, as a held frame always is. Then held on the run, on the hug
-  // and on the glide by the clock (Intro.jsx `?t=`), the last beat in the
-  // wheel the intro turns one load in nine (`?tint=rainbow`), and the same
-  // last beat typed, for setting beside it (`?intro=ascii`).
+  // and on the glide by the clock (Intro.jsx `?t=`), the last beat in a
+  // rainbow (`?tint=rainbow`, the one round the wheel from the amber), and
+  // the same last beat typed, for setting beside it (`?intro=ascii`). Then
+  // the last beat in each of the looks a load may draw that is more than one
+  // colour (Intro.jsx `LOOKS`: the four wheels and the prism, then the
+  // gradients out from them and across), and the glide in one of each way of
+  // laying the colours on the glass, with the colour on its way out through
+  // it.
   { label: 'intro',         path: '/?beat=3' },
   { label: 'intro-run',     path: '/?t=1400' },
   { label: 'intro-hug',     path: '/?t=2100' },
   { label: 'intro-glide',   path: '/?t=2450' },
   { label: 'intro-rainbow', path: '/?beat=3&tint=rainbow' },
   { label: 'intro-ascii',   path: '/?beat=3&intro=ascii' },
+  { label: 'intro-wheel-amber', path: '/?beat=3&tint=wheel-amber' },
+  { label: 'intro-wheel-green', path: '/?beat=3&tint=wheel-green' },
+  { label: 'intro-wheel-ice',   path: '/?beat=3&tint=wheel-ice' },
+  { label: 'intro-wheel-lilac', path: '/?beat=3&tint=wheel-lilac' },
+  { label: 'intro-prism',       path: '/?beat=3&tint=prism' },
+  { label: 'intro-peach',       path: '/?beat=3&tint=peach' },
+  { label: 'intro-seaglass',    path: '/?beat=3&tint=seaglass' },
+  { label: 'intro-twilight',    path: '/?beat=3&tint=twilight' },
+  { label: 'intro-dusk',        path: '/?beat=3&tint=dusk' },
+  { label: 'intro-lagoon',      path: '/?beat=3&tint=lagoon' },
+  { label: 'intro-glide-wheel', path: '/?t=2450&tint=wheel-ice' },
+  { label: 'intro-glide-peach', path: '/?t=2450&tint=peach' },
+  { label: 'intro-glide-dusk',  path: '/?t=2450&tint=dusk' },
   // ── the ping, on the wall ──
   // Raised over the Berkeley wall, from the tab, the bar and the foot, and
   // from every address Main used to draw it at. The people written to, with
@@ -1306,6 +1337,33 @@ const ROUTES = [
            ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light']] },
   { label: 'ping-done',     path: '/berkeley/ping/pilar.echevarria',
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // the face a note is written on (0073): the greeting changed in place, the
+  // battery pressed a bar at a time and down to the empty one, blinking, a
+  // greeting with a number in it refused at the send, and the note sent on
+  // the face its writer set. `ping-line` shows the line under the screen
+  // saying both are theirs, the first time
+  { label: 'ping-face',     path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping .wl-scr-greet input', 'to the one who laughed at the film'],
+           ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.']], settle: 900 },
+  { label: 'ping-bat',      path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'ping-bat-empty', path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+  // and under reduced motion, where the empty one stands still, and is drawn
+  { label: 'ping-bat-empty-still', path: '/berkeley/ping/pilar.echevarria', still: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'ping-face-caught', path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
+           ['fill', '.wl-ping .wl-scr-greet input', 'call me 510 555 0199'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'ping-face-done', path: '/berkeley/ping/pilar.echevarria',
+    acts: [['fill', '.wl-ping .wl-scr-greet input', 'to the one who laughed at the film'],
+           ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
+           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // the whole story from the wall: the tab, a name written to, a line, the
   // door passed on the spot, "it's out.", and back on the names
   { label: 'ping-story-tab',  path: '/berkeley', tab: true, verified: false, pass: true,
@@ -1367,6 +1425,14 @@ const ROUTES = [
   { label: 'ping-edit-bare-done', path: '/berkeley/you',
     acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', ''], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+  // and its face alone changed (0073): the battery pressed, the key lit as
+  // `send the change`, and what it ends on, which is not new words
+  { label: 'ping-edit-face', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 900 },
+  { label: 'ping-edit-face-done', path: '/berkeley/you',
+    acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // somebody this person is mutual with, written to again (0072): on the
   // list of the people written to, from a link, and sent, which is "sent
   // privately." as any note; the mutual opened off it and come back from,
@@ -1457,7 +1523,7 @@ const ROUTES = [
   { label: 'reveal-film-3700', path: '/reveal/jules.k?beat=4&film=3700', settle: 1200 },
   { label: 'reveal-film-4400', path: '/reveal/jules.k?beat=4&film=4400', settle: 1200 },
   { label: 'reveal-film-5900', path: '/reveal/jules.k?beat=4&film=5900', settle: 1200 },
-  { label: 'reveal-film-pull', path: '/reveal/jules.k?beat=4&film=6900', settle: 1600 },
+  { label: 'reveal-film-pull', path: '/reveal/jules.k?beat=4&film=7520', settle: 1600 },
   { label: 'reveal-played',    path: '/reveal/jules.k?beat=4', settle: 9800 },
   { label: 'reveal-skipped',   path: '/reveal/jules.k?beat=4', acts: [['wait', 2600], ['click', '.wl-film-stage .wl-scr-bg']], settle: 1600 },
   { label: 'reveal-keep',      path: '/reveal/jules.k?beat=4&keep', settle: 1400 },
@@ -1466,6 +1532,10 @@ const ROUTES = [
   { label: 'reveal-share',     path: '/reveal/jules.k?beat=4&keep=share', settle: 1800 },
   { label: 'reveal-long',      path: '/reveal/jules.k?beat=4&keep', notes: 'long', settle: 1400, full: true },
   { label: 'reveal-empty',     path: '/reveal/jules.k?beat=4&keep', notes: 'none', settle: 1400 },
+  // each note on its own face (0073): the line its writer set across its
+  // top and the battery they left it on, short and at their longest
+  { label: 'reveal-faces',     path: '/reveal/jules.k?beat=4&keep', notes: 'faces', settle: 1400 },
+  { label: 'reveal-faces-long', path: '/reveal/jules.k?beat=4&keep', notes: 'faces-long', settle: 1400, full: true },
   { label: 'reveal-cjk',       path: '/reveal/seoyeon.kim?beat=4&keep', notes: 'cjk', settle: 2400 },
   { label: 'reveal-short',     path: '/reveal/jules.k?beat=4&slot=67,318,256,60',
     store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },
@@ -1500,6 +1570,9 @@ const ROUTES = [
   { label: 'reveal-still',  path: '/berkeley/reveal/jules.k', still: true, settle: 1600 },
   { label: 'join-still',    path: '/berkeley/join', still: true, settle: 1600 },
   { label: 'intro-still',   path: '/?beat=3', still: true, settle: 900 },
+  // and in a rainbow and a look across the glass, whose lamps stand still
+  { label: 'intro-still-wheel', path: '/?beat=3&tint=wheel-green', still: true, settle: 900 },
+  { label: 'intro-still-dusk',  path: '/?beat=3&tint=dusk', still: true, settle: 900 },
   { label: 'letter-still',  path: '/berkeley/letter/ren.tanaka', still: true, settle: 1200 },
   // the veil over the field, with the flaps rolled into place (art.jsx
   // Flap), so the wall is shot once they have landed; then the field with
@@ -1752,6 +1825,15 @@ const ROUTES = [
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
   { label: 'write-how-edu', path: '/write/sofiaaa.reyes', anon: true,
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-cal .wl-how-go']], settle: 900 },
+  // sent privately from the composer: the greeting the writer set goes as
+  // the line across the note's top (0073), and one with a number in it
+  // brings them back to it before anything is asked
+  { label: 'write-private', path: '/write/sofiaaa.reyes',
+    draftOf: { greet: 'to the one in the front row' },
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-private .wl-how-go']], settle: 1600 },
+  { label: 'write-private-caught', path: '/write/sofiaaa.reyes',
+    draftOf: { greet: 'text me 510 555 0199' },
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-private .wl-how-go']], settle: 900 },
   { label: 'write-held',    path: '/write/sofiaaa.reyes', anon: true, held: true,
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go']], settle: 1200 },
   // the draft to an @ the resolver has no name for: "dear you", and the
@@ -1822,20 +1904,23 @@ const ROUTES = [
       ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
 
   // ── the replies (0068) ──
-  // The thread, the phone's lower half (app/src/wall/Replies.jsx), in every
-  // state it has: shut with its count on the chin, sliding open, open, the
-  // field risen, nothing yet, the recipient's own view and their reply, shut
-  // and put away, a device with no school and the link sent, the terms before
-  // a first reply, a name caught at the keyboard, a reply held and one
-  // refused, a report folded away, an open phone carried half shut by a
-  // hand, and the desk's queue.
+  // The thread, a sheet raised over the letter (app/src/wall/Replies.jsx
+  // `ThreadSheet`), and in a wide room a panel beside it, in every state it
+  // has: down with its bubble and count on the key and the envelope by the
+  // aerial, rising, up, scrolled to its foot, the field risen, nothing yet,
+  // the recipient's own view and their reply, shut and put away, a device
+  // with no school and the link sent, the terms before a first reply, a name
+  // caught at the keyboard, a reply held and one refused, a report folded
+  // away, the sheet half pulled down by its head and laid down by a press
+  // on the letter over it, a count of three figures, and the desk's queue.
   { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
+  { label: 'replies-many',     path: '/letter/pilar.echevarria', thread: 'many', settle: 1800 },
   { label: 'replies-opening',  path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 170]], settle: 0 },
   { label: 'replies-open',     path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-th .wl-low-list']], settle: 600 },
   { label: 'replies-write',    path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
@@ -1846,7 +1931,7 @@ const ROUTES = [
   { label: 'replies-recipient-open', path: '/letter/pilar.echevarria', thread: 'recipient',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-locked',   path: '/letter/pilar.echevarria', thread: 'locked',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-th .wl-low-list']], settle: 600 },
   { label: 'replies-locked-owner', path: '/letter/pilar.echevarria', thread: 'locked-owner',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-closed',   path: '/letter/pilar.echevarria', thread: 'closed', settle: 1800 },
@@ -1871,21 +1956,29 @@ const ROUTES = [
            ['fill', '.wl-rp-field textarea', 'refuse this one please'], ['click', '.wl-tray-send']], settle: 900 },
   { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
-  // a shut phone taken sideways and held, the chins in a line across the gap
+  // a letter taken sideways and held, the key bands in a line across the gap
   { label: 'replies-drag',     path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['swipe', '.wl-letter-card .wl-scr', -120, 'hold']], settle: 200 },
-  // an open phone taken sideways and held: half shut under the hand, the
-  // neighbour coming up out of the dark
-  { label: 'replies-carry',    path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['swipe', '.wl-letter-card .wl-scr', -90, 'hold']], settle: 200 },
-  // the tray on the other glasses: a negative, where the ink is the light,
-  // and a poster's print
-  { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
+  // the sheet taken by its head and held half way down, the letter coming
+  // back down and out to its place with it (a phone; the panel in a wide
+  // room is not pulled)
+  { label: 'replies-sheet-drag', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['swipe', '.wl-th-head', [0, 200], 'hold']], settle: 200 },
+  // and laid down by a press on the letter over it, caught on its way down
+  // and then at rest: the first press does nothing else
+  { label: 'replies-backdrop-shutting', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th-room', { x: 0.5, y: 0.18 }, 40]], settle: 0 },
+  { label: 'replies-backdrop-shut', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th-room', { x: 0.5, y: 0.18 }, 800]], settle: 200 },
+  // the sheet under the other glasses: a negative, whose light is its
+  // words, and a poster's print
+  { label: 'replies-negative-write', path: '/letter/dani.arroyo', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
   { label: 'replies-poster', path: '/letter/jules.k', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
-  // the recipient's reply lit in the letter's own colour, one of each kind
+  // the recipient's badge and the sheet's edge lit in the letter's own
+  // colour, one of each kind
   { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-acid',     path: '/letter/thom.iversen', thread: 'full',
@@ -2173,14 +2266,23 @@ for (const r of list) {
           const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)
           if (top && !el.contains(top) && top.closest('.wl-foot')) el.scrollIntoView({ block: 'center' })
         }).catch(() => {})
-        await page.click(sel, { timeout: 4000, force: true }).catch(() => {})
+        // `arg`, when it is given, is where on the element, as a share of
+        // its box ({ x, y }), for an element another stands over the middle
+        // of (the press round the replies, under the sheet)
+        const position = arg && typeof arg === 'object'
+          ? await page.$eval(sel, (el, at) => { const b = el.getBoundingClientRect(); return { x: b.width * at.x, y: b.height * at.y } }, arg).catch(() => undefined)
+          : undefined
+        await page.click(sel, { timeout: 4000, force: true, position }).catch(() => {})
         if (typeof more === 'number') { await page.waitForTimeout(more); continue }
       }
       // A finger across an element, as the pointer events a touch sends.
-      // `arg` is how far, in pixels, and `more` of 'hold' leaves the finger
-      // down so the frame in the middle of the gesture can be shot.
+      // `arg` is how far, in pixels: a number is sideways, and `[dx, dy]`
+      // goes down (or up) as well, for the replies' sheet pulled down by
+      // its head. `more` of 'hold' leaves the finger down so the frame in
+      // the middle of the gesture can be shot.
       if (act === 'swipe') {
-        await page.evaluate(async ({ sel, dx, hold }) => {
+        const [dx, dy] = Array.isArray(arg) ? [Number(arg[0]) || 0, Number(arg[1]) || 0] : [Number(arg) || 0, 0]
+        await page.evaluate(async ({ sel, dx, dy, hold }) => {
           const el = document.querySelector(sel)
           if (!el) return
           const b = el.getBoundingClientRect()
@@ -2195,10 +2297,10 @@ for (const r of list) {
           const steps = 12
           for (let i = 1; i <= steps; i++) {
             await frame()
-            ev('pointermove', x0 + (dx * i) / steps, y0)
+            ev('pointermove', x0 + (dx * i) / steps, y0 + (dy * i) / steps)
           }
-          if (!hold) { await frame(); ev('pointerup', x0 + dx, y0) }
-        }, { sel, dx: Number(arg) || 0, hold: more === 'hold' }).catch(() => {})
+          if (!hold) { await frame(); ev('pointerup', x0 + dx, y0 + dy) }
+        }, { sel, dx, dy, hold: more === 'hold' }).catch(() => {})
       }
       // The same with the browser's own mouse, which the letter's deck takes
       // too: to the middle of the element, then pressed and drawn `arg`

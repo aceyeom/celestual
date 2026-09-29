@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE KEEPSAKE: one rose phone, both notes, and the mark between them     ║
+// ║  THE KEEPSAKE: one rose phone, the mark at its head, and the two notes   ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // What a mutual is once it has been told (screens/Reveal.jsx): the thing the
@@ -11,13 +11,32 @@
 // keepsake of it that holds one note is half of it.
 //
 // So it is one phone, the rose letter, held square, and its glass is the
-// whole of what happened: their note at the top of the panel, the mark in
-// the middle of it, alive, with `it's mutual.` under it, and your note at
-// the foot, the panel cut into three by two dark lines of the phone's own
-// glass. The status row carries the night it was told, and the second row
-// the two of them, theirs first (screen.jsx `pair`). On a desk the three
-// stand in a row, theirs, the mark, yours, on a phone as wide as the room
-// allows. The same markup either way, in the order a reader hears it.
+// whole of what happened, read from the top down. The mark crowns it: alive
+// at the head of the glass, where the film lands, with `it's mutual.` under
+// it in the glass's own cells, and the two first names under that as one
+// line, `Jules & Ace`, the one place the pair is named together. Then the
+// two notes, theirs first and yours second, as the phone's inbox showed a
+// message: each a small screen of its own on the glass, with its own strip
+// across its top, a darker band of the rose like the phone's own band in
+// miniature, carrying the line its writer set there (`dear Ace` when they
+// set none) and the battery they left it on, over their words, signed
+// `from Jules`. Two people's phones, one moment, on one glass.
+//
+// It was cut into three by two dark lines, their note, the mark and yours,
+// with the two names crammed into a second status row (`Jules · Ace`); the
+// owner found it subdivided, and generic where it should be the one thing
+// of its kind (29 September). So nothing cuts the glass now: the mark's
+// panel has no edge, its unlit dots run on under the notes on the same
+// cells (mutual.css `.wl-keep-body`, PixelStory.jsx `dots`), and the band
+// is one row, the aerial and the night it was told, with no battery of the
+// phone's own, since each note carries its writer's. On a desk the phone is
+// as wide as it is tall and the two notes stand side by side under the
+// mark, level with each other, which is the two faces most plainly; a
+// phone on its side sets them beside the mark. The phone is sized by its
+// own height as well as the window's width, so a note of three lines is a
+// phone a little narrower and not one with its keys under the fold
+// (`place`, mutual.css `--keep-h`). The same markup every way, in the order
+// a reader hears it.
 //
 //   alive    the mark (its breath, the glint going round the ring, a cell of
 //            the star lit now and then, ten frames a second and never taken
@@ -30,10 +49,16 @@
 // Its two soft keys are the phone's: `options` (write them a new note, or
 // open the one already out on them since, or take it off your list) and
 // `share` (a picture of it). Every menu, the question before taking it off
-// and every note after a press stand in the mark's place, as a phone put a
-// menu on its screen, and the two notes stay in view beside them. Under the
-// phone, the one lit key: their Instagram, which is where this product's
-// part ends.
+// and every note after a press is a third small screen of the same kind as
+// the two notes, laid on the glass in the mark's place, the mark and the
+// names stood still and out of sight under it: its strip carries the
+// menu's name and where in it the chosen row is, as a note's carries its
+// line and its battery, and it is as tall as its rows and no taller, the
+// two notes in view under it. It filled the whole of the mark's panel,
+// a tall box of dots with the names left standing under it, and the
+// menu's name was on the band in the night's place (29 September), so the
+// band is the aerial and the night whatever is up. Under the phone, the one
+// lit key: their Instagram, which is where this product's part ends.
 //
 // ── taking it off ───────────────────────────────────────────────────────────
 // A mutual is kept on both lists for good (0072), and taking it off is
@@ -43,15 +68,18 @@
 // onto the private notes, where it is no longer listed.
 //
 // ── the picture ─────────────────────────────────────────────────────────────
-// `share` draws the keepsake as a picture (keepshare.js): the rose phone
-// with both first names, both notes and the mark, the night, and the
-// product's signature. The owner asked for it with the notes, so it has
-// them unless a person leaves them off from the same menu, and never a
-// handle or a link.
+// `share` draws the keepsake as a picture (keepshare.js), and it is this
+// phone: the aerial and the night on its band, the mark and `it's mutual.`
+// at the head of the glass, the two first names under it, and the two notes
+// on their faces, then the product's signature. The owner asked for it with
+// the notes, so it has them, their lines and their batteries, unless a
+// person leaves them off from the same menu, and never a handle or a link:
+// the names only when both first names are known, and a line that fell
+// back to a name says `dear you` rather than an @ (`face`).
 
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
-import { Screen, ScreenMenu, ScreenNote } from './screen.jsx'
-import PixelStory, { SQUARE } from './PixelStory.jsx'
+import { Screen, ScreenMenu, ScreenNote, Pix } from './screen.jsx'
+import PixelStory, { SQUARE, crispDpr } from './PixelStory.jsx'
 import { SheetFoot, Pill } from './parts.jsx'
 import { I_COLS, I_ROWS, NOTE } from './pixmark.js'
 import { atHandle } from './data.js'
@@ -99,20 +127,164 @@ function NoteGlyph() {
   )
 }
 
-// One of the two notes: whose it is, and what they wrote, or that they
-// wrote nothing. A group a reader lands on, with its name.
-function Note({ who, text, size, side, innerRef }) {
+// ── a line, set to fit ──
+// The line across a note's strip is its writer's, up to forty characters
+// (pings.js `greetOf`), and at its own size the strip holds about thirty
+// of the face, near two fifths of an em each, fewer on a desk, where the
+// two notes stand side by side. So a longer line is set smaller, down to
+// two thirds of its size, before anything is cut: the way screen.jsx
+// `lineSize` sets a long greeting. The page is told how long it is, in
+// the face's own widths (a Korean, Japanese or Chinese character is about
+// as wide as two and a half of the others), and works out the size from
+// the strip it stands in (mutual.css `--n`), so the one line is right on a
+// phone, on its side and on a desk. The two names under the mark are set
+// the same way. (Measured in the phone's faces: a letter of the alphabet
+// is about 0.35 of an em, a Korean syllable 0.7 and a Japanese or Chinese
+// character a whole em; counted as one, as 1.8 and as 2.6 of the width
+// the sizes are worked out on, which is 0.39 of an em. Korean was counted
+// as Chinese, and a Korean line was set a size smaller than it needed.)
+const HANGUL = /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF]/
+const WIDE = /[\u2E80-\uA4CF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]/
+const widthOf = (text) => [...String(text || '')].reduce((n, c) => n + (HANGUL.test(c) ? 1.8 : WIDE.test(c) ? 2.6 : 1), 0)
+const measureOf = (text) => ({ '--n': widthOf(text) || 1 })
+// Both lines of a pair are set at the one size the longer of them takes,
+// as the words are (`sizeOf`): two strips at two sizes read as one of them
+// said louder, and as two things rather than a pair
+const titleSize = (...lines) => ({ '--n': Math.max(1, ...lines.map(widthOf)) })
+
+// ── a small screen on the glass ──
+// A note, and whatever stands in the mark's place, are the one thing: a
+// panel of the glass a little brighter than the glass, a hairline of the
+// ink round it, and across its top a strip of darker rose, the phone's own
+// band in miniature, with a line at its start and a glyph or a count at its
+// end. The panel and the strip are painted under it (mutual.css
+// `.wl-keep-pane::before`) on the glass's own grid (`snapOf`), and what is
+// on it is laid out as it always was.
+function Pane({ as: Tag = 'div', className = '', title, titleStyle, end = null, innerRef, children, ...rest }) {
+  return (
+    <Tag className={`wl-keep-pane ${className}`} ref={innerRef} {...rest}>
+      <div className="wl-keep-head">
+        <span className="wl-keep-title" lang={langOf(title) || undefined} style={titleStyle}>{title}</span>
+        {end}
+      </div>
+      {children}
+    </Tag>
+  )
+}
+
+// One of the two notes, as the phone's inbox showed a message: the line its
+// writer set there and the battery they left it on across the strip, then
+// what they wrote, or that they wrote nothing, and whose it is under it. A
+// group a reader lands on, with its name. The battery is theirs to have
+// set, so it is drawn as they left it and never blinks, even empty: the
+// keepsake is still
+function Note({ who, title, titleStyle, bat, text, size, side, innerRef }) {
   const label = `from ${who}`
   return (
-    <figure className={`wl-keep-note is-${side}`} aria-label={label} tabIndex={-1} ref={innerRef}>
-      <figcaption className="wl-keep-from" lang={langOf(who) || undefined}>{label}</figcaption>
+    <Pane
+      as="figure" className={`wl-keep-note is-${side}`} title={title} titleStyle={titleStyle}
+      end={<Pix name={`bata${bat}`} className="wl-keep-bat" style={BAT_SIZE} />}
+      aria-label={label} tabIndex={-1} innerRef={innerRef}
+    >
       {text ? (
         <p className={`wl-keep-words is-${size}`} lang={langOf(text) || undefined}>{text}</p>
       ) : (
         <p className="wl-keep-words is-none"><NoteGlyph /><span>sent without a note.</span></p>
       )}
-    </figure>
+      <figcaption className="wl-keep-from" lang={langOf(who) || undefined}>{label}</figcaption>
+    </Pane>
   )
+}
+// the battery on a note's strip, a size under its line (`Pix` is in `cqw`
+// of the screen, and the keepsake's sizes are in `--su`), a whole number of
+// the page's pixels to each of its eight rows where the page can round
+// (mutual.css `--keep-bat`), so it is as crisp as the band's glyphs
+const BAT_SIZE = { height: 'var(--keep-bat)', width: 'auto' }
+
+// ── on the glass's own grid ──
+// Where a thing is on the phone's glass, in the glass's own pixels:
+// measured on the page with the phone's scale taken out, so a phone
+// measured part way through its unfold is measured as it stands
+// (PixelStory.jsx `onCells` measures the story's cells the same way).
+function onGlass(n, scr) {
+  const r = n.getBoundingClientRect()
+  const s = scr.getBoundingClientRect()
+  const kx = s.width ? scr.offsetWidth / s.width : 1
+  const ky = s.height ? scr.offsetHeight / s.height : kx
+  return { x: (r.left - s.left) * kx, y: (r.top - s.top) * ky, w: r.width * kx, h: r.height * ky }
+}
+// A small screen's panel laid on the glass's grid: each of its four edges,
+// and the foot of its strip, moved to the nearest of the grid's lines
+// between the story's cells, which the story says on the screen
+// (`--q-pitch`, `--story-x`, `--story-y`, `--story-lit`, story.css
+// `[data-cells]`), so the panel's edge is one of those lines drawn a little
+// darker and never a line through a row of pixels, and the panel is a
+// whole number of the phone's pixels. What is on it stays where it is; the
+// panel under it moves by at most half a cell (mutual.css `--sn-*`).
+// Measured here and written by `lay`, never by a render, and not before
+// the story has said where its cells are.
+function snapOf(pane, scr, st) {
+  const P = parseFloat(st.getPropertyValue('--q-pitch'))
+  const sx = parseFloat(st.getPropertyValue('--story-x'))
+  const sy = parseFloat(st.getPropertyValue('--story-y'))
+  const lit = parseFloat(st.getPropertyValue('--story-lit'))
+  if (!(P > 1) || ![sx, sy, lit].every(Number.isFinite)) return null
+  const g = onGlass(pane, scr)
+  if (!g.w || !g.h) return null
+  const head = pane.querySelector('.wl-keep-head')
+  const hb = head ? onGlass(head, scr) : null
+  // the columns' lines stand a cell's light in from its corner, a pixel of
+  // the page wide, and the rows' along the foot of each cell (story.css):
+  // an edge is put on the line from inside the panel, so the line is the
+  // panel's own first or last pixel
+  const col = (v) => sx + lit + Math.round((v - sx - lit) / P) * P
+  const row = (v) => sy + Math.round((v - sy) / P) * P
+  const l = col(g.x)
+  const r = col(g.x + g.w) + 1
+  const t = row(g.y) - 1
+  const b = row(g.y + g.h)
+  const px = (v) => `${Math.round(v * 100) / 100}px`
+  return [
+    ['--sn-l', px(l - g.x)], ['--sn-r', px(g.x + g.w - r)],
+    ['--sn-t', px(t - g.y)], ['--sn-b', px(g.y + g.h - b)],
+    ...(hb ? [['--sn-h', px(Math.max(P, row(hb.y + hb.h) - t))]] : []),
+  ]
+}
+
+// How much of the mark's panel is left under the story's last row: the
+// story's grid worked out for the panel as PixelStory.jsx lays it (`size`,
+// a whole number of device pixels to a cell, the rows in the middle of
+// the panel), before it has, so the names under `it's mutual.` stand
+// where they will from the first frame and the phone never moves under a
+// glass flying onto it. Coarser cells, a desk's, leave more
+function slackOf(w, h) {
+  if (!w || !h) return 0
+  const dpr = crispDpr(w, h)
+  const cell = Math.max(1, Math.floor(Math.min((w * dpr) / I_COLS, (h * dpr) / I_ROWS)))
+  const pr = Math.max(I_ROWS, Math.floor((h * dpr) / cell))
+  const my = (Math.round(h * dpr) - pr * cell) >> 1
+  return Math.max(0, h - (my + (((pr - I_ROWS) >> 1) + I_ROWS) * cell) / dpr)
+}
+
+// The face a note was left on: the line its writer set, or `dear` and the
+// name of the one it is to, and the battery they left it on, or full. A
+// note sent without words has neither (pings.js `placing`), and is drawn
+// on the phone's own.
+function faceOf(words, greet, bat, to) {
+  const set = !!words
+  return {
+    title: (set && greet) || `dear ${to}`,
+    bat: set && Number.isInteger(bat) && bat >= 0 && bat <= 4 ? bat : 4,
+  }
+}
+// The same line, for the picture, which is passed round among people and
+// never carries a handle or a link: the line its writer set unless it has
+// an @ or an address in it, else `dear` and the first name of the one it
+// is to, else `dear you` (VOICE.md, the mutual)
+const PASSED = /@|:\/\/|\bwww\.|\b[a-z0-9-]+\.(com|net|org|io|app|co|me|ly|gg|xyz|link|to)\b/i
+function titleOnPicture(words, greet, to) {
+  if (words && greet && !PASSED.test(greet)) return greet
+  return to ? `dear ${to}` : 'dear you'
 }
 
 export default function Keepsake({
@@ -128,6 +300,7 @@ export default function Keepsake({
   const coming = useRef(null)
   const lens = useRef(null)
   const lay = useRef(null)
+  const body = useRef(null)
   const [view, setView] = useState(() => (menu ? { kind: menu, at: 0 } : null))
   const [notesOn, setNotesOn] = useState(true)
   const [, drawn] = useState(0)
@@ -137,25 +310,100 @@ export default function Keepsake({
   const here = useRef(true)
   useEffect(() => { here.current = true; return () => { here.current = false } }, [])
 
+  // ── the glass's own grid ──
+  // The mark's canvas draws no unlit dots of its own (`dots`), and the glass
+  // lays them over the whole of itself instead, mark, names and notes alike,
+  // on the story's own cells: the pitch, the lit part of a cell, and where
+  // the first one starts, which is the canvas's, measured from the glass's
+  // corner (mutual.css `.wl-keep-body`), under whatever scale the phone is
+  // opening at. And every small screen on it has its panel laid on the
+  // lines between those cells (`snapOf`). Measured whole and then written,
+  // so a pass never lays the page out again half way through it; written
+  // straight to the glass whenever the story, the phone or what stands in
+  // the mark's place is laid out, and never by a render
+  const gridOf = (L = lay.current) => {
+    const b = body.current
+    const host = mark.current && mark.current.querySelector('.wl-story')
+    if (!b || !host || !L || !L.dpr) return []
+    const br = b.getBoundingClientRect()
+    const hr = host.getBoundingClientRect()
+    const kx = br.width && b.offsetWidth ? b.offsetWidth / br.width : 1
+    const ky = br.height && b.offsetHeight ? b.offsetHeight / br.height : kx
+    const px = (v) => `${Math.round(v * 1000) / 1000}px`
+    const out = [[b, [
+      ['--dot-p', px(L.cell / L.dpr)], ['--dot-d', px((L.cell - L.gap) / L.dpr)],
+      ['--dot-x', px((hr.left - br.left) * kx + L.mx / L.dpr)], ['--dot-y', px((hr.top - br.top) * ky + L.my / L.dpr)],
+    ]]]
+    const scr = b.closest('.wl-scr')
+    if (scr) {
+      for (const pane of b.querySelectorAll('.wl-keep-pane')) {
+        const sn = snapOf(pane, scr, scr.style)
+        if (sn) out.push([pane, sn])
+      }
+    }
+    return out
+  }
+  const write = (out) => { for (const [el, props] of out) for (const [k, v] of props) el.style.setProperty(k, v) }
+
   // ── where things are ──
   // The mark panel and the cells in it, on the page, for the film to land
   // on (Film.jsx `measure`); the hot spot and the room light, whenever the
-  // phone is laid out again
+  // phone is laid out again. And how tall the phone is in its own units,
+  // `--su`, which is the same at every size, since everything on it is
+  // set in them: the window fits the whole of it by that (mutual.css
+  // `--keep-h`), so a note of three lines is a phone a little narrower and
+  // not one with its keys under the fold. Written to the room straight, as
+  // the dots are, and only when it has moved by more than a unit, so the
+  // size it gives is never answered by another; and should a line of the
+  // words break one way at one size and the other way at the next, and the
+  // height go back to the one before it, the taller of the two is kept for
+  // as long as the window is that size (`sized`), rather than the phone
+  // going back and forth. Everything is read before anything is written,
+  // and the hot spot is read off the glass and not the strip, which is
+  // squeezed while it unfolds
+  const sized = useRef({ key: '', prev: NaN, held: false })
   useLayoutEffect(() => {
     const el = strip.current
     const mk = mark.current
     const bx = box.current
     if (!el || !mk || !bx) return undefined
     const place = () => {
-      const sr = el.getBoundingClientRect()
+      const scr = mk.closest('.wl-scr')
+      const sr = (scr || el).getBoundingClientRect()
       const mr = mk.getBoundingClientRect()
       const br = bx.getBoundingClientRect()
       if (!sr.height) return
-      setSpot({
+      const su = parseFloat(getComputedStyle(el).getPropertyValue('--su'))
+      // (less what the names are drawn up by into the mark's panel, which is
+      // the cells' to say and not the phone's, mutual.css `--pair-lift`:
+      // the lift this layout was made with, before a new one is written)
+      const b = body.current
+      const lift = b ? parseFloat(getComputedStyle(b).getPropertyValue('--pair-lift')) || 0 : 0
+      const slack = Math.round(slackOf(mk.clientWidth, mk.clientHeight) * 1000) / 1000
+      const tall = el.offsetHeight
+      const grid = gridOf()
+      const next = {
         hy: Math.round((1000 * (mr.top - sr.top + mr.height / 2)) / sr.height) / 10,
         lx: Math.round(mr.left - br.left + mr.width / 2),
         ly: Math.round(mr.top - br.top + mr.height / 2),
-      })
+      }
+      // and then written
+      if (b) b.style.setProperty('--mark-slack', `${slack}px`)
+      if (su > 0) {
+        const h = Math.ceil(((tall + lift) / su) * 2) / 2
+        const was = parseFloat(bx.style.getPropertyValue('--keep-h'))
+        const s = sized.current
+        const key = `${window.innerWidth}x${window.innerHeight}`
+        if (s.key !== key) Object.assign(s, { key, prev: NaN, held: false })
+        if (!(Math.abs(h - was) <= 1) && !(s.held && h <= was)) {
+          const back = Math.abs(h - s.prev) <= 1
+          s.prev = was
+          if (back) s.held = true
+          bx.style.setProperty('--keep-h', String(back ? Math.max(h, was) : h))
+        }
+      }
+      write(grid)
+      setSpot((o) => (o.hy === next.hy && o.lx === next.lx && o.ly === next.ly ? o : next))
     }
     place()
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(place) : null
@@ -327,20 +575,35 @@ export default function Keepsake({
   // since the mutual, and then it is that note, opened as itself to change
   // its words or let it go (Ping.jsx `editNote`): offered as a new one, it
   // opened a composer saying the note was already out, over the mutual's
-  // old words (the review of 28 September)
+  // old words (the review of 28 September). Every view says which menu it
+  // belongs to (`in`), for the strip of the small screen it stands on
   const back = () => setView(null)
   const n0 = names[0]
   const optionItems = [
     standing
       ? { t: `your new note to ${n0}`, run: () => editNote(go, them, standing.line, standing) }
       : { t: `send ${n0} a new note`, run: () => go('ping', them) },
-    { t: 'take it off my list', run: () => setView({ kind: 'confirm' }) },
+    { t: 'take it off my list', run: () => setView({ kind: 'confirm', in: 'options' }) },
   ]
-  // The picture: first names only, or none; the notes unless they are left
-  // off; the mark on the frame the keepsake is drawn still on; and not the
-  // pair's seed, which is their handles (keepshare.js `lookOf`)
+  // the two faces: theirs is to you and yours to them, and `names` is
+  // theirs, then yours
+  const theirFace = faceOf(p.theirLine, p.theirGreet, p.theirBat, names[1])
+  const yourFace = faceOf(p.line, p.greet, p.bat, names[0])
+  // The picture: the first names only, or none; the notes, their lines and
+  // their batteries unless they are left off, and then none of the three;
+  // a line that fell back to a name is `dear` and the first name, or `dear
+  // you`, and never an @ (`titleOnPicture`); the mark on the frame the
+  // keepsake is drawn still on; and not the pair's seed, which is their
+  // handles (keepshare.js `lookOf`)
   const face = () => ({
-    stamp, names: first, notes: notesOn ? [p.theirLine || '', p.line || ''] : null,
+    stamp,
+    names: first,
+    notes: notesOn ? [p.theirLine || '', p.line || ''] : null,
+    titles: notesOn ? [
+      titleOnPicture(p.theirLine, p.theirGreet, first && first[1]),
+      titleOnPicture(p.line, p.greet, first && first[0]),
+    ] : null,
+    bats: notesOn ? [theirFace.bat, yourFace.bat] : null,
     frame: story ? story.frame(story.still) : null,
   })
   const sharing = !!view && view.kind === 'share'
@@ -363,32 +626,32 @@ export default function Keepsake({
     // a phone opens the share sheet only inside the tap that asked, so a tap
     // before the picture is drawn waits for it and puts the menu back
     if (how === 'share' && !isMutualReady(face())) {
-      setView({ kind: 'note', glyph: 'env', title: 'drawing it' })
+      setView({ kind: 'note', in: 'share', glyph: 'env', title: 'drawing it' })
       const b = await prepareMutual(face())
       if (!here.current) return
-      setView(b ? { kind: 'share', at: 0 } : { kind: 'note', title: 'it did not go', text: 'try again', done: true })
+      setView(b ? { kind: 'share', at: 0 } : { kind: 'note', in: 'share', title: 'it did not go', text: 'try again', done: true })
       return
     }
     const going = shareMutual(how, face())
-    setView({ kind: 'note', glyph: 'env', title: how === 'save' ? 'saving' : 'sharing' })
+    setView({ kind: 'note', in: 'share', glyph: 'env', title: how === 'save' ? 'saving' : 'sharing' })
     const out = await going
     if (!here.current) return
     if (out === 'left') { setView({ kind: 'share', at: 0 }); return }
     const said = { shared: ['check', 'shared'], saved: ['check', 'saved'] }[out] || ['', 'it did not go', 'try again']
-    setView({ kind: 'note', glyph: said[0], title: said[1], text: said[2] || '', done: true })
+    setView({ kind: 'note', in: 'share', glyph: said[0], title: said[1], text: said[2] || '', done: true })
   }
 
   // ── taking it off ──
   const takeOff = async () => {
-    setView({ kind: 'note', glyph: 'wait', title: 'taking it off', busy: true })
+    setView({ kind: 'note', in: 'options', glyph: 'wait', title: 'taking it off', busy: true })
     const out = await forgetMutual({ me, them })
     if (!here.current) return
     if (out.ok || out.error === 'none') {
-      setView({ kind: 'note', glyph: 'check', title: 'taken off.', busy: true })
+      setView({ kind: 'note', in: 'options', glyph: 'check', title: 'taken off.', busy: true })
       setTimeout(() => { if (here.current && onGone) onGone() }, GONE_MS)
       return
     }
-    setView({ kind: 'note', title: 'it did not go through.', text: 'give it a moment, then try again.', done: true })
+    setView({ kind: 'note', in: 'options', title: 'it did not go through.', text: 'give it a moment, then try again.', done: true })
   }
   // the question opens with the focus on keeping it
   const confirming = !!view && view.kind === 'confirm'
@@ -412,26 +675,43 @@ export default function Keepsake({
   // and the menu's list goes when it does: after Escape, `keep it`, `ok`
   // and a pick, the focus was left on the page's body, or on `share`, which
   // is the button `keep it` was (the review of 28 September). So the glass
-  // coming back to rest puts it on the key that opened what was up, and a
-  // note that is done puts it on its `ok`. Not taken from anything outside
-  // the phone: a pick that opens the ping sheet keeps what that sheet gives.
+  // coming back to rest puts it on the key that opened what was up, a note
+  // that is done puts it on its `ok`, and a note still going (`saving`,
+  // `taking it off`), which has no key, holds it on its own small screen,
+  // which says what it says, rather than let it fall to the page's body
+  // with the menu that went. Not taken from anything outside the phone: a
+  // pick that opens the ping sheet keeps what that sheet gives.
   const opener = useRef('wl-keep-options')
   const wasUp = useRef(!!view)
+  const pane = useRef(null)
   useEffect(() => {
     const was = wasUp.current
     wasUp.current = !!view
+    const going = !!view && view.kind === 'note' && !view.done
     const id = view ? (view.kind === 'note' && view.done ? 'wl-keep-ok' : '') : was ? opener.current : ''
     const a = document.activeElement
-    if (!id || (a && a !== document.body && !(box.current && box.current.contains(a)))) return
-    const k = document.getElementById(id)
+    if ((!id && !going) || (a && a !== document.body && !(box.current && box.current.contains(a)))) return
+    const k = going ? pane.current : document.getElementById(id)
     if (k) k.focus({ preventScroll: true })
   }, [view])
+  // and what stands in the mark's place is laid on the glass's grid as the
+  // notes are, as it comes up and whenever it changes
+  useLayoutEffect(() => { if (view) write(gridOf()) }, [view])
 
   // ── the phone, as it stands ──
+  // One status row, the aerial and the night it was told, whatever is up,
+  // and no battery, since each note carries its own. A menu is a small
+  // screen of its own in the mark's place, as tall as its rows: its name on
+  // its strip, as a phone titled a menu, and where in it the chosen row is
+  // at the strip's far end, where a note has its battery; the question and
+  // every note after a press stand on the same small screen, under the name
+  // of the menu they came from
   const pos = (k, items) => `${Math.min(k.at || 0, items.length - 1) + 1}/${items.length}`
-  let top = { stamp, bat: 4, pair: names }
+  const menuOf = (v) => v.in || (v.kind === 'share' ? 'share' : 'options')
+  const top = { stamp, bat: null }
   let keys
   let over = null
+  let count = ''
   if (view && (view.kind === 'options' || view.kind === 'share')) {
     const items = view.kind === 'options' ? optionItems : shareItems
     const sel = Math.min(view.at || 0, items.length - 1)
@@ -441,7 +721,7 @@ export default function Keepsake({
       if (it.how) pass(it.how)
       else { setView(null); it.run() }
     }
-    top = { stamp, bat: 4, name: view.kind, pos: pos(view, items) }
+    count = pos(view, items)
     over = (
       <ScreenMenu
         items={items.map((x) => x.t)} at={sel} label={view.kind}
@@ -487,6 +767,7 @@ export default function Keepsake({
   else if (paused.current === null) paused.current = at ?? (from !== null ? performance.now() - from : 0)
   const hidden = state === 'hidden'
   const words = sizeOf(p.theirLine, p.line)
+  const lines = titleSize(theirFace.title, yourFace.title)
   const cls = [
     'wl-keep', hidden && 'is-hidden', landing && 'is-landing', enter === 'fade' && !hidden && 'is-fading',
     enter === 'fly' && 'is-flying', view && 'is-over',
@@ -500,18 +781,39 @@ export default function Keepsake({
         {/* the squeeze undone while the strip unfolds (`unfold`) */}
         <div className="wl-keep-lens" ref={lens}>
           <Screen look={LOOK} seed={seed} top={top} keys={keys} live={!hidden} className="wl-keep-scr" style={phone}>
-            <div className="wl-keep-body">
-              <Note who={names[0]} text={p.theirLine} size={words} side="theirs" innerRef={theirs} />
+            <div className="wl-keep-body" ref={body}>
+              {/* the crown, the film's panel, its cells the glass's
+                  (`gridOf`) */}
               <div className="wl-keep-mark" ref={mark}>
                 {story ? (
                   <PixelStory
-                    story={story} crisp from={from} at={over ? paused.current : at}
-                    onLayout={(l) => { lay.current = l }}
+                    story={story} crisp dots={false} from={from} at={over ? paused.current : at}
+                    onLayout={(l) => { lay.current = l; write(gridOf(l)) }}
                   />
                 ) : null}
-                {over ? <div className="wl-keep-over">{over}</div> : null}
+                {over ? (
+                  <div className="wl-keep-over">
+                    <Pane
+                      className={`wl-keep-sheet is-${view.kind}`} title={menuOf(view)} innerRef={pane} tabIndex={-1}
+                      end={count ? <span className="wl-keep-count" aria-hidden="true">{count}</span> : null}
+                    >
+                      {over}
+                    </Pane>
+                  </div>
+                ) : null}
               </div>
-              <Note who={names[1]} text={p.line} size={words} side="yours" />
+              <div className="wl-keep-inbox">
+                {/* the two of them, once, as one line under what was told;
+                    a reader has their names from the notes, so it is not
+                    read twice */}
+                <p className="wl-keep-pair" aria-hidden="true" style={measureOf(`${names[0]} & ${names[1]}`)}>
+                  <span lang={langOf(names[0]) || undefined}>{names[0]}</span>
+                  <span className="wl-keep-amp">&amp;</span>
+                  <span lang={langOf(names[1]) || undefined}>{names[1]}</span>
+                </p>
+                <Note who={names[0]} {...theirFace} titleStyle={lines} text={p.theirLine} size={words} side="theirs" innerRef={theirs} />
+                <Note who={names[1]} {...yourFace} titleStyle={lines} text={p.line} size={words} side="yours" />
+              </div>
             </div>
           </Screen>
         </div>

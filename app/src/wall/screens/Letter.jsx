@@ -3,10 +3,11 @@
 // The card, in the middle of the glass, over a wall that stays visible and
 // dimmed behind it. Nothing else: no sheet under it, no header row over it,
 // no pill. One mark in the corner of the glass is the way out, and the
-// letters either side of it, asleep, are the rest of the deck. The card is
-// a slider phone, and its thread is the phone's own lower half, slid out from
-// under the chin fixed to the screen's foot (`Handset`, and the slider,
-// below): nothing hangs under the phone and nothing on the sheet scrolls.
+// letters either side of it, asleep, are the rest of the deck. The card's
+// thread of replies is a sheet its right soft key raises from the foot of
+// the glass, the letter rising and stepping back to stand whole above it
+// (Replies.jsx `ThreadSheet`, and the sheet, below): nothing hangs under
+// the phone, and nothing but the thread scrolls.
 //
 // ── why it is centred, and why the chrome came off ──────────────────────────
 // It was a bottom sheet with a header row (`1 / 23` and the close mark), the
@@ -69,13 +70,12 @@
 // its own. The strip moves whole objects sideways, and they read cleanly
 // while it does only if every outline is the same rectangle standing on the
 // same middle line: so the proportion is the phones' middle one on this
-// sheet, and the card and its neighbours, their key bands and their chins,
-// stand in a line across the gap (wall.css, one phone, one outline). The
-// angle each lies at on the table (`--q-rz`) is kept, turning the whole
-// phone as one body, the chin and the thread with it (`Handset`); the
-// camera's depth is not, since a screen turned in depth reads as a card
-// swivelling while the hand slides it, and the thread would be read and
-// typed on a keystone. Everything that makes a letter its own phone is
+// sheet, and the card and its neighbours, their status rows and their key
+// bands, stand in a line across the gap (wall.css, one phone, one outline).
+// The angle each lies at on the table (`--q-rz`) is kept, turning the whole
+// phone as one body (`Handset`); the camera's depth is not, since a screen
+// turned in depth reads as a card swivelling while the hand slides it.
+// Everything that makes a letter its own phone is
 // painted, costs the gesture nothing, and stays: its corner, its light,
 // its pixels, its dust and glare, a print's grain. Opened, a phone is held
 // square to the eye, as a screen that is being used always is (DESIGN.md
@@ -117,7 +117,7 @@ import {
   Sheet, SheetFoot, Close, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
-import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf, skinVars, quirks } from '../looks.js'
+import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf, skinVars, quirks, countSaid } from '../looks.js'
 import { stripMoving, idle, unidle } from '../strip.js'
 import { shareLetter, prepareLetter, letterFace, canShare, isReady } from '../share.js'
 import {
@@ -132,7 +132,7 @@ import { isReader, toWrite } from '../auth.js'
 import { letterMarks } from '../schools.js'
 import { Nudge, useNudge } from '../Nudge.jsx'
 import { openForAlerts } from './You.jsx'
-import { useThread, threadKey, Slide } from '../Replies.jsx'
+import { useThread, threadKey, ThreadSheet } from '../Replies.jsx'
 
 // ── the name on the screen ──────────────────────────────────────────────────
 // The top row carries who the letter is for the way a phone carried the
@@ -160,8 +160,8 @@ function LetterX({ label }) {
 // product they have seen: a screen, a close mark, and a black room, which
 // read as a confessions page anybody could be running. So a letter opened
 // that way (`cold`, index.jsx) signs itself the way every bar in the product
-// does: the mark and the word, small, in the corner opposite the close mark,
-// in the room's own hand (DESIGN.md 3.6 and 2.6), and under the card one line
+// does: the mark and the word, drawn on the phone's grid as the bar draws
+// them, in the corner opposite the close mark (DESIGN.md 3.6), and under the card one line
 // that says what else is here, `view the wall`. Both go to the wall and land
 // on the names, not on the poster (screens/Wall.jsx `open`). The close mark
 // keeps doing what it does. A letter opened from the wall carries neither:
@@ -177,7 +177,7 @@ function LetterBrand({ onWall }) {
   const sheet = useSheet()
   return (
     <Brand
-      className="wl-letter-brand is-small" mark={19} href={href('wall')}
+      className="wl-letter-brand is-small" href={href('wall')}
       label="celestual, the wall" title="the wall"
       onClick={(e) => wallClick(e, sheet, onWall)}
     />
@@ -218,32 +218,40 @@ const KEY_MS = 260
 const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 const EASE_OUT = 'cubic-bezier(0.22, 0.61, 0.36, 1)'
 const EASE_HOME = 'cubic-bezier(0.16, 1, 0.3, 1)'
-// Where an open phone stands: its top under the close mark on a phone and
-// this far down a wide room, its foot this far off the bottom of the glass
-// (and the phone's own inset under that), and the least height its thread
-// is given (in a wide room, never more than a little under half of it),
-// under which a short phone lets the letter's top go under the black
-// behind the close mark rather than squeeze the thread, and a wide room
-// shows the upper half smaller.
-const OPEN_TOP_DESK = 40
-const OPEN_FOOT = 12
-const OPEN_FOOT_DESK = 32
-const THREAD_MIN = 300
-const THREAD_DESK = 360
-// and the narrowest a wide room shows the open phone, which a short window
-// keeps by letting the letter's top go up under the black instead
-const DESK_W = 340
-// the phone's own inset at the foot of the glass, which only the stylesheet
-// knows, read off a probe
-function safeBottom() {
-  if (typeof document === 'undefined') return 0
-  const p = document.createElement('div')
-  p.style.cssText = 'position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom, 0px);visibility:hidden;pointer-events:none'
-  document.body.appendChild(p)
-  const h = p.offsetHeight
-  p.remove()
-  return h
-}
+// Where the replies stand, and the letter with them (the sheet, below). On a
+// phone: the sheet is this share of the window's height, never under the
+// least a thread can be read in, and never so tall that less than this much
+// of the letter shows over it; the letter stands between the close mark
+// and the sheet's edge, this far off each, shown as small as it must be to
+// stand there whole and never under half its size. At half, the sheet gives
+// the letter back what it would have covered, down to the second share of
+// the window, and past that the letter stands at the top at half and the
+// sheet covers its foot. And how quickly a thread thrown down goes, however
+// little it was pulled (px per ms).
+const SHEET_SHARE = 0.64
+const SHEET_LEAST = 0.56
+const SHEET_MIN = 300
+const LETTER_LEAST = 140
+const LETTER_GAP = 12
+const LETTER_MIN = 0.5
+const SHEET_FLICK = 0.11
+// and how long a press takes to raise them and to lay them down, on the
+// sheet's own curve (`EASE_SLIDE`); going away is the quicker
+const OPEN_MS = 440
+const SHUT_MS = 340
+// In a wide room, or on a phone on its side, the replies are a panel beside
+// the letter: this wide, this far off it, as tall as the letter's phone and
+// never under the least, this far from the edges of the room, and rising
+// this far into place as it comes (replies.css keeps the same number)
+const PANEL_W = [380, 420]
+const PANEL_GAP = 28
+const PANEL_H = 520
+const ROOM_EDGE = 32
+const PANEL_RISE = 24
+// the room is a desk from this wide, or a phone on its side: the same query
+// replies.css draws the panel under, asked of the same window
+const DESK_ROOM = '(min-width: 900px), (max-height: 560px) and (orientation: landscape)'
+const deskRoom = () => !!(window.matchMedia && window.matchMedia(DESK_ROOM).matches)
 // The lean toward the next letter a new reader is shown once the screen has
 // woken, and how many times a device is shown it before it stops asking.
 const NUDGE_PX = 26
@@ -339,34 +347,21 @@ function Cell({ side = 0, fresh = false, arrived = false, reduce = false, childr
 }
 
 // ── one phone ───────────────────────────────────────────────────────────────
-// Every screen on the strip is a slider phone (`.wl-set`): the upper half,
-// which is the screen, and on the card the lower half, the thread, tucked
-// behind the upper until it is slid out (Replies.jsx `Slide`) by the
-// screen's own right soft key (Replies.jsx `threadKey`, handed to the screen
-// through `ThreadKey`). The phone lies on the table at its own angle, and
-// the whole of it turns as one body: the angle is on this box and not on
-// the screen, so the thread is in the screen's plane by construction and
-// nothing between them ever opens into a wedge. The lower half is lit in the
-// letter's own colours (looks.js `skinVars`, set here so both halves read
-// the same ones), the same glass as the screen above it. The neighbours are
-// the same phone with no count on the key, and the thread is asked for by
-// the card alone (`useThread` is given no letter anywhere else). Kept the
-// same element whichever side it stands on, so the neighbour that lands IS
-// the card, and its thread is read as it lands.
+// Every screen on the strip is a phone (`.wl-set`) lying on the table at its
+// own angle, the angle on this box and not on the screen, and the screen in
+// it (`.wl-set-up`), which is what rises and steps back while the replies
+// are up (the sheet, below). The card's right soft key is its thread's
+// (Replies.jsx `threadKey`, handed to the screen through `ThreadKey`), and
+// the thread is the card's alone: read once by the sheet (`useThread` in
+// `Letter`, handed in as `th`) and never for a neighbour, which is the same
+// phone with the bubble and no count on its key and nothing by its aerial.
+// Kept the same element whichever side it stands on, so the neighbour that
+// lands IS the card, and its thread is read as it lands.
 const ThreadKey = createContext(null)
-function Handset({ l, seed, live = false, open = false, onToggle, onClose, reduce = false, go, children }) {
+function Handset({ l, seed, live = false, open = false, onToggle, th = null, children }) {
   const q = quirks(seed)
-  const th = useThread(live && l && l.body != null ? l : null)
-  const on = live && !!l && th.on
+  const on = live && !!l && !!th && th.on
   const keyId = live && l ? `wl-thread-${l.id}` : undefined
-  const rad = parseFloat(q.vars['--q-rad']) || 1.2
-  const look = l ? l.look : null
-  const skin = useMemo(() => {
-    if (!on) return null
-    const colour = colourOf(look, seed)
-    const s = skinOf(colour)
-    return { kind: s.kind, vars: { ...skinVars(colour, !!s.print), '--q-pitch': q.vars['--q-pitch'], '--q-hx': q.vars['--q-hx'] } }
-  }, [on, look, seed]) // eslint-disable-line react-hooks/exhaustive-deps
   // the card's thread is its own and is read again with every render of it;
   // a neighbour's is nothing, and stays the same nothing, so the screen on a
   // neighbour is not drawn again whenever the sheet is (`LetterScreen`)
@@ -376,14 +371,10 @@ function Handset({ l, seed, live = false, open = false, onToggle, onClose, reduc
     [live, own, open, onToggle, keyId, l],
   )
   return (
-    <div
-      className={`wl-set${on ? ' has-thread' : ''}`} data-kind={skin ? skin.kind : undefined}
-      style={{ '--q-rz': q.vars['--q-rz'], '--set-rad': `calc(var(--scene-w) * ${(rad / 100).toFixed(4)})`, ...(skin ? skin.vars : null) }}
-    >
+    <div className={`wl-set${on ? ' has-thread' : ''}`} style={{ '--q-rz': q.vars['--q-rz'] }}>
       <div className="wl-set-up">
         <ThreadKey.Provider value={ctx}>{children}</ThreadKey.Provider>
       </div>
-      {on ? <Slide letter={l} th={th} open={open} reduce={reduce} go={go} onClose={onClose} /> : null}
     </div>
   )
 }
@@ -442,7 +433,8 @@ function removedFace(r) {
 // menu, the share menu, or a note ("shared", "saved"). Only the live card
 // has a view of its own; the neighbours on the strip are always the letter.
 //
-//   the letter   options · the heart and its count · share
+//   the letter   options · the heart and its count · the replies' bubble
+//                and its count (`share`, where there is no thread)
 //   a menu       select · back
 //   a note       ok
 //
@@ -460,7 +452,7 @@ function removedFace(r) {
 // ── and it is drawn again only when it changes ──
 // A screen is the dearest thing on the sheet to draw, and the sheet is drawn
 // again for a good many things that are not the screens beside the card: a
-// turn landing, the screen drawn ahead of one, a menu, the phone slid open,
+// turn landing, the screen drawn ahead of one, a menu, the replies raised,
 // the card waking. Each of those drew both neighbours again too, the words
 // and the pixels and the keys of letters that had not changed, inside the
 // frame the thing happened on. So a screen is kept as it was unless what it
@@ -509,8 +501,13 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
   // the count on the key, in whole thousands past a thousand, as a phone
   // counted, so it is never more than three figures, and three set a step
   // smaller (screen.css `.is-long`): it keeps to the middle of the band
-  // between `options` and `replies`. "9.9k" was four, and ran into the word
-  const heartsSaid = hearts < 1000 ? String(hearts) : `${Math.min(999, Math.floor(hearts / 1000))}k`
+  // between `options` and the replies. "9.9k" was four, and ran into the
+  // word. The replies' key counts the same way (looks.js `countSaid`)
+  const heartsSaid = countSaid(hearts)
+  // the envelope by the aerial: the person the letter is to has answered
+  // (Replies.jsx `threadKey` says why it is there and not on the key). The
+  // card's own thread only; a neighbour's is never read
+  const heard = !!(hs && hs.th && hs.th.answered)
 
   // Anybody's since 0068 (likes are open to everybody): the press goes
   // straight to the server, which keeps one heart per device, and never to
@@ -594,7 +591,7 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
     name: toName, dear: true,
     salutation: marks.salutation, tag: marks.tag,
     icon: 'pen',
-    stamp: stampOf(l.at), bat: chargeOf(l.at),
+    stamp: stampOf(l.at), bat: chargeOf(l.at), mail: heard,
   }
   let top
   let body
@@ -611,7 +608,7 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
     // the second row, the way the phone counted them. The first row stays
     // the letter's, so nothing on it moves when a menu opens
     const sel = Math.min(at.at || 0, items.length - 1)
-    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', stamp: stampOf(l.at), bat: chargeOf(l.at) }
+    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', stamp: stampOf(l.at), bat: chargeOf(l.at), mail: heard }
     body = (
       <ScreenMenu
         items={items.map((x) => x.t)} at={sel}
@@ -687,12 +684,18 @@ export default function Letter({
   }, [toWall])
   const wrap = `is-letter${cold ? ' is-cold' : ''}`
   // What the live screen is showing: the letter (null), a menu, or a note,
-  // and whether the card's phone is slid open on its thread. Nothing else on
-  // this sheet holds state: the letter is the server's, and so is its
-  // thread (Replies.jsx `useThread`). Every letter arrives shut, and a turn
-  // shuts the one it leaves (the slider, below).
+  // and whether the card's replies are up. Nothing else on this sheet holds
+  // state: the letter is the server's, and so is its thread (Replies.jsx
+  // `useThread`). Every letter arrives with its replies down, and the deck
+  // does not turn while they are up (the sheet, below).
   const [view, setView] = useState(null)
   const [thread, setThread] = useState(false)
+  // the sheet down and at rest, and not merely on its way down: until it has
+  // landed it is still on the glass and still takes a press (the hand that
+  // catches it going turns it round), and the black round it still swallows
+  // one, so a second tap as it goes lays nothing else down and never closes
+  // the letter under it
+  const [laid, setLaid] = useState(true)
   const threadRef = useRef(thread)
   threadRef.current = thread
 
@@ -795,6 +798,7 @@ export default function Letter({
     setArrived(!silentRef.current)
     setView(null)
     setThread(false)
+    setLaid(true)
   }
 
   // The letters under a name, when that is what the address named.
@@ -804,6 +808,24 @@ export default function Letter({
   const one = byId
     ? letter(id)
     : (knowsHandle(handle) ? (forHandle[0] || null) : undefined)
+
+  // ── the card's thread ──
+  // Read here, once, for the card and never for a neighbour: its count and
+  // its envelope are the card's key's and status row's (`Handset`), and the
+  // sheet it raises stands over the whole glass and not in the card
+  // (Replies.jsx `ThreadSheet`), so it is drawn by the sheet and not by the
+  // phone. The sheet is lit with the letter's own light, its colours handed
+  // to it here, since it stands outside the phone that has them.
+  const th = useThread(one && one.body != null ? one : null)
+  const threadOn = !!one && one.body != null && th.on
+  const oneId = one ? one.id : ''
+  const oneLook = one ? one.look : null
+  const sheetSkin = useMemo(() => {
+    if (!oneId) return null
+    const colour = colourOf(oneLook, oneId)
+    const s = skinOf(colour)
+    return { kind: s.kind, vars: skinVars(colour, !!s.print) }
+  }, [oneLook, oneId])
 
   const name = one ? one.to : handle
   const siblings = one ? lettersFor(one.to) : forHandle
@@ -943,6 +965,12 @@ export default function Letter({
   // wakes. Each shrinks toward its near edge, so the gap between two screens
   // stays the gap.
   //
+  // It never carries a thread. It used to: a hand that took a phone slid
+  // open on its thread sideways folded the thread shut as it went, by how far
+  // the card had gone. The replies are a sheet over the room now, and while
+  // it is up the deck does not turn at all (the sheet, below), so a turn only
+  // ever moves phones with nothing out.
+  //
   // Nothing is read here, and the track's height is not written. It used to
   // follow the strip from this card's height toward the neighbour's, read off
   // the neighbour on every report of the hand, and a read after a write is a
@@ -953,38 +981,23 @@ export default function Letter({
   // while they move and take the next card's once it has landed, and nothing
   // on the strip is seen to change; only the foot under it moves, and it is
   // carried there (the landing, below).
-  //
-  // ── an open phone, carried ──
-  // A hand that takes an open phone sideways shuts it as it carries it
-  // (`carrying`): the thread folds back under the chin by how far the card
-  // has gone, shut at a little under half a screen, and the neighbours come
-  // up out of the dark as it does. Let go past the turn and the phone
-  // finishes shutting on the strip's own run on, the same length and the
-  // same curve; let go short and it springs home and opens again on the
-  // spring's. One gesture drives both, so a turn never has to ask what
-  // becomes of a thread, and the letter that lands is shut.
   const place = (x, transition = 'none') => {
     if (frame.current) { cancelAnimationFrame(frame.current); frame.current = 0 }
     const G = geo()
     dx.current = x
     wrote.current = { x, transition }
     const c = cells()
-    const lit = carrying.current ? Math.min(1, Math.abs(x) / (0.45 * G.span)) : 1
-    const put = (el, p, k = 1) => {
+    const put = (el, p) => {
       if (!el) return
       const f = Math.min(1, Math.abs(p) / G.span)
       el.style.transition = transition
       if (p) el.style.transformOrigin = p < 0 ? '100% 50%' : '0% 50%'
       el.style.transform = `translate3d(${p.toFixed(2)}px, 0, 0) scale(${(1 - (1 - G.scale) * f).toFixed(4)})`
-      el.style.opacity = ((1 - (1 - G.dim) * f) * k).toFixed(3)
+      el.style.opacity = (1 - (1 - G.dim) * f).toFixed(3)
     }
     put(c.card, x)
-    put(c.prev, x - G.span, lit)
-    put(c.next, x + G.span, lit)
-    if (carrying.current) {
-      const m = /^transform ([^,(]+(?:\([^)]*\))?)/.exec(transition)
-      writeQ(1 - lit, m ? m[1] : 'none')
-    }
+    put(c.prev, x - G.span)
+    put(c.next, x + G.span)
   }
   // Where a hand puts the card, written on the frame's own clock: a hand
   // reports as often as it likes, and the strip is written once a frame, at
@@ -1014,9 +1027,6 @@ export default function Letter({
   // (strip.js)
   const settled = () => {
     settling.current = false
-    // an open phone carried and let go short is open again, where the
-    // stylesheet draws an open one
-    if (carrying.current) { carrying.current = false; clearQ() }
     measured.current = null
     tall.current = null
     if (stage.current) delete stage.current.dataset.moving
@@ -1113,7 +1123,10 @@ export default function Letter({
   const slide = (dir, { from = null, v = 0, ms: fixed = TURN_MS } = {}) => {
     // a key or a wheel while a hand holds the card is the hand's to finish
     if (closing.current || (drag.current && from == null)) return
-    // a phone still settling open or shut is let finish first
+    // and nothing turns the deck while the replies are up: the sheet is
+    // what is being read, and it is laid down first (the sheet, below)
+    if (threadRef.current) return
+    // a phone still settling from its replies is let finish first
     if (sliding.current) finishQ()
     // and one while a turn is still running on lands it, and turns again
     // from where it was seen: a key pressed twice is two letters
@@ -1134,9 +1147,6 @@ export default function Letter({
     if (view) setView(null)
     turned()
     if (reduce) { hold(); settled(); silent.current = true; go('letter', side.target); return }
-    // a key, a wheel or a press on a neighbour turns an open phone the way a
-    // hand does: it shuts on the turn's own clock (`place`)
-    if (threadRef.current && !carrying.current) { fitSlider(); carrying.current = true }
     busy.current = true
     wake()
     if (stage.current) stage.current.dataset.moving = dir > 0 ? 'next' : 'prev'
@@ -1216,10 +1226,10 @@ export default function Letter({
     const t = tall.current
     turning.current = null
     run.current = null
-    // the phone that was carried shut is a neighbour now, and the one that
-    // landed arrived shut: nothing is left written on either
-    carrying.current = false
-    clearQ()
+    // the letter that landed arrives with its replies down, and nothing a
+    // sheet wrote is left on it or on the one that left
+    sliding.current = null
+    clearQ(true)
     // the screen drawn ahead of the turn travelled in on its own (the effect
     // below); it stands beside the card now, where the stylesheet puts it
     const fe = farEl.current
@@ -1319,127 +1329,179 @@ export default function Letter({
     return () => { clearTimeout(nudgeAt.current); nudgeAt.current = 0 }
   }, [hasNext, reduce])
 
-  // ── the slider ──────────────────────────────────────────────────────────────
-  // The card's phone opens on its thread (Replies.jsx `Slide`, the head of
-  // this file says why it is there). Pushed open, the upper half, which is
-  // the screen and its chin, rises to stand under the close mark, square to
-  // the eye, and the lower half comes out from behind the chin in step with
-  // it: the same width at every frame, so the two halves are one body the
-  // whole way. In a wide room the camera steps back to take in the whole
-  // handset, the upper half shown smaller about its top (`--o-s`) and the
-  // lower laid out at the width it lands at, so its words are never scaled
-  // at rest. The neighbours go dark, the turn keys go, and the foot under
-  // the card fades: while it is open the phone is the only thing on the
-  // table.
+  // ── the sheet ───────────────────────────────────────────────────────────────
+  // The card's replies (Replies.jsx `ThreadSheet`, whose head says what it is
+  // made of). On a phone a press on the card's right soft key raises a sheet
+  // from the foot of the glass, and on the same clock the letter's phone
+  // rises and steps back until the whole of it stands in the room left
+  // between the close mark and the sheet's edge, square to the eye and still
+  // lit, the way a reel stands over its comments. Past half its size it
+  // steps back no further: it stands at the top, and the sheet covers its
+  // foot. In a wide room, or on a phone on its side, a sheet dragged up from
+  // the bottom of the glass is a phone gesture on furniture, so the letter
+  // slides to the left and the replies stand at its right as a panel as tall
+  // as it is, rising into place as it slides. Either way the neighbours go
+  // dark, the turn keys go and the foot under the card fades, and the deck
+  // does not turn: while the replies are up they are what is being read.
   //
-  // At rest the stylesheet draws it, shut or open, off the numbers measured
-  // here (`fitSlider`, written as `--o-*` on the sheet); a press on the chin
-  // only changes which (`thread`), and every part runs on the same length
-  // and the same curve, so they stay attached on every frame. A hand, and a
-  // turn that carries an open phone, write the same transforms straight to
-  // it instead (`writeQ`), at `q` between shut (0) and open (1), and hand it
-  // back to the stylesheet once it has come to rest. Anything that catches
-  // it moving catches it where it is SEEN (`readQ`).
+  // At rest the stylesheet draws both, down or up, off the numbers measured
+  // here (`fitThread`: `--o-*` on the sheet's room for the letter, `--th-*`
+  // on the replies); a press only changes which (`thread`), and the letter
+  // and the replies run on one length and one curve, so they move as one
+  // thing. A hand, on the letter or on the sheet, writes the same transforms
+  // straight to them instead (`writeQ`), at `q` between down (0) and up (1),
+  // and hands them back to the stylesheet once they have come to rest.
+  // Anything that catches them moving catches them where they are SEEN
+  // (`readQ`).
   const room = useRef(null)
   const og = useRef(null)
-  const carrying = useRef(false)
   const sliding = useRef(null)
   const qFrame = useRef(0)
+  const sheetEl = useRef(null)
   const liveSet = () => {
     const { card } = cells()
     return card ? card.querySelector('.wl-set') : null
   }
-  // The numbers the handset opens to, off the window as it is now: where
-  // the upper half stands open (under the close mark on a phone, and at the
-  // top of a wide room), how small the camera shows it, and how tall the
-  // lower half is, the rest of the window down to its foot, never under the
-  // measure a thread can be read in. A short phone keeps the size and lets
-  // the top of the letter go under the band of black behind the close mark
-  // rather than squeezing the thread.
-  const fitSlider = () => {
+  const liveKey = () => {
+    const set = liveSet()
+    return set ? set.querySelector('.wl-sk.is-thread') : null
+  }
+  // The numbers the letter and the replies stand at, off the window as it is
+  // now (above says what they are). While a field on the sheet has a phone's
+  // keys, the sheet rides up over them by what they cover (`--o-kb`, the
+  // visual viewport's own maths) and is held short enough that its head
+  // stays under the close mark, and the letter behind it stays where it is;
+  // a panel on a phone on its side stands in what the keys leave instead.
+  const fitThread = () => {
     const root = room.current
+    const sheet = sheetEl.current
     const set = liveSet()
     const card = set && set.closest('.wl-letter-card')
     const up = set && set.querySelector(':scope > .wl-set-up')
-    if (!root || !up || !card) return null
+    if (!root || !up || !card || !sheet) return null
+    const W0 = window.innerWidth
     const H = window.innerHeight
-    const desk = window.innerWidth >= 900
+    const desk = deskRoom()
     const h = up.offsetHeight
     const w = up.offsetWidth
     // where the card stands in the window, off the layout, which the strip's
     // and the sheet's own transforms do not move
+    let x = 0
     let y = 0
-    for (let el = card; el && !el.classList.contains('wl-sheet-wrap'); el = el.offsetParent) y += el.offsetTop
+    for (let el = card; el && !el.classList.contains('wl-sheet-wrap'); el = el.offsetParent) { x += el.offsetLeft; y += el.offsetTop }
+    const cx = x + card.offsetWidth / 2
     const mark = root.parentElement && root.parentElement.parentElement
       ? root.parentElement.parentElement.querySelector(':scope > .wl-letter-x') : null
-    const top0 = desk ? OPEN_TOP_DESK : (mark ? mark.offsetTop + mark.offsetHeight : 54) + 10
-    const foot = desk ? OPEN_FOOT_DESK : OPEN_FOOT + safeBottom()
-    const least = desk ? Math.min(THREAD_DESK, Math.round(H * 0.46)) : THREAD_MIN
-    const s = desk ? Math.min(1, Math.max(Math.min(1, DESK_W / w), (H - top0 - foot - least) / h)) : 1
-    const top = Math.max(-0.6 * h * s, Math.min(top0, H - foot - least - h * s))
-    const B = Math.round(Math.max(160, Math.min(h * s, H - foot - top - h * s)))
-    const dy = Math.round(top - y)
-    const g = {
-      dy, s, h, w, B,
-      y1: Math.round(dy - h * (1 - s)), y0: -Math.ceil(B / s), k0: 1 / s,
-      rz: parseFloat(set.style.getPropertyValue('--q-rz')) || 0,
+    const top0 = (mark ? mark.offsetTop + mark.offsetHeight : 54) + 10
+    const vv = window.visualViewport
+    const a = document.activeElement
+    const typing = !!(a && sheet.contains(a) && /^(TEXTAREA|INPUT)$/.test(a.tagName))
+    const kb = typing && vv ? Math.max(0, Math.round(H - vv.height - vv.offsetTop)) : 0
+    const rz = parseFloat(set.style.getPropertyValue('--q-rz')) || 0
+    const put = (el, k, v) => el.style.setProperty(k, v)
+    let g
+    if (!desk) {
+      let S = Math.max(SHEET_MIN, Math.min(Math.round(H * SHEET_SHARE), H - top0 - LETTER_LEAST))
+      // a letter at half its size that the sheet would cover a sliver of
+      // (its key band cut through the middle) is given the room back, as
+      // far as the sheet can spare it
+      const short = h * LETTER_MIN - (H - S - top0 - LETTER_GAP)
+      if (short > 0) S -= Math.max(0, Math.min(Math.ceil(short), S - Math.max(SHEET_MIN, Math.round(H * SHEET_LEAST))))
+      const left = H - S - top0 - LETTER_GAP
+      const s = Math.min(1, Math.max(LETTER_MIN, left / h))
+      const top = top0 + Math.max(0, (left - h * s) / 2)
+      const held = kb ? Math.max(SHEET_MIN * 0.6, Math.min(S, Math.round((vv ? vv.height : H) - top0))) : S
+      g = { desk, dx: 0, dy: Math.round(top - y), s, h, w, rz, S: held }
+      put(sheet, '--th-h', `${held}px`)
+      put(sheet, '--o-kb', `${kb}px`)
+    } else {
+      const W = Math.round(Math.min(PANEL_W[1], Math.max(Math.min(PANEL_W[0], W0 * 0.5), W0 - 2 * ROOM_EDGE - PANEL_GAP - w)))
+      const s = Math.min(1, (W0 - 2 * ROOM_EDGE - PANEL_GAP - W) / w, (H - 2 * ROOM_EDGE) / h)
+      const pw = w * s
+      const ph = h * s
+      const x0 = (W0 - (pw + PANEL_GAP + W)) / 2
+      const edge = Math.min(ROOM_EDGE, Math.round(H * 0.04))
+      let PH = Math.round(Math.min(Math.max(PANEL_H, ph), H - 2 * edge))
+      let PY = Math.round(Math.max(edge, Math.min(H - edge - PH, (H - PH) / 2)))
+      if (kb && vv) {
+        PH = Math.min(PH, Math.round(vv.height - 16))
+        PY = Math.round(vv.offsetTop + Math.max(8, (vv.height - PH) / 2))
+      }
+      g = { desk, dx: Math.round(x0 + pw / 2 - cx), dy: Math.round((H - ph) / 2 - y), s, h, w, rz, S: PH }
+      put(sheet, '--th-w', `${W}px`)
+      put(sheet, '--th-h', `${PH}px`)
+      put(sheet, '--th-x', `${Math.round(x0 + pw + PANEL_GAP)}px`)
+      put(sheet, '--th-y', `${PY}px`)
+      put(sheet, '--o-kb', '0px')
     }
-    const put = (k, v) => root.style.setProperty(k, v)
-    put('--o-dy', `${g.dy}px`)
-    put('--o-s', g.s.toFixed(4))
-    put('--o-w', `${Math.round(w * s)}px`)
-    put('--o-b', `${g.B}px`)
-    put('--o-y0', `${g.y0}px`)
-    put('--o-y1', `${g.y1}px`)
-    put('--o-k0', g.k0.toFixed(4))
+    put(root, '--o-dx', `${g.dx}px`)
+    put(root, '--o-dy', `${g.dy}px`)
+    put(root, '--o-s', g.s.toFixed(4))
     og.current = g
-    // taken by the stylesheet now, before anything is asked to move to them
-    const low = set.querySelector(':scope > .wl-low')
-    if (low) void getComputedStyle(low).transform
     return g
   }
-  // how open the phone is SEEN to be, off the upper half's own travel
+  // how far up the replies are SEEN to be, off the letter's own travel,
+  // which is plain pixels and never a share of anything laid out
   const readQ = () => {
     const g = og.current
     const set = liveSet()
     const up = set && set.querySelector(':scope > .wl-set-up')
     const was = threadRef.current ? 1 : 0
     if (!g || !up) return was
+    const k = (v) => Math.max(0, Math.min(1, v))
     try {
       const m = new DOMMatrixReadOnly(getComputedStyle(up).transform)
-      if (Math.abs(g.dy) > 2) return Math.max(0, Math.min(1, m.m42 / g.dy))
-      if (g.s < 0.99) return Math.max(0, Math.min(1, (1 - m.a) / (1 - g.s)))
+      if (Math.abs(g.dy) >= Math.abs(g.dx) && Math.abs(g.dy) > 2) return k(m.m42 / g.dy)
+      if (Math.abs(g.dx) > 2) return k(m.m41 / g.dx)
+      if (g.s < 0.99) return k((1 - m.a) / (1 - g.s))
     } catch { /* what the state says stands */ }
     return was
   }
-  // The handset at `q`, written straight to it, on `tr` (a length and a
-  // curve) or at once. `peers` is how the neighbours and the foot under the
-  // card fade with it, for a strip that is not moving; a strip that is
-  // writes its own (`place`), and leaves it null.
+  // The letter and the replies at `q`, written straight to them, on `tr` (a
+  // length and a curve) or at once. `peers` is how the neighbours and the
+  // foot under the card fade with them; the strip never moves while the
+  // replies are up, so it is always given. The sheet is written by how far
+  // it has left to rise, the panel by how far it has left to rise into
+  // place and how faint it still is. A `q` past up (a sheet pulled up past
+  // its rest) takes the sheet a little further up, and its foot goes on
+  // under the glass (replies.css), so there is never a gap under it.
   const writeQ = (q, tr = 'none', peers = null) => {
     const g = og.current
     const set = liveSet()
     if (!g || !set) return
     const up = set.querySelector(':scope > .wl-set-up')
-    const low = set.querySelector(':scope > .wl-low')
+    const sheet = sheetEl.current
     const k = Math.max(0, Math.min(1, q))
     const move = tr === 'none' ? 'none' : `transform ${tr}`
     set.style.transition = move
     set.style.transform = `rotate(${(g.rz * (1 - k)).toFixed(3)}deg)`
     if (up) {
       up.style.transition = move
-      up.style.transform = `translate3d(0, ${(g.dy * q).toFixed(2)}px, 0) scale(${(1 - (1 - g.s) * q).toFixed(4)})`
+      up.style.transform = `translate3d(${(g.dx * q).toFixed(2)}px, ${(g.dy * q).toFixed(2)}px, 0) scale(${(1 - (1 - g.s) * q).toFixed(4)})`
     }
-    if (low) {
-      low.style.transition = move
-      low.style.visibility = 'visible'
-      low.style.transform = `translate3d(0, ${(g.y0 + (g.y1 - g.y0) * q).toFixed(2)}px, 0) scale(${(g.k0 + (1 - g.k0) * q).toFixed(4)})`
+    if (sheet) {
+      sheet.style.visibility = 'visible'
+      if (g.desk) {
+        // coming up, the panel's light follows a beat behind its rise, so
+        // it fades up over a room the neighbour beside the letter has
+        // already gone dark in, and never shows it through half its glass
+        const ms = parseFloat(tr) || 0
+        const fade = tr === 'none' ? '' : k > 0.5
+          ? `opacity ${Math.round(ms * 0.8)}ms ${EASE_OUT} ${Math.round(ms * 0.2)}ms`
+          : `opacity ${tr}`
+        sheet.style.transition = tr === 'none' ? 'none' : `transform ${tr}, ${fade}`
+        sheet.style.transform = `translate3d(0, ${((1 - k) * PANEL_RISE).toFixed(2)}px, 0)`
+        sheet.style.opacity = k.toFixed(3)
+      } else {
+        sheet.style.transition = move
+        sheet.style.transform = `translate3d(0, ${((1 - q) * g.S).toFixed(2)}px, 0)`
+      }
     }
     const root = room.current
     if (root) {
       for (const el of root.querySelectorAll(':scope > .wl-letter-light')) {
         el.style.transition = move
-        el.style.transform = `translate3d(0, ${(g.dy * k * 0.5).toFixed(1)}px, 0)`
+        el.style.transform = `translate3d(${(g.dx * k).toFixed(1)}px, ${(g.dy * k * 0.5).toFixed(1)}px, 0)`
       }
     }
     if (peers == null) return
@@ -1455,20 +1517,26 @@ export default function Letter({
       el.style.opacity = (G.dim * (1 - k)).toFixed(3)
     }
   }
-  // and back to the stylesheet: nothing written on any phone on the strip,
-  // nor, with `peers`, on the neighbours and the foot
+  // and back to the stylesheet: nothing written on any phone on the strip or
+  // on the replies, nor, with `peers`, on the neighbours and the foot
   const clearQ = (peers = false) => {
     if (qFrame.current) { cancelAnimationFrame(qFrame.current); qFrame.current = 0 }
     const t = track.current
     if (t) {
-      for (const el of t.querySelectorAll('.wl-set, .wl-set-up, .wl-low')) {
+      for (const el of t.querySelectorAll('.wl-set, .wl-set-up')) {
         el.style.transition = ''
         el.style.transform = ''
-        el.style.visibility = ''
       }
       if (peers) {
         for (const el of t.querySelectorAll(':scope > .wl-letter-slot')) { el.style.transition = ''; el.style.opacity = '' }
       }
+    }
+    const sheet = sheetEl.current
+    if (sheet) {
+      sheet.style.transition = ''
+      sheet.style.transform = ''
+      sheet.style.visibility = ''
+      sheet.style.opacity = ''
     }
     const root = room.current
     if (root) {
@@ -1478,85 +1546,95 @@ export default function Letter({
     }
   }
   // ── the run ──
-  // The phone run open (1) or shut (0) from wherever it is SEEN: pinned
-  // there, the page told which it is going to (so a shut phone's thread is
-  // reachable, and an open one's is not, from the first frame), and then
-  // written on its way on one length and one curve, and handed back to the
-  // stylesheet when it lands. A hand's let go leaves at the hand's speed
-  // (`handoff`); a press takes the drawer's own length, 440 open (480 in a
-  // wide room) and 360 shut, since shutting is going away, cut short by how
-  // little is left when a press catches it moving. The neighbours go dark
-  // quickly as it opens and come back a beat after it starts to shut, and
-  // under reduced motion it is a cut, with only the thread's words fading.
+  // Up (1) or down (0) from wherever they are SEEN: pinned there, the page
+  // told which it is going to (so the replies are reachable, or not, from
+  // the first frame), and then written on their way on one length and one
+  // curve, and handed back to the stylesheet when they land. A hand's let go
+  // leaves at the hand's speed (`handoff`); a press takes the sheet's own
+  // length, OPEN_MS up and SHUT_MS down, since going away is quicker, cut
+  // short by how little is left when a press catches it moving. The
+  // neighbours go dark quickly as it rises and come back a beat after it
+  // starts down. Under reduced motion there is no travel at all: the letter
+  // stands where it is going, and the replies cross fade (replies.css).
   const runQ = (to, { v = 0, from = null } = {}) => {
-    const g = fitSlider()
+    const g = fitThread()
     if (!g) return
     // the strip's measure, read now, while the page has just been measured
-    // for the slider and nothing has been written since: read inside the
+    // for the sheet and nothing has been written since: read inside the
     // first write (`writeQ`, for the neighbours' light) it made the browser
-    // style the phone's lower half once for that and again for the press
+    // style the page once for that and again for the press
     geo()
     const q = from == null ? readQ() : from
     hold()
     writeQ(q, 'none', 'none')
     const open = !!to
-    if (open !== threadRef.current) {
+    // laid down with the focus on it, the focus goes to the key first, before
+    // the sheet it is on stops taking it: by the grip, the black, Escape, a
+    // wheel or a hand pulling it down alike
+    if (!open) keyBack()
+    if (open !== threadRef.current || laid) {
       threadRef.current = open
-      flushSync(() => setThread(open))
+      flushSync(() => { setThread(open); setLaid(false) })
     }
-    if (reduce) { sliding.current = null; clearQ(true); return }
+    if (reduce) { sliding.current = null; clearQ(true); if (!open) setLaid(true); return }
     void liveSet()?.offsetWidth
-    const travel = Math.max(Math.abs(g.dy), 120)
+    const travel = g.desk ? Math.max(Math.abs(g.dx), 120) : g.S
     const left = Math.abs(to - q)
     const { ms, ease } = v > 0
-      ? (to ? handoff(left * travel, v, 240, 440) : handoff(left * travel, v, 220, 380))
-      : { ms: Math.round((to ? (window.innerWidth >= 900 ? 480 : 440) : 360) * Math.max(0.4, left)), ease: EASE_SLIDE }
+      ? (to ? handoff(left * travel, v, 240, OPEN_MS) : handoff(left * travel, v, 200, SHUT_MS))
+      : { ms: Math.round((to ? OPEN_MS : SHUT_MS) * Math.max(0.4, left)), ease: EASE_SLIDE }
     const peers = to
-      ? `opacity ${Math.min(180, ms)}ms ${EASE_OUT}`
+      ? `opacity ${Math.min(g.desk ? 140 : 180, ms)}ms ${EASE_OUT}`
       : `opacity 240ms ${EASE_OUT} ${Math.round(ms * 0.4)}ms`
     sliding.current = { to }
     writeQ(to, `${ms}ms ${ease}`, peers)
-    after(ms + (to ? 30 : 280), () => { sliding.current = null; clearQ(true) })
+    after(ms + (to ? 30 : 280), () => { sliding.current = null; clearQ(true); if (!to) setLaid(true) })
   }
-  // one still under way, landed where it was going, for a hand that turns
-  // the deck instead
+  // one still under way, landed where it was going, for a turn of the deck
+  // that comes as it lands
   const finishQ = () => {
     if (!sliding.current) return
     hold()
     sliding.current = null
     clearQ(true)
+    if (!threadRef.current) setLaid(true)
   }
 
-  // ── open, and shut ──
-  // A press on the chin, Enter or Space on it, two fingers down over the
-  // screen, or the screen pushed up. Open by a press, the thread's list takes
-  // the focus (not its field: a keyboard coming up would cover the replies),
-  // and shut, the focus goes back to the chin. A press on the chin while it
-  // moves turns it round where it is.
+  // ── up, and down ──
+  // A press on the key, Enter or Space on it, two fingers down over the
+  // letter, or the letter pushed up. Raised by a press, the thread's list
+  // takes the focus (not its field: a keyboard coming up would cover the
+  // replies), and laid down, the focus goes back to the key. A press on the
+  // key, on the grip or anywhere off the sheet while it moves turns it round
+  // where it is.
   const canSlide = () => {
     if (busy.current || turning.current || closing.current || drag.current || settling.current) return false
     const set = liveSet()
-    return !!(set && set.classList.contains('has-thread'))
+    return !!(set && set.classList.contains('has-thread') && sheetEl.current)
   }
   const openThread = (by = 'press') => {
     if (!canSlide() || (threadRef.current && !sliding.current)) return
     hush()
     runQ(1)
     if (by !== 'wheel') {
-      const list = liveSet()?.querySelector('.wl-low-list')
+      const list = sheetEl.current && sheetEl.current.querySelector('.wl-low-list')
       if (list) list.focus({ preventScroll: true })
+    }
+  }
+  // the focus, on the sheet or the black round it, handed to the key
+  const keyBack = () => {
+    const sheet = sheetEl.current
+    const a = document.activeElement
+    if (a && ((sheet && sheet.contains(a)) || a.classList.contains('wl-th-room'))) {
+      const key = liveKey()
+      if (key && key.focus) key.focus({ preventScroll: true })
+      else if (a.blur) a.blur()
     }
   }
   const shutThread = () => {
     if (!threadRef.current) return
-    const set = liveSet()
-    const a = document.activeElement
-    if (set && a && a.closest && a.closest('.wl-low')) {
-      const key = set.querySelector('.wl-sk.is-thread')
-      if (key && key.focus) key.focus({ preventScroll: true })
-      else if (a.blur) a.blur()
-    }
-    if (!canSlide()) { flushSync(() => setThread(false)); threadRef.current = false; return }
+    keyBack()
+    if (!canSlide()) { flushSync(() => { setThread(false); setLaid(true) }); threadRef.current = false; return }
     runQ(0)
   }
   const openRef = useRef(openThread)
@@ -1568,36 +1646,33 @@ export default function Letter({
     if (s ? s.to : threadRef.current) shutThread()
     else openThread('press')
   }
-  // Escape shuts the phone before it closes the sheet, and inside the
-  // lower half it goes back a step first (the terms, the school's door).
-  // Shut from the keyboard, the focus goes to the key even when what had it
-  // has already gone from the page (a reply reported, folded under its flag)
+  // Escape lays the replies down before it closes the letter, and on the
+  // sheet it goes back a step first (the terms, the school's door; the field
+  // takes its own, Replies.jsx). Laid down from the keyboard, the focus goes
+  // to the key even when what had it has already gone from the page (a
+  // reply reported, folded under its flag). All of it here, on the letter's
+  // one listener (parts.jsx `Sheet`), and never on a second of the sheet's
   const onEscape = () => {
     if (!threadRef.current) return false
-    const set = liveSet()
-    const back = set && set.querySelector(':scope > .wl-low:not(.is-read) [data-low-back]')
+    const sheet = sheetEl.current
+    const back = sheet && !sheet.classList.contains('is-read') ? sheet.querySelector('[data-low-back]') : null
     if (back) { back.click(); return true }
     const a = document.activeElement
-    const key = set && (!a || a === document.body) ? set.querySelector('.wl-sk.is-thread') : null
+    const key = !a || a === document.body || !a.isConnected ? liveKey() : null
     if (key) key.focus({ preventScroll: true })
     shutThread()
     return true
   }
-  // While it is open the window can change under it (a phone turned, a
-  // keyboard up), and it is measured again. While a field in the thread has
-  // the keys on a phone, the handset rises by what the keyboard covers
-  // (`--o-kb`), so the field and `send` stand above the keys.
+  // While they are up the window can change under them (a phone turned, a
+  // keyboard up), and they are measured again (`fitThread` says what a
+  // keyboard does to them).
   useEffect(() => {
     if (!thread) return undefined
-    const root = room.current
+    const sheet = sheetEl.current
     const vv = window.visualViewport
     const fit = () => {
       if (busy.current || drag.current || sliding.current) return
-      fitSlider()
-      const a = document.activeElement
-      const typing = !!(a && a.closest && a.closest('.wl-low') && /^(TEXTAREA|INPUT)$/.test(a.tagName))
-      const kb = typing && vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0
-      if (root) root.style.setProperty('--o-kb', `${Math.round(kb)}px`)
+      fitThread()
     }
     window.addEventListener('resize', fit)
     if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit) }
@@ -1608,21 +1683,21 @@ export default function Letter({
       if (vv) { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit) }
       document.removeEventListener('focusin', fit)
       document.removeEventListener('focusout', fit)
-      if (root) root.style.setProperty('--o-kb', '0px')
+      if (sheet) sheet.style.setProperty('--o-kb', '0px')
     }
   }, [thread]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The arrow keys turn the deck, on a keyboard, and an open phone shuts as
-  // it turns (`place`). Not while a field has the keys: the reply being
-  // written keeps its arrows for its caret. A menu on the screen keeps its
-  // own arrows too (screen.jsx `ScreenMenu`).
+  // The arrow keys turn the deck, on a keyboard, and never while the replies
+  // are up. Not while a field has the keys: the reply being written keeps
+  // its arrows for its caret. A menu on the screen keeps its own arrows too
+  // (screen.jsx `ScreenMenu`).
   const canTurn = !!(nextTo || prevTo)
   const canTurnRef = useRef(canTurn)
   canTurnRef.current = canTurn
   useEffect(() => {
     if (!canTurn) return undefined
     const onKey = (e) => {
-      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return
+      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey || threadRef.current) return
       const tg = e.target
       if (tg && tg.closest && tg.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return
       if (e.key === 'ArrowRight') { e.preventDefault(); slideRef.current(1, { ms: KEY_MS }) }
@@ -1642,10 +1717,12 @@ export default function Letter({
   // sideways swipe left to it is the history going back, and the letter
   // closing under the hand.
   //
-  // Up and down over the phone's upper half, the same wheel opens and shuts
-  // it, once a gesture: scrolled down, the phone slides open on its thread,
-  // and scrolled up, it shuts. Over the thread itself the wheel only ever
-  // scrolls the thread.
+  // Up and down over the letter, the same wheel raises and lays down its
+  // replies, once a gesture: scrolled down over the phone, the replies come
+  // up, and scrolled up anywhere off the sheet while they are up, they go
+  // down. Over the sheet itself the wheel only ever scrolls the thread. And
+  // while they are up, sideways turns nothing, and is still kept from the
+  // browser, for whom it is the history going back.
   useEffect(() => {
     let acc = 0
     let locked = false
@@ -1662,8 +1739,8 @@ export default function Letter({
       const y = e.deltaY * unit
       if (y && Math.abs(y) > Math.abs(x) * 1.2) {
         const tg = e.target
-        if (!tg || !tg.closest || tg.closest('.wl-low')) return
-        if (!tg.closest('.wl-letter-card .wl-set.has-thread > .wl-set-up')) return
+        if (!tg || !tg.closest || tg.closest('.wl-th')) return
+        if (!tg.closest('.wl-letter-card .wl-set.has-thread > .wl-set-up, .wl-th-room')) return
         e.preventDefault()
         clearTimeout(vquiet)
         vquiet = setTimeout(() => { vlocked = false; vacc = 0 }, 220)
@@ -1679,6 +1756,7 @@ export default function Letter({
       if (!canTurnRef.current) return
       if (!x || Math.abs(x) <= Math.abs(y) * 1.2) return
       e.preventDefault()
+      if (threadRef.current) return
       clearTimeout(quiet)
       quiet = setTimeout(() => { locked = false; acc = 0; last = 0 }, 180)
       const now = performance.now()
@@ -1709,18 +1787,17 @@ export default function Letter({
   // (wall.css): the card is a thing that is picked up. A hand that comes down
   // while a turn is still running on catches it (`landNow`).
   //
-  // Up and down, the hand has the phone's upper half, one to one, and the
-  // thread comes out from under the chin with it (`writeQ`); let go past
-  // three tenths of the way, or pushed, and it runs on open at the speed it
-  // was let go at, and short, it shuts again, the same the other way. Past
-  // either end it gives, less the further it is pulled. Nothing inside the
-  // thread is ever a drag of the phone: the thread is read, scrolled and
-  // typed in, and a hand that lands on it is the thread's.
+  // Up and down, the hand has the letter, one to one, and its replies come
+  // up from the foot of the glass with it (`writeQ`); let go past three
+  // tenths of the way, or pushed, and they run on up at the speed they were
+  // let go at, and short, they go down again. Past either end it gives, less
+  // the further it is pulled. While they are up the letter is under a press
+  // that lays them down (`backdrop`, below), and the sheet takes its own
+  // hand (the sheet under a thumb, below).
   const onDown = (e) => {
     if (!e.isPrimary || drag.current) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const tg = e.target
-    if (tg && tg.closest && tg.closest('.wl-low')) return
     const up = !!(tg && tg.closest && tg.closest('.wl-letter-card .wl-set.has-thread > .wl-set-up'))
     if (!canTurn && !up) return
     let ox
@@ -1733,18 +1810,21 @@ export default function Letter({
     flung.current = false
     drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, lx: e.clientX, ox, axis: '', up, s: [{ x: e.clientX, t: e.timeStamp }] }
   }
-  // the phone taken up or down: from where it is seen, measured afresh
+  // the replies taken up or down, by the letter or by the sheet: from where
+  // they are seen, measured afresh. A hand on the letter moves the letter
+  // one to one; a hand on the sheet moves the sheet one to one (`d.sheet`)
   const startQ = (d, e, my) => {
     if (busy.current || turning.current || closing.current || settling.current || Math.abs(d.ox) > 0.5) return false
     hold()
     sliding.current = null
     const q0 = readQ()
-    const g = fitSlider()
+    const g = fitThread()
     if (!g) return false
     d.sy = e.clientY - Math.sign(my) * Math.max(0, Math.abs(my) - SLOP)
-    d.v = { open: q0 > 0.5, q0, q: q0, travel: Math.max(Math.abs(g.dy), 120), s: [{ x: e.clientY, t: e.timeStamp }] }
+    const travel = d.sheet ? g.S : Math.max(Math.abs(g.dy), 120)
+    d.v = { open: q0 > 0.5, q0, q: q0, travel, flick: d.sheet ? SHEET_FLICK : FLICK, s: [{ x: e.clientY, t: e.timeStamp }] }
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* a pointer the browser is not tracking */ }
-    if (stage.current && e.pointerType === 'mouse') stage.current.dataset.grab = ''
+    if (stage.current && e.pointerType === 'mouse' && !d.sheet) stage.current.dataset.grab = ''
     if (!reduce) writeQ(q0, 'none', 'none')
     return true
   }
@@ -1769,8 +1849,8 @@ export default function Letter({
     let to
     if (cancel) to = v.open ? 1 : 0
     else if (reduce) to = Math.abs(v.dy || 0) > 3 * SLOP ? (v.dy < 0 ? 1 : 0) : (v.open ? 1 : 0)
-    else if (sp < -FLICK) to = 1
-    else if (sp > FLICK) to = 0
+    else if (sp < -v.flick) to = 1
+    else if (sp > v.flick) to = 0
     else to = v.open ? (v.q < 0.7 ? 0 : 1) : (v.q > 0.3 ? 1 : 0)
     // the hand's speed carries on only toward where it is going
     runQ(to, { v: Math.max(0, to ? -sp : sp), from: v.q })
@@ -1788,10 +1868,9 @@ export default function Letter({
         if (!d.up || !startQ(d, e, my)) { drag.current = null; if (d.ox) spring() }
         return
       }
-      if (!canTurn) { drag.current = null; return }
-      // a phone still settling is let finish; an open one is carried
+      if (!canTurn || threadRef.current) { drag.current = null; return }
+      // a phone still settling from its replies is let finish
       finishQ()
-      if (threadRef.current) { fitSlider(); carrying.current = true }
       // the slack is not taken up: the card moves from here, and where it
       // was still giving at an end it is taken back to the pull behind it.
       // Only the slack: a phone that was busy for a moment reports a stretch
@@ -1880,7 +1959,7 @@ export default function Letter({
   }
   // and iOS takes a drag it has not been told is ours as the start of a
   // scroll, and cancels the pointer under it: once the drag is the card's,
-  // sideways or the phone's own up and down, the touch is the card's
+  // sideways or up and down raising its replies, the touch is the card's
   const gone = one === null
   useEffect(() => {
     const st = stage.current
@@ -1893,6 +1972,104 @@ export default function Letter({
     onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp,
     onPointerCancel: onCancel, onLostPointerCapture: onLost, onClickCapture: onClick,
   }
+
+  // ── the sheet under a thumb ──
+  // The sheet is pulled down by its grip and its head, one to one with the
+  // finger, and by the thread itself when the thread is at its top and the
+  // finger goes down, the way every sheet of comments is let go of. Let go
+  // past three tenths of the way down, or thrown down at all quickly
+  // (`SHEET_FLICK`), and it goes; short, it springs back up; pulled up past
+  // its rest it gives, less the further it is pulled. Caught moving, the
+  // hand has it from where it is seen (`startQ`). A thread scrolled away
+  // from its top scrolls, a finger going up the thread is the thread's, and
+  // so is the tray, where people type. Heard on the sheet itself, since it
+  // stands outside the stage, with a `touchmove` that is not passive: a
+  // phone that has not been told the drag is ours begins to scroll under it
+  // and takes the finger away. Only on a phone: a panel in a wide room is
+  // not pulled anywhere.
+  const sheetKey = threadOn && one ? one.id : ''
+  const hand = useRef(null)
+  hand.current = { startQ, moveQ, endQ }
+  useEffect(() => {
+    const el = sheetEl.current
+    if (!el) return undefined
+    let clear = null
+    const onSheetDown = (e) => {
+      if (!e.isPrimary || drag.current || (e.pointerType === 'mouse' && e.button !== 0)) return
+      if (!(threadRef.current || sliding.current) || deskRoom()) return
+      const tg = e.target
+      const head = tg && tg.closest ? tg.closest('.wl-th-head') : null
+      const list = !head && tg && tg.closest ? tg.closest('.wl-low-list') : null
+      if (!head && !list) return
+      if (list && (list.scrollTop > 0 || tg.closest('textarea, input, select, a'))) return
+      drag.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: 0, axis: '', sheet: true, list }
+      // and let go of wherever it is let go, when it never became a drag
+      // and so was never the sheet's to hear
+      if (clear) window.removeEventListener('pointerup', clear, true)
+      clear = () => { const d = drag.current; if (d && d.sheet && !d.v) drag.current = null }
+      window.addEventListener('pointerup', clear, { once: true, capture: true })
+    }
+    const onSheetMove = (e) => {
+      const d = drag.current
+      if (!d || !d.sheet || e.pointerId !== d.id) return
+      if (!d.v) {
+        const mx = e.clientX - d.sx
+        const my = e.clientY - d.sy
+        if (Math.abs(mx) < SLOP && Math.abs(my) < SLOP) return
+        // the list's own scroll, unless it is at its top and the finger
+        // goes down; the head is the sheet's whichever way it goes
+        const down = my > 0 && Math.abs(my) > Math.abs(mx)
+        const mine = d.list ? down && d.list.scrollTop <= 0 : Math.abs(my) >= Math.abs(mx)
+        if (!mine || !hand.current.startQ(d, e, my)) { drag.current = null; return }
+        d.axis = 'y'
+      }
+      hand.current.moveQ(d, e)
+    }
+    const onSheetUp = (e) => {
+      const d = drag.current
+      if (!d || !d.sheet || e.pointerId !== d.id) return
+      drag.current = null
+      if (d.v) hand.current.endQ(d, e)
+    }
+    const onSheetCancel = (e) => {
+      const d = drag.current
+      if (!d || !d.sheet || (e && e.pointerId !== d.id)) return
+      drag.current = null
+      if (d.v) hand.current.endQ(d, e, true)
+    }
+    // Safari's word that a pointer was lost, from the element under the
+    // finger, is not the sheet's (the stage's `onLost` says why)
+    const onSheetLost = (e) => { if (e.target === el) onSheetCancel(e) }
+    const onTouch = (e) => {
+      const d = drag.current
+      if (d && d.sheet && d.v && e.cancelable) e.preventDefault()
+    }
+    // the press a drag ends in is not a press on what it ended over
+    const onSheetClick = (e) => {
+      if (!flung.current) return
+      flung.current = false
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    el.addEventListener('pointerdown', onSheetDown)
+    el.addEventListener('pointermove', onSheetMove)
+    el.addEventListener('pointerup', onSheetUp)
+    el.addEventListener('pointercancel', onSheetCancel)
+    el.addEventListener('lostpointercapture', onSheetLost)
+    el.addEventListener('touchmove', onTouch, { passive: false })
+    el.addEventListener('click', onSheetClick, true)
+    return () => {
+      el.removeEventListener('pointerdown', onSheetDown)
+      el.removeEventListener('pointermove', onSheetMove)
+      el.removeEventListener('pointerup', onSheetUp)
+      el.removeEventListener('pointercancel', onSheetCancel)
+      el.removeEventListener('lostpointercapture', onSheetLost)
+      el.removeEventListener('touchmove', onTouch)
+      el.removeEventListener('click', onSheetClick, true)
+      if (clear) window.removeEventListener('pointerup', clear, true)
+      if (drag.current && drag.current.sheet) drag.current = null
+    }
+  }, [sheetKey])
 
   // ── the neighbour a key or a mouse is on ──
   // A mouse over a turn key, or the keyboard's focus on one, wakes the
@@ -2113,27 +2290,45 @@ export default function Letter({
 
   // ── what stands under the phone ──
   // Nothing, almost always: writing to them, reporting it and taking a name
-  // off are in the screen's own options, sharing it is its own key, and the
-  // thread is the phone's own lower half, slid out from under its chin (the
-  // slider, above). Once in a while, the nudge (`note`, above), which asks
+  // off are in the screen's own options, sharing is the first of them, and
+  // the thread is a sheet over the glass (the sheet, above, and `sheet`,
+  // below). Once in a while, the nudge (`note`, above), which asks
   // and never stands in the way: the letter over it is already whole. Its
   // key goes to the one door that can keep its promise: the account, opened
   // on the Instagram DM, since an email when a letter is written to you
   // needs the @ proved, and then asked about the email (You.jsx
   // `openForAlerts`). It went to the gate, whose Google and address could
   // never send that email, and which closed back onto this letter with
-  // nothing turned on. It fades while the phone is open, and comes back as
-  // it shuts.
+  // nothing turned on. It fades while the replies are up, and comes back as
+  // they go down.
   const foot = note.on ? <Nudge nudge={note} onSignIn={() => openForAlerts(go)} /> : null
 
-  // while the phone is open a press on the black round it shuts the phone,
-  // and only the next one reaches the room and closes the letter
-  const shade = thread
-    ? <button type="button" className="wl-low-room" tabIndex={-1} aria-label="shut the replies" onClick={shutThread} />
-    : null
+  // ── the replies, over the glass ──
+  // The sheet stands on the glass beside the letter's sheet rather than in
+  // it (parts.jsx `Sheet` `aside`), since the letter's own entrance and the
+  // card are transformed and would pin it to the card, and after the close
+  // mark, which the scripts find as the first way out on the page. It is
+  // keyed by the letter, so every letter's replies open on their own words.
+  // While they are up a press anywhere off the sheet, on the letter or on
+  // the black round it, lays them down (`backdrop`), and does nothing else:
+  // only the next one reaches the room and closes the letter.
+  // It never takes the focus itself (a press on a button does, and it goes
+  // with the sheet), so the focus on the sheet is handed to the key.
+  const backdrop = thread || !laid ? (
+    <button
+      type="button" className="wl-th-room" tabIndex={-1} aria-label="shut the replies"
+      onMouseDown={(e) => e.preventDefault()} onClick={shutThread}
+    />
+  ) : null
+  const sheet = threadOn && sheetSkin ? (
+    <ThreadSheet
+      key={one.id} ref={sheetEl} letter={one} th={th} open={thread} reduce={reduce} go={go}
+      onClose={shutThread} style={sheetSkin.vars} kind={sheetSkin.kind} resting={laid}
+    />
+  ) : null
 
   // ── and what the stylesheet reads off the sheet ──
-  // Whether the phone is slid open, whether a note stands under it, whether
+  // Whether the replies are up, whether a note stands under it, whether
   // that note is folded away with nothing beside it, and whether the card is
   // waking: said here, on the elements styled by them, and not found out by
   // the stylesheet with a `:has()`. Chrome answered each of those by styling
@@ -2146,7 +2341,7 @@ export default function Letter({
   return (
     <Sheet
       onClose={leave} onClosing={stop} onEscape={onEscape} labelledBy="wl-letter-to" room
-      className={`${wrap}${thread ? ' is-slid' : ''}${note.on ? ' has-note' : ''}`} aside={<>{shade}{aside}</>}
+      className={`${wrap}${thread ? ' is-slid' : ''}${note.on ? ' has-note' : ''}`} aside={<>{backdrop}{aside}{sheet}</>}
     >
       <div
         className={`wl-sheet-in wl-letter${thread ? ' is-thread' : ''}`} ref={room}
@@ -2156,10 +2351,10 @@ export default function Letter({
         {/* ── the card, and the letters either side of it ──
             One object, carrying everything true about the letter: when it
             went up, whether it is shut, who it is for, and the words, and
-            under them the chin its thread slides out from. Either side of
-            it the letter before and the one after, asleep, a sliver at the
-            edge of a phone's glass and whole in a wide room, each the same
-            phone with a bare chin. The card takes the hand, and a press on
+            on its right soft key its replies. Either side of it the letter
+            before and the one after, asleep, a sliver at the edge of a
+            phone's glass and whole in a wide room, each the same phone
+            with no count on that key. The card takes the hand, and a press on
             a neighbour turns to it: over each stands a key with nothing
             drawn on it (`.wl-turn`), which is also the turn a keyboard or a
             screen reader finds. The glass is the only clip. */}
@@ -2181,7 +2376,7 @@ export default function Letter({
                 ) : (
                   <Handset
                     l={one || null} seed={one ? one.id : String(param || handle || '')} live
-                    open={thread} onToggle={toggleThread} onClose={shutThread} reduce={reduce} go={go}
+                    open={thread} onToggle={toggleThread} th={th}
                   >
                     <LetterScreen
                       l={one || null} handle={one ? null : handle} seed={String(param)}

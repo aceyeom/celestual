@@ -118,6 +118,19 @@ export function fault(text) {
 
 export function clean(text) { return !fault(text) }
 
+// A number cut in two across two fields that are read apart (a private
+// note's line across its top and its words, 0073): the phone's pattern alone,
+// on the two joined by a space. Not the whole list: an address or a room read
+// across the join is two sentences meeting ("to the one on the 51" and "the
+// way you laughed"), which the server, reading each field on its own, would
+// let through, and the keyboard refused it and blamed the line
+export function phoneAcross(a, b) {
+  const p = PATTERNS.find((x) => x.id === 'phone')
+  const m = `${String(a || '')} ${String(b || '')}`.match(p.re)
+  if (!m || m[0].replace(/\D/g, '').length < p.digits || /\.\s/.test(m[0])) return ''
+  return p.say
+}
+
 // ── why the wall said no, at the send ──────────────────────────────────────
 // A letter read before it goes up (0066) can be refused on the spot, and the
 // server answers with the reasons it had (celestual-wall-moderate: the list's

@@ -43,7 +43,8 @@ import './wall.css'
 import './phone.css'
 import { parse, href, isWallPath, SHEETS } from './router.js'
 import { campus } from './campus.js'
-import { eclipticSVG, INK, CHALK } from './art.jsx'
+import { INK, CHALK } from './art.jsx'
+import { tabSVG } from './brand.js'
 import { prefersReducedMotion, PhoneChrome } from './parts.jsx'
 import Ground from './ground.jsx'
 import { getState, patch, setCold, isCold } from './store.js'
@@ -190,22 +191,22 @@ export default function WallApp() {
     ensureFaces()
 
     // ── the icon ──
-    // The mark, in the tab, drawn from the same constants the mark on the
-    // screen is drawn from. A second hand-drawn favicon would be a copy of a
-    // shape that is still being tuned, and it would be the copy that shipped
-    // wrong. Production's own icon is put back on the way out.
+    // The mark, in the tab: the tab's own drawing of it, fifteen cells chosen
+    // by hand (brand.js `MARK_TAB`), from the same module the brand on the
+    // bar is drawn from, and the same drawing app/public/icon.svg holds.
+    // Production's own icon is put back on the way out.
     //
     // INK, not chalk. Every desktop browser paints its tab strip near-white by
     // default, and the mark was being drawn in the one colour that is invisible
     // there: the tab showed an empty square. Drawn in ink it reads on that
     // strip, and the CHALK passed beside it is picked up by the icon's own
-    // `prefers-color-scheme` rule on a dark strip (art.jsx eclipticSVG), so one
+    // `prefers-color-scheme` rule on a dark strip (brand.js `tabSVG`), so one
     // file covers both.
     const was = [...document.querySelectorAll('link[rel~="icon"]')]
     const icon = document.createElement('link')
     icon.rel = 'icon'
     icon.type = 'image/svg+xml'
-    icon.href = `data:image/svg+xml,${encodeURIComponent(eclipticSVG(INK, CHALK))}`
+    icon.href = `data:image/svg+xml,${encodeURIComponent(tabSVG(INK, CHALK))}`
     icon.dataset.wall = 'icon'
     was.forEach((el) => el.remove())
     document.head.appendChild(icon)

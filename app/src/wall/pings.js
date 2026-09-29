@@ -237,12 +237,22 @@ export function pingWords(a) {
 // paywall is a trip to Stripe's page and back, and the page may be reloaded
 // or evicted on the way, so it is kept on this device (store.js `waiting`)
 // rather than in memory, for two hours, and sent the moment the pings land
-// (screens/Pings.jsx). What it is: a note to send, with its words, a lapsed
-// one to send again, or a running one to keep for next week.
+// (screens/Pings.jsx). What it is: a note to send, with its words and the
+// face they were written on (the line across the top, `greet`, and the
+// battery, `bat`, 0073), a lapsed one to send again, or a running one to keep
+// for next week. The face waits with the words, since the send that finally
+// goes replaces the card whole and a face left behind here would be gone.
 const WAIT_MS = 2 * 3600000
 export function waitForPings(action) {
   if (!action || !action.to) return
-  patch({ waiting: { kind: action.kind || 'send', to: normHandle(action.to), line: action.line ?? null, at: Date.now() } })
+  patch({
+    waiting: {
+      kind: action.kind || 'send', to: normHandle(action.to), line: action.line ?? null,
+      greet: typeof action.greet === 'string' && action.greet ? action.greet : null,
+      bat: Number.isInteger(action.bat) ? action.bat : null,
+      at: Date.now(),
+    },
+  })
 }
 export function waitingNote() {
   const w = getState().waiting
@@ -256,6 +266,11 @@ export function dropWaiting() {
 export function forgetWeek() {
   patch({ allowance: null, waiting: null })
 }
+
+// a card's face, read as the server cleans it (celestual_card_clean, 0073):
+// a line of at most forty characters, and a charge of 0 to 4
+const greetOf = (c) => (c && typeof c.greet === 'string' ? c.greet.slice(0, 40) : '')
+const batOf = (c) => (c && Number.isInteger(c.bat) && c.bat >= 0 && c.bat <= 4 ? c.bat : null)
 
 function shapePing(p) {
   const to = p.handle || ''
@@ -291,6 +306,14 @@ function shapePing(p) {
     revealedAt: Date.parse(p.revealed_at || 0) || 0,
     line: p.card?.words || '',
     theirLine: p.theirCard?.words || '',
+    // The note's face, which its writer set on its screen (0073): the line
+    // across its top, and the battery it was left on. Empty and null for a
+    // note from before, or one whose writer left them as they came, so a
+    // screen draws its own default (`dear` and the name, and a full battery).
+    greet: greetOf(p.card),
+    bat: batOf(p.card),
+    theirGreet: greetOf(p.theirCard),
+    theirBat: batOf(p.theirCard),
     // The moment it opened is not on the wire either. A mutual opens when the
     // second of the two is placed, and the only timestamp either side holds is
     // its own, so a screen says how long each has been standing rather than
@@ -405,14 +428,24 @@ export async function placeAgain(note) {
 // The placement both of them go through: the proof, sent again once renewed
 // when the server refuses it, the week learned from whatever came back, and
 // the answer's own refusals named rather than read as the network.
-async function placing(rpc, { me: mineNow, them, email, proof, words } = {}) {
+//
+// The card is the words and the face they were written on (0073): the line
+// across the top and the battery. The server replaces a card whole, so every
+// send that carries words carries the face too, or the face is gone; a send
+// with no words (`null`) keeps the card as it was, face and all, and words
+// taken off (`''`) take the face with them.
+async function placing(rpc, { me: mineNow, them, email, proof, words, greet, bat } = {}) {
+  const face = {}
+  const g = typeof greet === 'string' ? greet.replace(/\s+/g, ' ').trim().slice(0, 40) : ''
+  if (g) face.greet = g
+  if (Number.isInteger(bat) && bat >= 0 && bat <= 4) face.bat = bat
   try {
     const send = (spend) => rpc({
       me: mineNow,
       them,
       email: email || null,
       proof: spend,
-      card: words == null ? null : { words },
+      card: words == null ? null : words ? { words, ...face } : { words },
     })
     const key = proof || await proofFor(mineNow)
     let out = await send(key)

@@ -30,7 +30,7 @@ below, says what it does now before it tells what it was). Anybody can write
 to an @, and what they write is read before it goes up; a letter from a
 proved Berkeley address goes up at once and carries the Berkeley mark in its
 status row where the sticker stood. The @ is never printed on a letter. A
-letter has a thread of replies under it (The replies, below), the heart is
+letter's replies are a sheet its key raises over it (The replies, below), the heart is
 anybody's, and the field can be looked at four ways from a key at the end of
 its search (The search, The hive and The deck, below). The door's email way in
 is a link now, with a number to type on another device, where it was a code.
@@ -457,11 +457,13 @@ still after the last word. Every letter is the same screen, set in one face
 
 | | |
 | --- | --- |
-| **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. A letter from a verified Berkeley address carries the Berkeley mark in this row (below). Then the pen and `dear` with the writer's greeting, or the resolver's first name for the @, or, with neither, `dear you`. It used to be `dear` and the first name and then the handle, and `dear` and the handle alone where the resolver had no name; since 26 September the @ is never printed on a letter, its card while it loads, the letters asleep either side of it or its picture, and the handle is only the key the letter is filed and found under (`wall_search` still finds it by it). A sealed letter had a padlock where the pen is, until the seal went with 0066. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 140 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and a story screen (the intro, the door) carries the glyphs and neither; the mutual carries the night it was told, its film and its keepsake alike, and the keepsake the two names under it, `Jules · Ace` (screen.jsx `top.pair`) |
+| **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. A letter from a verified Berkeley address carries the Berkeley mark in this row (below). Then the pen and `dear` with the writer's greeting, or the resolver's first name for the @, or, with neither, `dear you`. It used to be `dear` and the first name and then the handle, and `dear` and the handle alone where the resolver had no name; since 26 September the @ is never printed on a letter, its card while it loads, the letters asleep either side of it or its picture, and the handle is only the key the letter is filed and found under (`wall_search` still finds it by it). A sealed letter had a padlock where the pen is, until the seal went with 0066. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 280 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and since 0073 its second row and its battery are the note's face, which its writer sets on that screen (the greeting, as the composer's, and the battery as a key a bar at a time, each with the dotted pixel line under it that says it is theirs), kept with the note and read with it if it is ever mutual, a line they set having the row to itself with no handle beside it, and a story screen (the intro, the door) carries the glyphs and neither; the mutual carries the night it was told, its film and its keepsake alike, and the keepsake nothing more: no battery of the phone's own, since each of its two notes carries its writer's, and no second row, since the two names stand on its glass under the mark, `Jules & Ace` (Keepsake.jsx; the row was `Jules · Ace`, screen.jsx `top.pair`, until 29 September) |
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter was its stars, until 0066 |
 | **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; since 0068 a press is anybody's and goes straight to the server, where it used to be carried through the gate from outside it and pressed on the way back in; a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
 
-The only thing a writer chooses is the COLOUR it is lit in, from one pool of
+The only thing a writer chooses about how a letter looks is the COLOUR it is
+lit in (a private note has no colour to choose, and its writer sets its face
+instead, the greeting across its top and its battery, 0073), from one pool of
 twelve under no heading, in the order of a spectrum (`Look.jsx`, under the
 composer's screen while its `colour` key is on): seven lit screens, the
 negative, two posters and a riso, which keep their own ground, and the
@@ -583,28 +585,40 @@ question is the name on the card itself, which is a press, and the dots in
 the head. And the act, `send anonymously`, stands alone in the middle of the
 foot, at a width a thumb finds.
 
-## The replies, under a letter
+## The replies, over a letter
 
-Since 26 September a letter has a thread under it (`Replies.jsx`,
-`replies.css`, `replies-api.js`, `replies-check.js`, `avatars.js`; migration
-0068 and `supabase/functions/celestual-wall-reply` are the rules). It sits
-under the phone, in the phone's own language, and never on its screen: the
-screen is the letter, and a thread folded into it would push the writer's
-words off their own glass, while a clean comment panel of the kind every other
-app draws under a post would be the one thing in the black room that is not
-the phone. So it is what an old phone drew under a message it had kept: an
-unlit panel of the same glass with the pixel grid and a one pixel bezel,
-dotted pixel rules between its parts, a head that is a status row (the newest
-three repliers' pictures, the count, and a line lit in the letter's colour,
-`the recipient replied`, when they have), and each reply a message in Jersey
-with its writer's picture on a small screen beside it. Two things on it are
-lit: the pictures, which are small screens as faces are, and the recipient's
-reply, a small lit screen in the letter's own inks with its hot corner, its
-grid and its glow, a `recipient` badge struck out of the ink and the @'s own
-face, because it is the letter answering. With a thread mounted the letter's
-sheet scrolls, the phone and the thread's head centred together in the first
-screenful, the scrim and the close mark fixed, and a black band fading what
-scrolls under them.
+Since 26 September a letter has a thread (`Replies.jsx`, `replies.css`,
+`replies-api.js`, `replies-check.js`, `avatars.js`; migration 0068 and
+`supabase/functions/celestual-wall-reply` are the rules). Since 28 September
+it is read the way every comment thread on a phone is read: the letter's
+right soft key, a pixel speech bubble and its count drawn exactly as the
+heart and its count beside it are, raises a sheet from the foot of the glass
+(`ThreadSheet`), and the letter's phone rises and steps back on the same
+clock until the whole of it stands in the room left between the close mark
+and the sheet's edge, still lit, as a reel stands over its comments (at half
+its size it steps back no further, and the sheet gives it back the sliver it
+would cover, or else covers its foot). A press anywhere off the sheet lays
+it down and does nothing else, as do the grip, a pull down by the head or by
+the list at its top (past three tenths of the way, or thrown), the key
+again, and Escape; the deck does not turn while it is up. From 900 wide, or
+on a phone on its side, the letter slides left and the replies stand at its
+right as a panel as tall as its phone, with a close key at its head. When
+the person the letter is to has answered, the envelope stands by the letter's
+aerial, steady, where a phone said something had come in (it was a lit
+square stacked under a lit count at the key's shoulder, which the owner read
+as a badge stuck onto the key). The sheet is the wall's unlit panel, as the
+account's sheet is: `--lcd` with its pixel grid, one pixel of bezel, four
+pixel corners at the top, the three dash grip, chalk and ash in Jersey, the
+chrome's keys and fields. The one colour on it is the letter's own light
+where it falls on the sheet, a hairline and a haze along its top edge (in a
+wide room, the edge facing the letter), and the badge on the recipient's
+reply, `recipient`, lit in the letter's colour beside their own face. It was
+twice the phone's own lower half, an unlit panel under the screen and then
+the letter's lit glass slid out from under its key band, and the owner read
+both as something attached to the letter that did not blend. Each reply is
+the row every comment thread has: the writer's creature in chalk on a small
+unlit screen, who and when with a small dim flag after the time, the words
+under them, and the heart with its count in one column down the right.
 
 | | |
 | --- | --- |
@@ -613,7 +627,7 @@ scrolls under them.
 | **writing one** | 280 characters with the count, the phone's caret, and the list and the rule that a reply names nobody else checked as it is typed (`replies-check.js`: no @, no word shaped like a handle, no full name, and the line under the field quotes what it caught). `you reply as <creature>`, or the recipient's badge. Sent, it says `it's up`, `being read`, or why it was refused, and a refused reply keeps its key off until the words change |
 | **the first one** | a sheet with the terms for replying, portaled into the wall's root, agreed once and recorded on the server; a first reply that is then refused does not ask again. For the recipient the sheet says their reply is marked as the recipient's |
 | **who is who** | nobody's name. Each writer is a creature (`avatars.js`: fifteen symmetric pixel creatures in the twelve colours' own inks, named with one word out of sixty-four from philosophy and the old sky, `kairos`, with no tie to the creature drawn), from a salted hash of the letter and the writer, so one person is one creature down one thread and another under the next letter. Two writers who land on one name in a thread get a roman numeral, `kairos ii`. The desk sees who wrote each reply |
-| **the recipient's say** | a row, `this letter is to you`, a lit `reply as the recipient`, and `stop new replies` / `let people reply again` (no new replies but theirs, the ones there stay) and `hide all replies` / `show the replies` (nobody else sees the thread, and nobody replies, themselves included) |
+| **the recipient's say** | a row at the head of the sheet, `this letter is to you.`, and they answer in the same tray as anybody, as the recipient, their face beside the field; then `stop new replies` / `let people reply again` (no new replies but theirs, the ones there stay) and `hide all replies` / `show the replies` (nobody else sees the thread, and nobody replies, themselves included) |
 | **a report** | one tap on a reply, which folds it with an undo. Three from three devices put it out of sight until the desk restores or removes it (the desk's replies screen, `admin/Replies.jsx`) |
 | **what its writer sees** | their own held, hidden and removed replies, marked, and nobody else's; a locked or put away thread says so; the throttle (forty a day, six under one letter in ten minutes) says to wait |
 
@@ -622,15 +636,15 @@ scrolls under them.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, to anybody (it was whole or redacted until 0066), the heart on its foot with the count beside it, the thread of replies under it (The replies, above), a nudge under the card for somebody not signed in from the eighth letter (rule 1), and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, to anybody (it was whole or redacted until 0066), the heart on its foot with the count beside it, its replies on a sheet its right soft key raises over it (The replies, above), a nudge under the card for somebody not signed in from the eighth letter (rule 1), and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall**: Instagram first, then Google and an address. The address was a mailed six digit code, Supabase Auth's (0057), and is a mailed link since 0065 (`linkdoor.jsx`): `check your inbox.` with the address, `tap the link in the mail.`, `waiting for the link`, a resend after thirty seconds, and `use a different address`. It asks the link's status and lands the moment it is tapped in this browser. Tapped in another, that browser is the one signed in and never this one (0070, which took away the number 0065 asked for there), and the door says `you opened it somewhere else.` with a new link to open here. Signed in already, it is the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its note is doing, or `it's mutual · write a new note`, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, eighty words and 280 characters at most, as long as a letter and as the composer's private note (it said twenty words until 26 September, long after the card took eighty in 0063), read by them only if it is ever mutual. The proof, only when this browser does not hold one and cannot get it back from its session (0065, for a person whose @ was proved before): the gate's Instagram door, in place. Then `sent privately.` and the saturday it reveals on, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen, with the words of a note running on them once the list has come. Somebody this person is mutual with, from the list, the field or a link, is no longer sent to the reveal (0072): it is their screen, for a new note, under `write them a new note.` `they only read it` `if they send one too.`, with `the mutual stays yours to keep.` and the ping it spends under it and `open the mutual` quietly under the key (which keeps the words for the way back, and steps back down onto the mutual when the mutual raised the sheet), sent through `placeAgain`, as the composer's `send privately` and /paid's waiting note are too. Opened by a note's own edit key or its screen's `change the words` (`editNote`), it is that note's settings, with no dot back to who it is for: `change your note.` `it runs till` `this saturday.` over its words and `send the new words` (`send it with no words` when they are all taken off), in place and free, or, for one that was not this time, `send it again.` and `send it again`, on a ping, and before the list has said which, `change your note.` `they only read it` `if it's mutual.` with the key unlit; `let it go` under either, asked on the phone (`let it go?`, `keep it`), which closes back onto the private notes; and `new words, sent privately.` and `your private notes` at the end. A note running on the person chosen any other way is the same settings, with its dot back to who it is for, and closes where it was raised; one whose note went mutual since it was opened opens the reveal instead |
-| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their private notes (the mutuals first, each its slot (`Slot.jsx`): a small night screen with two sealed notes stepping toward each other across it a cell at a time and never meeting, until its telling has been watched once on this device, and the rose letter with the one note on it after, backlit, the note blinking out and back in three steps every four seconds, a press on its glass opening the reveal out of that glass; then the notes running and the ones that were not this time, each row opening its own screen, whose options are `keep it for next week`, `change the words` and `let it go`, or, for one that was not this time, `send it again`, `send it with new words` and `let it go`; and beside every note and every mutual an `edit` key, a note's to its sheet to change the words or let it go (`Ping.jsx` `editNote`), a mutual's to the keepsake with its options up, to write them a new note or take it off one's own list, which the owner asked for on 28 September with the slot itself. Since 0072 a mutual and a new note to the same person stand side by side, and the rows go by each ping's `key`), the week's pings at the frame's foot, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `send a private note` or `write a letter` at the foot, and `sign out` under settings. With no @ proved here it says so and proves it; with nobody known it is the door. A person signed in on this device by any proof whose @ was proved before, anywhere, reads their private notes with the proof restored from the session (0065, `auth.js` `restoreProof`), and is never asked for a second DM |
-| `/berkeley/reveal/:handle` | **it's mutual.** Since 28 September, when the owner asked for both letters, the whole screen and something worth keeping: the first time a mutual is opened on a device it is a film (`Film.jsx`). The slot's glass grows until it is the screen (out of nothing it wakes in the black instead), the two notes and then the two names are set on it in the phone's own pixels (`pixtype.js`), theirs over yours, first names when both are known and both @s when either is not, the two of them run in and hold, the pink spreads and the phone turns rose, the mark gathers and `it's mutual.` is typed under it; then the camera pulls back and the glass closes onto the middle of one rose phone, which is the keepsake (`Keepsake.jsx`) and is what opens every time after, flying out of the slot. A tap, a key or `skip` jumps to the sentence and pulls back; `back` or Escape puts the screen to sleep at any moment. The keepsake: the night it was told in the status row, the two names (`Jules · Ace`), their note above the mark and yours under it, each `from` its writer (`sent without a note.` when there was none), the mark alive with the cursor after the sentence, and the soft keys `options` (`send Jules a new note`, which opens the ping sheet on them for a new note, or `your new note to Jules` once one is out, which opens that note to change or let go, and `take it off my list`, which asks `take it off your list?` with `take it off` and `keep it`; it leaves this person's list only, and the other keeps theirs and is not told) and `share` (a picture of the phone with both notes, `from them` and `from me` when nobody is named, `to someone`, `save the picture`, and `leave the notes off` or `put the notes back`, keepshare.js, laid out by keeplayout.js); under it the lit key `message @them on Instagram`. Its facts are who this is (`main/data.js` `me`, then `pings.js` `myHandle`), `celestual_my_pings` and the held copy (`pings.js`); a device remembers it has watched a mutual (`wasOpened`, the store's `toldSeen`). When there is nothing to show it says `nothing here.` whatever the reason, and its key is `your private notes`; with nobody signed in, `sign in to read it.` and `sign in`. Under reduced motion there is no film, only the keepsake, still. In development `?film=<ms>` holds the film on a moment (a negative one holds the push-in), `?keep` holds the keepsake (`=options`, `=confirm`, `=share` with a menu up), and `?slot=x,y,w,h` (with `&slotmenu=options`) opens it as from a slot there. At the root it is `/reveal/:handle`, which the wall took from Main |
+| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its note is doing, or `it's mutual · write a new note`, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, eighty words and 280 characters at most, as long as a letter and as the composer's private note (it said twenty words until 26 September, long after the card took eighty in 0063), read by them only if it is ever mutual. Its face is the writer's to set (0073, the owner's ask of 29 September): the greeting across the top (`dear` and their first name, or their @, until it is changed; forty characters; the dotted pixel line under it; a line they set has the row to itself and the handle gives way) and the battery, a key on the status row with the same dotted line under it, a bar off at each press, the empty one blinking, the next round to full, full to start (`the battery, 3 of 4. press to change it`). The first time on a device, `the greeting and battery are yours to set.` under the screen, fading where it stands at the first touch of either (store.js `faceSeen`). The greeting is read at the keyboard by the list the words are read by, on its own and with the words, and a caught one refuses the send with `the greeting can't go in a note as it is. take out links, addresses and numbers.` and the typing put back in it; the `clear` key takes a character from the greeting while the typing is in it. The face goes with the words wherever they go (the proof's pending record, a note waiting on pings, the words kept while the mutual is open, a note's settings) and only with words. The proof, only when this browser does not hold one and cannot get it back from its session (0065, for a person whose @ was proved before): the gate's Instagram door, in place. Then `sent privately.` and the saturday it reveals on, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen, with the words of a note running on them once the list has come. Somebody this person is mutual with, from the list, the field or a link, is no longer sent to the reveal (0072): it is their screen, for a new note, under `write them a new note.` `they only read it` `if they send one too.`, with `the mutual stays yours to keep.` and the ping it spends under it and `open the mutual` quietly under the key (which keeps the words for the way back, and steps back down onto the mutual when the mutual raised the sheet), sent through `placeAgain`, as the composer's `send privately` and /paid's waiting note are too. The composer's `send privately` sends the letter's greeting, where its writer changed it, as the note's line across the top, read the same way first (a caught one takes them back to the letter with the typing in the greeting, before any DM), and a note running on them keeps the battery its writer left it on, since the composer has no battery key; a new one goes out full, as its screen drew it (screens/Write.jsx `sentBat`). Opened by a note's own edit key or its screen's `change the words` (`editNote`), it is that note's settings, with no dot back to who it is for: `change your note.` `it runs till` `this saturday.` over its words and its face and `send the new words` (`send the change` when only the face changed, `send it with no words` when they are all taken off, which takes the face with them), in place and free (`already out. changing it costs nothing.`), or, for one that was not this time, `send it again.` and `send it again`, on a ping, and before the list has said which, `change your note.` `they only read it` `if it's mutual.` with the key unlit; `let it go` under either, asked on the phone (`let it go?`, `keep it`), which closes back onto the private notes; and `new words, sent privately.` (`the change, sent privately.` for a face alone) and `your private notes` at the end, the screen on the face that went. A note running on the person chosen any other way is the same settings, with its dot back to who it is for, and closes where it was raised; one whose note went mutual since it was opened opens the reveal instead |
+| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their private notes (the mutuals first, each its slot (`Slot.jsx`): a small night screen with two sealed notes stepping toward each other across it a cell at a time and never meeting, until its telling has been watched once on this device, and the rose letter with the one note on it after, backlit, the note blinking out and back in three steps every four seconds, a press on its glass opening the reveal out of that glass; then the notes running and the ones that were not this time, each row opening its own screen, on the face its writer left it on (its greeting and its battery, 0073, or `dear` and the name over a battery running down with its week for a note from before), whose options are `keep it for next week`, `change the words` and `let it go`, or, for one that was not this time, `send it again`, `send it with new words` and `let it go`; and beside every note and every mutual an `edit` key, a note's to its sheet to change the words or let it go (`Ping.jsx` `editNote`), a mutual's to the keepsake with its options up, to write them a new note or take it off one's own list, which the owner asked for on 28 September with the slot itself. Since 0072 a mutual and a new note to the same person stand side by side, and the rows go by each ping's `key`), the week's pings at the frame's foot, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `send a private note` or `write a letter` at the foot, and `sign out` under settings. With no @ proved here it says so and proves it; with nobody known it is the door. A person signed in on this device by any proof whose @ was proved before, anywhere, reads their private notes with the proof restored from the session (0065, `auth.js` `restoreProof`), and is never asked for a second DM |
+| `/berkeley/reveal/:handle` | **it's mutual.** Since 28 September, when the owner asked for both letters, the whole screen and something worth keeping: the first time a mutual is opened on a device it is a film (`Film.jsx`). The slot's glass grows until it is the screen (out of nothing it wakes in the black instead), the two notes and then the two names are set on it in the phone's own pixels (`pixtype.js`), theirs over yours, first names when both are known and both @s when either is not, the two of them run in and hold, the pink spreads and the phone turns rose, the mark gathers and `it's mutual.` is typed under it; then the camera pulls back and the glass closes onto the head of one rose phone, which is the keepsake (`Keepsake.jsx`) and is what opens every time after, flying out of the slot. A tap, a key or `skip` jumps to the sentence and pulls back; `back` or Escape puts the screen to sleep at any moment. The keepsake: one glass with nothing cutting it, the night it was told alone on the status row whatever is up, the mark alive at the head of the glass with the cursor after the sentence and the two first names under it as one line (`Jules & Ace`), then the two notes, theirs first, each as the phone's inbox showed a message, a small screen with a strip of darker rose across its top carrying the line its writer set there (`dear Ace` when they set none, both lines at the size the longer needs) and the battery they left it on (full when unset), then the words and `from Jules` (`sent without a note.` under the phone's own face when there were none), each small screen's edges on the grid's lines between the story's cells; a menu, the question and a note after a press are a third small screen of that kind in the mark's place, as tall as its rows, its name and `1/2` on its strip, the mark and the names out of sight under it and the notes in view; on a desk the phone is as wide as it is tall and the two notes stand side by side under the mark, and on a phone on its side beside it; and the soft keys `options` (`send Jules a new note`, which opens the ping sheet on them for a new note, or `your new note to Jules` once one is out, which opens that note to change or let go, and `take it off my list`, which asks `take it off your list?` with `take it off` and `keep it`; it leaves this person's list only, and the other keeps theirs and is not told) and `share` (a picture of this phone, the names only when both first names are known, both notes with their lines and batteries, `from them`, `from me` and `dear you` when nobody is named, `to someone`, `save the picture`, and `leave the notes off` or `put the notes back`, keepshare.js, laid out by keeplayout.js); under it the lit key `message @them on Instagram`. Its facts are who this is (`main/data.js` `me`, then `pings.js` `myHandle`), `celestual_my_pings` and the held copy (`pings.js`); a device remembers it has watched a mutual (`wasOpened`, the store's `toldSeen`). When there is nothing to show it says `nothing here.` whatever the reason, and its key is `your private notes`; with nobody signed in, `sign in to read it.` and `sign in`. Under reduced motion there is no film, only the keepsake, still. In development `?film=<ms>` holds the film on a moment (a negative one holds the push-in), `?keep` holds the keepsake (`=options`, `=confirm`, `=share` with a menu up), and `?slot=x,y,w,h` (with `&slotmenu=options`) opens it as from a slot there. At the root it is `/reveal/:handle`, which the wall took from Main |
 | `/berkeley/join` | how the weekly reveal works, drawn, from the wall's tab and the `i` on the private notes: `find out if it's mutual.`, the phone telling it, three short lines with nothing under them (`you send them a note, privately.`, `they send you one too.`, `saturday at 9pm pacific, you both find out.`), and `send one privately` raises the ping sheet over the wall, giving this page's place in the history to the wall first |
 
 The wall at the root reads the same table: `/ping`, `/you` and the rest,
@@ -676,7 +690,7 @@ ear (below):
 
 | | |
 | --- | --- |
-| ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
+| ✦ celestual. | **the brand**, top left. `Brand`: the mark and the name drawn on the phone's grid at one pixel a cell (`brand.js`, DESIGN.md 3), both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
 | write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: the metal capsule carrying the nib and the word (`wall/LiquidButton.jsx`), at the foot where a thumb is. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about; it was chalk with the running light inside it until the primary became a material |
 | ⚷ | **the person**: a keyhole while nobody is known here, and the face of the address or the @ that is, once somebody is. It opens `/you`, their pings, drafts and letters, for anybody known by any proof, and the gate for anybody else, with `/you` as where the gate lands |
 
@@ -704,9 +718,10 @@ on each of them.
 ```
 index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
              and the intro
-Intro.jsx    the first three seconds, on black: a phone's screen, and two
-             shadows on it who run into each other and become the mark. Once
-             per tab, skippable on any key, and the same intro Main plays
+Intro.jsx    the first four seconds, on black: a phone's screen, and two
+             shadows on it who run into each other and become the mark, in
+             one of fifteen looks drawn out of a bag on each load. Once per
+             tab, skippable on any key, the same at `/` and at `/berkeley`
 pixmark.js   the mark on a grid of the phone's cells, the two runners drawn
              by hand, and the stories they are in, as functions of the clock
 PixelStory.jsx  a story on a screen's body, on a canvas, drawn only when its
@@ -720,7 +735,10 @@ ground.jsx   the room: the plasma, the halo, the field (field.js) and the
              grain. One component, mounted by this shell and by Main's
 wall.css     every rule scoped under .wl-root
 router.js    ten routes, no dependency
-art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
+brand.js     the brand on the phone's grid: the mark at 25 cells, the tab's
+             at 15, the word's drawn letters, the lockup, and the tab's
+             icon string (DESIGN.md 3)
+art.jsx      ECLIPTIC (the mark as a vector, for the door and the desk) and the
              ornaments: sparkle, halftone sphere, THE ORRERY, bloom,
              per-handle constellation (with its countdown gauge), the field
 looks.js     the colours a letter's screen can be lit in, what each is painted
@@ -750,9 +768,10 @@ screens/     one file per screen. Wall.jsx carries `Seek`, the search on the
 Nudge.jsx    the note under a letter for somebody not signed in (0066)
 Filter.jsx   the key at the end of the search, its menu, and the field's
              move from one filter to the next (0067)
-Replies.jsx  the thread under a letter, with replies-api.js, replies-check.js
-             (the rule that a reply names nobody, at the keyboard) and
-             avatars.js (the creatures a thread names its writers by) (0068)
+Replies.jsx  a letter's thread, the sheet its key raises over it, with
+             replies-api.js, replies-check.js (the rule that a reply names
+             nobody, at the keyboard) and avatars.js (the creatures a thread
+             names its writers by) (0068)
 linkdoor.jsx the wait for a mailed link: the wait, the resend, and opened somewhere else
              (0065)
 ```
@@ -1481,8 +1500,8 @@ The rule under the date separates the masthead from the ledger, so on a spread
 
 A phone, on black, once per tab, before anything else exists. Not a spinner
 and not a splash: nothing is loading behind it and it never claims to be. It
-is `Intro.jsx`, and it is the same four seconds Main plays over its front
-door. It was the mark poured in liquid metal, which was the room's material on
+is `Intro.jsx`, and it is the same four seconds at the root and at a
+campus. It was the mark poured in liquid metal, which was the room's material on
 a surface that had become the phone; now it is one of the letters' own
 screens, the night one, with the product's story on it in the phone's pixels
 (`pixmark.js`, drawn by `PixelStory.jsx`).
@@ -1493,7 +1512,7 @@ screens, the night one, with the product's story on it in the phone's pixels
 | `40ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`, 500ms here), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in. The glass is the letters' own photographed glass: the pixel grid and the per-phone RGB tile laid exactly on the story's cells (`PixelStory.jsx` writes its pitch onto the screen), where they used to be hidden for the moire they made at the wrong pitch. Lit and empty from `540ms`, for a beat |
 | `780ms` | **the run.** He comes in off the left edge and she off the right, over the edges of the glass on the same frame (they used to arrive a beat apart), bodies posed from the feet up (`folk.js`) on the pitch every letter is lit at, her hair streaming and her dress swinging. From `1230ms` he slows, and at `1610ms` he stands with his arms open. They hold each other six cells left of the middle, which is what lets both runs start together unchanged; the mark stays centred |
 | `1690ms` | **the catch.** She lands in his arms and her run carries her on, leaning gently the way she ran, into him and half behind him: he is in front, her hair at his neck, her dress and her raised heel past his back. No heart |
-| `2110ms` | **the colour.** The backlight turns from where they hold each other a few of the panel's cells at a time, in two by two blocks, in a ragged front pushed on and held back by noise, so it grows the way pixels flip and never as a circle; each block flashes a step lighter as it turns and settles. It takes a little over a second to reach the last corner, taking the top band and the status at `2411ms`, the bottom band at `2670ms`, and the panel under it at `3210ms`, until the whole phone is a letter lit in that colour (`intro.css`, looks.js `skinOf`). The colour is drawn afresh on every load, never the same twice running on one device: the rose, the lilac, the ice, the green or the amber, the letters' own lit colours with a hue to them. About one load in nine it is all five at once, round the wheel from the rose where they hold each other to the lilac in the corners, with the night's dark bands kept and the light on the black a wheel of the five going slowly round (`Intro.jsx RAINBOW`, `PixelStory.jsx pinkOf`) |
+| `2110ms` | **the colour.** The backlight turns from where they hold each other a few of the panel's cells at a time, in two by two blocks, in a ragged front pushed on and held back by noise, so it grows the way pixels flip and never as a circle; each block flashes a step lighter as it turns and settles. It takes a little over a second to reach the last corner, taking the top band and the status at `2411ms`, the bottom band at `2670ms`, and the panel under it at `3210ms`, until the whole phone is a letter lit in that look (`intro.css`, looks.js `skinOf`). The look is drawn afresh on every load out of fifteen (`Intro.jsx LOOKS`), and every colour in each is a letter's own lit one, the rose, the lilac, the ice, the green or the amber, with only neighbours on the wheel ever side by side. Five are one colour, as it always was. Five are a rainbow, all five at once: four round the wheel out from where they hold each other to the corners, each from another colour and each colour an equal share of the glass (`even`), their light on the black a wheel of the five turning once in four and a half seconds, two one way and two the other; and the prism, the five laid across the glass in a spectrum's order (`axis`). Five are gradients: two colours out from them (peach, seaglass, twilight), or three laid across (dusk, lagoon), with their light laid across behind the phone and still. The phone follows the glass: its bands are gradients in the colours under them, the aerial and the battery each in the light of its own end (`PixelStory.jsx pinkOf`, `intro.css`) |
 | `2190ms` | **the mark**, on the frame they hold each other, while the colour is still leaving them: the ground glides into the ring and the two of them into the star, out from where they hold each other as the colour is, each pixel travelling between cells at the display's rate and landing on the grid (`pixmark.js I_QUICK`). Whole at `2780ms`, while the last corners turn. It used to wait until the pink had all but reached the edges and took a third longer; the owner asked for the two as one movement |
 | `3780ms` | **the lift**, after the mark has stood for a second, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 5100ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
 | `4390ms` | the black is gone |
@@ -1509,11 +1528,34 @@ frame. The screen is held square to the camera, because a tilted canvas of
 square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
 any tap or key, which lands the mark and lifts at once; it never plays twice in
 a tab; under `prefers-reduced-motion` it draws the mark on the letter lit in
-the colour it drew and lifts almost at once, the wheel's light standing still.
+the look it drew and lifts almost at once, a rainbow's light standing still.
+
+The look is drawn out of a bag kept on the device (`celestual.intro.v2`,
+which took over the last colour `v1` kept): every look comes round once a
+round and the rainbows twice, so of every twenty loads ten are a rainbow,
+five a gradient and five one colour, and the rose alone is one in twenty. It
+never draws the look it drew last, nor two running that open on the same
+colour (the one round the two of them, seen first), nor two running that
+read as pink (the rose or the lilac round them, or in the corners of one of
+two colours); it would rather not draw two of a kind running; and when all
+that is left of a round is alike the last, the next round starts and what
+was left is drawn first in it, so no look waits much more than a round
+(`Intro.jsx drawLook`). The draw only reads: React draws twice under
+development, so what is kept is written once the intro is on the page. A
+browser that keeps nothing draws from all fifteen. The canvas works out a
+look's field, its colours and the lighter step each block flashes when it
+turns while the glass is still dark, so a frame of the colour going out
+costs what a single colour's does (`PixelStory.jsx pinkOf`, `lightOf`).
+
 In development `?beat=3` holds the mark, `?t=2450` holds the clock on any
-frame, both in the rose unless `?tint=ice` (any lit colour) or `?tint=rainbow`
-says otherwise, and `?intro=ascii` and `?screen=green` draw the same story in
-characters or on the classic green from the first frame, for comparison.
+frame, both in the rose unless `?tint=dusk` (any look), `?tint=ice` (any lit
+colour) or `?tint=rainbow` (the rainbow from the amber) says otherwise, and
+`?intro=ascii` and `?screen=green` draw the same story in characters or on
+the classic green from the first frame, for comparison. The loop shoots each
+look that is more than one colour on its last beat (`intro-prism`,
+`intro-dusk` and the rest), one of each way of laying it mid glide
+(`intro-glide-wheel`, `-peach`, `-dusk`), and a rainbow and a look across
+standing still (`intro-still-wheel`, `-dusk`).
 
 The door (`screens/Join.jsx`) and the mutual (`Film.jsx`, from
 `screens/Reveal.jsx`) tell the same story with the same two and the same
@@ -1598,7 +1640,7 @@ The phone is the one this was designed for and it does not change.
 This tree, and one line elsewhere: `app/src/main.jsx` forks on `/berkeley` and
 lazy-imports it. The wall is a separate chunk and the four faces it needs are
 injected on mount and removed on unmount. Since the rebuild this tree is also
-THE SYSTEM: Main imports its parts, its ground, its intro and its stylesheet,
+THE SYSTEM: Main imports its parts, its ground and its stylesheet,
 which is what keeps the two surfaces one product.
 
 ## Known, and deliberately left

@@ -109,17 +109,18 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-
   padding: 18px 0 6px;
 }
 
-/* the lockup: the mark at 26px and the name in the display face at 22px,
-   lifted a hair because a serif's optical centre sits below its cap line */
-.brand {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--f-display); font-weight: 500; font-size: 22px;
-  line-height: 1; letter-spacing: -0.022em;
-  color: var(--chalk); text-decoration: none;
+/* the lockup: the mark and the word drawn on one grid at one pixel a cell,
+   25 tall, as every bar draws it (app/src/wall/brand.js, written to
+   /lockup.svg by scripts/export-mark.mjs), with the close bloom a lit thing
+   has on the phone. A picture and not type, so there is no face to wait for
+   and nothing to lift onto a baseline. A press drops it a pixel. */
+.brand { display: inline-flex; align-items: center; color: var(--chalk); text-decoration: none; }
+.brand img {
+  display: block; width: 113px; height: 25px;
+  filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1));
 }
-.brand img { display: block; width: 26px; height: 26px; filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18)); }
-.brand span { transform: translateY(-0.03em); }
 .brand:hover { color: var(--chalk); }
+.brand:active { transform: translateY(1px); }
 
 /* ── you, on the right ──
    parts.jsx `Me` as a static anchor: the ghost capsule, the handle in the
@@ -323,7 +324,7 @@ h2 + p, h2 + ul, h2 + .defs, h2 + .act { margin-top: 0; }
   .act .go { background: none; border: 1px solid #17150F; color: #17150F; }
   .defs, .defs > div { border-color: #E3DFD6; }
   section { break-inside: avoid; }
-  /* the mark is drawn in chalk, which is invisible on paper */
+  /* the lockup is drawn in chalk, which is invisible on paper */
   .brand img { filter: invert(1); }
   /* Only the document's own links are annotated. The lockup and the foot are
      furniture, and a page footer that prints its own address four times is

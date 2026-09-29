@@ -62,7 +62,13 @@ words), and is read by the same list as a letter's body (links, addresses,
 phone numbers, street addresses, rooms, slurs); a caught card refuses the
 ping with `{ recorded: false, error: 'card', reasons }` and places nothing.
 The other side reads it whole on the mutual (`match_card.words`, and
-`their_card.words` from `celestual_my_pings`).
+`their_card.words` from `celestual_my_pings`). Since 0073 a card with words
+carries its face too: the line across its top (`greet`, forty characters, the
+composer's greeting where its writer changed it, left off by the server when
+the list catches it and refused at the keyboard) and the battery its writer
+left it on (`bat`, 0 to 4, set on the ping's own screen; the composer sends a
+running note's own, or a full one). Both come back as `card.greet` and
+`card.bat`, and the other side's as `their_card.greet` and `their_card.bat`.
 
 **The salutation.** The `dear {name}` line is the writer's to edit: up to 40
 characters, stored as `salutation`. With none stored, the line is
@@ -174,9 +180,11 @@ screen, on the composer and the verify page, the same row stands on a small
 unlit plate (`Sticker.jsx`, which kept its name). A name note's school reads
 `at UC Berkeley`, so it cannot be taken for the mark.
 
-**Replies.** Every letter has a thread under it (0068, `celestual-wall-reply`,
-`app/src/wall/Replies.jsx`), drawn under the phone in the phone's own language
-and never on its screen, because the screen is the letter.
+**Replies.** Every letter has a thread (0068, `celestual-wall-reply`,
+`app/src/wall/Replies.jsx`), on a sheet its right soft key raises over the
+letter, the phone stepping back to stand whole above it (in a wide room, a
+panel beside it), in the wall's own unlit panel and never on the letter's
+screen, because the screen is the letter.
 
 - **Who replies.** A person with a proved school address (any `.edu`, or an
   address on the desk's pass list), which is the accountability the @-notes

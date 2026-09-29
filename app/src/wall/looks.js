@@ -984,6 +984,12 @@ export const PIX = {
   lock: ['..XXX..', '.X...X.', '.X...X.', 'XXXXXXX', 'XXX.XXX', 'XXX.XXX', 'XXXXXXX'],
   heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
   heartO: ['.XX.XX.', 'X..X..X', 'X.....X', '.X...X.', '..X.X..', '...X...'],
+  // the thread's key (Replies.jsx `threadKey`): a speech bubble drawn the
+  // way the heart beside it is, an outline on the heart's six rows so the
+  // two keys stand on one pixel pitch, closed, with its tail flaring down
+  // and out to the left off the rounded corner, the way a comment is drawn.
+  // A tail hung under the edge, or cut into it, read as a flag or a box
+  bubbleO: ['.XXXXXXX.', 'X.......X', 'X.......X', 'X.......X', '.XXXXXXX.', 'XX.......'],
   check: ['......X', '.....XX', 'X...XX.', 'XX.XX..', '.XXX...', '..X....'],
   // the star after a school's network in the status row (screen.jsx
   // `Network`): five points, seven pixels, a head over the name's capitals
@@ -1049,6 +1055,15 @@ export function stampOf(ts) {
   const d = new Date(ts)
   if (Number.isNaN(d.getTime())) return ''
   return `${two(d.getMonth() + 1)}/${two(d.getDate())}/${two(d.getFullYear() % 100)}`
+}
+
+// A count on a soft key, the heart's and the replies', in whole thousands
+// past a thousand, as a phone counted, so it is never more than three
+// characters, and three are set a step smaller (screen.css `.is-long`,
+// replies.css) to keep the heart in the middle of the band.
+export function countSaid(n) {
+  const v = Math.max(0, Math.floor(Number(n) || 0))
+  return v < 1000 ? String(v) : `${Math.min(999, Math.floor(v / 1000))}k`
 }
 
 // The path of a glyph, for an SVG `d` or a mask made once.
