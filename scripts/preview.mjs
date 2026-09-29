@@ -1465,7 +1465,7 @@ const ROUTES = [
   { label: 'reveal-film-3700', path: '/reveal/jules.k?beat=4&film=3700', settle: 1200 },
   { label: 'reveal-film-4400', path: '/reveal/jules.k?beat=4&film=4400', settle: 1200 },
   { label: 'reveal-film-5900', path: '/reveal/jules.k?beat=4&film=5900', settle: 1200 },
-  { label: 'reveal-film-pull', path: '/reveal/jules.k?beat=4&film=6900', settle: 1600 },
+  { label: 'reveal-film-pull', path: '/reveal/jules.k?beat=4&film=7520', settle: 1600 },
   { label: 'reveal-played',    path: '/reveal/jules.k?beat=4', settle: 9800 },
   { label: 'reveal-skipped',   path: '/reveal/jules.k?beat=4', acts: [['wait', 2600], ['click', '.wl-film-stage .wl-scr-bg']], settle: 1600 },
   { label: 'reveal-keep',      path: '/reveal/jules.k?beat=4&keep', settle: 1400 },

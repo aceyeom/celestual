@@ -120,14 +120,9 @@
 /* a screen is addressed to a person, and when the name and the @ will not
    both fit it is the @ that gives way: "dear Pilar" and a cut handle, not
    "dear Pil" and most of one. The shared picture gives way the same way
-   (share.js). The two names on a story are one weight and share the row */
-.wl-scene:not(.is-pair) .wl-scr-r2 > .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
-/* a phone that is two people's (screen.jsx `pair`): the two names in the
-   middle of the row, each cut before it takes more than its share, and the
-   point between them a little dimmer than either */
-.wl-scene.is-pair .wl-scr-r2 { justify-content: center; }
-.wl-scene.is-pair .wl-scr-r2 > .wl-scr-nm { max-width: 45%; }
-.wl-scr-mid { flex: 0 0 auto; font-size: 11cqw; line-height: 1; opacity: 0.72; }
+   (share.js). (The two names the keepsake had on this row, and the point
+   between them, went with the row on 29 September, Keepsake.jsx) */
+.wl-scene .wl-scr-r2 > .wl-scr-nm { flex-shrink: 0; max-width: 70%; }
 /* the words in a row share a baseline, whatever their size; the glyphs
    beside them stay centred */
 .wl-scr-r2 > .wl-scr-nm, .wl-scr-r2 > .wl-scr-hd { align-self: baseline; }

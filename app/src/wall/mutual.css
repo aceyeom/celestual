@@ -126,12 +126,14 @@
    screens/Reveal.jsx, Film.jsx, Keepsake.jsx. A black room with one phone
    lit in it, and nothing else. The first time a mutual is opened on a
    device the phone is the whole screen for a film of it (`.wl-film`), and
-   then the camera pulls back and it is one rose phone holding both notes
-   either side of the mark, which is what opens every time after
-   (`.wl-keep`). It was a phone telling the intro's story in a loop over a
-   column of the pair, their note and a key; the owner asked for the
-   animation over the entire screen, both names and both letters, and a
-   thing worth keeping (28 September), and this half was rewritten for it.
+   then the camera pulls back and it is one rose phone, the mark alive at
+   the head of its glass and both notes under it, which is what opens every
+   time after (`.wl-keep`). It was a phone telling the intro's story in a
+   loop over a column of the pair, their note and a key; the owner asked
+   for the animation over the entire screen, both names and both letters,
+   and a thing worth keeping (28 September), and this half was rewritten
+   for it, and the keepsake again for one glass with nothing cutting it
+   (29 September).
    What it does not do, still: no heart, no colour drifting, no phone rising
    and settling, no telling taken back and told again, no pink outside the
    glass. */
@@ -180,7 +182,7 @@
    September). Cut at the column's foot, on the one axis, and clipped rather
    than hidden, so the column is no scroller of its own and the lit key
    still docks to the sheet's. */
-.wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { overflow-y: clip; }
+.wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { overflow-y: clip; padding-bottom: 0; }
 .wl-reveal .wl-head { position: relative; z-index: 2; padding-bottom: 6px; }
 /* the corner key is the keepsake's: the film has its own `back`, and the
    key comes with the lit one as the film lands */
@@ -352,34 +354,46 @@
 /* ═══ the keepsake ════════════════════════════════════════════════════════
    Keepsake.jsx. One rose phone, held square, as wide as the column up to
    400 (346 on a phone of 390), and every size on it in `--su`, a hundredth
-   of the mark panel's width, which is the phone's own width on a phone
-   and 400 on a desk, where the phone is the whole row. The Screen's own
-   sizes are in `cqw` of its width, and on a desk that is the row's, so
-   the bands and the keys are set here in `--su` instead.
-   Upright, the phone is about 186 `--su` tall with two notes of a line or
-   two, and the corner key over it, the lit key under it and the gaps are
-   about 172 more pixels, so `--su` is also no more than what fits all of
-   that in the window: on a phone of 390 by 844 the width is the smaller,
-   and nothing changes; in a real phone's browser, its bars taking a
-   hundred and eighty of those pixels, the phone was as wide as the column,
-   the lit key docked over your note, and `options` and `share`, the only
-   ways to take it off or pass it on, were under the fold (the review of 28
-   September). The lit key stays as wide as the column allows up to 300,
-   so a narrower phone does not cut its words. A note of many lines still
-   makes it taller, and it scrolls. */
+   of the mark panel's width, which on a phone is the phone's own: the mark
+   stands across the whole head of the glass (on a desk and on its side the
+   phone is wider than its mark, below). The Screen's own sizes are in
+   `cqw` of its width, and the phone's box is the column's, so the band and
+   the keys are set here in `--su` instead.
+   Upright, the phone is 198 `--su` tall with two notes of two lines (the
+   band 14.8, the mark 79, the names 11.6 of which 2.2 stand in the foot of
+   the mark's panel, two notes of 36.6 and the air between and under them,
+   the keys 14; counted without the names' further lift into the panel,
+   `--pair-lift`, which only ever makes it shorter), and the corner key
+   over it, the lit key under it and the gaps are 146 more pixels, so `--su` is also no more than what fits all
+   of that in the window: on a phone of 390 by 844 the width is the
+   smaller, and nothing changes; in a real phone's browser, its bars taking
+   a hundred and eighty of those pixels, the phone was as wide as the
+   column, the lit key docked over your note, and `options` and `share`,
+   the only ways to take it off or pass it on, were under the fold (the
+   review of 28 September). A longer note is fitted too, by the phone's own
+   height in `--su` (`--keep-h`, Keepsake.jsx `place`): a note of three
+   lines makes the phone a little narrower rather than its keys fall under
+   the fold, down to 0.8 of the column's width or what two short notes
+   would get, whichever is less; a note of many lines on a short window
+   stops there, makes it taller, and it scrolls. The lit key stays as wide as the column allows
+   up to 300, so a narrower phone does not cut its words. */
 @property --su { syntax: '<length>'; inherits: true; initial-value: 3.46px; }
+/* (a length, so a script reads it in pixels, Keepsake.jsx `place`) */
+@property --pair-lift { syntax: '<length>'; inherits: true; initial-value: 0px; }
 .wl-keep {
   position: relative; flex: 1 1 auto; isolation: isolate;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding-top: 10px;
+  padding-top: 6px;
   container-type: inline-size;
 }
 :is(.wl-keep-strip, .wl-keep-foot) { --su: calc(min(100cqw, 400px) / 100); }
 @supports (height: 100dvh) {
   :is(.wl-keep-strip, .wl-keep-foot) {
+    --su-w: calc(min(100cqw, 400px) / 100);
+    --su-room: calc(100dvh - 146px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     --su: min(
-      calc(min(100cqw, 400px) / 100),
-      calc((100dvh - 172px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 186)
+      var(--su-w),
+      max(calc(var(--su-room) / var(--keep-h, 198)), min(calc(var(--su-room) / 198), calc(0.8 * var(--su-w))))
     );
   }
 }
@@ -413,9 +427,9 @@
 }
 
 /* ── the light it throws ──
-   Round the mark, where the film's glass lands: up as the camera pulls
-   back (Film.jsx), and breathing slowly once it is at rest (Keepsake.jsx);
-   the compositor's, on a gradient painted once. */
+   Round the mark, where the film's glass lands, at the head of the phone:
+   up as the camera pulls back (Film.jsx), and breathing slowly once it is
+   at rest (Keepsake.jsx); the compositor's, on a gradient painted once. */
 .wl-keep-light {
   position: absolute; left: var(--lx, 50%); top: var(--ly, 50%); z-index: 0;
   width: min(150vw, 1200px); aspect-ratio: 1; pointer-events: none;
@@ -442,15 +456,24 @@
   padding: calc(2.6 * var(--su)) calc(2.2 * var(--su)) calc(1.8 * var(--su));
   gap: calc(0.6 * var(--su));
 }
-.wl-keep-scr :is(.wl-scr-r1, .wl-scr-r2) { height: calc(10.4 * var(--su)); gap: calc(1.4 * var(--su)); }
-/* the second row stays when a menu takes it (its name and where in it the
-   chosen row is), so the band is one height whatever it says: story.css
-   takes it off every other screen with a story on it */
-.wl-root .wl-scene.wl-keep-scr .wl-scr-r2 { display: flex; }
-.wl-keep-scr :is(.wl-scr-cnt, .wl-scr-nm, .wl-scr-mid) { font-size: calc(11 * var(--su)); }
-.wl-keep-scr .wl-scr-hd { font-size: calc(7.4 * var(--su)); padding-left: var(--su); }
+/* One status row. The phone belongs to two people and not to a letter, so
+   there is no second row of a name and a handle: it is off here outright,
+   and not left to story.css. The aerial at the start, the night it was
+   told in the middle of the row and not of what the aerial leaves, since
+   no battery stands at the far end to balance it; a menu's name takes the
+   night's place, and where in the menu the chosen row is takes the far
+   end (Keepsake.jsx `top`). Every size in `--su`, the day's and the
+   count's included, which a desk read in `cqw` of the whole row */
+.wl-root .wl-scene.wl-keep-scr .wl-scr-r2 { display: none; }
+.wl-keep-scr .wl-scr-r1 {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  height: calc(10.4 * var(--su)); gap: calc(1.4 * var(--su));
+}
+.wl-keep-scr .wl-scr-r1 > .wl-scr-ant { justify-self: start; }
+.wl-keep-scr .wl-scr-r1 > :is(.wl-scr-stamp, .wl-scr-dt) { grid-column: 2; margin: 0; }
+.wl-keep-scr .wl-scr-dt ~ .wl-scr-cnt { grid-column: 3; justify-self: end; margin: 0 calc(0.6 * var(--su)) 0 0; font-size: calc(7.4 * var(--su)); opacity: 0.82; }
+.wl-keep-scr :is(.wl-scr-cnt, .wl-scr-dt) { font-size: calc(11 * var(--su)); }
 .wl-keep-scr .wl-scr-ant .wl-px { height: calc(9 * var(--su)) !important; width: auto !important; }
-.wl-keep-scr .wl-scr-bat .wl-px { height: calc(8 * var(--su)) !important; width: auto !important; }
 .wl-keep-scr .wl-scr-bot { height: calc(14 * var(--su)); padding: 0 calc(1.6 * var(--su)) calc(0.6 * var(--su)); }
 .wl-root .wl-keep-scr .wl-sk { font-size: calc(13.4 * var(--su)); padding: 0 calc(0.8 * var(--su)); gap: var(--su); }
 .wl-keep-scr .wl-lit {
@@ -469,65 +492,150 @@
 .wl-keep-scr .wl-scr-fx.is-glass { background: var(--q-scratch, none), var(--q-dust, none); }
 .wl-keep-scr .wl-scr-body { display: block; padding: 0; }
 
-/* ── the glass: their note, the mark, yours ──
-   One panel cut in three by two lines of the phone's dark glass, the notes
-   in the phone's face and its ink, the size a message took on its screen,
-   whose they are over them. Nothing scrolls: a note of 280 characters fits
-   at the smallest of the four sizes. */
-.wl-keep-body { display: flex; flex-direction: column; }
-.wl-keep-note {
-  margin: 0; min-height: calc(30 * var(--su)); padding: calc(4 * var(--su));
-  display: flex; flex-direction: column; gap: calc(2.4 * var(--su));
-  color: var(--s-ink); text-shadow: 0 0 calc(0.35 * var(--su)) var(--s-soft);
+/* ── the glass: the mark at its head, the two of them, their notes ──
+   One lit panel and nothing cutting it. The mark stands across the head of
+   it, where the film lands, and the backlight's hot spot is on it
+   (Keepsake.jsx `place`), so the light falls away down the glass over the
+   two notes. It was cut in three by two lines of the phone's dark glass
+   (the review of 29 September found it subdivided): without them the
+   mark's panel was a rectangle of unlit dots on a glass with none, so the
+   mark's canvas draws no dots now (PixelStory.jsx `dots`) and the glass
+   lays them over the whole of itself, a tile of one cell at the story's own
+   pitch, its lit part the dot, started where the canvas's first cell is
+   (Keepsake.jsx `dotsOn`): one grid from the band to the keys, lying under
+   the camera's lines of it (story.css `[data-cells]`). The breath's light
+   behind the mark ends well inside the panel's sides and foot, and its top
+   is under the band, so it is never cut at an edge a reader can see. Until
+   the story is laid out the glass has no dots, never dots at a wrong
+   pitch. */
+.wl-keep-body {
+  --pair-lift: var(--mark-slack, calc(2 * var(--su)));
+  position: relative; display: flex; flex-direction: column;
+  background-image: conic-gradient(at var(--dot-d) var(--dot-d), transparent 75%, color-mix(in srgb, var(--s-ink) 7%, transparent) 0);
+  background-size: var(--dot-p) var(--dot-p);
+  background-position: var(--dot-x) var(--dot-y);
 }
-/* a place a reader is put, never a stop the tab key comes to, so it
-   carries no ring */
-.wl-root .wl-keep-note:focus-visible { outline: none; }
-.wl-keep-from { font-size: calc(5.2 * var(--su)); line-height: 1; opacity: 0.72; }
-.wl-keep-words { margin: 0; line-height: 1.02; white-space: pre-wrap; overflow-wrap: break-word; }
-.wl-keep-words.is-l { font-size: calc(8.4 * var(--su)); }
-.wl-keep-words.is-m { font-size: calc(7.2 * var(--su)); }
-.wl-keep-words.is-s { font-size: calc(6.2 * var(--su)); }
-.wl-keep-words.is-xs { font-size: calc(5.4 * var(--su)); }
-.wl-keep-words.is-none {
-  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: calc(2 * var(--su)); font-size: calc(6.2 * var(--su)); text-align: center;
-}
-.wl-keep-glyph { height: calc(7 * var(--su)); width: auto; }
 .wl-keep-mark {
-  position: relative; aspect-ratio: 95 / 75;
-  border-block: 2px solid var(--s-bot);
+  position: relative; flex: 0 0 auto; aspect-ratio: 95 / 75;
   container-type: inline-size;
 }
 .wl-keep-mark .wl-story { position: absolute; inset: 0; }
 /* a menu, the question and every note stand in the mark's place, the mark
-   stood still and out of sight under them */
+   stood still and out of sight under them, on the same dots */
 .wl-keep.is-over .wl-keep-mark .wl-story { visibility: hidden; }
 .wl-keep-over { position: absolute; inset: 0; z-index: 1; display: flex; padding: 2.4cqw; }
 .wl-keep-over .wl-scr-note { font-size: 7.6cqw; gap: 2.6cqw; }
 .wl-keep-over .wl-scr-note b { font-size: 10cqw; line-height: 1; }
 
+/* the two of them, once, under `it's mutual.`: both first names (or both
+   @s) as one line in the notes' ink, the ampersand between them quieter,
+   and nothing else of the pair's on the glass but their notes */
+.wl-keep-inbox {
+  container-type: inline-size;
+  flex: 1 1 auto; display: flex; flex-direction: column; gap: calc(2.4 * var(--su));
+  padding: 0 calc(3.4 * var(--su)) calc(3.2 * var(--su));
+}
+/* set a little into the foot of the mark's panel, which is empty under
+   `it's mutual.`, so the names read as the line under it and not as the
+   first line of what follows: their top 2.2 units above the foot of the
+   story's last row, whatever the panel leaves under it (`--mark-slack`,
+   Keepsake.jsx `slackOf`), which a phone's fine cells leave little of and a
+   desk's coarse ones more, so they stand the same way under the sentence
+   on every glass. The phone's height in its own units is measured with
+   that taken back out (Keepsake.jsx `place`), so the size it is given never
+   waits on the cells that size gives. The panel's box is the film's, and
+   nothing of its cells is under them */
+.wl-root.is-room .wl-keep-pair {
+  margin: calc(-2.2 * var(--su) - var(--pair-lift)) 0 calc(3 * var(--su));
+  display: flex; justify-content: center; align-items: baseline; gap: calc(1.8 * var(--su));
+  min-width: 0; line-height: 1; white-space: nowrap;
+  font-size: max(calc(4.6 * var(--su)), min(calc(8 * var(--su)), calc(96cqw / (0.39 * var(--n, 1)))));
+  color: var(--s-ink); text-shadow: 0 0 calc(0.35 * var(--su)) var(--s-soft);
+}
+.wl-keep-pair > .wl-keep-amp { flex: 0 0 auto; opacity: 0.56; }
+
+/* ── a note, as the phone's inbox showed a message ──
+   A small screen on the glass: a hairline of the ink round it, the panel a
+   little brighter inside it, and a strip across its top a darker band of
+   the rose, the phone's own band in miniature, with the line its writer
+   set there at the start and the battery they left it on at the end, both
+   in the note's ink. Then the words, at the one size both notes take, and
+   whose it is, signed under them. Nothing scrolls: a note of 280
+   characters fits at the smallest of the four sizes, and makes the phone
+   taller. */
+.wl-keep-note {
+  position: relative; margin: 0; display: flex; flex-direction: column; min-width: 0;
+  color: var(--s-ink); text-shadow: 0 0 calc(0.35 * var(--su)) var(--s-soft);
+  border-radius: calc(0.9 * var(--su)); overflow: hidden;
+  background: color-mix(in srgb, var(--s-hi) 30%, transparent);
+  box-shadow: inset 0 0 0 calc(0.35 * var(--su)) color-mix(in srgb, var(--s-lo) 72%, transparent);
+}
+/* a place a reader is put, never a stop the tab key comes to, so it
+   carries no ring */
+.wl-root .wl-keep-note:focus-visible { outline: none; }
+.wl-keep-head {
+  container-type: inline-size;
+  display: flex; align-items: center; gap: calc(2.4 * var(--su));
+  height: calc(7.6 * var(--su)); padding: 0 calc(2.6 * var(--su)) 0 calc(3 * var(--su));
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--s-lo) 72%, transparent),
+    color-mix(in srgb, var(--s-lo) 90%, transparent));
+}
+/* its writer's line, at 6.2 until it is too long for the strip, then set
+   smaller to fit it, down to 4.2, and only then cut: the strip less the
+   battery and the gap before it, over the line's length in the face's
+   widths (Keepsake.jsx `measureOf`), each near two fifths of an em */
+.wl-keep-title {
+  flex: 1 1 auto; min-width: 0;
+  font-size: max(calc(4.2 * var(--su)), min(calc(6.2 * var(--su)), calc((100cqw - 11.4 * var(--su)) / (0.39 * var(--n, 1)))));
+  line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wl-keep-bat { flex: 0 0 auto; }
+/* the words keep the room's paragraph measure (phone.css), a little more
+   open than a letter's screen, so a note of two lines reads as said */
+.wl-keep-words {
+  margin: 0; padding: calc(2.6 * var(--su)) calc(3 * var(--su)) 0;
+  white-space: pre-wrap; overflow-wrap: break-word;
+}
+.wl-keep-words.is-l { font-size: calc(8.4 * var(--su)); }
+.wl-keep-words.is-m { font-size: calc(7.2 * var(--su)); }
+.wl-keep-words.is-s { font-size: calc(6.2 * var(--su)); }
+.wl-keep-words.is-xs { font-size: calc(5.4 * var(--su)); }
+.wl-keep-words.is-none {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(2 * var(--su)); padding-top: calc(3.6 * var(--su));
+  font-size: calc(6.2 * var(--su)); text-align: center;
+}
+.wl-keep-glyph { height: calc(7 * var(--su)); width: auto; }
+.wl-keep-from {
+  padding: calc(1.2 * var(--su)) calc(3 * var(--su)) calc(2.2 * var(--su));
+  font-size: calc(5.2 * var(--su)); line-height: 1; text-align: right; opacity: 0.72;
+}
+
 /* ── the lit key ──
    Under the phone, as wide as it, and docked to the foot of the window when
-   the phone is taller than the window (not on a phone on its side, below) */
+   the phone is taller than the window (not on a desk, nor on a phone on its
+   side, below) */
 .wl-keep-foot {
   position: sticky; bottom: 0; z-index: 2;
   width: max(calc(100 * var(--su)), min(100cqw, 300px));
-  padding: 18px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 18px 0 calc(12px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 18px);
 }
 .wl-keep-foot a.wl-pill { text-decoration: none; }
 
 /* ── landing ──
    Out of the film: the phone unfolds out of its mark (Keepsake.jsx, two
-   transforms on the strip), both notes wake on one frame, the backlight
-   coming up under their words the way a screen's does, and the corner key
-   and the lit key come a beat after. Never one note before the other. Out
-   of the slot's glass, the way somebody opens their keepsake most days, the
-   notes are simply there as the phone opens, and the lit key comes 80ms
-   behind it in 200: it had the film's landing too, after its flight, and the
-   notes were a second from the press. */
-.wl-keep.is-landing:not(.is-flying) .wl-keep-note > * { animation: wl-wake-light 620ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both; }
+   transforms on the strip), the two names and both notes wake on one
+   frame, the backlight coming up under them the way a screen's does, and
+   the corner key and the lit key come a beat after. Never one note before
+   the other. Out of the slot's glass, the way somebody opens their
+   keepsake most days, the notes are simply there as the phone opens, and
+   the lit key comes 80ms behind it in 200: it had the film's landing too,
+   after its flight, and the notes were a second from the press. Each note
+   wakes whole, its strip and its words together, by its own class and not
+   by everything under it. */
+.wl-keep.is-landing:not(.is-flying) :is(.wl-keep-pair, .wl-keep-note) { animation: wl-wake-light 620ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both; }
 .wl-keep.is-landing .wl-keep-foot { animation: wl-fade 260ms var(--ease-out) 240ms both; }
 .wl-keep.is-landing.is-flying .wl-keep-foot { animation-duration: 200ms; animation-delay: 80ms; }
 
@@ -545,37 +653,67 @@
 .wl-reveal-none { flex: 1 1 auto; display: flex; flex-direction: column; padding-top: 18svh; text-align: center; }
 
 /* ── on a desk ──
-   The phone is the row: their note, the mark and yours side by side, the
-   notes as tall as the mark and in the middle of their panels, and the lit
-   key under the mark. The corner key stands in the corner of the room,
-   where every sheet's does on a spread. The row stops at 960: at the width
-   of the room less its margins it was 1164 by 476 on a laptop, a banner with
-   its two notes in its top corners and its two soft keys a room apart, and
-   not a phone (the review of 28 September, which also had the notes stood
-   at the top of their panels, with the pink under them empty). Only the
-   keepsake takes the room's width: `sign in to read it.` and `nothing
-   here.` stand in the middle of it in the column they always had, since
-   the keepsake's width was given to every state of the sheet and those two
-   stood at the top of the room over a key as wide as it. */
+   The phone as wide as it is tall, the mark still crowning it and the two
+   notes side by side under it: two people's phones, one moment, on one
+   glass, where a phone has room for them only one over the other. It was
+   the row, their note, the mark and yours side by side, first as wide as
+   the room and then stopped at 960; the owner found three panels in a row
+   subdivided, and a banner is not a thing two people keep (29 September).
+   Upright, as the phone is, it was a narrow thing in the middle of the
+   room, and a note of 280 characters either ran it under the fold or set
+   its words at the size of a footnote. So the glass is 150 `--su` across,
+   the mark 100 of it in the middle, and `--su` as large as lets the whole
+   phone and its key stand in the window, up to 4.4, by the phone's own
+   height (`--keep-h`); the two notes are one height, their names signed at
+   the foot of each. The corner key stands in the corner of the room, where
+   every sheet's does on a spread, and the lit key stands under the phone
+   and is never docked over it. Only the keepsake takes the room's width:
+   `sign in to read it.` and `nothing here.` stand in the middle of it in
+   the column they always had. */
 @media (min-width: 900px) {
   .wl-sheet-wrap.is-reveal .wl-sheet-in { max-width: 1000px; min-height: 0; margin: auto; padding-bottom: 40px; }
   .wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { max-width: none; min-height: 100%; margin: 0 auto; padding-bottom: 0; }
   .wl-reveal .wl-head { position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); right: 28px; padding: 0; z-index: 4; }
-  .wl-keep { padding: 40px 0 24px; }
-  :is(.wl-keep-strip, .wl-keep-foot) { --su: 4px; }
-  .wl-keep-strip { width: min(960px, calc(100vw - 80px)); }
-  .wl-keep-foot { width: 320px; padding-top: 24px; background: none; }
-  .wl-keep-body { display: grid; grid-template-columns: minmax(0, 1fr) calc(100 * var(--su)) minmax(0, 1fr); }
-  .wl-keep-mark { border-block: 0; border-inline: 2px solid var(--s-bot); }
-  .wl-keep-note { min-height: 0; justify-content: center; }
-  .wl-keep-words.is-none { flex: 0 0 auto; }
+  .wl-keep { padding: 32px 0 20px; }
+  :is(.wl-keep-strip, .wl-keep-foot) {
+    --su: max(3px, min(4.4px, calc((100vh - 136px) / var(--keep-h, 170)), calc((100vw - 200px) / 150)));
+  }
+  @supports (height: 100dvh) {
+    :is(.wl-keep-strip, .wl-keep-foot) {
+      --su: max(3px, min(4.4px, calc((100dvh - 136px) / var(--keep-h, 170)), calc((100vw - 200px) / 150)));
+    }
+  }
+  .wl-keep-strip { width: calc(150 * var(--su)); }
+  .wl-keep-foot { position: static; width: 320px; padding: 22px 0 0; background: none; }
+  .wl-keep-mark { align-self: center; width: calc(100 * var(--su)); }
+  /* the two notes on one set of rows (a subgrid), so their strips, their
+     words and their names stand level with each other whatever each says;
+     and a strip this narrow lets its writer's line take a second line
+     before it is set smaller than 5.2 or cut */
+  .wl-keep-inbox {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto 1fr auto;
+    column-gap: calc(3.4 * var(--su)); row-gap: 0;
+    padding: 0 calc(4 * var(--su)) calc(4 * var(--su));
+  }
+  .wl-root.is-room .wl-keep-pair { grid-column: 1 / -1; }
+  .wl-keep-note { display: grid; grid-row: 2 / span 3; grid-template-rows: subgrid; }
+  .wl-keep-head { height: auto; min-height: calc(7.6 * var(--su)); padding-top: calc(0.9 * var(--su)); padding-bottom: calc(0.9 * var(--su)); }
+  .wl-keep-title {
+    white-space: normal; text-wrap: balance; line-height: 1.08;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    font-size: max(calc(5.2 * var(--su)), min(calc(6.2 * var(--su)), calc((100cqw - 11.4 * var(--su)) / (0.39 * var(--n, 1)))));
+  }
+  .wl-keep-words { align-self: start; }
 }
-/* A phone on its side: the row, round a smaller mark, and the whole of it
-   and the lit key inside a window 390 high, the corner key in the corner
-   beside the phone and not over it. The key is not docked here: docked, it
-   stood over the foot of the mark and `it's mutual.` on every way in, and
-   over the soft keys once the film had landed (the review of 28 September).
-   A phone whose notes are longer than the window scrolls to its key. */
+/* A phone on its side: too short for the phone upright, so the notes stand
+   beside the mark, the mark still at the head of the glass on the left and
+   the names and the two notes down the right of it, on one glass with
+   nothing between; the whole of it and the lit key inside a window 390
+   high, the corner key in the corner beside the phone and not over it.
+   The key is not docked here: docked, it stood over the foot of the mark
+   and `it's mutual.` on every way in, and over the soft keys once the film
+   had landed (the review of 28 September). A phone whose notes are longer
+   than the window scrolls to its key. */
 @media (max-height: 560px) and (min-width: 600px) and (orientation: landscape) {
   .wl-sheet-wrap.is-reveal .wl-sheet-in.is-mutual { max-width: none; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
   .wl-reveal .wl-head {
@@ -583,21 +721,27 @@
     padding: 0; z-index: 4;
   }
   .wl-keep { padding: 0; }
-  :is(.wl-keep-strip, .wl-keep-foot) { --su: 2.5px; }
-  .wl-keep-strip { width: min(1000px, calc(100vw - 128px)); }
+  :is(.wl-keep-strip, .wl-keep-foot) { --su: max(2.4px, min(2.9px, calc((100vh - 72px) / var(--keep-h, 108)))); }
+  @supports (height: 100dvh) {
+    :is(.wl-keep-strip, .wl-keep-foot) { --su: max(2.4px, min(2.9px, calc((100dvh - 72px) / var(--keep-h, 108)))); }
+  }
+  .wl-keep-strip { width: calc(240 * var(--su)); }
   .wl-keep-foot { position: static; width: 300px; padding: 10px 0 calc(4px + env(safe-area-inset-bottom, 0px)); background: none; }
-  .wl-keep-body { display: grid; grid-template-columns: minmax(0, 1fr) calc(100 * var(--su)) minmax(0, 1fr); }
-  .wl-keep-mark { border-block: 0; border-inline: 2px solid var(--s-bot); }
-  .wl-keep-note { min-height: 0; justify-content: center; }
-  .wl-keep-words.is-none { flex: 0 0 auto; }
+  .wl-keep-body { display: grid; grid-template-columns: calc(100 * var(--su)) minmax(0, 1fr); align-items: start; }
+  .wl-keep-inbox { padding: calc(3.4 * var(--su)) calc(3.4 * var(--su)) calc(3.4 * var(--su)) calc(1.2 * var(--su)); }
+  .wl-keep-body { --pair-lift: 0px; }
+  .wl-root.is-room .wl-keep-pair { margin: 0 0 calc(0.6 * var(--su)); }
 }
 
 /* ── still ──
    Under reduced motion the film is never played: the keepsake comes up in
    200ms, its mark one frame of it alive with the cursor lit, and the light
-   round it stands at the strength it breathes at. */
+   round it stands at the strength it breathes at. The notes' batteries
+   never blink, whatever the motion, and a landing held under it (`?film`)
+   puts the names and the notes up without the flicker of a screen waking. */
 @media (prefers-reduced-motion: reduce) {
   .wl-keep.is-fading { animation-duration: 200ms; }
   .wl-keep-light { opacity: 0.8; animation: none; }
+  .wl-keep.is-landing :is(.wl-keep-pair, .wl-keep-note) { animation: none; }
   .wl-join-step { transition: none; }
 }
