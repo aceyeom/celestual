@@ -704,9 +704,10 @@ on each of them.
 ```
 index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
              and the intro
-Intro.jsx    the first three seconds, on black: a phone's screen, and two
-             shadows on it who run into each other and become the mark. Once
-             per tab, skippable on any key, and the same intro Main plays
+Intro.jsx    the first four seconds, on black: a phone's screen, and two
+             shadows on it who run into each other and become the mark, in
+             one of fifteen looks drawn out of a bag on each load. Once per
+             tab, skippable on any key, the same at `/` and at `/berkeley`
 pixmark.js   the mark on a grid of the phone's cells, the two runners drawn
              by hand, and the stories they are in, as functions of the clock
 PixelStory.jsx  a story on a screen's body, on a canvas, drawn only when its
@@ -1481,8 +1482,8 @@ The rule under the date separates the masthead from the ledger, so on a spread
 
 A phone, on black, once per tab, before anything else exists. Not a spinner
 and not a splash: nothing is loading behind it and it never claims to be. It
-is `Intro.jsx`, and it is the same four seconds Main plays over its front
-door. It was the mark poured in liquid metal, which was the room's material on
+is `Intro.jsx`, and it is the same four seconds at the root and at a
+campus. It was the mark poured in liquid metal, which was the room's material on
 a surface that had become the phone; now it is one of the letters' own
 screens, the night one, with the product's story on it in the phone's pixels
 (`pixmark.js`, drawn by `PixelStory.jsx`).
@@ -1493,7 +1494,7 @@ screens, the night one, with the product's story on it in the phone's pixels
 | `40ms` | **the screen comes on**, the phone's own flicker (`screen.css wl-wake`, 500ms here), and throws its light on the black round it. One status row, the aerial and the battery, and nothing that would say a message had come in. The glass is the letters' own photographed glass: the pixel grid and the per-phone RGB tile laid exactly on the story's cells (`PixelStory.jsx` writes its pitch onto the screen), where they used to be hidden for the moire they made at the wrong pitch. Lit and empty from `540ms`, for a beat |
 | `780ms` | **the run.** He comes in off the left edge and she off the right, over the edges of the glass on the same frame (they used to arrive a beat apart), bodies posed from the feet up (`folk.js`) on the pitch every letter is lit at, her hair streaming and her dress swinging. From `1230ms` he slows, and at `1610ms` he stands with his arms open. They hold each other six cells left of the middle, which is what lets both runs start together unchanged; the mark stays centred |
 | `1690ms` | **the catch.** She lands in his arms and her run carries her on, leaning gently the way she ran, into him and half behind him: he is in front, her hair at his neck, her dress and her raised heel past his back. No heart |
-| `2110ms` | **the colour.** The backlight turns from where they hold each other a few of the panel's cells at a time, in two by two blocks, in a ragged front pushed on and held back by noise, so it grows the way pixels flip and never as a circle; each block flashes a step lighter as it turns and settles. It takes a little over a second to reach the last corner, taking the top band and the status at `2411ms`, the bottom band at `2670ms`, and the panel under it at `3210ms`, until the whole phone is a letter lit in that colour (`intro.css`, looks.js `skinOf`). The colour is drawn afresh on every load, never the same twice running on one device: the rose, the lilac, the ice, the green or the amber, the letters' own lit colours with a hue to them. About one load in nine it is all five at once, round the wheel from the rose where they hold each other to the lilac in the corners, with the night's dark bands kept and the light on the black a wheel of the five going slowly round (`Intro.jsx RAINBOW`, `PixelStory.jsx pinkOf`) |
+| `2110ms` | **the colour.** The backlight turns from where they hold each other a few of the panel's cells at a time, in two by two blocks, in a ragged front pushed on and held back by noise, so it grows the way pixels flip and never as a circle; each block flashes a step lighter as it turns and settles. It takes a little over a second to reach the last corner, taking the top band and the status at `2411ms`, the bottom band at `2670ms`, and the panel under it at `3210ms`, until the whole phone is a letter lit in that look (`intro.css`, looks.js `skinOf`). The look is drawn afresh on every load out of fifteen (`Intro.jsx LOOKS`), and every colour in each is a letter's own lit one, the rose, the lilac, the ice, the green or the amber, with only neighbours on the wheel ever side by side. Five are one colour, as it always was. Five are a rainbow, all five at once: four round the wheel out from where they hold each other to the corners, each from another colour and each colour an equal share of the glass (`even`), their light on the black a wheel of the five turning once in four and a half seconds, two one way and two the other; and the prism, the five laid across the glass in a spectrum's order (`axis`). Five are gradients: two colours out from them (peach, seaglass, twilight), or three laid across (dusk, lagoon), with their light laid across behind the phone and still. The phone follows the glass: its bands are gradients in the colours under them, the aerial and the battery each in the light of its own end (`PixelStory.jsx pinkOf`, `intro.css`) |
 | `2190ms` | **the mark**, on the frame they hold each other, while the colour is still leaving them: the ground glides into the ring and the two of them into the star, out from where they hold each other as the colour is, each pixel travelling between cells at the display's rate and landing on the grid (`pixmark.js I_QUICK`). Whole at `2780ms`, while the last corners turn. It used to wait until the pink had all but reached the edges and took a third longer; the owner asked for the two as one movement |
 | `3780ms` | **the lift**, after the mark has stood for a second, and not before the wall is ready: the lift waits on the index and the first screen's faces, with a ceiling at 5100ms from mount. The screen goes to sleep (`wl-sleep`), the phone rises and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone |
 | `4390ms` | the black is gone |
@@ -1509,11 +1510,34 @@ frame. The screen is held square to the camera, because a tilted canvas of
 square cells beats into a moire (`PixelStory.jsx SQUARE`). It is skippable on
 any tap or key, which lands the mark and lifts at once; it never plays twice in
 a tab; under `prefers-reduced-motion` it draws the mark on the letter lit in
-the colour it drew and lifts almost at once, the wheel's light standing still.
+the look it drew and lifts almost at once, a rainbow's light standing still.
+
+The look is drawn out of a bag kept on the device (`celestual.intro.v2`,
+which took over the last colour `v1` kept): every look comes round once a
+round and the rainbows twice, so of every twenty loads ten are a rainbow,
+five a gradient and five one colour, and the rose alone is one in twenty. It
+never draws the look it drew last, nor two running that open on the same
+colour (the one round the two of them, seen first), nor two running that
+read as pink (the rose or the lilac round them, or in the corners of one of
+two colours); it would rather not draw two of a kind running; and when all
+that is left of a round is alike the last, the next round starts and what
+was left is drawn first in it, so no look waits much more than a round
+(`Intro.jsx drawLook`). The draw only reads: React draws twice under
+development, so what is kept is written once the intro is on the page. A
+browser that keeps nothing draws from all fifteen. The canvas works out a
+look's field, its colours and the lighter step each block flashes when it
+turns while the glass is still dark, so a frame of the colour going out
+costs what a single colour's does (`PixelStory.jsx pinkOf`, `lightOf`).
+
 In development `?beat=3` holds the mark, `?t=2450` holds the clock on any
-frame, both in the rose unless `?tint=ice` (any lit colour) or `?tint=rainbow`
-says otherwise, and `?intro=ascii` and `?screen=green` draw the same story in
-characters or on the classic green from the first frame, for comparison.
+frame, both in the rose unless `?tint=dusk` (any look), `?tint=ice` (any lit
+colour) or `?tint=rainbow` (the rainbow from the amber) says otherwise, and
+`?intro=ascii` and `?screen=green` draw the same story in characters or on
+the classic green from the first frame, for comparison. The loop shoots each
+look that is more than one colour on its last beat (`intro-prism`,
+`intro-dusk` and the rest), one of each way of laying it mid glide
+(`intro-glide-wheel`, `-peach`, `-dusk`), and a rainbow and a look across
+standing still (`intro-still-wheel`, `-dusk`).
 
 The door (`screens/Join.jsx`) and the mutual (`Film.jsx`, from
 `screens/Reveal.jsx`) tell the same story with the same two and the same
@@ -1598,7 +1622,7 @@ The phone is the one this was designed for and it does not change.
 This tree, and one line elsewhere: `app/src/main.jsx` forks on `/berkeley` and
 lazy-imports it. The wall is a separate chunk and the four faces it needs are
 injected on mount and removed on unmount. Since the rebuild this tree is also
-THE SYSTEM: Main imports its parts, its ground, its intro and its stylesheet,
+THE SYSTEM: Main imports its parts, its ground and its stylesheet,
 which is what keeps the two surfaces one product.
 
 ## Known, and deliberately left
