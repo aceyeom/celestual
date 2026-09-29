@@ -307,6 +307,34 @@ let HELD = false
 // nothing under them; a replies route names the one it is for.
 let THREAD = 'empty'
 
+// ── keepsake stream: the mutual's one face (0077) ───────────────────────────
+// What the three doors answer for the fixture's mutual (keepface.js): the
+// colour the pair lit it in, the charge of the battery on its band, and
+// whether the other side has opened it, as a route's `face` says (the rose,
+// full and not opened by default). `later` is what the other side changes it
+// to `laterMs` after the first ask, which the keepsake picks up on its
+// clock; `missing` answers as a database without 0077 does. A set moves the
+// fixture's face, so a route can press the battery or choose a colour and
+// shoot what the next ask says. With `PREVIEW_FACE_LOG` set every ask is
+// printed as it comes, and the nudge a change sends (the REST broadcast,
+// api/celestual.js `nudgeMutual`) is answered as Realtime answers it.
+let FACE = null
+let FACE_AT = 0
+const FACE_ASKS = { face: 0, set: 0, seen: 0, nudge: 0, last: null }
+const FACE_TOPIC = '6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b'
+function faceNow() {
+  const f = { tint: 'rose', bat: 4, opened: false, ...(FACE || {}) }
+  if (FACE && FACE.later && FACE_AT && Date.now() - FACE_AT >= (FACE.laterMs || 2500)) Object.assign(f, FACE.later)
+  return f
+}
+function faceAnswer() {
+  const f = faceNow()
+  return {
+    ok: true, tint: f.tint, bat: f.bat, at: new Date(now - 2 * DAY).toISOString(), topic: FACE_TOPIC,
+    opened: !!f.opened, opened_at: f.opened ? new Date(now - 6 * DAY).toISOString() : null,
+  }
+}
+
 // ── the replies (0068) ──────────────────────────────────────────────────────
 // Every field is wall_reply_thread's. `who` is sixteen hex, as the server's
 // salted hash is, and one writer is one `who` all down a thread: the first
@@ -1152,6 +1180,31 @@ async function fulfil(route) {
     return route.fulfill({ json: INDEX })
   }
 
+  // keepsake stream: the mutual's one face (0077), before every other RPC,
+  // since a database without it answers with a 404 and not a body
+  const mf = url.match(/\/rest\/v1\/rpc\/(celestual_mutual_face|celestual_mutual_face_set|celestual_mutual_seen)$/)
+  if (url.includes('/realtime/v1/api/broadcast')) {
+    FACE_ASKS.nudge += 1
+    if (process.env.PREVIEW_FACE_LOG) console.log(`    nudge ${decodeURIComponent(url.split('/broadcast')[1] || '')}`)
+    return route.fulfill({ status: 202, body: '' })
+  }
+  if (mf) {
+    if (process.env.PREVIEW_FACE_LOG) console.log(`    ${mf[1]} ${req.postData() || ''}`)
+    if (FACE && FACE.missing) {
+      return route.fulfill({ status: 404, json: { code: 'PGRST202', message: `Could not find the function public.${mf[1]}` } })
+    }
+    const body = req.postData() ? JSON.parse(req.postData()) : {}
+    if (!FACE_AT) FACE_AT = Date.now()
+    if (mf[1] === 'celestual_mutual_face') FACE_ASKS.face += 1
+    if (mf[1] === 'celestual_mutual_seen') FACE_ASKS.seen += 1
+    if (mf[1] === 'celestual_mutual_face_set') {
+      FACE_ASKS.set += 1
+      FACE_ASKS.last = { tint: body.p_tint ?? null, bat: body.p_bat ?? null }
+      FACE = { ...faceNow(), later: null, ...(body.p_tint ? { tint: body.p_tint } : {}), ...(Number.isInteger(body.p_bat) ? { bat: body.p_bat } : {}) }
+    }
+    return route.fulfill({ json: faceAnswer() })
+  }
+
   // Every RPC.
   const m = url.match(/\/rest\/v1\/rpc\/([a-z_]+)/)
   if (m) {
@@ -1553,7 +1606,44 @@ const ROUTES = [
     store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },
   { label: 'reveal-edit',      path: '/reveal/jules.k?beat=4&slot=67,318,256,60&slotmenu=options', settle: 1600 },
   { label: 'reveal-keep-still', path: '/reveal/jules.k', still: true, settle: 1400 },
-  // the mutual's slot (Slot.jsx): the night glass with the two notes on
+  // ── keepsake stream: the mutual's one face (0077, 29 September) ──
+  // The one battery on the band, not one on each note: full, at two bars and
+  // empty (never blinking). The colour the pair lit it in, each of the lit
+  // screens it can wear, on notes that have their own lines. Under your
+  // note, `delivered` until the other side has opened it and `opened` after.
+  // The colours up in the mark's place, the third row chosen and the whole
+  // phone lit in it while the choice is made. The battery pressed twice and
+  // a colour chosen from the options, and the other side changing it while
+  // the keepsake is open (picked up on the keepsake's clock). A database
+  // without 0077: the rose keepsake with no battery, no colour row and no
+  // report. And powering on where it stands, held at 0, 120, 240 and 380ms,
+  // and under reduced motion, where it is simply lit.
+  { label: 'reveal-bat-2',     path: '/reveal/jules.k?beat=4&keep', face: { bat: 2 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-bat-0',     path: '/reveal/jules.k?beat=4&keep', face: { bat: 0 }, settle: 1400 },
+  { label: 'reveal-colour-night', path: '/reveal/jules.k?beat=4&keep', face: { tint: 'night', bat: 3 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-colour-white', path: '/reveal/jules.k?beat=4&keep', face: { tint: 'white', bat: 3 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-colour-ice',   path: '/reveal/jules.k?beat=4&keep', face: { tint: 'ice', bat: 3 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-colour-green', path: '/reveal/jules.k?beat=4&keep', face: { tint: 'green', bat: 3 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-colour-amber', path: '/reveal/jules.k?beat=4&keep', face: { tint: 'amber', bat: 3 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-colour-lilac', path: '/reveal/jules.k?beat=4&keep', face: { tint: 'lilac', bat: 3 }, notes: 'faces', settle: 1400 },
+  { label: 'reveal-delivered', path: '/reveal/jules.k?beat=4&keep', face: { opened: false }, settle: 1400 },
+  { label: 'reveal-opened',    path: '/reveal/jules.k?beat=4&keep', face: { opened: true }, settle: 1400 },
+  { label: 'reveal-colour-menu', path: '/reveal/jules.k?beat=4&keep=colour&at=2', face: { bat: 3 }, settle: 1400 },
+  { label: 'reveal-colour-options', path: '/reveal/jules.k?beat=4&keep=options&at=1', settle: 1400 },
+  { label: 'reveal-bat-tap',   path: '/reveal/jules.k?beat=4&keep',
+    acts: [['wait', 900], ['click', '.wl-keep-scr .wl-scr-bat', null, 120], ['click', '.wl-keep-scr .wl-scr-bat', null, 900]], settle: 600 },
+  { label: 'reveal-colour-pick', path: '/reveal/jules.k?beat=4&keep',
+    acts: [['wait', 900], ['click', '#wl-keep-options', null, 300], ['click', '.wl-keep-sheet .wl-scr-menu li:nth-child(2)', null, 300],
+      ['click', '.wl-keep-sheet .wl-scr-menu li:nth-child(4)', null, 900]], settle: 600 },
+  { label: 'reveal-live',      path: '/reveal/jules.k?beat=4&keep', face: { later: { tint: 'lilac', bat: 1, opened: true }, laterMs: 1500 }, settle: 7200 },
+  { label: 'reveal-face-missing', path: '/reveal/jules.k?beat=4&keep=options', face: { missing: true }, settle: 1400 },
+  { label: 'reveal-power-0',   path: '/reveal/jules.k?beat=4&keep&power=0', face: { tint: 'ice' }, settle: 1200 },
+  { label: 'reveal-power-120', path: '/reveal/jules.k?beat=4&keep&power=120', face: { tint: 'ice' }, settle: 1200 },
+  { label: 'reveal-power-240', path: '/reveal/jules.k?beat=4&keep&power=240', face: { tint: 'ice' }, settle: 1200 },
+  { label: 'reveal-power-380', path: '/reveal/jules.k?beat=4&keep&power=380', face: { tint: 'ice' }, settle: 1200 },
+  { label: 'reveal-power-still', path: '/reveal/jules.k?beat=4', face: { tint: 'ice', bat: 2, opened: true }, still: true, settle: 1400 },
+  { label: 'reveal-short-colour', path: '/reveal/jules.k?beat=4&slot=67,318,256,60', face: { tint: 'green' },
+    store: { toldSeen: [toldSeen('ace03d', `mutual:jules.k:${MUTUAL_AT}`)] }, settle: 1600 },  // the mutual's slot (Slot.jsx): the night glass with the two notes on
   // their way, held on one moment of the loop (`?slot=`, ms into it: 1500 is
   // part way, the ghosts behind them; 2400 is the hold, two cells apart);
   // under the pointer, the backlight up; pressed, the phone's inversion; once
@@ -2134,6 +2224,10 @@ for (const r of list) {
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
+    // keepsake stream: a face moved on the last pass is put back
+    FACE = r.face || null
+    FACE_AT = 0
+    Object.assign(FACE_ASKS, { face: 0, set: 0, seen: 0, nudge: 0, last: null })
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
     const page = await browser.newPage({

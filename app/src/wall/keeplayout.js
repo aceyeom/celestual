@@ -2,11 +2,11 @@
 //
 // Where everything on the mutual's picture goes (keepshare.js, which draws
 // it), which is where it stands on the keepsake (Keepsake.jsx, mutual.css):
-// the phone's band, the aerial and the night; the mark crowning the glass,
-// `it's mutual.` in its cells; the two first names under it; the two notes,
-// each a small screen with its strip, its line and its battery, its words
-// and whose it is; the phone's foot; and the product's signature under the
-// phone. All of it inside the middle 1080 by 1350 of a story's 1080 by 1920,
+// the phone's band, the aerial, the night and the pair's one battery; the
+// mark crowning the glass, `it's mutual.` in its cells; the two first names
+// under it; the two notes, each a small screen with its strip and its line,
+// its words and whose it is; the phone's foot; and the product's signature
+// under the phone. All of it inside the middle 1080 by 1350 of a story's 1080 by 1920,
 // which is what a feed crops a post to. Arithmetic and a measure, and
 // nothing drawn, so scripts/check-stories.mjs lays out the notes and the
 // lines a person could write here as well, in node, and holds the picture to
@@ -44,6 +44,15 @@ export const SU = PW / 100
 // the band over the glass, the one status row, and the foot under it
 export const BAND = Math.round(14.8 * SU)
 export const FOOT = Math.round(10 * SU)
+// The battery on the band, the pair's (keepface.js, 0077): the glyph's
+// seventeen columns and eight rows at eight pixels to a row, so it is crisp
+// (looks.js `bata0` to `bata4`), which is 7.6 units to the page's 8, and
+// its far end the band's edge in from the phone's, as the aerial's near end
+// is (mutual.css `.wl-scr-top`). The notes each carried one of their own
+// until the owner put the one at the top of the card (29 September)
+export const BAND_BAT_H = 64
+export const BAND_BAT_W = (17 * BAND_BAT_H) / 8
+export const BAND_END = Math.round(2.2 * SU)
 // the signature under the phone, and the room between them
 export const SIGN_GAP = 76
 export const SIGN_H = 52
@@ -80,16 +89,11 @@ const NAME_LOW = Math.round(5.4 * SU)
 const SAY_LOW = Math.round(4.4 * SU)
 
 // ── a note ──
-// its strip, and the line and the battery on it; the words' inset from the
-// panel's edge and the room over them; whose it is, under them
+// its strip, and the line on it; the words' inset from the panel's edge and
+// the room over them; whose it is, under them
 export const HEAD = Math.round(6.4 * SU)
 export const INSET = Math.round(3 * SU)
 export const HEAD_END = Math.round(2.6 * SU)
-// the battery, the glyph's seventeen columns and eight rows at four pixels
-// to a row, so it is crisp (looks.js `bata0` to `bata4`)
-export const BAT_H = 32
-export const BAT_W = (17 * BAT_H) / 8
-const TITLE_GAP = Math.round(2.4 * SU)
 const TITLE_MAX = Math.round(5.4 * SU)
 const TITLE_MIN = Math.round(3.1 * SU)
 export const WORDS_TOP = Math.round(2.2 * SU)
@@ -111,9 +115,10 @@ export const faceOf = (text) => s40Face(text)
 export const LINE = 1.02
 export const NOTE_W = PW - 2 * SIDE
 export const INNER = NOTE_W - 2 * INSET
-// the room a line has on its strip: the strip, less the battery, the gap
-// before it and the insets either end
-export const TITLE_ROOM = NOTE_W - INSET - HEAD_END - BAT_W - TITLE_GAP
+// the room a line has on its strip: the strip, less the insets either end.
+// It was less a battery and the gap before it too, while each note carried
+// one
+export const TITLE_ROOM = NOTE_W - INSET - HEAD_END
 // the tallest the phone may be: the crop, less 15 either side of the block,
 // the gap and the signature
 const MOST = CROP_BOT - CROP_TOP - 30 - SIGN_GAP - SIGN_H
@@ -205,8 +210,8 @@ function titlesOf(g, titles, f) {
 
 // Where everything goes, for the picture with the notes and without them.
 // `g` is anything with a font and `measureText` (a canvas's context). With
-// the notes off there are no notes, no lines and no batteries: the mark and
-// the names alone, the mark larger
+// the notes off there are no notes and no lines: the mark and the names
+// alone, the mark larger, and the band as it always is, its battery on it
 export function layoutOf(g, o) {
   const names = namesOf(g, o.names)
   // where the first note starts under a mark's panel `m` tall: under the

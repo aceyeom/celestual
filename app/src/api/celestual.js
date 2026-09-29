@@ -11,7 +11,10 @@
 // mutual is kept on both lists as it was told, so a person can write to
 // somebody they are mutual with again (placePingAgain) and take a mutual off
 // their own list (forgetMutualPing), and the other person is told nothing
-// either way.
+// either way. Since 0077 a told mutual has one face the two of them share,
+// the keepsake's colour, the battery on its band and whether each has
+// opened it (mutualFace, setMutualFace, seeMutual), and a content free
+// nudge on the pair's channel when it moves (watchMutual, nudgeMutual).
 //
 // All matching and anonymity logic lives in SECURITY DEFINER RPCs (RLS on,
 // zero client read policies; see supabase/migrations). This file used to carry
@@ -216,6 +219,108 @@ export async function forgetMutualPing({ me, them, proof, told }) {
   });
   if (error) throw error;
   return data;
+}
+
+// ── the mutual's one face (0077) ────────────────────────────────────────────
+// The colour a told mutual's keepsake is lit in and the charge of the one
+// battery on its band are the pair's, set by either and seen by both, and
+// each side can see whether the other has opened it since it was told
+// (app/src/wall/keepface.js, which is the only caller). Three doors, every
+// one behind the proof and every one answering the face as it stands:
+//   { ok:true, tint, bat, at, topic, opened, opened_at }
+//   { ok:false, error:'unverified' | 'none' | 'invalid' }
+// where 'none' is the one answer anybody without a told mutual with that @
+// gets, whatever the reason. Read defensively, as the alerts are
+// (api/alerts.js): a database a migration behind this front end answers
+// 'missing' rather than 'network', and the keepsake draws its old rose face
+// with nothing shared, and no report under your note, rather than a word
+// it could not stand behind. None of this throws.
+function missingRpc(error, status) {
+  if (status === 404) return true
+  const code = String(error?.code || '')
+  return code === 'PGRST202' || code === '42883' || /could not find the function/i.test(String(error?.message || ''))
+}
+async function faceRpc(fn, args) {
+  if (!hasSupabase) return { ok: false, error: 'offline' }
+  try {
+    const { data, error, status } = await supabase.rpc(fn, args)
+    if (error) return { ok: false, error: missingRpc(error, status) ? 'missing' : 'network' }
+    return data && typeof data === 'object' ? data : { ok: false, error: 'empty' }
+  } catch {
+    return { ok: false, error: 'network' }
+  }
+}
+export function mutualFace({ me, them, proof }) {
+  return faceRpc('celestual_mutual_face', { p_handle: me, p_proof: proof || null, p_them: them })
+}
+// either or both; a null leaves that one as it is
+export function setMutualFace({ me, them, proof, tint = null, bat = null }) {
+  return faceRpc('celestual_mutual_face_set', {
+    p_handle: me, p_proof: proof || null, p_them: them,
+    p_tint: tint || null, p_bat: Number.isInteger(bat) ? bat : null,
+  })
+}
+// this side has opened it; `told` is the night the screen drew, as the list
+// said it, so a mutual told since is not marked by opening an older one
+export function seeMutual({ me, them, proof, told }) {
+  return faceRpc('celestual_mutual_seen', { p_handle: me, p_proof: proof || null, p_them: them, p_told: told || null })
+}
+
+// The nudge, as the wall's (wall/api.js `subscribeWall`): a broadcast on the
+// pair's own channel, `mutual:<topic>`, that says something moved and
+// nothing else, and the keepsake that hears it reads the face again through
+// the door above. No colour, no battery and no opening ever travels on it,
+// so a channel whose name leaked says only when, never what. A channel that
+// will not open is let go after a few refusals; the keepsake asks on a
+// clock besides.
+const NUDGE_TRIES = 4
+const WATCHED = new Map()
+export function watchMutual(topic, onMoved) {
+  if (!hasSupabase || !topic || typeof supabase.channel !== 'function') return () => {}
+  let ch = null
+  let refused = 0
+  const drop = () => {
+    if (!ch) return
+    const c = ch
+    ch = null
+    if (WATCHED.get(topic) === c) WATCHED.delete(topic)
+    try { supabase.removeChannel(c) } catch { /* already gone */ }
+  }
+  try {
+    ch = supabase
+      .channel(`mutual:${topic}`, { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'moved' }, () => onMoved())
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') refused = 0
+        else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && ++refused >= NUDGE_TRIES) drop()
+      })
+    WATCHED.set(topic, ch)
+  } catch {
+    return () => {}
+  }
+  return drop
+}
+// Sent by the browser that moved the face or opened the mutual: over the
+// channel it is already on when it is on one (which does not come back to
+// it), and otherwise once over the REST door, on a channel opened for the
+// one message and let go. Fire and forget.
+export function nudgeMutual(topic) {
+  if (!hasSupabase || !topic || typeof supabase.channel !== 'function') return
+  try {
+    const on = WATCHED.get(topic)
+    if (on && on.state === 'joined') {
+      on.send({ type: 'broadcast', event: 'moved', payload: {} }).catch(() => {})
+      return
+    }
+    const ch = supabase.channel(`mutual:${topic}`)
+    const done = () => { try { supabase.removeChannel(ch) } catch { /* already gone */ } }
+    const sent = typeof ch.httpSend === 'function'
+      ? ch.httpSend('moved', {})
+      : ch.send({ type: 'broadcast', event: 'moved', payload: {} })
+    Promise.resolve(sent).then(done, done)
+  } catch {
+    /* the clock will carry it */
+  }
 }
 
 // ── the two different doors (migration 0020) ─────────────────────────────────

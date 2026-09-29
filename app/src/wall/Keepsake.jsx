@@ -1,5 +1,5 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE KEEPSAKE: one rose phone, the mark at its head, and the two notes   ║
+// ║  THE KEEPSAKE: one phone, the mark at its head, and the two notes        ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // What a mutual is once it has been told (screens/Reveal.jsx): the thing the
@@ -10,16 +10,16 @@
 // you know what you wrote. But what was told is the two of them, and a
 // keepsake of it that holds one note is half of it.
 //
-// So it is one phone, the rose letter, held square, and its glass is the
-// whole of what happened, read from the top down. The mark crowns it: alive
-// at the head of the glass, where the film lands, with `it's mutual.` under
-// it in the glass's own cells, and the two first names under that as one
-// line, `Jules & Ace`, the one place the pair is named together. Then the
-// two notes, theirs first and yours second, as the phone's inbox showed a
-// message: each a small screen of its own on the glass, with its own strip
-// across its top, a darker band of the rose like the phone's own band in
-// miniature, carrying the line its writer set there (`dear Ace` when they
-// set none) and the battery they left it on, over their words, signed
+// So it is one phone, held square, lit rose until the two of them light it
+// otherwise, and its glass is the whole of what happened, read from the top
+// down. The mark crowns it: alive at the head of the glass, where the film
+// lands, with `it's mutual.` under it in the glass's own cells, and the two
+// first names under that as one line, `Jules & Ace`, the one place the pair
+// is named together. Then the two notes, theirs first and yours second, as
+// the phone's inbox showed a message: each a small screen of its own on the
+// glass, with its own strip across its top, a darker band of the glass's
+// colour like the phone's own band in miniature, carrying the line its
+// writer set there (`dear Ace` when they set none), over their words, signed
 // `from Jules`. Two people's phones, one moment, on one glass.
 //
 // It was cut into three by two dark lines, their note, the mark and yours,
@@ -28,68 +28,93 @@
 // of its kind (29 September). So nothing cuts the glass now: the mark's
 // panel has no edge, its unlit dots run on under the notes on the same
 // cells (mutual.css `.wl-keep-body`, PixelStory.jsx `dots`), and the band
-// is one row, the aerial and the night it was told, with no battery of the
-// phone's own, since each note carries its writer's. On a desk the phone is
-// as wide as it is tall and the two notes stand side by side under the
-// mark, level with each other, which is the two faces most plainly; a
-// phone on its side sets them beside the mark. The phone is sized by its
-// own height as well as the window's width, so a note of three lines is a
-// phone a little narrower and not one with its keys under the fold
-// (`place`, mutual.css `--keep-h`). The same markup every way, in the order
-// a reader hears it.
+// is one row: the aerial, the night it was told, and the phone's one
+// battery. On a desk the phone is as wide as it is tall and the two notes
+// stand side by side under the mark, level with each other, which is the
+// two faces most plainly; a phone on its side sets them beside the mark.
+// The phone is sized by its own height as well as the window's width, so a
+// note of three lines is a phone a little narrower and not one with its
+// keys under the fold (`place`, mutual.css `--keep-h`). The same markup
+// every way, in the order a reader hears it.
 //
 //   alive    the mark (its breath, the glint going round the ring, a cell of
 //            the star lit now and then, ten frames a second and never taken
 //            back; pixmark.js `keepStory`), the cursor on the phone's beat,
 //            and the light the phone throws in the room, breathing slowly
-//   still    everything else: the phone, the notes, the names, the keys.
-//            Nothing floats, no colour drifts, and nothing is told again on
-//            its own (the owner cut all three)
+//   still    everything else: the phone, the notes, the names, the keys,
+//            the battery, even empty. Nothing floats, no colour drifts, and
+//            nothing is told again on its own (the owner cut all three)
+//
+// ── the face, the two of theirs ─────────────────────────────────────────────
+// The owner, 29 September: one battery, "at the top of the card not for each
+// message card", the card's design and that battery the two people's to
+// change, "hidden untold mechanism", seen by the other "instantly", and a way
+// to see whether the other has opened it. The notes used to carry a battery
+// each, the one its writer left it on; they carry none now, and the band
+// carries the phone's, at the far end of its row as every phone's is, at the
+// charge the pair's face holds (keepface.js, 0077). A tap on it takes a bar
+// off, and the empty one comes round to full; nothing on the phone says it
+// can be tapped, or that the other person sees it move, and it never
+// blinks, even empty, since the keepsake is still. `change its colour`, in
+// the options, puts the colours up in the mark's place, and the whole phone
+// is lit in each as the chosen row moves; `select` lights it in that one for
+// both of them, and `back` puts it as it was. And under your note, where the
+// phone reported on a message it had sent, one steady word: `delivered`,
+// until the other side has opened the mutual since it was told, and then
+// `opened`, with the phone's tick before it. Only under yours: theirs is in
+// your hands, and you know you opened it. The three come to the other side
+// while their keepsake is open, within a moment (keepface.js says how). A
+// database without them draws the rose keepsake as it was, with no battery,
+// no colour row and no report, rather than offer what cannot be shared or
+// say what nobody has told it.
 //
 // Its two soft keys are the phone's: `options` (write them a new note, or
-// open the one already out on them since, or take it off your list) and
-// `share` (a picture of it). Every menu, the question before taking it off
-// and every note after a press is a third small screen of the same kind as
-// the two notes, laid on the glass in the mark's place, the mark and the
-// names stood still and out of sight under it: its strip carries the
-// menu's name and where in it the chosen row is, as a note's carries its
-// line and its battery, and it is as tall as its rows and no taller, the
-// two notes in view under it. It filled the whole of the mark's panel,
-// a tall box of dots with the names left standing under it, and the
-// menu's name was on the band in the night's place (29 September), so the
-// band is the aerial and the night whatever is up. Under the phone, the one
-// lit key: their Instagram, which is where this product's part ends.
+// open the one already out on them since; change its colour; or take it off
+// your list) and `share` (a picture of it). Every menu, the question before
+// taking it off and every note after a press is a third small screen of the
+// same kind as the two notes, laid on the glass in the mark's place, the
+// mark and the names stood still and out of sight under it: its strip
+// carries the menu's name and where in it the chosen row is, and it is as
+// tall as its rows and no taller, the two notes in view under it. It filled
+// the whole of the mark's panel, a tall box of dots with the names left
+// standing under it, and the menu's name was on the band in the night's
+// place (29 September), so the band is the aerial, the night and the
+// battery whatever is up. Under the phone, the one lit key: their
+// Instagram, which is where this product's part ends.
 //
 // ── taking it off ───────────────────────────────────────────────────────────
 // A mutual is kept on both lists for good (0072), and taking it off is
 // taking it off your own: they keep theirs and are not told
 // (`forgetMutual`). Asked once, in the phone's own words, with keeping it
 // the key the focus starts on, and said as done before the sheet closes
-// onto the private notes, where it is no longer listed.
+// onto the private notes, where it is no longer listed. After it the face
+// is not yours to read or move, and theirs stays as it was.
 //
 // ── the picture ─────────────────────────────────────────────────────────────
 // `share` draws the keepsake as a picture (keepshare.js), and it is this
-// phone: the aerial and the night on its band, the mark and `it's mutual.`
-// at the head of the glass, the two first names under it, and the two notes
-// on their faces, then the product's signature. The owner asked for it with
-// the notes, so it has them, their lines and their batteries, unless a
-// person leaves them off from the same menu, and never a handle or a link:
-// the names only when both first names are known, and a line that fell
-// back to a name says `dear you` rather than an @ (`face`).
+// phone: in the pair's colour, the aerial, the night and the battery at the
+// pair's charge on its band, the mark and `it's mutual.` at the head of the
+// glass, the two first names under it, and the two notes on their faces,
+// then the product's signature. The owner asked for it with the notes, so
+// it has them and their lines, unless a person leaves them off from the same
+// menu, and never a handle, a link, or whether anybody opened anything: the
+// names only when both first names are known, and a line that fell back to
+// a name says `dear you` rather than an @ (`face`).
 
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Screen, ScreenMenu, ScreenNote, Pix } from './screen.jsx'
 import PixelStory, { SQUARE, crispDpr } from './PixelStory.jsx'
 import { SheetFoot, Pill } from './parts.jsx'
 import { I_COLS, I_ROWS, NOTE } from './pixmark.js'
 import { atHandle } from './data.js'
+import { skinOf } from './looks.js'
 import { langOf } from './type.js'
-import { bezier } from './Film.jsx'
+import { bezier, keepFor } from './Film.jsx'
 import { forgetMutual } from './pings.js'
 import { editNote } from './screens/Ping.jsx'
 import { prepareMutual, isMutualReady, shareMutual, canShareFiles } from './keepshare.js'
+import { useFace, TINTS, TINT_NAMES, FIRST_TINT, glowOf } from './keepface.js'
 
-const LOOK = { tint: 'rose' }
 const EASE = 'cubic-bezier(0.16, 1, 0.30, 1)'
 const EASE_OUT = 'cubic-bezier(0.22, 0.61, 0.36, 1)'
 // How it unfolds out of its mark, on `--ease` read a step at a time, and the
@@ -103,6 +128,24 @@ const UNFOLD_FLY_MS = 280
 const FLY_MS = 360
 export const FLY_OPENS = 150
 const FLY_OUT = 90
+// Coming up where it stands (the `fade` way in: a watched mutual opened from
+// its link, the ping sheet or a reload), the phone powers on the way a
+// phone's backlight comes on (the owner, 29 September: "make it feel like
+// its a phone turning on, not just a sudden opening of a page ... subtle and
+// smooth and still quick"): black glass, then the light rising under it in
+// 380ms on one smooth curve, no flicker and no dip, the notes' light a beat
+// behind the backlight's, the room's round it, and the lit key after. A
+// black veil lifting, the film's way of waking a glass this size (Film.jsx
+// `WAKE`), never a filter: opacity is the compositor's, and a blur over the
+// whole phone is the dearest frame the page could draw. Going out it is the
+// same veil back down, quicker (mutual.css `wl-keep-off`, 200ms).
+const POWER_MS = 380
+const POWER_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
+const POWER_NOTES_AT = 90
+const POWER_NOTES_MS = 300
+const POWER_ROOM_MS = 700
+const POWER_KEY_AT = 200
+const POWER_KEY_MS = 220
 // how long `taken off.` stands before the screen sleeps
 const GONE_MS = 900
 
@@ -173,33 +216,43 @@ function Pane({ as: Tag = 'div', className = '', title, titleStyle, end = null, 
 }
 
 // One of the two notes, as the phone's inbox showed a message: the line its
-// writer set there and the battery they left it on across the strip, then
-// what they wrote, or that they wrote nothing, and whose it is under it. A
-// group a reader lands on, with its name. The battery is theirs to have
-// set, so it is drawn as they left it and never blinks, even empty: the
-// keepsake is still
-function Note({ who, title, titleStyle, bat, text, size, side, innerRef }) {
+// writer set across the strip, then what they wrote, or that they wrote
+// nothing, and whose it is under it. A group a reader lands on, with its
+// name. It carried the battery its writer left it on at the strip's far
+// end until the owner put the one battery on the phone's band (29
+// September); the strip is the line's alone now. Under yours, after your
+// name, what the phone said of a message it had sent (`report`, the pair's
+// face, keepface.js): `delivered`, and `opened` with the phone's tick
+// before it once the other side has opened the mutual. Steady: it is a word
+// that changes once, never a light that blinks for attention.
+function Note({ who, title, titleStyle, text, size, side, report = null, innerRef }) {
   const label = `from ${who}`
   return (
     <Pane
       as="figure" className={`wl-keep-note is-${side}`} title={title} titleStyle={titleStyle}
-      end={<Pix name={`bata${bat}`} className="wl-keep-bat" style={BAT_SIZE} />}
-      aria-label={label} tabIndex={-1} innerRef={innerRef}
+      aria-label={report ? `${label}, ${report}` : label} tabIndex={-1} innerRef={innerRef}
     >
       {text ? (
         <p className={`wl-keep-words is-${size}`} lang={langOf(text) || undefined}>{text}</p>
       ) : (
         <p className="wl-keep-words is-none"><NoteGlyph /><span>sent without a note.</span></p>
       )}
-      <figcaption className="wl-keep-from" lang={langOf(who) || undefined}>{label}</figcaption>
+      <figcaption className="wl-keep-from">
+        <span lang={langOf(who) || undefined}>{label}</span>
+        {report ? (
+          <span className={`wl-keep-report is-${report}`}>
+            <span className="wl-keep-dot" aria-hidden="true">·</span>
+            {report === 'opened' ? <Pix name="check" className="wl-keep-tick" style={TICK} /> : null}
+            <span>{report}</span>
+          </span>
+        ) : null}
+      </figcaption>
     </Pane>
   )
 }
-// the battery on a note's strip, a size under its line (`Pix` is in `cqw`
-// of the screen, and the keepsake's sizes are in `--su`), a whole number of
-// the page's pixels to each of its eight rows where the page can round
-// (mutual.css `--keep-bat`), so it is as crisp as the band's glyphs
-const BAT_SIZE = { height: 'var(--keep-bat)', width: 'auto' }
+// the tick, a size under the caption's words (`Pix` is in `cqw` of the
+// screen, and the keepsake's sizes are in `--su`, mutual.css `--keep-tick`)
+const TICK = { height: 'var(--keep-tick)', width: 'auto' }
 
 // ── on the glass's own grid ──
 // Where a thing is on the phone's glass, in the glass's own pixels:
@@ -266,16 +319,13 @@ function slackOf(w, h) {
   return Math.max(0, h - (my + (((pr - I_ROWS) >> 1) + I_ROWS) * cell) / dpr)
 }
 
-// The face a note was left on: the line its writer set, or `dear` and the
-// name of the one it is to, and the battery they left it on, or full. A
-// note sent without words has neither (pings.js `placing`), and is drawn
-// on the phone's own.
-function faceOf(words, greet, bat, to) {
-  const set = !!words
-  return {
-    title: (set && greet) || `dear ${to}`,
-    bat: set && Number.isInteger(bat) && bat >= 0 && bat <= 4 ? bat : 4,
-  }
+// The line a note was left on: the line its writer set, or `dear` and the
+// name of the one it is to. A note sent without words has none (pings.js
+// `placing`), and is drawn on the phone's own. (The battery its writer left
+// it on is still on the card, 0073, and read by their own list's screen,
+// You.jsx; the keepsake draws the pair's one battery on its band instead.)
+function faceOf(words, greet, to) {
+  return { title: (words && greet) || `dear ${to}` }
 }
 // The same line, for the picture, which is passed round among people and
 // never carries a handle or a link: the line its writer set unless it has
@@ -288,8 +338,8 @@ function titleOnPicture(words, greet, to) {
 }
 
 export default function Keepsake({
-  me, them, p, names, first, seed, stamp, story, from = null, at = null,
-  state = 'rest', enter = 'fade', fly = null, menu = null, standing = null,
+  me, them, p, names, first, seed, stamp, story: told, from = null, at = null,
+  state = 'rest', enter = 'fade', fly = null, menu = null, menuAt = null, powerAt = null, standing = null,
   go, onGone, apiRef, escRef,
 }) {
   const box = useRef(null)
@@ -301,7 +351,33 @@ export default function Keepsake({
   const lens = useRef(null)
   const lay = useRef(null)
   const body = useRef(null)
-  const [view, setView] = useState(() => (menu ? { kind: menu, at: 0 } : null))
+  const veil = useRef(null)
+  const inbox = useRef(null)
+  const [view, setView] = useState(() => (
+    menu ? { kind: menu, at: menuAt ?? (menu === 'colour' ? TINTS.indexOf(FIRST_TINT) : 0) } : null))
+
+  // ── the face ──
+  // The pair's (keepface.js): the colour it is lit in, the charge of the
+  // battery on its band, and whether the other side has opened it; listened
+  // for while the phone can be seen. The colour a menu row stands on is the
+  // one the phone is lit in while the colours are up (`trying`), and the one
+  // it wears otherwise; the mark is inked in the one it wears (Film.jsx
+  // `keepFor`), since under the menu it is out of sight. The look is made
+  // again only when the colour is another, so the phone's own pixels up
+  // close (screen.jsx `useRgbTile`, off the pair's seed) are never asked for
+  // again by a change that changed nothing.
+  const hidden = state === 'hidden'
+  const pair = useFace(me, them, !hidden)
+  const shared = pair.status === 'ok' && !!pair.face
+  const worn = shared ? pair.face.tint : FIRST_TINT
+  const bat = shared ? pair.face.bat : null
+  const trying = view && view.kind === 'colour' ? TINTS[Math.max(0, Math.min(view.at || 0, TINTS.length - 1))] : null
+  const tint = trying || worn
+  const look = useMemo(() => ({ tint }), [tint])
+  const story = useMemo(() => (told && worn !== 'rose' ? keepFor(worn) : told), [told, worn])
+  // the frame the picture is drawn still on, worked out once a story, not
+  // on every render the share menu asks whether its picture is ready
+  const still = useMemo(() => (story ? story.frame(story.still) : null), [story])
   const [notesOn, setNotesOn] = useState(true)
   const [, drawn] = useState(0)
   // the backlight's hot spot at the middle of the mark, as a share of the
@@ -465,8 +541,8 @@ export default function Keepsake({
   // it opens and the lit key a beat behind, the whole of it in under half a
   // second (`fly`); it was the film's landing again, after a flight, and a
   // reader who opens their keepsake most days waited a second for its notes.
-  // Otherwise it comes up where it stands (`fade`), and under reduced motion
-  // that is all that moves.
+  // Otherwise it comes up where it stands (`fade`), powering on (`power`,
+  // below); and under reduced motion it is simply there, lit.
   //
   // The unfold is two transforms, as the film's pull-back is (Film.jsx
   // `pull`): the strip moved and squeezed onto its mark and cut by its own
@@ -530,7 +606,11 @@ export default function Keepsake({
   }, [])
   // the slot's glass, flying to the mark: laid over where the mark is and
   // scaled down onto the slot, then let go to its own size, and the phone
-  // unfolding out from under it once it is most of the way there
+  // unfolding out from under it once it is most of the way there. The glass
+  // is the keepsake's colour (`--fly-*`), and the slot's is the rose, so a
+  // pair that lit theirs in another has the rose going out of the glass as
+  // it comes (`.wl-keep-fly-was`), one colour turning into the other on the
+  // way rather than a cut where it lands
   const flier = useRef(null)
   const [flying, setFlying] = useState(enter === 'fly' && !!fly)
   useLayoutEffect(() => {
@@ -542,8 +622,10 @@ export default function Keepsake({
     Object.assign(el.style, { left: `${mr.left}px`, top: `${mr.top}px`, width: `${mr.width}px`, height: `${mr.height}px` })
     const start = `translate(${fly.x - mr.left}px, ${fly.y - mr.top}px) scale(${fly.w / mr.width}, ${fly.h / mr.height})`
     const a = el.animate([{ transform: start }, { transform: 'none' }], { duration: FLY_MS, easing: EASE, fill: 'both' })
-    const veil = el.firstChild
-    if (veil && veil.animate) veil.animate([{ opacity: 0.38 }, { opacity: 0 }], { duration: FLY_MS, easing: EASE_OUT, fill: 'both' })
+    const dim = el.querySelector('.wl-keep-fly-veil')
+    if (dim && dim.animate) dim.animate([{ opacity: 0.38 }, { opacity: 0 }], { duration: FLY_MS, easing: EASE_OUT, fill: 'both' })
+    const was = el.querySelector('.wl-keep-fly-was')
+    if (was && was.animate) was.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FLY_MS, easing: EASE_OUT, fill: 'both' })
     const t = setTimeout(() => { unfold(UNFOLD_FLY_MS); setLanding(true) }, FLY_OPENS)
     a.finished.then(() => {
       const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FLY_OUT, easing: 'linear', fill: 'forwards' })
@@ -553,22 +635,69 @@ export default function Keepsake({
     // once, from the slot
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  const flySkin = skinOf(worn)
+  const flyStyle = { '--fly-hi': flySkin.hi, '--fly-mid': flySkin.mid, '--fly-lo': flySkin.lo }
+
+  // ── powering on ──
+  // The `fade` way in (see the timings at the head of the file): the veil
+  // over the glass from black to nothing, the notes' light following it,
+  // the light in the room coming up round the phone, and the lit key after,
+  // each a few frames of the compositor's, laid on before the first frame
+  // is painted so the glass is never seen lit before it comes on. Each ends
+  // where the stylesheet already stands, and holds nothing after it
+  // (`backwards`), so the veil the sheet's closing brings down again
+  // (mutual.css `wl-keep-off`) is not held off by this one. Not under
+  // reduced motion, which lands lit, and not behind the film or out of the
+  // slot. `powerAt` holds it on one frame, for the screenshot loop.
+  const powering = enter === 'fade' && !hidden
+  const reduce = typeof window !== 'undefined' && !!window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [powered] = useState(() => powering && !reduce)
+  useLayoutEffect(() => {
+    if (!powered) return undefined
+    const run = (el, frames, o) => {
+      if (!el || !el.animate) return null
+      const a = el.animate(frames, { fill: 'backwards', ...o })
+      if (powerAt !== null) { a.pause(); a.currentTime = powerAt }
+      return a
+    }
+    const key = box.current && box.current.querySelector('.wl-keep-foot')
+    const all = [
+      run(veil.current, [{ opacity: 1 }, { opacity: 0 }], { duration: POWER_MS, easing: POWER_EASE }),
+      run(inbox.current, [{ opacity: 0 }, { opacity: 1 }], { duration: POWER_NOTES_MS, delay: POWER_NOTES_AT, easing: POWER_EASE }),
+      run(light.current, [
+        { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(0.88)' },
+        { opacity: 0.75, transform: 'translate3d(-50%, -50%, 0) scale(0.96)' },
+      ], { duration: POWER_ROOM_MS, easing: EASE_OUT }),
+      run(key, [{ opacity: 0 }, { opacity: 1 }], { duration: POWER_KEY_MS, delay: POWER_KEY_AT, easing: EASE_OUT }),
+    ]
+    return () => { for (const a of all) if (a) a.cancel() }
+    // once, on arriving
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── the room light, breathing ──
   // Once it is at rest: from the strength the landing left it at, slowly
   // brighter and back, a little larger and back, for as long as it is open.
   // The compositor's, and still under reduced motion (mutual.css).
+  // Powering on, it starts once the room's light has come up, from where
+  // that leaves it (and held with it, for the screenshot loop).
   const rest = state === 'rest'
   useEffect(() => {
     const el = light.current
-    if (!rest || !el || !el.animate) return undefined
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    if (!rest || !el || !el.animate || reduce) return undefined
+    if (powered && powerAt !== null) return undefined
     const a = el.animate([
       { opacity: 0.75, transform: 'translate3d(-50%, -50%, 0) scale(0.96)' },
       { opacity: 1, transform: 'translate3d(-50%, -50%, 0) scale(1.04)' },
-    ], { duration: 4200, easing: 'cubic-bezier(0.45, 0, 0.55, 1)', iterations: Infinity, direction: 'alternate' })
+    ], {
+      duration: 4200, easing: 'cubic-bezier(0.45, 0, 0.55, 1)', iterations: Infinity, direction: 'alternate',
+      delay: powered ? POWER_ROOM_MS : 0,
+    })
     return () => a.cancel()
-  }, [rest])
+    // (`powered` and `powerAt` are fixed from the first render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rest, reduce])
 
   // ── the menus ──
   // Writing to them again is a new note, unless one is already out on them
@@ -583,18 +712,33 @@ export default function Keepsake({
     standing
       ? { t: `your new note to ${n0}`, run: () => editNote(go, them, standing.line, standing) }
       : { t: `send ${n0} a new note`, run: () => go('ping', them) },
+    // the colours, in the mark's place, from the one it wears (`colour`,
+    // below); only with a face the two of them share to change
+    ...(shared ? [{ t: 'change its colour', run: () => setView({ kind: 'colour', at: Math.max(0, TINTS.indexOf(worn)) }) }] : []),
     { t: 'take it off my list', run: () => setView({ kind: 'confirm', in: 'options' }) },
   ]
+  // A colour chosen is the pair's: the phone lit in it here at once and
+  // sent, and the other side's lit in it while they look (keepface.js).
+  // Choosing the one it wears changes nothing and sends nothing
+  const choose = (j) => {
+    const t = TINTS[j]
+    setView(null)
+    if (t && t !== worn) pair.change({ tint: t })
+  }
+  // The battery on the band, the untold mechanism: a tap takes a bar off,
+  // and the empty one comes round to full, for both of them
+  const tap = () => { if (shared) pair.change((f) => ({ bat: (f.bat + 4) % 5 })) }
   // the two faces: theirs is to you and yours to them, and `names` is
   // theirs, then yours
-  const theirFace = faceOf(p.theirLine, p.theirGreet, p.theirBat, names[1])
-  const yourFace = faceOf(p.line, p.greet, p.bat, names[0])
-  // The picture: the first names only, or none; the notes, their lines and
-  // their batteries unless they are left off, and then none of the three;
-  // a line that fell back to a name is `dear` and the first name, or `dear
-  // you`, and never an @ (`titleOnPicture`); the mark on the frame the
-  // keepsake is drawn still on; and not the pair's seed, which is their
-  // handles (keepshare.js `lookOf`)
+  const theirFace = faceOf(p.theirLine, p.theirGreet, names[1])
+  const yourFace = faceOf(p.line, p.greet, names[0])
+  // The picture: the first names only, or none; the notes and their lines
+  // unless they are left off, and then neither; a line that fell back to a
+  // name is `dear` and the first name, or `dear you`, and never an @
+  // (`titleOnPicture`); the phone in the colour it wears and its battery at
+  // the pair's charge, with nothing of who set either or whether anybody
+  // opened it; the mark on the frame the keepsake is drawn still on; and not
+  // the pair's seed, which is their handles (keepshare.js `lookOf`)
   const face = () => ({
     stamp,
     names: first,
@@ -603,8 +747,9 @@ export default function Keepsake({
       titleOnPicture(p.theirLine, p.theirGreet, first && first[1]),
       titleOnPicture(p.line, p.greet, first && first[0]),
     ] : null,
-    bats: notesOn ? [theirFace.bat, yourFace.bat] : null,
-    frame: story ? story.frame(story.still) : null,
+    tint: worn,
+    bat,
+    frame: still,
   })
   const sharing = !!view && view.kind === 'share'
   useEffect(() => {
@@ -614,7 +759,7 @@ export default function Keepsake({
     return () => { live = false }
     // the picture for what it says now
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sharing, notesOn, story])
+  }, [sharing, notesOn, story, worn, bat])
   const canFiles = canShareFiles()
   const shareItems = [
     ...(canFiles ? [{ t: isMutualReady(face()) ? 'to someone' : 'to someone…', how: 'share' }] : []),
@@ -699,20 +844,40 @@ export default function Keepsake({
   useLayoutEffect(() => { if (view) write(gridOf()) }, [view])
 
   // ── the phone, as it stands ──
-  // One status row, the aerial and the night it was told, whatever is up,
-  // and no battery, since each note carries its own. A menu is a small
-  // screen of its own in the mark's place, as tall as its rows: its name on
-  // its strip, as a phone titled a menu, and where in it the chosen row is
-  // at the strip's far end, where a note has its battery; the question and
-  // every note after a press stand on the same small screen, under the name
-  // of the menu they came from
+  // One status row, whatever is up: the aerial, the night it was told, and
+  // the phone's one battery at the pair's charge, a key that says nothing of
+  // what it does beyond its name to a screen reader (`tap`); none at all
+  // until the server has said the face, or where it cannot. A menu is a
+  // small screen of its own in the mark's place, as tall as its rows: its
+  // name on its strip, as a phone titled a menu, and where in it the chosen
+  // row is at the strip's far end; the question and every note after a
+  // press stand on the same small screen, under the name of the menu they
+  // came from
   const pos = (k, items) => `${Math.min(k.at || 0, items.length - 1) + 1}/${items.length}`
-  const menuOf = (v) => v.in || (v.kind === 'share' ? 'share' : 'options')
-  const top = { stamp, bat: null }
+  const menuOf = (v) => v.in || (v.kind === 'share' ? 'share' : v.kind === 'colour' ? 'colour' : 'options')
+  const top = { stamp, bat, onBat: shared ? tap : null, batLabel: bat === null ? '' : `the battery, ${bat} of 4` }
   let keys
   let over = null
   let count = ''
-  if (view && (view.kind === 'options' || view.kind === 'share')) {
+  if (view && view.kind === 'colour') {
+    // The colours, each named as the letters' panel names it, the whole
+    // phone lit in the one the chosen row stands on (`trying`): `select`
+    // lights it in that one for both of them, `back` and Escape put it as
+    // it was
+    const sel = Math.max(0, Math.min(view.at || 0, TINTS.length - 1))
+    const said = TINTS.map((t) => TINT_NAMES.get(t) || t)
+    count = pos(view, TINTS)
+    over = (
+      <ScreenMenu
+        items={said} at={sel} label="colour"
+        onAt={(j) => setView({ ...view, at: j })} onPick={choose} onBack={back}
+      />
+    )
+    keys = {
+      l: { label: 'select', onClick: () => choose(sel), aria: `light it ${said[sel]}` },
+      r: { label: 'back', onClick: back, aria: 'back to the notes, as it was' },
+    }
+  } else if (view && (view.kind === 'options' || view.kind === 'share')) {
     const items = view.kind === 'options' ? optionItems : shareItems
     const sel = Math.min(view.at || 0, items.length - 1)
     const pick = (j) => {
@@ -751,7 +916,7 @@ export default function Keepsake({
       l: {
         label: 'options', id: 'wl-keep-options',
         onClick: () => { opener.current = 'wl-keep-options'; setView({ kind: 'options', at: 0 }) },
-        aria: `options: ${standing ? `your new note to ${n0}` : `send ${n0} a new note`}, or take it off your list`,
+        aria: `options: ${standing ? `your new note to ${n0}` : `send ${n0} a new note`}${shared ? ', change its colour' : ''}, or take it off your list`,
       },
       r: {
         label: 'share', id: 'wl-keep-share',
@@ -765,22 +930,24 @@ export default function Keepsake({
   const paused = useRef(null)
   if (!over) paused.current = null
   else if (paused.current === null) paused.current = at ?? (from !== null ? performance.now() - from : 0)
-  const hidden = state === 'hidden'
   const words = sizeOf(p.theirLine, p.line)
   const lines = titleSize(theirFace.title, yourFace.title)
   const cls = [
-    'wl-keep', hidden && 'is-hidden', landing && 'is-landing', enter === 'fade' && !hidden && 'is-fading',
+    'wl-keep', hidden && 'is-hidden', landing && 'is-landing',
     enter === 'fly' && 'is-flying', view && 'is-over',
   ].filter(Boolean).join(' ')
   const phone = { ...SQUARE, '--q-hx': '50%', '--q-hy': `${spot.hy}%` }
+  // the light it throws on the room, in the colour it is lit in
+  const room = { '--lx': `${spot.lx}px`, '--ly': `${spot.ly}px`, '--story-glow-rgb': glowOf(tint) }
+  const report = shared ? (pair.face.opened ? 'opened' : 'delivered') : null
 
   return (
-    <div className={cls} ref={box} style={{ '--lx': `${spot.lx}px`, '--ly': `${spot.ly}px` }}>
+    <div className={cls} ref={box} style={room}>
       <span className="wl-keep-light" ref={light} aria-hidden="true" />
       <div className="wl-keep-strip" ref={strip} inert={hidden || undefined} aria-hidden={hidden || undefined}>
         {/* the squeeze undone while the strip unfolds (`unfold`) */}
         <div className="wl-keep-lens" ref={lens}>
-          <Screen look={LOOK} seed={seed} top={top} keys={keys} live={!hidden} className="wl-keep-scr" style={phone}>
+          <Screen look={look} seed={seed} top={top} keys={keys} live={!hidden} className="wl-keep-scr" style={phone}>
             <div className="wl-keep-body" ref={body}>
               {/* the crown, the film's panel, its cells the glass's
                   (`gridOf`) */}
@@ -802,7 +969,7 @@ export default function Keepsake({
                   </div>
                 ) : null}
               </div>
-              <div className="wl-keep-inbox">
+              <div className="wl-keep-inbox" ref={inbox}>
                 {/* the two of them, once, as one line under what was told;
                     a reader has their names from the notes, so it is not
                     read twice */}
@@ -812,10 +979,13 @@ export default function Keepsake({
                   <span lang={langOf(names[1]) || undefined}>{names[1]}</span>
                 </p>
                 <Note who={names[0]} {...theirFace} titleStyle={lines} text={p.theirLine} size={words} side="theirs" innerRef={theirs} />
-                <Note who={names[1]} {...yourFace} titleStyle={lines} text={p.line} size={words} side="yours" />
+                <Note who={names[1]} {...yourFace} titleStyle={lines} text={p.line} size={words} side="yours" report={report} />
               </div>
             </div>
           </Screen>
+          {/* the black of the glass before its light comes on, and after it
+              goes out (`powered`, mutual.css `wl-keep-off`) */}
+          <span className="wl-keep-veil" ref={veil} aria-hidden="true" />
         </div>
       </div>
       <SheetFoot className="wl-keep-foot">
@@ -826,7 +996,12 @@ export default function Keepsake({
           message {atHandle(them)} on Instagram
         </Pill>
       </SheetFoot>
-      {flying ? <div className="wl-keep-fly" ref={flier} aria-hidden="true"><span /></div> : null}
+      {flying ? (
+        <div className="wl-keep-fly" ref={flier} aria-hidden="true" style={flyStyle}>
+          {worn !== 'rose' ? <span className="wl-keep-fly-was" /> : null}
+          <span className="wl-keep-fly-veil" />
+        </div>
+      ) : null}
     </div>
   )
 }

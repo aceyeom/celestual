@@ -61,6 +61,14 @@
 // has not seen it told either, and it marked the film watched for good on
 // that device, the slot turned still and the takeover never played (the
 // review of 28 September), so the slot still tells it the next time.
+// Marked watched, it is marked opened on the server as well (pings.js
+// `markOpened`, keepface.js `seeFace`, 0077), which is what turns
+// `delivered` under the other person's note into `opened`. With no film and
+// no slot (the link, the ping sheet, a reload), the keepsake powers on where
+// it stands, black glass and then its light (Keepsake.jsx `powered`), and it
+// waits a moment for the pair's face (`primeFace`) so it is lit in the
+// colour the two of them chose from its first frame, and never lit rose and
+// then turned.
 //
 // The screen reader hears the same facts from the first frame, from a
 // heading nobody sees and a line under it, and never waits on the film.
@@ -109,6 +117,7 @@ import { myHandle, myPings, heldPings, mutualOf, liveOf, revealStamp, wasOpened,
 import { takeRevealFrom, returnTo } from '../revealfrom.js'
 import Film, { pairSeed, namesOf, namesNow, primeFilm, filmFor, keepFor, wordsReady, faceCame, filmHold } from '../Film.jsx'
 import Keepsake, { FLY_OPENS } from '../Keepsake.jsx'
+import { primeFace, heldFace } from '../keepface.js'
 import '../mutual.css'
 
 // Who this browser is before the server has said: the handle its own proof
@@ -137,12 +146,23 @@ function nightWords(ms) {
 // ── the screenshot loop's holds ──
 // Development only, as the intro's `?t=` is: `?film=5200` holds the film
 // (Film.jsx), and `?keep` lands on the keepsake at rest, `?keep=options`,
-// `?keep=confirm` or `?keep=share` with that up in the mark's place.
+// `?keep=confirm`, `?keep=share` or `?keep=colour` with that up in the
+// mark's place (`&at=2`, the colours' third row chosen, the phone lit in
+// it); `?power=190` holds its powering on at that many milliseconds.
 function keepHold() {
   if (!import.meta.env.DEV) return null
   const v = new URLSearchParams(window.location.search).get('keep')
-  return v === null ? null : ['options', 'confirm', 'share'].includes(v) ? v : ''
+  return v === null ? null : ['options', 'confirm', 'share', 'colour'].includes(v) ? v : ''
 }
+function numberHold(name) {
+  if (!import.meta.env.DEV) return null
+  const v = new URLSearchParams(window.location.search).get(name)
+  const n = v === null || v === '' ? NaN : Number(v)
+  return Number.isFinite(n) ? n : null
+}
+// How long the keepsake waits for the pair's face before it powers on
+// without it, lit rose and turned when the face comes
+const FACE_WAIT_MS = 350
 // and `?slot=67,210,256,60` stands in for a slot's glass pressed at that
 // rect (with `&slotmenu=options` for its `edit` key), since the screenshot
 // loop opens the reveal by its address and not by a press
@@ -163,7 +183,7 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
   const [hold] = useState(() => {
     const film = filmHold()
     const keep = keepHold()
-    return { film, keep }
+    return { film, keep, at: numberHold('at'), power: numberHold('power') }
   })
   // how it opens, decided once: a mutual marked watched a moment from now
   // is still being watched now
@@ -207,6 +227,22 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
     const t = setTimeout(() => settle(namesNow(mine, them)), 400)
     return () => { alive = false; clearTimeout(t) }
   }, [entry, mine, them])
+
+  // ── the pair's face ──
+  // Asked for as the reveal opens, alongside the names, so the keepsake has
+  // its colour and its battery when it is drawn. Coming up where it stands
+  // (and under reduced motion, which is the same way in) it waits for the
+  // answer, or a third of a second, whichever is sooner, since that phone is
+  // lit on its first frame; out of the film the face has long come by the
+  // landing, and out of the slot the glass is flying and cannot wait
+  const [faced, setFaced] = useState(() => !!heldFace(mine, them))
+  useEffect(() => {
+    let alive = true
+    const done = () => { if (alive) setFaced(true) }
+    primeFace(mine, them).then(done, done)
+    const t = setTimeout(done, FACE_WAIT_MS)
+    return () => { alive = false; clearTimeout(t) }
+  }, [mine, them])
 
   // ── watched ──
   // on arriving the short way or the still one (not with the options up, see
@@ -321,6 +357,7 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
     : hold.film !== null && film ? Math.max(0, hold.film - film.times.live) : null
   const keepFrom = entry === 'film' ? (from === null || !film ? null : from + film.times.live) : arrived
   const enter = entry === 'film' ? 'film' : (entry === 'short' || entry === 'options') && rect ? 'fly' : 'fade'
+  const ready = enter !== 'fade' || faced
   const state = phase === 'film' ? 'hidden' : phase === 'landing' ? 'landing' : 'rest'
   // (asked of the slot and not of the entry, which under reduced motion is
   // the still one, and the `edit` key opened the keepsake with no options)
@@ -339,11 +376,11 @@ function Mutual({ mine, them, p, list, reduce, opened, go, onPhase, escRef }) {
       <p className="wl-sr">
         you both sent a note, and nobody else was told.{night ? ` told ${night}.` : ''}
       </p>
-      {made && behind ? (
+      {made && behind && ready ? (
         <Keepsake
           me={mine} them={them} p={p} names={made.names} first={made.first} seed={seed} stamp={stamp}
           story={made.keep} from={keepFrom} at={keepAt} state={state} enter={enter} fly={rect}
-          menu={menu} standing={standing} go={go} apiRef={keep} escRef={keepEsc}
+          menu={menu} menuAt={hold.at} powerAt={hold.power} standing={standing} go={go} apiRef={keep} escRef={keepEsc}
           onGone={() => sheet && sheet.dismiss('taken')}
         />
       ) : null}

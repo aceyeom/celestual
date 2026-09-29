@@ -50,7 +50,10 @@
 // A cell is [x, y, ink, heat, alpha]. The ink is the screen's near ink, the
 // same ink at half for the far side, or the story's rose (pixmark.js `ROSE`).
 // `heat` is how much of the rose a cell of ink is carrying, for the glint on
-// the mutual's ring. `alpha` is how much of it is lit, for the edges of the
+// the mutual's ring; a story may name its own colour for it (`heat`, a hex),
+// and the keepsake's does, so a keepsake the two of them lit in ice has a
+// glint of deep ice going round its ring and not a rose one (Film.jsx
+// `keepFor`, keepface.js `heatOf`, 29 September). `alpha` is how much of it is lit, for the edges of the
 // two of them and a note going out. A cell whose x or y is not a whole
 // number is one on its way somewhere (the mark gathering), and it is drawn
 // where it is, to the device pixel, between the panel's own cells, until it
@@ -299,18 +302,20 @@ const RANK = [0, 4, 1, 3, 2]
 // the mid (ink 4, the intro's faces, hands and her dress) between them
 const LIT = [1, 1, 0.5, 1, 0.72]
 
-// The fill of a lit cell: its ink, carried toward the rose by its heat, and
-// lit by its alpha. Heat and alpha are counted in sixteenths, so a frame has
-// a few dozen fills to set and not a few hundred, and each is made once.
+// The fill of a lit cell: its ink, carried toward the rose (or the story's
+// own heat) by its heat, and lit by its alpha. Heat and alpha are counted in
+// sixteenths, so a frame has a few dozen fills to set and not a few
+// hundred, and each is made once.
 function fillOf(s, ink, heat, alpha) {
   const h = Math.round(heat * 16)
   const a = Math.round(alpha * 16)
   const key = ink * 1000 + h * 20 + a
   let f = s.fills.get(key)
   if (f) return f
-  const base = ink === 3 ? ROSE_RGB : s.rgb
+  const hot = s.heat || ROSE_RGB
+  const base = ink === 3 ? hot : s.rgb
   const k = ink === 3 ? 0 : h / 16
-  const c = base.map((v, i) => Math.round(v + (ROSE_RGB[i] - v) * k))
+  const c = base.map((v, i) => Math.round(v + (hot[i] - v) * k))
   const lit = LIT[ink] ?? 1
   f = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${((lit + (1 - lit) * k) * (a / 16)).toFixed(3)})`
   s.fills.set(key, f)
@@ -1130,7 +1135,7 @@ const layoutOf = (s, dpr) => ({ cell: s.cell, gap: s.gap, dpr, pc: s.pc, pr: s.p
 // light behind the mark included. `dots` off leaves the dots to the caller,
 // as the keepsake's glass does (the picture lays them over the whole of its
 // glass, on these cells).
-export function paintStill(canvas, frame, { cols, rows, ink = '#131313', dots = true } = {}) {
+export function paintStill(canvas, frame, { cols, rows, ink = '#131313', dots = true, heat = null } = {}) {
   const g = canvas && canvas.getContext('2d')
   if (!g) return null
   const W = canvas.width
@@ -1143,6 +1148,7 @@ export function paintStill(canvas, frame, { cols, rows, ink = '#131313', dots = 
     pc, pr, ox: (pc - cols) >> 1, oy: (pr - rows) >> 1, cell,
     gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
     ink, rgb, fills: new Map(), W, H, mx: (W - pc * cell) >> 1, my: (H - pr * cell) >> 1, dots,
+    heat: heat ? rgbOf(heat) : null,
   }
   s.ghost = faint(rgb)
   paintFine(g, frame, s)
@@ -1195,6 +1201,7 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
         pc, pr, ox: (pc - story.cols) >> 1, oy: (pr - story.rows) >> 1, cell, mode,
         gap: cell >= 6 ? Math.max(1, Math.round(cell * 0.14)) : cell >= 3 ? 1 : 0,
         ink: inkHex, rgb: rgbOf(inkHex), fills: new Map(), panel: story.panel,
+        heat: story.heat ? rgbOf(story.heat) : null,
         spectrum: story.spectrum || null, front: story.spectrum ? null : story.front || FRONT_RGB,
         // (a spectrum laid across the glass, or each colour an equal share)
         axis: story.axis ?? null, even: !!story.even,

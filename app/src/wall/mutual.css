@@ -126,9 +126,10 @@
    screens/Reveal.jsx, Film.jsx, Keepsake.jsx. A black room with one phone
    lit in it, and nothing else. The first time a mutual is opened on a
    device the phone is the whole screen for a film of it (`.wl-film`), and
-   then the camera pulls back and it is one rose phone, the mark alive at
-   the head of its glass and both notes under it, which is what opens every
-   time after (`.wl-keep`). It was a phone telling the intro's story in a
+   then the camera pulls back and it is one phone, rose until the two of
+   them light it in another colour, the mark alive at the head of its glass
+   and both notes under it, which is what opens every time after
+   (`.wl-keep`). It was a phone telling the intro's story in a
    loop over a column of the pair, their note and a key; the owner asked
    for the animation over the entire screen, both names and both letters,
    and a thing worth keeping (28 September), and this half was rewritten
@@ -166,7 +167,8 @@
    and the room goes on opacity alone, since the glass is fixed to the
    window and a transform on the column would carry it off. */
 .wl-sheet-wrap.is-reveal.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
-.wl-sheet-wrap.is-reveal.is-closing .wl-keep-scr .wl-scr { animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both; }
+.wl-sheet-wrap.is-reveal.is-closing .wl-keep-veil { animation: wl-keep-off 200ms cubic-bezier(0.4, 0, 1, 1) both; }
+@keyframes wl-keep-off { from { opacity: 0; } to { opacity: 1; } }
 .wl-sheet-wrap.is-reveal.is-closing:is(.is-film, .is-landing) .wl-sheet { animation: wl-unfade 260ms var(--ease-out) both; }
 .wl-sheet-wrap.is-reveal.is-closing .wl-film-veil { animation: wl-film-sleep 220ms steps(2, end) both; }
 @keyframes wl-film-sleep { to { opacity: 1; } }
@@ -352,7 +354,7 @@
 .wl-mutual-say .wl-scr-cur { margin-right: -0.214em; }
 
 /* ═══ the keepsake ════════════════════════════════════════════════════════
-   Keepsake.jsx. One rose phone, held square, as wide as the column up to
+   Keepsake.jsx. One phone, held square, as wide as the column up to
    400 (346 on a phone of 390), and every size on it in `--su`, a hundredth
    of the mark panel's width, which on a phone is the phone's own: the mark
    stands across the whole head of the glass (on a desk and on its side the
@@ -408,7 +410,23 @@
    note or the menu asked for, went nowhere */
 .wl-keep.is-hidden :is(.wl-keep-strip, .wl-keep-foot),
 .wl-keep.is-flying:not(.is-landing) :is(.wl-keep-strip, .wl-keep-foot) { opacity: 0; pointer-events: none; }
-.wl-keep.is-fading { animation: wl-fade 320ms var(--ease-out) both; }
+/* Powering on (Keepsake.jsx `powered`, the `fade` way in): a veil the
+   black of the glass before its backlight comes on, over the whole phone,
+   band, glass and keys, and a little past its edge, where the light the
+   glass throws on its bezel would otherwise stand round a phone still
+   dark. Lifted by the script in 380ms, the notes' light following it; at
+   rest it is at nothing and in nobody's way. It was a plain fade of the
+   whole keepsake in 320ms, a page arriving rather than a phone coming on
+   (the owner, 29 September). Going out it comes down again in 200ms, the
+   screen's light going out rather than a blur, which on a glass this size
+   is the dearest frame the page could draw (`wl-keep-off`, above). */
+.wl-keep-lens { position: relative; }
+.wl-keep-veil {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border-radius: calc(1.2 * var(--su)); background: #000;
+  box-shadow: 0 0 calc(1.4 * var(--su)) calc(0.6 * var(--su)) #000;
+  opacity: 0;
+}
 /* the unfold (Keepsake.jsx `unfold`): the strip's own edge is the cut while
    it opens, and the lens in it has the squeeze undone. While the keepsake
    waits for it, behind the film or under the slot's glass, the two are
@@ -459,8 +477,10 @@
 /* One status row. The phone belongs to two people and not to a letter, so
    there is no second row of a name and a handle: it is off here outright,
    and not left to story.css. The aerial at the start, the night it was
-   told in the middle of the row and not of what the aerial leaves, since
-   no battery stands at the far end to balance it, and the row is the same
+   told in the middle of the row, and the phone's one battery at the far
+   end, as every phone had it: the pair's (Keepsake.jsx `tap`, keepface.js),
+   which the notes each carried a battery of their own for until the owner
+   put the one at the top of the card (29 September). The row is the same
    whatever is up: a menu names itself on its own small screen (Keepsake.jsx
    `Pane`). Every size in `--su`, the night's included, which a desk read
    in `cqw` of the whole row */
@@ -471,6 +491,30 @@
 }
 .wl-keep-scr .wl-scr-r1 > .wl-scr-ant { justify-self: start; }
 .wl-keep-scr .wl-scr-r1 > .wl-scr-stamp { grid-column: 2; margin: 0; }
+/* The battery: eight of `--su` tall to the aerial's nine, as a letter's is
+   to its aerial, and a whole number of the page's pixels to each of the
+   glyph's eight rows where the page can round it (`--keep-bat`), so it is
+   as crisp as the aerial beside it. A key with no mark on it of being one:
+   the dotted line a writer's battery carries on the composer's status row
+   (screen.css `.wl-scr-bat.is-key::before`) says this is yours to set, and
+   this one says nothing, the owner's untold mechanism; its reach is a
+   finger's all the same, in `--su`, and its ring the status's light. It
+   never blinks, even empty: the keepsake is still, and an empty battery
+   blinking on it would be the one thing on the glass asking for a hand */
+.wl-keep-scr .wl-scr-r1 > .wl-scr-bat { grid-column: 3; justify-self: end; margin: 0; }
+.wl-keep-scr .wl-scr-bat .wl-px { height: var(--keep-bat) !important; width: auto !important; }
+.wl-keep-scr .wl-scr-bat.is-low { animation: none; }
+.wl-keep-scr .wl-scr-bat.is-key::before { content: none; }
+.wl-keep-scr .wl-scr-bat.is-key::after { inset: calc(-2.6 * var(--su)) calc(-1.8 * var(--su)); }
+.wl-root .wl-keep-scr .wl-scr-bat.is-key:focus-visible {
+  outline: calc(0.5 * var(--su)) solid var(--s-lit); outline-offset: calc(0.6 * var(--su)); border-radius: calc(0.6 * var(--su));
+}
+.wl-keep-scr { --keep-bat: calc(8 * var(--su)); }
+@supports (height: round(nearest, 1px, 1px)) {
+  .wl-keep-scr { --keep-bat: round(nearest, calc(8 * var(--su)), 8px); }
+  @media (min-resolution: 2dppx) { .wl-keep-scr { --keep-bat: round(nearest, calc(8 * var(--su)), 4px); } }
+  @media (min-resolution: 3dppx) { .wl-keep-scr { --keep-bat: round(nearest, calc(8 * var(--su)), calc(8px / 3)); } }
+}
 .wl-keep-scr .wl-scr-cnt { font-size: calc(11 * var(--su)); }
 .wl-keep-scr .wl-scr-ant .wl-px { height: calc(9 * var(--su)) !important; width: auto !important; }
 .wl-keep-scr .wl-scr-bot { height: calc(14 * var(--su)); padding: 0 calc(1.6 * var(--su)) calc(0.6 * var(--su)); }
@@ -555,6 +599,13 @@
   font-size: calc(7.6 * var(--su)); line-height: 1.08;
 }
 .wl-keep-sheet .wl-scr-menu li { padding: calc(1.2 * var(--su)) calc(1.8 * var(--su)) calc(0.9 * var(--su)); border-radius: calc(0.5 * var(--su)); }
+/* The colours are seven rows (Keepsake.jsx `colour`), more than any other
+   menu here, so they are set a step smaller and closer, and the small
+   screen stands in the mark's place as the others do, with the names' line
+   and the notes clear under it on every glass: at the others' size it ran
+   down over the first note's strip on a desk */
+.wl-keep-sheet.is-colour .wl-scr-menu { font-size: calc(6.2 * var(--su)); padding: calc(1.2 * var(--su)) calc(1.6 * var(--su)); }
+.wl-keep-sheet.is-colour .wl-scr-menu li { padding: calc(0.75 * var(--su)) calc(1.8 * var(--su)) calc(0.45 * var(--su)); }
 /* The small screen that has the phone's keys is framed in the ink, its
    hairline drawn in full, as a phone framed the screen in front: the menu
    while its list has the focus, and a note while it holds it. That is the
@@ -639,25 +690,15 @@
 }
 /* its writer's line, at 6.2 until the longer of the pair's two is too long
    for the strip, then both set smaller to fit it, down to 4.2, and only
-   then cut: the strip less the battery and the gap before it, over the
-   longer line's length in the face's widths (Keepsake.jsx `titleSize`),
-   each near two fifths of an em */
+   then cut: the whole strip, over the longer line's length in the face's
+   widths (Keepsake.jsx `titleSize`), each near two fifths of an em. The
+   strip kept the room of a battery at its end until the one battery went
+   to the band (29 September) */
 .wl-keep-title {
   flex: 1 1 auto; min-width: 0;
-  font-size: max(calc(4.2 * var(--su)), min(calc(6.2 * var(--su)), calc((100cqw - 11.4 * var(--su)) / (0.39 * var(--n, 1)))));
+  font-size: max(calc(4.2 * var(--su)), min(calc(6.2 * var(--su)), calc(100cqw / (0.39 * var(--n, 1)))));
   line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* the battery, a whole number of the screen's own pixels to each of the
-   glyph's eight rows where the page can round it (eight of the page's
-   pixels a step on a screen of one to the pixel, four on one of two and
-   three on one of three), so it is as crisp as the band's glyphs */
-.wl-keep-body { --keep-bat: calc(4.2 * var(--su)); }
-@supports (height: round(nearest, 1px, 1px)) {
-  .wl-keep-body { --keep-bat: round(nearest, calc(4.2 * var(--su)), 8px); }
-  @media (min-resolution: 2dppx) { .wl-keep-body { --keep-bat: round(nearest, calc(4.2 * var(--su)), 4px); } }
-  @media (min-resolution: 3dppx) { .wl-keep-body { --keep-bat: round(nearest, calc(4.2 * var(--su)), calc(8px / 3)); } }
-}
-.wl-keep-bat { flex: 0 0 auto; }
 /* the words keep the room's paragraph measure (phone.css), a little more
    open than a letter's screen, so a note of two lines reads as said */
 .wl-keep-words {
@@ -677,8 +718,23 @@
 }
 .wl-keep-glyph { height: calc(7 * var(--su)); width: auto; }
 .wl-keep-from {
+  display: flex; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; column-gap: calc(1.4 * var(--su));
   padding: calc(1.2 * var(--su)) calc(3 * var(--su)) calc(2.2 * var(--su));
   font-size: calc(5.2 * var(--su)); line-height: 1; text-align: right; opacity: 0.72;
+}
+/* The report under your note, after your name: what the phone said of a
+   message it had sent, `delivered` and then `opened` (Keepsake.jsx `Note`),
+   a point of the caption's own between, and before `opened` the phone's
+   tick, a size under the words and a whole number of the page's pixels to
+   each of its six rows where the page can round it. In the caption's ink
+   and at its strength: a line of the note's, and never a light */
+.wl-keep-report { display: inline-flex; align-items: baseline; column-gap: calc(1.4 * var(--su)); white-space: nowrap; }
+.wl-keep-report .wl-keep-tick { align-self: center; }
+.wl-keep-body { --keep-tick: calc(3.6 * var(--su)); }
+@supports (height: round(nearest, 1px, 1px)) {
+  .wl-keep-body { --keep-tick: round(nearest, calc(3.6 * var(--su)), 6px); }
+  @media (min-resolution: 2dppx) { .wl-keep-body { --keep-tick: round(nearest, calc(3.6 * var(--su)), 3px); } }
+  @media (min-resolution: 3dppx) { .wl-keep-body { --keep-tick: round(nearest, calc(3.6 * var(--su)), 2px); } }
 }
 
 /* ── the lit key ──
@@ -708,14 +764,20 @@
 .wl-keep.is-landing .wl-keep-foot { animation: wl-fade 260ms var(--ease-out) 240ms both; }
 .wl-keep.is-landing.is-flying .wl-keep-foot { animation-duration: 200ms; animation-delay: 80ms; }
 
-/* the slot's glass, flying to the mark: the rose panel under the slot's
-   sleeping light, waking as it comes */
+/* the slot's glass, flying to the mark: the panel in the colour the pair's
+   keepsake is lit in (Keepsake.jsx `flyStyle`, the screen's own three
+   greys of it), under the slot's sleeping light, waking as it comes; and a
+   pair that lit theirs in another colour than the slot's rose has the rose
+   going out of it on the way (`.wl-keep-fly-was`). The rose was this
+   file's own, in three figures, until the pair could choose */
 .wl-keep-fly {
   position: fixed; z-index: 3; pointer-events: none; overflow: hidden;
   transform-origin: 0 0; border-radius: 3px;
-  background: radial-gradient(120% 95% at 50% 50%, #E9B3C7, #DF93AF 52%, #9C677B);
+  background: radial-gradient(120% 95% at 50% 50%, var(--fly-hi, #E9B3C7), var(--fly-mid, #DF93AF) 52%, var(--fly-lo, #9C677B));
 }
-.wl-keep-fly > span { position: absolute; inset: 0; background: #000; opacity: 0.38; }
+.wl-keep-fly > span { position: absolute; inset: 0; }
+.wl-keep-fly-was { background: radial-gradient(120% 95% at 50% 50%, #E9B3C7, #DF93AF 52%, #9C677B); }
+.wl-keep-fly-veil { background: #000; opacity: 0.38; }
 
 /* waiting on the server, and nothing here */
 .wl-reveal-wait { flex: 1 1 auto; display: grid; place-items: center; min-height: 60svh; color: var(--ash); }
@@ -770,7 +832,7 @@
   .wl-keep-title {
     white-space: normal; text-wrap: balance; line-height: 1.08;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    font-size: max(calc(5.2 * var(--su)), min(calc(6.2 * var(--su)), calc((100cqw - 11.4 * var(--su)) / (0.39 * var(--n, 1)))));
+    font-size: max(calc(5.2 * var(--su)), min(calc(6.2 * var(--su)), calc(100cqw / (0.39 * var(--n, 1)))));
   }
   .wl-keep-words { align-self: start; }
 }
@@ -805,13 +867,14 @@
 }
 
 /* ── still ──
-   Under reduced motion the film is never played: the keepsake comes up in
-   200ms, its mark one frame of it alive with the cursor lit, and the light
-   round it stands at the strength it breathes at. The notes' batteries
-   never blink, whatever the motion, and a landing held under it (`?film`)
-   puts the names and the notes up without the flicker of a screen waking. */
+   Under reduced motion the film is never played and the phone does not
+   power on: the keepsake is simply there, lit, its mark one frame of it
+   alive with the cursor lit, and the light round it stands at the strength
+   it breathes at. The battery on its band never blinks, whatever the
+   motion, and a landing held under it (`?film`) puts the names and the
+   notes up without the flicker of a screen waking. */
 @media (prefers-reduced-motion: reduce) {
-  .wl-keep.is-fading { animation-duration: 200ms; }
+  .wl-keep-veil { opacity: 0; }
   .wl-keep-light { opacity: 0.8; animation: none; }
   .wl-keep.is-landing :is(.wl-keep-pair, .wl-keep-note) { animation: none; }
   .wl-join-step { transition: none; }
