@@ -7,7 +7,9 @@
 // touch) with the processor slowed four times, a letter is opened off a disc
 // with a finger, turned by the hand three times, turned by the arrow keys in
 // quick succession, turned onto the next name, closed, and then a letter's
-// replies are slid open and shut. Each of those is watched frame by frame
+// replies are raised by its key and laid down by the grip of the sheet they
+// stand on (the key is under the sheet by then, as a thumb would find it).
+// Each of those is watched frame by frame
 // (a frame loop in the page, and the long tasks the page reports), and the
 // numbers are the frames that came late, how late the worst one was, and
 // the tasks that held the page for more than fifty milliseconds. A swipe's
@@ -222,7 +224,10 @@ async function measurement() {
       const { ctx, page, cdp } = await open('/letter/pilar.echevarria', 'full')
       await wait(2200)
       await watch(page, 'replies', async () => { await tap(page, cdp, '.wl-letter-card .wl-sk.is-thread'); await wait(1300) })
-      await watch(page, 'shut', async () => { await tap(page, cdp, '.wl-letter-card .wl-sk.is-thread'); await wait(1100) })
+      // the grip on a phone, the close key at the head of the panel in a wide
+      // room: whichever of the two the sheet is showing
+      const shut = MODE === 'phone' ? '.wl-th .wl-th-grip' : '.wl-th .wl-th-x'
+      await watch(page, 'shut', async () => { await tap(page, cdp, shut); await wait(1100) })
       await ctx.close()
     }
   }

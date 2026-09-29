@@ -174,9 +174,11 @@ screen, on the composer and the verify page, the same row stands on a small
 unlit plate (`Sticker.jsx`, which kept its name). A name note's school reads
 `at UC Berkeley`, so it cannot be taken for the mark.
 
-**Replies.** Every letter has a thread under it (0068, `celestual-wall-reply`,
-`app/src/wall/Replies.jsx`), drawn under the phone in the phone's own language
-and never on its screen, because the screen is the letter.
+**Replies.** Every letter has a thread (0068, `celestual-wall-reply`,
+`app/src/wall/Replies.jsx`), on a sheet its right soft key raises over the
+letter, the phone stepping back to stand whole above it (in a wide room, a
+panel beside it), in the wall's own unlit panel and never on the letter's
+screen, because the screen is the letter.
 
 - **Who replies.** A person with a proved school address (any `.edu`, or an
   address on the desk's pass list), which is the accountability the @-notes

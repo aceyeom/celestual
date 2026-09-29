@@ -333,6 +333,9 @@ function thread() {
   const full = { ...base, count: rows.length, replies: rows, me }
   switch (THREAD) {
     case 'full': return full
+    // a thread of three figures, which the key counts at a step smaller
+    // (replies.css `.is-long`); the rows drawn are the same six
+    case 'many': return { ...full, count: 128 }
     case 'terms': return { ...full, me: { ...me, terms: false } }
     case 'held': return { ...full, count: rows.length, replies: [...rows,
       { id: 'r0000007-2222-4333-8444-555566660007', who: 'c74d97b01eae257e', recipient: false, status: 'held', mine: true,
@@ -1834,20 +1837,23 @@ const ROUTES = [
       ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
 
   // ── the replies (0068) ──
-  // The thread, the phone's lower half (app/src/wall/Replies.jsx), in every
-  // state it has: shut with its count on the chin, sliding open, open, the
-  // field risen, nothing yet, the recipient's own view and their reply, shut
-  // and put away, a device with no school and the link sent, the terms before
-  // a first reply, a name caught at the keyboard, a reply held and one
-  // refused, a report folded away, an open phone carried half shut by a
-  // hand, and the desk's queue.
+  // The thread, a sheet raised over the letter (app/src/wall/Replies.jsx
+  // `ThreadSheet`), and in a wide room a panel beside it, in every state it
+  // has: down with its bubble and count on the key and the envelope by the
+  // aerial, rising, up, scrolled to its foot, the field risen, nothing yet,
+  // the recipient's own view and their reply, shut and put away, a device
+  // with no school and the link sent, the terms before a first reply, a name
+  // caught at the keyboard, a reply held and one refused, a report folded
+  // away, the sheet half pulled down by its head and laid down by a press
+  // on the letter over it, a count of three figures, and the desk's queue.
   { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
+  { label: 'replies-many',     path: '/letter/pilar.echevarria', thread: 'many', settle: 1800 },
   { label: 'replies-opening',  path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 170]], settle: 0 },
   { label: 'replies-open',     path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-th .wl-low-list']], settle: 600 },
   { label: 'replies-write',    path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
@@ -1858,7 +1864,7 @@ const ROUTES = [
   { label: 'replies-recipient-open', path: '/letter/pilar.echevarria', thread: 'recipient',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-locked',   path: '/letter/pilar.echevarria', thread: 'locked',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-letter-card .wl-low-list']], settle: 600 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['end', '.wl-th .wl-low-list']], settle: 600 },
   { label: 'replies-locked-owner', path: '/letter/pilar.echevarria', thread: 'locked-owner',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-closed',   path: '/letter/pilar.echevarria', thread: 'closed', settle: 1800 },
@@ -1883,21 +1889,29 @@ const ROUTES = [
            ['fill', '.wl-rp-field textarea', 'refuse this one please'], ['click', '.wl-tray-send']], settle: 900 },
   { label: 'replies-reported', path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-item:nth-child(2) .wl-rp-flag']], settle: 700 },
-  // a shut phone taken sideways and held, the chins in a line across the gap
+  // a letter taken sideways and held, the key bands in a line across the gap
   { label: 'replies-drag',     path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['swipe', '.wl-letter-card .wl-scr', -120, 'hold']], settle: 200 },
-  // an open phone taken sideways and held: half shut under the hand, the
-  // neighbour coming up out of the dark
-  { label: 'replies-carry',    path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['swipe', '.wl-letter-card .wl-scr', -90, 'hold']], settle: 200 },
-  // the tray on the other glasses: a negative, where the ink is the light,
-  // and a poster's print
+  // the sheet taken by its head and held half way down, the letter coming
+  // back down and out to its place with it (a phone; the panel in a wide
+  // room is not pulled)
+  { label: 'replies-sheet-drag', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['swipe', '.wl-th-head', [0, 200], 'hold']], settle: 200 },
+  // and laid down by a press on the letter over it, caught on its way down
+  // and then at rest: the first press does nothing else
+  { label: 'replies-backdrop-shutting', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th-room', { x: 0.5, y: 0.18 }, 40]], settle: 0 },
+  { label: 'replies-backdrop-shut', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th-room', { x: 0.5, y: 0.18 }, 800]], settle: 200 },
+  // the sheet under the other glasses: a negative, whose light is its
+  // words, and a poster's print
   { label: 'replies-negative', path: '/letter/dani.arroyo', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
            ['fill', '.wl-rp-field textarea', 'this made my whole week']], settle: 500 },
   { label: 'replies-poster', path: '/letter/jules.k', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
-  // the recipient's reply lit in the letter's own colour, one of each kind
+  // the recipient's badge and the sheet's edge lit in the letter's own
+  // colour, one of each kind
   { label: 'replies-rose',     path: '/letter/sofiaaa.reyes', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-acid',     path: '/letter/thom.iversen', thread: 'full',
@@ -2185,14 +2199,23 @@ for (const r of list) {
           const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)
           if (top && !el.contains(top) && top.closest('.wl-foot')) el.scrollIntoView({ block: 'center' })
         }).catch(() => {})
-        await page.click(sel, { timeout: 4000, force: true }).catch(() => {})
+        // `arg`, when it is given, is where on the element, as a share of
+        // its box ({ x, y }), for an element another stands over the middle
+        // of (the press round the replies, under the sheet)
+        const position = arg && typeof arg === 'object'
+          ? await page.$eval(sel, (el, at) => { const b = el.getBoundingClientRect(); return { x: b.width * at.x, y: b.height * at.y } }, arg).catch(() => undefined)
+          : undefined
+        await page.click(sel, { timeout: 4000, force: true, position }).catch(() => {})
         if (typeof more === 'number') { await page.waitForTimeout(more); continue }
       }
       // A finger across an element, as the pointer events a touch sends.
-      // `arg` is how far, in pixels, and `more` of 'hold' leaves the finger
-      // down so the frame in the middle of the gesture can be shot.
+      // `arg` is how far, in pixels: a number is sideways, and `[dx, dy]`
+      // goes down (or up) as well, for the replies' sheet pulled down by
+      // its head. `more` of 'hold' leaves the finger down so the frame in
+      // the middle of the gesture can be shot.
       if (act === 'swipe') {
-        await page.evaluate(async ({ sel, dx, hold }) => {
+        const [dx, dy] = Array.isArray(arg) ? [Number(arg[0]) || 0, Number(arg[1]) || 0] : [Number(arg) || 0, 0]
+        await page.evaluate(async ({ sel, dx, dy, hold }) => {
           const el = document.querySelector(sel)
           if (!el) return
           const b = el.getBoundingClientRect()
@@ -2207,10 +2230,10 @@ for (const r of list) {
           const steps = 12
           for (let i = 1; i <= steps; i++) {
             await frame()
-            ev('pointermove', x0 + (dx * i) / steps, y0)
+            ev('pointermove', x0 + (dx * i) / steps, y0 + (dy * i) / steps)
           }
-          if (!hold) { await frame(); ev('pointerup', x0 + dx, y0) }
-        }, { sel, dx: Number(arg) || 0, hold: more === 'hold' }).catch(() => {})
+          if (!hold) { await frame(); ev('pointerup', x0 + dx, y0 + dy) }
+        }, { sel, dx, dy, hold: more === 'hold' }).catch(() => {})
       }
       // The same with the browser's own mouse, which the letter's deck takes
       // too: to the middle of the element, then pressed and drawn `arg`

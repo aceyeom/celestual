@@ -30,7 +30,7 @@ below, says what it does now before it tells what it was). Anybody can write
 to an @, and what they write is read before it goes up; a letter from a
 proved Berkeley address goes up at once and carries the Berkeley mark in its
 status row where the sticker stood. The @ is never printed on a letter. A
-letter has a thread of replies under it (The replies, below), the heart is
+letter's replies are a sheet its key raises over it (The replies, below), the heart is
 anybody's, and the field can be looked at four ways from a key at the end of
 its search (The search, The hive and The deck, below). The door's email way in
 is a link now, with a number to type on another device, where it was a code.
@@ -583,28 +583,40 @@ question is the name on the card itself, which is a press, and the dots in
 the head. And the act, `send anonymously`, stands alone in the middle of the
 foot, at a width a thumb finds.
 
-## The replies, under a letter
+## The replies, over a letter
 
-Since 26 September a letter has a thread under it (`Replies.jsx`,
-`replies.css`, `replies-api.js`, `replies-check.js`, `avatars.js`; migration
-0068 and `supabase/functions/celestual-wall-reply` are the rules). It sits
-under the phone, in the phone's own language, and never on its screen: the
-screen is the letter, and a thread folded into it would push the writer's
-words off their own glass, while a clean comment panel of the kind every other
-app draws under a post would be the one thing in the black room that is not
-the phone. So it is what an old phone drew under a message it had kept: an
-unlit panel of the same glass with the pixel grid and a one pixel bezel,
-dotted pixel rules between its parts, a head that is a status row (the newest
-three repliers' pictures, the count, and a line lit in the letter's colour,
-`the recipient replied`, when they have), and each reply a message in Jersey
-with its writer's picture on a small screen beside it. Two things on it are
-lit: the pictures, which are small screens as faces are, and the recipient's
-reply, a small lit screen in the letter's own inks with its hot corner, its
-grid and its glow, a `recipient` badge struck out of the ink and the @'s own
-face, because it is the letter answering. With a thread mounted the letter's
-sheet scrolls, the phone and the thread's head centred together in the first
-screenful, the scrim and the close mark fixed, and a black band fading what
-scrolls under them.
+Since 26 September a letter has a thread (`Replies.jsx`, `replies.css`,
+`replies-api.js`, `replies-check.js`, `avatars.js`; migration 0068 and
+`supabase/functions/celestual-wall-reply` are the rules). Since 28 September
+it is read the way every comment thread on a phone is read: the letter's
+right soft key, a pixel speech bubble and its count drawn exactly as the
+heart and its count beside it are, raises a sheet from the foot of the glass
+(`ThreadSheet`), and the letter's phone rises and steps back on the same
+clock until the whole of it stands in the room left between the close mark
+and the sheet's edge, still lit, as a reel stands over its comments (at half
+its size it steps back no further, and the sheet gives it back the sliver it
+would cover, or else covers its foot). A press anywhere off the sheet lays
+it down and does nothing else, as do the grip, a pull down by the head or by
+the list at its top (past three tenths of the way, or thrown), the key
+again, and Escape; the deck does not turn while it is up. From 900 wide, or
+on a phone on its side, the letter slides left and the replies stand at its
+right as a panel as tall as its phone, with a close key at its head. When
+the person the letter is to has answered, the envelope stands by the letter's
+aerial, steady, where a phone said something had come in (it was a lit
+square stacked under a lit count at the key's shoulder, which the owner read
+as a badge stuck onto the key). The sheet is the wall's unlit panel, as the
+account's sheet is: `--lcd` with its pixel grid, one pixel of bezel, four
+pixel corners at the top, the three dash grip, chalk and ash in Jersey, the
+chrome's keys and fields. The one colour on it is the letter's own light
+where it falls on the sheet, a hairline and a haze along its top edge (in a
+wide room, the edge facing the letter), and the badge on the recipient's
+reply, `recipient`, lit in the letter's colour beside their own face. It was
+twice the phone's own lower half, an unlit panel under the screen and then
+the letter's lit glass slid out from under its key band, and the owner read
+both as something attached to the letter that did not blend. Each reply is
+the row every comment thread has: the writer's creature in chalk on a small
+unlit screen, who and when with a small dim flag after the time, the words
+under them, and the heart with its count in one column down the right.
 
 | | |
 | --- | --- |
@@ -622,7 +634,7 @@ scrolls under them.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, to anybody (it was whole or redacted until 0066), the heart on its foot with the count beside it, the thread of replies under it (The replies, above), a nudge under the card for somebody not signed in from the eighth letter (rule 1), and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, to anybody (it was whole or redacted until 0066), the heart on its foot with the count beside it, its replies on a sheet its right soft key raises over it (The replies, above), a nudge under the card for somebody not signed in from the eighth letter (rule 1), and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall**: Instagram first, then Google and an address. The address was a mailed six digit code, Supabase Auth's (0057), and is a mailed link since 0065 (`linkdoor.jsx`): `check your inbox.` with the address, `tap the link in the mail.`, `waiting for the link`, a resend after thirty seconds, and `use a different address`. It asks the link's status and lands the moment it is tapped in this browser. Tapped in another, that browser is the one signed in and never this one (0070, which took away the number 0065 asked for there), and the door says `you opened it somewhere else.` with a new link to open here. Signed in already, it is the account |
@@ -750,9 +762,10 @@ screens/     one file per screen. Wall.jsx carries `Seek`, the search on the
 Nudge.jsx    the note under a letter for somebody not signed in (0066)
 Filter.jsx   the key at the end of the search, its menu, and the field's
              move from one filter to the next (0067)
-Replies.jsx  the thread under a letter, with replies-api.js, replies-check.js
-             (the rule that a reply names nobody, at the keyboard) and
-             avatars.js (the creatures a thread names its writers by) (0068)
+Replies.jsx  a letter's thread, the sheet its key raises over it, with
+             replies-api.js, replies-check.js (the rule that a reply names
+             nobody, at the keyboard) and avatars.js (the creatures a thread
+             names its writers by) (0068)
 linkdoor.jsx the wait for a mailed link: the wait, the resend, and opened somewhere else
              (0065)
 ```

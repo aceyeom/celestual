@@ -2430,8 +2430,8 @@ a.wl-lq { text-decoration: none; }
    number the sheet, the stage, the deck and the nudge's note are all sized
    from, and on a phone it leaves `--gutter` of glass either side for the
    letters beside it (THE LETTER, below). The height it is sized off keeps
-   forty pixels more than it did for the chin under every screen, the lip
-   the thread slides out from (Letter.jsx `Handset`). */
+   the forty pixels it once kept for a chin under every screen, which the
+   deck's foot and the nudge's note have since grown into. */
 .wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 2 * var(--gutter)), 520px, calc((100svh - 230px) / 1.22)); }
 @media (max-height: 560px) and (orientation: landscape) {
   /* a letter with no nudge under it has no foot to leave room for (the
@@ -2672,8 +2672,8 @@ a.wl-lq { text-decoration: none; }
    (Letter.jsx `place`). The gap, the dim and the size are read back by that
    gesture, so they stay plain numbers here and never a calc. `pan-y` hands
    a vertical drag on the glass round the card to the browser; on the card
-   itself a vertical drag is the phone's own, which slides it open on its
-   thread (the slider, below).
+   itself a vertical drag is the letter's own, which raises its replies
+   (the letter while its replies are up, below, and replies.css).
 
    The GLASS is the only clip (`.wl-sheet-wrap.is-letter`): a neighbour is
    cut by the window's edge and by nothing in the room. */
@@ -2726,14 +2726,13 @@ a.wl-lq { text-decoration: none; }
    Every screen on the strip is the same rectangle, whatever its letter: the
    proportion is the phones' middle one here (1.16, where the quirks run from
    1.12 to 1.2), so the card and both neighbours stand at one height, their
-   key bands and chins in a line across the gap while a hand moves them, and
-   the strip never bobs as it turns. Each still lies on the table at its own
-   angle: the photograph's lie (`--q-rz`) is kept, and turns the whole phone
-   as one body (`.wl-set`, Letter.jsx `Handset`), the chin and the thread
-   with it. The camera's depth (`--q-rx`, `--q-ry`) is dropped here, since a
-   screen turned in depth reads as a card turning while the strip slides it
-   sideways, two neighbours turned opposite ways zigzag across the glass, and
-   the thread's words and caret would be read and typed on a keystone. What
+   status rows and key bands in a line across the gap while a hand moves
+   them, and the strip never bobs as it turns. Each still lies on the table
+   at its own angle: the photograph's lie (`--q-rz`) is kept, and turns the
+   whole phone as one body (`.wl-set`, Letter.jsx `Handset`). The camera's
+   depth (`--q-rx`, `--q-ry`) is dropped here, since a screen turned in
+   depth reads as a card turning while the strip slides it sideways, and
+   two neighbours turned opposite ways zigzag across the glass. What
    makes a letter its own phone is painted and all of it stays: the corner,
    the hot spot of its backlight, its pitch and moire, its dust, scratch and
    dead pixel, its glare, a print's grain and slip. The small screens on the
@@ -2744,57 +2743,48 @@ a.wl-lq { text-decoration: none; }
    screen in depth is drawn again on every frame the page draws, and a print
    beside the card was turned in its own plane only for that reason. No
    screen on the strip is in depth now, card or neighbour, lit or printed.
-   The screen's foot is square while its thread is out under it, and has
-   its corners back once the thread has gone in. */
+   A screen keeps its corners while its replies are up: the sheet over the
+   glass is not joined to it. */
 .wl-letter-track .wl-scr {
   aspect-ratio: 1 / 1.16;
   transform: none;
 }
-.wl-letter.is-thread .wl-letter-card .wl-scr { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-/* ── the slider ──
-   Letter.jsx, the slider. The phone at rest, as the stylesheet draws it:
-   shut, lying at its angle about its own middle; open, square to the eye,
-   its upper half risen to stand under the close mark (`--o-dy`, and in a
-   wide room shown smaller about its top, `--o-s`), and its thread out from
-   under the chin (replies.css `.wl-slide`). Every movement between the two
-   is written by Letter.jsx on one length and one curve, and handed back to
-   these rests. While a field in the thread has a phone's keys, the open
-   phone rises by what they cover (`--o-kb`), with the keyboard. */
+/* ── the letter while its replies are up ──
+   Letter.jsx, the sheet. The phone at rest, as the stylesheet draws it:
+   with its replies down, lying at its angle about its own middle; with
+   them up, square to the eye, risen and stepped back about its top to
+   stand whole in the room over the sheet (`--o-dy`, `--o-s`), and in a
+   wide room slid to the left of the panel beside it (`--o-dx`). Every
+   movement between the two is written by Letter.jsx on one length and one
+   curve, the sheet's (replies.css), and handed back to these rests. */
 .wl-set { position: relative; transform: rotate(var(--q-rz, 0deg)); }
-/* the handset is the screen's width and no wider, so the thread that
-   Letter.jsx `fitSlider` sizes off it is too. The card is wider than the
+/* the phone is the screen's width and no wider, so what Letter.jsx
+   `fitThread` measures off it is the screen. The card is wider than the
    screen wherever the screen is sized off the window's height (a link
-   opened in an app's own browser, a short phone), and a thread sized off
-   the card stood out past the screen on both sides */
+   opened in an app's own browser, a short phone) */
 .wl-letter-track .wl-set { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
 .wl-set-up { position: relative; z-index: 1; transform-origin: 50% 0; }
-/* a hand on the card's upper half takes it up and down as well as
-   sideways (Letter.jsx, the swipe), so the browser is given none of it; the
-   thread itself scrolls as a list does (replies.css) */
+/* a hand on the card takes it up and down as well as sideways (Letter.jsx,
+   the swipe), so the browser is given none of it */
 .wl-letter-card .wl-set.has-thread > .wl-set-up { touch-action: none; }
-.wl-letter-card .wl-set { transition: translate 280ms cubic-bezier(0.32, 0.72, 0, 1); }
-.wl-letter.is-thread .wl-letter-card .wl-set { transform: none; translate: 0 calc(-1 * var(--o-kb, 0px)); }
-.wl-letter.is-thread .wl-letter-card .wl-set-up { transform: translate3d(0, var(--o-dy, 0px), 0) scale(var(--o-s, 1)); }
-/* the light the screen throws goes up with it */
-.wl-letter.is-thread > .wl-letter-light { transform: translate3d(0, calc(var(--o-dy, 0px) * 0.5), 0); }
-/* while it is open the phone is the only thing on the table: the letters
-   beside it dark, the turn keys gone, and the foot under the card faded */
+.wl-letter.is-thread .wl-letter-card .wl-set { transform: none; }
+.wl-letter.is-thread .wl-letter-card .wl-set-up { transform: translate3d(var(--o-dx, 0px), var(--o-dy, 0px), 0) scale(var(--o-s, 1)); }
+/* the light the screen throws goes with it */
+.wl-letter.is-thread > .wl-letter-light { transform: translate3d(var(--o-dx, 0px), calc(var(--o-dy, 0px) * 0.5), 0); }
+/* while they are up the letter and its replies are the only things on the
+   table: the letters beside it dark, the turn keys gone, and the foot under
+   the card faded */
 .wl-letter.is-thread .wl-letter-slot { opacity: 0; }
 .wl-letter.is-thread .wl-turn { visibility: hidden; pointer-events: none; }
 .wl-letter.is-thread > .wl-foot { opacity: 0; pointer-events: none; }
-/* a press on the black round the open phone shuts it (Letter.jsx `shade`),
-   under the sheet and over the room's own way out */
+/* the letter over the room's own way out, and under the press that lays
+   the replies down (replies.css `.wl-th-room`), the close mark and them */
 .wl-sheet-wrap.is-letter .wl-sheet { z-index: 1; }
-.wl-low-room {
-  position: absolute; inset: 0; z-index: 0;
-  margin: 0; padding: 0; border: 0; background: none;
-  -webkit-tap-highlight-color: transparent; cursor: default;
-}
 /* and the black behind the close mark stands over the phone, for a short
-   window or a keyboard that has pushed the letter's top up under it. The
-   sheet is told the phone is open (Letter.jsx `is-slid`) rather than asking
-   with a `:has()`, which Chrome answered by styling the whole page again
-   whenever any element anywhere changed a class */
+   window where the letter at half its size still stands under it. The
+   sheet is told the replies are up (Letter.jsx `is-slid`) rather than
+   asking with a `:has()`, which Chrome answered by styling the whole page
+   again whenever any element anywhere changed a class */
 .wl-sheet-wrap.is-letter.is-slid::after {
   content: ''; position: fixed; top: 0; left: 0; right: 0; z-index: 2;
   height: calc(60px + env(safe-area-inset-top, 0px));
@@ -2866,10 +2856,6 @@ a.wl-lq { text-decoration: none; }
   .wl-letter-stage.can-turn .wl-letter-card,
   .wl-letter-stage.can-turn .wl-letter-card * { cursor: grab; }
   .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li) { cursor: pointer; }
-  /* the thread is read and typed in, and is not picked up: it keeps the
-     page's own hand, and its words can be selected */
-  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-low, .wl-low *) { cursor: auto; -webkit-user-select: text; user-select: text; }
-  .wl-letter-stage.can-turn .wl-letter-card .wl-low :is(button, button *, a, a *) { cursor: pointer; }
   .wl-letter-stage[data-grab], .wl-letter-stage[data-grab] * { cursor: grabbing !important; }
 }
 /* asked for less movement: the neighbours are simply there, and one about

@@ -537,10 +537,13 @@ export function Screen({
   // a line the writer set is set smaller when it is long (`lineSize`); the
   // name the screen makes itself keeps its size and its cut, as it always did
   const nmStyle = greet ? lineSize(greet.value || greet.placeholder || '') : salutation ? lineSize(salutation) : undefined
-  // A key can carry a count, set small at its shoulder the way the phone
-  // counted what was waiting behind a key (`badge`), and the message light
-  // under it (`dot`); and a key that opens something stays struck out of
-  // its band while that is open (`open`), as the phone lit the tab it was on.
+  // A key is a word, or a glyph with its count after it in the key's own
+  // ink (the heart, the replies' bubble), and nothing is ever stuck on it:
+  // the count at a key's shoulder, a lit plate with the message light
+  // stacked under it, was the one badge on the band and read as one, so
+  // the light went to the status row (`mail`). A key that opens something
+  // stays struck out of its band while that is open (`open`), as the phone
+  // lit the tab it was on.
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -556,12 +559,6 @@ export function Screen({
       >
         {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
         {d.label ? <span className="wl-lit">{d.label}</span> : null}
-        {d.badge || d.dot ? (
-          <span className="wl-sk-n" aria-hidden="true">
-            {d.dot ? <i className="wl-sk-dot" /> : null}
-            {d.badge ? <b>{d.badge}</b> : null}
-          </span>
-        ) : null}
       </button>
     )
   }
