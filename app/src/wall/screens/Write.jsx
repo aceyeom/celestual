@@ -121,7 +121,7 @@ import {
   useSuggest, Suggest, Segmented, useProfile, DoorFoot, CodeBox, waitLine,
 } from '../parts.jsx'
 import { LookPanel, useColourSwipe } from '../Look.jsx'
-import { Screen, ScreenDraft, ScreenNote, RoomLight, PixIcon, Wait } from '../screen.jsx'
+import { Screen, ScreenDraft, ScreenNote, RoomLight, PixIcon, Wait, useWake, POWER_MS } from '../screen.jsx'
 import { Dots } from '../art.jsx'
 import {
   normHandle, validHandle, hash, allowance, loadQuota,
@@ -325,6 +325,11 @@ export default function Write({
   const [igHeld] = useState(() => resumeIg(d0))
   // who · 1 (the letter) · how · edu · ig · done
   const [step, setStep] = useState(() => (sentTo ? 'done' : live(d0.held) ? 'edu' : igHeld ? 'ig' : prefill ? 1 : 0))
+  // The card's phone powers on when it is put on the glass (screen.jsx
+  // `useWake`): as the sheet opens on it, and when a step of the open sheet
+  // puts it there, which nothing else would say, since the who step and the
+  // card stand in one element
+  const power = useWake(reduce, POWER_MS, step === 1 || step === 'done' ? 'card' : String(step))
   const [done, setDone] = useState(() => (sentTo ? 'private' : ''))
   // the reveal a note sent privately runs to, off the placement's answer
   const [ends, setEnds] = useState(0)
@@ -952,7 +957,7 @@ export default function Write({
         <div className="wl-write-step">
           <div
             {...(fin ? {} : colourSwipe)}
-            className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
+            className={`wl-write-card${shaking ? ' is-shaking' : ''}`} data-power={power ? '' : undefined}
             onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
           >
             <span className="wl-write-light" aria-hidden="true">
@@ -962,7 +967,7 @@ export default function Write({
                 that goes up with it: "dear" and the name, the writer's to
                 change, in the line's own face (screen.jsx `Greet`). */}
             <Screen
-              look={look} seed={seed} live
+              look={look} seed={seed} live state={power}
               top={fin ? {
                 salutation: greeting, icon: 'pen', stamp: stampOf(Date.now()),
                 // a note sent privately, on the battery it went with

@@ -908,10 +908,20 @@ function held(l, asked) {
 
 export async function heart(id, on) {
   const was = BY_ID.get(id) || null
+  // Only the list that holds the letter is made again. Every name's list
+  // was, on every press and every answer, so every screen that keeps a list
+  // (the deck's neighbours, the wall's names) saw a new one and drew again,
+  // for one heart on one letter (the owner, 29 September, the lag).
   const set = (fn) => {
     const cur = BY_ID.get(id)
     if (cur) BY_ID.set(id, fn(cur))
-    for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.map((l) => (l.id === id ? fn(l) : l)))
+    for (const [h, list] of BY_HANDLE) {
+      const i = list.findIndex((l) => l.id === id)
+      if (i < 0) continue
+      const next = list.slice()
+      next[i] = fn(list[i])
+      BY_HANDLE.set(h, next)
+    }
     bump()
   }
   PRESSED.set(id, { on: !!on, at: 0 })

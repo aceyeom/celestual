@@ -54,7 +54,7 @@
 // is a letter that scrolls, with the words somebody wrote pushed off their
 // own screen by the answers.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Face, EmailField, Pill, usePhone } from './parts.jsx'
 import { PixIcon, Wait } from './screen.jsx'
 import { Caret } from './caret.jsx'
@@ -68,6 +68,7 @@ import {
 import { refresh as refreshMe, eduDomain } from './auth.js'
 import { isNameKey } from './data.js'
 import { getState, patch } from './store.js'
+import { afterStrip, idle, unidle } from './strip.js'
 import { ResendLink } from './linkdoor.jsx'
 import './replies.css'
 
@@ -181,23 +182,40 @@ export function useThread(letter) {
   useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
   const at = useRef(id)
   at.current = id
+  // what a press reads at the moment it is made, so the presses themselves
+  // can stay the same functions from one render to the next (below)
+  const now = useRef({ t, liking, setting })
+  now.current = { t, liking, setting }
 
   // One hook reads every letter the card turns to (Letter.jsx), so what a
   // press started on one letter and answered after a turn is that letter's,
   // and says nothing on the next one's sheet: every line said after an
   // answer names the letter it was for (`say`)
-  const say = (text, forId) => { if (forId === at.current) setNote(text) }
+  const say = useCallback((text, forId) => { if (forId === at.current) setNote(text) }, [])
 
+  // The answer is drawn once a turn of the deck is still (strip.js): a read
+  // asked for as a turn landed came back while the next hand was already on
+  // the glass, and drew the whole sheet again under it. The likes drawn at
+  // once are let go of only when there are any.
   const load = useCallback(async () => {
     if (!id) return null
     const out = await readThread(id)
     if (!alive.current || at.current !== id) return out
     if (out && out.ok) KEPT.set(id, out)
+    await new Promise((done) => afterStrip(done, done))
+    if (!alive.current || at.current !== id) return out
     setT(out)
-    if (out && out.ok) setLikes({})
+    if (out && out.ok) setLikes((m) => (Object.keys(m).length ? {} : m))
     return out
   }, [id])
-  useEffect(() => { if (id) load() }, [id, load])
+  // Asked for when the page is next idle after the card lands, and not on
+  // the landing's own frame; a card only passed through on the way to
+  // another is never asked about at all
+  useEffect(() => {
+    if (!id) return undefined
+    const k = idle(() => { load() })
+    return () => unidle(k)
+  }, [id, load])
   // and again when the tab comes back to the front, so a thread left open
   // in the background is not a thread from an hour ago
   useEffect(() => {
@@ -213,8 +231,8 @@ export function useThread(letter) {
   }, [note])
 
   // ── a like, drawn at once and corrected by the answer ──
-  const like = async (r) => {
-    if (liking[r.id]) return
+  const like = useCallback(async (r) => {
+    if (now.current.liking[r.id]) return
     const on = !r.liked
     setLikes((m) => ({ ...m, [r.id]: { liked: on, likes: Math.max(0, (r.likes || 0) + (on ? 1 : -1)) } }))
     setLiking((m) => ({ ...m, [r.id]: true }))
@@ -226,12 +244,12 @@ export function useThread(letter) {
       setLikes((m) => { const n = { ...m }; delete n[r.id]; return n })
       if (out?.error === 'gone' || out?.error === 'closed') load()
     }
-  }
+  }, [load])
 
   // ── a report, one tap, with the way back ──
-  const report = async (r) => {
+  const report = useCallback(async (r) => {
     setReports((m) => ({ ...m, [r.id]: 'busy' }))
-    const was = id
+    const was = at.current
     const out = await reportReply(r.id, true)
     if (!alive.current || at.current !== was) return
     if (out && out.ok) setReports((m) => ({ ...m, [r.id]: 'on' }))
@@ -239,8 +257,8 @@ export function useThread(letter) {
       setReports((m) => { const n = { ...m }; delete n[r.id]; return n })
       say('the report did not go through. try again', was)
     }
-  }
-  const undo = async (r) => {
+  }, [say])
+  const undo = useCallback(async (r) => {
     setReports((m) => ({ ...m, [r.id]: 'busy' }))
     const out = await reportReply(r.id, false)
     if (!alive.current) return
@@ -248,12 +266,12 @@ export function useThread(letter) {
       setReports((m) => { const n = { ...m }; delete n[r.id]; return n })
       await load()
     } else setReports((m) => ({ ...m, [r.id]: 'on' }))
-  }
+  }, [load])
 
   // ── the recipient's say ──
-  const set = async (state) => {
-    if (setting) return
-    const before = t?.state
+  const set = useCallback(async (state) => {
+    if (now.current.setting) return
+    const before = now.current.t?.state
     const was = id
     setSetting(true)
     const out = await setThread(id, state)
@@ -266,29 +284,44 @@ export function useThread(letter) {
           : before === 'closed' ? 'everybody can see the replies again.' : 'people can reply again.', was)
       await load()
     } else say('that did not go through. try again', was)
-  }
+  }, [id, load, say])
 
-  const retry = () => { setT(null); load() }
+  const retry = useCallback(() => { setT(null); load() }, [load])
 
-  // what the key, the status row and the sheet read off it
+  // What the key, the status row and the sheet read off it, made again only
+  // when the thread itself moves. It was a new object on every render of
+  // the letter, and the card's screen, its key and every row of the sheet
+  // were drawn again with it: on a turn landing, on the replies raised, on
+  // anything at all the letter did (the owner, 29 September: a good second
+  // before the comments open)
   const on = !!id && !(t && !t.ok && NONE.has(t.error))
   const ok = !!(t && t.ok)
-  const me = (ok && t.me) || {}
-  const state = (ok && t.state) || 'open'
-  const away = state === 'closed'
-  const shut = state === 'locked'
-  const rows = ok ? (t.replies || []).filter((r) => !goneSeen(r)).map((r) => (likes[r.id] ? { ...r, ...likes[r.id] } : r)) : []
-  const names = namesFor([...rows.filter((r) => !r.recipient).map((r) => r.who), me.who].filter(Boolean))
-  const hiddenFromMe = away && !me.recipient
-  return {
-    id, t, on, ok, load, retry, me, state, away, shut, rows, names, hiddenFromMe,
-    count: (ok && t.count) || 0,
-    answered: !!(ok && t.recipient_replied && !hiddenFromMe),
-    canWrite: !!me.can,
-    toAt: !!letter && !isNameKey(letter.to),
-    like, report, undo, reports, liking, set, setting, note, setNote, say,
-  }
+  const rows = useMemo(
+    () => (ok ? (t.replies || []).map((r) => (likes[r.id] ? { ...r, ...likes[r.id] } : r)) : NO_ROWS),
+    [ok, t, likes],
+  )
+  const me = (ok && t.me) || NO_ME
+  const names = useMemo(
+    () => namesFor([...rows.filter((r) => !r.recipient).map((r) => r.who), me.who].filter(Boolean)),
+    [rows, me.who],
+  )
+  const toAt = !!letter && !isNameKey(letter.to)
+  return useMemo(() => {
+    const state = (ok && t.state) || 'open'
+    const away = state === 'closed'
+    const hiddenFromMe = away && !me.recipient
+    return {
+      id, t, on, ok, load, retry, me, state, away, shut: state === 'locked', rows, names, hiddenFromMe,
+      count: (ok && t.count) || 0,
+      answered: !!(ok && t.recipient_replied && !hiddenFromMe),
+      canWrite: !!me.can,
+      toAt,
+      like, report, undo, reports, liking, set, setting, note, setNote, say,
+    }
+  }, [id, t, on, ok, load, retry, me, rows, names, toAt, like, report, undo, reports, liking, set, setting, note, say])
 }
+const NO_ME = {}
+const NO_ROWS = []
 
 // ── the key ─────────────────────────────────────────────────────────────────
 // The thread is opened by the letter's own right soft key, where `share`
@@ -347,10 +380,20 @@ export function threadKey(th, { open = false, onToggle, id, letter } = {}) {
 // has their face and, where a writer's name would be, `recipient` on a
 // badge lit in the letter's colour, the one lit thing on the sheet that is
 // not its edge. `fresh` is a reply that came while the sheet was up
-// (`ThreadSheet`), which arrives on its own rather than in the opening's
-// stagger.
+// (`ThreadSheet`), which arrives on its own, the one row that does.
+//
+// A row is drawn again only when what it shows changes (`memo`): its reply,
+// its writer's name, whether it is reported or being liked, and the four
+// things handed to every row, which are the same from one render to the
+// next (`to` is the letter's @, for the recipient's face). Every row of a
+// thread was drawn again, three times, on every press that raised the
+// sheet, and a thread of sixty held the page for a third of a second on a
+// phone (the owner, 29 September).
 const PIC = 32
-function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, liking, fresh = false }) {
+// how many rows come up with the sheet, before the rest of the thread is
+// put under them: more than the tallest phone's sheet shows
+const FIRST_ROWS = 12
+const Reply = memo(function Reply({ r, to, name, onLike, onReport, onUndo, reported, liking, fresh = false }) {
   const rec = r.recipient
   const live = r.status === 'live'
   const down = reported && live
@@ -358,7 +401,7 @@ function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, lik
     // reported by this device: folded away, in the letter report's words,
     // with the way back
     return (
-      <li className="wl-rp-item is-folded" style={{ '--i': Math.min(i, 5) }}>
+      <li className="wl-rp-item is-folded">
         <PixIcon name="flag" scale={2} className="wl-rp-fold-g" />
         <span className="wl-rp-fold-say">reported. a person will review it.</span>
         <button type="button" className="wl-rp-undo" onClick={() => onUndo(r)} disabled={reported === 'busy'}>undo</button>
@@ -369,10 +412,10 @@ function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, lik
   return (
     <li
       className={`wl-rp-item${rec ? ' is-recipient' : ''}${r.mine ? ' is-mine' : ''}${live ? '' : ` is-${r.status}`}${fresh ? ' is-new' : ''}`}
-      style={{ '--i': Math.min(i, 5) }} data-id={r.id}
+      data-id={r.id}
     >
       <span className="wl-rp-pic">
-        {rec ? <Face handle={letter.to} size={PIC} /> : <Creature who={r.who} size={PIC} box={PIC} mono />}
+        {rec ? <Face handle={to} size={PIC} /> : <Creature who={r.who} size={PIC} box={PIC} mono />}
       </span>
       <div className="wl-rp-main">
         <div className="wl-rp-meta">
@@ -406,7 +449,7 @@ function Reply({ r, i = 0, letter, name, onLike, onReport, onUndo, reported, lik
       ) : <span className="wl-rp-like is-void" aria-hidden="true" />}
     </li>
   )
-}
+})
 
 // ── the terms, before the first reply ───────────────────────────────────────
 // Read on the replies' own sheet, in place of the thread, and not on a
@@ -739,21 +782,62 @@ function TrayKey({ lit = false, back = false, busy = false, disabled = false, on
 // that failed) the tray says so in one line, with the way on where there is
 // one. Letter.jsx owns up and down (`onClose`), where the sheet stands, and
 // every movement of it; every time it is raised it opens on the thread.
-// While it is down it is `inert`, and while it is up the keyboard's Tab goes
-// round inside it and never out onto the letter under it.
-export function ThreadSheet({ letter, th, open = false, resting = true, reduce = false, go = null, onClose, style, kind, ref = null }) {
+// While it is down and still it is out of sight (replies.css), which takes
+// it out of the keyboard's way and a screen reader's as well; while it is
+// up the keyboard's Tab goes round inside it and never out onto the letter
+// under it. It was `inert` as well, and taking that off restyled every row
+// of the thread on the press that raised it.
+//
+// ── one sheet for the whole deck ──
+// It stands for every letter the deck turns to, and is not drawn anew for
+// each (it was keyed by the letter, and every turn that landed took the
+// last one's thread off the page and put the next one's on, rows, field
+// and caret, on the frame the card settled). What is the letter's own is
+// set back when the letter changes (`forId`, below).
+//
+// ── and the thread's first rows only, until it is up ──
+// Down and still, the sheet holds the first rows of the thread and no more,
+// as many as it can show (`FIRST_ROWS`), put on it when the page has a
+// moment after the card lands (`lazy`), never inside the landing: so a turn
+// puts nothing on the sheet as it lands, and the press that raises it
+// brings a dozen rows into view and not the whole thread (every row of a
+// thread of sixty made visible at once was eight hundredths of a second on
+// a phone before the sheet could move, measured 29 September). Raised, the
+// rest of the thread is put under them a moment later (`deep`), while the
+// sheet is still rising and nobody has scrolled yet; laid down and still,
+// it is the first rows again.
+export const ThreadSheet = memo(function ThreadSheet({ letter, th, open = false, resting = true, reduce = false, go = null, onClose, style, kind, ref = null }) {
   const phone = usePhone()
   const [mode, setMode] = useState('read')
   const [wasOpen, setWasOpen] = useState(open)
-  // the replies the sheet opened on, which come up in the opening's stagger;
-  // one that comes after them while it is up arrives on its own (`fresh`)
+  // the replies the sheet opened on; one that comes after them while it is
+  // up arrives on its own (`fresh`)
   const [first, setFirst] = useState(null)
+  // the letter it is for, and everything that was that letter's put back
+  const [forId, setForId] = useState(letter.id)
+  const [body, setBodyNow] = useState(() => DRAFTS.get(letter.id) || '')
+  const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState(null)   // { tone: 'ok'|'hold'|'no', text, refused? }
+  if (forId !== letter.id) {
+    setForId(letter.id)
+    setMode('read')
+    setBodyNow(DRAFTS.get(letter.id) || '')
+    setBusy(false)
+    setSaid(null)
+    setFirst(null)
+  }
   if (open !== wasOpen) {
     setWasOpen(open)
-    if (open) setMode('read')
+    if (open) { setMode('read'); setFirst(th.ok ? new Set(th.rows.map((r) => r.id)) : null) }
     else setFirst(null)
-  }
-  if (open && first === null && th.ok) setFirst(new Set(th.rows.map((r) => r.id)))
+  } else if (open && first === null && th.ok) setFirst(new Set(th.rows.map((r) => r.id)))
+  // whether its rows are on it, and whether all of them (`deep`), for the
+  // list below
+  const up = open || !resting
+  const deep = useDeferredValue(up)
+  // the letter the sheet stands for now, for what a press answers late
+  const now = useRef(letter.id)
+  now.current = letter.id
   const low = useRef(null)
   const list = useRef(null)
   const field = useRef(null)
@@ -781,7 +865,7 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
     }), { root: el, threshold: [0, 0.25, 0.5, 0.75, 1] })
     el.querySelectorAll('.wl-rp-item.is-mine.is-removed[data-id]').forEach((row) => io.observe(row))
     return () => io.disconnect()
-  }, [open, mode, goneIds])
+  }, [open, mode, goneIds, deep])
   useEffect(() => {
     if (!open) return undefined
     const seen = gone.current
@@ -801,17 +885,22 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
   // thread's `me.terms` is only read again when a reply goes up. So a first
   // reply that was refused, edited and sent again carries the agreement with
   // it rather than raising the terms a second time.
-  const [body, setBodyNow] = useState(() => DRAFTS.get(letter.id) || '')
   const setBody = (v) => {
     setBodyNow(v)
     if (v) DRAFTS.set(letter.id, v)
     else DRAFTS.delete(letter.id)
   }
-  const [busy, setBusy] = useState(false)
-  const [said, setSaid] = useState(null)   // { tone: 'ok'|'hold'|'no', text, refused? }
-  const nonce = useRef(freshNonce())
+  // one per draft, made when the sheet is put up and for each letter it
+  // comes to stand for (below), and not on every render of it
+  const nonce = useRef('')
   const agreed = useRef(false)
-  const fault = replyFault(body)
+  // a new letter is a new draft, and a new agreement to be carried
+  useEffect(() => {
+    nonce.current = freshNonce()
+    agreed.current = false
+    gone.current.clear()
+  }, [letter.id])
+  const fault = useMemo(() => replyFault(body), [body])
   const left = MAX - body.length
   const empty = !body.trim()
   const me = th.me
@@ -848,7 +937,11 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
     if (!me.terms && !yes) { setMode('terms'); return }
     setBusy(true)
     setSaid(null)
-    const out = await sendReply({ letter: letter.id, body, nonce: nonce.current, accept: yes })
+    const was = letter.id
+    const out = await sendReply({ letter: was, body, nonce: nonce.current, accept: yes })
+    // turned to another letter meanwhile (the sheet laid down and the deck
+    // turned): the answer is that letter's, and its draft is left as it was
+    if (now.current !== was) { if (out && out.ok && out.status !== 'rejected') DRAFTS.delete(was); return }
     setBusy(false)
     if (out && out.ok) {
       // a fresh draft either way; a refused one keeps its words to be changed
@@ -864,6 +957,7 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
       if (field.current) field.current.blur()
       th.say(out.status === 'live' ? 'it’s up.' : (out.say || 'it’s being read. others see it once it passes.'), letter.id)
       await th.load()
+      if (now.current !== was) return
       requestAnimationFrame(() => toEnd())
       return
     }
@@ -890,7 +984,18 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
   }, [th])
 
   // ── what the list holds ──
-  const rows = th.rows
+  // The thread as it is, less a reply of theirs that came down and has
+  // been seen (`goneSeen`, asked again each time the sheet opens or goes),
+  // and only while the sheet is up or moving: the first rows at once and
+  // the rest a moment after (the head of this part)
+  const shownRows = useMemo(() => th.rows.filter((r) => !goneSeen(r)), [th.rows, wasOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  const firstRows = useMemo(
+    () => ({ rows: shownRows.slice(0, FIRST_ROWS), to: letter.to, names: th.names }),
+    [shownRows, letter.to, th.names],
+  )
+  const lazy = useDeferredValue(firstRows)
+  const view = !up ? lazy : deep ? { ...firstRows, rows: shownRows } : firstRows
+  const rows = view.rows
   const canWrite = th.canWrite
   let inside
   if (mode === 'terms') {
@@ -918,11 +1023,11 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
             <PixIcon name="lock" scale={3} className="wl-rp-empty-g" />
             <span className="wl-rp-empty-say">the person this letter is to put the replies away.</span>
           </div>
-        ) : rows.length ? (
+        ) : shownRows.length ? (
           <ol className="wl-rp-list">
-            {rows.map((r, i) => (
+            {rows.map((r) => (
               <Reply
-                key={r.id} r={r} i={i} letter={letter} name={th.names.get(r.who) || ''}
+                key={r.id} r={r} to={view.to} name={view.names.get(r.who) || ''}
                 onLike={th.like} onReport={th.report} onUndo={th.undo}
                 reported={th.reports[r.id] || (r.reported ? 'on' : '')} liking={!!th.liking[r.id]}
                 fresh={!!first && !first.has(r.id)}
@@ -1089,7 +1194,7 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
       className={`wl-th is-${mode}${open ? ' is-open' : ''}`} id={`wl-low-${letter.id}`}
       data-kind={kind} style={style}
       role="dialog" aria-modal={open ? 'true' : undefined} aria-labelledby={titleId}
-      inert={open || !resting ? undefined : true} aria-hidden={open ? undefined : 'true'}
+      aria-hidden={open ? undefined : 'true'}
       onKeyDown={onKey}
     >
       <div className="wl-th-head">
@@ -1119,4 +1224,4 @@ export function ThreadSheet({ letter, th, open = false, resting = true, reduce =
       {tray ? <div className={`wl-tray is-${mode}`}>{tray}</div> : null}
     </div>
   )
-}
+})

@@ -9,8 +9,19 @@
 // notice says no more than that the cache moved. It is let go of once the strip
 // has been still for a moment, when the page is idle, so the draw it asks for
 // never lands on the frame a turn lands on.
+//
+// ── and every other answer that would draw under a hand ──
+// The shell's notice was the only one held, and it was not the only one that
+// landed mid-swipe: the thread of the card a turn had just landed on
+// (Replies.jsx `useThread`) and the face its name is drawn with (parts.jsx
+// `useProfile`) came back while the next hand was already on the glass and
+// drew the whole sheet again under it (the owner, 29 September: swiping
+// through the letters is slow). So a hold is kept for each asker by name
+// (`key`), the last of each, and all of them are let go together once the
+// strip is still. The shell's is `rev`, a thread's is `thread`, a face's is
+// its handle's.
 let moving = false
-let held = null
+const held = new Map()
 let wake = 0
 
 // when the page is next idle, and no later than a quarter second: WebKit has
@@ -20,9 +31,10 @@ export const idle = (fn) => (typeof requestIdleCallback === 'function'
   : setTimeout(fn, 60))
 export const unidle = (id) => (typeof cancelIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id))
 
-// the shell's notice: now, or once the strip is still
-export function afterStrip(fn) {
-  if (moving || wake) held = fn
+// an answer that would draw: now, or once the strip is still. Only the last
+// held under each `key` is kept, since each says where its asker stands now
+export function afterStrip(fn, key = 'rev') {
+  if (moving || wake) held.set(key, fn)
   else fn()
 }
 
@@ -35,12 +47,12 @@ export function stripMoving(on) {
   }
   if (!moving) return
   moving = false
-  if (!held || wake) return
+  if (!held.size || wake) return
   wake = idle(() => {
     wake = 0
     if (moving) return
-    const fn = held
-    held = null
-    if (fn) fn()
+    const fns = [...held.values()]
+    held.clear()
+    for (const fn of fns) fn()
   })
 }

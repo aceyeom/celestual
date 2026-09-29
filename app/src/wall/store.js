@@ -192,8 +192,13 @@ export function drop(bucket, value) {
   return write({ ...s, [bucket]: list.filter((v) => v !== value) })
 }
 
+// A mark already made is not written again: the letter marks itself opened
+// every time a turn lands on it (screens/Letter.jsx), and writing the whole
+// blob back to storage, the same as it was, on every landing was work done
+// on the frame the card settled for nothing.
 export function mark(bucket, id) {
   const s = read()
+  if (s[bucket] && s[bucket][id] === true) return s
   return write({ ...s, [bucket]: { ...s[bucket], [id]: true } })
 }
 

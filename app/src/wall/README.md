@@ -600,7 +600,16 @@ its size it steps back no further, and the sheet gives it back the sliver it
 would cover, or else covers its foot). A press anywhere off the sheet lays
 it down and does nothing else, as do the grip, a pull down by the head or by
 the list at its top (past three tenths of the way, or thrown), the key
-again, and Escape; the deck does not turn while it is up. From 900 wide, or
+again, and Escape; the deck does not turn while it is up. Since 29 September
+it goes up in 280ms and down in 220ms, and the motion starts on the frame
+after the press, on the compositor, before the letter draws anything for it;
+the rows are on it as it rises, with no stagger (a thread's first twelve
+before it is raised, the rest put under them as it rises); and the letter
+takes a press the moment the sheet starts down (a press on the black round
+it is let go of until the sheet has landed, so a second tap never closes the
+letter). It was 440ms up and 340ms down, the rows coming up one by one
+behind it, and the letter swallowed every press for six tenths of a second
+after it was laid down: the owner's good second. From 900 wide, or
 on a phone on its side, the letter slides left and the replies stand at its
 right as a panel as tall as its phone, with a close key at its head. When
 the person the letter is to has answered, the envelope stands by the letter's
@@ -929,44 +938,32 @@ thirteen pixels sliding past is a handle nobody reads.
 
 ### A name opens into the letter it carries
 
-Pressing a disc does not cut to a sheet, and it does not wait. On the frame
-of the press the letter's own card opens out of the circle that was pressed:
-the wall leaves the disc's rectangle behind on the way out (`morph.js`), the
-card claims it on the way in, and one transform puts the real card — words,
-crest, dateline and all — where the disc was, at the disc's size, with the
-paper's corner a circle's, and runs it out to where it stands on the
-travelling curve the sheets move on (`screens/Letter.jsx`, 440ms). At the
-same moment the wall answers the press the way it answers the tap that opens
-the veil: the same pulse is sent out from the disc through the crowd and the
-field travels to bring that disc into the light (`Hive.jsx tapAt`), both
-running out under the sheet's glass, so the name is in the light when the
-sheet comes down. It used to wait half a second for the crest to leave the
-disc before the card opened, and half a second between a finger and anything
-readable is the moment a surface stops feeling touched. The pulse's tail
-runs out under the sheet's glass, because a crowd frozen in the middle of a
-wave is a crowd that jumps when the sheet goes. And it closes the
-same way: the mark, the scrim or the key sends the card back into the disc of
-whichever name the deck is showing, if that disc is on the glass
-(`morph.js locate`), while the glass fades in place instead of dropping.
-Dragged down, the sheet falls the way every sheet falls.
-The sheet's glass comes up under it in place rather than rising, and its
-header and foot arrive a beat behind the card. The words are on the card from
-the first frame, and there is no stand-in: the card the flight starts on is
-the card the words land on, so a letter that arrives mid-flight arrives on a
-card that is opening rather than under one that is hiding it.
+Pressing a disc does not cut to a sheet, and it does not wait: the letter
+opens on the frame of the press, and it comes on the way a phone does when
+it is picked up (the owner, 29 September: "make it feel like a phone turning
+on, not just a sudden opening of a page"). The card is put on the glass
+black, where it stands, while the room goes black round it, and its
+backlight rises smoothly over about four tenths of a second, with no
+flicker, no dip and no blur, the light it throws following a beat behind
+and the phone settling from a hair under its size to its size
+(`screen.jsx` `useWake`, `screen.css` `is-power`). Only then are the letters
+either side of it drawn, and they come up out of the dark. At the same
+moment the wall answers the press the way it answers the tap that opens the
+veil: the same pulse is sent out from the disc through the crowd and the
+field travels to bring that disc into the light (`Hive.jsx tapAt`), running
+out under the black, because a crowd frozen in the middle of a wave is a
+crowd that jumps when the sheet goes. It closes the quicker way: the screen
+is put out in a fifth of a second, the card goes, the room lifts, and the
+wall is back a quarter second after the press.
 
-It used to be a stand-in flown by hand from the disc to a card that was read
-fresh every frame and switched on at the end, and it was glitchy for exactly
-the reasons that design tried to handle: the destination moved when the words
-landed, the sheet re-centred under it, the face inside the stand-in was a
-monogram set at the disc's size inside a thirty pixel circle, and the real
-card was invisible for two thirds of a second. The transform is measured once
-now, against the card's own final box, and is relative to it: whatever the
-layout does under the card, the card goes with it.
-
-A deep link, a refresh, a back button, a turn of the deck or a reader who has
-asked for less movement opens the ordinary way, because none of them has a
-circle to open out of.
+It used to open OUT of the disc, the card flown by one transform from the
+disc's circle to where it stands, and then to rise eighteen pixels and
+flicker on for nearly a second (`wl-wake`, the intro's and the door's
+still); both were a page arriving, and the flight dropped frames on every
+phone it was tried on. The composer, the ping and the pings come on the same
+way (wall.css, the composer's room): the room fades up, the phone powers on
+where it stands and the words round it settle a beat behind, where the whole
+column used to slide up the window.
 
 ### The deck
 
@@ -995,8 +992,9 @@ the lit one on a table are there in the dark. On a phone the glass leaves a
 sliver of each at its edges (the screen gives up `--gutter` of the glass
 for it); in a wide room, and on a phone on its side, they are the two
 screens themselves, dim, a hand's width off the card (`wall.css --peek-*`).
-They come up out of the dark while the card wakes, a beat behind it, and
-one that comes to stand there later fades up where it stands. Two chevrons in the
+They are drawn once the card has powered on, when the page is next idle,
+and come up out of the dark where they stand, as does one that comes to
+stand there later. Two chevrons in the
 gutters said the same thing until 25 September, and a chevron is a control
 somebody has to find and read. There is no line saying to swipe (VOICE.md
 section 7), no dots and no count: the deck is the whole wall, and a count of
@@ -1029,7 +1027,7 @@ browser, which would take it as the history going back. A turn asked for
 past an end leans the card a little and brings it home.
 
 The first two times a device opens the deck, until it has turned it once,
-the card leans toward the next letter about a second after it has woken
+the card leans toward the next letter about a second after it has come on
 and comes home (`nudge`, `hinted` and `turned` in the store). Never under
 reduced motion and never over a menu, and a hand or a key that gets there
 first puts it off. Under reduced motion a turn is the next card, at once.
@@ -1050,8 +1048,23 @@ turn lands at once, where it is seen, and the hand has the card it was
 bringing in from there (`landNow`), so a second throw a moment after the
 first is the letter after, and never lost. A hand is written to the strip
 once a frame, whatever it reports, and while the strip moves whatever the
-network brings is held and drawn once it is still (`strip.js`), so no
-screen is drawn again under the hand.
+network brings is held and drawn once it is still (`strip.js`: the wall's
+corpus, the card's thread and a name's face, each held under its own name),
+so no screen is drawn again under the hand.
+
+And a landing changes almost nothing (the owner, 29 September: swiping
+through the letters is slow). Which of the three a screen is, card or
+neighbour, is one attribute on one element whose box is the same whichever
+it is (`data-side`, every screen in the one cell of a grid), so a landing
+lays nothing out; the neighbours are not `inert` (their keys are out of the
+Tab order and deaf to a press, and the glass under them takes none); the
+replies' sheet is one sheet for the whole deck and puts the next letter's
+thread on itself after the landing, not in it; the thread is asked for when
+the page is next idle, and a card only passed through is never asked about;
+the letter is marked opened then too, and only once; a heart pressed makes
+only its own name's list again; and the wall under the black is not drawn at
+all while a letter is open (`content-visibility`, wall.css `data-covered`),
+nor its field's clock asked for frames it would spend on nothing.
 
 The height settles as the card lands. A short letter beside a long one is a
 card beside a taller card. The track's height used to follow the strip, read
