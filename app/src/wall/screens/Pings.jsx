@@ -53,7 +53,7 @@
 // the paywall's is: in sight it only said again what the glass under it did.
 import { useEffect, useState } from 'react'
 import { Sheet, SheetHead, Label, Pill } from '../parts.jsx'
-import { Screen, ScreenNote, RoomLight } from '../screen.jsx'
+import { Screen, ScreenNote, RoomLight, useWake } from '../screen.jsx'
 import { colourOf } from '../looks.js'
 import { atHandle } from '../data.js'
 import { heldProof, proofFor } from '../auth.js'
@@ -106,8 +106,10 @@ function Count({ n, cents }) {
 // `out` is whether it was raised by a note that could not be paid for, which
 // is what the heading says to a screen reader; `onBack` is the way out of
 // it, and `backLabel` what that key says.
-export function BuyPings({ out = false, onBack, backLabel = 'not now', headId = 'wl-buy-h' }) {
+export function BuyPings({ out = false, onBack, backLabel = 'not now', headId = 'wl-buy-h', reduce = false }) {
   const me = myHandle()
+  // the phone powers on as it is put on the glass (screen.jsx `useWake`)
+  const power = useWake(reduce)
   const [week, setWeek] = useState(() => heldAllowance(me))
   const [n, setN] = useState(1)
   const [busy, setBusy] = useState(false)
@@ -145,12 +147,12 @@ export function BuyPings({ out = false, onBack, backLabel = 'not now', headId = 
           header says why) */}
       <h2 id={headId} className="wl-sr">{out ? 'this week’s ping is spent.' : 'more pings.'}</h2>
       <div className="wl-write-step">
-        <div className="wl-write-card wl-buy-card">
+        <div className="wl-write-card wl-buy-card" data-power={power ? '' : undefined}>
           <span className="wl-write-light" aria-hidden="true">
             <RoomLight key={colourOf(ROSE, SEED).slug} look={ROSE} seed={SEED} />
           </span>
           <Screen
-            look={ROSE} seed={SEED} live
+            look={ROSE} seed={SEED} live state={power}
             top={{ name: 'pings', icon: 'pen', counter: `${price(cents)} ea` }}
             keys={{
               l: { label: 'less', onClick: () => step(-1), disabled: n <= 1 || busy, keepFocus: true, aria: `one fewer. ${n} now` },
@@ -241,7 +243,9 @@ function runPaid(session) {
   return run
 }
 
-function Paid({ go, up }) {
+function Paid({ go, up, reduce = false }) {
+  // the phone powers on as it is put on the glass (screen.jsx `useWake`)
+  const power = useWake(reduce)
   const [query] = useState(() => new URLSearchParams(window.location.search))
   const session = query.get('session') || ''
   const turned = query.get('c') === '1'
@@ -310,11 +314,11 @@ function Paid({ go, up }) {
         {phase === 'landed' ? 'thank you.' : phase === 'turned' ? 'no pings bought.' : 'more pings.'}
       </h2>
       <div className="wl-write-step">
-        <div className="wl-write-card wl-buy-card">
+        <div className="wl-write-card wl-buy-card" data-power={power ? '' : undefined}>
           <span className="wl-write-light" aria-hidden="true">
             <RoomLight key={colourOf(ROSE, SEED).slug} look={ROSE} seed={SEED} />
           </span>
-          <Screen look={ROSE} seed={SEED} live top={{ name: 'pings', icon: 'pen' }} keys={{}}>
+          <Screen look={ROSE} seed={SEED} live state={power} top={{ name: 'pings', icon: 'pen' }} keys={{}}>
             {body}
           </Screen>
         </div>
@@ -330,7 +334,7 @@ function Paid({ go, up }) {
 // ── the sheet ───────────────────────────────────────────────────────────────
 // Raised over the wall like the composer, in the composer's own sheet, for
 // both addresses: `/pings` to choose, `/paid` to come back to.
-export default function Pings({ paid = false, go, up, upLabel = 'back to the wall' }) {
+export default function Pings({ paid = false, go, up, upLabel = 'back to the wall', reduce = false }) {
   const w = waitingNote()
   const me = myHandle()
   // nobody with an @ has pings to buy: the account first, which asks for it
@@ -340,8 +344,8 @@ export default function Pings({ paid = false, go, up, upLabel = 'back to the wal
       <div className="wl-sheet-in wl-write wl-ping wl-buy">
         <SheetHead onClose={up} label={upLabel} />
         {paid
-          ? <Paid go={go} up={up} />
-          : <BuyPings out={!!w} onBack={up} backLabel={w ? 'not now, keep the note' : 'not now'} />}
+          ? <Paid go={go} up={up} reduce={reduce} />
+          : <BuyPings out={!!w} onBack={up} backLabel={w ? 'not now, keep the note' : 'not now'} reduce={reduce} />}
       </div>
     </Sheet>
   )

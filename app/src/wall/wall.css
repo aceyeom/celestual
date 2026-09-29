@@ -374,6 +374,16 @@
    black nobody can see through. Their clock runs on regardless, so they are
    back where it has them when the room lifts */
 .wl-root[data-covered] .wl-far { content-visibility: hidden; }
+/* and the wall itself, the same: under the black every one of its seventy
+   screens was still its own layer, handed to the compositor on every frame
+   a letter was turned in, most of the frame's main thread spent on a
+   picture nobody could see (the owner, 29 September, the lag: a letter's
+   turns measured at a third of their compositing cost without it). It is
+   drawn again on the frame the way out is taken, which is when the root is
+   lit again (parts.jsx `Sheet`), under a room still black. Not
+   `visibility`: that restyled the whole wall on the way out and cost the
+   close more than it saved */
+.wl-root[data-covered] .wl-main { content-visibility: hidden; }
 
 /* ═══ THE COLUMN ═══════════════════════════════════════════════════════════
    460px, centred, and the void bleeds to the edges of the viewport on a
@@ -2448,13 +2458,13 @@ a.wl-lq { text-decoration: none; }
 /* a length and not a share: the scene is an inline-size container and adds
    no width of its own, so min(100%, ...) of a dialog that takes its width
    from what is in it is nothing. The max-width keeps it inside its card */
-.wl-letter-card .wl-scene, .wl-letter-slot .wl-scene { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
+.wl-letter-cell .wl-scene { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
 .wl-sheet-wrap.is-letter .wl-sheet {
   min-height: 0; max-height: none; max-width: calc(var(--scene-w) + 30px);
   background: none; box-shadow: none; border-radius: 0;
   -webkit-backdrop-filter: none; backdrop-filter: none;
   overflow: visible;
-  animation: wl-letter-in 380ms var(--ease) both;
+  animation: wl-letter-in 140ms var(--ease-out) both;
 }
 .wl-sheet-wrap.is-letter .wl-grip { display: none; }
 .wl-sheet-wrap.is-letter .wl-sheet-in {
@@ -2485,6 +2495,24 @@ a.wl-lq { text-decoration: none; }
   overflow: visible; isolation: isolate;
   padding-top: calc(14px + env(safe-area-inset-top, 0px));
 }
+/* ── and how it comes on ──
+   The composer, the ping and the pings are a phone put down in the black
+   room, and they come on the way the letter does (the owner, 29 September:
+   a phone turning on, not a page): the room fades up, the phone powers on
+   where it stands (screen.jsx `useWake`), and the words round it, the head,
+   the question and the foot, settle a few pixels into place a beat behind.
+   The whole column used to rise off the foot of the window as a sheet does,
+   phone and all, which read as a page arriving. On a desk it was the
+   dialog's lift, and it is this now at every width (the rule outranks the
+   dialog's). The card's own step does not fade: its glass is black when
+   the sheet opens and its light is what comes up. */
+.wl-sheet-wrap.is-write .wl-sheet { animation: none; }
+.wl-sheet-wrap.is-write .wl-scrim { animation-duration: 320ms; }
+.wl-sheet-wrap.is-write .wl-sheet-in { animation: none; }
+.wl-sheet-wrap.is-write .wl-sheet-in > :not(.wl-write-step),
+.wl-sheet-wrap.is-write .wl-write-step.wl-write-who { animation: wl-settle 300ms var(--ease) 60ms both; }
+.wl-sheet-wrap.is-write .wl-write-step:not(.wl-write-who) { animation: none; }
+@keyframes wl-settle { from { opacity: 0; transform: translate3d(0, 6px, 0); } }
 /* The first question is not centred on what it holds: the names under the
    field come and go as it is typed in, and the field must not move with
    them. It stands where the column is centred with four names under it
@@ -2496,7 +2524,15 @@ a.wl-lq { text-decoration: none; }
    not something the sheet scrolls to */
 .wl-write-light { position: absolute; inset: 0; z-index: -1; contain: layout; pointer-events: none; }
 .wl-sheet-wrap.is-write :is(.wl-head, .wl-write-h, .wl-look, .wl-write-foot) { position: relative; z-index: 1; }
-.wl-sheet-wrap.is-write.is-closing .wl-room-light { animation: wl-unfade 320ms var(--ease-in) both; }
+/* and off: the phone's screen is put out (screen.css `wl-sleep`), and the
+   column goes as the letter's does, then the room lifts, all of it inside
+   the quarter second the route waits for (parts.jsx `Sheet` hears
+   `wl-letter-out`). It dropped off the foot of the window */
+.wl-sheet-wrap.is-write.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
+.wl-sheet-wrap.is-write.is-closing .wl-write-card .wl-scr:not([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+  animation: wl-sleep 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.wl-sheet-wrap.is-write.is-closing .wl-room-light { animation: wl-unfade 200ms var(--ease-in) both; }
 /* The screen is as wide as the column, up to 440, and never taller than the
    window, so the keys and the act are in view: 330 is the head, the
    question, the line under the card and the foot, and `--notch` the
@@ -2535,32 +2571,32 @@ a.wl-lq { text-decoration: none; }
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 /* ── on and off ──
-   The card is opaque within the first beat of opening, so the screen is
-   seen to switch on (screen.css `wl-wake`) and not to fade up through the
-   room. Closing, the screen goes to sleep first: a lit screen dims to
-   nothing (screen.css `wl-sleep`), the light it threw goes with it, and
-   only then does the card leave and the room lift. A print is not lit, so
-   it is not put to sleep; it fades with the card, over a room still black.
-   The route changes on parts.jsx Sheet's 580ms floor, since `wl-letter-out`
-   is not a drop it listens for, so the scrim's delay and length stay under
-   it. */
+   The card does not travel in: it is put on the glass black, in the
+   first seventh of a second, and its screen powers on where it stands
+   (screen.css `is-power`, screen.jsx `useWake`), the light it throws
+   following, while the room comes up black round it. It used to rise
+   eighteen pixels and fade as it flickered on for nearly a second.
+   Closing, the screen is put out first: a lit screen dims to nothing in
+   200ms (screen.css `wl-sleep`), the light it threw goes with it, and the
+   card leaves as the room lifts. A print is not lit, so it is not put out;
+   it fades with the card, over a room still black. The route changes when
+   the card has gone (parts.jsx Sheet hears `wl-letter-out`), where it used
+   to wait out a floor of 580ms with the letter shut and the page still
+   held; so the room's lift is timed to end with it, here and for the
+   composer and the mutual at rest, whose columns leave the same way. */
 .wl-sheet-wrap.is-letter .wl-scrim { animation-duration: 320ms; }
-@keyframes wl-letter-in {
-  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.97); }
-  12%  { opacity: 1; }
-  to   { opacity: 1; transform: none; }
-}
+@keyframes wl-letter-in { from { opacity: 0; } }
 @keyframes wl-letter-out {
   0%, 60% { opacity: 1; transform: none; }
   to      { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
 }
 .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
-.wl-sheet-wrap.is-letter.is-closing .wl-letter-card .wl-scr:not([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
-  animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both;
+.wl-sheet-wrap.is-letter.is-closing .wl-letter-cell[data-side='card'] .wl-scr:not([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+  animation: wl-sleep 200ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 .wl-sheet-wrap.is-letter.is-closing .wl-scene-halo-2 { opacity: 0; transition-duration: 200ms; }
-.wl-sheet-wrap.is-letter.is-closing .wl-room-light { animation: wl-unfade 220ms var(--ease-in) both; }
-.wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-unfade 300ms var(--ease-in) 180ms both; }
+.wl-sheet-wrap.is-letter.is-closing .wl-room-light { animation: wl-unfade 200ms var(--ease-in) both; }
+.wl-sheet-wrap:is(.is-letter, .is-write, .is-reveal).is-closing .wl-scrim { animation: wl-unfade 200ms var(--ease-in) 60ms both; }
 /* the one mark on the glass: the way out, in the corner where every sheet
    keeps it, standing on the scrim rather than on a header row. A sibling of
    the sheet (parts.jsx Sheet `aside`), because the sheet's entrance is a
@@ -2704,26 +2740,44 @@ a.wl-lq { text-decoration: none; }
    what is laid out again inside one (its words set to fit as its letter
    lands) stays inside it (`contain`). Not `paint`: that would clip each
    screen's glow at the edge of its box, and a glow cut by a clip is a lit
-   rectangle. */
-.wl-letter-track { position: relative; display: flex; flex-direction: column; justify-content: center; }
-.wl-letter-card { position: relative; z-index: 1; will-change: transform, opacity; backface-visibility: hidden; }
-.wl-letter-slot {
-  position: absolute; inset: 0; z-index: 0;
+   rectangle.
+
+   ── one box for every screen on the strip ──
+   The card and its neighbours are the same element in the same box, all
+   of them in the one cell of the track's grid (`.wl-letter-cell`), and
+   which each is is said by `data-side` alone: the card over the others and
+   taking a press, a neighbour dimmer, smaller, off to its side and taking
+   none. A turn's landing changes that attribute on two of them and nothing
+   else, and none of what it changes is laid out: it used to swap two
+   classes with two different boxes (the card in the flow, a neighbour
+   lifted out of it and made `inert`), and the landing styled and laid out
+   both screens from the top on the frame the card settled (the owner, 29
+   September, the lag; Letter.jsx `Cell`). `wl-letter-card` is still on the
+   card, for the scripts and the letter's own lookups, and no rule in any
+   stylesheet may read it, or moving it would restyle the screens again.
+   Every screen is one outline (below), so the grid's one row is the card's
+   height whichever screen is the card. */
+.wl-letter-track { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); }
+.wl-letter-cell {
+  grid-area: 1 / 1; min-width: 0;
   display: flex; flex-direction: column; justify-content: center;
-  pointer-events: none; will-change: transform, opacity;
-  backface-visibility: hidden; contain: layout style;
+  will-change: transform, opacity; backface-visibility: hidden; contain: layout style;
+}
+.wl-letter-cell[data-side='card'] { z-index: 1; }
+.wl-letter-cell:is([data-side='prev'], [data-side='next'], [data-side='far']) {
+  z-index: 0; pointer-events: none;
   opacity: var(--peek-dim);
   transform: translate3d(var(--span), 0, 0) scale(var(--peek-scale));
   transform-origin: 0% 50%;
 }
-.wl-letter-slot[data-side='prev'] {
+.wl-letter-cell[data-side='prev'] {
   transform: translate3d(calc(-1 * var(--span)), 0, 0) scale(var(--peek-scale));
   transform-origin: 100% 50%;
 }
 /* the letter past the neighbour, drawn while a turn runs on toward it, off
    the glass, and carried in with the strip (Letter.jsx `ahead`); never seen
    standing still where it is drawn */
-.wl-letter-slot[data-side='far'] { opacity: 0; }
+.wl-letter-cell[data-side='far'] { opacity: 0; }
 /* ── one phone, one outline ──
    Every screen on the strip is the same rectangle, whatever its letter: the
    proportion is the phones' middle one here (1.16, where the quirks run from
@@ -2767,16 +2821,25 @@ a.wl-lq { text-decoration: none; }
 .wl-letter-track .wl-set { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
 .wl-set-up { position: relative; z-index: 1; transform-origin: 50% 0; }
 /* a hand on the card takes it up and down as well as sideways (Letter.jsx,
-   the swipe), so the browser is given none of it */
-.wl-letter-card .wl-set.has-thread > .wl-set-up { touch-action: none; }
-.wl-letter.is-thread .wl-letter-card .wl-set { transform: none; }
-.wl-letter.is-thread .wl-letter-card .wl-set-up { transform: translate3d(var(--o-dx, 0px), var(--o-dy, 0px), 0) scale(var(--o-s, 1)); }
+   the swipe), so the browser is given none of it. Only the card's phone
+   has a thread behind it (`has-thread`, Letter.jsx `Handset`) */
+.wl-set.has-thread > .wl-set-up { touch-action: none; }
+.wl-letter.is-thread .wl-set.has-thread { transform: none; }
+/* the numbers are written on the phone that rises and on the light it
+   throws, the two that read them, and are not inherited (the three
+   `@property` rules below): on the room round the three screens they were
+   handed down to every element of all three, and the press that raised
+   the replies restyled every one (Letter.jsx `fitThread`) */
+.wl-letter.is-thread .wl-set.has-thread > .wl-set-up { transform: translate3d(var(--o-dx, 0px), var(--o-dy, 0px), 0) scale(var(--o-s, 1)); }
 /* the light the screen throws goes with it */
 .wl-letter.is-thread > .wl-letter-light { transform: translate3d(var(--o-dx, 0px), calc(var(--o-dy, 0px) * 0.5), 0); }
+@property --o-dx { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --o-dy { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --o-s { syntax: '<number>'; inherits: false; initial-value: 1; }
 /* while they are up the letter and its replies are the only things on the
    table: the letters beside it dark, the turn keys gone, and the foot under
    the card faded */
-.wl-letter.is-thread .wl-letter-slot { opacity: 0; }
+.wl-letter.is-thread .wl-letter-cell:is([data-side='prev'], [data-side='next'], [data-side='far']) { opacity: 0; }
 .wl-letter.is-thread .wl-turn { visibility: hidden; pointer-events: none; }
 .wl-letter.is-thread > .wl-foot { opacity: 0; pointer-events: none; }
 /* the letter over the room's own way out, and under the press that lays
@@ -2796,11 +2859,10 @@ a.wl-lq { text-decoration: none; }
 @media (min-width: 900px) {
   .wl-sheet-wrap.is-letter.is-slid::after { height: 36px; }
 }
-/* they come up out of the dark once the card has woken, the way the eye
-   finds the rest of a dark room after the one light in it. One that comes
-   to stand there later is brought up by Letter.jsx `Cell` */
-.wl-letter-stage.is-waking .wl-letter-slot.is-early { animation: wl-peek-in 480ms var(--ease) 420ms both; }
-@keyframes wl-peek-in { from { opacity: 0; } }
+/* they come up out of the dark once the card has powered on, the way the
+   eye finds the rest of a dark room after the one light in it: drawn when
+   the page is next idle after the power on, and brought up by Letter.jsx
+   `Cell`, like any screen that comes to stand beside the card */
 .wl-letter-leaf { position: relative; }
 /* an arrival that is not the strip landing: a link, the history */
 .wl-letter-leaf.is-arrived { animation: wl-fade 260ms var(--ease) both; }
@@ -2836,16 +2898,16 @@ a.wl-lq { text-decoration: none; }
    the keys' own `:hover` and `:focus-visible`, Chrome could not tell which
    changes mattered to it and styled the whole page again for every element
    added or taken away anywhere on it, a turn's landing included */
-.wl-letter-stage:not([data-moving])[data-focus='next'] .wl-letter-slot[data-side='next'],
-.wl-letter-stage:not([data-moving])[data-focus='prev'] .wl-letter-slot[data-side='prev'] {
+.wl-letter-stage:not([data-moving])[data-focus='next'] .wl-letter-cell[data-side='next'],
+.wl-letter-stage:not([data-moving])[data-focus='prev'] .wl-letter-cell[data-side='prev'] {
   opacity: calc(var(--peek-dim) + 0.16);
 }
 @media (hover: hover) and (pointer: fine) {
-  .wl-letter-slot { transition: opacity 240ms var(--ease), translate 360ms var(--ease); }
-  .wl-letter-stage:not([data-moving])[data-hover='next'] .wl-letter-slot[data-side='next'] {
+  .wl-letter-cell:is([data-side='prev'], [data-side='next']) { transition: opacity 240ms var(--ease), translate 360ms var(--ease); }
+  .wl-letter-stage:not([data-moving])[data-hover='next'] .wl-letter-cell[data-side='next'] {
     opacity: calc(var(--peek-dim) + 0.16); translate: -8px 0;
   }
-  .wl-letter-stage:not([data-moving])[data-hover='prev'] .wl-letter-slot[data-side='prev'] {
+  .wl-letter-stage:not([data-moving])[data-hover='prev'] .wl-letter-cell[data-side='prev'] {
     opacity: calc(var(--peek-dim) + 0.16); translate: 8px 0;
   }
   /* ── and under a mouse the card is a thing picked up ──
@@ -2854,16 +2916,19 @@ a.wl-lq { text-decoration: none; }
      a drag across the card is a turn, and a letter half highlighted after
      one reads as broken. The soft keys and a menu's rows keep their own
      hand. */
+  /* the hand is inherited by everything on the glass, and nothing asks for
+     it by a `*`: a rule ending in one made every screen on the strip be
+     styled again whenever the class above it came or went, a landing's and
+     a drag's included */
   .wl-letter-stage.can-turn { -webkit-user-select: none; user-select: none; }
-  .wl-letter-stage.can-turn .wl-letter-card,
-  .wl-letter-stage.can-turn .wl-letter-card * { cursor: grab; }
-  .wl-letter-stage.can-turn .wl-letter-card :is(.wl-sk:not(:disabled), .wl-sk:not(:disabled) *, .wl-scr-menu li) { cursor: pointer; }
-  .wl-letter-stage[data-grab], .wl-letter-stage[data-grab] * { cursor: grabbing !important; }
+  .wl-letter-stage.can-turn .wl-letter-cell { cursor: grab; }
+  .wl-letter-stage.can-turn :is(.wl-sk:not(:disabled), .wl-scr-menu li) { cursor: pointer; }
+  .wl-letter-stage[data-grab], .wl-letter-stage[data-grab] :is(.wl-letter-cell, .wl-sk, .wl-scr-menu li) { cursor: grabbing !important; }
 }
 /* asked for less movement: the neighbours are simply there, and one about
    to be turned to wakes where it stands without leaning in */
 @media (prefers-reduced-motion: reduce) {
-  .wl-letter-slot { animation: none !important; translate: none !important; }
+  .wl-letter-cell { animation: none !important; translate: none !important; }
 }
 
 /* The seal's line and its `read it` key stood here, in the sheet's foot
@@ -3134,9 +3199,8 @@ a.wl-lq { text-decoration: none; }
   .wl-write:has(.wl-write-card) > .wl-write-h { grid-column: 2; grid-row: 2; text-align: left; }
   .wl-write:has(.wl-write-card) > .wl-write-step { display: contents; }
   .wl-write-card { grid-column: 1; grid-row: 2 / span 3; }
-  /* the step's own fade is lost to display: contents; it is kept off the
-     card so the card never becomes a stacking context over the room light */
-  .wl-write-card .wl-scene { animation: wl-fade 260ms var(--ease) both; }
+  /* the card is not faded in here either: its screen powers on where it
+     stands (screen.css `is-power`), as on a phone */
   .wl-write:has(.wl-write-card) .wl-write-card .wl-scene { width: var(--wscr); }
   .wl-write .wl-look { grid-column: 2; grid-row: 3; align-self: start; margin-top: 0; max-width: none; }
   .wl-write:has(.wl-write-card) > .wl-write-foot { grid-column: 2; grid-row: 4; }
@@ -3525,6 +3589,11 @@ a.wl-lq { text-decoration: none; }
   }
   .wl-root .wl-spark.is-twinkle { animation: none !important; opacity: 0.8; }
   .wl-main.is-under { opacity: 0.22; }
+  /* the words round the composer's phone are simply there, and not held
+     for their beat and then dropped in (the delay is not one this block
+     shortens) */
+  .wl-sheet-wrap.is-write .wl-sheet-in > :not(.wl-write-step),
+  .wl-sheet-wrap.is-write .wl-write-step.wl-write-who { animation: none !important; }
 }
 
 /* ═══ WIDE ═════════════════════════════════════════════════════════════════
@@ -3773,7 +3842,7 @@ a.wl-lq { text-decoration: none; }
      three phones on a table with one of them on. Each key is the neighbour
      it stands over, and its focus is drawn round that screen. */
   .wl-sheet-wrap.is-letter { padding: 32px 80px; --peek-gap: 64px; --peek-dim: 0.24; --peek-scale: 0.9; }
-  .wl-sheet-wrap.is-letter .wl-sheet { max-width: calc(var(--scene-w) + 20px); animation: wl-letter-in 380ms var(--ease) both; }
+  .wl-sheet-wrap.is-letter .wl-sheet { max-width: calc(var(--scene-w) + 20px); animation: wl-letter-in 140ms var(--ease-out) both; }
   .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
   .wl-sheet-wrap.is-letter .wl-sheet-in { padding: 0; }
   .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }

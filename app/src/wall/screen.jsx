@@ -588,7 +588,7 @@ export function Screen({
           `.wl-scr-press`), and a print is uncovered here. Always drawn, so a
           screen turned from lit to print keeps the field in it */}
       <div
-        className={`wl-scr-press${s.paper && state ? ` is-${state}` : ''}`}
+        className={`wl-scr-press${s.paper && state && !(state === 'power' && s.kind === 'brat') ? ` is-${state}` : ''}`}
         style={press ? { filter: `url(#${fid})` } : undefined}
       >
         <div
@@ -655,6 +655,10 @@ export function Screen({
           <span className="wl-scr-fx is-glass" aria-hidden="true" />
           <span className="wl-scr-fx is-glare" aria-hidden="true" />
           <span className="wl-scr-fx is-shine" aria-hidden="true" />
+          {/* the glass before its backlight has come up (`useWake`): black,
+              over everything on it, and gone once it is lit. A print is
+              not lit, and is uncovered instead (screen.css) */}
+          {state === 'power' && !s.paper ? <span className="wl-scr-veil" aria-hidden="true" /> : null}
         </div>
       </div>
     </div>
@@ -782,6 +786,41 @@ function RgbLayer({ url, late }) {
 // crossfades when the screen is lit in another colour (keyed by the colour
 // where it is drawn). It is the room's and not the screen's (screen.css
 // `.wl-room-light`), because a glow cut by a clip is a lit rectangle.
+// ── the screen, powering on ─────────────────────────────────────────────────
+// Where a card opens, its phone comes on the way a phone does when it is
+// picked up (the owner, 29 September: "make it feel like a phone turning
+// on, not just a sudden opening of a page ... subtle and smooth and still
+// quick"): the glass is black for a beat, then the backlight rises
+// smoothly, with no flicker, no dip and no blur, and the light the screen
+// throws follows it a beat behind, while the phone settles from a hair
+// under its size to its size, where it already stands. `state='power'` on
+// a Screen is that (screen.css `is-power`), and this is how long it lasts
+// and the hook that holds it for the first beat after a card is put on the
+// glass. It is drawn by the compositor alone: a black veil inside the
+// glass whose opacity falls, the halo's opacity rising, the glass's
+// `scale`, and nothing laid out or painted again while it runs. A print is
+// not lit, so it is uncovered quickly instead, and the square not at all.
+// The old wake (`waking`, `wl-wake`, a blurred flicker of nearly a second)
+// is the intro's and the door's still, and nothing else's.
+//
+// `useWake(reduce, ms, key)` is 'power' for `ms` after the component that
+// calls it is put on the page, and again whenever `key` changes to a new
+// value (the composer's card, put on the glass by a step of a sheet that is
+// already up); under reduced motion it is '' from the start, and the screen
+// is simply lit (DESIGN.md 6.4).
+export const POWER_MS = 380
+export function useWake(reduce = false, ms = POWER_MS, key = 'on') {
+  const [s, set] = useState(() => ({ key, on: !reduce }))
+  if (s.key !== key) set({ key, on: !reduce })
+  const on = s.on && s.key === key
+  useEffect(() => {
+    if (!on) return undefined
+    const t = setTimeout(() => set((x) => (x.key === key ? { key, on: false } : x)), ms + 60)
+    return () => clearTimeout(t)
+  }, [on, key, ms])
+  return on && !reduce ? 'power' : ''
+}
+
 export function RoomLight({ look, seed = '' }) {
   const v = skinVars(colourOf(look, seed))
   return <span className="wl-room-light" style={{ '--s-halo': v['--s-halo'] }} aria-hidden="true" />

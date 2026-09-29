@@ -326,8 +326,14 @@ const REPLIES = [
   { id: 'r0000006-2222-4333-8444-555566660006', who: 'e4da3b7fbbce2345', recipient: false, status: 'live',
     body: 'wheeler at night is the most romantic place on campus and nobody will convince me otherwise', at: REPLY_AT(12), likes: 0 },
 ]
+const LONG = Array.from({ length: 60 }, (_, i) => {
+  const r = REPLIES[i % REPLIES.length]
+  const n = String(i + 1).padStart(4, '0')
+  return { ...r, id: `r000${n}-3333-4333-8444-555566660000`, who: `${n}${r.who.slice(4)}`, recipient: false,
+    at: REPLY_AT((60 - i) * 11), likes: (i * 7) % 23, mine: false }
+})
 function thread() {
-  const me = { signed: true, recipient: false, edu: true, terms: true, who: 'c74d97b01eae257e', can: true, why: null }
+  const me ={ signed: true, recipient: false, edu: true, terms: true, who: 'c74d97b01eae257e', can: true, why: null }
   const rows = REPLIES.map((r) => ({ liked: r.id.endsWith('1'), reported: false, mine: false, ...r }))
   const base = { ok: true, letter: '11110111-2222-4333-8444-555566660000', state: 'open', recipient_replied: true }
   const full = { ...base, count: rows.length, replies: rows, me }
@@ -336,6 +342,12 @@ function thread() {
     // a thread of three figures, which the key counts at a step smaller
     // (replies.css `.is-long`); the rows drawn are the same six
     case 'many': return { ...full, count: 128 }
+    // a thread as long as a loved letter's gets (2026-09-29, the lag the
+    // owner felt opening the replies): sixty rows, so a sheet that animates
+    // or lays out every row it holds shows it, where the six above hide it.
+    // The words cycle through the six, each row a writer of its own, one
+    // reply every eleven minutes back to about eleven hours ago.
+    case 'long': return { ...full, count: LONG.length, replies: LONG.map((r) => ({ ...r, liked: false, reported: false, mine: false })) }
     case 'terms': return { ...full, me: { ...me, terms: false } }
     case 'held': return { ...full, count: rows.length, replies: [...rows,
       { id: 'r0000007-2222-4333-8444-555566660007', who: 'c74d97b01eae257e', recipient: false, status: 'held', mine: true,
@@ -1916,7 +1928,7 @@ const ROUTES = [
   { label: 'replies',          path: '/letter/pilar.echevarria', thread: 'full', settle: 1800 },
   { label: 'replies-many',     path: '/letter/pilar.echevarria', thread: 'many', settle: 1800 },
   { label: 'replies-opening',  path: '/letter/pilar.echevarria', thread: 'full',
-    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 170]], settle: 0 },
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 0], ['freeze', '.wl-th', 110]], settle: 0 },
   { label: 'replies-open',     path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 400 },
   { label: 'replies-bottom',   path: '/letter/pilar.echevarria', thread: 'full',
@@ -2032,6 +2044,52 @@ const ROUTES = [
   { label: 'copy',          path: '/copy#c=481920' },
   { label: 'signin',        path: '/signin' },
   { label: 'notfound',      path: '/nothing-here' },
+
+  // ── perf (29 September): the power on, and the replies at their new pace ──
+  // Where a card opens its phone powers on (screen.jsx `useWake`): a letter
+  // opened off a disc, held a third of the way in and two thirds in, then
+  // lit; the same under reduced motion, which lands lit; the composer's
+  // card put on the glass by its first step, the ping's by its name, and
+  // the pings' by a send the week could not pay for, each held a third in
+  // and two thirds in; and the composer's way out, held as its screen goes
+  // out. Then the replies: a thread of sixty up and read, caught mid rise
+  // with its rows already on it, and laid down with the letter taking a
+  // press at once (the pane that swallowed presses for six tenths of a
+  // second is gone, so a press on the letter as the sheet goes down turns
+  // the deck, and the shot after it is the next letter).
+  { label: 'power-letter-120', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc', null, 0], ['freeze', '.wl-scr-veil', 120]], settle: 0 },
+  { label: 'power-letter-260', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc', null, 0], ['freeze', '.wl-scr-veil', 260]], settle: 0 },
+  { label: 'power-letter-lit', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc', null, 1600]], settle: 200 },
+  { label: 'power-letter-still', path: '/berkeley', still: true,
+    acts: [['click', '.wl-mast-go'], ['wait', 1200], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc', null, 60]], settle: 0 },
+  { label: 'power-write-120', path: '/berkeley/write', draft: null,
+    acts: [['fill', '.wl-field input', 'sofiaaa.reyes'], ['click', '.wl-write-foot .wl-pill.is-light', null, 1400],
+           ['click', '.wl-write-foot .wl-pill.is-light', null, 0], ['freeze', '.wl-scr-veil', 120]], settle: 0 },
+  { label: 'power-write-260', path: '/berkeley/write', draft: null,
+    acts: [['fill', '.wl-field input', 'sofiaaa.reyes'], ['click', '.wl-write-foot .wl-pill.is-light', null, 1400],
+           ['click', '.wl-write-foot .wl-pill.is-light', null, 0], ['freeze', '.wl-scr-veil', 260]], settle: 0 },
+  { label: 'power-ping-120', path: '/berkeley/ping',
+    acts: [['click', '.wl-ping-wrote .wl-suggest-row', null, 0], ['freeze', '.wl-scr-veil', 120]], settle: 0 },
+  { label: 'power-ping-260', path: '/berkeley/ping',
+    acts: [['click', '.wl-ping-wrote .wl-suggest-row', null, 0], ['freeze', '.wl-scr-veil', 260]], settle: 0 },
+  { label: 'power-buy-120', path: '/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light', null, 0],
+           ['freeze', '.wl-buy-card .wl-scr-veil', 120]], settle: 0 },
+  { label: 'power-buy-260', path: '/ping/pilar.echevarria', full: true,
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light', null, 0],
+           ['freeze', '.wl-buy-card .wl-scr-veil', 260]], settle: 0 },
+  { label: 'power-write-off', path: '/berkeley/write/sofiaaa.reyes',
+    acts: [['wait', 700], ['click', '.wl-write .wl-head .wl-close', null, 0], ['freeze', '.wl-sheet-wrap.is-closing', 110]], settle: 0 },
+  { label: 'replies-long',     path: '/letter/pilar.echevarria', thread: 'long',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900]], settle: 300 },
+  { label: 'replies-long-opening', path: '/letter/pilar.echevarria', thread: 'long',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 0], ['freeze', '.wl-th', 150]], settle: 0 },
+  { label: 'replies-shut-turn', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th .wl-th-grip', null, 60],
+           ['swipe', '.wl-letter-card .wl-scr', -220]], settle: 900 },
 ]
 
 // one label, or several separated by commas
@@ -2251,6 +2309,43 @@ for (const r of list) {
         continue
       }
       await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+      // a frame inside a movement, held still to be looked at: once `sel`
+      // is on the page, every animation on the sheet (on the glass, the
+      // room, the phone and its light, anything the movement started) is
+      // put `arg` milliseconds in and stopped there, and what each was
+      // drawing is written on its element, so what the page does next (a
+      // power on's state taken off at its end, and its black pane with it)
+      // cannot move the frame before it is shot. Settle it at 0
+      if (act === 'freeze') {
+        await page.evaluate((ms) => {
+          const held = []
+          for (const a of document.getAnimations()) {
+            const fx = a.effect
+            const el = fx && fx.target
+            if (!(el instanceof Element) || fx.pseudoElement || !el.closest('.wl-sheet-wrap')) continue
+            a.pause()
+            a.currentTime = ms
+            held.push([a, el])
+          }
+          const vals = held.map(([a, el]) => {
+            const cs = getComputedStyle(el)
+            return [a, el, cs.opacity, cs.transform, cs.scale, cs.filter]
+          })
+          for (const [a, el, o, t, sc, f] of vals) {
+            a.cancel()
+            // the pane goes when the page takes the power state off: a copy
+            // of it stands where it was
+            const e = el.classList.contains('wl-scr-veil') ? el.parentNode.insertBefore(el.cloneNode(), el.nextSibling) : el
+            e.style.setProperty('animation', 'none', 'important')
+            e.style.setProperty('transition', 'none', 'important')
+            e.style.setProperty('opacity', o, 'important')
+            e.style.setProperty('transform', t, 'important')
+            e.style.setProperty('scale', sc, 'important')
+            e.style.setProperty('filter', f, 'important')
+          }
+        }, Number(arg) || 0).catch(() => {})
+        continue
+      }
       if (act === 'fill') await page.fill(sel, arg).catch(() => {})
       // a click's fourth field, when it is a number, is how long to wait
       // after it instead of the beat below: the way to catch a frame in the

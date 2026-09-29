@@ -99,7 +99,7 @@ import {
   Sheet, SheetHead, Display, Label, Pill, HandleField, Addressed, Light, Who, DmCode, VerifyHead,
   DoorHead, DoorFoot, PixMark, useResolver, confirmWord, useSuggest, Suggest, useProfile,
 } from '../parts.jsx'
-import { Screen, ScreenDraft, ScreenNote, RoomLight } from '../screen.jsx'
+import { Screen, ScreenDraft, ScreenNote, RoomLight, useWake, POWER_MS } from '../screen.jsx'
 import { Dots, Provider } from '../art.jsx'
 import { normHandle, validHandle, atHandle, loadMine } from '../data.js'
 import { href } from '../router.js'
@@ -564,6 +564,11 @@ export default function Ping({
   const [placing, setPlacing] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [dip, setDip] = useState('')
+  // the note's phone powers on when it is put on the glass (screen.jsx
+  // `useWake`): as the sheet opens on it, and when the name step hands on
+  // to it, and not again when it is sent, which is the same phone; the dip
+  // after a send is its own and wins while it runs
+  const power = useWake(reduce, POWER_MS, step === 'line' || step === 'done' ? 'card' : step)
   // Set when the DM came from an account other than the one typed. The
   // webhook's answer is the identity (0012), so the choice is not whether to
   // believe it: it is whether to place THIS ping under that name, and that
@@ -1075,7 +1080,7 @@ export default function Ping({
   if (step === 'buy') {
     body = (
       <BuyPings
-        out headId="wl-ping-h" backLabel="back to the note"
+        out headId="wl-ping-h" backLabel="back to the note" reduce={reduce}
         onBack={() => { dropWaiting(); setStep('line') }}
       />
     )
@@ -1169,7 +1174,7 @@ export default function Ping({
         </Display>
         <div className="wl-write-step">
           <div
-            className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
+            className={`wl-write-card${shaking ? ' is-shaking' : ''}`} data-power={power ? '' : undefined}
             onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
           >
             <span className="wl-write-light" aria-hidden="true">
@@ -1190,7 +1195,7 @@ export default function Ping({
                 answered on its soft keys. Across the top, the face the note
                 is written on (`top`, above). */}
             <Screen
-              look={null} seed={seed} live state={dip}
+              look={null} seed={seed} live state={dip || power}
               top={{
                 ...top,
                 ...(done ? { stamp: stampOf(!spends && live?.at ? live.at : Date.now()) } : { counter: `${MAX_LINE - line.length}/1` }),

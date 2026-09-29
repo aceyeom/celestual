@@ -140,8 +140,18 @@ export default function WallApp() {
   // none of them has to know a network exists.
   // Except while a letter's deck is being turned: a fetch that lands under a
   // hand, or while the strip runs on, is drawn once it is still (strip.js).
-  const [, setRev] = useState(0)
-  useEffect(() => subscribe((r) => afterStrip(() => setRev(r))), [])
+  // The number every screen is handed is this one, the one the notice set,
+  // and not the cache's own read again at every render: read live, a fetch
+  // that landed mid-swipe was handed to the wall inside the render the
+  // turn's landing forced, and the wall under the black drew itself again
+  // on the frame a letter landed (the owner, 29 September, the lag).
+  const [rev, setRev] = useState(revision)
+  useEffect(() => {
+    const off = subscribe((r) => afterStrip(() => setRev(r), 'rev'))
+    // and whatever landed between the first draw and the subscription
+    setRev(revision())
+    return off
+  }, [])
   // ── and the wall, live ──
   // The index is read again while the tab is on the screen, on a clock and
   // on a nudge from the campus's channel (data.js watchWall), so a letter
@@ -447,14 +457,13 @@ export default function WallApp() {
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
 
   const mode = override || FIELD[route.name] || 'drift'
-  // Read on every render, which for this component means on every route
-  // change — the only moment a screen under a sheet can come back into view.
-  // It is what makes a name taken down on a sheet actually be gone from the
-  // wall that sheet was raised over.
+  // `rev` is the corpus's revision as the last notice left it (above), so a
+  // name taken down on a sheet is gone from the wall that sheet was raised
+  // over as soon as the notice lands, and never inside a turn's landing.
   const onSheet = SHEETS.has(route.name)
   // `under` is whether a sheet is up over the wall: the hive stops moving and
   // stops writing to the DOM while it is dimmed and blurred behind one.
-  const shared = { go, back, up, nested, upLabel, setField, reduce, rev: revision(), under: onSheet, cold, toWall, pushWall }
+  const shared = { go, back, up, nested, upLabel, setField, reduce, rev, under: onSheet, cold, toWall, pushWall }
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />

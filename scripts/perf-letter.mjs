@@ -8,13 +8,21 @@
 // with a finger, turned by the hand three times, turned by the arrow keys in
 // quick succession, turned onto the next name, closed, and then a letter's
 // replies are raised by its key and laid down by the grip of the sheet they
-// stand on (the key is under the sheet by then, as a thumb would find it).
+// stand on (the key is under the sheet by then, as a thumb would find it),
+// on a thread of six and again on one of sixty (`long`, `longshut`).
 // Each of those is watched frame by frame
 // (a frame loop in the page, and the long tasks the page reports), and the
 // numbers are the frames that came late, how late the worst one was, and
 // the tasks that held the page for more than fifty milliseconds. A swipe's
 // frames while the finger is down are counted apart, since those are the
 // ones a hand feels.
+//
+// And the replies' two presses are timed as a thumb feels them (`took`,
+// added 29 September, when the owner said the sheet took a good second to
+// open and to close): from the finger coming up to the first frame the
+// sheet was seen to move in, and from the finger coming up on the grip to
+// the first frame a press on the middle of the letter would land on the
+// letter again, which is what the page's own hit test says.
 //
 //   node scripts/perf-letter.mjs                     every moment, on a phone
 //   node scripts/perf-letter.mjs swipe,keys          some of them
@@ -69,10 +77,55 @@ async function measurement() {
         for (const e of list.getEntries()) if (P.rec) P.long.push(Math.round(e.duration))
       }).observe({ type: 'longtask' })
     } catch { /* a browser without them */ }
-    const loop = (t) => { if (!P.rec) return; P.frames.push(t); requestAnimationFrame(loop) }
-    P.start = () => { P.frames = []; P.long = []; P.marks = []; P.rec = true; P.t0 = performance.now(); requestAnimationFrame(loop) }
+    // one loop a moment: a loop left over from the moment before, whose
+    // next frame came after this one started, would count every frame twice
+    P.gen = 0
+    const loop = (gen) => (t) => { if (!P.rec || gen !== P.gen) return; P.frames.push(t); requestAnimationFrame(loop(gen)) }
+    P.start = () => { P.frames = []; P.long = []; P.marks = []; P.rec = true; P.t0 = performance.now(); P.gen += 1; requestAnimationFrame(loop(P.gen)) }
     P.mark = (m) => { if (P.rec) P.marks.push([m, performance.now()]) }
-    P.stop = () => { P.rec = false; return { frames: P.frames, long: P.long, marks: P.marks } }
+    P.stop = () => { P.rec = false; return { frames: P.frames, long: P.long, marks: P.marks, took: P.took } }
+    // how long a press took to show, in the page's own clock: from the
+    // moment the finger came up (the pointerup's time stamp, which is when
+    // the hand let go and not when the page got round to hearing it) to the
+    // first frame that had changed. `arm('open')` watches the replies sheet
+    // for the first frame its transform or opacity is not what it was at
+    // rest; `arm('shut')` watches the point at the middle of the letter's
+    // screen, taken while it stood at rest before its replies came up, for
+    // the first frame a press there would land on the letter again (the
+    // hit test is the browser's own, so a backdrop over it, or the sheet
+    // still passing over it, counts as the letter not taking the press).
+    P.lift = 0
+    P.took = null
+    addEventListener('pointerup', (e) => { if (P.armed && !P.lift) P.lift = e.timeStamp }, true)
+    const look = (el) => { if (!el) return ''; const cs = getComputedStyle(el); return `${cs.transform}|${cs.opacity}|${cs.visibility}` }
+    P.arm = (kind) => {
+      P.lift = 0
+      P.took = null
+      P.armed = kind
+      const th = document.querySelector('.wl-th')
+      const scr = document.querySelector('.wl-letter-card .wl-scr')
+      if (kind === 'open' && scr) { const r = scr.getBoundingClientRect(); P.home = [r.left + r.width / 2, r.top + r.height / 2] }
+      const from = look(th)
+      // the clock read when the frame's callbacks run, and not the time
+      // stamp the frame is handed: that is the moment the frame was due,
+      // and a frame held up behind a long task is still handed the moment
+      // it was due, so a press that held the page for a tenth of a second
+      // read as if it had shown at once
+      const done = (t) => { P.took = Math.round(t - P.lift); P.armed = null }
+      const tick = () => {
+        if (!P.armed) return
+        const t = performance.now()
+        if (P.lift && t >= P.lift) {
+          if (kind === 'open' && look(document.querySelector('.wl-th')) !== from) return done(t)
+          if (kind === 'shut' && P.home) {
+            const hit = document.elementFromPoint(P.home[0], P.home[1])
+            if (hit && hit.closest('.wl-letter-card')) return done(t)
+          }
+        }
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    }
   }
 
   // late frames: a frame that took more than 20ms missed the next, and each
@@ -189,7 +242,7 @@ async function measurement() {
     const downs = r.marks.filter((m) => m[0] === 'down').map((m) => m[1])
     const lifts = r.marks.filter((m) => m[0] === 'lift').map((m) => m[1])
     const hand = downs.length ? stats(r.frames, (t) => downs.some((d, k) => t > d && t <= (lifts[k] ?? Infinity))) : null
-    const row = { ...all, long: r.long.length, longest: Math.max(0, ...r.long), hand, where: TRACE ? summarise(await browser.stopTracing()) : '' }
+    const row = { ...all, long: r.long.length, longest: Math.max(0, ...r.long), hand, took: r.took, where: TRACE ? summarise(await browser.stopTracing()) : '' }
     ;(rows[label] = rows[label] || []).push(row)
   }
 
@@ -220,14 +273,26 @@ async function measurement() {
       await watch(page, 'close', async () => { await tap(page, cdp, '.wl-close'); await wait(1400) })
       await ctx.close()
     }
-    if (want('replies') || want('shut')) {
-      const { ctx, page, cdp } = await open('/letter/pilar.echevarria', 'full')
+    // the replies raised and laid down on a thread of six, and again on one
+    // of sixty (`long` and `longshut`), since a sheet that pays for every
+    // row it holds only shows it on a long one; each press also times how
+    // long it took to show (the `took` column: the sheet's first moved
+    // frame for a raise, the letter taking a press again for a lay down)
+    for (const [up, down, which] of [['replies', 'shut', 'full'], ['long', 'longshut', 'long']]) {
+      if (!want(up) && !want(down)) continue
+      const { ctx, page, cdp } = await open('/letter/pilar.echevarria', which)
       await wait(2200)
-      await watch(page, 'replies', async () => { await tap(page, cdp, '.wl-letter-card .wl-sk.is-thread'); await wait(1300) })
+      await watch(page, up, async () => {
+        await page.evaluate(() => window.__perf.arm('open'))
+        await tap(page, cdp, '.wl-letter-card .wl-sk.is-thread'); await wait(1300)
+      })
       // the grip on a phone, the close key at the head of the panel in a wide
       // room: whichever of the two the sheet is showing
       const shut = MODE === 'phone' ? '.wl-th .wl-th-grip' : '.wl-th .wl-th-x'
-      await watch(page, 'shut', async () => { await tap(page, cdp, shut); await wait(1100) })
+      await watch(page, down, async () => {
+        await page.evaluate(() => window.__perf.arm('shut'))
+        await tap(page, cdp, shut); await wait(1100)
+      })
       await ctx.close()
     }
   }
@@ -235,11 +300,15 @@ async function measurement() {
 
   // the middle run of each, by frames dropped
   console.log(`\n${MODE}, processor at 1/${THROTTLE}, ${RUNS} run${RUNS > 1 ? 's' : ''}, ${BASE}\n`)
-  console.log('moment    frames  late  dropped  worst   long tasks (longest)   finger down: dropped (worst)')
+  console.log('moment    frames  late  dropped  worst   long tasks (longest)    took   finger down: dropped (worst)')
   for (const [k, rs] of Object.entries(rows)) {
     const r = [...rs].sort((a, b) => a.dropped - b.dropped)[Math.floor((rs.length - 1) / 2)]
     const hand = r.hand ? `${r.hand.dropped} (${r.hand.worst}ms)` : ''
-    console.log(`${k.padEnd(9)} ${String(r.frames).padStart(6)} ${String(r.late).padStart(5)} ${String(r.dropped).padStart(8)} ${`${r.worst}ms`.padStart(7)}   ${`${r.long} (${r.longest}ms)`.padStart(18)}   ${hand}`)
+    // the press's latency is the middle of the runs' own, not the middle
+    // run's, since the two need not agree
+    const tooks = rs.map((x) => x.took).filter((x) => x != null).sort((a, b) => a - b)
+    const took = tooks.length ? `${tooks[Math.floor((tooks.length - 1) / 2)]}ms` : ''
+    console.log(`${k.padEnd(9)} ${String(r.frames).padStart(6)} ${String(r.late).padStart(5)} ${String(r.dropped).padStart(8)} ${`${r.worst}ms`.padStart(7)}   ${`${r.long} (${r.longest}ms)`.padStart(18)}   ${took.padStart(6)}   ${hand}`)
     if (r.where) console.log(`          ${r.where}`)
   }
 }
