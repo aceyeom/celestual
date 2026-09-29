@@ -341,6 +341,20 @@ burns with. It lives in `celestual_entries.card`.
   range — so an unknown key cannot ride along inside the object and come back
   out at a reveal. Since 0063 the words are also read by the letters' list
   (`celestual_text_caught`), and a card it catches places nothing.
+- **The face is rebuilt too, and a caught line is left off, not refused**
+  (0073). A card can carry the line across its top (`greet`) and the battery
+  its writer left it on (`bat`), and only with words. The line is a string,
+  its spaces closed and cut to forty, and the same list reads it: a line it
+  catches is dropped and the note goes with its words, so nothing the list
+  catches is ever stored, in the line or the words. Refusing is the
+  composer's, at the keyboard, where the writer can change it (screens/Ping.jsx
+  and Write.jsx read the line on its own and with the words, so a number split
+  between the two is caught; the server reads each on its own). The battery is
+  matched against the numbers' regular expression before it is cast, then
+  rounded and clamped to 0 to 4, so a hostile value can neither raise inside
+  the write path nor ride along. The validator reads the service role's list
+  now and is revoked from `public`, `anon` and `authenticated`; its one caller
+  is `celestual_place`, which is SECURITY DEFINER.
 - **One door, and it is locked to a matched row.**
   `celestual_counterpart_card` is the only function that returns a card its
   caller did not write, it is **not granted to `anon` or `authenticated`**, and

@@ -237,12 +237,22 @@ export function pingWords(a) {
 // paywall is a trip to Stripe's page and back, and the page may be reloaded
 // or evicted on the way, so it is kept on this device (store.js `waiting`)
 // rather than in memory, for two hours, and sent the moment the pings land
-// (screens/Pings.jsx). What it is: a note to send, with its words, a lapsed
-// one to send again, or a running one to keep for next week.
+// (screens/Pings.jsx). What it is: a note to send, with its words and the
+// face they were written on (the line across the top, `greet`, and the
+// battery, `bat`, 0073), a lapsed one to send again, or a running one to keep
+// for next week. The face waits with the words, since the send that finally
+// goes replaces the card whole and a face left behind here would be gone.
 const WAIT_MS = 2 * 3600000
 export function waitForPings(action) {
   if (!action || !action.to) return
-  patch({ waiting: { kind: action.kind || 'send', to: normHandle(action.to), line: action.line ?? null, at: Date.now() } })
+  patch({
+    waiting: {
+      kind: action.kind || 'send', to: normHandle(action.to), line: action.line ?? null,
+      greet: typeof action.greet === 'string' && action.greet ? action.greet : null,
+      bat: Number.isInteger(action.bat) ? action.bat : null,
+      at: Date.now(),
+    },
+  })
 }
 export function waitingNote() {
   const w = getState().waiting

@@ -243,6 +243,28 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0073_the_note_has_a_face.sql`: **the note has a face** (the
+  owner's ask of 29 September): the line across a private note's top and its
+  battery are its writer's to set, and are kept with it. Only
+  `celestual_card_clean` is redefined: after the words, the ground, the
+  typeface, the position and the tone it keeps `greet` (a string, its spaces
+  closed, forty characters, and LEFT OFF when `celestual_text_caught` catches
+  it, the note going with its words; the composer refuses a caught one at the
+  keyboard, on its own and with the words) and `bat` (a whole number from 0 to
+  4, read with the numbers' regular expression before any cast, rounded and
+  clamped, dropped when it is not a number). A card with no words is still no
+  card, whatever face it came with, so `has_card`, the mail's "their note to
+  you is waiting", the DM and the desk's `has_line` keep meaning the note has
+  words; `null` keeps a card as it was, face and all, `{"words":""}` takes the
+  words and the face off, and new words sent without a face replace the card
+  whole. The list, the counterpart card, the keepsakes and the status pass the
+  two keys through untouched, so they reach the writer's list, the other
+  side's card on the mutual and both keepsakes with nothing else redefined.
+  The validator is revoked from public, anon and authenticated: it reads the
+  service role's list now, and its one caller, `celestual_place`, is SECURITY
+  DEFINER. Re-runnable. **Tested by `scripts/sql/test-note-face.sql`, 17
+  assertions.**
+
 - `migrations/0072_the_mutual_kept.sql`: **a mutual is kept, and the pair
   can be found again** (the owner's ruling of 28 September). A person can
   write a new private note to somebody they are mutual with, and take a
@@ -907,8 +929,10 @@ the app uses Supabase Auth for Google alone. See
 - **`celestual_entries`** — one ping: `from_handle` (the verified sender),
   `to_hash` (**salted hash** of the target — plaintext is never stored),
   optional `from_email`, the **`card`** the ping carries (migration 0022 — the
-  words, the ground, the face, the block's position and the tone, rebuilt by
-  `celestual_card_clean` on the way in and readable by the other person only
+  words, the ground, the face, the block's position and the tone, and since
+  0073 the line across its top, `greet`, and the battery its writer left it
+  on, `bat`, only ever with words, rebuilt by `celestual_card_clean` on the
+  way in and readable by the other person only
   once `matched_at` is set), the **`photo`** it stands on (migration 0025 —
   base64 of the treated, EXIF-stripped JPEG, written only through
   `celestual_card_photo_put` and released by `celestual_counterpart_photo`

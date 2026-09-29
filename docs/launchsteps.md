@@ -36,6 +36,38 @@ tier has no point in time recovery.
 
 ---
 
+## The note has a face: the deploy (migration 0073)
+
+The owner, 29 September: the line across the top of a private note and its
+battery are the writer's to set. One migration, then the wall. It goes after
+0072 in the order, and needs 0063 applied (the list it reads the line with).
+Nobody in this repository applies it to any real database; it is verified
+against a bare PostgreSQL only (`scripts/verify-migrations.sh --test`,
+`scripts/sql/test-note-face.sql`).
+
+1. [ ] **Apply `0073_the_note_has_a_face.sql`.** Re-runnable. It redefines
+       `celestual_card_clean` alone, and revokes it from `public`, `anon`
+       and `authenticated` (nothing but `celestual_place` calls it). From
+       this moment a card keeps `greet` and `bat` beside the words, and a
+       line the letters' list catches is left off rather than refused. A card
+       sent without them is stored exactly as before, so the wall already
+       live is not touched by it.
+2. [ ] **Ship the front end**, after step 1 and never before it: a wall that
+       sends the face to a database without 0073 has it thrown away by the
+       old validator, which rebuilds a card from the keys it knows, and the
+       writer is shown a face on the screen that went out without it.
+
+Check: from one account open a note's screen, change the greeting to `to the
+one at the bus stop`, press the battery twice and send it. In a SQL editor:
+
+```sql
+select card->>'greet', card->'bat' from celestual_entries
+ where from_handle = 'yourhandle' and to_hash = celestual_hash_handle('theirhandle');   -- to the one at the bus stop, 2
+```
+
+Its screen on the account shows the line and two bars, and a greeting with a
+phone number in it is refused under the screen and never sent.
+
 ## Pings by the week: the deploy (migration 0071)
 
 The owner, 27 September: one free ping a week, and more for $2.99 each, as

@@ -177,9 +177,10 @@ export function BuyPings({ out = false, onBack, backLabel = 'not now', headId = 
 }
 
 // ── what was waiting, done ──────────────────────────────────────────────────
-// A note to send goes with the words it was kept with; a lapsed one is sent
-// again with its own; a running one is kept for next week. Answers what the
-// screen says: { ok, title, text } or a fault.
+// A note to send goes with the words it was kept with, on the face they were
+// written on (the line across its top and its battery, 0073); a lapsed one is
+// sent again with its own; a running one is kept for next week. Answers what
+// the screen says: { ok, title, text } or a fault.
 //
 // A note to send to somebody this person is mutual with, and has nothing
 // running on, is a new note, and goes out through `placeAgain` (0072), as it
@@ -201,8 +202,11 @@ async function finish(w) {
   const list = w.kind === 'send' ? await myPings({ handle: me, proof: heldProof(me) }) : null
   if (list && !list.ok) return NOT_OUT
   const anew = !!list && !!mutualOf(list, w.to) && liveOf(list, w.to)?.state !== 'standing'
+  // the face goes with the words it waited with (0073): a send with words
+  // replaces the card whole, and one without keeps the card as it was
   const out = await (anew ? placeAgain : place)({
     me, them: w.to, proof: heldProof(me), words: w.kind === 'again' || w.line == null ? undefined : w.line,
+    greet: w.greet || undefined, bat: Number.isInteger(w.bat) ? w.bat : undefined,
   })
   if (!out.ok) return NOT_OUT
   const ends = Date.parse(out.expires_at || 0) || nextReveal()

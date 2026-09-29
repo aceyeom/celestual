@@ -184,8 +184,12 @@ aerial, the signal bars, the name, by the battery the day it went up as
 beside the aerial; the pen, the mode, the handle), the words, and the three
 soft keys at the foot
 (`options`, the heart and its count, `share`), set in one face, Jersey 10, the
-Series 40 grid (`--f-s40`). The only thing a writer chooses is the COLOUR it is
-lit in, and each colour carries its own treatment with it:
+Series 40 grid (`--f-s40`). The only thing a writer chooses about how a letter
+looks is the COLOUR it is lit in (the greeting across its top is words, and
+theirs; a private note, lit in the colour its person's name picks, has no
+colour to choose, and its writer sets its face instead, the line across its top
+and its battery, 0073, below and 2.6), and each colour carries its own
+treatment with it:
 
 | kind | colours | what it is |
 | --- | --- | --- |
@@ -302,6 +306,16 @@ hearted the letter, the battery how long it has been sitting there unsaid,
 and on the wall's small screens the bars are how many letters the name has
 and an envelope blinks on a name that heard from somebody today.
 
+On a private note the battery is its writer's own (the owner, 29 September,
+and 0073). They set it on the note's screen a bar at a time, full to start,
+the empty one blinking as the phone's did, and it is kept with the note and
+read with the words by the other person if it is ever mutual: how much they
+had left in them, or whatever else they meant by it. It counts nothing, so it
+claims nothing (VOICE.md 4, truth exactly), and it is drawn only where the
+note is, on the writer's own screens and, once it is mutual, the other's. A
+note from before 0073, which has none, still draws the battery running down
+with its week on the account's screen, the only place it ever drew one.
+
 **A person is a picture on a screen.** There is no round face anywhere. A
 profile picture is cut square round the face (a fifth in from the edges, a
 touch above centre), brought down to a few dozen pixels by halving, pulled to
@@ -360,8 +374,8 @@ on the wall now, built of the wall's own parts and nothing new:
 
 | Sheet | What it is made of |
 | --- | --- |
-| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `it's out.` as a note on that screen (`ScreenNote`). One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
-| the person (`screens/You.jsx`) | the account card on an unlit panel, its rows the letters' rows, with the key held at the foot of the panel over a dashed seam while the card scrolls under it. A standing ping opens onto its own lit screen, whose options key is the phone's menu (`ScreenMenu`) and whose `let it go?` is a note with two soft keys |
+| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `sent privately.` as a note on that screen (`ScreenNote`). The screen's status rows are the note's face and the writer's to set (0073): the greeting is the composer's (`Greet`, `dear` and their first name until it is changed, forty characters, the dotted pixel line under it), and the battery is a key on the row with the same dotted line under it, a bar off at each press, the empty one blinking, and round to full. A line the writer set has the row to itself and the handle gives way to it. The first time on a device one line under the screen says `the greeting and battery are yours to set.`, and it fades where it stands at the first touch of either, the screen having given up that line's height. One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
+| the person (`screens/You.jsx`) | the account card on an unlit panel, its rows the letters' rows, with the key held at the foot of the panel over a dashed seam while the card scrolls under it. A standing ping opens onto its own lit screen, on the face its writer left it on (its greeting across the top and its battery, or `dear` and the name and a battery running down with its week for a note from before 0073), whose options key is the phone's menu (`ScreenMenu`) and whose `let it go?` is a note with two soft keys |
 
 Nothing about a ping is ever drawn anywhere a second person can look. The
 sheets show a person their own pings and nobody else's, which is the whole

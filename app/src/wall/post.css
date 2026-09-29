@@ -14,7 +14,11 @@
    place, set exactly as the line is (the row's face, size, colour and
    bloom). It is sized to what is in it by a mirror of its own value laid in
    the same grid cell, so the @ beside it keeps its place. A dotted pixel
-   line under it says it can be changed, and gives way to the caret. */
+   line under it says it can be changed, and gives way to the caret. The
+   line is set in the line's own ems, just under its baseline, so it stands
+   in the band at every size the line is set at (screen.jsx `lineSize`); in
+   cqw below the box it fell on the edge of the panel, where on a lit screen
+   it could not be seen at all (the ping's note, 0073). */
 .wl-scr-greet {
   position: relative; display: inline-grid; align-items: baseline;
   min-width: 3ch;
@@ -37,12 +41,16 @@
 .wl-root .wl-scr-greet > input[data-caret] { caret-color: transparent; }
 .wl-root .wl-scr-greet > input::selection { background: var(--s-lit); color: var(--s-top); text-shadow: none; }
 .wl-scr-greet::before {
-  content: ''; position: absolute; left: 0; right: 0.3em; bottom: -0.9cqw; height: 0.55cqw;
+  content: ''; position: absolute; left: 0; right: 0.3em; bottom: 0.04em; height: max(0.55cqw, 0.06em);
   background: repeating-linear-gradient(90deg, currentColor 0 1.1cqw, transparent 1.1cqw 2.2cqw);
   opacity: 0.5; pointer-events: none;
   transition: opacity 160ms var(--ease, ease);
 }
 .wl-scr-greet:focus-within::before { opacity: 0; }
+/* a print is pressed through its inks (screen.jsx `Press`), and a grey the
+   press does not keep is paper: the line is the ink itself there, or the
+   xerox's threshold takes it clean off the band */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-scr-greet:not(:focus-within)::before { opacity: 1; }
 /* the caret, in the line's lit colour rather than the words' ink */
 .wl-scr-greet .wl-caret.is-screen { background: var(--s-lit); box-shadow: 0 0 1cqw var(--s-bloom); }
 .wl-scr-greet .wl-caret.is-screen > i { color: var(--s-top); }
