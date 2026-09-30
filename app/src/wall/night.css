@@ -1,33 +1,58 @@
 /* ── a night that was not mutual ────────────────────────────────────────────
-   Night.jsx: the report a phone shows on the night, and on a note that was
-   not this time. On the glass, so in the screen's own ink and sized in its
-   `cqw`, like every word on a screen: the title in the large face a screen's
-   note uses (11cqw), and the three lines a step down from a note's line, at
-   6.4, so the whole of it stands on one glass without a scroll at any width.
-   Left set, as a message is, and pushed to the middle of the glass when it
-   is short. The line about why is a shade back, since it is the one about
-   somebody else; the line about what came back is the ink's own, with the
-   phone's small check before it when something did. */
+   Night.jsx. Two places, one message: three short lines and what came back.
+
+   On a note's own glass (`NightReport`) it is set in the middle, as the
+   phone set a message it had finished with, in the screen's own ink and
+   sized in its `cqw` like every word on a screen: the two envelopes, the
+   title in the large face a screen's note uses (11cqw), the two lines at
+   the size a note's line is (7.4cqw), and the tag. Nothing is a paragraph,
+   so nothing needs reading twice. */
 .wl-night-rep {
   flex: 1 1 auto; min-width: 0;
-  display: flex; flex-direction: column; justify-content: center; gap: 2.4cqw;
-  padding: 0 0.6cqw 0.6cqw;
-  color: var(--s-ink); font: 400 6.4cqw/1.1 var(--f-s40); text-align: left;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.2cqw;
+  padding: 0 3cqw 1cqw;
+  color: var(--s-ink); font: 400 7.4cqw/1.12 var(--f-s40); text-align: center;
   text-shadow: 0 0 0.35cqw var(--s-soft);
 }
-.wl-night-rep b { font-weight: 400; font-size: 11cqw; line-height: 0.96; margin-bottom: 0.4cqw; }
-.wl-night-rep p { margin: 0; }
-.wl-night-rep .is-why { opacity: 0.74; }
-.wl-night-rep .is-back { display: flex; align-items: flex-start; gap: 1.8cqw; }
-.wl-night-rep .is-back .wl-night-g { margin-top: 1.1cqw; }
-/* after a share: the link glyph and what became of it, in the middle */
-.wl-night-rep.is-said { align-items: center; justify-content: center; text-align: center; gap: 3cqw; }
-.wl-night-rep.is-said .wl-night-g { height: 7cqw; width: auto; }
+.wl-night-rep b { font-weight: 400; font-size: 11cqw; line-height: 0.96; }
+.wl-night-lines { display: flex; flex-direction: column; gap: 0.6cqw; }
+.wl-night-note { opacity: 0.74; }
+/* the one that went, a dotted line, and the place where the one back would
+   have been: the phone's own envelope twice, the second only its outline's
+   ghost */
+.wl-night-pic { display: flex; align-items: center; gap: 2.4cqw; margin-bottom: 0.6cqw; }
+.wl-night-pic .wl-px { height: 5.4cqw; width: auto; }
+.wl-night-pic .wl-px.is-none { opacity: 0.28; }
+.wl-night-dots {
+  width: 14cqw; height: 0.9cqw;
+  background: repeating-linear-gradient(90deg, currentColor 0 0.9cqw, transparent 0.9cqw 2.2cqw);
+  opacity: 0.6;
+}
+/* what came back: lit, as a chosen row is on the phone (the ink for its
+   ground, the glass's own middle for its words), with the small check */
+.wl-night-tag {
+  display: inline-flex; align-items: center; gap: 1.6cqw;
+  padding: 0.9cqw 2.4cqw 0.7cqw;
+  background: var(--s-ink); color: var(--s-mid); text-shadow: none;
+  font-size: 6.6cqw; line-height: 1;
+}
+.wl-night-tag .wl-px { height: 4.6cqw; width: auto; }
 
-/* the night's own phone, at the head of the private notes' frame
-   (screens/You.jsx): the frame's width less its grid's inset, a beat of
-   the frame's own seam under it before the notes */
-.wl-night { position: relative; margin: 4px 4px 12px; }
+/* ── the night's notice, at the head of the private notes ──
+   (screens/You.jsx). The wall's notice (wall.css `.wl-down`, the card the
+   wall raises after a post), so it is one of the wall's own things and not
+   a second phone in the list: the face it was about, the title in chalk,
+   the two lines in ash, one under the other, and the tag, lit in chalk,
+   under them. The keys under the dotted seam. */
+.wl-night.wl-down { margin: 4px 4px 12px; width: auto; animation: none; }
+.wl-night-say { display: flex; flex-direction: column; gap: 2px; }
+.wl-night.wl-down .wl-night-tag {
+  align-self: flex-start; margin-top: 4px;
+  gap: 8px; padding: 5px 9px 4px; border-radius: 2px;
+  background: var(--chalk); color: #000;
+  font-size: var(--t-small);
+}
+.wl-night.wl-down .wl-night-tag .wl-px { height: auto; }
 
 /* a note that was not this time, at its own reveal's address
    (screens/Reveal.jsx), where `nothing here.` stood: its screen in the middle

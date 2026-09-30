@@ -183,15 +183,16 @@ aerial, the signal bars, the name, by the battery the day it went up as
 `09/24/26`, or on a draft the characters it has left, and never a second date
 beside the aerial, and after the aerial an envelope, steady, once the person
 the letter is to has answered it; the pen, the mode, the handle), the words,
-and the soft keys at the foot: the heart and its count and the replies'
-speech bubble and its count, drawn exactly as the heart is, with no plate and
-no light on it, together on the left (the heart alone where a letter has no
-thread), and `options` alone on the right, whose first row is always `share`
-(the owner's ruling of 29 September: likes and comments under one thumb, the
-menu at the other end of the band, where a phone kept it; every count holds
-the room of two figures so a heart counted up does not push the bubble
-along, `screen.css` `.wl-sk-n`; while a menu is open the band is `select` and
-`back`, the key that opened it shutting it), set in one
+and the soft keys at the foot: `options` alone on the left, whose first row
+is always `share`, and the heart and its count and the replies' speech
+bubble and its count, drawn exactly as the heart is, with no plate and no
+light on it, together on the right (the heart alone where a letter has no
+thread). The owner's ruling of 30 September, turning round the one of the
+29th: the menu where every screen on the wall keeps it and a phone kept it,
+and likes and comments together at the other end, under the thumb. Every
+count but the last holds the room of two figures, so a heart counted up does
+not move under the thumb that pressed it (`screen.css` `.wl-sk-n`); while a
+menu is open the band is `select` and `back`, as on every screen. Set in one
 face, Jersey 10, the Series 40 grid (`--f-s40`). The only things a writer
 chooses about how a letter looks are the COLOUR it is lit in and the charge
 its battery shows (0076, below; the greeting across its top is words, and
@@ -568,20 +569,24 @@ drawn a whole number of device pixels to a cell (`crisp`), at no more than
 two million of them, and only where the frame changed (8.4).
 Under reduced motion every story is drawn on its last frame.
 
-**A message from celestual.** Since 29 September a night that was not mutual
-is told on a phone of its own (`Night.jsx`): the envelope and `celestual`
-across the band, the night's date where a letter carries its day, and no
-battery, since nobody set one. It is the night's colour (`looks.js` `night`),
-lit, never the rose, which is the mutual's alone, and never dimmed while it
-is being read: a note that was not this time dims only when its own words
-are turned to. The report is left set as a message is, the title in a
-screen note's large face (11cqw) and three lines a step down (6.4cqw), the
-line about the other person a shade back and the line about what came back
-led by the phone's small check when something did. Its keys are `options`
-and `ok`, the options the next steps (`send it again`, `share celestual`,
-`let it go`), and the menu turns them to `select` and `back` as every menu
-does. It stands in the private notes' frame once a reveal, and the same
-report is the face a lapsed note opens on and its `/reveal/<handle>`.
+**A night that was not mutual.** Told since 29 September, and made short
+and plain on the 30th, when the owner found the first telling "too wordy and
+hard to understand": three lines and what came back (`Night.jsx`). `not this
+time.`, `they didn't send you one.`, `they'll never know you did.`, and, where
+a ping came back, a small lit tag with the phone's check, `+1 free ping this
+week` or `your ping is back`. On a note's own screen, the face a lapsed note
+opens on and its `/reveal/<handle>`, it is set in the middle of the glass as
+the phone set a message it had finished with, under the phone's two
+envelopes (the one that went, a dotted line, and the ghost of the one that
+never came), the title in a screen note's large face (11cqw), the lines at a
+note's (7.4cqw), the tag inverted as a chosen row is; the phone is the
+night's colour (`looks.js` `night`), lit, never the rose, which is the
+mutual's alone. In the private notes' frame it is not a second phone but the
+wall's own notice (`.wl-down`, the card after a post): the face it was
+about, the title in chalk, the lines in ash, the tag lit in chalk, and the
+keys that act under the dotted seam, `send again` and `share celestual`. And
+the frame's strip says `not this time` in chalk, not rose, on a night with
+no mutual in it.
 
 **The context.** `PhoneChrome` (`parts.jsx`) is turned on at the wall's root
 (`index.jsx`) and read by the shared parts that draw rather than lay out:

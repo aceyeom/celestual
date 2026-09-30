@@ -250,9 +250,9 @@ to rather than guessing at one.
 | lapses in 4 days. still feel it? | Your entry expires soon. Renew now. |
 | this gives its ping back. they never find out you sent it. | Are you sure you want to delete? |
 | this week’s ping is spent. get 3 pings · $8.97 | You’ve hit your limit. Upgrade to Premium! |
-| not this time. nobody was told you sent it, and nobody ever will. | They didn't match with you. Better luck next time! |
-| they didn't send you one by saturday 9pm, or they aren't reachable here yet. celestual never says which, on purpose. | @maya isn't on celestual yet. Invite her to join! |
-| your free ping came back as an extra for this week. | We've credited 1 bonus ping to your account. |
+| not this time. they didn't send you one. they'll never know you did. | They didn't match with you. Better luck next time! |
+| share celestual | @maya isn't on celestual yet. Invite her to join! |
+| +1 free ping this week | We've credited 1 bonus ping to your account. |
 | the rest is yours. celestual's part is done. | Start chatting now. |
 | celestual opens at reed when 300 are in. current count: 214. | Join the hottest new app on campus. |
 

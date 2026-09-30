@@ -480,14 +480,17 @@ function Press({ id, colour, q }) {
 // `keys` is the three soft keys, `l`, `c` and `r`, each
 // `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
 // it was when the key is pressed with a pointer. The body is the children.
-// `l` can be a list instead, the keys that stand together at the left of the
-// band, and only a letter asks for one (screens/Letter.jsx, the owner's
-// ruling of 29 September): its heart and its replies' bubble side by side,
-// each with its count, and `options` alone on the right. The band says so
-// (`is-grouped`), and every count in the group keeps the room of two
-// figures whatever it holds (`.wl-sk-n`), so a heart going from nine to ten
-// does not push the bubble along. Every other screen hands one key or none
-// to each place and is drawn exactly as it was.
+// `l` or `r` can be a list instead, keys that stand together at that end of
+// the band, and only a letter asks for one (screens/Letter.jsx): `options`
+// alone on the left, where every other screen keeps it, and its heart and
+// its replies' bubble side by side on the right, each with its count (the
+// owner's ruling of 30 September, which turned round the one of the 29th).
+// The band says so (`is-grouped`), and every count in the group but the
+// last keeps the room of two figures whatever it holds (`.wl-sk-n`), so a
+// heart going from nine to ten does not move under the thumb that pressed
+// it; the last count, against the band's edge, takes only the room it
+// needs, so an empty one leaves no hole at the end. Every other screen
+// hands one key or none to each place and is drawn exactly as it was.
 //
 // `salutation` is the whole of that line when the writer set one of their
 // own ("to the girl on the 51B"), and with none it is "dear" and the name
@@ -562,8 +565,8 @@ export function Screen({
   // the light went to the status row (`mail`). A key that opens something
   // stays struck out of its band while that is open (`open`), as the phone
   // lit the tab it was on.
-  // `n` is a key in the left group, whose count keeps its room when it is
-  // empty (the list above)
+  // `n` is a key in a group whose count keeps its room when it is empty
+  // (the list above)
   const soft = (d, cls, n = false, k = undefined) => (
     <button
       key={k} type="button" id={live ? d.id : undefined}
@@ -583,12 +586,15 @@ export function Screen({
     const d = keys[k]
     if (Array.isArray(d)) {
       const ds = d.filter((x) => x && (x.label || x.glyph))
-      return <span className={`wl-sk-group ${cls}`}>{ds.map((x, i) => soft(x, '', true, i))}</span>
+      // at the right end the last key is against the edge, and its count
+      // takes only its own room
+      const end = cls === 'is-r'
+      return <span className={`wl-sk-group ${cls}`}>{ds.map((x, i) => soft(x, '', !(end && i === ds.length - 1), i))}</span>
     }
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
     return soft(d, cls)
   }
-  const grouped = Array.isArray(keys.l)
+  const grouped = Array.isArray(keys.l) || Array.isArray(keys.r)
   // What the stylesheet needs to know about what is on the glass, said on
   // the elements it styles: the screen's state on the scene round it (the
   // light it throws wakes and sleeps with it), and a menu on the body that

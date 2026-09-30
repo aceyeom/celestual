@@ -145,8 +145,9 @@ actually placed.
 **And it is never answered for a note that was not mutual (0075, the owner's
 ruling of 29 September).** The owner asked what happens when the other person
 is not on celestual. The ruling is that nobody is ever told whether they are:
-the wall says, on the night, that they didn't send one by saturday 9pm or
-aren't reachable here yet, and that celestual never says which, on purpose.
+the wall says, on the night, `they didn't send you one.`, which is true
+whether they sent nothing, let one go or are not reachable here, and claims
+none of them.
 Two reasons, either enough. Every ping of a night that was not mutual now
 comes back, so a bit answered at the night would be a free lookup of ten @s a
 week, the scan this section exists to prevent. And the answer would say

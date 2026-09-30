@@ -144,6 +144,13 @@
 .wl-vault-bar.is-told .wl-vault-now { color: var(--rose); }
 .wl-vault-bar.is-told .wl-vault-now b { color: var(--rose); }
 .wl-vault-bar.is-told .wl-vault-seal { color: var(--rose); }
+/* a night with no mutual in it is told in chalk: rose is the mutual's
+   colour, and a strip lit rose over `not this time` said the opposite of
+   its words at a glance (Night.jsx, the owner's 30 September) */
+.wl-vault-bar.is-told.is-none { background-image: none; }
+.wl-vault-bar.is-told.is-none .wl-vault-now,
+.wl-vault-bar.is-told.is-none .wl-vault-now b,
+.wl-vault-bar.is-told.is-none .wl-vault-seal { color: var(--chalk); }
 .wl-slots-cells { display: inline-flex; gap: 3px; }
 .wl-slots-cells i { width: 7px; height: 7px; box-shadow: inset 0 0 0 1px var(--lcd-edge-hi); }
 

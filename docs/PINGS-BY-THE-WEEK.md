@@ -372,12 +372,13 @@ What the database and the wall settled:
   byte for byte, whether the other person never wrote, wrote and let go
   before the night, or is not reachable here: the settlement reads only the
   sender's own ledger and whether the pair was told. Nothing says whether the
-  other person is reachable, and the wall says so: `celestual never says
-  which, on purpose.` (SECURITY.md section 5 has why.)
+  other person is reachable. The wall says `they didn't send you one.`, which
+  is true in every one of those cases and claims none of them (SECURITY.md
+  section 5 has why).
 * **The share is generic.** The night's screen offers `share celestual`: the
   wall's how it works door (`/join`) and the line it opens on, never a name,
   never a word about who sent what. It is never a condition of anything.
 
-The wall's side is `app/src/wall/Night.jsx`: the night's screen in the private
-notes once a reveal (`NightCard`), and the same report on each note that was
-not this time and at its own `/reveal/<handle>`.
+The wall's side is `app/src/wall/Night.jsx`: the night's notice in the
+private notes once a reveal (`NightCard`), and the same three lines on each
+note that was not this time and at its own `/reveal/<handle>`.

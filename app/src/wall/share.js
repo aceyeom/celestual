@@ -10,8 +10,8 @@
 // letter up and for passing one on is a word a person has to read twice.
 //
 // The picture's band is the card's band, key for key (the owner's ruling of
-// 29 September): the heart and its count and the replies' bubble and its
-// count together on the left, and `options` alone on the right (`drawScreen`,
+// 30 September): `options` alone on the left, and the heart and its count
+// and the replies' bubble and its count together on the right (`drawScreen`,
 // the soft keys). It painted `options`, the heart in the middle and `share`
 // on the right after the card had stopped drawing any of them there.
 //
@@ -488,12 +488,14 @@ function drawScreen(o, tile = null) {
   // no cursor: a letter being read is not being written
   g.restore()
 
-  // the soft keys: the heart and the bubble, each with its count, together
-  // on the left, and `options` on the right, set as the page sets them
+  // the soft keys: `options` on the left, and the heart and the bubble,
+  // each with its count, together on the right, set as the page sets them
   // (screen.css `.wl-scr-bot.is-grouped`): a glyph on six rows, a unit's gap,
-  // the count in a slot two figures wide whatever it holds (`.wl-sk-n`), the
-  // key's own padding and the group's gap before the next. A count of none
-  // says nothing, and three figures are a step smaller, as on the card
+  // the count, the key's own padding and the group's gap before the next.
+  // Every count but the last keeps a slot two figures wide whatever it holds
+  // (`.wl-sk-n`); the last, against the edge, takes only its own width. A
+  // count of none says nothing, and three figures are a step smaller, as on
+  // the card. The group is measured first and then set from the right edge
   withBloom(() => {
     const my = sh - botH / 2 - 0.3 * u
     g.fillStyle = lit
@@ -501,26 +503,32 @@ function drawScreen(o, tile = null) {
     g.font = `400 ${13.4 * u}px ${FACE}`
     // as close to the edge as the page sets them (screen.css `.wl-scr-bot`)
     const kx = flat ? 3.2 * u : 2.4 * u
-    g.textAlign = 'right'
-    g.fillText(o.right || 'options', sw - kx, my)
     g.textAlign = 'left'
-    let x = kx
-    const key = (name, cols, n) => {
+    g.fillText(o.left || 'options', kx, my)
+    const keys = [[o.hearted ? 'heart' : 'heartO', 7, o.hearts]]
+    if (o.thread) keys.push(['bubbleO', 9, o.replies])
+    const laid = keys.map(([name, cols, n], i) => {
       const said = n ? countSaid(n) : ''
       const size = said.length > 2 ? 9 : 11
       g.font = `400 ${size * u}px ${FACE}`
       const gw = (6.8 * u * cols) / 6
-      glyph(g, name, x, my - 3.4 * u, 6.8 * u, lit)
-      x += gw + 1.4 * u
-      g.fillStyle = lit
-      if (said) g.fillText(said, x, my + 0.3 * u)
-      const slot = size * u * (said.length > 2 ? 1.36 : 1.02)
-      x += Math.max(slot, said ? g.measureText(said).width : 0)
-      // this key's padding, the group's gap and the next key's padding
-      x += 0.8 * u + 2.2 * u + 0.8 * u
+      const tw = said ? g.measureText(said).width : 0
+      const last = i === keys.length - 1
+      const room = last ? (said ? 1.8 * u + tw : 0) : 1.8 * u + Math.max(size * u * (said.length > 2 ? 1.36 : 1.02), tw)
+      return { name, said, size, gw, w: gw + room }
+    })
+    // this key's padding, the group's gap and the next key's padding
+    const between = 0.8 * u + 2.2 * u + 0.8 * u
+    let x = sw - kx - laid.reduce((a, k) => a + k.w, 0) - between * (laid.length - 1)
+    for (const k of laid) {
+      glyph(g, k.name, x, my - 3.4 * u, 6.8 * u, lit)
+      if (k.said) {
+        g.font = `400 ${k.size * u}px ${FACE}`
+        g.fillStyle = lit
+        g.fillText(k.said, x + k.gw + 1.8 * u, my + 0.3 * u)
+      }
+      x += k.w + between
     }
-    key(o.hearted ? 'heart' : 'heartO', 7, o.hearts)
-    if (o.thread) key('bubbleO', 9, o.replies)
   })
 
   // the LCD over all of it: the backlight's faults, the grid, the pixels up
@@ -765,7 +773,7 @@ export function letterFace(l, { name, replies = null }) {
     // key says it (Letter.jsx hands it over; `null` is a letter with no
     // thread to read, whose band has the heart alone)
     thread: replies != null, replies: Number(replies) || 0,
-    right: 'options',
+    left: 'options',
   }
 }
 

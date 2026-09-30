@@ -1,118 +1,148 @@
-// ── a night that was not mutual: THE REPORT ─────────────────────────────────
+// ── a night that was not mutual ─────────────────────────────────────────────
 //
-// What the wall says on the night a private note was not mutual, and on the
-// note itself afterwards. Until 29 September it said two words, `not this
-// time`, on a strip and under a dimmed screen, and nothing about what had
-// happened to anybody, or to the ping the note had spent (which was used,
-// then: 0071). The owner asked what is shown when it is not mutual, what if
-// the other person is not here at all, whether the ping could come back and
-// whether the person could be asked to share celestual, and asked for the
-// way it is told to be honest, direct and beautiful. So a night that was not
-// mutual gives every ping it held back (migration 0075), and the phone says
-// so, exactly, the way a phone of the era said anything: a message on its
-// glass, in its own face, with its keys under it.
+// What the wall says when a private note was not mutual on its night, and on
+// the note itself afterwards. The owner asked on 29 September what is shown
+// when it is not mutual, what if the other person is not here at all,
+// whether the ping could come back, and whether the person could be asked to
+// share celestual; and on 30 September, looking at the first answer, that it
+// was too wordy, hard to understand and not clean: "make it more direct and
+// obvious". So it says three things and no more, each in one short line:
 //
-// ── what it says, in this order ─────────────────────────────────────────────
-//   not this time.   the title, the words the product has always used
-//   nobody was told  you sent it, and nobody ever will: the one fear, answered
-//                    first
-//   why              they didn't send you one by 9pm, or they aren't
-//                    reachable here yet, and celestual never says which, on
-//                    purpose. Both are possible and nothing on the server
-//                    tells them apart for anybody (0075's header), so the
-//                    line says both, and that the silence is deliberate
-//   what came back   per note on the note's own screen, and in total on the
-//                    night's: the free ping as an extra this week, the bought
-//                    one back to keep, or nothing, with the reason (one extra
-//                    a week is the most; a note from before pings cost none)
+//   not this time.                the title, the words the product has
+//                                 always used
+//   they didn't send you one.     what happened, true whatever the reason:
+//                                 they sent nothing, or let one go, or are
+//                                 not reachable here yet, and the server
+//                                 tells those apart for nobody (0075), so
+//                                 the line claims none of them
+//   they'll never know you did.   the one fear, answered
 //
-// Every line is true of this person only, off their own ledger (pings.js
-// `nightOf`, the note's `cost` and `returned`), and the same whoever the other
-// person is. There is no line about them, no urgency, and nothing to chase:
-// the keys are what can be done: send it again, share celestual, let it go.
+// and then, where something came back, what came back, as a small lit tag
+// that reads at a glance: `+1 free ping this week` for the free one, back as
+// the coming week's extra, or `your ping is back` for a bought one, which
+// never lapses (0075). A second free one the same night brings nothing back
+// and says so in one line (`one ping comes back a week.`); a note from before
+// pings, which cost none, says nothing about pings at all. Every word is true
+// of this person only, off their own ledger (the note's `cost` and
+// `returned`), and the same whoever the other person is. The long sentence
+// about "or they aren't reachable here yet, and celestual never says which"
+// is gone from the glass: the line above is already the whole truth, and the
+// possibility it named is what `share celestual` is for.
 //
 // ── where it is ─────────────────────────────────────────────────────────────
-//   the night       `NightCard`, in the private notes' frame under the strip
-//                   (screens/You.jsx), once a reveal on this device
-//                   (`nightWaiting`): a message from celestual, stamped with
-//                   the night, telling every note that was not mutual on it
-//                   at once, `options` and `ok` on its keys, the options
-//                   the next steps: send it again, share celestual, let it go
-//   a note          its own screen opens on its report (You.jsx `NoteScreen`,
-//                   'told'), the note's own line across the top, with the
-//                   note's options under `options`: send it again, with new
-//                   words, share celestual, read your note, let it go
-//   its reveal      /reveal/<handle> of a note that was not this time shows
-//                   the same screen (screens/Reveal.jsx), where it used to
-//                   say `nothing here.`; a handle with no note of this
-//                   person's still says that, and nothing else
+//   the night    `NightCard`, at the head of the private notes (You.jsx),
+//                once a reveal on this device (`nightWaiting`): a notice
+//                in the wall's own notice material (the card the wall
+//                raises after a post, wall.css `.wl-down`), the face of the
+//                person it was about, the three lines and the tag, and the
+//                keys that act: `send again` and `share celestual`, or for
+//                a night of several notes `share celestual` alone, each
+//                note's own `send again` being on its row
+//   a note       its own screen opens on the same three lines, set in the
+//                middle of the glass as a phone set a message it had
+//                finished with (You.jsx `NoteScreen`, 'told'), under the
+//                phone's own two envelopes, one sent and one that never
+//                came, with the note's options under `options`
+//   its reveal   /reveal/<handle> of a note that was not this time shows
+//                that screen (screens/Reveal.jsx)
 //
 // ── the share ───────────────────────────────────────────────────────────────
 // Generic, and the receiver's face only (design/VOICE.md 4): the wall's door
 // to how it works (/join) with the line that page opens on, `find out if
 // it's mutual.`, never a name, never a word about who sent what. Asked for
-// inside the tap, as the letter's share is (share.js), the phone's own share
-// sheet where there is one and the link copied where there is not.
-//
-// ── how it looks ────────────────────────────────────────────────────────────
-// The night's colour (looks.js `night`), the lit grey phone the reveal's own
-// story starts on, never the rose, which is the mutual's alone. The title in
-// the screen's large face and the three lines under it a step down (night.css,
-// `6.4cqw`), left set as a message is, the line about what came back led by
-// the phone's small check when something did. Under reduced motion it is
-// simply there.
+// inside the tap, the phone's own share sheet where there is one and the
+// link copied where there is not.
 import { useState } from 'react'
-import { Screen, ScreenMenu, ScreenNote, Pix } from './screen.jsx'
+import { Pix, PixIcon } from './screen.jsx'
+import { Face } from './parts.jsx'
 import { atHandle } from './data.js'
 import { canShare } from './share.js'
 import { copyText } from './handoff.js'
 import { href } from './router.js'
-import { revealStamp } from './pings.js'
 import './night.css'
 
 // ── the words ───────────────────────────────────────────────────────────────
-// What came back for one note, exactly: the free ping as this week's extra,
-// the bought one on hand for good, or nothing, and why nothing.
-export function backLine(p) {
-  if (!p) return ''
-  if (p.returned === 'extra') return 'your free ping came back as an extra for this week.'
-  if (p.returned === 'kept') return 'your bought ping came back to you. it never lapses.'
-  if (p.cost === 'free') return 'one extra a week is the most, so nothing comes back for this one.'
-  if (p.cost === 'paid') return 'nothing comes back for this one.'
-  return 'it cost no ping, so none comes back.'
+// Who did not send one: `they` on a note's own screen, whose @ is across its
+// top already; on the night's notice the @, or two, or the first and how
+// many more.
+export function whoWords(notes) {
+  const hs = (notes || []).map((p) => atHandle(p.to))
+  if (hs.length === 1) return hs[0]
+  if (hs.length === 2) return `${hs[0]} and ${hs[1]}`
+  return `${hs[0]} and ${hs.length - 1} others`
 }
 
-// And for a night of several: what came back in all, which is what the week
-// under it holds. Each note says its own on its screen.
-export function backTotal(night) {
-  const parts = []
-  if (night.extra) parts.push('1 extra ping this week')
-  if (night.kept) parts.push(`${night.kept} bought ${night.kept === 1 ? 'ping' : 'pings'}`)
-  if (parts.length) return `back to you: ${parts.join(' and ')}.`
-  if (night.notes.every((p) => !p.cost)) return 'they cost no pings, so none come back.'
-  return 'one extra a week is the most, so nothing comes back this time.'
+// What came back for one note, as the tag says it, or '' for nothing.
+export function backTag(p) {
+  if (!p) return ''
+  if (p.returned === 'extra') return '+1 free ping this week'
+  if (p.returned === 'kept') return 'your ping is back'
+  return ''
+}
+
+// The one line said where nothing came back and there is a reason worth a
+// line: the second free one of a night. A note from before pings cost none
+// and says nothing.
+export function backNote(p) {
+  return p && !p.returned && p.cost === 'free' ? 'one ping comes back a week.' : ''
+}
+
+// And for a night of several, what came back in all.
+export function backTotalTag(night) {
+  const n = (night.extra || 0) + (night.kept || 0)
+  if (!n) return ''
+  if (!night.kept) return '+1 free ping this week'
+  if (!night.extra) return night.kept === 1 ? 'your ping is back' : `${night.kept} pings are back`
+  return `${n} pings are back`
+}
+export function backTotalNote(night) {
+  if ((night.extra || 0) + (night.kept || 0)) return ''
+  return night.notes.some((p) => p.cost === 'free') ? 'one ping comes back a week.' : ''
 }
 
 // The few words a note's row carries after `not this time` (You.jsx): the
 // same fact, as short as it goes.
 export function backMark(p) {
-  return p && p.returned === 'extra' ? 'free one back' : p && p.returned === 'kept' ? 'bought one back' : ''
+  return p && p.returned === 'extra' ? '+1 free ping' : p && p.returned === 'kept' ? 'ping back' : ''
 }
 
-// ── the report, on the glass ────────────────────────────────────────────────
-// `notes` is how many it is about; `back` the line about what came back, and
-// `came` whether anything did, which puts the phone's check before it.
-export function NightReport({ notes = 1, back, came = false, titleId }) {
-  const one = notes <= 1
+// ── the tag ─────────────────────────────────────────────────────────────────
+// What came back, lit: the phone's small check and the words, on a plate of
+// whatever ink it stands in (night.css `.wl-night-tag`).
+// On the glass the check is the screen's own pixels (`Pix`, in `cqw`); on
+// the notice, which is the wall's chrome, it is the chrome's whole-pixel
+// glyph (`PixIcon`), so it is as crisp as the words beside it.
+function Tag({ children, chrome = false }) {
+  return (
+    <span className="wl-night-tag">
+      {chrome
+        ? <PixIcon name="check" scale={2} className="wl-night-tag-g" />
+        : <Pix name="check" h={4.6} className="wl-night-tag-g" />}
+      <span>{children}</span>
+    </span>
+  )
+}
+
+// ── the report, on a note's own glass ───────────────────────────────────────
+// Set in the middle of the glass, as the phone set a message it had finished
+// with: its two envelopes, the one that went and the place where the one
+// back would have been, the title, the two lines, and what came back.
+export function NightReport({ p, titleId }) {
+  const tag = backTag(p)
+  const note = backNote(p)
   return (
     <div className="wl-night-rep" role="status">
+      <span className="wl-night-pic" aria-hidden="true">
+        <Pix name="env" h={5.4} />
+        <span className="wl-night-dots" />
+        <Pix name="env" h={5.4} className="is-none" />
+      </span>
       <b id={titleId}>not this time.</b>
-      <p>nobody was told you sent {one ? 'it' : 'them'}, and nobody ever will.</p>
-      <p className="is-why">they didn&rsquo;t send you one by saturday 9pm, or they aren&rsquo;t reachable here yet. celestual never says which, on purpose.</p>
-      <p className={`is-back${came ? ' is-came' : ''}`}>
-        {came ? <Pix name="check" h={4.6} className="wl-night-g" /> : null}
-        <span>{back}</span>
-      </p>
+      <span className="wl-night-lines">
+        <span>they didn&rsquo;t send you one.</span>
+        <span>they&rsquo;ll never know you did.</span>
+      </span>
+      {tag ? <Tag>{tag}</Tag> : note ? <span className="wl-night-note">{note}</span> : null}
     </div>
   )
 }
@@ -136,101 +166,85 @@ export const SHARED_SAYS = {
   failed: 'the link did not copy. try again.',
 }
 
-// ── the night's own screen ──────────────────────────────────────────────────
-// A message from celestual, come in on the night: the envelope and the name
-// across its top, the night's date where a letter carries its day, and the
-// report. Its keys are the phone's: `options` and `ok`, `ok` putting it away.
-// The options are the next steps, in the order the owner named them: for a
-// night of one note, `send it again` (for next saturday), `share celestual`,
-// `let it go`; for a night of several, `share celestual` and then each note
-// by its @, which opens that note on its own report, where its own `send it
-// again` and `let it go` are. The menu, as every menu on the wall, turns the
-// keys to `select` and `back`. What a press says after (sent again, the link
-// copied) stands on the glass until `ok`.
+// ── the night's notice ──────────────────────────────────────────────────────
+// At the head of the private notes, once a reveal. The face of the person
+// it was about (the first, for a night of several), the title, the two
+// lines, what came back, and the keys under a dotted seam as the wall's
+// other notices have them: `send again` on the left and `share celestual`
+// on the right for a night of one note, `share celestual` alone for a night
+// of several. After a key it says what happened in the lines' place (`sent
+// again. it runs to saturday.`, `link copied.`), and `ok` puts it away.
 //
-// `onAgain(p)` sends the note again and answers `{ ends }` when it went, `{
-// said }` when it did not, or nothing when it went somewhere else (the
-// paywall); `onLetGo(p)` lets it go and answers `{ said }` only when it did
-// not; `onOpen(p)` opens a note on its own screen.
-export function NightCard({ night, onOk, onAgain, onLetGo, onOpen, endsOf }) {
-  const [mode, setMode] = useState('face')
-  const [at, setAt] = useState(0)
-  const [said, setSaid] = useState(null)
+// `onAgain(p)` sends the note again and answers `{ ends }` when it went,
+// `{ said }` when it did not, or nothing when it went somewhere else (the
+// paywall); `onOk` puts the notice away.
+// What the notice said after a key, kept by the night it is about: sending
+// again reads the list again, and the frame draws the notice afresh when it
+// comes, so the answer is kept here and not only in the notice's own state.
+const SAID = new Map()
+export function NightCard({ night, onOk, onAgain, endsOf }) {
+  const [said, setHeld] = useState(() => SAID.get(night.at) || null)
+  const setSaid = (v) => { if (v) SAID.set(night.at, v); else SAID.delete(night.at); setHeld(v) }
   const [busy, setBusy] = useState(false)
   const one = night.notes.length === 1
   const only = one ? night.notes[0] : null
-  const back = one ? backLine(only) : backTotal(night)
-  const came = night.extra + night.kept > 0
-  const tell = (glyph, title, line = '') => { setSaid({ glyph, title, line }); setMode('said') }
+  const lapsed = !!only && only.state === 'lapsed'
+  const tag = one ? backTag(only) : backTotalTag(night)
+  const note = one ? backNote(only) : backTotalNote(night)
   const share = () => {
-    setMode('face')
-    shareCelestual().then((r) => { if (SHARED_SAYS[r]) tell('link', SHARED_SAYS[r]) })
+    shareCelestual().then((r) => { if (SHARED_SAYS[r]) setSaid({ h: SHARED_SAYS[r], line: '' }) })
   }
   const again = async () => {
     setBusy(true)
     const out = await onAgain(only)
     setBusy(false)
     if (!out) return
-    if (out.said) { tell('', out.said); return }
-    tell('check', 'sent again.', endsOf ? `it runs to ${endsOf(out.ends)}.` : '')
+    if (out.said) { setSaid({ h: 'not sent.', line: out.said }); return }
+    setSaid({ h: 'sent again.', line: endsOf ? `it runs to ${endsOf(out.ends)}.` : '', done: true })
   }
-  const drop = async () => {
-    setBusy(true)
-    const out = await onLetGo(only)
-    setBusy(false)
-    if (out && out.said) tell('', out.said)
-  }
-  const lapsed = !!only && only.state === 'lapsed'
-  const items = one ? [
-    ...(lapsed ? [{ t: 'send it again', run: again }] : []),
-    { t: 'share celestual', run: share },
-    ...(lapsed ? [{ t: 'let it go', run: () => setMode('ask') }] : []),
-  ] : [
-    { t: 'share celestual', run: share },
-    ...night.notes.map((p) => ({ t: atHandle(p.to), run: () => onOpen(p) })),
-  ]
-  const sel = Math.min(at, items.length - 1)
-  const pick = (j) => { const it = items[j]; if (it && !busy) it.run() }
-  const toFace = () => setMode('face')
-
-  let body
-  let keys
-  let name = 'celestual'
-  if (mode === 'menu') {
-    name = 'options'
-    body = <ScreenMenu items={items.map((x) => x.t)} at={sel} onAt={setAt} onPick={pick} label="options" onBack={toFace} />
-    keys = {
-      l: { label: 'select', onClick: () => pick(sel), disabled: busy, aria: `select ${items[sel]?.t || ''}` },
-      r: { label: 'back', onClick: toFace, aria: 'back to the report' },
-    }
-  } else if (mode === 'ask') {
-    body = <ScreenNote title="let it go?">they never find out you sent it.</ScreenNote>
-    keys = {
-      l: { label: 'let it go', onClick: drop, disabled: busy, aria: 'let it go' },
-      r: { label: 'keep it', onClick: toFace, aria: 'keep it' },
-    }
-  } else if (mode === 'said' && said) {
-    body = <ScreenNote glyph={said.glyph} title={said.title}>{said.line}</ScreenNote>
-    keys = { l: { label: 'ok', onClick: () => { setSaid(null); toFace() }, aria: 'back to the report' } }
-  } else {
-    body = <NightReport notes={night.notes.length} back={back} came={came} titleId="wl-night-h" />
-    keys = {
-      l: {
-        label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy,
-        aria: `options: ${items.map((x) => x.t).join(', ')}`,
-      },
-      r: { label: 'ok', onClick: onOk, aria: 'put the report away' },
-    }
-  }
+  // the face of the one it was about; on a night of several, the first,
+  // since the line under the title names them all
+  const face = night.notes[0].to
   return (
-    <div className="wl-night">
-      <Screen
-        look={NIGHT} seed={`night:${night.at}`} live
-        top={{ icon: mode === 'menu' ? '' : 'env', name, stamp: revealStamp(night.at), bat: null, ...(mode === 'menu' ? { pos: `${sel + 1}/${items.length}` } : {}) }}
-        keys={keys}
-      >
-        {body}
-      </Screen>
+    <div className={`wl-down wl-night${said ? ' is-said' : ''}`} role="status" aria-labelledby="wl-night-h">
+      <div className="wl-down-in">
+        <Face handle={face} size={36} className="wl-down-face" />
+        <div className="wl-down-text">
+          <p className="wl-down-h" id="wl-night-h">{said ? said.h : 'not this time.'}</p>
+          {said ? (
+            said.line ? <p className="wl-down-why">{said.line}</p> : null
+          ) : (
+            <>
+              <p className="wl-down-why wl-night-say">
+                <span>{whoWords(night.notes)} didn&rsquo;t send you one.</span>
+                <span>they&rsquo;ll never know you did.</span>
+              </p>
+              {tag ? <Tag chrome>{tag}</Tag> : note ? <p className="wl-down-why">{note}</p> : null}
+            </>
+          )}
+        </div>
+      </div>
+      <div className={`wl-down-keys${said || (one && lapsed) ? ' is-two' : ''}`}>
+        {said ? (
+          <>
+            <span />
+            <button type="button" className="wl-down-ok" onClick={() => { const done = said.done; setSaid(null); if (done) onOk() }} aria-label="ok">ok</button>
+          </>
+        ) : (
+          <>
+            {one && lapsed ? (
+              <button
+                type="button" className="wl-down-ok is-l" disabled={busy} onClick={again}
+                aria-label={`send your note to ${atHandle(only.to)} again, for next saturday`}
+              >send again</button>
+            ) : null}
+            <button
+              type="button" className="wl-down-ok" disabled={busy} onClick={share}
+              aria-label="share celestual. the link says nothing about you or your notes"
+            >share celestual</button>
+          </>
+        )}
+      </div>
     </div>
   )
 }

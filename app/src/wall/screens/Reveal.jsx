@@ -90,9 +90,8 @@
 // A note of this person's own to them that was not mutual on its night is
 // something to show, and since 29 September it is shown: the note's screen
 // as the private notes draw it (You.jsx `NoteScreen`), opened on its night's
-// report (Night.jsx): `not this time.`, nobody was told, they did not send
-// one or are not reachable here yet and celestual never says which, and what
-// came back of its ping (0075). It reads the person's own list and nothing
+// three lines (Night.jsx): `not this time.`, `they didn't send you one.`,
+// `they'll never know you did.`, and what came back of its ping (0075). It reads the person's own list and nothing
 // else, and says the same whoever the other person is. Anything else,
 // "nothing here." is said the same way whatever the reason, and its one key
 // is the account sheet (screens/You.jsx), which is where each reason has its

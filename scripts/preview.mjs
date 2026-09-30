@@ -1633,11 +1633,12 @@ const ROUTES = [
     acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
 
   // ── the night that was not (0075, the not-mutual stream) ────────────────
-  // The night's own screen in the private notes (Night.jsx `NightCard`),
-  // once a reveal: one note, its free ping back as this week's extra, and
-  // the week's foot saying it; a bought one back; the second free one of a
+  // The night's notice in the private notes (Night.jsx `NightCard`), once a
+  // reveal: one note, its free ping back as this week's extra, and the
+  // week's foot saying it; a bought one back; the second free one of a
   // night, which brings nothing back; a note from before pings; three at
-  // once; a night that also told a mutual; the share, copied; and still.
+  // once; a night that also told a mutual; sent again; the share, copied;
+  // and still.
   // Then a note that was not this time, opened on its report, its menu, its
   // words, and at its own reveal's address, where `nothing here.` stood
   { label: 'night', path: '/berkeley/you', night: 'extra', week: 'extra',
@@ -1650,16 +1651,10 @@ const ROUTES = [
   { label: 'night-many', path: '/berkeley/you', night: 'many', week: 'extrakept', store: { nightSeen: null }, settle: 1600 },
   { label: 'night-mutual', path: '/berkeley/you', night: 'mutual', week: 'extra',
     store: { revealSeen: 1, nightSeen: null, noteSpans: [[now - 11 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
-  { label: 'night-menu', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
-    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l']], settle: 900 },
-  { label: 'night-many-menu', path: '/berkeley/you', night: 'many', week: 'extrakept', store: { nightSeen: null },
-    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l']], settle: 900 },
-  { label: 'night-let-go', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
-    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l'], ['wait', 400], ['click', '.wl-night .wl-scr-menu li:last-child']], settle: 900 },
+  { label: 'night-again', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-down-ok.is-l']], settle: 2400 },
   { label: 'night-shared', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
-    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l'], ['wait', 400], ['click', '.wl-night .wl-scr-menu li:nth-child(2)']], settle: 900 },
-  { label: 'night-ok', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
-    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-r']], settle: 900 },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-down-ok:not(.is-l)']], settle: 900 },
   { label: 'night-still', path: '/berkeley/you', night: 'extra', week: 'extra', still: true,
     store: { revealSeen: 1, nightSeen: null, noteSpans: [[now - 11 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
   { label: 'night-seen', path: '/berkeley/you', night: 'extra', week: 'extra', settle: 1400 },

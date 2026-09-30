@@ -513,21 +513,23 @@ function removedFace(r) {
 // menu, the share menu, or a note ("shared", "saved"). Only the live card
 // has a view of its own; the neighbours on the strip are always the letter.
 //
-//   the letter   the heart and its count, the replies' bubble and its
-//                count, together on the left · options, alone on the right
+//   the letter   options, alone on the left · the heart and its count,
+//                the replies' bubble and its count, together on the right
 //   a menu       select · back
 //   a note       ok
 //
-// The heart and the bubble were the middle and right keys, with `options`
-// on the left, until the owner's ruling of 29 September: "rearrange the
-// likes and comments so its on the left together and the options on the
-// right". What a reader does to a letter is together, under one thumb, and
-// the menu is where a phone kept its menu, alone at the other end of the
-// band (screen.jsx `keys.l` as a list). `share` is the first row of the
-// options on every letter now, thread or none, so the band is the same
-// three things on every letter; a letter with no thread to read has the
-// heart alone on the left. The key that opens a menu is the key that shuts
-// it: `options` is on the right, and a menu's `back` is on the right.
+// The owner's ruling of 29 September put the heart and the bubble together
+// on the left and `options` on the right; their ruling of 30 September
+// turned it round: "in the letters lets have options to the left and like
+// and comment to the right". So `options` is where every screen on the wall
+// keeps it and where a phone kept its menu, the left key, and what a reader
+// does to a letter stands together at the other end of the band, under the
+// thumb (screen.jsx `keys.r` as a list). `share` is the first row of the
+// options on every letter, thread or none, so the band is the same three
+// things on every letter; a letter with no thread to read has the heart
+// alone on the right. The key that opens the menu is the key that picks in
+// it: `options` on the left becomes `select`, and `back` is on the right, as
+// on every other screen.
 //
 // The right key said `send` until the composer's own act said `send
 // anonymously`: one word for putting a letter up and for passing one on is a
@@ -767,9 +769,11 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
       pressed: !!l.hearted,
       aria: `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
     }
+    // `options` on the left, the heart and the bubble together on the right
+    // (the owner, 30 September)
     keys = {
-      l: tk ? [hk, tk] : [hk],
-      r: { label: 'options', cls: 'is-options', onClick: () => onView({ kind: 'options', at: 0 }), aria: `options: ${optionItems.map((x) => x.t).join(', ')}` },
+      l: { label: 'options', cls: 'is-options', onClick: () => onView({ kind: 'options', at: 0 }), aria: `options: ${optionItems.map((x) => x.t).join(', ')}` },
+      r: tk ? [hk, tk] : [hk],
     }
   }
   return (

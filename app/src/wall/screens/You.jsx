@@ -82,22 +82,21 @@
 // a person who will not look on Saturday says so on Wednesday.
 //
 // A night that was not mutual is told, not just shown (the owner, 29
-// September): the night's own screen stands in the frame once a reveal
-// (Night.jsx `NightCard`), a message from celestual saying `not this time.`,
-// that nobody was told and nobody ever will be, that they did not send one or
-// are not reachable here yet and celestual never says which, and exactly
-// what came back: every ping a night that was not mutual held comes back
-// (migration 0075), a free one as one extra this week, a bought one on hand.
-// Each note that was not this time opens on the same report of its own
-// (`NoteScreen`), and its row says what came back of it.
+// September, and made short and plain on the 30th): a notice stands in the
+// frame once a reveal (Night.jsx `NightCard`) saying `not this time.`, who
+// did not send one, that they will never know you did, and what came back:
+// every ping a night that was not mutual held comes back (migration 0075), a
+// free one as one extra this week, a bought one on hand. Each note that was
+// not this time opens on the same few lines of its own (`NoteScreen`), and
+// its row says what came back of it.
 
 // ── and only ever their own ─────────────────────────────────────────────────
 // Nothing here is about anybody else. A standing ping says who and how long
 // it has left, and nothing about whether they have seen it, whether they are
 // reachable here, or whether anybody else has placed one on them, because
 // none of that is knowable without telling somebody something they did not
-// agree to being told. A note that was not this time says so, and says that
-// celestual never says which of the two it was, in those words, since the
+// agree to being told. A note that was not this time says `they didn't send
+// you one.`, which is true whichever it was and claims neither, since the
 // server answers it the same either way (0075). And nothing here is ever on
 // the wall: a ping is sealed until both sides exist, and showing one anywhere
 // a second person can look would be the double blind broken by the product
@@ -154,7 +153,7 @@ import {
   nextReveal, lastReveal, revealStamp, countdown, endsWords, endedWords, keptAhead, revealWaiting, sawReveal,
   heldAllowance, waitForPings, forgetWeek, liveOf, mutualsOf, freeWords, nightOf, nightWaiting, sawNight,
 } from '../pings.js'
-import { NightCard, NightReport, NIGHT, backLine, backMark, shareCelestual, SHARED_SAYS } from '../Night.jsx'
+import { NightCard, NightReport, NIGHT, backMark, shareCelestual, SHARED_SAYS } from '../Night.jsx'
 import { takeReturn } from '../revealfrom.js'
 import { Aerial } from '../aerial.jsx'
 import { MutualSlot, EditKey, movingOf } from '../Slot.jsx'
@@ -311,11 +310,11 @@ function RevealStrip({ fresh, told, onInfo }) {
   const words = c.d ? `${c.d} ${c.d === 1 ? 'day' : 'days'} and ${c.h} ${c.h === 1 ? 'hour' : 'hours'}` : `${c.h} hours and ${c.m} minutes`
   const said = told.mutual ? (told.mutual === 1 ? 'it’s mutual' : `${told.mutual} are mutual`) : 'not this time'
   return (
-    <div className={`wl-vault-bar${tell ? ' is-told' : ''}${soon && !tell ? ' is-soon' : ''}`}>
+    <div className={`wl-vault-bar${tell ? ' is-told' : ''}${tell && !told.mutual ? ' is-none' : ''}${soon && !tell ? ' is-soon' : ''}`}>
       <span className="wl-vault-title" id="wl-vault-h" tabIndex={-1}>
         <Seal />
         {tell ? (
-          <span className="wl-vault-now">the reveal is in · <b>{said}</b></span>
+          <span className="wl-vault-now"><span className="wl-sr">the reveal is in: </span><b>{said}</b></span>
         ) : (
           <span className="wl-vault-now">
             <span aria-hidden="true">reveals in <b>{left}</b></span>
@@ -534,10 +533,10 @@ function Wrote({ go, rows }) {
 //
 // ── and one that was not this time ──────────────────────────────────────────
 // It opens on what its night said (Night.jsx `NightReport`, the owner's
-// request of 29 September): `not this time.`, that nobody was told, that
-// they did not send one or are not reachable here yet and celestual never
-// says which, and exactly what came back of the ping it spent (0075), the
-// note's own line across the top and the night's date by the battery. The
+// request of 29 September, made short and plain on the 30th): `not this
+// time.`, that they didn't send you one and will never know you did, and
+// what came back of the ping it spent (0075), the note's own line across
+// the top and the night's date by the battery. The
 // phone is in the night's colour, lit, so it reads; `read your note` on its
 // menu turns it to the words, dimmed as a phone dims a message that is done,
 // with `back` to the report. The same screen answers /reveal/<handle> for a
@@ -702,7 +701,7 @@ export function NoteScreen({ p, me, go, onBack, onChange }) {
     body = <ScreenNote glyph="link" title={shared} />
     keys = { l: { label: 'ok', onClick: toFace, aria: 'back to the note' } }
   } else if (told) {
-    body = <NightReport back={backLine(p)} came={!!p.returned} />
+    body = <NightReport p={p} />
     keys = {
       l: {
         label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy,
@@ -1166,9 +1165,9 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // leaving the notes, once they have landed
   const leave = () => { if (fresh && tab === 'notes') setLanded(true) }
   const pick = (t) => { if (t !== tab) leave(); setTab(t); keepTab(t) }
-  // the night's own screen's two steps for a night of one note (Night.jsx
-  // `NightCard`), the same as that note's own menu takes: sent again, the
-  // paywall where no ping is left, and let go; the list read again after
+  // the night's notice's one act on a night of one note (Night.jsx
+  // `NightCard`), the same as that note's own menu takes: sent again, or the
+  // paywall where no ping is left; the list read again after
   const reread = () => { forgetPings(); setRev((n) => n + 1) }
   const nightAgain = async (p) => {
     const out = await sendAgain({ me: handle, them: p.to })
@@ -1176,12 +1175,6 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
     if (!out.ok) return { said: AGAIN_SAYS[out.error] || 'it did not go through. try again.' }
     reread()
     return { ends: Date.parse(out.expires_at || 0) || nextReveal() }
-  }
-  const nightLetGo = async (p) => {
-    const out = await release({ me: handle, them: p.to })
-    if (!out.ok && out.error !== 'mutual') return { said: 'it did not go through. try again.' }
-    reread()
-    return null
   }
   // the arrow keys move between the two tabs, as a tab list's do
   const keys = (e) => {
@@ -1212,17 +1205,17 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // two keys side by side, and the key's name starts with the word on it, so
   // a voice asking for `edit` finds every one, then says what it is for in
   // the words the note's own menu uses. A row that was not this time says,
-  // after it, what came back of its ping (Night.jsx `backMark`: `free one
-  // back`, `bought one back`), the note's own share of what the night's
-  // screen says in all.
+  // after it, what came back of its ping (Night.jsx `backMark`: `+1 free
+  // ping`, `ping back`), the note's own share of what the night's notice
+  // says in all.
   //
   // And after a reveal that had notes in it that were not mutual, the
-  // night's own screen (Night.jsx `NightCard`) stands at the head of what
-  // was not, under the mutuals, so a night with a mutual in it tells that
-  // first: a message from celestual, once a reveal on this device, with
-  // `options` and `ok` on its keys, the options the night's next steps (send
-  // it again, share celestual, let it go). `ok` puts it away for the visit,
-  // and the focus goes back to the frame's title.
+  // night's notice (Night.jsx `NightCard`) stands at the head of what was
+  // not, under the mutuals, so a night with a mutual in it tells that first:
+  // once a reveal on this device, with the acts on its keys (`send again`
+  // for a night of one note, and `share celestual`). After an act its `ok`
+  // puts it away for the visit, and the focus goes back to the frame's
+  // title.
   const row = (p, cls, onClick, aria) => (
     <div
       key={p.key} data-key={p.key}
@@ -1280,8 +1273,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           {showNight ? (
             <NightCard
               night={night} endsOf={endsWords}
-              onAgain={nightAgain} onLetGo={nightLetGo}
-              onOpen={(p) => { leave(); setView(p.key) }}
+              onAgain={nightAgain}
               onOk={() => {
                 setNightOn(false)
                 document.getElementById('wl-vault-h')?.focus({ preventScroll: true })
