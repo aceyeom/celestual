@@ -18,6 +18,12 @@ body { margin: 0; background: #000; }
 .lg-btn:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
 .lg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 56px 40px; }
 .lg-root.is-one .lg-grid { grid-template-columns: minmax(0, 520px); justify-content: center; }
+/* at one device pixel to each of the page's, a phone is wider, so that the
+   fine pitch (189 cells across) has two or three pixels to a cell and not
+   one; a phone or a retina screen has them already */
+@media (max-resolution: 1.5dppx) {
+  .lg-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); }
+}
 .lg-card { display: grid; gap: 14px; align-content: start; min-width: 0; }
 .lg-phone { position: relative; cursor: pointer; border-radius: 12px; }
 .lg-phone:focus-visible { outline: 2px solid var(--chalk); outline-offset: 6px; }

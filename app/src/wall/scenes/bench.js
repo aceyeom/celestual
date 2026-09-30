@@ -1,358 +1,461 @@
 // ── the bench ───────────────────────────────────────────────────────────────
 // Behind them, at night, close. A park bench seen from its back, the two of
-// them sitting on it a little apart, in silhouette against the lit glass: a
-// treeline far off between the rails, the moon with its light round it, a
-// branch of blossom hanging in at the top and petals coming down. The
-// camera eases in, very slowly, the whole time.
+// them sitting on it a little apart, in silhouette against the lit glass:
+// the moon between them and above, a treeline far off, a branch of blossom
+// hanging in at the top, petals coming down. The camera eases in the whole
+// time. The bodies are rig.js's, sculpted and in the round; she has her
+// hair up in a ponytail, tied with a ribbon, the one colour on either of
+// them.
 //
-// She turns her head to look at him, and her profile comes out of the back
-// of her head as it turns, the brow, the nose, the lips, a lash. She holds
-// the look. She glances down, and up again. Then she shifts along the
-// bench toward him, twice, the way anybody does, the weight onto her hands,
-// the shoulders coming up, the slide, the settle, her hair swinging after
-// her. She tilts her head and rests it on his shoulder. He turns his head a
-// little to hers and lays his cheek on her hair, and his arm comes up round
-// her. A star falls. The backlight turns pink out from their two heads; the
-// bench bends into the ring and the two of them gather into the star, and
-// the petals go on falling round the mark.
+// She turns to look at him: her head first, her neck a beat after it and
+// her shoulders last, as anybody turns, and her profile comes round out of
+// the back of her head as it goes. She holds the look. Then she moves along
+// the bench to him, twice, the way anybody does: her hands to the seat
+// beside her, the weight onto them, the shoulders coming up, the hips
+// lifting and sliding, her body a beat behind them and then a little past,
+// her ponytail swinging after her, and her eyes on him all the while, her
+// head holding its aim as the rest of her moves under it (`aim`). She puts
+// her hands back in her lap. She leans, and tilts her head, and lays it on
+// his shoulder: her head goes to his shoulder and not to where his
+// shoulder was, it comes to rest there, it sinks a little, and it rides his
+// breathing from then on (`restOn`). A moment; he turns his head to her and
+// lays his cheek on her hair. A star falls. The backlight turns pink out
+// from their heads; the bench bends into the ring and the two of them
+// gather into the star, and the petals go on falling round the mark.
 //
-// Everything moves on the clock, not in frames: every shape is laid between
-// the cells, anti-aliased, wherever the moment puts it, and every move is
-// eased at both ends and overlaps the next, as a body's does (kit.js
-// `moves`). Her hair hangs on a spring and swings after her (`springOf`).
-//
-//      0   the park; the two of them sitting apart
-//    800   she turns her head to him
-//   1750   a glance down, and back up to him
-//   2400   she shifts along toward him; again at 3050
-//   3700   she tilts her head onto his shoulder
-//   4400   he turns his head to hers; 4700 his arm round her
-//   5300   the star falls
-//   5800   the pink, from their heads
-//   5950   the bench into the ring, the two of them into the star
+//      0   the two of them sitting apart; he looks at the moon
+//    900   she turns her head to him
+//   1700   she holds the look
+//   2700   her hands to the seat; she moves along to him, and again at 3660
+//   4380   her hands back in her lap
+//   4600   she leans, and rests her head on his shoulder
+//   5650   he turns his head into her, and lays his cheek on her hair
+//   6450   the star falls
+//   6850   the pink, from their heads
+//   7000   the bench into the ring, the two of them into the star
 
-import {
-  Pad, softPetals, sky, mark, glideOf, tale, INK, FAR, ROSE,
-  clamp, lerp, span, sm5, settle, moves, springOf, round, D, hash,
-} from './kit.js'
+import { Pad, softPetals, mark, glideOf, tale, INK, FAR, ROSE, lerp, span, sm5, settle, moves, hash, clamp } from './kit.js'
+import { HIM, HER, withHair, solve, solid, flat, camera, chains, strands, breath, wander, V, mv, at, onHead } from './rig.js'
 
-const HIP = 64
-const HIM = { x: 60, sh: 41.2, w: 9.4, waist: 6.4, neck: 2.25, neckLen: 3.7, head: 1.34 }
-const HER = { sh: 43.8, w: 7.0, waist: 4.6, neck: 1.25, neckLen: 5.2, head: 1.26 }
-const STAR = [5300, 5850]
-const WASH_AT = 5800
-const MORPH = 5950
+const SEAT = 45
+// her hair up, the sides drawn back over the tops of her ears
+const HER_UP = withHair(HER, { from: 11.8, nape: 7.2, back: 0.55, side: 0.45, top: 0.85, temple: 0.9, front: 0.55, behind: -2.3 })
+const Z0 = -9
+const SC = [
+  { hands: [2700, 2960], push: [2900, 3060], slide: [3030, 3450], land: [3450, 3660], by: 11 },
+  { hands: [3640, 3870], push: [3820, 3940], slide: [3910, 4240], land: [4240, 4420], by: 8 },
+]
+const LAP = [4380, 4740]
+const LEAN = [4600, 5500]
+const HIS = [5650, 6400]
+const STAR = [6450, 7000]
+const WASH_AT = 6850
+const MORPH = 7000
 const END = MORPH + 1300
-const CAMERA = [0, MORPH]
+const HIM_X = 22
 
-// ── the heads, in profile ──
-// The intro's (folk.js): the skull, the brow, the nose, the lips, the chin
-// and the jaw, and the hair over the crown, which in silhouette are one
-// outline; x forward, y up from the top of the neck, in the bodies' units.
-const HIM_HEAD = [
-  [0.2, 8.4], [2.0, 8.0], [3.3, 6.8], [3.7, 5.2], [3.45, 4.6], [3.75, 4.1], [4.9, 2.8], [3.95, 2.35], [4.0, 1.8], [3.7, 1.45],
-  [3.85, 1.05], [3.65, 0.2], [3.0, -0.45], [1.8, -0.5], [0.6, 0.2], [-1.3, 0.1], [-2.9, 1.7], [-3.7, 3.9], [-3.4, 6.2], [-2.1, 7.8],
-]
-const HIM_HAIR = [
-  [3.45, 6.4], [3.1, 7.6], [1.9, 8.6], [0.0, 8.95], [-2.2, 8.4], [-3.6, 6.7], [-4.1, 4.3], [-3.6, 2.2], [-2.6, 1.4],
-  [-1.9, 2.7], [-0.6, 5.1], [1.2, 5.9], [2.7, 6.0],
-]
-const HER_HEAD = [
-  [0.0, 7.8], [1.9, 7.4], [3.1, 6.3], [3.45, 4.85], [3.25, 4.35], [3.5, 3.9], [4.25, 2.8], [3.7, 2.45], [3.75, 2.0], [3.5, 1.65],
-  [3.62, 1.3], [3.35, 0.55], [2.7, 0.0], [1.6, -0.1], [0.55, 0.45], [-1.2, 0.35], [-2.7, 1.8], [-3.45, 3.8], [-3.15, 5.8], [-2.0, 7.1],
-]
-const HER_HAIR = [
-  [3.65, 5.0], [3.75, 6.2], [3.2, 7.5], [1.9, 8.5], [0.0, 8.9], [-2.2, 8.5], [-3.8, 7.1], [-4.5, 4.8], [-4.5, 2.7],
-  [-3.8, 1.1], [-2.6, 1.0], [-1.6, 2.9], [-0.3, 4.8], [1.5, 5.7], [2.7, 5.35],
-]
+const bump = (t, a, b) => Math.sin(Math.PI * span(t, a, b))
 
-// a point in a head's frame (u across, v down, from the top of the neck),
-// turned `tilt` degrees about the neck and set on it at (nx, ny)
-const onNeck = (nx, ny, tilt) => {
-  const c = Math.cos(tilt * D)
-  const s = Math.sin(tilt * D)
-  return ([u, v]) => [nx + u * c - v * s, ny + u * s + v * c]
-}
-// pushed out from a middle by `g`, for the air round a shape
-const grown = (pts, g) => {
-  if (!g) return pts
-  let cx = 0
-  let cy = 0
-  for (const [x, y] of pts) { cx += x; cy += y }
-  cx /= pts.length
-  cy /= pts.length
-  return pts.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1; return [x + ((x - cx) / d) * g, y + ((y - cy) / d) * g] })
+// ── looking at something ────────────────────────────────────────────────────
+// How far a body must turn its head, and lift or bow it, to face `target`
+// from where its chest is: a yaw (positive to its left) and a pitch
+// (positive bowing), in its own frame.
+function aim(F, target) {
+  const d = V.sub(target, at(F.neck, [0, 12, 4]))
+  const R = F.s2.R
+  const l = [R[0] * d[0] + R[3] * d[1] + R[6] * d[2], R[1] * d[0] + R[4] * d[1] + R[7] * d[2], R[2] * d[0] + R[5] * d[1] + R[8] * d[2]]
+  return { yaw: (Math.atan2(l[0], l[2]) * 180) / Math.PI, pitch: (-Math.atan2(l[1], Math.hypot(l[0], l[2])) * 180) / Math.PI }
 }
 
-// A head from behind, turning. `turn` 0 is the back of it and 1 the profile
-// facing right (-1 left): the skull is round from every side, so it stays
-// an ellipse; the face is laid out from its middle by how far round it has
-// come (a profile point `x` forward is seen `x sin` across), so the nose,
-// the lips and the chin come out past the skull's edge only as the head
-// comes round, as they do. Her lashes, past her eye, the last of it.
-function head(pad, P, ink, g = 0) {
-  const s = P.scale
-  const sn = Math.sin((P.turn * Math.PI) / 2)
-  const at = onNeck(P.nx, P.ny, P.tilt)
-  const face = (P.her ? [HER_HEAD, HER_HAIR] : [HIM_HEAD, HIM_HAIR])
-  for (const pts of face) {
-    const ring = round(pts.map(([x, y]) => [x * s * sn, -y * s]), 1)
-    pad.poly(grown(ring.map(at), g), ink, 1)
+// ── her ─────────────────────────────────────────────────────────────────────
+// She faces away from us, into the park (-z): her right is our right, toward
+// him, so turning to him is a turn to her right (a negative yaw), and
+// leaning to him a roll to her right (a positive roll).
+const herX = (t) => moves(t, -33, SC.map((c) => [c.slide[0], c.slide[1], c.by, sm5]))
+function herBase(t) {
+  const x = herX(t)
+  const b = breath(t, 4200, 700)
+  let lift = 0
+  let press = 0
+  let lag = 0
+  for (const c of SC) {
+    lift += 1.3 * bump(t, c.slide[0] - 30, c.land[0] + 40)
+    press += moves(t, 0, [[c.push[0], c.push[1], 1], [c.land[0], c.land[1], -1]])
+    // the body a beat behind the hips as they slide, then a little past
+    const k = c.by / 11
+    lag += k * moves(t, 0, [[c.slide[0], c.slide[0] + 150, -3.0], [c.slide[0] + 150, c.land[0] + 30, 5.0], [c.land[0] + 30, c.land[1] + 80, -2.0]])
   }
-  // the skull: round from behind, and as the head comes round, the back
-  // of it only, the face's own outline taking over in front
-  const k = Math.abs(sn)
-  const [cx, cy] = at([-0.9 * s * sn, -4.4 * s])
-  pad.ell(cx, cy, lerp(P.her ? 3.35 : 3.6, 2.9, k) * s + g, (P.her ? 4.3 : 4.5) * s + g, P.tilt, ink, 1)
-  // his ears, either side from behind, going in behind the head as it turns
-  if (!P.her) {
-    for (const side of [-1, 1]) {
-      const [ex, ey] = at([(side * 3.55 * Math.cos((P.turn * Math.PI) / 2) - 0.3 * sn) * s, -3.5 * s])
-      pad.ell(ex, ey, 0.55 * s + g, 0.95 * s + g, P.tilt + side * 12, ink, 1)
-    }
-  }
-  // her hair up: a bun at the back of her head, high, which comes out
-  // behind her as she turns
-  if (P.her) {
-    const [bx, by] = at([-3.3 * s * sn, -6.3 * s])
-    pad.disc(bx, by, 1.75 * s + g, ink, 1)
-  }
-  // the nape, down into the neck
-  const [ax, ay] = at([0, -1.2 * s])
-  pad.ell(ax, ay, (P.her ? 1.6 : 2.35) * s * 0.75 + g, 1.8 * s + g, P.tilt, ink, 1)
-  if (P.her && ink && Math.abs(sn) > 0.8) {
-    const [l0x, l0y] = at([3.15 * s * sn, -4.55 * s])
-    const [l1x, l1y] = at([4.0 * s * sn, -4.85 * s])
-    pad.line(l0x, l0y, l1x, l1y, ink, 0.75 * (Math.abs(sn) - 0.8) / 0.2, 0.24)
-  }
-  return { at, sn }
-}
-
-// The body from behind: shoulders, the slope of them to the neck, the back
-// down to the waist (most of it behind the bench), the arms at the sides;
-// `lean` from the hips, degrees toward him, and `rise` the shoulders lifted.
-function body(pad, B, ink, g = 0) {
-  const c = Math.cos(B.lean * D)
-  const s = Math.sin(B.lean * D)
-  const at = ([u, v]) => [B.x + u * c - v * s, HIP + u * s + v * c]
-  const sh = -(HIP - B.sh) - B.rise
-  const w = B.w
-  // the slope from the shoulder to the neck: hers falls more
-  const sl = B.her ? 0.9 : 0.25
-  const half = [
-    [B.waist, 1], [B.waist * 1.04, sh * 0.5], [w * 0.9, sh * 0.78], [w, sh + 3.4], [w * 0.985, sh + 1.6],
-    [w * 0.92, sh + 0.45], [w * 0.76, sh - 0.25], [w * 0.5, sh - 0.85 - sl], [B.neck + 0.9, sh - 1.6 - sl],
-    [B.neck, sh - B.neckLen * 0.55 - sl * 0.5], [B.neck * 0.95, sh - B.neckLen],
-  ]
-  const outline = [...half, ...half.slice().reverse().map(([u, v]) => [-u, v])]
-  pad.poly(grown(round(outline, 2).map(at), g), ink, 1)
-  // the arms, hanging, the hands down on the seat either side
-  for (const side of [-1, 1]) {
-    const push = B.push || 0
-    const a = at([side * (w - 1.5), sh + 2.4])
-    const e = at([side * (w + 0.6 - push * 0.6), sh + 11])
-    const h = at([side * (w + 1.2 - push * 0.4), sh + 19.5 - push * 1.2])
-    pad.cap(a[0], a[1], e[0], e[1], (B.her ? 1.55 : 2.0) + g, (B.her ? 1.25 : 1.6) + g, ink, 1)
-    pad.cap(e[0], e[1], h[0], h[1], (B.her ? 1.25 : 1.6) + g, (B.her ? 0.95 : 1.2) + g, ink, 1)
-  }
-  return { neckTop: at([0, sh - B.neckLen]), shoulder: (side) => at([side * w * 0.92, sh + 0.8]) }
-}
-
-// ── the two of them, on the clock ──
-function herAt(t) {
-  const x = moves(t, 31, [[2400, 2880, 6.3], [3080, 3500, 5]])
-  const breath = 0.13 * Math.sin((t / 3300) * Math.PI * 2)
   return {
-    x,
-    // onto her hands, the shoulders up, and down again as she settles
-    rise: breath + moves(t, 0, [[2250, 2440, 0.95], [2760, 3020, -0.95], [2980, 3130, 0.8], [3380, 3620, -0.8], [3750, 4400, -0.9]]),
-    push: moves(t, 0, [[2250, 2440, 1], [2760, 3020, -1], [2980, 3130, 1], [3380, 3620, -1]]),
-    lean: moves(t, 0, [[2250, 2440, 4.5], [2780, 3050, -4.5], [2980, 3140, 3.8], [3400, 3640, -2.8], [3720, 4420, 7.5]]),
-    // the look: round to him, a glance down and back, and the head coming
-    // a little forward again as she lays it on him
-    turn: moves(t, 0.02, [[760, 1380, 0.9, (k) => settle(k, 0.07)], [3760, 4380, -0.12]]),
-    nod: moves(t, 0, [[1720, 1980, 4], [2080, 2400, -4], [3760, 4400, 2]]),
-    tilt: moves(t, 0, [[760, 1380, -3], [3700, 4450, 33, (k) => settle(k, 0.04)]]),
-    drop: moves(t, 0, [[3700, 4450, 0.9]]),
+    root: [x, SEAT + 9 + lift, Z0], yaw: 180, pitch: -6 + 5 * press,
+    s1: [6 + 5 * press, 0, lag * 0.55],
+    s2: [3 + 4 * press - 0.8 * b, 0, lag * 0.45],
+    neck: [5, 0, -lag * 0.5],
+    head: [-3, 0, -lag * 0.45],
+    shrug: [0.45 * b + 1.6 * press, 0.45 * b + 1.6 * press],
+    arms: herArms(t, x),
+    legs: [1, -1].map((side) => ({ ik: [x - side * 10, HER.ankle, Z0 - 47], pole: [0, 0.3, -1], foot: [180, 0] })),
   }
 }
-function himAt(t) {
-  const breath = 0.12 * Math.sin((t / 3700) * Math.PI * 2 + 1.3)
+// her hands: in her lap, then down on the seat either side of her to push
+// from, planted there while her hips slide past them, set again, and back
+function herArms(t, x) {
+  // (the wrists: over the middle of her thighs, the elbows soft; and beside
+  // her on the seat, a palm's height over it, as she leans into them)
+  const lap = (side) => [x - side * 8, SEAT + 14.5, Z0 - 16]
+  const seat = (side, x0) => [x0 - side * 19, SEAT + 4, Z0 - 8]
+  const x1 = herX(SC[0].hands[0])
+  const x2 = herX(SC[1].hands[0])
+  const down1 = sm5(span(t, ...SC[0].hands))
+  const reset = sm5(span(t, ...SC[1].hands))
+  const back = sm5(span(t, ...LAP))
+  return [1, -1].map((side) => {
+    let p = V.lerp(lap(side), seat(side, x1), down1)
+    p = V.lerp(p, seat(side, x2), reset)
+    p = V.add(p, [0, 4 * bump(t, ...SC[1].hands), 0])
+    p = V.lerp(p, lap(side), back)
+    return { ik: p, pole: [-side * 0.7, -0.3, -0.6] }
+  })
+}
+// the look: the head first, the neck a beat after, the shoulders last, each
+// taking its share of the turn to him; and as she rests her head on him,
+// her face coming most of the way back round
+const HER_LOOK = [[900, 1450, 0.48], [960, 1560, 0.4], [1040, 1700, 0.12]]
+function herLook(t, pose, him) {
+  const F = solve(HER_UP, pose)
+  const a = aim(F, at(him.head, onHead(HIM, 0, 11, 2)))
+  const rest = 1 - 0.58 * sm5(span(t, LEAN[0] + 100, LEAN[1]))
+  const w = HER_LOOK.map(([t0, t1]) => sm5(span(t, t0, t1)) * rest)
+  // (holding the look, her head softens: a small tilt, a small nod)
+  const soft = sm5(span(t, 1650, 2300)) * (1 - sm5(span(t, 2700, 3000)))
   return {
-    rise: breath + moves(t, 0, [[4200, 4700, -0.35]]),
-    lean: moves(t, 0, [[4300, 4900, -2]]),
-    turn: moves(t, 0.03, [[1100, 1600, 0.05], [4380, 4950, -0.78, (k) => settle(k, 0.05)]]),
-    tilt: moves(t, -1.5, [[1100, 1600, 1.5], [4400, 5000, -9]]),
-    arm: sm5(span(t, 4700, 5350)),
+    ...pose,
+    s2: [pose.s2[0], a.yaw * HER_LOOK[2][2] * w[2], pose.s2[2]],
+    neck: [pose.neck[0] + 0.3 * a.pitch * w[1], a.yaw * HER_LOOK[1][2] * w[1], pose.neck[2]],
+    head: [
+      pose.head[0] + 0.7 * a.pitch * w[0] + 3 * soft + wander(t, 2, 0.4) * 0.7,
+      a.yaw * HER_LOOK[0][2] * w[0] + wander(t, 3, 0.3) * 1.1,
+      pose.head[2] - 5 * soft + wander(t, 4, 0.25) * 0.6,
+    ],
   }
 }
-
-// her hair hangs from her head and swings after her: it follows her tilt
-// and her lean, and trails behind her as she moves along
-const hairSwing = springOf((t) => {
-  const h = herAt(t)
-  const v = (herAt(t + 8).x - herAt(t - 8).x) / 16
-  return h.lean * 0.9 - h.tilt * 0.35 - v * 900
-}, 0, END, { hz: 1.6, damp: 0.32 })
-
-function her(pad, t, ink, g = 0) {
-  const P = herAt(t)
-  const B = { ...HER, x: P.x, lean: P.lean, rise: P.rise, push: P.push, her: true }
-  const b = body(pad, B, ink, g)
-  const [nx, ny] = b.neckTop
-  const H = { nx, ny: ny + P.drop, scale: HER.head, turn: P.turn, tilt: P.tilt + P.lean * 0.3 + P.nod * 0.2, her: true }
-  const hd = head(pad, H, ink, g)
-  // the bow on her bun, the one colour on either of them, its two tails
-  // hanging and swinging after her
-  if (ink) {
-    const s = H.scale
-    const at = onNeck(H.nx, H.ny, H.tilt)
-    const [bx, by] = at([-3.3 * s * hd.sn, -6.3 * s])
-    const r = onNeck(bx, by, H.tilt)
-    pad.poly([[0, 0], [-2.2, -1.5], [-2.3, 0.9]].map(r), ROSE, 1)
-    pad.poly([[0, 0], [2.2, -1.5], [2.3, 0.9]].map(r), ROSE, 1)
-    pad.disc(bx, by, 0.75, ROSE, 1)
-    const a = hairSwing(t) * D
-    for (const side of [-1, 1]) {
-      const a1 = a + side * 0.12
-      const x1 = bx + side * 0.5 + Math.sin(a1) * 4.6
-      const y1 = by + Math.cos(a1) * 4.6
-      pad.cap(bx + side * 0.4, by + 0.4, x1, y1, 0.42, 0.3, ROSE, 1)
-    }
-  }
-  return b
-}
-function him(pad, t, ink, g = 0) {
-  const P = himAt(t)
-  const b = body(pad, { ...HIM, lean: P.lean, rise: P.rise }, ink, g)
-  const [nx, ny] = b.neckTop
-  head(pad, { nx, ny, scale: HIM.head, turn: P.turn, tilt: P.tilt + P.lean * 0.4 }, ink, g)
-  return b
-}
-// his arm, coming up round her: from his shoulder, over her back, to her
-// far shoulder, on an arc, the elbow leading
-function arm(pad, t, ink, g = 0) {
-  const k = himAt(t).arm
-  if (k <= 0) return
-  const hb = body(new Pad(), { ...HIM, lean: himAt(t).lean, rise: himAt(t).rise }, 0)
-  const S = hb.shoulder(-1)
-  const hbHer = body(new Pad(), { ...HER, x: herAt(t).x, lean: herAt(t).lean, rise: herAt(t).rise, her: true }, 0)
-  const T = hbHer.shoulder(-1)
-  const lift = Math.sin(Math.PI * k) * 3
-  const E = [lerp(S[0] + 0.8, lerp(S[0], T[0], 0.5), k), lerp(S[1] + 9, lerp(S[1], T[1], 0.5) + 3.2, k) - lift * 0.4]
-  const Hd = [lerp(S[0] + 1.2, T[0] + 0.6, k), lerp(S[1] + 16, T[1] + 0.8, k) - lift]
-  pad.cap(S[0], S[1] + 1.2, E[0], E[1], 1.9 + g, 1.55 + g, ink, 1)
-  pad.cap(E[0], E[1], Hd[0], Hd[1], 1.55 + g, 1.2 + g, ink, 1)
-  pad.disc(Hd[0], Hd[1], 1.35 + g, ink, 1)
-}
-
-function bench(pad, ink, g = 0) {
-  // the posts, which carry the back up, and the rails across
-  pad.cap(8.5, 47.5, 8.5, 80, 1.25 + g, 1.25 + g, ink, 1)
-  pad.cap(86.5, 47.5, 86.5, 80, 1.25 + g, 1.25 + g, ink, 1)
-  pad.rect(4.5 - g, 50.6 - g, 86 + 2 * g, 2.7 + 2 * g, ink, 1)
-  pad.rect(5 - g, 57 - g, 85 + 2 * g, 2.1 + 2 * g, ink, 1)
-  pad.rect(5.5 - g, 63.4 - g, 84 + 2 * g, 1.6 + 2 * g, ink, 1)
-  // the arms, rolled at the ends
-  pad.cap(3.2, 60.2, 8.5, 59.2, 1.1 + g, 1.1 + g, ink, 1)
-  pad.cap(91.8, 60.2, 86.5, 59.2, 1.1 + g, 1.1 + g, ink, 1)
-  pad.disc(3.2, 60.2, 1.6 + g, ink, 1)
-  pad.disc(91.8, 60.2, 1.6 + g, ink, 1)
-  // the front legs, further off, lighter
-  if (ink && !g) {
-    pad.cap(11.5, 65, 11.8, 74, 0.8, 0.8, INK, 0.45)
-    pad.cap(83.5, 65, 83.2, 74, 0.8, 0.8, INK, 0.45)
+// Resting her head on him: where her head touches (the side of it, over her
+// right ear) is brought to a point on the top of his shoulder, along an arc
+// that comes over and down onto it, by leaning her body (`a`) and tilting
+// her head (`b`), found by Newton's method on the two of them.
+const TEMPLE = onHead(HER_UP, -7.3, 12.4, -1.0)
+function withLean(pose, a, b) {
+  return {
+    ...pose,
+    s1: [pose.s1[0] + 0.05 * a, pose.s1[1], pose.s1[2] + 0.42 * a],
+    s2: [pose.s2[0] + 0.08 * a, pose.s2[1], pose.s2[2] + 0.58 * a],
+    neck: [pose.neck[0], pose.neck[1], pose.neck[2] + 0.38 * b],
+    head: [pose.head[0], pose.head[1], pose.head[2] + 0.62 * b],
   }
 }
+const templeOf = (pose) => at(solve(HER_UP, pose).head, TEMPLE)
+function restOn(pose, target) {
+  let a = 8
+  let b = 16
+  for (let it = 0; it < 5; it++) {
+    const p = templeOf(withLean(pose, a, b))
+    const ex = p[0] - target[0]
+    const ey = p[1] - target[1]
+    if (Math.abs(ex) + Math.abs(ey) < 0.05) break
+    const pa = templeOf(withLean(pose, a + 0.5, b))
+    const pb = templeOf(withLean(pose, a, b + 0.5))
+    const j11 = (pa[0] - p[0]) / 0.5
+    const j21 = (pa[1] - p[1]) / 0.5
+    const j12 = (pb[0] - p[0]) / 0.5
+    const j22 = (pb[1] - p[1]) / 0.5
+    const det = j11 * j22 - j12 * j21 || 1e-6
+    a = clamp(a - (j22 * ex - j12 * ey) / det, -5, 26)
+    b = clamp(b - (-j21 * ex + j11 * ey) / det, -5, 40)
+  }
+  return withLean(pose, a, b)
+}
+// where her head comes to rest: the top of his shoulder, between his neck
+// and the point of it, on his jacket
+const shoulderOf = (him) => V.add(at(him.s2, [13.5, 27.8, -2.6]), mv(him.s2.R, [0, 1.0, 0]))
+function herPose(t, him) {
+  let pose = herLook(t, herBase(t), him)
+  if (t > LEAN[0]) {
+    const e = settle(span(t, ...LEAN), 0.03)
+    const from = templeOf(pose)
+    const q = shoulderOf(him)
+    const target = V.add(V.lerp(from, q, e), [0, 3 * Math.sin(Math.PI * Math.min(1, e)), 0])
+    pose = restOn(pose, target)
+    // and the weight of it: she bows into him a little as it settles
+    const w = sm5(span(t, LEAN[1] - 200, LEAN[1] + 400))
+    pose = { ...pose, head: [pose.head[0] + 3 * w, pose.head[1], pose.head[2]] }
+  }
+  return pose
+}
 
-const MOON = [79, 12.5, 6.2]
-function scenery(pad, t, a) {
+// ── him ─────────────────────────────────────────────────────────────────────
+// His left (our left) is toward her: turning to her is a positive yaw, and
+// leaning to her a negative roll.
+function himBase(t) {
+  const b = breath(t, 4600, 1900)
+  // after a while, their breath the same
+  const bb = lerp(b, breath(t, 4200, 700), sm5(span(t, 5900, 7400)))
+  const notice = sm5(span(t, 3600, 4200))
+  return {
+    root: [HIM_X, SEAT + 9.5, Z0], yaw: 180, pitch: -8,
+    s1: [7, 0, 0],
+    s2: [5 - 0.8 * bb, 3 * notice, 0],
+    neck: [3 + wander(t, 7, 0.25) * 0.5, -6 + 8 * notice, 0],
+    // looking at the moon, up and to his right, and then aware of her
+    head: [-9 + 5 * notice + wander(t, 8, 0.3) * 0.7, -8 + 12 * notice + wander(t, 9, 0.2) * 0.9, 0],
+    shrug: [0.45 * bb, 0.45 * bb],
+    arms: [1, -1].map((side) => ({ ik: [HIM_X + side * 8, SEAT + 17, Z0 - 30], pole: [side * 0.7, -0.3, -0.6] })),
+    legs: [1, -1].map((side) => ({ ik: [HIM_X + side * 11, HIM.ankle, Z0 - 50], pole: [0, 0.3, -1], foot: [180, 0] })),
+  }
+}
+// his cheek onto her hair: the side of his face brought down to the top of
+// her head by bowing his neck and tilting his head to her
+const CHEEK = onHead(HIM, 7.1, 9.8, 2.2)
+function withTilt(pose, c, d) {
+  return {
+    ...pose,
+    s2: [pose.s2[0], pose.s2[1], pose.s2[2] - 0.2 * c],
+    neck: [pose.neck[0] + 0.25 * d, pose.neck[1], pose.neck[2] - 0.8 * c],
+    head: [pose.head[0] + 0.6 * d, pose.head[1], pose.head[2] - 1.2 * c],
+  }
+}
+const cheekOf = (pose) => at(solve(HIM, pose).head, CHEEK)
+function tiltOnto(pose, target) {
+  let c = 10
+  let d = 8
+  for (let it = 0; it < 5; it++) {
+    const p = cheekOf(withTilt(pose, c, d))
+    const ex = p[0] - target[0]
+    const ey = p[1] - target[1]
+    if (Math.abs(ex) + Math.abs(ey) < 0.05) break
+    const pc = cheekOf(withTilt(pose, c + 0.5, d))
+    const pd = cheekOf(withTilt(pose, c, d + 0.5))
+    const j11 = (pc[0] - p[0]) / 0.5
+    const j21 = (pc[1] - p[1]) / 0.5
+    const j12 = (pd[0] - p[0]) / 0.5
+    const j22 = (pd[1] - p[1]) / 0.5
+    const det = j11 * j22 - j12 * j21 || 1e-6
+    c = clamp(c - (j22 * ex - j12 * ey) / det, -4, 24)
+    d = clamp(d - (-j21 * ex + j11 * ey) / det, -6, 24)
+  }
+  return withTilt(pose, c, d)
+}
+function himPose(t, her) {
+  let pose = himBase(t)
+  if (her && t > HIS[0]) {
+    const e = sm5(span(t, ...HIS))
+    pose = { ...pose, head: [pose.head[0], pose.head[1] + 20 * e, pose.head[2]] }
+    const from = cheekOf(pose)
+    const top = V.add(at(her.head, onHead(HER_UP, 0, 22.2, -2.0)), mv(her.head.R, [0, 0.85, 0]))
+    pose = tiltOnto(pose, V.add(V.lerp(from, top, e), [0, 1.5 * Math.sin(Math.PI * e), 0]))
+  }
+  return pose
+}
+
+// ── the bench, the park ─────────────────────────────────────────────────────
+// the boards, in the world: the posts, three slats across the back, the
+// seat's back edge, and the arms, as flat shapes on the glass
+function bench(cam) {
+  const shapes = []
+  const R = (x0, y0, x1, y1, z) => {
+    const [a, b] = cam.P([x0, y1, z])
+    const [c, d] = cam.P([x1, y0, z])
+    shapes.push({ k: 3, convex: true, pts: [[a, b], [c, b], [c, d], [a, d]] })
+  }
+  for (const x of [-82, 82]) R(x - 2.6, 0, x + 2.6, 93, 5)
+  R(-88, 84, 88, 89.5, 6)
+  R(-88, 73, 88, 78, 5)
+  R(-88, 62, 88, 67, 4.5)
+  R(-86, SEAT - 3.5, 86, SEAT + 0.8, 1)
+  for (const x of [-82, 82]) {
+    const [a, b] = cam.P([x - Math.sign(x) * 3, 64, 4])
+    const [c2, d] = cam.P([x + Math.sign(x) * 5, 64, 4])
+    shapes.push({ k: 1, ax: a, ay: b, bx: c2, by: d, ra: 1.9 * cam.s, rb: 1.9 * cam.s })
+  }
+  return shapes
+}
+
+const MOON = [55, 11.5, 6]
+function scenery(pad, t, f, a) {
   if (a <= 0.01) return
+  const S = (v) => v * f
+  // the moon, full, with its seas
   const [mx, my, mr] = MOON
-  pad.disc(mx, my, mr, INK, 0.26 * a)
-  pad.disc(mx - 1.8, my - 1.1, 2.1, INK, 0.42 * a)
-  pad.disc(mx + 2.1, my + 1.9, 1.5, INK, 0.4 * a)
-  pad.disc(mx + 1.3, my - 2.7, 0.9, INK, 0.38 * a)
-  // the treeline, far off, soft, seen between the rails and over them
-  for (let i = 0; i < 16; i++) {
-    const x = -4 + i * 6.8 + hash(i, 4) * 3
-    const r = 3.4 + hash(i, 5) * 3.2
-    pad.disc(x, 58 - r * 0.55, r, FAR, 0.34 * a)
+  const moon = [{ k: 0, cx: S(mx), cy: S(my), r: S(mr) }]
+  const seas = [{ k: 0, cx: S(mx - 1.8), cy: S(my - 1.1), r: S(2.1) }, { k: 0, cx: S(mx + 2.1), cy: S(my + 1.9), r: S(1.5) }, { k: 0, cx: S(mx + 1.3), cy: S(my - 2.7), r: S(0.9) }]
+  // the stars, each on its own clock, in three brightnesses
+  const stars = [[], [], []]
+  for (let i = 0; i < 26; i++) {
+    const x = 26 + hash(i, 3) * 68
+    const y = 1 + hash(i, 5) * 26
+    if (Math.hypot(x - mx, y - my) < mr + 3) continue
+    const tw = 0.5 + 0.5 * Math.sin(t * 0.0032 * (0.5 + hash(i, 7)) + hash(i, 9) * 6.28)
+    stars[Math.min(2, Math.floor(tw * 3))].push({ k: 0, cx: S(x), cy: S(y), r: S(0.28 + 0.22 * hash(i, 11)) })
   }
-  pad.rect(-4, 56, 103, 12, FAR, 0.34 * a)
-  // the branch, from off the top left, and its blossom
-  pad.cap(-5, 1.5, 12.5, 7.8, 1.5, 1.05, INK, 0.9 * a)
-  pad.cap(12.5, 7.8, 30, 9.2, 1.05, 0.45, INK, 0.85 * a)
-  pad.cap(10, 6.8, 17, 0.6, 0.6, 0.35, INK, 0.8 * a)
-  pad.cap(21, 8.7, 25.5, 14.8, 0.5, 0.32, INK, 0.8 * a)
+  // the treeline, far off and soft, low behind the bench
+  const trees = []
+  for (let i = 0; i < 22; i++) {
+    const x = -6 + i * 5.2 + hash(i, 4) * 3.5
+    const r = 2.6 + hash(i, 5) * 4.2
+    trees.push({ k: 0, cx: S(x), cy: S(56 - r * 0.6 - hash(i, 6) * 2), r: S(r) })
+  }
+  trees.push({ k: 3, convex: true, pts: [[S(-6), S(55)], [S(101), S(55)], [S(101), S(80)], [S(-6), S(80)]] })
+  // the branch, from off the top left, and its blossom, moving a little
+  const sw = Math.sin(t / 1400) * 0.4
+  const branch = [
+    { k: 1, ax: S(-5), ay: S(1.5), bx: S(12.5), by: S(7.8 + sw * 0.3), ra: S(1.5), rb: S(1.05) },
+    { k: 1, ax: S(12.5), ay: S(7.8 + sw * 0.3), bx: S(30), by: S(9.2 + sw), ra: S(1.05), rb: S(0.45) },
+    { k: 1, ax: S(10), ay: S(6.8), bx: S(17), by: S(0.6), ra: S(0.6), rb: S(0.35) },
+    { k: 1, ax: S(21), ay: S(8.7 + sw * 0.5), bx: S(25.5), by: S(14.8 + sw), ra: S(0.5), rb: S(0.32) },
+  ]
   const bloom = [[3, 4.6, 1.9], [8, 9.3, 1.6], [15, 2.4, 1.5], [17.2, 7.8, 1.8], [23, 10.8, 1.45], [25.6, 14.9, 1.35], [29.2, 8.4, 1.35], [5.2, 1.4, 1.35], [20, 5.4, 1.15], [11.6, 11.2, 1.15]]
-  for (const [x, y, r] of bloom) {
-    pad.disc(x, y, r * (1 + 0.04 * Math.sin(t / 900 + x)), ROSE, 0.85 * a)
-  }
+    .map(([x, y, r]) => ({ k: 0, cx: S(x), cy: S(y + sw * (x / 30)), r: S(r) }))
+  pad.layers([
+    [moon, INK, 0.24 * a], [seas, INK, 0.38 * a], [trees, FAR, 0.3 * a],
+    [stars[0], INK, 0.42 * a], [stars[1], INK, 0.6 * a], [stars[2], INK, 0.8 * a],
+    [branch, INK, 0.9 * a], [bloom, ROSE, 0.85 * a],
+  ])
 }
 
 // the falling star: a bright head and a long tail thinning out behind it
-function falling(pad, t) {
+function falling(pad, t, f) {
   const k = span(t, ...STAR)
   if (k <= 0 || k >= 1) return
   const e = 1 - (1 - k) ** 2.2
-  const [x0, y0, x1, y1] = [92, 1, 48, 17]
+  const [x0, y0, x1, y1] = [92 * f, 1 * f, 62 * f, 15 * f]
   const fade = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3
   const hx = lerp(x0, x1, e)
   const hy = lerp(y0, y1, e)
   const tail = Math.min(0.32, e * 0.9)
   const ex = lerp(x0, x1, e - tail)
   const ey = lerp(y0, y1, e - tail)
-  const n = 14
-  for (let i = 0; i < n; i++) {
-    const a = i / n
-    const b = (i + 1) / n
-    pad.line(lerp(hx, ex, a), lerp(hy, ey, a), lerp(hx, ex, b), lerp(hy, ey, b), INK, fade * (1 - a) ** 1.6, 0.45 * (1 - a * 0.7))
+  const seg = [[], [], []]
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12
+    const b = (i + 1) / 12
+    seg[Math.min(2, Math.floor(a * 3))].push({ k: 1, ax: lerp(hx, ex, a), ay: lerp(hy, ey, a), bx: lerp(hx, ex, b), by: lerp(hy, ey, b), ra: 0.45 * f * (1 - a * 0.7), rb: 0.45 * f * (1 - b * 0.7) })
   }
-  pad.disc(hx, hy, 0.9, INK, fade)
+  seg[0].push({ k: 0, cx: hx, cy: hy, r: 0.9 * f })
+  pad.layers([[seg[0], INK, fade], [seg[1], INK, fade * 0.45], [seg[2], INK, fade * 0.15]])
 }
 
-export function benchStory() {
-  const pad = new Pad()
-  const src = new Pad()
-  let glide = null
-  const camera = (t) => ({ k: 1.24 + 0.08 * sm5(span(t, ...CAMERA)), cx: 47, cy: 46 })
-  const people = (p, t) => {
-    him(p, t, INK)
-    her(p, t, 0, 0.75)
-    her(p, t, INK)
-    arm(p, t, 0, 0.7)
-    arm(p, t, INK)
-    bench(p, 0, 0.75)
-    bench(p, INK)
+export function benchStory(f = 2) {
+  const pad = new Pad(f)
+  const src = new Pad(f)
+  const camAt = (t) => camera({
+    at: [lerp(-6, -2, sm5(span(t, 2500, 6000))), lerp(106, 110, sm5(span(t, 0, MORPH))), 0],
+    s: lerp(0.95, 1.07, sm5(span(t, 0, MORPH))) * f, x0: 47 * f, y0: 37 * f,
+  })
+  // the two of them at a moment, posed once for it
+  const memo = new Map()
+  const posed = (t) => {
+    const key = Math.round(t)
+    if (memo.has(key)) return memo.get(key)
+    const him0 = solve(HIM, himBase(t))
+    const herF = solve(HER_UP, herPose(t, him0))
+    const himF = solve(HIM, himPose(t, herF))
+    const out = { himF, herF }
+    if (memo.size > 600) memo.delete(memo.keys().next().value)
+    memo.set(key, out)
+    return out
   }
+  // her ponytail and the ribbon in it, worked out once over the story
+  let tail = null
+  let ties = null
+  const TIE = onHead(HER_UP, 0, 7.6, -8.1)
+  const hang = () => {
+    if (tail) return
+    const herF = (t) => posed(t).herF
+    const colliders = (t) => {
+      const F = herF(t)
+      return [
+        { c: at(F.head, onHead(HER_UP, 0, 11.5, -1.2)), r: 9.2 },
+        { c: at(F.neck, [0, 4, 1.2]), r: 5.0 },
+        { c: at(F.s2, [8.5, 18, -2.5]), r: 7.4 }, { c: at(F.s2, [-8.5, 18, -2.5]), r: 7.4 },
+        { c: at(F.s2, [0, 9, -2.5]), r: 11.2 },
+      ]
+    }
+    const wind = (t) => [0.00003 * (1 + Math.sin(t / 900)), 0, 0]
+    tail = chains({
+      t0: 0, t1: END, n: 7, len: 27, stiff: 0.5, drag: 0.0026,
+      roots: (t) => { const F = herF(t); return [{ p: at(F.head, TIE), d: mv(F.head.R, [0, -0.72, -0.7]) }] },
+      colliders, wind,
+    })
+    ties = chains({
+      t0: 0, t1: END, n: 5, len: 10, stiff: 0.25, drag: 0.0028,
+      roots: (t) => { const F = herF(t); return [-0.7, 0.7].map((x) => ({ p: at(F.head, V.add(TIE, [x, 0.2, -1.2])), d: mv(F.head.R, [x * 0.25, -1, -0.3]) })) },
+      colliders, wind,
+    })
+  }
+  const bow = (F) => {
+    const loop = (x, deg) => {
+      const a = (deg * Math.PI) / 180
+      const R = F.head.R
+      const Z = [Math.cos(a), -Math.sin(a), 0, Math.sin(a), Math.cos(a), 0, 0, 0, 1]
+      const RR = [0, 1, 2].flatMap((i) => [0, 1, 2].map((j) => R[i * 3] * Z[j] + R[i * 3 + 1] * Z[3 + j] + R[i * 3 + 2] * Z[6 + j]))
+      return { k: 'e', c: at(F.head, V.add(TIE, [x, 0.6, -1.4])), R: RR, r: [2.3, 1.3, 0.9] }
+    }
+    return [loop(-2.2, 20), loop(2.2, -20), { k: 's', c: at(F.head, V.add(TIE, [0, 0.4, -1.5])), r: 0.95 }]
+  }
+  // the two of them, the bench over them, on a pad
+  const people = (p, t, cam) => {
+    hang()
+    const { himF, herF } = posed(t)
+    const hers = flat([
+      ...solid(HER_UP, herF),
+      { k: 'e', c: at(herF.head, TIE), R: herF.head.R, r: [2.2, 1.8, 2.0] },
+      ...strands(tail(t), [[2.3, 0.45]]),
+    ], cam)
+    const boards = bench(cam)
+    p.layers([
+      [flat(solid(HIM, himF), cam), INK], [hers, INK, 1, 0, 0.42 * f],
+      [flat([...bow(herF), ...strands(ties(t), [[0.45, 0.3]])], cam), ROSE], [boards, INK, 1, 0, 0.7 * f],
+    ])
+  }
+  let glide = null
   const prep = (ms) => {
-    if (typeof document === 'undefined') return
+    if (typeof document === 'undefined') return true
+    hang()
+    const a = performance.now()
+    const left = () => Math.max(0, ms - (performance.now() - a))
+    if (!tail.step(left() / 2) || !ties.step(left())) return false
     if (!glide) {
-      const M = mark()
-      src.zoom = camera(MORPH)
-      src.clear(); bench(src, INK)
+      const M = mark(f)
+      const cam = camAt(MORPH)
+      src.clear(); src.union(bench(cam), INK)
       const ringFrom = src.cells()
-      src.clear(); people(src, MORPH)
-      const starFrom = src.cells().filter((c) => c[4] >= 0.25 && c[1] < 51)
-      const hx = 47
-      const hy = 34
+      src.clear(); people(src, MORPH, cam)
+      const top = cam.P([0, 89.5, 6])[1]
+      const starFrom = src.cells().filter((q) => q[4] >= 0.3 && q[1] < top)
+      const [hx, hy] = cam.P(at(posed(MORPH).herF.head, [0, 6, 0]))
       glide = {
-        ring: glideOf(ringFrom, M.ring.map((p) => [p.x, p.y]), { delay: (p) => ((p[0] + 4) / 100) * 280, flight: 780, bend: 3 }),
-        star: glideOf(starFrom, M.star.map((p) => [p.x, p.y]), { delay: (p) => 130 + (Math.hypot(p[0] - hx, p[1] - hy) / 36) * 240, flight: 720, bend: 2.4 }),
+        ring: glideOf(ringFrom, M.ring.map((q) => [q.x, q.y]), { delay: (q) => ((q[0] / f + 4) / 100) * 280, flight: 800, bend: 3 * f }),
+        star: glideOf(starFrom, M.star.map((q) => [q.x, q.y]), { delay: (q) => 130 + (Math.hypot(q[0] - hx, q[1] - hy) / (40 * f)) * 260, flight: 740, bend: 2.4 * f }),
       }
     }
-    if (glide.ring.step(ms)) glide.star.step(ms)
+    return glide.ring.step(left()) && glide.star.step(left())
   }
+  // the park behind them moves slowly, and is laid again thirty times a
+  // second rather than every frame
+  const bg = new Pad(f)
+  let bgAt = null
   const draw = (t) => {
     pad.clear()
-    pad.zoom = camera(t)
+    const cam = camAt(t)
     const fade = 1 - sm5(span(t, MORPH - 150, MORPH + 500))
-    sky(pad, t, { n: 26, seed: 3, box: [34, 1, 95, 40], a: fade })
-    scenery(pad, t, fade)
-    falling(pad, t)
+    const slot = Math.floor(t / 33)
+    if (slot !== bgAt) {
+      bgAt = slot
+      bg.clear()
+      scenery(bg, slot * 33, f, fade)
+    }
+    pad.lay(bg)
+    falling(pad, t, f)
     softPetals(pad, t, { n: 12, seed: 7, v: 0.0085, drift: 0.003, sway: 2.6, from: -9000, box: [-6, -4, 104, 76], a: 0.8, size: 0.95 })
-    if (t < MORPH) people(pad, t)
+    if (t < MORPH) people(pad, t, cam)
     softPetals(pad, t, { n: 7, seed: 19, v: 0.013, drift: 0.0045, sway: 3.2, from: -9000, box: [-6, -4, 104, 80], a: 0.95, size: 1.35 })
     const cells = pad.cells()
     if (t >= MORPH) {
@@ -360,9 +463,11 @@ export function benchStory() {
       glide.ring.at(t - MORPH, cells)
       glide.star.at(t - MORPH, cells)
     }
-    const moon = fade > 0.01 ? { x: 47 + (MOON[0] - 47) * pad.zoom.k, y: 46 + (MOON[1] - 46) * pad.zoom.k, r: 10, a: 0.45 * fade, inner: 0.9 } : null
-    return { cells, glow: moon }
+    return { cells, glow: fade > 0.01 ? { x: MOON[0] * f, y: MOON[1] * f, r: 10 * f, a: 0.45 * fade, inner: 0.9 } : null }
   }
-  return tale({ end: END, draw, prep, live: true, wash: { at: WASH_AT, x: 47, y: 34, ms: 1450 } })
+  const [wx, wy] = camAt(WASH_AT).P([-2, 124, Z0])
+  // (for the lab's own checks: the poses and what hangs from them)
+  const story = tale({ f, end: END, draw, prep, live: true, wash: { at: WASH_AT, x: Math.round(wx), y: Math.round(wy), ms: 1450 } })
+  story.debug = { posed, hair: () => tail, ties: () => ties }
+  return story
 }
-void clamp

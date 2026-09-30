@@ -43,79 +43,93 @@ const reach = (w) => {
   return 1 + 0.16 * Math.exp(-4.2 * x) * Math.sin(x * Math.PI * 1.35) * 3 - Math.exp(-7 * x)
 }
 
-// a star that is a light: a soft core and four tapering rays, two fainter
-// between them; `r` its size
-function light(pad, x, y, r, a = 1) {
-  pad.disc(x, y, 0.55 + 0.35 * r, INK, a)
+// a star that is a light: a soft core and four tapering rays, and four
+// fainter between them; `r` its size, in cells
+function light(x, y, r) {
+  const core = [{ k: 0, cx: x, cy: y, r: 0.55 + 0.35 * r }]
+  const rays = []
   for (let i = 0; i < 4; i++) {
-    const ang = (i * Math.PI) / 2
-    pad.cap(x, y, x + Math.cos(ang) * r * 2.4, y + Math.sin(ang) * r * 2.4, 0.42 * r, 0.05, INK, a)
+    const a = (i * Math.PI) / 2
+    core.push({ k: 1, ax: x, ay: y, bx: x + Math.cos(a) * r * 2.4, by: y + Math.sin(a) * r * 2.4, ra: 0.42 * r, rb: 0.05 })
+    const b = Math.PI / 4 + a
+    rays.push({ k: 1, ax: x, ay: y, bx: x + Math.cos(b) * r * 1.2, by: y + Math.sin(b) * r * 1.2, ra: 0.26 * r, rb: 0.04 })
   }
-  for (let i = 0; i < 4; i++) {
-    const ang = Math.PI / 4 + (i * Math.PI) / 2
-    pad.cap(x, y, x + Math.cos(ang) * r * 1.2, y + Math.sin(ang) * r * 1.2, 0.26 * r, 0.04, INK, a * 0.6)
-  }
+  return { core, rays }
 }
 
-export function binaryStory() {
-  const pad = new Pad()
+export function binaryStory(f = 2) {
+  const pad = new Pad(f)
   const draw = (t) => {
-    const M = mark()
+    const M = mark(f)
     const C = [M.cx, M.cy]
     pad.clear()
-    pad.zoom = { k: 1 + 0.05 * sm5(span(t, 0, T)), cx: C[0], cy: C[1] }
+    // the camera eases in a little on the two of them as they fall together
+    const zk = 1 + 0.05 * sm5(span(t, 0, T))
+    const Z = ([x, y]) => [C[0] + (x - C[0]) * zk, C[1] + (y - C[1]) * zk]
     const w = span(t, ...WAVE)
     const s = reach(w)
     const tc = Math.cos((M.tilt * Math.PI) / 180)
     const ts = Math.sin((M.tilt * Math.PI) / 180)
     // the sky: each star twinkling, and pushed aside by the wave as it goes
-    // over it, and let back
+    // over it, and let back; in three brightnesses
+    const sky = [[], [], []]
+    const skyRays = []
     for (let i = 0; i < 58; i++) {
-      const x0 = hash(i, 21) * 99 - 2
-      const y0 = hash(i, 24) * 79 - 2
+      const x0 = (hash(i, 21) * 99 - 2) * f
+      const y0 = (hash(i, 24) * 79 - 2) * f
       const dx = x0 - C[0]
       const dy = y0 - C[1]
       const u = (dx * tc + dy * ts) / M.RX
       const v = (-dx * ts + dy * tc) / M.RY
       const d = Math.hypot(u, v) || 1
       const front = w > 0 ? Math.exp(-(((d - s * 1.25) / 0.22) ** 2)) : 0
-      const push = 2.6 * front
-      const x = x0 + (dx / (Math.hypot(dx, dy) || 1)) * push
-      const y = y0 + (dy / (Math.hypot(dx, dy) || 1)) * push
+      const push = 2.6 * f * front
+      const l = Math.hypot(dx, dy) || 1
+      const [x, y] = Z([x0 + (dx / l) * push, y0 + (dy / l) * push])
       const tw = 0.5 + 0.5 * Math.sin(t * 0.0035 * (0.5 + hash(i, 27)) + hash(i, 29) * 6.28)
-      const size = 0.45 + 0.4 * hash(i, 31)
       const a = (0.35 + 0.55 * tw) * (0.6 + 0.4 * hash(i, 33)) * (1 - 0.5 * front)
-      if (hash(i, 35) > 0.85) light(pad, x, y, size * 0.9, a * 0.8)
-      else pad.disc(x, y, size, INK, a)
+      const size = (0.45 + 0.4 * hash(i, 31)) * f
+      const b = Math.min(2, Math.floor(a * 3.2))
+      if (hash(i, 35) > 0.85) {
+        const L = light(x, y, size * 0.9)
+        sky[b].push(...L.core)
+        skyRays.push(...L.rays)
+      } else sky[b].push({ k: 0, cx: x, cy: y, r: size })
     }
+    const layers = [[sky[0], INK, 0.35], [sky[1], INK, 0.6], [sky[2], INK, 0.85], [skyRays, INK, 0.35]]
     const glows = []
     if (t < T) {
+      const trail = [[], [], []]
+      const bodies = []
+      const halos = []
       for (const off of [0, Math.PI]) {
-        // the arc behind it: short lines from where it was, thinning out
+        // the arc behind it: short pieces from where it was, thinning out
         let prev = null
         for (let j = 0; j <= 34; j++) {
-          const tt = t - j * 16
-          const o = orbitAt(tt / T)
-          const p = M.at(o.th + off, o.r)
+          const o = orbitAt((t - j * 16) / T)
+          const p = Z(M.at(o.th + off, o.r))
           if (prev) {
-            const f = 1 - j / 34
-            pad.line(prev[0], prev[1], p[0], p[1], INK, 0.75 * f ** 1.4, 0.18 + 0.4 * f)
+            const k = 1 - j / 34
+            trail[Math.min(2, Math.floor((1 - k) * 3))].push({ k: 1, ax: prev[0], ay: prev[1], bx: p[0], by: p[1], ra: (0.18 + 0.4 * k) * f, rb: (0.18 + 0.4 * k) * f })
           }
           prev = p
         }
         const o = orbitAt(t / T)
         const th = o.th + off
-        const [x, y] = M.at(th, o.r)
+        const [x, y] = Z(M.at(th, o.r))
         // nearer (the lower half of the orbit) is larger and brighter, and
         // their light quickens as they fall together
         const near = (Math.sin(th) + 1) / 2
         const quick = 1 + 0.18 * Math.sin(o.th * 2.2) * (t / T)
-        const r = lerp(1.4, 2.3, near) * quick
-        light(pad, x, y, r, lerp(0.78, 1, near))
-        glows.push({ x: C[0] + (x - C[0]) * pad.zoom.k, y: C[1] + (y - C[1]) * pad.zoom.k, r: 2.2 + 2.4 * r, a: 0.35 + 0.3 * near, inner: 0.95, light: true })
+        const r = lerp(1.4, 2.3, near) * quick * f
+        const L = light(x, y, r)
+        bodies.push(...L.core)
+        halos.push(...L.rays)
+        glows.push({ x, y, r: (2.2 + 2.4 * r / f) * f, a: 0.35 + 0.3 * near, inner: 0.95, light: true })
       }
+      layers.push([trail[0], INK, 0.75], [trail[1], INK, 0.42], [trail[2], INK, 0.18], [bodies, INK, 1], [halos, INK, 0.6])
     }
-    pad.zoom = null
+    pad.layers(layers)
     const cells = pad.cells()
     if (t >= T) {
       // the wave: the ring from nothing, a little past itself and back, and
@@ -140,17 +154,20 @@ export function binaryStory() {
       const fl = span(t, T, T + 700)
       if (fl < 1) {
         pad.clear()
-        const len = 44 * Math.sin(Math.PI * fl) ** 0.7
+        const len = 44 * f * Math.sin(Math.PI * fl) ** 0.7
+        const rays = []
         for (let i = 0; i < 4; i++) {
-          const ang = (i * Math.PI) / 2
-          pad.cap(C[0], C[1], C[0] + Math.cos(ang) * len, C[1] + Math.sin(ang) * len, 0.9, 0.05, INK, 0.9 * (1 - fl))
+          const a = (i * Math.PI) / 2
+          rays.push({ k: 1, ax: C[0], ay: C[1], bx: C[0] + Math.cos(a) * len, by: C[1] + Math.sin(a) * len, ra: 0.9 * f, rb: 0.05 })
         }
+        pad.union(rays, INK, 0.9 * (1 - fl))
         pad.cells(cells)
       }
-      const f = 1 - sm5(span(t, T, T + 700))
-      if (f > 0.01) glows.push({ x: C[0], y: C[1], r: lerp(4, 24, 1 - f), a: 0.95 * f, inner: 0.75, light: true })
+      const fk = 1 - sm5(span(t, T, T + 700))
+      if (fk > 0.01) glows.push({ x: C[0], y: C[1], r: lerp(4, 24, 1 - fk) * f, a: 0.95 * fk, inner: 0.75, light: true })
     }
     return { cells, glow: glows }
   }
-  return tale({ end: END, draw, live: true, wash: { at: T, x: 47, y: 37, ms: 1250 } })
+  const M = mark(f)
+  return tale({ f, end: END, draw, live: true, wash: { at: T, x: Math.round(M.cx), y: Math.round(M.cy), ms: 1250 } })
 }

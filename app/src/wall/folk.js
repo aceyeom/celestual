@@ -808,7 +808,7 @@ const pitchAt = (keys, u) => keyed(keys.map(([a, b]) => [a, { f: b }]), u).f
 // and its pelvis (`at(t)`: `x` along the ground and `y` over it). Answers
 // the legs at any moment. `amp` shrinks a swing that is shorter than a
 // full stride's, so a short step is a short step.
-export function walker(who, steps, pelvis, stride) {
+function walker(who, steps, pelvis, stride) {
   const B = who === 'her' ? HER : HIM
   const legs = [steps.filter((s) => s.leg === 0), steps.filter((s) => s.leg === 1)]
   const side = [0.3, -0.3]
@@ -858,7 +858,7 @@ export function walker(who, steps, pelvis, stride) {
 
 // The pelvis's height set exactly: the pose's `lift` is what raises it from
 // where its lower foot would put it to `y`.
-export function lifted(who, pose, y) {
+function lifted(who, pose, y) {
   const { hipY } = stance(who, { ...pose, lift: 0 })
   return { ...pose, lift: y - hipY }
 }
@@ -866,7 +866,7 @@ export function lifted(who, pose, y) {
 // a pace that falls from `v` to nothing over `d` ms, smoothly at both ends:
 // the distance gone by `u` of the way (g(0) = 0, g'(0) = 1, g'(1) = 0 and
 // g''(1) = 0, and g(1) = 1/2, so the whole of it is v d / 2)
-export const slowing = (u) => {
+const slowing = (u) => {
   const x = clamp(u, 0, 1)
   return x - x * x * x + (x * x * x * x) / 2
 }
@@ -874,7 +874,7 @@ export const slowing = (u) => {
 // the arms and the body through a run, by the phase of the near leg
 // (the arms swing close, the elbows bent, the hands coming up to the chest
 // in front and back past the hip behind; hers a little less)
-export function runTop(who, phi) {
+function runTop(who, phi) {
   const c = Math.cos(2 * Math.PI * phi)
   const her = who === 'her'
   const [s0, sa, e0, ea] = her ? [-9, 22, 86, 14] : [-11, 26, 88, 16]
@@ -897,7 +897,7 @@ const HAIR_REST = [-12, -8, -5, -2, 1]
 const HAIR_RUN = [-18, -30, -42, -50, -54]
 // gravity, in cells a millisecond a millisecond (a cell is about 3cm of him)
 const G = 0.000306
-export function follow(v, t0, t1) {
+function follow(v, t0, t1) {
   const n = Math.ceil(t1 - t0) + 1
   const hair = HAIR_REST.map(() => new Float32Array(n))
   const hem = new Float32Array(n)
