@@ -58,9 +58,15 @@ const EMPTY = {
   hinted: 0,          // how many times it has been shown the lean, which is
                       // twice at most (screens/Letter.jsx `nudge`)
   faceSeen: false,    // the note's face has been touched once on this device:
-                      // its greeting or its battery (screens/Ping.jsx), so the
-                      // line under the screen saying both are the writer's
-                      // to set is not shown again. Never whose note it was
+                      // its greeting (screens/Ping.jsx; its battery too until
+                      // 30 September, when the battery went to the wall
+                      // letters, 0076), so the line under the screen saying
+                      // it is the writer's to set is not shown again. Never
+                      // whose note it was
+  batSeen: false,     // the composer's battery has been pressed once on this
+                      // device (screens/Write.jsx, 0076), so the line under
+                      // the card saying it is the writer's to set is not
+                      // shown again. Never which letter it was
   tabHid: 0,          // when the tab at the foot of the wall was last put away,
                       // and how many letters this device had put up by then.
                       // The tab comes back after a while, and at once after

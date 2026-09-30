@@ -66,8 +66,9 @@ The other side reads it whole on the mutual (`match_card.words`, and
 carries its face too: the line across its top (`greet`, forty characters, the
 composer's greeting where its writer changed it, left off by the server when
 the list catches it and refused at the keyboard) and the battery its writer
-left it on (`bat`, 0 to 4, set on the ping's own screen; the composer sends a
-running note's own, or a full one). Both come back as `card.greet` and
+left it on (`bat`, 0 to 4, set on the ping's own screen from 29 September
+until 0076 moved the battery to the wall letters on the 30th: a new note
+carries none, and a note from that day is sent again with its own). Both come back as `card.greet` and
 `card.bat`, and the other side's as `their_card.greet` and `their_card.bat`.
 
 **The salutation.** The `dear {name}` line is the writer's to edit: up to 40

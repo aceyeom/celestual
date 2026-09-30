@@ -22,7 +22,8 @@
 //     look is the paper the letter chose (0055): `{ theme, tint, face }`,
 //     each a short slug, or nothing. It is cleaned here to the same three
 //     slugs the schema admits, and cleaned again by wall_write, so a fourth
-//     key, a colour or a sentence never reaches a row.
+//     key, a colour or a sentence never reaches a row. Since 0076 it also
+//     carries `bat`, the battery its writer left it on, 0 to 4.
 //     { ok:true,  status:'live',     id }           on the wall, now
 //     { ok:true,  status:'rejected', id, reasons }  caught by layer 1: stored,
 //                                                   never shown, and the app
@@ -296,19 +297,24 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
 // ── the look (0055) ──────────────────────────────────────────────────────────
 // Three keys, each a short lower case slug, or nothing. The same rule
 // wall_look_clean applies in the schema, so what leaves here is what the
-// row will hold; `paper` is the plain paper and is nothing.
+// row will hold; `paper` is the plain paper and is nothing. And since 0076
+// the writer's battery, `bat`, which the composer sets a bar at a time: a
+// number, rounded and held to 0 to 4, and anything else left off, so a
+// letter is never refused over its battery. Both paths, the v2 write and the
+// v1 one, read the look through here.
 const SLUG = /^[a-z][a-z0-9-]{0,23}$/
-function cleanLook(raw: unknown): Record<string, string> | null {
+function cleanLook(raw: unknown): Record<string, string | number> | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const r = raw as Record<string, unknown>
   const pick = (k: string) => (typeof r[k] === 'string' && SLUG.test(r[k] as string) ? (r[k] as string) : '')
-  const out: Record<string, string> = {}
+  const out: Record<string, string | number> = {}
   const theme = pick('theme')
   if (theme && theme !== 'paper') out.theme = theme
   const tint = pick('tint')
   if (tint) out.tint = tint
   const face = pick('face')
   if (face) out.face = face
+  if (typeof r.bat === 'number' && Number.isFinite(r.bat)) out.bat = Math.min(4, Math.max(0, Math.round(r.bat)))
   return Object.keys(out).length ? out : null
 }
 

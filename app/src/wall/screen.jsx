@@ -26,7 +26,7 @@
 // looks.js `quirks`, off the letter's id.
 
 import { isValidElement, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS, alpha } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS, alpha, batOfLetter } from './looks.js'
 import { Caret } from './caret.jsx'
 import { stickerLabel } from './schools.js'
 import { langOf } from './type.js'
@@ -503,8 +503,10 @@ function Press({ id, colour, q }) {
 //
 // `bat` is the battery's charge, 0 to 4, and `null` for a phone that draws
 // none. With `onBat` (and `live`) the battery is a key its writer presses to
-// set it, a bar at a time and round again, named by `batLabel` (a private
-// note's face, 0073). `mail` puts the envelope by the aerial, steady: the
+// set it, a bar at a time and round again, named by `batLabel`: the
+// composer's letter since 30 September (0076, screens/Write.jsx), whose
+// battery goes up with it, and no longer a private note's, which had it from
+// 0073 until then. `mail` puts the envelope by the aerial, steady: the
 // phone's own light for something having come in (a letter the person it
 // is to has answered, Replies.jsx).
 //
@@ -1099,8 +1101,9 @@ export function ScreenNote({ glyph = '', title, children }) {
 const TILE_GLAZE = { lit: 0.14, neg: 0.1, brat: 0.2, print: 0.18, xerox: 0.26 }
 
 // A name on the wall: its newest letter's screen, in that letter's colour,
-// small. The aerial across the top, the battery how long since the last
-// letter, and an envelope blinks on a name that heard from
+// small. The aerial across the top, the battery its newest letter's (the one
+// its writer left it on, or for a letter from before, how long since it went
+// up), and an envelope blinks on a name that heard from
 // somebody today. The middle is the name's picture, in its own colours
 // under a little of the screen's light, or its monogram.
 export function Tile({ look, seed = '', mono = '', src = '', at = 0, className = '' }) {
@@ -1112,7 +1115,9 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
   const [shownFor, setShownFor] = useState('')
   const shown = !!src && shownFor === src
   const hrs = at ? (Date.now() - at) / 3600000 : 99
-  const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
+  // the newest letter's battery: its writer's where they set one (0076),
+  // and otherwise how long it has been up, empty with no letter to date it
+  const bat = batOfLetter({ look, at }, 0)
   const fresh = hrs < 24
   // a print's light is its colour's (`--t-spot`, looks.js), laid where this
   // phone's backlight is brightest, as it is on the letter

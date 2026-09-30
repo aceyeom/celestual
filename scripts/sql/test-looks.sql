@@ -5,7 +5,9 @@
 -- the constraint refuses anything else, every read carries it, the index and
 -- the search carry the newest letter's under a key, and a name can be one
 -- letter, a number or five words while a handle, a link and a command still
--- cannot be one. Run through scripts/verify-migrations.sh --test. Self
+-- cannot be one. Since 0076_the_battery_is_the_writers.sql a look also
+-- carries the writer's battery, 0 to 4, rounded and clamped, and every read
+-- above carries it with the colour. Run through scripts/verify-migrations.sh --test. Self
 -- contained cast, named apart from test-names.sql's.
 -- ─────────────────────────────────────────────────────────────────────────────
 \set ON_ERROR_STOP on
@@ -171,3 +173,76 @@ create temp table lk_rep as
   select wall_report('token-lk-reader-00000000', (select (out->>'id')::uuid from lk_w1), 'subject') as out;
 select lk_ok('a report takes the letter down on the tap', (select (out->>'ok')::boolean from lk_rep));
 select lk_ok('and its look goes with it', (select look from wall_index where target_handle = '~j') is null);
+
+-- ── the writer's battery (0076) ──────────────────────────────────────────────
+-- A wall letter's battery is its writer's, set on the composer a bar at a
+-- time, and kept in the look beside the colour: a whole number from 0 to 4,
+-- a number rounded and clamped, and anything else left off.
+select lk_ok('a battery comes through beside the colour',
+  wall_look_clean('{"tint":"rose","bat":1}'::jsonb) = '{"tint":"rose","bat":1}'::jsonb);
+select lk_ok('an empty battery is a battery', wall_look_clean('{"bat":0}'::jsonb) = '{"bat":0}'::jsonb);
+select lk_ok('a fraction is rounded', wall_look_clean('{"bat":2.6}'::jsonb) = '{"bat":3}'::jsonb
+  and wall_look_clean('{"bat":1.2}'::jsonb) = '{"bat":1}'::jsonb);
+select lk_ok('too many bars is a full battery', wall_look_clean('{"bat":9}'::jsonb) = '{"bat":4}'::jsonb
+  and wall_look_clean('{"bat":1e300}'::jsonb) = '{"bat":4}'::jsonb);
+select lk_ok('fewer than none is an empty one', wall_look_clean('{"bat":-3}'::jsonb) = '{"bat":0}'::jsonb);
+select lk_ok('a battery that is not a number is left off and the colour stays',
+  wall_look_clean('{"tint":"ice","bat":"3"}'::jsonb) = '{"tint":"ice"}'::jsonb
+  and wall_look_clean('{"tint":"ice","bat":true}'::jsonb) = '{"tint":"ice"}'::jsonb
+  and wall_look_clean('{"tint":"ice","bat":{"n":3}}'::jsonb) = '{"tint":"ice"}'::jsonb
+  and wall_look_clean('{"tint":"ice","bat":null}'::jsonb) = '{"tint":"ice"}'::jsonb);
+select lk_ok('a battery that is nothing leaves nothing', wall_look_clean('{"bat":"full"}'::jsonb) is null);
+select lk_ok('the three slugs are cleaned as 0055 cleaned them',
+  wall_look_clean('{"theme":"nokia","tint":"moss","face":"pixel","url":"https://x"}'::jsonb)
+    = '{"theme":"nokia","tint":"moss","face":"pixel"}'::jsonb);
+select lk_ok('cleaning a battery is idempotent',
+  (select bool_and(wall_look_clean(wall_look_clean(jsonb_build_object('tint', 'amber', 'bat', n)))
+                   = jsonb_build_object('tint', 'amber', 'bat', n))
+     from generate_series(0, 4) n));
+
+create temp table lk_b1 as
+  select wall_write('token-lk-author-00000000', 'battery.set', 'you left your bike lights on outside doe all night.',
+                    null, null, 'berkeley', 'live', '{}', 'handle', null,
+                    '{"tint":"rose","bat":1.4,"url":"https://x"}'::jsonb) as out;
+select lk_ok('a letter goes up with its battery', (select (out->>'ok')::boolean from lk_b1));
+select lk_ok('the answer carries the battery, cleaned',
+  (select out->'look' from lk_b1) = '{"tint":"rose","bat":1}'::jsonb);
+select lk_ok('the row holds the battery',
+  (select look->'bat' from wall_letters where id = (select (out->>'id')::uuid from lk_b1)) = '1'::jsonb);
+select lk_ok('one letter carries its battery to a reader',
+  (select wall_letter('token-lk-reader-00000000', (out->>'id')::uuid)->'letter'->'look'->'bat' from lk_b1) = '1'::jsonb);
+select lk_ok('the letters under a key carry it',
+  exists (select 1 from jsonb_array_elements(wall_letters_for('token-lk-reader-00000000', 'battery.set')->'letters') l
+           where l->'look' = '{"tint":"rose","bat":1}'::jsonb));
+select lk_ok('the index carries the newest letter''s battery under the key',
+  (select look from wall_index where target_handle = 'battery.set') = '{"tint":"rose","bat":1}'::jsonb);
+select lk_ok('wall_mine carries it to its writer',
+  exists (select 1 from jsonb_array_elements(wall_mine('token-lk-author-00000000')->'letters') l
+           where l->>'handle' = 'battery.set' and l->'look' = '{"tint":"rose","bat":1}'::jsonb));
+
+create temp table lk_b2 as
+  select wall_write('token-lk-author-00000000', 'battery.set', 'and the next morning they were still on.',
+                    null, null, 'berkeley', 'live', '{}', 'handle', null, '{"tint":"ice","bat":0}'::jsonb) as out;
+select lk_ok('an empty battery is stored as one, not as nothing',
+  (select out->'look' from lk_b2) = '{"tint":"ice","bat":0}'::jsonb);
+
+do $$
+declare v_ok boolean := false; v_me uuid;
+begin
+  select id into v_me from celestual_users where edu_email = 'lk-author@berkeley.edu';
+  begin
+    insert into wall_letters (target_handle, target_kind, target_name, body, author_id, campus, status, moderation, look)
+    values ('~raw', 'name', 'raw', 'a letter.', v_me, 'berkeley', 'live', '{}', '{"tint":"rose","bat":7}'::jsonb);
+  exception when check_violation then v_ok := true;
+  end;
+  perform lk_ok('a battery the write did not clean is refused by the row', v_ok);
+  v_ok := false;
+  begin
+    insert into wall_letters (target_handle, target_kind, target_name, body, author_id, campus, status, moderation, look)
+    values ('~raw', 'name', 'raw', 'a letter.', v_me, 'berkeley', 'live', '{}', '{"tint":"rose","bat":"2"}'::jsonb);
+  exception when check_violation then v_ok := true;
+  end;
+  perform lk_ok('a battery that is a string is refused by the row', v_ok);
+end $$;
+select lk_ok('every look already stored still passes the widened check',
+  not exists (select 1 from wall_letters where look is distinct from wall_look_clean(look)));

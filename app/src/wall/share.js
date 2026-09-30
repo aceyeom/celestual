@@ -29,7 +29,7 @@
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady, countSaid } from './looks.js'
+import { colourOf, skinOf, quirks, PIX, hexRgb, batOfLetter, stampOf, rgbTileReady, countSaid } from './looks.js'
 import { CHALK } from './mark.js'
 import { LOCKUP } from './brand.js'
 import { copyText } from './handoff.js'
@@ -759,7 +759,7 @@ export function letterFace(l, { name, replies = null }) {
     salutation: marks.salutation, sticker: marks.sticker, tag: marks.tag,
     // the day it went up, between the aerial and the battery, and no
     // second date
-    stamp: stampOf(l.at), bat: chargeOf(l.at),
+    stamp: stampOf(l.at), bat: batOfLetter(l),
     hearts: l.hearts || 0, hearted: !!l.hearted,
     // the replies' bubble, where the card has one, and its count as the
     // key says it (Letter.jsx hands it over; `null` is a letter with no
@@ -780,7 +780,7 @@ export const canShare = () => typeof navigator !== 'undefined' && typeof navigat
 // first. The last few are kept; one that failed is dropped, so the next ask
 // draws it again.
 const READY = new Map()
-const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.thread ? o.replies : '-'}|${o.name}|${o.handle}|${o.salutation || ''}|${o.sticker ? o.sticker.slug : ''}`
+const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.thread ? o.replies : '-'}|${o.name}|${o.handle}|${o.salutation || ''}|${o.sticker ? o.sticker.slug : ''}|${o.bat}`
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }
   requestAnimationFrame(() => setTimeout(done, 0))

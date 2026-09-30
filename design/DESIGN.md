@@ -192,12 +192,13 @@ menu at the other end of the band, where a phone kept it; every count holds
 the room of two figures so a heart counted up does not push the bubble
 along, `screen.css` `.wl-sk-n`; while a menu is open the band is `select` and
 `back`, the key that opened it shutting it), set in one
-face, Jersey 10, the Series 40 grid (`--f-s40`). The only thing a writer
-chooses about how a letter looks is the COLOUR it is lit in (the greeting
-across its top is words, and theirs; a private note, lit in the colour its
-person's name picks, has no colour to choose, and its writer sets its face
-instead, the line across its top and its battery, 0073, below and 2.6), and
-each colour carries its own treatment with it:
+face, Jersey 10, the Series 40 grid (`--f-s40`). The only things a writer
+chooses about how a letter looks are the COLOUR it is lit in and the charge
+its battery shows (0076, below; the greeting across its top is words, and
+theirs; a private note, lit in the colour its person's name picks, has no
+colour to choose and no battery to set, and its writer sets the line across
+its top instead, 0073, below and 2.6), and each colour carries its own
+treatment with it:
 
 | kind | colours | what it is |
 | --- | --- | --- |
@@ -310,20 +311,37 @@ small on purpose. The screen reads as one object on every letter, the way a
 row of phones on a table is one object, and nothing a quirk does moves a key,
 changes a word or makes a letter harder to read.
 
-The bars and the battery are not decoration: the signal is how many people
-hearted the letter, the battery how long it has been sitting there unsaid,
-and on the wall's small screens the bars are how many letters the name has
-and an envelope blinks on a name that heard from somebody today.
+The bars are not decoration: the signal is how many people hearted the
+letter, and on the wall's small screens the bars are how many letters the
+name has and an envelope blinks on a name that heard from somebody today.
 
-On a private note the battery is its writer's own (the owner, 29 September,
-and 0073). They set it on the note's screen a bar at a time, full to start,
-the empty one blinking as the phone's did, and it is kept with the note and
-read with the words by the other person if it is ever mutual: how much they
-had left in them, or whatever else they meant by it. It counts nothing, so it
-claims nothing (VOICE.md 4, truth exactly), and it is drawn only where the
-note is, on the writer's own screens and, once it is mutual, the other's. A
-note from before 0073, which has none, still draws the battery running down
-with its week on the account's screen, the only place it ever drew one.
+The battery on a wall letter is its writer's own (the owner, 30 September,
+and 0076: "battery state customizations shouldnt be for pings only for wall
+letters and it can just be clicked to change its charge state"). It is a key
+on the composer's status row, full to start, a bar off at each press, the
+empty one blinking as the phone's did and the next round to full, and it goes
+up with the letter in its look beside the colour (looks.js `withBat`), so
+every reader's phone draws the charge the writer left it on: on the letter,
+on its picture, and on the name's small screen on the field, which draws its
+newest letter's. How much they had left in them, or whatever else they meant
+by it: nothing on the wall says, which is the owner's (the untold
+mechanism). It counts nothing, so it claims nothing (VOICE.md 4, truth
+exactly). A letter from before 0076, which has none, draws it as every letter
+did until then, by how long it has been up: full for its first day, a bar
+off at sixty hours, at five and a half days and at ten, and empty after that
+(looks.js `batOfLetter`, `chargeOf`), so no letter already up changed its
+face the night the writers were given it. The first time the composer is
+used on a device, once the line about the greeting has gone, one line under
+the card says `the battery is yours to set.`, and the first press puts it
+away for good.
+
+A private note's battery is no longer set. Its writer set it a bar at a time
+from 29 September (0073) until the owner moved it to the wall letters the
+next day; the key is gone from the note's screen, which draws the phone's own
+full battery, and a new note carries none. A note written in that day keeps
+the one it was left on, drawn where it was and sent again with its words as
+it came, and a note from before 0073 still draws the battery running down
+with its week on the account's screen.
 
 On the keepsake there is one battery, the phone's own, at the far end of its
 band as every phone had it, and it is the two people's (the owner, 29
@@ -397,7 +415,7 @@ on the wall now, built of the wall's own parts and nothing new:
 
 | Sheet | What it is made of |
 | --- | --- |
-| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `sent privately.` as a note on that screen (`ScreenNote`). The screen's status rows are the note's face and the writer's to set (0073): the greeting is the composer's (`Greet`, `dear` and their first name until it is changed, forty characters, the dotted pixel line under it), and the battery is a key on the row with the same dotted line under it, a bar off at each press, the empty one blinking, and round to full. A line the writer set has the row to itself and the handle gives way to it. The first time on a device one line under the screen says `the greeting and battery are yours to set.`, and it fades where it stands at the first touch of either, the screen having given up that line's height. One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
+| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `sent privately.` as a note on that screen (`ScreenNote`). The screen's second row is the note's face and the writer's to set (0073): the greeting is the composer's (`Greet`, `dear` and their first name until it is changed, forty characters, the dotted pixel line under it). The battery beside the stamp is the phone's own and full, and not a key since 0076, which gave it to the wall letters (2.5); a note from 29 September keeps the one it was left on. A line the writer set has the row to itself and the handle gives way to it. The first time on a device one line under the screen says `the greeting is yours to set.`, and it fades where it stands at the first touch of it, the screen having given up that line's height. One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
 | the person (`screens/You.jsx`) | the account card on an unlit panel, its rows the letters' rows, with the key held at the foot of the panel over a dashed seam while the card scrolls under it. A standing ping opens onto its own lit screen, on the face its writer left it on (its greeting across the top and its battery, or `dear` and the name and a battery running down with its week for a note from before 0073), whose options key is the phone's menu (`ScreenMenu`) and whose `let it go?` is a note with two soft keys |
 
 Nothing about a ping is ever drawn anywhere a second person can look. The

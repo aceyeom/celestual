@@ -257,8 +257,8 @@ export function freeWords(a) {
 // or evicted on the way, so it is kept on this device (store.js `waiting`)
 // rather than in memory, for two hours, and sent the moment the pings land
 // (screens/Pings.jsx). What it is: a note to send, with its words and the
-// face they were written on (the line across the top, `greet`, and the
-// battery, `bat`, 0073), a lapsed one to send again, or a running one to keep
+// face they were written on (the line across the top, `greet`, and, for a
+// note from before 30 September, the battery it kept, `bat`, 0073), a lapsed one to send again, or a running one to keep
 // for next week. The face waits with the words, since the send that finally
 // goes replaces the card whole and a face left behind here would be gone.
 const WAIT_MS = 2 * 3600000
@@ -456,10 +456,14 @@ export async function placeAgain(note) {
 // the answer's own refusals named rather than read as the network.
 //
 // The card is the words and the face they were written on (0073): the line
-// across the top and the battery. The server replaces a card whole, so every
-// send that carries words carries the face too, or the face is gone; a send
-// with no words (`null`) keeps the card as it was, face and all, and words
-// taken off (`''`) take the face with them.
+// across the top, and the battery only for a note from before 30 September,
+// when the battery left the private notes for the wall letters (0076): no
+// screen sets one now, so a new note carries none, and one a note already
+// had is handed back by its screen with its words and sent again as it was.
+// The server still takes one (0073 is left as it stands). It replaces a card
+// whole, so every send that carries words carries the face too, or the face
+// is gone; a send with no words (`null`) keeps the card as it was, face and
+// all, and words taken off (`''`) take the face with them.
 async function placing(rpc, { me: mineNow, them, email, proof, words, greet, bat } = {}) {
   const face = {}
   const g = typeof greet === 'string' ? greet.replace(/\s+/g, ' ').trim().slice(0, 40) : ''

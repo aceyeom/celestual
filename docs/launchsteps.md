@@ -36,6 +36,40 @@ tier has no point in time recovery.
 
 ---
 
+## The battery is the writer's: the deploy (migration 0076)
+
+The owner, 30 September: the battery is for wall letters, set with a tap,
+and not for private notes. One migration, the moderation function, then the
+wall. It goes after 0073 in the order and needs 0055 applied (the look it
+widens). Nobody in this repository applies it to any real database; it is
+verified against a bare PostgreSQL only (`scripts/verify-migrations.sh
+--test`, `scripts/sql/test-looks.sql`).
+
+1. [ ] **Apply `0076_the_battery_is_the_writers.sql`.** Re-runnable. It
+       redefines `wall_look_clean` alone, which the write and the row's
+       check both read, so a look may carry `bat`, 0 to 4, beside its colour.
+       Every look already stored passes it unchanged, and no letter is
+       rewritten.
+2. [ ] **Deploy `celestual-wall-moderate`**, whose `cleanLook` passes the
+       battery on to the write. Before it, a letter's battery is dropped on
+       the way in and the letter goes up with none, which draws by its age as
+       before: nothing breaks, the writer's charge is only lost.
+3. [ ] **Ship the front end**, after both. Letters from before carry no
+       battery and keep drawing theirs by their age; the ping sheet stops
+       offering one, and a note that had one keeps it.
+
+Check: write a letter, press the battery until it shows one bar, and put it
+up. In a SQL editor:
+
+```sql
+select look from wall_letters order by created_at desc limit 1;   -- {"bat": 1, "tint": ...}
+```
+
+and the letter, its picture and its name's small screen on the wall all show
+one bar whatever its age.
+
+---
+
 ## The note has a face: the deploy (migration 0073)
 
 The owner, 29 September: the line across the top of a private note and its
@@ -58,7 +92,9 @@ against a bare PostgreSQL only (`scripts/verify-migrations.sh --test`,
        writer is shown a face on the screen that went out without it.
 
 Check: from one account open a note's screen, change the greeting to `to the
-one at the bus stop`, press the battery twice and send it. In a SQL editor:
+one at the bus stop`, press the battery twice and send it (since 0076 the
+battery is not a key on a note; the greeting alone checks it, and `bat` is
+null for a new note). In a SQL editor:
 
 ```sql
 select card->>'greet', card->'bat' from celestual_entries
