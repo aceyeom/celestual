@@ -179,6 +179,16 @@ Write: "it did not go through. give it a moment, then send it again."
 
 Never: "Something went wrong. Try again."
 
+A refusal of the words is the same shape: the one thing found, and the one
+edit that gets past it, never the rule's name. "a street address cannot go
+on a public wall", "it is only abuse. say what they did, and send it again."
+A proposition on the wall (30 September) says where the same words may go,
+since a private note is read only by somebody who sent one back: "it's
+sexual, and the wall is public. say it another way, or send it privately."
+Under a reply, which has no private way, it is only "that's sexual, and
+replies are public. say it another way." The keyboard and the server say
+the same sentence for the same words (moderate.js `whyNot`).
+
 ---
 
 ## 6. The banned list

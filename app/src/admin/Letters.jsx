@@ -75,6 +75,8 @@ const WHY_WORDS = {
   contact: 'contact details',
   third: 'names someone else',
   pile: 'piling on the person it is to',
+  abuse: 'nothing but abuse at the person',
+  harm: 'tells them to hurt themselves',
   slur: 'a slur',
   url: 'a link',
   email: 'an email address',
@@ -84,6 +86,20 @@ const WHY_WORDS = {
   tag: 'tags someone',
   name: 'someone’s full name',
 }
+// Which reading passed or refused a letter, in a few words, since a pass
+// carries no reasons and the desk could not otherwise tell a letter the
+// model read from one the word list waved through (30 September: the owner
+// believed every letter was read by the model, and a verified @-note that
+// matches no row of the lexicon never is). '' when there is nothing to say.
+export function readBy(m) {
+  if (!m || typeof m !== 'object') return ''
+  if (m.verdict === 'unread') return 'not read yet'
+  if (m.model === 'lexicon') return 'passed by the word list alone. no model read it'
+  if (Number(m.model_layer) === 1) return 'caught by the list at the send'
+  if (m.model) return m.before ? 'read by the model before it went up' : 'read by the model where it stood'
+  return ''
+}
+
 export function reasonWords(rs) {
   return (rs || []).map((r) => {
     const k = String(r)
@@ -254,6 +270,9 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
             <div className="ad-head-note ad-meta">why it is waiting: {heldWhy(l)}</div>
           ) : reasons.length ? (
             <div className="ad-head-note ad-meta">the reading said: {reasonWords(reasons).join(', ')}</div>
+          ) : null}
+          {readBy(l.moderation) ? (
+            <div className={`ad-head-note ad-meta${l.moderation.model === 'lexicon' ? ' is-lexicon' : ''}`}>{readBy(l.moderation)}</div>
           ) : null}
         </td>
         <td>

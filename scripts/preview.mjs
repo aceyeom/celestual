@@ -536,7 +536,7 @@ const DESK_LETTERS = [
   { id: 'aaa11111-2222-4333-8444-555566660001', target_handle: 'sofiaaa.reyes',
     body: 'you sat two rows ahead all semester and i never once said anything.',
     sealed_line: 'it was the tuesday section.', status: 'live',
-    moderation: { verdict: 'review', reasons: ['locate'], flagged: true, at: new Date(now - 2 * 3600000).toISOString(), model_layer: 2 },
+    moderation: { verdict: 'review', reasons: ['locate'], flagged: true, at: new Date(now - 2 * 3600000).toISOString(), model_layer: 2, model: 'claude-haiku-4-5-20251001' },
     campus: 'berkeley', source_code: 'flyer-a', created_at: new Date(now - 2 * 3600000).toISOString(),
     expires_at: new Date(now + 30 * DAY).toISOString(), author_id: DESK_USERS[1].id,
     author_handle: null, author_campus: 'berkeley.edu', claims: 0, reports: 0, reports_open: 0, ask: null },
@@ -549,7 +549,7 @@ const DESK_LETTERS = [
     author_handle: 'ace03d', author_campus: 'berkeley.edu', claims: 0, reports: 0, reports_open: 0, ask: null },
   { id: 'aaa11111-2222-4333-8444-555566660003', target_handle: 'pilar.echevarria',
     body: 'you gave me your umbrella outside wheeler and walked home in it. i still have it.',
-    sealed_line: null, status: 'live', moderation: { verdict: 'pass', reasons: [] },
+    sealed_line: null, status: 'live', moderation: { verdict: 'pass', reasons: [], model: 'lexicon', model_layer: 2 },
     campus: 'berkeley', source_code: 'flyer-a', created_at: new Date(now - 3 * DAY).toISOString(),
     expires_at: new Date(now + 27 * DAY).toISOString(), author_id: DESK_USERS[0].id,
     author_handle: 'ace03d', author_campus: 'berkeley.edu', claims: 1, reports: 0, reports_open: 0, ask: 'pending' },
@@ -2366,6 +2366,26 @@ const ROUTES = [
   { label: 'replies-shut-turn', path: '/letter/pilar.echevarria', thread: 'full',
     acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-th .wl-th-grip', null, 60],
            ['swipe', '.wl-letter-card .wl-scr', -220]], settle: 900 },
+  // ── the filter (30 September, migration 0078) ──
+  // A proposition refused when the wall is chosen: the words, the way
+  // there, the wall pressed, and the card back on the words shaking with
+  // the server's own sentence (Write.jsx `wallCaught`, moderate.js
+  // `whyNot`), and the same frame landed under reduced motion; the same
+  // words sent privately, which a private note may carry; a reply refused
+  // at the keyboard for the same words; and the desk's word on which
+  // reading passed a letter, the word list's alone in the hold colour.
+  { label: 'write-caught-sexual', path: '/write/sofiaaa.reyes', body: 'babe lets fuck',
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go', null, 240]], settle: 0 },
+  { label: 'write-caught-sexual-still', path: '/write/sofiaaa.reyes', body: 'babe lets fuck', still: true,
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go']], settle: 700 },
+  { label: 'write-caught-harm', path: '/write/sofiaaa.reyes', body: 'kys',
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go']], settle: 900 },
+  { label: 'write-joke-passes', path: '/write/sofiaaa.reyes', body: 'fuck you for leaving without saying bye. you owe me $5',
+    acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
+  { label: 'replies-caught-sexual', path: '/letter/pilar.echevarria', thread: 'full',
+    acts: [['wait', 1200], ['click', '.wl-letter-card .wl-sk.is-thread', null, 900], ['click', '.wl-rp-field textarea', null, 500],
+           ['fill', '.wl-rp-field textarea', 'babe lets fuck']], settle: 500 },
+  { label: 'admin-wall-read', path: '/admin', desk: true, click: 'wall', acts: [['click', '.ad-tabs button:last-child']], settle: 900 },
 ]
 
 // one label, or several separated by commas
