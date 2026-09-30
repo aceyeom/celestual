@@ -138,9 +138,9 @@
 // you?").
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile,
+  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile, prefersReducedMotion,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait, PixIcon } from '../screen.jsx'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait, PixIcon, useWake, POWER_MS } from '../screen.jsx'
 import { Provider } from '../art.jsx'
 import {
   labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
@@ -527,6 +527,9 @@ export function NoteScreen({ p, me, go, onBack, onChange }) {
   const [shared, setShared] = useState('')
   const [expires, setExpires] = useState(p.expires)
   const [gone, setGone] = useState(p.state === 'lapsed')
+  // a note opened out of the list powers on like the letter and the
+  // composer do (screen.jsx `useWake`), and under reduced motion lands lit
+  const power = useWake(prefersReducedMotion(), POWER_MS)
   // the night came while the screen was up: it turns to what the night said
   useEffect(() => { if (p.state === 'lapsed') { setGone(true); setFace('told') } }, [p.state])
   useNight(onChange)
@@ -683,7 +686,7 @@ export function NoteScreen({ p, me, go, onBack, onChange }) {
   const dim = gone && face === 'line' && mode === 'face'
   return (
     <div className="wl-you-ping">
-      <Screen look={gone ? NIGHT : null} seed={`ping:${p.to}`} top={top} keys={keys} live nameId="wl-you-h" state={dim ? 'dim' : ''}>
+      <Screen look={gone ? NIGHT : null} seed={`ping:${p.to}`} top={top} keys={keys} live nameId="wl-you-h" state={dim ? 'dim' : power}>
         {body}
       </Screen>
       <p className="wl-you-floor" aria-live="polite">
