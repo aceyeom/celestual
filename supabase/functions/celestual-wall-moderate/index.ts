@@ -1,8 +1,9 @@
 // CELESTUAL: celestual-wall-moderate, the screen the wall publishes through.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  This is the ONLY path a letter reaches the wall by. It writes the letter ║
-// ║  at once, answers, and then reads it.                                     ║
+// ║  This is the ONLY path a letter reaches the wall by. It reads an open    ║
+// ║  note before it writes it, and writes a verified one at once and reads   ║
+// ║  it where it stands.                                                      ║
 // ║                                                                           ║
 // ║  Deploy:  supabase functions deploy celestual-wall-moderate               ║
 // ║  Secrets: MODERATION_API_KEY, optionally MODERATION_MODEL                 ║
@@ -39,40 +40,53 @@
 // ── MODERATE THE CONSEQUENCE, NOT THE EMOTION ───────────────────────────────
 // The wall is where people say the thing they never said, and a good deal
 // of what they never said is unkind. Heartbreak, anger, a grudge, a roast, a
-// letter that calls somebody a coward, a letter with every swear word in it:
-// that is the product, and a screen that took those down would be taking
+// letter that calls somebody a coward, a letter with every swear word in it
+// and a reason under them: that is the product, and a screen that took those down would be taking
 // down the wall. What comes down is a letter that can DO something to the
 // person it names off the wall: get them found, get them hurt, out them,
-// sexualise them, or say they are a child. The list is short and it is
+// sexualise them or proposition them in public, tell them to hurt
+// themselves, or say they are a child. The list is short and it is
 // about consequence. Nothing on it is about tone.
 //
-// ── and it is cheap, because most letters are never read by a model ────────
-// Three layers, and the expensive one runs on a minority of letters:
+// ── four layers, and the expensive one reads what it has to ────────────────
 //
-//   1  DETERMINISTIC   regex. slurs, phones, addresses, room numbers, URLs,
-//                      emails. Mirrored from app/src/wall/moderate.js, where it
+//   1  DETERMINISTIC   regex, over the words as typed and folded flat
+//                      (`norm`): slurs, phones, addresses, room numbers,
+//                      URLs, emails, and since 30 September a sexual
+//                      proposition aimed at the person and telling them to
+//                      hurt themselves, the two rules only public words
+//                      carry. Mirrored from app/src/wall/moderate.js, where it
 //                      runs at the keyboard and shakes the card, and re-run
 //                      HERE because a client-side check is a courtesy to the
-//                      writer, not a control on the writer. A catch is stored
-//                      at rejected and never published. This is the only
-//                      thing that stands BEFORE a letter is up.
+//                      writer, not a control on the writer. A catch is
+//                      stored at rejected and never published.
 //   2  THE LEXICON     a list of the words and shapes that a letter with a
 //                      consequence in it nearly always carries: violence,
-//                      sex, a minor, a routine, a place, exposure. A letter
-//                      that matches none of them is passed without a model
-//                      call and marked so. Most letters match none of them.
-//                      This is what makes the screen cost a fraction of what
-//                      one call per letter cost: the model reads only what
-//                      the lexicon flagged.
+//                      sex, abuse, a minor, a routine, a place, exposure,
+//                      read over the folded words too. On a verified @-note
+//                      a letter that matches none of them is passed without
+//                      a model call and marked so (`model: 'lexicon'`, which
+//                      the desk prints); the model reads what it flagged. It
+//                      is a gate, never a verdict.
 //   3  CLASSIFIER      one call to the cheapest model, against the short
-//                      list of consequences below, with a small output, run
-//                      AFTER the letter has been written at live and the
-//                      writer has been answered. A reject takes the letter
-//                      down (`wall_screened`), and the wall tells the writer
-//                      it came down for going against the terms and hands
-//                      their words back. A review leaves it up, flagged for
-//                      a person at the desk. A pass is recorded and nothing
-//                      moves.
+//                      list of consequences below, with a small output. An
+//                      open note (a name note, or an @-note sent without the
+//                      Berkeley proof, which is the composer's default) is
+//                      read BEFORE it is written, whatever the lexicon says:
+//                      a pass goes up, a review waits for the desk, a reject
+//                      is refused and the writer is told why. A verified
+//                      @-note is written at live and read after the answer:
+//                      a reject takes it down (`wall_screened`), and the wall
+//                      tells the writer it came down for going against the
+//                      terms and hands their words back; a review leaves it
+//                      up, flagged for a person at the desk.
+//   4  THE DESK        a person, for everything the reading was unsure of.
+//
+// The line all four keep is the owner's, set on 30 September after "lets
+// fuck babe" was read, passed and put up: the wall stays free for comedy,
+// jokes, swearing inside a feeling and flirting, and only the plainly bad
+// comes off. The list takes the narrowest, surest shapes; the reading takes
+// the rest, with the owner's own jokes in its prompt as the ones that pass.
 //
 // It used to read every letter, before it wrote, against a list that made
 // the tone the crime: lukewarm was a category, sarcasm was a review, and
@@ -106,45 +120,131 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 }
 
-// ── layer 1 ──────────────────────────────────────────────────────────────────
+// ── the words, folded flat ──────────────────────────────────────────────────
+// app/src/wall/moderate.js `norm`, character for character, and the
+// database's `celestual_text_norm` (migration 0078): lower case, NFKD with
+// the accents off (fullwidth letters come out plain), the Cyrillic and Greek
+// letters drawn like Latin ones as Latin, the few emoji that are sexual when
+// aimed at a person as word tokens nobody types, apostrophes out, dots,
+// underscores and hyphens to spaces, a run of three or more single letters
+// joined ("n i g g e r", "k y s"), leet inside a word that has a letter in
+// it and never in a bare number, everything else to a space, a run of three
+// of one letter cut to two, and the spaces closed. Every rule below that
+// reads words reads these; the contact patterns read the words as typed.
+// scripts/check-moderation.mjs runs this block and moderate.js over the same
+// tables and fails if they disagree.
+const LOOK_FROM = 'авеёкмнорстухіїјѕԁɡһαβεηικνορτυχωγ'
+const LOOK_TO = 'abeekmhopctyxiijsdghabeniknoptuxwy'
+const EMOJI_WORDS: Array<[RegExp, string]> = [
+  [/\u{1F449}\s*\u{1F44C}/gu, ' empoke '],
+  [/\u{1F346}/gu, ' emeggplant '],
+  [/\u{1F351}/gu, ' empeach '],
+  [/\u{1F4A6}/gu, ' emdroplets '],
+  [/\u{1F445}/gu, ' emtongue '],
+]
+function leet(w: string): string {
+  if (!/[a-z]/.test(w)) return w
+  return w.replace(/^[!|*@]+|[!|*@]+$/g, '')
+    .replace(/[0@]/g, 'o').replace(/[1!|]/g, 'i').replace(/3/g, 'e')
+    .replace(/4/g, 'a').replace(/[5$]/g, 's').replace(/7/g, 't').replace(/\*/g, '')
+}
+function norm(s: string): string {
+  let t = String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+  t = t.replace(/[\u0080-\uffff]/g, (c) => { const i = LOOK_FROM.indexOf(c); return i < 0 ? c : LOOK_TO[i] })
+  for (const [re, word] of EMOJI_WORDS) t = t.replace(re, word)
+  t = t.replace(/['\u2019`]/g, '').replace(/[._-]/g, ' ')
+  t = t.replace(/(^|[^a-z0-9@$!|])((?:[aiu] )?)((?:[a-z0-9@$!|] ){2,}[a-z0-9@$!|])(?![a-z0-9@$|])/g, (_m, a, lead, run) => a + lead + run.replace(/ /g, ''))
+  t = t.replace(/[a-z0-9@$!|*]+/g, leet)
+  return t.replace(/[^a-z0-9\s]/g, ' ').replace(/([a-z])\1{2,}/g, '$1$1').replace(/\s+/g, ' ').trim()
+}
+
 // Slurs against a protected class are a consequence, not a tone: on a public
 // wall under somebody's name they are harassment of that person, whatever
-// the framing. Profanity is not on this list and never will be.
+// the framing. Profanity is not on this list and never will be. Read over
+// the folded words, every letter allowed to repeat and a plural on the end
+// (30 September: "you niggers" and "faggots" went past the singular), with
+// two idioms that carry a slur's letters and none of its meaning taken out.
 const SLURS = [
-  'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'retard', 'retarded', 'kike',
+  'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'trannie', 'retard', 'retarded', 'kike',
   'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',
 ]
+const SLUR_RES = SLURS.map((s) => new RegExp(`\\b${s.split('').map((c) => `${c}+`).join('')}(?:s|es|z|ies)?\\b`))
+const NOT_SLURS = /\bspick? (?:and|n) span\b|\bchinks? in (?:the|his|her|my|your|their) armou?r\b/g
+function slurred(n: string): boolean {
+  const t = n.replace(NOT_SLURS, ' ')
+  return SLUR_RES.some((re) => re.test(t))
+}
 
+// Contact, read over the words as typed. Loosened on 30 September where it
+// refused memories that carry no contact at all ("the same dorm 2 years
+// ago", "#2019", "20 minutes each way", "23 points on court", "you.me",
+// "1000000000 hugs"); a real address, room, link or number still comes off.
+const COUNTED = 'minutes?|mins?|hours?|hrs?|seconds?|secs?|days?|weeks?|months?|years?|yrs?|times?|people|points?|pts|miles?|km|feet|ft|steps?|dollars?|bucks|games?|goals?|reps?|laps?|kids?|friends?|percent|degrees?|pages?|words?|texts?|messages?|calls?|nights?|of'
 const PATTERNS: Array<{ id: string; re: RegExp; digits?: number }> = [
-  { id: 'url',     re: /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|co|edu|gg|me|ly)\b)/i },
+  { id: 'url',     re: /(https?:\/\/|www\.|\b(?!(?:you|u|me|us|it|so|to|and|love|miss|home|time|here|there|this|that|with|for|all|see|call|text)\.(?:me|co|ly|io|gg)\b)[a-z0-9-]+\.(com|net|org|io|co|edu|gg|me|ly)\b)/i },
   { id: 'email',   re: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i },
   // a run that looks like a number, then at least nine digits in it and no
   // full stop: "since 2019. 2020 was the year" is two years and a sentence
   { id: 'phone',   re: /(\+?\d[\d\s().-]{8,}\d)/, digits: 9 },
-  { id: 'address', re: /\b\d{2,5}\s+[A-Za-z][A-Za-z.'-]*(\s+[A-Za-z][A-Za-z.'-]*)?\s+(st|street|ave|avenue|rd|road|blvd|boulevard|way|dr|drive|ln|lane|ct|court|pl|place|terrace)\b/i },
-  { id: 'room',    re: /\b(room|rm|apt|apartment|suite|ste|dorm)\s*#?\s*\d{1,4}[a-z]?\b|#\s?\d{3,4}\b/i },
+  { id: 'address', re: new RegExp(`\\b\\d{2,5}\\s+(?!(?:${COUNTED})\\b)[A-Za-z][A-Za-z.'-]*(\\s+[A-Za-z][A-Za-z.'-]*)?\\s+(?<!\\b(?:each|the|all|on|in|at|a|my|your|every|one|other|that|this|no|any|half|out|to|for|by|his|her|their|our)\\s)(st|street|ave|avenue|rd|road|blvd|boulevard|way|dr|drive|ln|lane|ct|court|pl|place|terrace)\\b`, 'i') },
+  { id: 'room',    re: new RegExp(`\\b(room|rm|apt|apartment|suite|ste|dorm)\\s*#?\\s*\\d{1,4}[a-z]?\\b(?!\\s*(?:${COUNTED})\\b)|#\\s?(?!(?:19|20)\\d\\d\\b)\\d{3,4}\\b`, 'i') },
 ]
-
-function fold(s: string) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[0@]/g, 'o').replace(/1|!/g, 'i').replace(/3/g, 'e')
-    .replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't')
-    .replace(/[^a-z\s]/g, '')
+function phoneLike(m: string): boolean {
+  const d = m.replace(/\D/g, '')
+  return d.length >= 9 && !/\.\s/.test(m) && !/^\d(\d)\1+$/.test(d)
 }
 
+// What only public words may not carry (30 September): a sexual proposition
+// aimed at the person in its surest shapes, and telling them to hurt
+// themselves. Never the fuck word alone ("fuck you for leaving" goes up), and
+// never in a private note's list (`celestual_text_caught`), where flirting is
+// between two people who both asked. moderate.js has the long reasons.
+const FK0 = '(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)'
+const FK = `${FK0}(?:ing|in|n|ed|s)?`
+const LEADS = 'lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\\b(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you'
+const NOT_SEX = '(?!\\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\\b)(?!\\s+(?:you|u|ya|me|him|her|them) (?:up|over)\\b)'
+const AFTER = '(?=\\s*$|\\s+(?:tbh|ngl|lol|lmao|fr|ong|rn|tonight|already|babe|baby|honestly|and|but|anyway|though|tho)\\b)'
+const EM = '(?:emeggplant|empeach|emdroplets|emtongue)'
+const WALL_ONLY: Array<{ id: string; re: RegExp }> = [
+  { id: 'sexual', re: new RegExp([
+    `\\b(?:${LEADS})(?:\\s+(?:just|finally|so|really|already|now))?\\s+${FK0}\\b${NOT_SEX}`,
+    `\\b${FK} me (?:daddy|mommy|mami|papi|baby|babe|harder|hard|senseless)\\b`,
+    '\\bdtf\\b',
+    '\\b(?:send|drop|show) (?:me )?(?:(?:your|ur|some) )?(?:nudes|noods|nudez|nude pics|naked pics|tits|titties|boobs|dick pics?|cock|pussy)\\b',
+    '\\bsit on (?:my|your|ur) (?:face|dick|cock)\\b',
+    '\\bride (?:my|your|ur) (?:face|dick|cock)\\b',
+    '\\bsuck (?:my|me|your|ur) (?:dick|cock|balls|tits)\\b|\\bsuck (?:you|u|me) off\\b',
+    '\\b(?:eat|lick) (?:you|u|me) out\\b|\\b(?:eat|lick) (?:your|ur|my) (?:pussy|cock|dick)\\b',
+    '\\b(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\\b',
+    `\\b(?:${LEADS}|would)\\s+(?:smash|bang|rail|pipe|hit it|hit that|tap that|tap it|clap (?:you|ya|u|it|them cheeks|those cheeks))(?:\\s+(?:you|u|ya|that|it))?${AFTER}`,
+    `\\b(?:${LEADS})\\s+${EM}`,
+    '\\bempoke\\b',
+    `\\b(?:emeggplant|empeach)\\b.*\\b${EM}\\b|\\b(?:emdroplets|emtongue)\\b.*\\b(?:emeggplant|empeach)\\b`,
+  ].join('|')) },
+  { id: 'harm', re: new RegExp([
+    '\\bkys\\b',
+    '^(?:kill|unalive|hang) (?:yourself|urself|your self|ur self)\\b',
+    '\\b(?:go|just|pls|please|plz|should|shoulda|gotta|need to|hope you|hope u|why dont you|why dont u|can you|can u)\\s+(?:(?!dont|do|not|never|wont)[a-z]+\\s+)?(?:kill|unalive|hang|off|end|drown|shoot|hurt|cut) (?:yourself|urself|yourselves|your self|ur self|yoself)\\b',
+    '\\b(?:go|pls|please|plz|just|should)\\s+(?:die|drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit your wrists|end it all)\\b',
+  ].join('|')) },
+]
+
+// ── layer 1 ──────────────────────────────────────────────────────────────────
+// The list, read before anything is written: slurs, contact, and the two
+// rules only public words carry. A catch is stored at rejected and never
+// published, with the ids that caught it, which the composer turns into the
+// same sentence the keyboard said (moderate.js `whyNot`).
 function deterministic(text: string) {
   const reasons: string[] = []
-  const folded = fold(text)
-  for (const s of SLURS) {
-    if (new RegExp(`\\b${s}\\b`).test(folded)) { reasons.push('slur'); break }
-  }
+  const n = norm(text)
+  if (slurred(n)) reasons.push('slur')
   for (const p of PATTERNS) {
     const m = text.match(p.re)
     if (!m) continue
-    if (p.digits && (m[0].replace(/\D/g, '').length < p.digits || /\.\s/.test(m[0])) ) continue
+    if (p.digits && !phoneLike(m[0])) continue
     reasons.push(p.id)
   }
+  for (const w of WALL_ONLY) if (w.re.test(n)) reasons.push(w.id)
   return { verdict: reasons.length ? 'reject' : 'pass', reasons }
 }
 
@@ -157,28 +257,45 @@ function deterministic(text: string) {
 // ones it sends. A false alarm here costs one small call. A miss here costs
 // a letter standing.
 //
-// Not on it, on purpose: swearing, insults, "hate", "hurt" in the sense of
-// feelings, "die" in "I could die", break-up words, mockery. Those are the
-// wall.
+// Not on it, on purpose: "hate", "hurt" in the sense of feelings, "die" in
+// "I could die", break-up words, mockery. Those are the wall. Swearing is on
+// it since 30 September, and only as a gate: a letter that said "lets fuck
+// babe" matched no row (the row wanted "fuck you" with its pronoun), so on a
+// verified @-note it would have gone up with no model ever reading it. The
+// fuck word in any form, the propositions and their slang, the sexual emoji
+// (as `norm` spells them) and a new row for abuse, the words a letter that is
+// nothing but abuse is made of, now send a letter to the model, which passes
+// "fuck you for leaving" and "you're a bad bitch" the way the prompt says.
+// A hit is never a verdict: it costs one small call, and the call decides.
+//
+// Every row reads the words as typed AND folded flat (`norm`), so "f*ck",
+// "n i g g e r" and a Cyrillic letter reach the row they belong to, while
+// the rows that need digits ("at 9pm", "16 years") still have them.
 const LEXICON: Array<{ id: string; re: RegExp }> = [
   // a threat or violence promised, or wished on somebody, or a weapon
-  { id: 'threat',   re: /\b(kill|murder|stab|shoot|shot|gun|knife|blade|beat (you|him|her|them) up|hurt (you|him|her|them)|break (your|his|her) (legs|face|neck)|burn (your|his|her)|rape|assault|attack|choke|strangle|drown|poison|bomb|slit|bury you|find you|coming for you|watch(ing)? your back|you('ll| will) (pay|regret)|dead (to me|man|girl|woman)|end you|hunt)\b/i },
-  // sexual content, or a body described that way
-  { id: 'sexual',   re: /\b(sex|sexy|sexual|fuck(ed|ing)? (you|him|her|me)|blow ?job|hand ?job|dick|cock|pussy|cunt|tits?|boobs?|ass(hole)?|nude|naked|nudes|onlyfans|horny|orgasm|cum|slut|whore|hoe|thot|body count|virgin|thicc|thick thighs|rack|bulge|hooked up|hookup|one night|in bed|sleep with|slept with|moan)\b/i },
+  { id: 'threat',   re: /\b(kill|murder|stab|shoot|shot|gun|knife|blade|beat (you|him|her|them) up|hurt (you|him|her|them)|break (your|his|her) (legs|face|neck)|burn (your|his|her)|rape|assault|attack|choke|strangle|drown|poison|bomb|slit|bury you|find you|coming for you|watch(ing)? your back|you('ll| will) (pay|regret|see)|know where you (live|sleep|are)|dead (to me|man|girl|woman)|end you|hunt)\b/i },
+  // sexual content, a body described that way, a proposition, or the emoji
+  // that say it
+  { id: 'sexual',   re: /\b(sex|sexy|sexual|f+u+c*k+\w*|f+v+c*k+\w*|f+c+k+\w*|ph+u+c*k+\w*|dtf|smash|rail|bang|screw|hit (it|that)|tap (it|that)|sit on|bend (you )?over|suck|eat (you|u|me) out|ride (me|my|your)|breed|head|wet|hard for|blow ?job|hand ?job|bj|dick|cock|pussy|cunt|tits?|titties|boobs?|ass(hole)?|nude|naked|nudes|noods|clothes off|onlyfans|horny|orgasm|cum|slut|whore|hoe|thot|body count|virgin|thicc|thick thighs|rack|bulge|hooked up|hook up|hookup|one night|in bed|sleep with|slept with|moan|69|netflix and chill|emeggplant|empeach|emdroplets|emtongue|empoke)\b/i },
+  // a letter that may be nothing but abuse: the gendered and sexual slurs
+  // used as attacks, degradation, telling them to hurt themselves
+  { id: 'abuse',    re: /\b(bitch(es|y)?|whore|slut|hoe|thot|skank|cunt|twat|dickhead|motherf\w*|piece of shit|eat shit|suck my|worthless|waste of (space|air|oxygen)|nobody (loves|likes|wants) you|kys|kill (yo|ur|your)(self| self)|unalive|go die|die alone|drink bleach)\b/i },
   // a minor, stated or implied
   { id: 'minor',    re: /\b(1[0-7] ?(years|yrs|yo|year old|y\/o)|(you'?re|you are|she'?s|she is|he'?s|he is|they'?re|only|just|turned|turning|is|are) 1[0-7]|1[0-2]th grade|grade 1[0-2]|under ?age|underage|minor|middle school|freshman in high|high school (freshman|sophomore|junior)|child|kid|little (girl|boy)|sixteen|fifteen|fourteen|thirteen|jailbait|loli)\b/i },
   // a routine, a schedule, a way to find somebody at a time
   { id: 'locate',   re: /\b(every (monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|night|day|week)|(mon|tues|wednes|thurs|fri|satur|sun)days|at \d{1,2}(:\d{2})? ?(am|pm|o'?clock)|\d{1,2}(:\d{2})? ?(am|pm) (every|each|on)|schedule|routine|(lives?|living|stays?|staying) (at|in|on|near)|(his|her|their|your) (place|apartment|dorm|house|room|address|building|floor|unit)|room ?\d|floor \d|unit \d|parking|license plate|plate number|follow(ed|ing)? (you|her|him|them) (home|back)|(bus|train|route|line) (home|to)|works? at|shift at|gym at|class at|section at)\b/i },
   // exposing a private fact: outing, health, status, papers, money
   { id: 'expose',   re: /\b(gay|lesbian|bi(sexual)?|trans(gender)?|queer|closet(ed)?|out (you|him|her|them)|outed|pregnan(t|cy)|abortion|miscarriage|hiv|aids|std|sti|herpes|chlamydia|positive for|diagnos(ed|is)|bipolar|schizo|anorexi|bulimi|eating disorder|rehab|overdose|self.?harm|cutting|suicid|kill (my|your|him|her)self|kys|undocumented|illegal (immigrant|alien)|deport|ice will|visa|green card|owes? money|debt|bankrupt|arrest(ed)?|charged with|felony|criminal record|dui|cheated on|affair|nudes? of|leak|revenge)\b/i },
-  // a slur that the fold missed, or hatred by group
-  { id: 'hate',     re: /\b(n[i1]gg|f[a4]gg?|tr[a4]nn|r[e3]t[a4]rd|k[i1]k[e3]|sp[i1]c|ch[i1]nk|w[e3]tb[a4]ck|towel ?head|sand ?n|go back to (your|ur) country|your kind|(all|every) (jews|muslims|blacks|asians|mexicans|indians|whites|arabs|gays|women|men) (are|should))\b/i },
+  // a slur, or hatred by group. The stems take any ending now: the row had
+  // `n[i1]gg` closed by a word boundary, which no real word ever met
+  { id: 'hate',     re: /\b(n+i+g+g+\w*|f+a+g+\w*|tr+a+n+n+\w*|r+e+t+a+r+d+\w*|k+i+k+e+s?|sp+i+c+k?s?|ch+i+n+k+s?|w+e+t+b+a+c+k+s?|towel ?heads?|sand ?n\w*|go back to (your|ur) country|your kind|(all|every) (jews|muslims|blacks|asians|mexicans|indians|whites|arabs|gays|women|men) (are|should))\b/i },
 ]
 
 function needsReading(text: string): string[] {
   const hits: string[] = []
   const t = String(text || '')
-  for (const row of LEXICON) if (row.re.test(t)) hits.push(row.id)
+  const n = norm(t)
+  for (const row of LEXICON) if (row.re.test(t) || row.re.test(n)) hits.push(row.id)
   return hits
 }
 
@@ -189,24 +306,61 @@ function needsReading(text: string): string[] {
 // is a decision against a list somebody can be held to. The list is what
 // carries the judgement; the model applies it. It is told, plainly, what the
 // wall is for, so that cruelty reads as the product and not as a category.
-const SYSTEM_PROMPT = `You screen short anonymous letters that have just been published on a public wall. Each letter is addressed to a named Instagram handle, or to a first name or nickname. The person it is about did not write it and will read it. The addressee is given with the letter.
+//
+// Rewritten on 30 September to the owner's ruling, after it passed "lets fuck
+// babe": its sexual rule named explicit content, a body and a history, and a
+// two word proposition was none of those, while "swearing at them: allowed"
+// and "never reject for being crude" told it the rest. So the rule names a
+// proposition aimed at the person, however short, joking or misspelled, and
+// the sexual emoji; a new category, `abuse`, takes the letter that is nothing
+// but profanity or degradation hurled at the person, telling them to hurt
+// themselves, and a sexual or gendered slur used as an attack, and says in
+// the same breath that cruelty with a point is not it; and a short block of
+// examples sets the owner's jokes beside the letters that come off, since a
+// line drawn in words alone is drawn a little differently every time. Its
+// default is still PASS, reviews are still rare, and the addressee is judged
+// with the words, since a name note's name is printed on the wall too.
+const SYSTEM_PROMPT = `You screen short anonymous letters for a public wall. Each letter is addressed to a named Instagram handle, or to a first name or nickname. The person it is to did not write it and will read it. You are given the addressee, the letter, and sometimes a sealed line.
 
 Return ONLY JSON: {"verdict":"pass"|"review"|"reject","reasons":[string]}
 
-THE WALL IS FOR THE THINGS PEOPLE NEVER SAID. Longing, admiration, gratitude, regret, apology, and also heartbreak, anger, grudges, break-ups, roasting, mockery, insults, contempt, and profanity. Cruelty is allowed. Calling somebody pathetic, a liar, a coward, ugly, fat, boring, a bad kisser, a terrible friend: allowed. Swearing at them: allowed. Sarcasm, bitterness, "I hope you're miserable", "you ruined my year": allowed. Ordinary detail is allowed: a class, a building, a bar, a party, a bus line, a job, a place somebody was once seen, a memory of one day. Your default is PASS, and most letters, including most unkind ones, are a PASS.
+THE WALL IS FOR THE THINGS PEOPLE NEVER SAID, and it has to stay fun. Longing, admiration, gratitude, regret, apology, and also heartbreak, anger, grudges, break-ups, roasting, mockery, insults, contempt, jokes and swearing. Your default is PASS, and most letters, including most rude, crude and unkind ones, are a PASS. A wall that is too strict is a dead wall.
+
+Always PASS:
+- swearing inside a feeling, a story or a joke: "fuck you for leaving", "you're the fucking best", "shit i miss you"
+- roasts, insults and cruelty with a point: "your playlist is a war crime", "you're a coward and you know why", "you were selfish to me all year and you know it"
+- anger with a reason, heartbreak, "i hope you're miserable", "you ruined my year"
+- flirting and attraction, and romantic innuendo that is not explicit: "you're so fine it's rude", "kiss me already", "marry me", "i think about your hands too much"
+- comic hyperbole: "i'd fight a bear for you", "kill it at your recital", "i could kill you for that haha"
+- money jokes and ordinary detail: "you owe me $5", a class, a building, a bar, a party, a bus line, a job, one remembered day
 
 Moderate the CONSEQUENCE, not the emotion. REJECT only if one of these is clearly true:
-1. threat: a threat of violence, a wish for their death or injury stated as intent or a promise, intimidation, "I know where you live", stalking, or any promised consequence to their body, home or safety.
+1. threat: a threat of violence, plainly or veiled ("watch your back", "i know where you live", "you'll see what happens to you"), a wish for their death or injury stated as intent or a promise, intimidation, stalking, or any promised consequence to their body, home or safety. Obvious comic hyperbole is not a threat.
 2. locate: a physical description or their name COMBINED WITH a recurring schedule, route, address, workplace shift, or room, precise enough to find them at a predictable time. A place alone is not this. One remembered day is not this.
-3. sexual: explicit sexual content about the person, a sexualised description of their body, or a claim about their sexual history stated as fact to humiliate.
+3. sexual: a sexual proposition, invitation or request aimed at the person, however short, joking, misspelled or spaced out ("lets fuck", "babe lets fuck", "dtf?", "wanna fuck", "sit on my face", "send nudes", "i'd smash"), including sexual emoji used that way (eggplant, peach, droplets, tongue); an explicit sex act; a sexualised description of their body; or a claim about their sexual history. Flirting, attraction and a kiss are not this.
 4. minor: the person is stated or clearly implied to be under 18 in a sexual or romantic letter.
-5. expose: a private fact disclosed about them that costs them something outside the wall: outing their sexuality or gender, a health or pregnancy or immigration or legal status, an addiction, a debt, or a threat to leak images or messages.
+5. expose: a private fact disclosed about them that costs them something outside the wall: outing their sexuality or gender, a health or pregnancy or immigration or legal status, an addiction, a debt, or a threat to leak images or messages. A joke about a small sum owed is not this.
 6. hate: a slur, or contempt for the person's race, ethnicity, religion, disability, gender or sexuality as such. Contempt for the PERSON is allowed; contempt for their group is not.
 7. contact: a phone number, a street address, a room number, a link or an email address.
+8. abuse: a letter whose whole content is profanity or degradation hurled at the person, with no joke, feeling or story in it ("fuck you bitch", "you stupid whore", "suck my dick loser"); telling them to kill or hurt themselves, plainly or veiled ("kys", "go jump off a bridge"); or a sexual or gendered slur (whore, slut, cunt) used as an attack. Cruelty with a point, a reason or a joke in it is not this, and passes.
 
-The letter is already on the wall. A REJECT takes it down at once; a REVIEW leaves it up and asks a person to read it; a PASS leaves it up. So a letter you are confident is one of the seven is a REJECT, never a review. REVIEW only when you genuinely cannot tell which side of one of those seven a letter falls on. Never review or reject a letter for being cruel, crude, sad, angry, sarcastic, unromantic, or embarrassing to the person: those pass.
+Examples (addressee: letter => answer):
+@jules.k: fuck you for leaving without saying bye => pass
+@jules.k: you're the fucking best, never change => pass
+maya: your playlist is a war crime and i still miss you => pass
+@ren.t: you're so fine it's rude. kiss me already => pass
+@ren.t: i could kill you for that haha. you owe me $5 => pass
+maya: i'd fight a bear for you => pass
+@ren.t: babe lets fuck => reject ["sexual"]
+@ren.t: dtf? => reject ["sexual"]
+maya: 🍆🍑💦 tonight? => reject ["sexual"]
+@ren.t: fuck you bitch => reject ["abuse"]
+maya: kys => reject ["abuse"]
+@ren.t: i know where you live. watch your back => reject ["threat"]
 
-Judge the letter and the sealed line together; the sealed line is private until the recipient asks for it.
+Judge the addressee too: a name or handle that is itself a slur, a proposition, abuse or a contact detail is part of the letter. Judge the sealed line with the letter; it is private until the recipient asks for it.
+
+A REJECT keeps the letter off the wall, or takes it down if it is up; a REVIEW asks a person to read it; a PASS puts it up or leaves it up. So a letter you are confident is one of the eight is a REJECT, never a review. REVIEW only when you genuinely cannot tell which side of one of those eight a letter falls on. Never review or reject a letter for being cruel with a point, crude, sad, angry, sarcastic, flirtatious, unromantic, or embarrassing to the person: those pass.
 
 Reasons: one word each, from the category names above, or [] on a pass.`
 

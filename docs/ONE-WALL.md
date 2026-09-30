@@ -197,8 +197,11 @@ screen, because the screen is the letter.
   replies' own, that a reply names nobody else (no @, no word shaped like a
   handle, no full name), then the classifier, with two more names on its list:
   `third` (somebody other than the addressee named or pointed at) and `pile`
-  (a reply that is only abuse aimed at the addressee), and a `pile` can only
-  hold a reply, never refuse it. A pass goes up; a review, or no classifier,
+  (a reply that urges others on, or joins a crowd going after the
+  addressee), and a `pile` can only hold a reply, never refuse it. A reply
+  that is nothing but abuse hurled at the person is `abuse` since 30
+  September (migration 0078 and the prompts), and refused, and the list
+  refuses a proposition and "kys" before the classifier is asked. A pass goes up; a review, or no classifier,
   is held for the desk and shown to its writer alone; a reject is refused and
   kept for the desk. 280 characters. Forty replies a day, and six under one
   letter in ten minutes.

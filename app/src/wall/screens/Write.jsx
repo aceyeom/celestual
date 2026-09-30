@@ -129,7 +129,7 @@ import {
   newNonce, postDraft, openCampuses, loadCampuses, targetKey,
 } from '../data.js'
 import { normaliseLook, freshLook, colourOf, stampOf } from '../looks.js'
-import { fault, whyNot, phoneAcross } from '../moderate.js'
+import { fault, whyNot, phoneAcross, caughtOnWall } from '../moderate.js'
 import { campus } from '../campus.js'
 import { getState, patch, setAfterGate } from '../store.js'
 import { DOMAIN, eduBerkeley, eduDomain, refresh, validEmail, anyEmail, normEmail, heldProof } from '../auth.js'
@@ -747,10 +747,25 @@ export default function Write({
   }
 
   // ── the three choices ──
+  // What the wall may not carry and a private note may (moderate.js
+  // `caughtOnWall`, 30 September): a proposition aimed at them, or telling
+  // them to hurt themselves, in the words or the greeting. Caught when the
+  // wall is chosen and not while the words are typed, since the same words
+  // may still go privately; said the way the server's refusal would say it,
+  // back on the words, with the shake.
+  const wallCaught = () => {
+    const w = caughtOnWall(body) || (greetOut ? caughtOnWall(greetOut) : '')
+    if (!w) return false
+    setStep(1)
+    setSaid(whyNot([w]))
+    shake()
+    return true
+  }
   // The wall, from anybody: posted as it is, and read before it goes up.
   const chooseWall = () => {
     if (sending || spent) return
     setSaid('')
+    if (wallCaught()) return
     setPostAs('none')
     postWall({ proof: 'none' })
   }
@@ -760,6 +775,7 @@ export default function Write({
   const chooseCal = () => {
     if (sending || spent || !toAt) return
     setSaid('')
+    if (wallCaught()) return
     setPostAs('edu')
     if (eduBerkeley()) { postWall({ proof: 'edu' }); return }
     setWrongSchool(false)

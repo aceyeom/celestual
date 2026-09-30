@@ -169,6 +169,34 @@ select rp_ok('nor a first name alone, or a sentence break between two words',
 select rp_ok('the letter list is here too',
   'url' = any(wall_reply_caught('read it at x.com'))
   and 'phone' = any(wall_reply_caught('call 510 555 0199 now')));
+-- 0078: a reply is as public as its letter, so it carries what the wall
+-- refuses and a private note may say
+select rp_ok('0078: a proposition aimed at them is caught',
+  'sexual' = any(wall_reply_caught('babe lets fuck'))
+  and 'sexual' = any(wall_reply_caught('dtf?'))
+  and 'sexual' = any(wall_reply_caught('lets f*ck'))
+  and 'sexual' = any(wall_reply_caught('i''d smash'))
+  and 'sexual' = any(wall_reply_caught('send nudes'))
+  and 'sexual' = any(wall_reply_caught('🍆🍑💦 tonight?')));
+select rp_ok('0078: and telling them to hurt themselves',
+  'harm' = any(wall_reply_caught('kys'))
+  and 'harm' = any(wall_reply_caught('k y s'))
+  and 'harm' = any(wall_reply_caught('go kill yourself'))
+  and 'harm' = any(wall_reply_caught('just go die')));
+select rp_ok('0078: but a joke, a swear and care are not',
+  coalesce(array_length(wall_reply_caught('fuck, this is so real'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('fuck you for leaving'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('lets fuck shit up this weekend'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''ll fuck you up at mario kart'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('my id fucking expired'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''d smash that exam for you'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('don''t kill yourself over finals'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('kiss them already'), 1), 0) = 0);
+select rp_ok('0078: the slurs in the plural here too',
+  'slur' = any(wall_reply_caught('you niggers')) and 'slur' = any(wall_reply_caught('faggots')));
+select rp_ok('0078: and the write refuses the proposition, storing nothing',
+  rp_write('rp-token-school-0000000', rp_letter(1), 'babe lets fuck')->>'error' = 'caught'
+  and not exists (select 1 from wall_replies where body = 'babe lets fuck'));
 select rp_ok('and the write refuses what it catches, storing nothing',
   rp_write('rp-token-school-0000000', rp_letter(1), 'Maria Delgado wrote this')->>'error' = 'caught'
   and not exists (select 1 from wall_replies where body like 'Maria%'));

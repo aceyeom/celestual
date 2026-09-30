@@ -136,26 +136,37 @@ unsure of is not held. Takedown is **post-hoc**, and the same asymmetry drives
 both: the screenshot exists before the decision does.
 
 ```
-  writing        layer 1  regex — slurs, links, phones, addresses, room numbers.
-                          Runs at the keyboard (moderate.js) and again on the
-                          server, because a client-side check is a courtesy to
-                          the writer, not a control on the writer.
-                          The ONLY thing that stops a letter going up: the
-                          card shakes, the line under it says what was
-                          caught, and nothing is sent.
-                 layer 2  one Haiku call, against explicit categories, AFTER
-                          the letter is on the wall. A pass and a review leave
-                          it up. Only a letter it reads as severely malicious
-                          comes down, and the writer is told on the wall that
-                          it went against the terms, with their words back.
-                 layer 3  anything ambiguous stays up, flagged, and a person
-                          reads it at the desk while it stands. If that person
-                          takes it down, the writer is told the same way.
+  writing        layer 1  regex, over the words as typed and folded flat
+                          (moderate.js `norm`): slurs in any plural or
+                          disguise, links, phones, addresses, room numbers,
+                          and on public words only, a sexual proposition
+                          aimed at the person and telling them to hurt
+                          themselves. Runs at the keyboard (moderate.js) and
+                          again on the server, because a client-side check is
+                          a courtesy to the writer, not a control on the
+                          writer. A catch is a hard refusal: the card shakes,
+                          the line under it says what was caught, and nothing
+                          is sent.
+                 layer 2  the lexicon, server side: a wide list of the words a
+                          letter with a consequence in it carries (violence,
+                          sex, abuse, a minor, a routine, exposure). A gate,
+                          never a verdict. On a verified @-note a letter that
+                          matches none of it goes up unread by any model, and
+                          the desk sees that it did.
+                 layer 3  one Haiku call, against explicit categories. An open
+                          note (the composer's default, and every name note)
+                          is read BEFORE it is written: a pass goes up, a
+                          review waits for the desk, a reject never goes up
+                          and the writer is told the one thing to change. A
+                          verified @-note is read AFTER it is up: a reject
+                          takes it down and the writer is told on the wall.
+                 layer 4  anything ambiguous is held for, or flagged to, a
+                          person at the desk.
 
   reporting      the tap  off the wall, the search and the count. Immediately.
                  the box  optional, three lines. Why.
-                 the read Haiku decides only WHERE it lands — confirmed, or a
-                          person looks at it. Never whether it comes down.
+                 the desk a person upholds it (it stays down) or dismisses
+                          it (it goes back up). No model reads a report.
                           -> held, never deleted. A desk can put it back up.
 ```
 
@@ -185,6 +196,33 @@ hand), and offers the words back on the composer. The notice is never raised
 for a reader's report, because telling the writer would point them at the
 person likeliest to have filed it. A classifier that does not answer leaves
 the letter up, flagged `unscreened`.
+
+**The balance, as the owner set it on 30 September.** A letter that said
+"lets fuck babe" was read, passed and put up, and the desk took it down
+eleven minutes later: the reading's sexual rule named explicit content, a
+body and a history, and a two word proposition was none of those, while the
+same prompt said swearing at a person was allowed. The owner asked for the
+balance to be tuned rather than tightened, since a wall too strict is as
+dead as one too loose. So the fun passes, and the prompt says so with the
+owner's own jokes as examples: swearing inside a feeling or a joke ("fuck you
+for leaving", "you're the fucking best"), roasts ("your playlist is a war
+crime"), anger with a reason, flirting and innuendo that is not explicit
+("you're so fine it's rude", "kiss me already"), comic hyperbole ("i'd fight a
+bear for you", "i could kill you for that haha") and money jokes ("you owe me
+$5"). What comes off: a proposition aimed at the person however short or
+misspelled, explicit sex or a sexualised body, a letter that is nothing but
+profanity or degradation hurled at the person (the new `abuse` category),
+telling them to hurt themselves, a slur used as an attack, and a threat,
+plainly or veiled. The list takes the surest shapes of the first and the
+fourth at the keyboard (`caughtOnWall`), where the composer shakes and says
+"it's sexual, and the wall is public. say it another way, or send it
+privately.": a private note is read only if the other person sent one back,
+so the same words may go there, and nothing sexual is on the private note's
+list (`celestual_text_caught`, migration 0078). Everything subtler is the
+reading's. `npm run check:moderation` holds the keyboard and both functions
+to a must-refuse table and a must-pass table of exactly these lines, and the
+same list stopped refusing memories as contact ("the same dorm 2 years ago",
+"#2019", "20 minutes each way", "you.me").
 
 ### 2 · Getting a letter down is free. Emptying a whole name is the one thing that asks.
 
@@ -756,8 +794,8 @@ parts.jsx    display · label · prose · redaction · pill · paper · fields �
              sheet · row · icons · the close mark · the bar · step dots
 auth.js      the domain check, what it does and does not buy, and the
              Instagram handoff that stands on the one irreversible action
-moderate.js  the screen: layer 1 for real, layers 2 and 3 drawn honestly, and
-             the report's own triage
+moderate.js  the screen: layer 1 for real (`norm`, `fault`, `wallFault`,
+             `caughtOnWall`), and the sentences a refusal says (`whyNot`)
 data.js      handles, the deterministic hash everything derives from, the
              corpus, search, write, the reports (held, never deleted) and the
              removals
