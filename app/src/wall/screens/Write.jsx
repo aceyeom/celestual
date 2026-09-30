@@ -45,6 +45,16 @@
 // too: "dear Sofia", which is the writer's to change (`Greet`), up to forty
 // characters, and follows the name until they do.
 //
+// ── and the battery is theirs (0076) ────────────────────────────────────────
+// The owner, 30 September: the battery is for wall letters, and "it can just
+// be clicked to change its charge state". So the battery on this screen is a
+// key (screen.jsx `onBat`), full to start, a bar off at each press, the
+// empty one blinking and the next round to full, kept in the draft and sent
+// in the letter's look beside its colour (looks.js `withBat`), and it is
+// what every reader's phone draws on the letter (looks.js `batOfLetter`).
+// Nothing says what it means. It goes with the letter only: a note sent
+// privately from here goes with no battery, as a note does now (`sentBat`).
+//
 // ── nothing is asked before the letter is written ───────────────────────────
 // This screen used to be behind the campus address: the composer did not
 // open for anybody who had not given one. Now everybody writes first, and the
@@ -128,7 +138,7 @@ import {
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
   newNonce, postDraft, openCampuses, loadCampuses, targetKey,
 } from '../data.js'
-import { normaliseLook, freshLook, colourOf, stampOf } from '../looks.js'
+import { normaliseLook, freshLook, withBat, colourOf, stampOf } from '../looks.js'
 import { fault, whyNot, phoneAcross } from '../moderate.js'
 import { campus } from '../campus.js'
 import { getState, patch, setAfterGate } from '../store.js'
@@ -305,7 +315,12 @@ export default function Write({
   // the @ the name nudge asks for, under a name
   const [at, setAt] = useState(() => (prefill ? '' : d0.at || ''))
   const [body, setBody] = useState(() => d0.body || '')
-  const [look, setLook] = useState(() => normaliseLook(d0.look) || freshLook())
+  // the colour it is lit in, and the battery it goes up on (0076), which
+  // are kept apart here and laid together in the look it is sent and kept
+  // with (`withBat`): the colour panel and the swipe hand back a colour
+  // alone, and the battery key a charge alone
+  const [look, setLook] = useState(() => { const l = normaliseLook(d0.look); return l && l.tint ? { tint: l.tint } : freshLook() })
+  const [bat, setBat] = useState(() => { const l = normaliseLook(d0.look); return l && Number.isInteger(l.bat) ? l.bat : 4 })
   // the greeting as the writer set it, or null while it follows the name
   const [greet, setGreet] = useState(() => (typeof d0.greet === 'string' ? d0.greet : null))
   // a name note's school: a slug, '' for none, or null before one is chosen
@@ -390,10 +405,10 @@ export default function Write({
   const words = useRef(`${body}\u0000${greet}`)
   useEffect(() => {
     if (sentTo) return
-    patch({ draft: { to: h, body, kind, name, at, look, greet, school, proof: postAs, nonce, held } })
+    patch({ draft: { to: h, body, kind, name, at, look: withBat(look, bat), greet, school, proof: postAs, nonce, held } })
     const now = `${body}\u0000${greet}`
     if (now !== words.current) { words.current = now; setSaid('') }
-  }, [sentTo, h, body, kind, name, at, look, greet, school, postAs, nonce, held])
+  }, [sentTo, h, body, kind, name, at, look, bat, greet, school, postAs, nonce, held])
 
   const them = useResolver(kind === 'name' ? '' : to)
   const prof = useProfile(kind === 'name' ? '' : h)
@@ -409,6 +424,22 @@ export default function Write({
   // the hint over the greeting, the first time: shown until it is tapped once
   const [hint, setHint] = useState(() => !getState().greetSeen)
   const seenHint = useCallback(() => { setHint(false); patch({ greetSeen: true }) }, [])
+  // ── the battery, set ──
+  // A wall letter's battery is its writer's (the owner, 30 September, and
+  // 0076): a key on the status row, as a private note's was under 0073, a
+  // bar off at each press, the empty one blinking as the phone's did and the
+  // next round to full; it starts full. It goes up with the letter, in its
+  // look, and is what every reader's phone draws, and nothing says what it
+  // means. The first time the composer is used on a device, once the line
+  // about the greeting has gone, one line under the card says the battery
+  // is the writer's, and the first press puts it away for good (store.js
+  // `batSeen`); one fact at a time, so the two lines never stand together.
+  const [batHint, setBatHint] = useState(() => !getState().batSeen)
+  const pressBat = () => {
+    if (sending) return
+    if (batHint) { setBatHint(false); patch({ batSeen: true }) }
+    setBat((b) => (b + 4) % 5)
+  }
   const onGreet = useCallback((v) => setGreet(v === defaultGreet ? null : v), [defaultGreet])
 
   const sug = useSuggest(kind === 'name' ? name : to, {
@@ -440,7 +471,7 @@ export default function Write({
   }, [reduce])
 
   // the draft as it stands, for the post
-  const draftNow = () => ({ to: h, body, kind, name, at, look, greet, school: schoolPicked(), proof: postAs, nonce, held })
+  const draftNow = () => ({ to: h, body, kind, name, at, look: withBat(look, bat), greet, school: schoolPicked(), proof: postAs, nonce, held })
 
   // ── a name note's school ──
   // The open campuses (api.js `campuses`), and none. It starts on the
@@ -674,14 +705,15 @@ export default function Write({
   // The note goes on the face the letter was written on (0073): the greeting,
   // where the writer changed it, is the line across the note's top, read
   // first by the list the words are read by (a number cut between the two is
-  // a number), and a caught one sends the writer back to it. The composer
-  // has no battery key (the letter's battery is the letter's, full on a
-  // draft), so a note running on them keeps the battery its writer left it
-  // on, and a new one goes out full, as the screen drew it; the screen it
-  // ends on draws the one that went (`sentBat`). A greeting left as it came
-  // keeps a running note's own line the same way. The server replaces a card
-  // whole, so a send that left the face out would take a running note's off
-  // without a word.
+  // a number), and a caught one sends the writer back to it. The battery on
+  // this screen is the wall letter's (0076, the owner, 30 September: the
+  // battery is for wall letters and not for pings), so it never goes with a
+  // note: a new one goes out with none, and a note running on them from
+  // before, which was given one on its own screen under 0073, keeps it, since
+  // the server replaces a card whole and a send without it would take it off
+  // without a word. The screen it ends on draws the phone's own full battery,
+  // or the one that note kept (`sentBat`). A greeting left as it came keeps a
+  // running note's own line the same way.
   const [sentBat, setSentBat] = useState(4)
   const greetOut = greet === null ? '' : greet.replace(/\s+/g, ' ').trim().slice(0, MAX_GREET)
   const greetCaught = () => {
@@ -703,9 +735,9 @@ export default function Write({
     if (!alive.current) return
     const anew = list.ok && !!mutualOf(list, target) && liveOf(list, target)?.state !== 'standing'
     const running = list.ok && !anew ? liveOf(list, target) : null
-    const bat = running && Number.isInteger(running.bat) ? running.bat : 4
+    const keptBat = running && Number.isInteger(running.bat) ? running.bat : null
     const out = !list.ok ? list : await (anew ? placeAgain : place)({
-      me, them: target, proof: proofNow, words: body.trim(), greet: greetOut || (running && running.greet) || undefined, bat,
+      me, them: target, proof: proofNow, words: body.trim(), greet: greetOut || (running && running.greet) || undefined, bat: keptBat,
     })
     if (!alive.current) return
     setSending(false)
@@ -721,7 +753,7 @@ export default function Write({
       // it and sent the moment the pings land (screens/Pings.jsx)
       if (out.error === 'no_pings' || out.error === 'no_slots' || out.error === 'cap') {
         setStep('how')
-        waitForPings({ kind: 'send', to: target, line: body.trim(), greet: greetOut, bat })
+        waitForPings({ kind: 'send', to: target, line: body.trim(), greet: greetOut, bat: keptBat })
         go('pings')
         return
       }
@@ -738,7 +770,7 @@ export default function Write({
     }
     forgetPings()
     setAdopted(null)
-    setSentBat(bat)
+    setSentBat(keptBat ?? 4)
     patch({ draft: null })
     try { window.history.replaceState({ ...window.history.state, wallSent: target }, '') } catch { /* a sandbox */ }
     setEnds(out.expires_at ? Date.parse(out.expires_at) || 0 : 0)
@@ -965,8 +997,10 @@ export default function Write({
               look={look} seed={seed} live
               top={fin ? {
                 salutation: greeting, icon: 'pen', stamp: stampOf(Date.now()),
-                // a note sent privately, on the battery it went with
-                ...(done === 'private' ? { bat: sentBat } : null),
+                // a letter being read, on the battery it will go up on; a
+                // note sent privately, on the phone's own full one, or the
+                // one a note running from before kept
+                bat: done === 'private' ? sentBat : bat,
               } : {
                 greet: {
                   value: greeting, onChange: onGreet, max: MAX_GREET, placeholder: defaultGreet,
@@ -977,6 +1011,7 @@ export default function Write({
                 },
                 icon: 'pen',
                 counter: `${MAX_BODY - body.length}/1`,
+                bat, onBat: pressBat,
               }}
               keys={fin ? {} : {
                 l: colourKey,
@@ -1006,6 +1041,7 @@ export default function Write({
               {floor ? <Label className="wl-write-caught">{floor}</Label>
                 : !fin && askName ? <Label tone="dim" className="wl-write-hint">tap the greeting to put their name in</Label>
                 : !fin && hint ? <Label tone="dim" className="wl-write-hint">tap the greeting to change it</Label>
+                : !fin && batHint ? <Label tone="dim" className="wl-write-hint">the battery is yours to set.</Label>
                 : null}
             </div>
           </div>

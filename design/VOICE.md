@@ -183,6 +183,16 @@ that the control is unclear. Fix the control.
 | "drag to orbit, pinch to zoom" | a sky you can drag is discovered by dragging it |
 | the panel explaining the countdown | the one line that mattered, moved into the panel already there |
 
+The one kind of line that stays is the first-use line under a screen whose
+glyph is also a key, because a battery that can be pressed looks exactly like
+one that cannot: said once on a device, one fact, gone for good at the first
+touch, and never saying what the thing means. On the composer it is `tap the
+greeting to change it`, and once that has gone, `the battery is yours to
+set.` (a wall letter's battery is its writer's since 0076, and nothing says
+what they meant by it); on a private note it is `the greeting is yours to
+set.`, which said `the greeting and battery are yours to set.` for the one
+day a note's battery was its writer's (0073).
+
 And never write about somebody's own account in the conditional. The server
 knows whether there is an email on file, so the screen names the inbox it sent
 to rather than guessing at one.

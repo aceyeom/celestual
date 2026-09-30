@@ -186,27 +186,61 @@ function prng(seed) {
 
 // ── the shape ───────────────────────────────────────────────────────────────
 // The same cleaning the server does (wall_look_clean): an object, the three
-// keys, slugs. Not the catalogue: a slug this build does not know is kept,
-// so a row is never rewritten by reading it.
+// keys, slugs, and since 0076 the writer's battery, `bat`, a number rounded
+// and held to 0 to 4 as the server holds it. Not the catalogue: a slug this
+// build does not know is kept, so a row is never rewritten by reading it.
 export function cleanLook(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const out = {}
   for (const k of ['theme', 'tint', 'face']) {
     if (typeof raw[k] === 'string' && SLUG.test(raw[k]) && !(k === 'theme' && raw[k] === 'paper')) out[k] = raw[k]
   }
+  const bat = batIn(raw.bat)
+  if (bat !== null) out.bat = bat
   return Object.keys(out).length ? out : null
 }
+// a battery's charge as the server keeps it: a whole number of bars
+function batIn(v) {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.min(4, Math.max(0, Math.round(v))) : null
+}
 
-// What THIS build writes: one colour, or nothing when it is not one of ours.
+// What THIS build writes: one colour and the battery its writer left it on,
+// or only the battery, or nothing, when the colour is not one of ours.
 export function normaliseLook(raw) {
   const l = cleanLook(raw)
   const t = l && current(l.tint)
-  return t && BY_SLUG.has(t) ? { tint: t } : null
+  const out = t && BY_SLUG.has(t) ? { tint: t } : {}
+  if (l && l.bat !== undefined) out.bat = l.bat
+  return Object.keys(out).length ? out : null
 }
 
+// A look with the battery its writer set laid on it (the composer, 0076),
+// cleaned as it will be stored: the battery is written into the look beside
+// the colour, since both are the writer's and both go up with the letter.
+export function withBat(look, bat) {
+  return normaliseLook({ ...(look || {}), bat })
+}
+
+// The key a look is compared by (data.js `shapeTile`, the wall's memo): its
+// battery is in it, so a name whose newest letter changed only its battery
+// draws its small screen again.
 export function lookKey(look) {
   const l = cleanLook(look)
-  return l ? `${l.theme || ''}/${l.tint || ''}/${l.face || ''}` : ''
+  return l ? `${l.theme || ''}/${l.tint || ''}/${l.face || ''}/${l.bat ?? ''}` : ''
+}
+
+// ── the battery ─────────────────────────────────────────────────────────────
+// A wall letter's battery is its writer's (the owner, 30 September, and
+// 0076): set on the composer a bar at a time and kept in the look. A letter
+// from before, which has none, draws it the way every letter did until then,
+// by how long it has been up (`chargeOf`), so no letter already on the wall
+// changed its face the night the writers were given the battery. `bare` is
+// what a letter with no time on it reads as: full on a letter, and empty on
+// the field's small screen of a name with no letter to date it by.
+export function batOfLetter(l, bare = 4) {
+  const set = l && l.look && typeof l.look === 'object' ? batIn(l.look.bat) : null
+  if (set !== null) return set
+  return l && l.at ? chargeOf(l.at) : bare
 }
 
 // The colour a letter is lit in: its own when it chose one of these (or the
@@ -1018,7 +1052,8 @@ export const PIX = {
   wait: ['XXXXXXX', 'X.....X', '.X...X.', '..X.X..', '...X...', '..X.X..', '.X.X.X.', 'X.XXX.X', 'XXXXXXX'],
 }
 // the battery as the phone drew it, its nub on the left and its cells
-// draining from that end; the charge in it is how fresh the letter is
+// draining from that end; the charge in it is the one its writer left it on,
+// or on a letter from before 0076 how fresh it is (`batOfLetter`)
 const BAT = {
   a: ['..XXXXXXXXXXXXXXX', '..X.............X', 'XXX.............X', 'X.X.............X', 'X.X.............X', 'XXX.............X', '..X.............X', '..XXXXXXXXXXXXXXX'],
 }
@@ -1037,7 +1072,9 @@ for (let n = 0; n <= 4; n++) {
   }
 }
 
-// The charge, off a letter: how long it has been sitting there unsaid.
+// The charge, off a letter's age: how long it has been sitting there unsaid.
+// What a letter from before 0076 draws, which has no battery of its writer's
+// (`batOfLetter`).
 export function chargeOf(ts) {
   if (!ts) return 4
   const hrs = (Date.now() - ts) / 3600000

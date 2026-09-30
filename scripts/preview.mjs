@@ -115,6 +115,13 @@ const LOOKS = {
   'ace03d': { tint: 'white' },
 }
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
+// ── the battery builder (0076): a letter that went up with its battery set ──
+// ren.tanaka's newest letter was left on one bar by its writer, so its phone,
+// its picture and the name's small screen on the field draw one bar however
+// new it is (looks.js `batOfLetter`); every other letter is from before and
+// reads by its age (`letter-bat`)
+const BAT_LETTER = 'ren.tanaka'
+for (const r of INDEX) if (r.target_handle === BAT_LETTER) r.look = { ...r.look, bat: 1 }
 const NAMES = [
   ['~sofia', 'Sofia', 2, { tint: 'green' }],
   ['~j', 'J', 1, { tint: 'amber' }],
@@ -1337,33 +1344,25 @@ const ROUTES = [
            ['fill', '.wl-door .wl-field input', 'ace03d'], ['click', '.wl-door-ways .wl-pill.is-light']] },
   { label: 'ping-done',     path: '/berkeley/ping/pilar.echevarria',
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
-  // the face a note is written on (0073): the greeting changed in place, the
-  // battery pressed a bar at a time and down to the empty one, blinking, a
+  // the face a note is written on (0073): the greeting changed in place, a
   // greeting with a number in it refused at the send, and the note sent on
-  // the face its writer set. `ping-line` shows the line under the screen
-  // saying both are theirs, the first time
+  // the face its writer set. Since 30 September (0076) the battery is not a
+  // key on a private note any more: `ping-bat` is the note being written
+  // with the phone's own full battery and the line under the screen saying
+  // only the greeting is theirs, the first time. The battery pressed down to
+  // the empty one lives on the composer's letter now (`write-bat-*`)
   { label: 'ping-face',     path: '/berkeley/ping/pilar.echevarria',
     acts: [['fill', '.wl-ping .wl-scr-greet input', 'to the one who laughed at the film'],
            ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.']], settle: 900 },
   { label: 'ping-bat',      path: '/berkeley/ping/pilar.echevarria',
-    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
-           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
-  { label: 'ping-bat-empty', path: '/berkeley/ping/pilar.echevarria',
-    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
-           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key'],
-           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
-  // and under reduced motion, where the empty one stands still, and is drawn
-  { label: 'ping-bat-empty-still', path: '/berkeley/ping/pilar.echevarria', still: true,
-    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
-           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key'],
-           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 700 },
+    acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.']], settle: 700 },
   { label: 'ping-face-caught', path: '/berkeley/ping/pilar.echevarria',
     acts: [['fill', '.wl-ping textarea', 'i kept nearly saying something after class.'],
            ['fill', '.wl-ping .wl-scr-greet input', 'call me 510 555 0199'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 900 },
   { label: 'ping-face-done', path: '/berkeley/ping/pilar.echevarria',
     acts: [['fill', '.wl-ping .wl-scr-greet input', 'to the one who laughed at the film'],
            ['fill', '.wl-ping textarea', 'you laughed at the wrong part of the film and i liked you for it.'],
-           ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+           ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // the whole story from the wall: the tab, a name written to, a line, the
   // door passed on the spot, "it's out.", and back on the names
   { label: 'ping-story-tab',  path: '/berkeley', tab: true, verified: false, pass: true,
@@ -1425,14 +1424,17 @@ const ROUTES = [
   { label: 'ping-edit-bare-done', path: '/berkeley/you',
     acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping textarea', ''], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
-  // and its face alone changed (0073): the battery pressed, the key lit as
-  // `send the change`, and what it ends on, which is not new words
+  // and its face alone changed (0073): the greeting changed, the key lit as
+  // `send the change`, and what it ends on, which is not new words. The note
+  // is one from before 0076 and keeps the battery it was left on (two bars),
+  // drawn where it was and not a key any more
   { label: 'ping-edit-face', path: '/berkeley/you',
     acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
-           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-scr-bat.is-key']], settle: 900 },
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping .wl-scr-greet input', 'to the one on the 51B']], settle: 900 },
   { label: 'ping-edit-face-done', path: '/berkeley/you',
     acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
-           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['click', '.wl-ping .wl-scr-bat.is-key'], ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
+           ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900], ['fill', '.wl-ping .wl-scr-greet input', 'to the one on the 51B'],
+           ['click', '.wl-write-foot .wl-pill.is-light']], settle: 1600 },
   // somebody this person is mutual with, written to again (0072): on the
   // list of the people written to, from a link, and sent, which is "sent
   // privately." as any note; the mutual opened off it and come back from,
@@ -1851,6 +1853,28 @@ const ROUTES = [
     acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="teal"]']], settle: 1200 },
   { label: 'write-look-xerox', path: '/berkeley/write/sofiaaa.reyes',
     acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="xerox"]']], settle: 1200 },
+  // ── the battery is the writer's (0076, the battery builder) ──
+  // A wall letter's battery is a key on the composer's status row, full to
+  // start, a bar off at each press, the empty one blinking and the next round
+  // to full. `write-bat` is the first letter on a device once the greeting's
+  // line has been read, with the line saying the battery is theirs; then two
+  // presses (two bars, the line gone), four (the empty one), the empty one
+  // under reduced motion, a kept draft coming back on its battery, and a
+  // letter on the wall that went up with one bar set (ren.tanaka's newest,
+  // `BAT_LETTER` below), whose phone draws that bar whatever its age.
+  { label: 'write-bat',     path: '/berkeley/write/sofiaaa.reyes', store: { greetSeen: true }, settle: 900 },
+  { label: 'write-bat-two', path: '/berkeley/write/sofiaaa.reyes', store: { greetSeen: true },
+    acts: [['click', '.wl-write-card .wl-scr-bat.is-key'], ['click', '.wl-write-card .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'write-bat-empty', path: '/berkeley/write/sofiaaa.reyes', store: { greetSeen: true },
+    acts: [['click', '.wl-write-card .wl-scr-bat.is-key'], ['click', '.wl-write-card .wl-scr-bat.is-key'],
+           ['click', '.wl-write-card .wl-scr-bat.is-key'], ['click', '.wl-write-card .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'write-bat-empty-still', path: '/berkeley/write/sofiaaa.reyes', still: true, store: { greetSeen: true, batSeen: true },
+    acts: [['click', '.wl-write-card .wl-scr-bat.is-key'], ['click', '.wl-write-card .wl-scr-bat.is-key'],
+           ['click', '.wl-write-card .wl-scr-bat.is-key'], ['click', '.wl-write-card .wl-scr-bat.is-key']], settle: 700 },
+  { label: 'write-bat-kept', path: '/berkeley/write/sofiaaa.reyes', store: { greetSeen: true, batSeen: true },
+    draftOf: { look: { tint: 'rose', bat: 1 } }, settle: 900 },
+  { label: 'letter-bat',    path: '/berkeley/letter/ren.tanaka', settle: 1200 },
+  { label: 'letter-bat-still', path: '/berkeley/letter/ren.tanaka', still: true, settle: 1200 },
   // the phone's caret (caret.jsx): after the last word, in the middle of a
   // word, where it is the letter after it struck out of a cell of its own,
   // and in an empty field, just before the hint, on the ping and on both

@@ -352,7 +352,12 @@ burns with. It lives in `celestual_entries.card`.
   between the two is caught; the server reads each on its own). The battery is
   matched against the numbers' regular expression before it is cast, then
   rounded and clamped to 0 to 4, so a hostile value can neither raise inside
-  the write path nor ride along. The validator reads the service role's list
+  the write path nor ride along. (No screen sets one on a new note since
+  0076; the validator still takes it, for a note that already had one.) A
+  wall letter's battery (0076) is kept in its look and cleaned the same way
+  by `wall_look_clean`: only a JSON number, cast only after `jsonb_typeof`
+  has called it one, rounded and clamped; anything else is dropped, and the
+  row's check holds every stored look to that function. The validator reads the service role's list
   now and is revoked from `public`, `anon` and `authenticated`; its one caller
   is `celestual_place`, which is SECURITY DEFINER.
 - **One door, and it is locked to a matched row.**

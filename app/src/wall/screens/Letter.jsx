@@ -117,7 +117,7 @@ import {
   Sheet, SheetFoot, Close, Brand, ArrowLink, useProfile, useSheet,
 } from '../parts.jsx'
 import { Screen, ScreenText, ScreenMenu, ScreenNote, RoomLight } from '../screen.jsx'
-import { colourOf, chargeOf, stampOf, lookFor, rgbTile, skinOf, skinVars, quirks, countSaid } from '../looks.js'
+import { colourOf, batOfLetter, stampOf, lookFor, rgbTile, skinOf, skinVars, quirks, countSaid } from '../looks.js'
 import { stripMoving, idle, unidle } from '../strip.js'
 import { shareLetter, prepareLetter, letterFace, canShare, isReady } from '../share.js'
 import {
@@ -591,7 +591,7 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
     name: toName, dear: true,
     salutation: marks.salutation, tag: marks.tag,
     icon: 'pen',
-    stamp: stampOf(l.at), bat: chargeOf(l.at), mail: heard,
+    stamp: stampOf(l.at), bat: batOfLetter(l), mail: heard,
   }
   let top
   let body
@@ -608,7 +608,7 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
     // the second row, the way the phone counted them. The first row stays
     // the letter's, so nothing on it moves when a menu opens
     const sel = Math.min(at.at || 0, items.length - 1)
-    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', stamp: stampOf(l.at), bat: chargeOf(l.at), mail: heard }
+    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', stamp: stampOf(l.at), bat: batOfLetter(l), mail: heard }
     body = (
       <ScreenMenu
         items={items.map((x) => x.t)} at={sel}

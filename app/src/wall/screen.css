@@ -157,6 +157,11 @@
    greeting's line) */
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-scr-bat.is-key::before { opacity: 1; }
 .wl-root .wl-scr-bat.is-key:active { opacity: 0.45; transition-duration: 0ms; }
+/* the empty one blinks as the phone's did, and on a key only the glyph does:
+   the dotted line under it stays lit, so the battery never goes out as a
+   thing that can be pressed (the composer's letter, 0076) */
+.wl-scr-bat.is-key.is-low { animation: none; }
+.wl-scr-bat.is-key.is-low > .wl-px { animation: wl-blink 1.06s steps(1) infinite; }
 .wl-root .wl-scr-bat.is-key:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: 0.6cqw; border-radius: 0.6cqw; }
 .wl-px { display: block; flex: 0 0 auto; fill: currentColor; }
 /* the words on the glass bloom, the way a lit word does in a photograph of
@@ -666,7 +671,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-scr-bat.is-low > .wl-px, .wl-sk.is-on .wl-px,
   .wl-scene[data-state='waking'] .wl-scene-halo-2, .wl-letter[data-waking] .wl-room-light { animation: none !important; }
   /* the words are fitted by measuring them at each size (`useFit`), and a
      transition, even the 1ms one this preference gives everything
