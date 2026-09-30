@@ -24,8 +24,13 @@
 //   the seal       one function returns it, and only when the caller holds the
 //                  verified handle it is addressed to, asked, and the author
 //                  said yes.
-//   the author     never. Not on any request, by any actor, ever. There is no
-//                  column for it in anything a browser can reach.
+//   the author     never, to anybody else. Not on any request, by any actor,
+//                  ever: there is no column for it in anything a browser can
+//                  reach. The one thing said about it is said to the author,
+//                  and about nobody but the one asking (0074): `yours`, true
+//                  on a letter when the session reading it is the session
+//                  that wrote it, so its writer can take it back, and false
+//                  for every other reader, who learns nothing by it.
 //
 // ── ERRORS ───────────────────────────────────────────────────────────────────
 // Every function here answers `{ ok, ... }` and none of them throw. A wall that
@@ -362,8 +367,16 @@ function shapeLetter(l) {
     at: new Date(l.at).getTime(),
     expires: new Date(l.expires).getTime(),
     // Only ever true when the reader holds the verified handle the letter is
-    // addressed to. It is what turns on the ask and the takedown.
-    mine: !!l.mine,
+    // addressed to. It is what turns on the ask and the takedown. A name's
+    // letters carry it since 0074; a read from before that says nothing
+    // (`undefined`), and the cache keeps what the letter's own read said
+    // (data.js `loadHandle`).
+    mine: l.mine === undefined ? undefined : !!l.mine,
+    // Whether the session reading it wrote it (0074), answered to that
+    // session alone: what puts `take it back` on its menu. `undefined` from a
+    // database before 0074, where this device's own record stands in
+    // (data.js `isYours`).
+    yours: l.yours === undefined ? undefined : !!l.yours,
     // How many hearted it, and whether this session is one of them (0042).
     // A count, never a list: nothing anywhere says who.
     hearts: Number(l.hearts) || 0,
@@ -502,7 +515,10 @@ export async function campuses() {
 //   downBy   null while the letter is up; 'screen' when the screen refused it
 //            on the way in; 'desk' when a person took it down after; 'report'
 //            when a reader did; 'shut' when the name itself came off the wall;
-//            'lapsed' when it aged out
+//            'lapsed' when it aged out; 'writer' when this person took it
+//            back themselves (0074)
+//   undoUntil  for a letter this person took back, when the day to put it
+//            back ends, while it is open; 0 otherwise
 //   reasons  the screen's own category words, when it named any
 export async function mine() {
   const out = await call('wall_mine', { p_token: sessionToken() })
@@ -520,6 +536,7 @@ export async function mine() {
       // how many hearted it (0056), so the account sheet can say so
       hearts: Number(l.hearts) || 0,
       downBy: l.down_by || null,
+      undoUntil: l.undo_until ? new Date(l.undo_until).getTime() || 0 : 0,
       reasons: Array.isArray(l.reasons) ? l.reasons.map(String) : [],
       flagged: !!l.flagged,
       at: new Date(l.at).getTime(),

@@ -128,7 +128,10 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Pill, Roll, HandleField, WriteAct, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { PixIcon, Wait } from '../screen.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest, setWallFilter } from '../data.js'
+import {
+  wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest, setWallFilter,
+  canTakeBack, withdraw, unwithdraw,
+} from '../data.js'
 import { useSift, FilterKey, FilterMenu, FilterNone, useFilterMenu, useOutside } from '../Filter.jsx'
 import { getState, patch, setCold } from '../store.js'
 import { isMember } from '../auth.js'
@@ -194,6 +197,12 @@ const TAB_AFTER_LETTER_MS = 3200
 // seconds after it is written and a takedown is owed to its writer at once.
 const ARRIVE_AFTER_MS = 160
 const READ_AGAIN_MS = [3000, 8000, 16000, 32000]
+// How long the card that says a letter is up stands at the foot of the wall
+// unanswered (`Up`, below): long enough to read the letter's own name on it
+// and change one's mind, and not so long that it becomes the wall's banner.
+// The way back stays open after it has gone, in the letter's own options
+// and on the account's list, for as long as the letter stands.
+const UP_STANDS_MS = 45000
 
 function rippleMs(r) {
   return Math.round(Math.max(RIPPLE_MIN, Math.min(RIPPLE_MAX, RIPPLE_BASE + r * RIPPLE_PER_PX)))
@@ -547,6 +556,53 @@ function Down({ letter: l, onLeave }) {
   )
 }
 
+// ── and a letter that has just gone up ──
+// The owner's ruling of 29 September: "let users who just posted a letter
+// to the wall the ability to take it down". The moment right after a letter
+// goes up is the moment a person is likeliest to wish it had not, and the
+// composer's glass has gone by then (a letter that is up closes its sheet at
+// once, screens/Write.jsx). So the wall says so where the notice stands, on
+// the same unlit panel with the same two words a phone put under a note:
+// "your letter to Sofia is up.", and `take it back` on the left key and
+// `ok` on the right. Taken back, the same card says `taken back.` with
+// `undo`, which puts it where it was, for a day, and `ok`. It stands until
+// it is answered or for `UP_STANDS_MS` unanswered, and holds the tab back
+// while it does: the question of whether it is mutual is a question about a
+// letter that is staying up. Nothing on it is about anybody but the person
+// who just wrote; the letter's writer is told here only because this is the
+// device that wrote it (data.js `withdraw`, which the server checks). `at`
+// is { id, to, phase: 'up' | 'back', busy, said }.
+function Up({ at, onTake, onUndo, onLeave }) {
+  const back = at.phase === 'back'
+  const busy = !!at.busy
+  return (
+    <div className="wl-down is-up" role="status">
+      <div className="wl-down-in">
+        <Face handle={at.to} size={36} className="wl-down-face" />
+        <div className="wl-down-text">
+          <p className="wl-down-h">
+            <PixIcon name={back ? 'check' : 'env'} scale={2} className="wl-down-env" />
+            {back ? 'taken back.' : <>your letter to <span className="wl-h">{labelFor(at.to)}</span> is up.</>}
+          </p>
+          <p className="wl-down-why">
+            {at.said || (back
+              ? <>your letter to <span className="wl-h">{labelFor(at.to)}</span> is off the wall. undo puts it back for a day.</>
+              : 'you can take it back from its options any time.')}
+          </p>
+        </div>
+      </div>
+      <div className="wl-down-keys is-two">
+        <button
+          type="button" className="wl-down-ok is-l" disabled={busy}
+          onClick={back ? onUndo : onTake}
+          aria-label={back ? 'undo: put the letter back on the wall' : 'take it back off the wall'}
+        >{back ? 'undo' : 'take it back'}</button>
+        <button type="button" className="wl-down-ok" disabled={busy} onClick={onLeave} aria-label="ok, put this away">ok</button>
+      </div>
+    </div>
+  )
+}
+
 // A held letter's notice is put away under a key of its own, so the verdict
 // on the same letter still has a notice to raise.
 const heldKey = (l) => `${l.id}:held`
@@ -781,12 +837,18 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   // store the moment it is read.
   const hive = useRef(null)
   const [sentAt, setSentAt] = useState(0)
+  // the letter that has just gone up, while its card stands (`Up`)
+  const [fresh, setFresh] = useState(null)
   useEffect(() => {
     if (under || !lifted) return undefined
     const h = getState().justPosted
     if (!h) return undefined
     patch({ justPosted: '' })
     setSentAt(Date.now())
+    // the card that says it is up, with the way to take it back, for the
+    // letter this device wrote last (data.js `landLetter` puts it first)
+    const id = (getState().written || [])[0]
+    if (id && canTakeBack()) setFresh({ id, to: h, phase: 'up', said: '' })
     // a letter going up is received by the wall it went up on: a field
     // filtered to names this one is not among goes back to every name, so
     // the pulse has a disc to go out from
@@ -814,6 +876,40 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
     }, ms))
     return () => ts.forEach(clearTimeout)
   }, [sentAt])
+
+  // ── the card after a post ──
+  // Unanswered, it goes by itself (`UP_STANDS_MS`); taken back, it stands
+  // until `ok`, since the undo on it is the thing to keep in reach. A letter
+  // the reading took down before anybody pressed anything has the notice
+  // instead, which says so: its card goes the moment the writer's list says
+  // a hand other than theirs took it down.
+  const freshPhase = fresh ? fresh.phase : ''
+  useEffect(() => {
+    if (freshPhase !== 'up') return undefined
+    const t = window.setTimeout(() => setFresh((f) => (f && f.phase === 'up' ? null : f)), UP_STANDS_MS)
+    return () => clearTimeout(t)
+  }, [freshPhase])
+  const freshRow = fresh ? own.find((l) => l.id === fresh.id) : null
+  const upCard = fresh && !(freshRow && freshRow.downBy && freshRow.downBy !== 'writer' && fresh.phase === 'up') ? fresh : null
+  const takeFresh = useCallback(async () => {
+    const f = fresh
+    if (!f || f.busy) return
+    setFresh({ ...f, busy: true })
+    const out = await withdraw(f.id)
+    if (out?.ok) { setFresh({ ...f, phase: 'back', busy: false, said: '' }); return }
+    if (out?.error === 'gone') { setFresh(null); return }
+    setFresh({ ...f, busy: false, said: 'it did not come down. try again.' })
+  }, [fresh])
+  const undoFresh = useCallback(async () => {
+    const f = fresh
+    if (!f || f.busy) return
+    setFresh({ ...f, busy: true })
+    const out = await unwithdraw(f.id, f.to)
+    if (out?.ok) { setFresh({ ...f, phase: 'up', busy: false, said: 'it is back up.' }); return }
+    setFresh({ ...f, busy: false, said: out?.error === 'expired' || out?.error === 'gone' ? 'it cannot go back up now.' : 'it did not go back. try again.' })
+  }, [fresh])
+  const leaveFresh = useCallback(() => setFresh(null), [])
+
   const veilStyle = tap
     ? { '--rx': `${tap.x.toFixed(1)}px`, '--ry': `${tap.y.toFixed(1)}px`, '--rmax': `${tap.r.toFixed(1)}px` }
     : undefined
@@ -821,7 +917,7 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
   // the tab stand above the act when there is one, and only then does the
   // dock pour the void under itself (`has-tab`).
   const docked = lifted
-  const carded = lifted && (!!down || tab)
+  const carded = lifted && (!!upCard || !!down || tab)
 
   return (
     <>
@@ -949,7 +1045,9 @@ function Wall({ go, reduce, rev, under = false, open: opened = 0 }) {
       {docked && (
       <div className="wl-dock" inert={under || undefined}>
         <div className="wl-dock-veil" aria-hidden="true" />
-        {down ? (
+        {upCard ? (
+          <Up at={upCard} onTake={takeFresh} onUndo={undoFresh} onLeave={leaveFresh} />
+        ) : down ? (
           <Down letter={down} onLeave={() => answer(down)} />
         ) : tab ? (
           <Tab faces={wroteTo.slice(0, 3)} onGo={() => { hideTab(); go(getState().joined ? 'ping' : 'join') }} onHide={hideTab} going={going} />

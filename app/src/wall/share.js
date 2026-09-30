@@ -2,12 +2,18 @@
 // ║  SHARE: a letter, as a picture somebody can pass on                      ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The right soft key on every letter is `share`, and it does the three things
-// a phone's Send menu did: to somebody (the share sheet, with the picture and
-// the link), to the phone itself (the picture, saved), and the address,
-// copied. It said `send` until the composer's act said `send anonymously`,
-// and one word for putting a letter up and for passing one on is a word a
-// person has to read twice.
+// `share` is the first row of every letter's options (the right soft key,
+// screens/Letter.jsx), and it does the three things a phone's Send menu did:
+// to somebody (the share sheet, with the picture and the link), to the phone
+// itself (the picture, saved), and the address, copied. It said `send` until
+// the composer's act said `send anonymously`, and one word for putting a
+// letter up and for passing one on is a word a person has to read twice.
+//
+// The picture's band is the card's band, key for key (the owner's ruling of
+// 29 September): the heart and its count and the replies' bubble and its
+// count together on the left, and `options` alone on the right (`drawScreen`,
+// the soft keys). It painted `options`, the heart in the middle and `share`
+// on the right after the card had stopped drawing any of them there.
 //
 // The picture is drawn here with a canvas and not photographed out of the
 // page. A screenshot of the DOM would need the page's fonts and filters to
@@ -23,7 +29,7 @@
 // off the first. Nothing leaves the browser; the picture is made on the
 // phone that asked for it.
 
-import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady } from './looks.js'
+import { colourOf, skinOf, quirks, PIX, hexRgb, chargeOf, stampOf, rgbTileReady, countSaid } from './looks.js'
 import { CHALK } from './mark.js'
 import { LOCKUP } from './brand.js'
 import { copyText } from './handoff.js'
@@ -482,7 +488,12 @@ function drawScreen(o, tile = null) {
   // no cursor: a letter being read is not being written
   g.restore()
 
-  // the soft keys, and the heart, which says nothing of a count of none
+  // the soft keys: the heart and the bubble, each with its count, together
+  // on the left, and `options` on the right, set as the page sets them
+  // (screen.css `.wl-scr-bot.is-grouped`): a glyph on six rows, a unit's gap,
+  // the count in a slot two figures wide whatever it holds (`.wl-sk-n`), the
+  // key's own padding and the group's gap before the next. A count of none
+  // says nothing, and three figures are a step smaller, as on the card
   withBloom(() => {
     const my = sh - botH / 2 - 0.3 * u
     g.fillStyle = lit
@@ -490,18 +501,26 @@ function drawScreen(o, tile = null) {
     g.font = `400 ${13.4 * u}px ${FACE}`
     // as close to the edge as the page sets them (screen.css `.wl-scr-bot`)
     const kx = flat ? 3.2 * u : 2.4 * u
-    g.textAlign = 'left'
-    g.fillText(o.left, kx, my)
     g.textAlign = 'right'
-    g.fillText(o.right, sw - kx, my)
-    g.font = `400 ${11 * u}px ${FACE}`
-    const hw = (6.8 * u * 7) / 6
-    const count = o.hearts ? String(o.hearts) : ''
-    const tw = count ? g.measureText(count).width + u : 0
-    const x0 = sw / 2 - (hw + tw) / 2
-    glyph(g, o.hearted ? 'heart' : 'heartO', x0, my - 3.4 * u, 6.8 * u, lit)
+    g.fillText(o.right || 'options', sw - kx, my)
     g.textAlign = 'left'
-    if (count) g.fillText(count, x0 + hw + u, my + 0.3 * u)
+    let x = kx
+    const key = (name, cols, n) => {
+      const said = n ? countSaid(n) : ''
+      const size = said.length > 2 ? 9 : 11
+      g.font = `400 ${size * u}px ${FACE}`
+      const gw = (6.8 * u * cols) / 6
+      glyph(g, name, x, my - 3.4 * u, 6.8 * u, lit)
+      x += gw + 1.4 * u
+      g.fillStyle = lit
+      if (said) g.fillText(said, x, my + 0.3 * u)
+      const slot = size * u * (said.length > 2 ? 1.36 : 1.02)
+      x += Math.max(slot, said ? g.measureText(said).width : 0)
+      // this key's padding, the group's gap and the next key's padding
+      x += 0.8 * u + 2.2 * u + 0.8 * u
+    }
+    key(o.hearted ? 'heart' : 'heartO', 7, o.hearts)
+    if (o.thread) key('bubbleO', 9, o.replies)
   })
 
   // the LCD over all of it: the backlight's faults, the grid, the pixels up
@@ -728,7 +747,7 @@ export function grainOver(g, w, h, seed) {
 // name, and never the @ (screens/Letter.jsx says why): a letter to an @ is
 // filed under its handle, and the picture of it passed round says "dear" and
 // the name. And never a seal, since no letter is shut to anybody (0066).
-export function letterFace(l, { name }) {
+export function letterFace(l, { name, replies = null }) {
   const text = l.body || ''
   // the greeting the writer set, the school's sticker on a verified
   // letter, and a name note's school (schools.js `letterMarks`)
@@ -742,7 +761,11 @@ export function letterFace(l, { name }) {
     // second date
     stamp: stampOf(l.at), bat: chargeOf(l.at),
     hearts: l.hearts || 0, hearted: !!l.hearted,
-    left: 'options', right: 'share',
+    // the replies' bubble, where the card has one, and its count as the
+    // key says it (Letter.jsx hands it over; `null` is a letter with no
+    // thread to read, whose band has the heart alone)
+    thread: replies != null, replies: Number(replies) || 0,
+    right: 'options',
   }
 }
 
@@ -757,7 +780,7 @@ export const canShare = () => typeof navigator !== 'undefined' && typeof navigat
 // first. The last few are kept; one that failed is dropped, so the next ask
 // draws it again.
 const READY = new Map()
-const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.name}|${o.handle}|${o.salutation || ''}|${o.sticker ? o.sticker.slug : ''}`
+const keyOf = (o) => `${o.seed}|${o.look ? o.look.tint || '' : ''}|${o.text.length}|${o.hearts}|${o.hearted}|${o.thread ? o.replies : '-'}|${o.name}|${o.handle}|${o.salutation || ''}|${o.sticker ? o.sticker.slug : ''}`
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }
   requestAnimationFrame(() => setTimeout(done, 0))

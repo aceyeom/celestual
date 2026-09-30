@@ -187,8 +187,16 @@ export function neverUp(l) {
 // row for the desk, and never printed here. `held` is a letter that never
 // went up (`neverUp`), for the one hand that reads differently for it: a
 // letter that lapsed while it waited did not stand for thirty days.
+//
+// `writer` is the writer's own hand (0074, the owner's ruling of 29
+// September): they took it back themselves. The notice never rises for it
+// (screens/Wall.jsx asks only after the four hands above), since a person
+// does not need telling what they just did; the sentence is here so that
+// anything that ever does print a reason for it prints theirs and not the
+// terms'.
 export function whyDown(downBy, held = false) {
   switch (downBy) {
+    case 'writer': return 'you took it back.'
     case 'screen':
     case 'desk':   return 'it went against the terms of the wall. you can change it and put it up again.'
     case 'shut':   return 'the name has come off the wall, and nothing can be written to it now.'

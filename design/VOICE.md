@@ -39,6 +39,7 @@ equivalent.
 | delivered, opened (the report under your note on a mutual) | seen, read, viewed, read receipt |
 | change its colour (the mutual's, for both of you) | theme, customise, design, style |
 | remove it (a letter about you, by the owner of its @) | delete, take it down |
+| take it back (a wall letter of your own, by its writer; done, `taken back.`) | delete, unsend, retract, withdraw, remove |
 | keep it standing, renew | extend, refresh, resubscribe |
 | lapses | expires |
 | the wall | the feed, the board, the community |

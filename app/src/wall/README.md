@@ -234,7 +234,10 @@ each carry one line saying what they do, the reversible one first, because the
 one decision on this surface that must not be made by guessing at a label is
 the one between them. They were two bare outlined rows with an arrow each,
 which is a form drawn in a hurry; the pane is one object and the rows are
-parts of it.
+parts of it. (The flag has gone since, and both acts are rows of the letter's
+own `options`, the right soft key, with the heart and the replies' bubble on
+the left of the band; the soft keys, below. The one person who never had a
+row on it, the writer, has `take it back` there since 0074.)
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -459,7 +462,25 @@ still after the last word. Every letter is the same screen, set in one face
 | --- | --- |
 | **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. A letter from a verified Berkeley address carries the Berkeley mark in this row (below). Then the pen and `dear` with the writer's greeting, or the resolver's first name for the @, or, with neither, `dear you`. It used to be `dear` and the first name and then the handle, and `dear` and the handle alone where the resolver had no name; since 26 September the @ is never printed on a letter, its card while it loads, the letters asleep either side of it or its picture, and the handle is only the key the letter is filed and found under (`wall_search` still finds it by it). A sealed letter had a padlock where the pen is, until the seal went with 0066. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 280 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and since 0073 its second row and its battery are the note's face, which its writer sets on that screen (the greeting, as the composer's, and the battery as a key a bar at a time, each with the dotted pixel line under it that says it is theirs), kept with the note and read with it if it is ever mutual, a line they set having the row to itself with no handle beside it, and a story screen (the intro, the door) carries the glyphs and neither; the mutual carries the night it was told, its film and its keepsake alike, and the keepsake the phone's one battery after it, the pair's (0077, `keepface.js`): a key either of the two taps to take a bar off, the empty one round to full, the other seeing it move, with no dotted line under it and nothing saying so, never blinking, even empty (the two notes each carried their writer's battery until 29 September); and no second row, since the two names stand on its glass under the mark, `Jules & Ace` (Keepsake.jsx; the row was `Jules · Ace`, screen.jsx `top.pair`, until 29 September) |
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter was its stars, until 0066 |
-| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; since 0068 a press is anybody's and goes straight to the server, where it used to be carried through the gate from outside it and pressed on the way back in; a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
+| **the soft keys** | since 29 September, on the owner's ruling, the heart and the replies' bubble together on the left, each with its count, and `options` alone on the right (`screen.jsx` `keys.l` as a list, `.wl-scr-bot.is-grouped`; every count keeps the room of two figures so the bubble does not move when the heart is counted up). The heart and its count: the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; since 0068 a press is anybody's and goes straight to the server, where it used to be carried through the gate from outside it and pressed on the way back in; a read that set out before the press landed cannot take it back, `data.js` `heart`. The bubble raises the replies (below); a letter with no thread to read has the heart alone. `options` is a menu drawn the way the phone drew one, and its first row is always `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link); then, for a stranger, write to them, report it and `this is about me`; for the person who holds the letter's @, remove this letter and take my name off; and for the person who WROTE it, `take it back` and nothing a stranger's menu has (0074, below). While a menu is up the band reads `select` and `back`, the key that opened it shutting it. The picture is signed under the screen with the mark and `celestual.`, and its band is the card's, key for key (`share.js`) |
+
+**Taking it back** (0074, the owner's ruling of 29 September). The person who
+wrote a letter can take it back down at any time while it stands or waits on
+the desk, and put it back where it was within a day. Whose a letter is is
+said to its writer's own session alone (`yours` on the two reads, answered
+only about the caller; `data.js` `isYours` falls back to this device's
+`written` ids and `wall_mine`), and nobody else learns anything by it. It is
+offered in three places: the letter's options (`take it back`, then
+`take it back?` with `take it back` and `keep it`, then `taken back.` with
+`undo` and `ok`); the card the wall stands at its foot right after a live
+post (`Wall.jsx` `Up`: "your letter to Sofia is up." with `take it back` and
+`ok`, holding the tab back while it stands); and the composer's held screen,
+a quiet `take it back` under `back to the wall`. The account's list reads
+`you took it back` for such a letter, and the wall's notice never rises for
+it (`moderate.js` `whyDown` has the sentence all the same). Nothing is filed
+and no name is shut; to the person it was written to it is a letter that came
+down, as any other. A database without 0074 answers 'missing' and the row is
+simply not offered (`data.js` `canTakeBack`).
 
 The only thing a writer chooses about how a letter looks is the COLOUR it is
 lit in (a private note has no colour to choose, and its writer sets its face
@@ -590,9 +611,9 @@ foot, at a width a thumb finds.
 Since 26 September a letter has a thread (`Replies.jsx`, `replies.css`,
 `replies-api.js`, `replies-check.js`, `avatars.js`; migration 0068 and
 `supabase/functions/celestual-wall-reply` are the rules). Since 28 September
-it is read the way every comment thread on a phone is read: the letter's
-right soft key, a pixel speech bubble and its count drawn exactly as the
-heart and its count beside it are, raises a sheet from the foot of the glass
+it is read the way every comment thread on a phone is read: the soft key
+beside the heart on the left of the band, a pixel speech bubble and its
+count drawn exactly as the heart and its count beside it are, raises a sheet from the foot of the glass
 (`ThreadSheet`), and the letter's phone rises and steps back on the same
 clock until the whole of it stands in the room left between the close mark
 and the sheet's edge, still lit, as a reel stands over its comments (at half
@@ -1021,7 +1042,9 @@ drawn on it (`.wl-turn`, `the letter before this one` and `the letter
 after this one`), which is also the turn a keyboard and a screen reader
 find, and which keeps a press on a neighbour from reaching the room behind
 it, the way out. The arrow keys turn it, and the soft key that had the
-focus has it again on the card the turn lands on. Two fingers sideways on a
+focus has it again on the card the turn lands on, found by what it is
+(`is-heart`, `is-thread`, `is-options`) since the heart and the bubble share
+one place on the band. Two fingers sideways on a
 trackpad turn it one letter a swipe, and the swipe is kept from the
 browser, which would take it as the history going back. A turn asked for
 past an end leans the card a little and brings it home.

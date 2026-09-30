@@ -3723,6 +3723,12 @@ a.wl-lq { text-decoration: none; }
   .wl-root .wl-down-ok:hover { background: rgba(244, 241, 234, 0.1); }
 }
 .wl-root .wl-down-ok:active { background: var(--chalk); color: #000; }
+/* the card after a post (screens/Wall.jsx `Up`, the owner's ruling of 29
+   September): the same note with the phone's two keys under it, the act on
+   the left and `ok` on the right, as the letter's own screen puts them */
+.wl-down-keys.is-two { justify-content: space-between; }
+.wl-root .wl-down-ok.is-l { text-align: left; }
+.wl-root .wl-down-ok:disabled { opacity: 0.5; cursor: default; }
 /* On the wall the bottom of the screen is already dark: `.wl-shade.is-bottom`
    pours the void back over the field on a much longer ramp than this one, and
    two gradients over each other put a visible waist across the field where

@@ -127,6 +127,7 @@ import {
   normHandle, validHandle, hash, allowance, loadQuota,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor, atHandle,
   newNonce, postDraft, openCampuses, loadCampuses, targetKey,
+  canTakeBack, withdraw, unwithdraw,
 } from '../data.js'
 import { normaliseLook, freshLook, colourOf, stampOf } from '../looks.js'
 import { fault, whyNot, phoneAcross } from '../moderate.js'
@@ -331,6 +332,15 @@ export default function Write({
   // card stand in one element
   const power = useWake(reduce, POWER_MS, step === 1 || step === 'done' ? 'card' : String(step))
   const [done, setDone] = useState(() => (sentTo ? 'private' : ''))
+  // A letter held for the desk, and whether its writer has taken it back
+  // from this screen (the owner's ruling of 29 September, 0074): the letter
+  // is up to the desk, but the words are still the writer's, and the screen
+  // that says it is being read is the one place a writer who has just
+  // changed their mind is standing. `took` is '' (waiting), 'busy', 'back'
+  // (taken back) or 'failed'; a quiet line under the pill, not a second
+  // pill, since the thing this screen is for is the wall.
+  const [heldId, setHeldId] = useState('')
+  const [took, setTook] = useState('')
   // the reveal a note sent privately runs to, off the placement's answer
   const [ends, setEnds] = useState(0)
   const [styling, setStyling] = useState(false)
@@ -457,7 +467,7 @@ export default function Write({
   // ── what the wall answered ──
   const landedWall = (out, p) => {
     if (out.ok && out.status === 'live') { home(); return }
-    if (out.ok && out.status === 'pending') { setDone('pending'); setStep('done'); return }
+    if (out.ok && out.status === 'pending') { setHeldId(out.id || ''); setTook(''); setDone('pending'); setStep('done'); return }
     if (out.ok && out.status === 'rejected') {
       if (out.id) patch({ noticed: { ...(getState().noticed || {}), [out.id]: true } })
       renonce()
@@ -490,6 +500,22 @@ export default function Write({
     if (e === 'cap') { setStep('how'); setSaid(''); return }
     setSaid(WALL_SAY[e] || WALL_SAY.network)
   }
+
+  // ── a held letter, taken back ──
+  // Down with one press and back with one, as the wall's card after a post
+  // does it (screens/Wall.jsx `Up`): the day to put it back is the server's
+  // (0074), and a letter put back is waiting on the desk again, never up
+  // without having been read.
+  const takeHeld = async () => {
+    if (!heldId || took === 'busy') return
+    const was = took
+    setTook('busy')
+    const out = was === 'back' ? await unwithdraw(heldId) : await withdraw(heldId)
+    if (!alive.current) return
+    if (out?.ok) { setTook(was === 'back' ? '' : 'back'); return }
+    setTook(was === 'back' ? 'back' : 'failed')
+  }
+  const tookBack = took === 'back'
 
   // ── posting on the wall ──
   async function postWall(over = null) {
@@ -952,6 +978,7 @@ export default function Write({
         <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">
           {!fin ? <>and what<br />makes them so.</>
             : done === 'private' ? <>sent privately.</>
+            : tookBack ? <>taken<br />back.</>
             : <>it&rsquo;s being<br />read.</>}
         </Display>
         <div className="wl-write-step">
@@ -997,6 +1024,8 @@ export default function Write({
               {fin ? (
                 done === 'private' ? (
                   <ScreenNote glyph="check" title={`till ${endsWords(ends) || 'saturday'}`}>if they send you one by then, you both find out at 9pm.</ScreenNote>
+                ) : tookBack ? (
+                  <ScreenNote glyph="check" title="taken back.">it won&rsquo;t go up. undo puts it back in the reading.</ScreenNote>
                 ) : (
                   <ScreenNote glyph="wait" title="being read">it goes up once it passes.</ScreenNote>
                 )
@@ -1023,6 +1052,13 @@ export default function Write({
         <Pill tone="light" onClick={home}>back to the wall</Pill>
         {done === 'private' ? (
           <button type="button" className="wl-quiet" onClick={() => { if (toWall) toWall(); go('you') }}>your private notes</button>
+        ) : done === 'pending' && heldId && canTakeBack() ? (
+          <button
+            type="button" className="wl-quiet wl-write-takeback" onClick={takeHeld} disabled={took === 'busy'}
+            aria-label={tookBack ? 'undo: put it back in the reading' : 'take it back, so it never goes up'}
+          >
+            {tookBack ? 'undo' : took === 'failed' ? 'it did not come down. try again' : 'take it back'}
+          </button>
         ) : null}
       </>
     ) : (

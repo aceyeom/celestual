@@ -131,6 +131,7 @@ import { shareLetter, prepareLetter, letterFace, canShare, isReady } from '../sh
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
   nameFor, heart, wall, loadWall, removeLetter,
+  isYours, canTakeBack, withdraw, unwithdraw,
 } from '../data.js'
 import { ownerRemove, ownerRestore } from '../../api/alerts.js'
 import { href } from '../router.js'
@@ -472,16 +473,34 @@ function Lights({ look, seed }) {
 // Drawn on the letter's own glass, and on the "not on the wall" one once the
 // letter is read again and is gone, so the undo stands as long as either
 // does. `r` is { busy, said, onUndo, onLeave, leaveLabel }.
+//
+// And the same screen for the letter's WRITER, who took it back themselves
+// (`takeBack` in the sheet below, the owner's ruling of 29 September): it
+// says `taken back.`, the words the writer chose from the menu said back to
+// them as done, and its right key is `ok`, since a writer who took their own
+// letter down is not being shown out of anything. A letter that was waiting
+// on the desk when it was taken back goes back to waiting (0074), where no
+// reader can see it, so its undo lands on a screen that says so and has
+// nothing more to undo (`held`). `who` is 'writer' for these.
 function removedFace(r) {
+  const writer = r.who === 'writer'
+  if (writer && r.held) {
+    return {
+      body: <ScreenNote glyph="check" title="it's being read">it goes up once it passes.</ScreenNote>,
+      keys: { r: { label: 'ok', onClick: r.onLeave, aria: r.leaveLabel || 'ok' } },
+    }
+  }
   return {
     body: r.busy
       ? <ScreenNote glyph="wait" title="putting it back" />
       : r.said
         ? <ScreenNote title="it did not come back">{r.said}</ScreenNote>
-        : <ScreenNote glyph="check" title="removed" />,
+        : <ScreenNote glyph="check" title={writer ? 'taken back.' : 'removed'} />,
     keys: r.busy ? {} : {
-      l: { label: 'undo', onClick: r.onUndo, aria: 'undo: put the letter back on the wall' },
-      r: { label: 'back', onClick: r.onLeave, aria: r.leaveLabel || 'back' },
+      l: r.done ? undefined : { label: 'undo', onClick: r.onUndo, aria: 'undo: put the letter back where it was' },
+      r: writer
+        ? { label: 'ok', onClick: r.onLeave, aria: r.leaveLabel || 'ok' }
+        : { label: 'back', onClick: r.onLeave, aria: r.leaveLabel || 'back' },
     },
   }
 }
@@ -494,10 +513,21 @@ function removedFace(r) {
 // menu, the share menu, or a note ("shared", "saved"). Only the live card
 // has a view of its own; the neighbours on the strip are always the letter.
 //
-//   the letter   options · the heart and its count · the replies' bubble
-//                and its count (`share`, where there is no thread)
+//   the letter   the heart and its count, the replies' bubble and its
+//                count, together on the left · options, alone on the right
 //   a menu       select · back
 //   a note       ok
+//
+// The heart and the bubble were the middle and right keys, with `options`
+// on the left, until the owner's ruling of 29 September: "rearrange the
+// likes and comments so its on the left together and the options on the
+// right". What a reader does to a letter is together, under one thumb, and
+// the menu is where a phone kept its menu, alone at the other end of the
+// band (screen.jsx `keys.l` as a list). `share` is the first row of the
+// options on every letter now, thread or none, so the band is the same
+// three things on every letter; a letter with no thread to read has the
+// heart alone on the left. The key that opens a menu is the key that shuts
+// it: `options` is on the right, and a menu's `back` is on the right.
 //
 // The right key said `send` until the composer's own act said `send
 // anonymously`: one word for putting a letter up and for passing one on is a
@@ -518,7 +548,7 @@ function removedFace(r) {
 // and the pixels and the keys of letters that had not changed, inside the
 // frame the thing happened on. So a screen is kept as it was unless what it
 // shows has changed (`memo`), which for a neighbour is only its letter.
-const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, woke = '', onRemove = null }) {
+const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, woke = '', onRemove = null, onTakeBack = null }) {
   const to = l ? l.to : handle
   const first = useFirst(to)
   const hs = useContext(ThreadKey)
@@ -535,12 +565,19 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
   // of that: drawing it holds a phone for most of a second, which is a stall
   // in the turn when it lands on a letter only passed through
   const sharing = live && !!l && !!view && view.kind === 'share'
+  // the replies' count as the key says it, for the picture's bubble: the
+  // card's own thread only, read and not put away (Replies.jsx `shown`)
+  const th0 = hs && hs.th
+  // and `null` where the card has no bubble at all, a thread that cannot be
+  // read, so the picture draws the heart alone as the card does
+  const repliesN = !(th0 && th0.on) ? null
+    : th0.t && th0.t.ok && !th0.hiddenFromMe ? th0.count || 0 : 0
   useEffect(() => {
     if (!sharing) return undefined
     let alive = true
-    prepareLetter(letterFace(l, { name: toName })).then(() => { if (alive) drawn((n) => n + 1) })
+    prepareLetter(letterFace(l, { name: toName, replies: repliesN })).then(() => { if (alive) drawn((n) => n + 1) })
     return () => { alive = false }
-  }, [sharing, l && l.id, l && l.hearts, l && l.hearted, toName]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sharing, l && l.id, l && l.hearts, l && l.hearted, toName, repliesN]) // eslint-disable-line react-hooks/exhaustive-deps
   // whether this letter is still the one on the glass, so what a tap
   // answers late (a picture drawn, a file saved) is not put on the next
   const here = useRef(true)
@@ -561,9 +598,10 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
   const hearts = l.hearts || 0
   // the count on the key, in whole thousands past a thousand, as a phone
   // counted, so it is never more than three figures, and three set a step
-  // smaller (screen.css `.is-long`): it keeps to the middle of the band
-  // between `options` and the replies. "9.9k" was four, and ran into the
-  // word. The replies' key counts the same way (looks.js `countSaid`)
+  // smaller (screen.css `.is-long`), and the bubble beside it keeps its
+  // place whatever the count (screen.css `.wl-sk-n`). "9.9k" was four, and
+  // ran into the word. The replies' key counts the same way (looks.js
+  // `countSaid`)
   const heartsSaid = countSaid(hearts)
   // the envelope by the aerial: the person the letter is to has answered
   // (Replies.jsx `threadKey` says why it is there and not on the key). The
@@ -592,16 +630,33 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
      can do, taking the name off included (the claim's own sheet and the
      account's "take my name off the wall for good"). It was four look alike
      rows, "this is about me" beside "take my name off", a claim beside a DM
-     that ends in something permanent. */
+     that ends in something permanent.
+
+     And a third, for the person who WROTE it (the owner's ruling of 29
+     September, 0074): `take it back`, and nothing a stranger's menu has.
+     Writing to the person you wrote to, reporting your own words and
+     claiming to be the one they are about are not things a writer does to
+     their own letter. Whose it is is the server's answer to this session
+     alone (`yours`, api.js), or this device's own record of what it put up
+     (data.js `isYours`), and it is never drawn anywhere but on this menu,
+     for this reader. A database without the take back hides the row
+     (`canTakeBack`). A letter written to your own @ is both yours and
+     mine: the row to take it back, and the row to take the name off. */
   const toAt = !isNameKey(l.to)
-  // The right key is the thread's (Replies.jsx `threadKey`), and sharing is
-  // the first row of the options, where a phone put what it did with the
-  // thing on its screen. A letter whose thread cannot be read keeps `share`
-  // on the key, as every letter had it, and the options without it.
+  const yours = !!onTakeBack && canTakeBack() && isYours(l)
+  // The replies' key (Replies.jsx `threadKey`) stands beside the heart, and
+  // sharing is the first row of the options on every letter, where a phone
+  // put what it did with the thing on its screen, whether or not the letter
+  // has a thread to read.
   const tk = hs ? threadKey(hs.th, { open: hs.open, onToggle: hs.onToggle, id: hs.keyId, letter: hs.letter }) : null
-  const face = () => letterFace(l, { name: toName })
+  // the replies' count goes on the shared picture's bubble as it stands on
+  // the key (share.js `letterFace`)
+  const face = () => letterFace(l, { name: toName, replies: tk ? repliesN : null })
   const openShare = () => { prepareLetter(face()); onView({ kind: 'share', at: 0 }) }
-  const optionItems = [...(tk ? [{ t: 'share', run: openShare }] : []), ...(l.mine && onRemove ? [
+  const optionItems = [{ t: 'share', run: openShare }, ...(yours ? [
+    { t: 'take it back', run: () => onTakeBack(l) },
+    ...(l.mine && toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
+  ] : l.mine && onRemove ? [
     { t: 'remove this letter', run: () => onRemove(l) },
     ...(toAt ? [{ t: 'take my name off', run: () => go('remove', l.to) }] : []),
   ] : [
@@ -702,19 +757,19 @@ const LetterScreen = memo(function LetterScreen({ l, handle, seed, id, live = fa
   } else {
     top = letterTop
     body = <ScreenText text={text} />
+    /* never disabled while a press is out: the heart is drawn at once
+       (data.js `heart`), and a key that dimmed until the server answered
+       read as a press that had not taken, and let go of the focus */
+    const hk = {
+      glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? heartsSaid : '',
+      cls: `is-heart${heartsSaid.length > 2 ? ' is-long' : ''}`,
+      onClick: pressHeart, on: l.hearted,
+      pressed: !!l.hearted,
+      aria: `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
+    }
     keys = {
-      l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: `options: ${optionItems.map((x) => x.t).join(', ')}` },
-      /* never disabled while a press is out: the heart is drawn at once
-         (data.js `heart`), and a key that dimmed until the server answered
-         read as a press that had not taken, and let go of the focus */
-      c: {
-        glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? heartsSaid : '',
-        cls: heartsSaid.length > 2 ? 'is-long' : undefined,
-        onClick: pressHeart, on: l.hearted,
-        pressed: !!l.hearted,
-        aria: `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
-      },
-      r: tk || { label: 'share', onClick: openShare, aria: 'share this letter, save its picture, or copy its link' },
+      l: tk ? [hk, tk] : [hk],
+      r: { label: 'options', cls: 'is-options', onClick: () => onView({ kind: 'options', at: 0 }), aria: `options: ${optionItems.map((x) => x.t).join(', ')}` },
     }
   }
   return (
@@ -836,8 +891,53 @@ export default function Letter({
   // the same function for the life of the sheet, so the card's screen is
   // not drawn again for it (`useStable`)
   const onRemove = useStable(removeMine)
+
+  // ── the writer takes it back ──
+  // The owner's ruling of 29 September: the person who wrote a letter can
+  // take it back down, at any time while it stands (0074
+  // `wall_writer_remove`). `take it back` on the menu asks first, on the
+  // screen, `take it back?`, the act on the left key and `keep it` on the
+  // right, since a letter coming off the wall is not something a thumb
+  // should do by landing on the wrong row; and then it is down, the screen
+  // says `taken back.`, and `undo` puts it back where it was for as long as
+  // the screen stands (the server keeps the way back for a day, and the
+  // account's list and the wall's own card after a post offer it too). The
+  // same `removed` state and face as the owner's, marked as the writer's.
+  const takeBack = (l) => {
+    setView({
+      kind: 'ask', title: 'take it back?', yes: 'take it back', aria: 'take it back off the wall',
+      text: 'it comes off the wall now. you can put it back for a day.',
+      onYes: async () => {
+        setView({ kind: 'note', glyph: 'wait', title: 'taking it back' })
+        const out = await withdraw(l.id)
+        if (out?.ok) {
+          setRemoved({ id: l.id, to: l.to, busy: false, said: '', who: 'writer' })
+          setView(null)
+          return
+        }
+        setView({
+          kind: 'note', glyph: '', title: out?.error === 'gone' ? 'it is already down' : 'it did not come down', done: true,
+          text: out?.error === 'gone' ? '' : 'try again',
+        })
+      },
+    })
+  }
+  const undoTakeBack = async () => {
+    const r = removed
+    if (!r || r.busy) return
+    setRemoved({ ...r, busy: true, said: '' })
+    const out = await unwithdraw(r.id, r.to)
+    if (out?.ok && out.status === 'pending') { setRemoved({ ...r, busy: false, held: true }); return }
+    if (out?.ok) { setRemoved(null); setView(null); return }
+    if (out?.error === 'expired') { setRemoved({ ...r, busy: false, done: true, said: 'the day to put it back is over.' }); return }
+    setRemoved({ ...r, busy: false, said: 'try again' })
+  }
+  // the same function for the life of the sheet (`useStable`), as above
+  const onTakeBack = useStable(takeBack)
   // what the removed screen's keys do, with the state it draws
-  const removedAt = removed ? { ...removed, onUndo: undoMine, onLeave: leave, leaveLabel: upLabel } : null
+  const removedAt = removed ? {
+    ...removed, onUndo: removed.who === 'writer' ? undoTakeBack : undoMine, onLeave: leave, leaveLabel: upLabel,
+  } : null
   const aside = cold
     ? <><LetterBrand onWall={onWall} /><LetterX label={upLabel} /></>
     : <LetterX label={upLabel} />
@@ -1234,7 +1334,10 @@ export default function Letter({
     const x0 = from == null ? catchStrip() : from
     const focused = document.activeElement
     const k = focused && focused.closest ? focused.closest('.wl-letter-card .wl-sk') : null
-    keyed.current = k ? (['is-l', 'is-c', 'is-r'].find((n) => k.classList.contains(n)) || '') : ''
+    // by what the key is and not where it stands, since the heart and the
+    // bubble share one place on the band (`is-heart`, `is-thread`,
+    // `is-options`); a key with none of those is found by its place
+    keyed.current = k ? (['is-heart', 'is-thread', 'is-options', 'is-l', 'is-c', 'is-r'].find((n) => k.classList.contains(n)) || '') : ''
     if (view) setView(null)
     turned()
     if (reduce) { hold(); settled(); silent.current = true; go('letter', side.target); return }
@@ -2569,7 +2672,16 @@ export default function Letter({
   // One gone letter is not a stranger's: the one its owner just removed on
   // this sheet, which is read again the moment it comes down and answers
   // gone. Its screen keeps the undo (`removedFace`).
-  if (one === null) {
+  //
+  // Nor is one its writer just took back (`takeBack`), and that one is gone
+  // from under a name that may have other letters: a sheet opened on a name
+  // stands on the name's newest letter, which, once the one taken back has
+  // left the cache, is the next one down. So a sheet on a name whose letter
+  // was just taken down here stands on the undo, as a sheet on a letter's
+  // id does, until the undo is pressed or the sheet is left, and never
+  // slides a letter the person did not ask for under their thumb.
+  const downHere = !!removedAt && !!one && !byId && removedAt.to === handle && removedAt.id !== one.id
+  if (one === null || downHere) {
     const mineGone = removedAt && (removedAt.id === param || removedAt.to === handle) ? removedFace(removedAt) : null
     return (
       <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside} room>
@@ -2695,7 +2807,7 @@ export default function Letter({
                       id="wl-letter-to" live go={go}
                       view={removedAt && one && removedAt.id === one.id ? { kind: 'removed', ...removedAt } : view}
                       onView={setView}
-                      woke={cardWoke} onRemove={onRemove}
+                      woke={cardWoke} onRemove={onRemove} onTakeBack={onTakeBack}
                     />
                   </Handset>
                 )}
