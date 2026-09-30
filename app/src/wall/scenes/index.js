@@ -14,7 +14,7 @@ export const SCENES = [
   },
   {
     id: 'umbrella', name: 'the umbrella', make: umbrellaStory, ms: 5750, for: 'the door',
-    line: 'rain, in silhouette. she waits under a lamp, cold. he comes running with the umbrella furled, brakes in front of her and swings it up: it springs open over the two of them as she puts her arms round his neck. his arm round her waist, he kisses her forehead, and her foot comes up behind her. the rain turns to petals; the canopy opens into the ring.',
+    line: 'rain, in silhouette. she waits under a lamp, cold. he comes running with the umbrella furled, brakes in front of her and swings it up: it springs open over the two of them as she puts her arms round his neck. his arm round her waist, he kisses her forehead. the rain turns to petals; the canopy opens into the ring.',
   },
   {
     id: 'binary', name: 'binary', make: binaryStory, ms: 4100, for: 'loading',

@@ -1231,8 +1231,11 @@ export default function PixelStory({ story, at = null, from = null, mode = 'pixe
       // a spectrum is painted now, from where the pink will leave, while the
       // glass is still dark, and not on the frame the pink starts: its
       // field, its colours and its lighter step, all of it
+      // (asked of the story's wash alone where it answers it, so a story
+      // that works its frames out as it goes is not asked to work out all
+      // of them up to the pink before its first, scenes/kit.js `tale`)
       if (s.spectrum && story.times) {
-        const w = story.frame(story.times.glow, s.edge).wash
+        const w = story.washAt ? story.washAt(story.times.glow) : story.frame(story.times.glow, s.edge).wash
         if (w) pinkOf(s, w)
       }
       onCells(el, host, s, dpr)

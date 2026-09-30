@@ -125,6 +125,9 @@ import { Screen } from './screen.jsx'
 import PixelStory, { SQUARE, useFirstFrame } from './PixelStory.jsx'
 import { introStory, I_QUICK, I_RUN_AT, I_ENTER, I_WAKE_AT, I_WAKE_MS } from './pixmark.js'
 import { COLOURS, hexRgb, mix, skinOf, skinVars } from './looks.js'
+import { umbrellaStory } from './scenes/umbrella.js'
+import { benchStory } from './scenes/bench.js'
+import { solve, HER } from './scenes/rig.js'
 import './intro.css'
 
 // ── the looks it may turn ──
@@ -191,6 +194,47 @@ const BAG = 'celestual.intro.v2'
 const OLD = 'celestual.intro.v1'
 // every lit colour, which `?tint=` may hold the intro in as well
 const LIT = new Set(COLOURS.filter((c) => c.kind === 'lit').map((c) => c.slug))
+
+// ── what it tells ──
+// The owner asked for the intro to be told other ways as well, and for them
+// to come round at random: the run (pixmark.js `introStory`), the umbrella
+// (scenes/umbrella.js: he runs to her in the rain and flips the umbrella
+// open over them as she puts her arms round him) and the bench (scenes/
+// bench.js: behind them at night, she moves along to him and rests her head
+// on his shoulder). Each is lit in the look drawn, the same fifteen, and
+// answers the same moments for the phone to turn on. The two new ones are
+// longer, the umbrella about six seconds to the mark and the bench about
+// eight, and a tap still lands the mark at once. It never tells the one the
+// last load told (`TOLD_KEY`, in the browser's storage). Under reduced
+// motion it is the run, which is the mark held still.
+//
+// The two new ones work out bodies in the round and cloth and hair as they
+// go, which a phone well slower than a laptop cannot do sixty times a
+// second; the run is a few hundred cells. So before either is told the
+// device is timed over a little of that same work, on the black before the
+// screen wakes (`quick`), and one that is too slow for them is told the run.
+const TELLINGS = ['run', 'umbrella', 'bench']
+// (twice through two hundred and forty poses: about 19ms on a laptop, 30 on
+// a phone half as quick)
+const TOO_SLOW_MS = 32
+function quick() {
+  const a = performance.now()
+  for (let k = 0; k < 480; k++) {
+    solve(HER, { root: [0, 88, 0], yaw: k, pitch: 3, s2: [2, 0, 0], legs: [{ ik: [4, 8, 6], pole: [0, 0, 1] }, { ik: [-4, 8, -6], pole: [0, 0, 1] }] })
+  }
+  return performance.now() - a < TOO_SLOW_MS
+}
+const TOLD_KEY = 'celestual.intro.telling'
+const SCENE = { umbrella: umbrellaStory, bench: benchStory }
+function drawTelling(hold, held, reduce) {
+  if (hold.telling) return { id: hold.telling, keep: null }
+  if (held || reduce) return { id: 'run', keep: null }
+  let last = null
+  let ok = true
+  try { last = window.localStorage.getItem(TOLD_KEY) } catch { ok = false }
+  const id = pick(TELLINGS.filter((k) => k !== last))
+  return { id, keep: ok ? id : null }
+}
 
 const NIGHT = skinOf('night')
 const N = skinVars('night')
@@ -293,13 +337,12 @@ function along(stops, key, t) {
 // its corners, which is what the glass's edges are lit. They are all set
 // here, on the screen itself, and not in the stylesheet under it, since the
 // four numbers are not handed down (intro.css).
-function taleOf(id) {
+function taleOf(id, telling = 'run') {
   const look = LOOKS.get(id) || { kind: 'one', lay: 'one', stops: [id], lead: id }
   const { stops, lay } = look
   const one = lay === 'one'
   const to = skinOf(stops[0])
-  const story = introStory(I_RUN_AT - I_ENTER, {
-    pace: I_QUICK,
+  const lit = {
     panel: panelOf(to),
     ink: [NIGHT.ink, skinOf(look.lead).ink],
     // a block that has just turned, a step lighter, in the colour's own
@@ -308,7 +351,9 @@ function taleOf(id) {
     spectrum: one ? null : stops.map((c) => panelOf(skinOf(c))),
     axis: lay === 'axis' ? look.axis : null,
     even: lay === 'even',
-  })
+  }
+  // the run, or one of the other tellings at the phone's own pitch
+  const story = SCENE[telling] ? SCENE[telling](1, lit) : introStory(I_RUN_AT - I_ENTER, { pace: I_QUICK, ...lit })
   // a lamp on the black: every rainbow's, and a look across the glass's
   const lamp = lay === 'axis' || lay === 'even'
   // what each turns to: one colour's own skin, or the look's colour in its
@@ -383,7 +428,7 @@ const NO_KEYS = {}
 // story typed, and `?screen=green` lights the phone in the classic Nokia
 // colour from the first frame, for the owner to set beside the shipped one.
 function dev() {
-  if (!import.meta.env.DEV) return { beat: null, t: null, mode: 'pixel', look: LOOK, tint: null }
+  if (!import.meta.env.DEV) return { beat: null, t: null, mode: 'pixel', look: LOOK, tint: null, telling: null }
   const q = new URLSearchParams(window.location.search)
   const b = q.get('beat')
   const t = q.get('t')
@@ -395,6 +440,7 @@ function dev() {
     beat, t: at, mode: q.get('intro') === 'ascii' ? 'ascii' : 'pixel',
     look: screen && /^[a-z-]{2,24}$/.test(screen) ? { tint: screen } : LOOK,
     tint: tint === 'rainbow' ? RAINBOW : LOOKS.has(tint) || LIT.has(tint) ? tint : null,
+    telling: TELLINGS.includes(q.get('telling')) ? q.get('telling') : null,
   }
 }
 
@@ -470,7 +516,9 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   // the look, drawn once for the mount, and the story told in it
   const [tale] = useState(() => {
     const d = drawLook(hold, held)
-    return { ...taleOf(d.id), keep: d.keep }
+    const w = drawTelling(hold, held, reduce)
+    const telling = w.id === 'run' || hold.telling || quick() ? w.id : 'run'
+    return { ...taleOf(d.id, telling), keep: d.keep, told: w.keep }
   })
   const { story, beats, glow } = tale
   // (the mark, held, is the moment before the lift: the colour reaches the
@@ -500,8 +548,9 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   // draws another; a held frame, or a look held, keeps nothing. Written
   // twice under development's second render, the same both times
   useEffect(() => {
-    if (!tale.keep) return
     try {
+      if (tale.told) window.localStorage.setItem(TOLD_KEY, tale.told)
+      if (!tale.keep) return
       window.localStorage.setItem(BAG, JSON.stringify(tale.keep))
       window.localStorage.removeItem(OLD)
     } catch { /* nothing kept */ }

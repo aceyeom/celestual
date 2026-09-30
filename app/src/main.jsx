@@ -166,6 +166,21 @@ if (!adminPath && !sigPath) {
 }
 
 
+// A refresh, or leaving for another address: the browser keeps the old page
+// on the glass until the new one paints, so a refresh from the wall showed
+// its letters for a moment before the intro's black. The page goes black the
+// moment it starts to leave, so the next load comes up out of the same black
+// the intro opens on. If it does not leave after all (a link that opened
+// something else, a download), it comes back; and so does a page restored
+// from the back-forward cache.
+const leaving = () => {
+  const html = document.documentElement
+  html.classList.add('is-leaving')
+  setTimeout(() => html.classList.remove('is-leaving'), 2500)
+}
+window.addEventListener('beforeunload', leaving)
+window.addEventListener('pageshow', (e) => { if (e.persisted) document.documentElement.classList.remove('is-leaving') })
+
 const root = createRoot(document.getElementById('root'))
 
 if (adminPath) {

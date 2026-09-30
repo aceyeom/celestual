@@ -751,8 +751,14 @@ export function washFrom(u, x, y, ms = TOLD.wash) {
 // third of the way down the glass, the top edge is about two fifths of the
 // way to the farthest corner and the bottom band about two thirds.
 const REACH = { top: 0.4, bottom: 0.68 }
+// When a wash leaving at `at`, `ms` to the corners, reaches the top band and
+// the bottom band, and covers the glass: the moments a phone's glass turns
+// on (the tellings, scenes/kit.js `tale`, as `introStory` has them)
+export const washTimes = (at, ms = TOLD.wash) => ({
+  top: Math.round(at + washAtP(REACH.top, ms)), bottom: Math.round(at + washAtP(REACH.bottom, ms)), covered: at + ms,
+})
 // two hex colours mixed, `k` of the way
-function mixHex(a, b, k) {
+export function mixHex(a, b, k) {
   const A = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16))
   const B = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16))
   return `#${A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('')}`

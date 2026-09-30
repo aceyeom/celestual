@@ -330,33 +330,39 @@ function falling(pad, t, f) {
   pad.layers([[seg[0], INK, fade], [seg[1], INK, fade * 0.45], [seg[2], INK, fade * 0.15]])
 }
 
-export function benchStory(f = 1) {
+export function benchStory(f = 1, look = null) {
   const pad = new Pad(f)
   const src = new Pad(f)
   const camAt = (t) => camera({
     at: [lerp(-6, -2, sm5(span(t, 2500, 6000))), lerp(106, 110, sm5(span(t, 0, MORPH))), 0],
     s: lerp(0.95, 1.07, sm5(span(t, 0, MORPH))) * f, x0: 47 * f, y0: 37 * f,
   })
-  // the two of them at a moment, posed once for it
-  const memo = new Map()
-  const posed = (t) => {
-    const key = Math.round(t)
-    if (memo.has(key)) return memo.get(key)
-    const him0 = solve(HIM, himBase(t))
-    const herF = solve(HER_UP, herPose(t, him0))
-    const himF = solve(HIM, himPose(t, herF))
-    const out = { himF, herF }
-    if (memo.size > 600) memo.delete(memo.keys().next().value)
-    memo.set(key, out)
-    return out
+  // the two of them at a moment, posed once for it: her, against him as he
+  // sits (which is all her ponytail needs), and him, his cheek to her hair
+  const once = (fn) => {
+    const memo = new Map()
+    return (t) => {
+      const key = Math.round(t)
+      if (memo.has(key)) return memo.get(key)
+      const out = fn(key)
+      if (memo.size > 1600) memo.delete(memo.keys().next().value)
+      memo.set(key, out)
+      return out
+    }
   }
+  const herAt = once((t) => solve(HER_UP, herPose(t, solve(HIM, himBase(t)))))
+  const posed = once((t) => {
+    const herF = herAt(t)
+    return { himF: solve(HIM, himPose(t, herF)), herF }
+  })
+
   // her ponytail and the ribbon in it, worked out once over the story
   let tail = null
   let ties = null
   const TIE = onHead(HER_UP, 0, 7.6, -8.1)
   const hang = () => {
     if (tail) return
-    const herF = (t) => posed(t).herF
+    const herF = herAt
     const colliders = (t) => {
       const F = herF(t)
       return [
@@ -368,12 +374,12 @@ export function benchStory(f = 1) {
     }
     const wind = (t) => [0.00003 * (1 + Math.sin(t / 900)), 0, 0]
     tail = chains({
-      t0: 0, t1: END, n: 7, len: 27, stiff: 0.5, drag: 0.0026,
+      t0: 0, t1: MORPH + 10, n: 7, len: 27, stiff: 0.5, drag: 0.0026,
       roots: (t) => { const F = herF(t); return [{ p: at(F.head, TIE), d: mv(F.head.R, [0, -0.72, -0.7]) }] },
       colliders, wind,
     })
     ties = chains({
-      t0: 0, t1: END, n: 5, len: 10, stiff: 0.25, drag: 0.0028,
+      t0: 0, t1: MORPH + 10, n: 5, len: 10, stiff: 0.25, drag: 0.0028,
       roots: (t) => { const F = herF(t); return [-0.7, 0.7].map((x) => ({ p: at(F.head, V.add(TIE, [x, 0.2, -1.2])), d: mv(F.head.R, [x * 0.25, -1, -0.3]) })) },
       colliders, wind,
     })
@@ -404,17 +410,26 @@ export function benchStory(f = 1) {
     ])
   }
   let glide = null
+  let ringFrom = null
   const prep = (ms) => {
     if (typeof document === 'undefined') return true
     hang()
+    tail(0)
+    ties(0)
     const a = performance.now()
     const left = () => Math.max(0, ms - (performance.now() - a))
     if (!tail.step(left() / 2) || !ties.step(left())) return false
+    // (the gathering set up in two pieces, the ring's and then the star's,
+    // so that neither is a long frame)
+    if (!ringFrom) {
+      mark(f)
+      src.clear(); src.union(bench(camAt(MORPH)), INK)
+      ringFrom = src.cells()
+      if (ms !== Infinity) return false
+    }
     if (!glide) {
       const M = mark(f)
       const cam = camAt(MORPH)
-      src.clear(); src.union(bench(cam), INK)
-      const ringFrom = src.cells()
       src.clear(); people(src, MORPH, cam)
       const top = cam.P([0, 89.5, 6])[1]
       const starFrom = src.cells().filter((q) => q[4] >= 0.3 && q[1] < top)
@@ -446,7 +461,11 @@ export function benchStory(f = 1) {
     if (t < MORPH) people(pad, t, cam)
     softPetals(pad, t, { n: 7, seed: 19, v: 0.013, drift: 0.0045, sway: 3.2, from: -9000, box: [-6, -4, 104, 80], a: 0.95, size: 1.35 })
     const cells = pad.cells()
-    if (t >= MORPH) {
+    if (t >= MORPH + 1200 && !glide) {
+      // (asked for the mark before the gathering was worked out, as a skip
+      // asks: the mark as it lands, and nothing held up working it out)
+      for (const [x, y] of mark(f).all) cells.push([x, y, INK, 0, 1])
+    } else if (t >= MORPH) {
       prep(Infinity)
       glide.ring.at(t - MORPH, cells)
       glide.star.at(t - MORPH, cells)
@@ -455,7 +474,7 @@ export function benchStory(f = 1) {
   }
   const [wx, wy] = camAt(WASH_AT).P([-2, 124, Z0])
   // (for the lab's own checks: the poses and what hangs from them)
-  const story = tale({ f, end: END, draw, prep, live: true, wash: { at: WASH_AT, x: Math.round(wx), y: Math.round(wy), ms: 1450 } })
-  story.debug = { posed, hair: () => tail, ties: () => ties }
+  const story = tale({ f, end: END, draw, prep, live: true, look, hold: LEAN[1], done: MORPH + 1150, wash: { at: WASH_AT, x: Math.round(wx), y: Math.round(wy), ms: 1450 } })
+  story.debug = { posed, hair: () => tail, ties: () => ties, glide: () => glide }
   return story
 }

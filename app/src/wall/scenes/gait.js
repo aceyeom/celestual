@@ -71,12 +71,14 @@ export function hermite(p0, v0, p1, v1, ms, u) {
 //   lean     (t) => [x, y], the pelvis moved from its stand (to lean in to
 //            somebody, say), after the stop
 //   forward  how far the body leans into the run, degrees
+//   strides  how many strides of the run are worked out before the braking
+//            step (before them the body goes on at the run's pace)
 // Answers where the pelvis is (`root`), the legs (`legs`, for `solve`), how
 // fast it is going (`speed`, cm a ms), how much it is running (`running`,
 // 1 to 0 through the stop), the pelvis's tip (`pelvisPitch`) and the lean
 // of the body (`trunkLean`), and where in its stride it is (`phase`).
 export function runner(B, o) {
-  const { TB, T, end: END, stride: STRIDE, beside: BESIDE, forward = 8 } = o
+  const { TB, T, end: END, stride: STRIDE, beside: BESIDE, forward = 8, strides = 6 } = o
   const [FAR_ON, NEAR_OFF, NEAR_ON] = o.falls.map((d) => TB + d)
   const lean = o.lean || (() => [0, 0])
   const LEG = B.thigh + B.shin
@@ -85,7 +87,7 @@ export function runner(B, o) {
   const downs = [0, 1].map((i) => {
     const out = []
     const first = i === 0 ? 0 : 0.5
-    for (let k = -6; k < 0; k++) {
+    for (let k = -strides; k < 0; k++) {
       const on = TB + (k + first) * T
       if (on + DOWN * T <= TB) out.push([on, on + DOWN * T])
     }

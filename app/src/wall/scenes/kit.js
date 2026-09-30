@@ -25,7 +25,7 @@
 //              the shortest ways, pixmark.js `transport`), for any drawing
 //   `tale`     the story object PixelStory wants, from a frame function
 
-import { markOn, transport, washFrom, MARK_CUT } from '../pixmark.js'
+import { markOn, transport, washFrom, washTimes, mixHex, MARK_CUT } from '../pixmark.js'
 import { ECL, rad } from '../mark.js'
 
 // the inks a cell can carry (PixelStory.jsx `fillOf`): the screen's near
@@ -636,8 +636,24 @@ export function glideOf(from, to, { delay = () => 0, flight = 520, bend = 2.6, i
 // past its end (the petals still falling round the mark). `prep(ms)` is the
 // heavy start, worked a little at a time on the early frames. A frame past
 // the end, unless it is live, is the last.
-export function tale({ f = 1, end, draw, wash = null, live = false, prep = null, panel, front }) {
+//
+// Told as the intro (Intro.jsx), a telling is lit in the look the intro
+// drew, as its own story is (pixmark.js `introStory`): `look` is the panel
+// it turns to (`panel`, or a `spectrum` of them laid `axis` or `even`), the
+// lighter step at its front (`front`), and the ink going from the night's to
+// the look's as the colour goes out (`ink`). And it answers the moments the
+// phone turns on (`times`): the colour leaving, at the top band, at the
+// bottom band and covering the glass, the two of them holding each other
+// (`hold`) and the mark whole (`done`).
+export function tale({ f = 1, end, draw, wash = null, live = false, prep = null, panel, front, look = null, hold = null, done = null }) {
   const g = grid(f)
+  const L = look || {}
+  const ink = L.ink || null
+  const inkAt = (u) => {
+    if (!ink || !wash) return null
+    const k = clamp((u - wash.at) / ((wash.ms ?? 1300) * 0.6))
+    return k <= 0 ? ink[0] : k >= 1 ? ink[1] : mixHex(ink[0], ink[1], Math.round(k * 8) / 8)
+  }
   let lastKey = null
   let last = null
   const frame = (t) => {
@@ -648,15 +664,40 @@ export function tale({ f = 1, end, draw, wash = null, live = false, prep = null,
     const key = fr.key ?? `t${Math.round(u)}`
     if (key === lastKey && last) return last
     lastKey = key
-    last = { key, cells: fr.cells, wash: fr.wash !== undefined ? fr.wash : w, glow: fr.glow || null, ink: null }
+    last = { key, cells: fr.cells, wash: fr.wash !== undefined ? fr.wash : w, glow: fr.glow || null, ink: inkAt(u) }
     return last
   }
+  const times = wash ? { glow: wash.at, ...washTimes(wash.at, wash.ms ?? 1300), catch: hold ?? wash.at, done: done ?? end, end } : null
+  // The heavy start, worked ahead of the clock whenever the page is idle
+  // between frames, once asked for (`prime`), so that a telling told at once
+  // (the intro's) draws its frames and does not work out on them what its
+  // hair and its cloth will be doing.
+  let ahead = null
+  const workAhead = () => {
+    if (ahead || !prep || typeof window === 'undefined') return
+    const idle = window.requestIdleCallback
+    const later = idle ? (fn) => idle(fn, { timeout: 60 }) : (fn) => setTimeout(fn, 8)
+    ahead = true
+    const go = (d) => {
+      const ms = d && d.timeRemaining ? Math.max(2, Math.min(12, d.timeRemaining() - 1)) : 4
+      if (prep(ms) === false) later(go)
+    }
+    later(go)
+  }
   return {
-    cols: g.cols, rows: g.rows, end, fine: true, frame, panel, front,
+    cols: g.cols, rows: g.rows, end, fine: true, frame, times,
+    // the pink alone at a moment, without drawing it (PixelStory.jsx)
+    washAt: (t) => (wash ? washFrom(t - wash.at, wash.x, wash.y, wash.ms ?? 1300) : null),
+    panel: L.panel || panel, front: L.front !== undefined ? L.front : front,
+    spectrum: L.spectrum || null, axis: L.axis ?? null, even: !!L.even,
     live: live ? [end, Infinity] : null,
     // the heavy start, and `b` ms more of it; answers whether all of it is
     // done (a story with none is always done)
-    prime: (b = 0) => (prep ? prep(b) !== false : true),
+    prime: (b = 0) => {
+      if (!prep) return true
+      workAhead()
+      return prep(b) !== false
+    },
   }
 }
 // the pink's front from a point, for a story that lays the pink itself

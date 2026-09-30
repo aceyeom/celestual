@@ -10,11 +10,10 @@
 // and it springs open behind him, the canopy blooming out and a little past
 // itself and back, and he brings it over the two of them as she steps in
 // and puts her arms up round his neck. His other arm goes round her waist.
-// He bows his head and kisses her forehead, and her foot comes up behind
-// her. The rain thins, and the last of it comes down as petals. The camera
-// has come in to the two of them. The pink goes out from under the
-// umbrella; the canopy opens into the ring, and the two of them gather into
-// the star.
+// He bows his head and kisses her forehead. The rain thins, and the last
+// of it comes down as petals. The camera has come in to the two of them.
+// The pink goes out from under the umbrella; the canopy opens into the
+// ring, and the two of them gather into the star.
 //
 // His run is gait.js's: the legs as a run is measured, and the body put on
 // the ground by its feet.
@@ -27,7 +26,7 @@
 //          2400
 //   1700   she steps in to him; her arms round his neck by 2400
 //   1950   his arm round her waist
-//   2600   he kisses her forehead; her foot comes up behind her at 2700
+//   2600   he kisses her forehead
 //   3000   the rain eases into petals
 //   4300   the pink, from under the umbrella
 //   4450   the canopy into the ring, the two of them into the star
@@ -48,7 +47,6 @@ const STEP_IN = [1700, 2080]
 const ARMS = [1800, 2400]
 const HOLD = [1950, 2600]
 const KISS = [2600, 3150]
-const LIFT = [2700, 3250]
 const EASE = [3000, 4000]
 const WASH_AT = 4300
 const MORPH = 4450
@@ -60,7 +58,7 @@ const D = Math.PI / 180
 // are his left, [0]; the umbrella is in his far hand, his right.
 let GAIT = null
 const gaitOf = () => GAIT || (GAIT = runner(HIM, {
-  TB, T: RUN_T, end: END, x: HIM_X, stride: 34, beside: 7, falls: [290, 470, 720], forward: 10,
+  TB, T: RUN_T, end: END, x: HIM_X, stride: 34, beside: 7, falls: [290, 470, 720], forward: 10, strides: 3,
   // (as he holds her, his weight a little forward, into her)
   lean: (t) => [-4 * sm5(span(t, ...HOLD)), -0.6 * sm5(span(t, ...HOLD))],
 }))
@@ -285,9 +283,8 @@ const STAND = HER.root - 1.4
 // her pelvis: over her far foot as she waits; a step in to him
 const herX = (t) => HER_X + 15 * sm5(span(t, STEP_IN[0] + 60, STEP_IN[1] + 250))
 // Her feet: the far one planted, the near one easy and a little ahead as
-// she waits; the near one a step in to him, heel first; and at the last the
-// far one rolled up onto its ball and lifted up behind her, pointed.
-function herLegs(t, x) {
+// she waits; then the near one a step in to him, heel first.
+function herLegs(t) {
   const near = (() => {
     // the heel carried forward and set down, the toe up as it comes down
     // and then flat
@@ -297,16 +294,9 @@ function herLegs(t, x) {
     const [ax, ay] = rolled(HER, heel, 'heel', pitch, 1)
     return { ik: [ax, ay + 4.2 * Math.sin(Math.PI * u) ** 1.6, 6.2], pole: [1, 0.1, 0.1], foot: [90, pitch] }
   })()
-  const far = (() => {
-    const g = HER_X + 1 + HER.ball
-    const roll = sm5(span(t, LIFT[0], LIFT[0] + 180))
-    const [rx, ry] = rolled(HER, g, 'ball', -38 * roll, 1)
-    const up = sm5(span(t, LIFT[0] + 120, LIFT[1]))
-    if (up <= 0) return { ik: [rx, ry, -6.2], pole: [1, 0.05, -0.1], foot: [90, -38 * roll] }
-    const top = [x - 27, 39, -5.4]
-    const q = path([[0, [rx, ry, -6.2]], [0.45, [x - 21, 24, -5.8]], [1, top]], up)
-    return { ik: q, pole: [1, -0.1, -0.1], foot: [90, lerp(-38, -104, up)] }
-  })()
+  // (the far one stays where it is, and the leg trails a little as she
+  // goes in to him)
+  const far = { ik: [HER_X + 1, HER.ankle, -6.2], pole: [1, 0.05, -0.1], foot: [90, 0] }
   return [far, near]
 }
 // her pelvis's height: a little lower through the step, and up a little as
@@ -314,19 +304,20 @@ function herLegs(t, x) {
 const herY = (t) => STAND - 1.1 * Math.sin(Math.PI * span(t, STEP_IN[0], STEP_IN[1] + 200)) + 0.8 * sm5(span(t, ...ARMS))
 function herBody(t, him) {
   const x = herX(t)
-  // cold, hunched, her head down; then up at the sound of him
+  // her arms round herself and her head down a little in the rain, but
+  // standing tall; then up at the sound of him
   const cold = 1 - sm5(span(t, 560, 1500))
   const up = sm5(span(t, 560, 980))
   const b = breath(t, lerp(3400, 2400, sm5(span(t, 600, 1800))), 300)
   const into = sm5(span(t, STEP_IN[0], ARMS[1]))
   const pose = {
-    root: [x, herY(t), 0], yaw: 90, pitch: 3 - 2 * into,
-    s1: [2 + 3 * cold, 0, 0],
-    s2: [3 + 5 * cold - 0.7 * b, 0, 0],
-    neck: [6 * cold * (1 - up) + 2, 0, 0],
-    head: [12 * (1 - up) + wander(t, 4, 0.3) * 0.8, 0, wander(t, 5, 0.25) * 0.8],
-    shrug: [1.8 * cold + 0.4 * b, 1.8 * cold + 0.4 * b],
-    legs: herLegs(t, x),
+    root: [x, herY(t), 0], yaw: 90, pitch: 1 - 1 * into,
+    s1: [0.5 + 1 * cold, 0, 0],
+    s2: [1 + 2 * cold - 0.7 * b, 0, 0],
+    neck: [4 * cold * (1 - up) + 2, 0, 0],
+    head: [9 * (1 - up) + wander(t, 4, 0.3) * 0.8, 0, wander(t, 5, 0.25) * 0.8],
+    shrug: [0.9 * cold + 0.4 * b, 0.9 * cold + 0.4 * b],
+    legs: herLegs(t),
   }
   // leaning in to him as she comes
   pose.s1 = [pose.s1[0] + 2 * into, 0, 0]
@@ -388,7 +379,7 @@ const ROOTS = [-112, -84, -56, -28, 0, 28, 56, 84, 112].map((a) => {
   return { p: onHead(HER, 7.2 * Math.sin(r), 10.4 + 1.2 * Math.cos(r), -1.8 - 8.2 * Math.cos(r)), d: [0.3 * Math.sin(r), -1, -0.35 * Math.cos(r)] }
 })
 
-export function umbrellaStory(f = 1) {
+export function umbrellaStory(f = 1, look = null) {
   const pad = new Pad(f)
   const src = new Pad(f)
   // wide, for his run; up a little with the umbrella as it goes up; and in
@@ -423,11 +414,13 @@ export function umbrellaStory(f = 1) {
   let skirt = null
   const hang = () => {
     if (hair) return
-    const herF = herAt
+    // (before the telling begins, her hair and her skirt settle on her as
+    // she stands at its first moment)
+    const herF = (t) => herAt(Math.max(0, t))
     // the wind in the rain, gusting
     const gust = (t) => 0.00005 * (1 + 0.6 * Math.sin(t / 700) + 0.4 * Math.sin(t / 310 + 1))
     hair = chains({
-      t0: -1500, t1: END, n: 7, len: 32, drag: 0.0024, stiff: 0.34,
+      t0: -600, t1: MORPH + 10, settle: 400, n: 7, len: 32, drag: 0.0024, stiff: 0.34,
       roots: (t) => { const F = herF(t); return ROOTS.map((r) => ({ p: at(F.head, r.p), d: mv(F.head.R, r.d) })) },
       colliders: (t) => {
         const F = herF(t)
@@ -441,9 +434,9 @@ export function umbrellaStory(f = 1) {
       wind: (t) => [-gust(t), 0, 0],
     })
     skirt = cloth({
-      t0: -1500, t1: END, dt: 2, rows: 6, cols: 18, len: 40, flare: 1.45, drag: 0.0026,
-      radii: [13.6, 10.2],
-      waist: (t) => { const F = herF(t); return { p: at(F.root, [0, 4.5, -0.6]), R: F.root.R } },
+      t0: -600, t1: MORPH + 10, settle: 400, dt: 2, rows: 6, cols: 16, len: 58, flare: 1.4, drag: 0.0032,
+      radii: [12.8, 10.2],
+      waist: (t) => { const F = herF(t); return { p: at(F.root, [0, 4.5, -0.4]), R: F.root.R } },
       colliders: (t) => {
         const F = herF(t)
         const out = []
@@ -453,13 +446,15 @@ export function umbrellaStory(f = 1) {
         for (let i = 0; i < 2; i++) {
           const knee = F.shin[i].p
           out.push({ a: V.lerp(F.thigh[i].p, knee, 0.3), b: V.lerp(F.thigh[i].p, knee, 0.7), r: 6.4 })
-          out.push({ a: V.lerp(F.thigh[i].p, knee, 0.7), b: knee, r: 5.2 })
-          out.push({ a: knee, b: F.foot[i].p, r: 4.2 })
+          out.push({ a: V.lerp(F.thigh[i].p, knee, 0.7), b: knee, r: 5.4 })
+          out.push({ a: knee, b: V.lerp(knee, F.foot[i].p, 0.35), r: 5.0 })
+          out.push({ a: V.lerp(knee, F.foot[i].p, 0.35), b: F.foot[i].p, r: 4.2 })
         }
-        out.push({ c: at(F.root, [0, -5, -2.5]), r: 13 })
+        // her hips, side to side
+        out.push({ a: at(F.root, [-7, -6.5, -1.8]), b: at(F.root, [7, -6.5, -1.8]), r: 10.8 })
         return out
       },
-      wind: (t) => [-0.7 * gust(t), 0, 0],
+      wind: (t) => [-0.3 * gust(t), 0, 0],
     })
   }
   const herShapes = (t, F, cam) => flat([
@@ -497,18 +492,32 @@ export function umbrellaStory(f = 1) {
     return um
   }
   let glide = null
+  let ringFrom = null
+  let ringUm = null
   const prep = (ms) => {
     if (typeof document === 'undefined') return true
+    // (his run, and her hair and her skirt settled to the first moment:
+    // on the black, before the telling starts, as the intro primes it)
+    gaitOf()
     hang()
+    hair(0)
+    skirt(0)
     const a = performance.now()
     const left = () => Math.max(0, ms - (performance.now() - a))
     if (!hair.step(left() / 2) || !skirt.step(left())) return false
+    // (the gathering set up in two pieces, the ring's and then the star's,
+    // so that neither is a long frame)
+    if (!ringFrom) {
+      mark(f)
+      src.clear()
+      ringUm = scene(src, MORPH, camAt(MORPH), 'canopy')
+      ringFrom = src.cells()
+      if (ms !== Infinity) return false
+    }
     if (!glide) {
       const M = mark(f)
       const cam = camAt(MORPH)
-      src.clear()
-      const um = scene(src, MORPH, cam, 'canopy')
-      const ringFrom = src.cells()
+      const um = ringUm
       src.clear(); scene(src, MORPH, cam, 'people')
       const starFrom = src.cells().filter((q) => q[4] >= 0.3)
       const [hx, hy] = cam.P(V.add(um.grip, [0, SHAFT - RISE, 0]))
@@ -600,7 +609,11 @@ export function umbrellaStory(f = 1) {
       a: 0.95 * pk, alpha: (x, y) => { if (t >= MORPH) return 1; const r = roof(x * f); return r === null || y * f < r - f ? 1 : 0 },
     })
     const cells = pad.cells()
-    if (t >= MORPH) {
+    if (t >= MORPH + 1200 && !glide) {
+      // (asked for the mark before the gathering was worked out, as a skip
+      // asks: the mark as it lands, and nothing held up working it out)
+      for (const [x, y] of mark(f).all) cells.push([x, y, INK, 0, 1])
+    } else if (t >= MORPH) {
       prep(Infinity)
       glide.ring.at(t - MORPH, cells)
       glide.star.at(t - MORPH, cells)
@@ -610,7 +623,7 @@ export function umbrellaStory(f = 1) {
   }
   const [wx, wy] = camAt(WASH_AT).P([-4, 176, 0])
   // (for the lab's own checks: the poses and what hangs from them)
-  const story = tale({ f, end: END, draw, prep, live: true, wash: { at: WASH_AT, x: Math.round(wx), y: Math.round(wy), ms: 1350 } })
-  story.debug = { posed, hair: () => hair, skirt: () => skirt }
+  const story = tale({ f, end: END, draw, prep, live: true, look, hold: ARMS[1], done: MORPH + 1150, wash: { at: WASH_AT, x: Math.round(wx), y: Math.round(wy), ms: 1350 } })
+  story.debug = { posed, hair: () => hair, skirt: () => skirt, glide: () => glide }
   return story
 }
