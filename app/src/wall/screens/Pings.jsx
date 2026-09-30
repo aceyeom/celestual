@@ -40,6 +40,10 @@
 // A bought ping buys a note in a reveal, and nothing else: not an earlier
 // reveal, not a word about who sent what, not whether anybody is here. The
 // person a note is to learns nothing from it being bought (docs/SECURITY.md).
+// And since 29 September it is used only by a mutual: a note that was not
+// this time gives its bought ping back at the night, on hand, to keep
+// (migration 0075, Night.jsx), so what is bought here is a chance at a
+// mutual, and nothing is spent on a night that told nobody anything.
 //
 // ── back from Stripe (/paid) ────────────────────────────────────────────────
 // Stripe hosts the payment and sends the buyer back to /paid?session= (not

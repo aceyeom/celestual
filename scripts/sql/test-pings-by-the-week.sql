@@ -5,7 +5,12 @@
 -- at the most, across every @ one person has linked. Changing the words of a
 -- running note spends nothing; letting one go gives its pings back, free or
 -- bought; keeping one spends next week's; a pair made mutual gives back what
--- it held for a reveal after its night. Buying three grants three, once; a
+-- it held for a reveal after its night. A night that was not mutual gives
+-- back every ping it held (0075): a bought one on hand, a free one as one
+-- extra for the week after, one a person and never more, each night judged
+-- once, a kept note's two nights each on its own, the answer the same
+-- whoever the other person is, and nothing swept before it is settled.
+-- Buying three grants three, once; a
 -- refund takes them back, in proportion to the money, never below zero. The
 -- allowance is the proof's alone. Erasure takes the ledger, and a note to the
 -- erased @ gives its sender's ping back. The broom takes the ledger a
@@ -89,7 +94,15 @@ create or replace function pw_r0() returns timestamptz language sql as $$ select
 create or replace function pw_r1() returns timestamptz language sql as $$ select r1 from pw_r $$;
 
 select pw_proof(h) from unnest(array['pw_a', 'pw_t5', 'pw_c', 'pw_l', 'pw_buy', 'pw_g1', 'pw_g2',
-                                     'pw_e', 'pw_x', 'pw_y', 'pw_o', 'pw_r']) h;
+                                     'pw_e', 'pw_x', 'pw_y', 'pw_o', 'pw_r',
+                                     'pw_xa', 'pw_k', 'pw_s1', 'pw_s2', 'pw_s3', 'pw_st1']) h;
+
+-- (0075) a note on a list that is not mutual, by the @ it is to
+create or replace function pw_note(p_from text, p_to text) returns jsonb
+language sql as $$
+  select x from jsonb_array_elements(celestual_my_pings(p_from, 'proof-' || p_from)->'pings') x
+   where x->>'handle' = p_to and not (x->>'mutual')::boolean limit 1
+$$;
 
 -- ── 1. the doors ────────────────────────────────────────────────────────────
 select pw_ok('the allowance is the browser''s to ask for, and the ledger is nobody''s',
@@ -104,6 +117,15 @@ select pw_ok('the allowance is the browser''s to ask for, and the ledger is nobo
   and not has_table_privilege('anon', 'celestual_ping_spends', 'SELECT')
   and not has_table_privilege('authenticated', 'celestual_ping_spends', 'INSERT')
   and (select relrowsecurity from pg_class where oid = 'celestual_ping_spends'::regclass));
+select pw_ok('what comes back at the night is nobody''s either (0075)',
+  not has_function_privilege('anon', 'celestual_ping_settle(text)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'celestual_ping_settle(text)', 'EXECUTE')
+  and not has_function_privilege('anon', 'celestual_ping_free(text, timestamptz)', 'EXECUTE')
+  and not has_function_privilege('anon', 'celestual_ping_extra(text, timestamptz)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'celestual_ping_base(text)', 'EXECUTE')
+  and not has_table_privilege('anon', 'celestual_ping_extras', 'SELECT')
+  and not has_table_privilege('authenticated', 'celestual_ping_extras', 'INSERT')
+  and (select relrowsecurity from pg_class where oid = 'celestual_ping_extras'::regclass));
 select pw_ok('buying is the service role''s alone, and the old doors of three and two arguments are gone',
   not has_function_privilege('anon', 'celestual_billing_begin(text, text, text, integer)', 'EXECUTE')
   and not has_function_privilege('authenticated', 'celestual_billing_begin(text, text, text, integer)', 'EXECUTE')
@@ -129,7 +151,9 @@ select pw_ok('without the proof it answers nobody''s: the free ping, nothing bou
   and ((select r from pw_nobody)->'allowance'->>'free_left')::int = 1
   and ((select r from pw_nobody)->'allowance'->>'credits')::int = 0
   and ((select r from pw_nobody)->'allowance'->>'sent')::int = 0
+  and ((select r from pw_nobody)->'allowance'->>'extra')::int = 0
   and ((select r from pw_nobody)->'allowance'->'next'->>'free_left')::int = 1
+  and ((select r from pw_nobody)->'allowance'->'next'->>'extra')::int = 0
   and ((select r from pw_nobody)->'allowance'->'next'->>'sent')::int = 0);
 select pw_give('pw_a', 7);
 select pw_ok('so a stranger never learns what a handle bought',
@@ -141,9 +165,9 @@ create temp table pw_mine as select celestual_ping_allowance('pw_a', 'proof-pw_a
 select pw_ok('with the proof it answers the handle''s own, in the contract''s shape',
   ((select r from pw_mine)->>'ok')::boolean
   and (select array_agg(k order by k) from jsonb_object_keys((select r from pw_mine)->'allowance') k)
-      = array['ceiling', 'credits', 'free', 'free_left', 'next', 'price_cents', 'reveal_at', 'sent']
+      = array['ceiling', 'credits', 'extra', 'free', 'free_left', 'next', 'price_cents', 'reveal_at', 'sent']
   and (select array_agg(k order by k) from jsonb_object_keys((select r from pw_mine)->'allowance'->'next') k)
-      = array['free_left', 'reveal_at', 'sent']);
+      = array['extra', 'free_left', 'reveal_at', 'sent']);
 select pw_ok('the reveal is the one a note sent now runs to, and next the one after it',
   ((select r from pw_mine)->'allowance'->>'reveal_at')::timestamptz = pw_r0()
   and ((select r from pw_mine)->'allowance'->'next'->>'reveal_at')::timestamptz = pw_r1()
@@ -305,25 +329,192 @@ select pw_ok('and a keep into a full week is refused the same way',
   and (pw_row('pw_c', 'pw_c01')).expires_at = pw_r0());
 
 -- ── 11. a note that was not this time ───────────────────────────────────────
+-- (0075) Every ping spent on a night that was not mutual comes back at that
+-- night: a bought one on hand, a free one as one extra for the reveal a note
+-- sent after the night runs to. Here the night is two days ago, and the week
+-- after it is this one.
 select pw_give('pw_l', 1);
 select pw_send('pw_l', 'pw_lt');
 select pw_send('pw_l', 'pw_lu');
--- both lapse at a reveal two days ago
+select pw_ok('the first went out on the free ping and the second on the bought one',
+  (pw_spend('pw_l', 'pw_lt', pw_r0())).kind = 'free' and (pw_spend('pw_l', 'pw_lu', pw_r0())).kind = 'paid'
+  and pw_credits('pw_l') = 0);
+-- both lapse at a night two days ago, the ledger's rows with them
 update celestual_entries set expires_at = now() - interval '2 days' where from_handle = 'pw_l';
 update celestual_ping_spends set reveal_at = now() - interval '2 days' where handle = 'pw_l';
-select pw_ok('it used its ping, and this week''s free one is there',
-  (pw_allow('pw_l')->>'free_left')::int = 1
-  and (pw_allow('pw_l')->>'sent')::int = 0
-  and pw_credits('pw_l') = 0);
-select pw_ok('let go after its night, it gives nothing back: the ping was used',
+select pw_ok('before anything reads it, the night is still to be settled',
+  (select count(*) from celestual_ping_spends where handle = 'pw_l' and settled_at is null) = 2);
+create temp table pw_lapse as select pw_allow('pw_l') as a;
+select pw_ok('the first read settles it: the bought one is back on hand, to keep',
+  pw_credits('pw_l') = 1
+  and (select returned from celestual_ping_spends
+        where handle = 'pw_l' and to_hash = celestual_hash_handle('pw_lu')) = 'kept');
+select pw_ok('and the free one is one extra ping, for this week''s reveal',
+  (select returned from celestual_ping_spends
+    where handle = 'pw_l' and to_hash = celestual_hash_handle('pw_lt')) = 'extra'
+  and exists (select 1 from celestual_ping_extras
+               where handle = 'pw_l' and reveal_at = pw_r0() and from_reveal = now() - interval '2 days'));
+select pw_ok('the allowance says so exactly: one free, one extra, two to spend, one bought, none sent',
+  ((select a from pw_lapse)->>'free')::int = 1
+  and ((select a from pw_lapse)->>'extra')::int = 1
+  and ((select a from pw_lapse)->>'free_left')::int = 2
+  and ((select a from pw_lapse)->>'credits')::int = 1
+  and ((select a from pw_lapse)->>'sent')::int = 0
+  and ((select a from pw_lapse)->'next'->>'extra')::int = 0
+  and ((select a from pw_lapse)->'next'->>'free_left')::int = 1);
+select pw_ok('settled once: asked again, twice, nothing more comes back',
+  celestual_reveal_due() = 0 and celestual_ping_settle() = 0
+  and pw_credits('pw_l') = 1
+  and (select count(*) from celestual_ping_extras where handle = 'pw_l') = 1
+  and (select count(*) from celestual_ping_spends where handle = 'pw_l' and settled_at is not null) = 2);
+select pw_ok('each note on the list says what its night cost and what came back',
+  (pw_note('pw_l', 'pw_lt')->>'lapsed')::boolean
+  and pw_note('pw_l', 'pw_lt')->>'cost' = 'free' and pw_note('pw_l', 'pw_lt')->>'returned' = 'extra'
+  and pw_note('pw_l', 'pw_lu')->>'cost' = 'paid' and pw_note('pw_l', 'pw_lu')->>'returned' = 'kept');
+select pw_ok('let go after its night, it gives nothing more: what it held came back at the night',
   (celestual_withdraw('pw_l', 'pw_lu', 'proof-pw_l')->>'withdrawn')::boolean
-  and pw_credits('pw_l') = 0
+  and pw_credits('pw_l') = 1
   and pw_spends('pw_l') = 2);
-select pw_ok('sent again, it spends a ping for its new reveal',
+select pw_ok('sent again, it spends a free ping for its new reveal, and one free is left',
   (pw_send('pw_l', 'pw_lt')->>'recorded')::boolean
   and (pw_spend('pw_l', 'pw_lt', pw_r0())).kind = 'free'
   and (pw_row('pw_l', 'pw_lt')).expires_at = pw_r0()
-  and pw_spends('pw_l') = 3);
+  and pw_spends('pw_l') = 3
+  and (pw_allow('pw_l')->>'free_left')::int = 1);
+select pw_ok('a second note spends the extra, as a free ping, before the bought one',
+  (pw_send('pw_l', 'pw_lw')->>'recorded')::boolean
+  and (pw_spend('pw_l', 'pw_lw', pw_r0())).kind = 'free'
+  and pw_credits('pw_l') = 1
+  and (pw_allow('pw_l')->>'free_left')::int = 0);
+select pw_ok('and a note spent from the extra, let go, gives it back as any free one comes back',
+  (celestual_withdraw('pw_l', 'pw_lw', 'proof-pw_l')->>'withdrawn')::boolean
+  and (pw_allow('pw_l')->>'free_left')::int = 1
+  and pw_credits('pw_l') = 1);
+-- a note from before 0071 holds no row, and its night gives nothing back
+insert into celestual_entries (from_handle, to_hash, to_handle, expires_at, created_at)
+values ('pw_l', celestual_hash_handle('pw_lold'), 'pw_lold', now() - interval '2 days', now() - interval '12 days');
+select pw_ok('a note from before pings held none, and its night says so: no cost, nothing back',
+  (pw_note('pw_l', 'pw_lold')->>'lapsed')::boolean
+  and pw_note('pw_l', 'pw_lold') ? 'cost' and pw_note('pw_l', 'pw_lold')->>'cost' is null
+  and pw_note('pw_l', 'pw_lold') ? 'returned' and pw_note('pw_l', 'pw_lold')->>'returned' is null
+  and pw_credits('pw_l') = 1);
+
+-- ── 11b. one extra a week, and never more ───────────────────────────────────
+-- An extra that lapses comes back as the next week's extra, one, and a second
+-- free ping lapsing on the same night gives back nothing. The week is moved
+-- into the past whole: the notes, their pings, and the extra they were for.
+insert into celestual_ping_extras (handle, reveal_at, from_reveal)
+values ('pw_xa', pw_r0(), pw_r0() - interval '7 days');
+select pw_ok('an extra from last week is two free pings this week',
+  (pw_allow('pw_xa')->>'extra')::int = 1 and (pw_allow('pw_xa')->>'free_left')::int = 2
+  and (pw_allow('pw_xa')->'next'->>'extra')::int = 0 and (pw_allow('pw_xa')->'next'->>'free_left')::int = 1);
+select pw_send('pw_xa', 'pw_xt1');
+select pw_send('pw_xa', 'pw_xt2');
+select pw_ok('both go out free, and a third is refused with nothing bought',
+  (pw_spend('pw_xa', 'pw_xt1', pw_r0())).kind = 'free' and (pw_spend('pw_xa', 'pw_xt2', pw_r0())).kind = 'free'
+  and pw_send('pw_xa', 'pw_xt3')->>'error' = 'no_pings'
+  and (pw_allow('pw_xa')->>'free_left')::int = 0 and (pw_allow('pw_xa')->>'sent')::int = 2);
+update celestual_entries set expires_at = now() - interval '1 day' where from_handle = 'pw_xa';
+update celestual_ping_spends set reveal_at = now() - interval '1 day' where handle = 'pw_xa';
+update celestual_ping_extras set reveal_at = now() - interval '1 day' where handle = 'pw_xa';
+create temp table pw_twice as select pw_allow('pw_xa') as a;
+select pw_ok('both lapse: the first comes back as this week''s extra, the second as nothing',
+  (select count(*) from celestual_ping_spends where handle = 'pw_xa' and returned = 'extra') = 1
+  and (select count(*) from celestual_ping_spends where handle = 'pw_xa' and settled_at is not null and returned is null) = 1
+  and (select count(*) from celestual_ping_extras where handle = 'pw_xa' and reveal_at = pw_r0()) = 1
+  and ((select a from pw_twice)->>'extra')::int = 1
+  and ((select a from pw_twice)->>'free_left')::int = 2);
+select pw_ok('the one that brought nothing back says so: it cost the free ping, and nothing returned',
+  (select count(*) from unnest(array['pw_xt1', 'pw_xt2']) t
+    where pw_note('pw_xa', t)->>'cost' = 'free' and pw_note('pw_xa', t)->>'returned' is null) = 1
+  and (select count(*) from unnest(array['pw_xt1', 'pw_xt2']) t
+    where pw_note('pw_xa', t)->>'returned' = 'extra') = 1);
+-- one person, two linked @s, each with a free ping lapsing on the same night
+with g as (select gen_random_uuid() as id)
+insert into celestual_handle_links (handle, group_id)
+select h, g.id from g, unnest(array['pw_g3', 'pw_g4']) h;
+insert into celestual_ping_spends (handle, to_hash, reveal_at, kind) values
+  ('pw_g3', celestual_hash_handle('pw_g3t'), now() - interval '1 day', 'free'),
+  ('pw_g4', celestual_hash_handle('pw_g4t'), now() - interval '1 day', 'free');
+select celestual_reveal_due();
+select pw_ok('and one extra a person, counted across every @ they have linked',
+  (select count(*) from celestual_ping_extras where handle in ('pw_g3', 'pw_g4')) = 1
+  and (select count(*) from celestual_ping_spends where handle in ('pw_g3', 'pw_g4') and returned = 'extra') = 1
+  and (select count(*) from celestual_ping_spends where handle in ('pw_g3', 'pw_g4') and settled_at is not null) = 2
+  and celestual_ping_extra('pw_g3', pw_r0()) = 1 and celestual_ping_extra('pw_g4', pw_r0()) = 1);
+
+-- ── 11c. a note kept for next week, across its two nights ───────────────────
+-- Each night's ping is judged on its own night. The first night here is the
+-- last real reveal, which the list reads a running note's night off; the
+-- second is a moment ago.
+select pw_give('pw_k', 2);
+select pw_send('pw_k', 'pw_kt');
+select pw_send('pw_k', 'pw_ku');
+select celestual_renew('pw_k', 'pw_kt', 'proof-pw_k');
+select celestual_renew('pw_k', 'pw_ku', 'proof-pw_k');
+select pw_ok('kept, each holds a ping for both its reveals: free, then bought',
+  (pw_spend('pw_k', 'pw_kt', pw_r0())).kind = 'free' and (pw_spend('pw_k', 'pw_kt', pw_r1())).kind = 'free'
+  and (pw_spend('pw_k', 'pw_ku', pw_r0())).kind = 'paid' and (pw_spend('pw_k', 'pw_ku', pw_r1())).kind = 'paid'
+  and pw_credits('pw_k') = 0);
+create temp table pw_kr as select celestual_last_reveal(now()) as l, now() - interval '1 minute' as m;
+-- the first night comes and goes, and both notes run on to the second
+update celestual_ping_spends set reveal_at = (select l from pw_kr) where handle = 'pw_k' and reveal_at = pw_r0();
+select celestual_reveal_due();
+select pw_ok('at the first night, each gives back that night''s ping, and runs on holding the next',
+  (pw_spend('pw_k', 'pw_kt', (select l from pw_kr))).returned = 'extra'
+  and (pw_spend('pw_k', 'pw_ku', (select l from pw_kr))).returned = 'kept'
+  and pw_credits('pw_k') = 1
+  and (pw_spend('pw_k', 'pw_kt', pw_r1())).settled_at is null
+  and (pw_spend('pw_k', 'pw_ku', pw_r1())).settled_at is null);
+select pw_ok('and the list says it on the running note, the night it last stood in',
+  not (pw_note('pw_k', 'pw_ku')->>'lapsed')::boolean
+  and pw_note('pw_k', 'pw_ku')->>'cost' = 'paid' and pw_note('pw_k', 'pw_ku')->>'returned' = 'kept'
+  and pw_note('pw_k', 'pw_kt')->>'returned' = 'extra');
+-- the second night comes for one of them, and it lapses there
+update celestual_entries set expires_at = (select m from pw_kr)
+ where from_handle = 'pw_k' and to_hash = celestual_hash_handle('pw_ku');
+update celestual_ping_spends set reveal_at = (select m from pw_kr)
+ where handle = 'pw_k' and to_hash = celestual_hash_handle('pw_ku') and reveal_at = pw_r1();
+select celestual_reveal_due();
+select pw_ok('at its second night it gives back that one too, once, and nothing twice',
+  (pw_spend('pw_k', 'pw_ku', (select m from pw_kr))).returned = 'kept'
+  and pw_credits('pw_k') = 2
+  and (select count(*) from celestual_ping_spends where handle = 'pw_k' and returned = 'kept') = 2
+  and celestual_reveal_due() = 0 and pw_credits('pw_k') = 2);
+
+-- ── 11d. the same answer whoever the other person is ────────────────────────
+-- Three notes that were not this time: one to somebody who wrote back and let
+-- theirs go before the night (sealed, then unsealed), one to somebody who
+-- never wrote, and one to somebody who has an account and never wrote. The
+-- list, the allowance and the ledger answer all three alike, and nothing on
+-- the row could say which is which.
+insert into celestual_members (handle, handle_hash) values ('pw_st3', celestual_hash_handle('pw_st3'))
+on conflict (handle) do nothing;
+select pw_send('pw_s1', 'pw_st1');
+select pw_send('pw_s2', 'pw_st2');
+select pw_send('pw_s3', 'pw_st3');
+select pw_send('pw_st1', 'pw_s1');
+select pw_ok('one of them is sealed, the other side having written back',
+  (pw_row('pw_s1', 'pw_st1')).sealed_with is not null and (pw_row('pw_s2', 'pw_st2')).sealed_with is null);
+select celestual_withdraw('pw_st1', 'pw_s1', 'proof-pw_st1');
+select pw_ok('and unsealed again, the other side having let theirs go before the night',
+  (pw_row('pw_s1', 'pw_st1')).sealed_with is null);
+create temp table pw_sn as select now() - interval '3 hours' as n;
+update celestual_entries set expires_at = (select n from pw_sn) where from_handle in ('pw_s1', 'pw_s2', 'pw_s3');
+update celestual_ping_spends set reveal_at = (select n from pw_sn) where handle in ('pw_s1', 'pw_s2', 'pw_s3');
+create temp table pw_same as
+  select h, pw_note(h, t) - 'handle' - 'time' as row, pw_allow(h) as week
+    from (values ('pw_s1', 'pw_st1'), ('pw_s2', 'pw_st2'), ('pw_s3', 'pw_st3')) v(h, t);
+select pw_ok('the three notes answer alike, field for field',
+  (select count(distinct row) from pw_same) = 1
+  and (select bool_and((row->>'lapsed')::boolean and row->>'returned' = 'extra' and row->>'cost' = 'free') from pw_same));
+select pw_ok('and so do the three weeks',
+  (select count(distinct week) from pw_same) = 1
+  and (select bool_and((week->>'extra')::int = 1) from pw_same));
+select pw_ok('and a note that was not mutual carries no field that could say whether they are here',
+  (select array_agg(k order by k) from jsonb_object_keys(pw_note('pw_s3', 'pw_st3')) k)
+    = array['avatar_path', 'card', 'cost', 'display_name', 'expires_at', 'handle', 'is_verified', 'known',
+            'lapsed', 'mutual', 'returned', 'revealed_at', 'their_card', 'time']);
 
 -- ── 12. buying ──────────────────────────────────────────────────────────────
 create temp table pw_b1 as select celestual_billing_begin('pw_buy', 'proof-pw_buy', 'pings', 3) as r;
@@ -495,11 +686,29 @@ select pw_ok('the broom sweeps the ledger too',
 select pw_ok('taking a ping a fortnight past its reveal, and not one sooner',
   not exists (select 1 from celestual_ping_spends where handle = 'pw_old' and to_hash = 'pw_hash_1')
   and exists (select 1 from celestual_ping_spends where handle = 'pw_old' and to_hash = 'pw_hash_2'));
+-- (0075) a bought ping whose night came and nothing settled it, left long
+-- enough for the broom to reach: settled first, then swept
+insert into celestual_ping_spends (handle, to_hash, reveal_at, kind) values
+  ('pw_pg', 'pw_hash_3', now() - interval '16 days', 'paid');
+insert into celestual_ping_extras (handle, reveal_at, from_reveal) values
+  ('pw_pg2', now() - interval '15 days', now() - interval '22 days'),
+  ('pw_pg2', now() - interval '13 days', now() - interval '20 days');
+create temp table pw_swept as select celestual_purge_expired() as r;
+select pw_ok('the broom never takes a ping before its night is settled: it comes back, then goes',
+  ((select r from pw_swept)->>'spends')::int >= 1
+  and not exists (select 1 from celestual_ping_spends where handle = 'pw_pg')
+  and pw_credits('pw_pg') = 1);
+select pw_ok('and an extra goes a fortnight after the reveal it was for, and not sooner',
+  ((select r from pw_swept)->>'extras')::int >= 1
+  and not exists (select 1 from celestual_ping_extras where handle = 'pw_pg2' and reveal_at < now() - interval '14 days')
+  and exists (select 1 from celestual_ping_extras where handle = 'pw_pg2' and reveal_at > now() - interval '14 days'));
 
 -- ── 16. sent and let go, as often as anybody likes ──────────────────────────
 -- There is no bound on new pairs beyond the hourly limits (the header of 0071
 -- says why): a note sent and let go learns nothing, whether the @ has an
--- account included, which is said at the reveal and not before.
+-- account included. That is never said of a note that was not mutual, before
+-- its night, at it or after (0075: the list's row for one is the same whoever
+-- the other person is, section 11d); only a pair already told says it.
 insert into celestual_members (handle, handle_hash) values ('pw_rm', celestual_hash_handle('pw_rm'))
 on conflict (handle) do nothing;
 select pw_ok('a note to somebody with an account does not say so before the night',

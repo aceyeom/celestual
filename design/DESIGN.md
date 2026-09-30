@@ -544,6 +544,21 @@ drawn a whole number of device pixels to a cell (`crisp`), at no more than
 two million of them, and only where the frame changed (8.4).
 Under reduced motion every story is drawn on its last frame.
 
+**A message from celestual.** Since 29 September a night that was not mutual
+is told on a phone of its own (`Night.jsx`): the envelope and `celestual`
+across the band, the night's date where a letter carries its day, and no
+battery, since nobody set one. It is the night's colour (`looks.js` `night`),
+lit, never the rose, which is the mutual's alone, and never dimmed while it
+is being read: a note that was not this time dims only when its own words
+are turned to. The report is left set as a message is, the title in a
+screen note's large face (11cqw) and three lines a step down (6.4cqw), the
+line about the other person a shade back and the line about what came back
+led by the phone's small check when something did. Its keys are `options`
+and `ok`, the options the next steps (`send it again`, `share celestual`,
+`let it go`), and the menu turns them to `select` and `back` as every menu
+does. It stands in the private notes' frame once a reveal, and the same
+report is the face a lapsed note opens on and its `/reveal/<handle>`.
+
 **The context.** `PhoneChrome` (`parts.jsx`) is turned on at the wall's root
 (`index.jsx`) and read by the shared parts that draw rather than lay out:
 `Pill tone="light"` is the lit key and not `LiquidButton`; `Icon`, `Close`,

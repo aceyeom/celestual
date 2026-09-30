@@ -5,7 +5,9 @@
 // moment: the weekly reveal, Saturday at nine at night in California (0069).
 // One free ping for every reveal, and more bought (0071); each runs to its
 // week's reveal and can be kept for the next, which spends that week's;
-// letting one go gives its ping back. Matching and suppression run on salted hashes, and
+// letting one go gives its ping back, and so does a night that was not
+// mutual (0075): a bought one comes back on hand, a free one as one extra
+// next week. Matching and suppression run on salted hashes, and
 // since migration 0010 the server also keeps the normalised target so the
 // owner's pings restore BY NAME on any device they verify on. Since 0072 a
 // mutual is kept on both lists as it was told, so a person can write to
@@ -101,6 +103,13 @@ export async function fetchMyPings({ handle, proof } = {}) {
         // it, and the night a mutual was told
         lapsed: !!p.lapsed,
         revealed_at: p.revealed_at || null,
+        // since 0075, on a note that is not mutual: what the night it last
+        // stood in cost it ('free', 'paid', or nothing held) and what came
+        // back ('extra', one more free ping next week; 'kept', the bought
+        // one back on hand; or nothing). Only this person's own ledger: the
+        // same whoever the other person is, and never whether they are here
+        cost: p.cost === 'free' || p.cost === 'paid' ? p.cost : null,
+        returned: p.returned === 'extra' || p.returned === 'kept' ? p.returned : null,
         card: p.card || null,
         theirCard: p.their_card || null,
         // The resolver's answer for the handle, when it has one (0042), so
@@ -120,7 +129,8 @@ export async function fetchMyPings({ handle, proof } = {}) {
 }
 
 // This week's pings (0071, docs/PINGS-BY-THE-WEEK.md): the free one, the
-// ones bought, and how many are spent on the reveal a note sent now would run
+// extra a night that was not mutual gave back (`extra`, 0075), the ones
+// bought, and how many are spent on the reveal a note sent now would run
 // to, and on the one after it. Proof gated, like the list. Answers
 // { ok, allowance } or { ok:false, allowance } with nobody's numbers in it.
 export async function fetchAllowance({ handle, proof } = {}) {

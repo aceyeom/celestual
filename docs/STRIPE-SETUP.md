@@ -23,7 +23,10 @@ Three things stay true through all of it:
 - **A bought ping never lapses.** It is spent only when a note is sent, sent
   again or kept for next week, and only once the week's free one is gone. It
   comes back if its note is let go, or turns out mutual before a reveal it was
-  kept for.
+  kept for, and (since 0075) if the Saturday it was spent on was not mutual:
+  it is back on hand that night, to keep. A bought ping is used only by a
+  mutual. (The free one of a night that was not mutual comes back as one
+  extra free ping for the week after, one a person a week.)
 - **Nobody has more than ten pings in one reveal.** Buying more does not buy
   past that.
 

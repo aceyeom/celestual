@@ -88,6 +88,9 @@ const EMPTY = {
   revealSeen: null,   // the weekly reveal this device has opened, by the
                       // moment it fell (pings.js `lastReveal`): until it has
                       // been, the account's key in the bar carries a light
+  nightSeen: null,    // the reveal whose night this device has told, when
+                      // notes on it were not mutual (pings.js `nightWaiting`,
+                      // Night.jsx): once a reveal, by the moment it fell
   noteSpans: [],      // when each of this person's private notes went out and
                       // when it ended or was told, as the list last said it
                       // (pings.js `revealWaiting`). Never who it was to

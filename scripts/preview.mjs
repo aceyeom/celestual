@@ -335,6 +335,25 @@ function faceAnswer() {
   }
 }
 
+// ── the night that was not (0075, the not-mutual stream) ───────────────────
+// What a night that was not mutual gave back, on the notes that lapsed on it
+// (`cost` and `returned` on celestual_my_pings' rows, Night.jsx): 'extra'
+// (the free ping, back as this week's extra), 'kept' (a bought one, back on
+// hand), 'capped' (a second free one the same night, nothing back), 'old'
+// (a note from before pings, which held none), 'many' (three that night:
+// the extra, a bought one back and one from before), and 'mutual' (the
+// extra, on a night that also told the mutual). With any of them but
+// 'mutual' the fixture's mutual with jules.k was told three weeks before, so
+// the night is only the notes that were not. '' leaves the rows as they
+// were, and every route but these seeds the night's screen as seen
+// (`nightSeen`), so no other shot changes.
+let NIGHT = ''
+const NIGHT_ROW = (w) => (w === 'extra' || w === 'mutual' ? { cost: 'free', returned: 'extra' }
+  : w === 'kept' ? { cost: 'paid', returned: 'kept' }
+  : w === 'capped' ? { cost: 'free', returned: null }
+  : { cost: null, returned: null })
+const NIGHT_TOLD = () => (NIGHT && NIGHT !== 'mutual' ? NEXT_REVEAL - 21 * DAY : NEXT_REVEAL - 7 * DAY)
+
 // ── the replies (0068) ──────────────────────────────────────────────────────
 // Every field is wall_reply_thread's. `who` is sixteen hex, as the server's
 // salted hash is, and one writer is one `who` all down a thread: the first
@@ -913,11 +932,17 @@ const DESK = {
 function ALLOWANCE() {
   const at = NEXT_REVEAL - now >= DAY ? NEXT_REVEAL : NEXT_REVEAL + 7 * DAY
   const w = FULL ? 'none' : WEEK
+  // (0075) 'extra': a night gave the free ping back, both still to spend;
+  // 'extraone': the free one spent, the extra left; 'extrakept': the extra
+  // and a bought one back, nothing spent; 'kept': a bought one back
+  const extra = ['extra', 'extraone', 'extrakept'].includes(w) ? 1 : 0
   return {
     reveal_at: new Date(at).toISOString(),
-    free: 1, free_left: w === 'free' ? 1 : 0, credits: w === 'credits' ? 2 : 0,
-    sent: w === 'free' ? 0 : 1, ceiling: 10, price_cents: 299,
-    next: { reveal_at: new Date(at + 7 * DAY).toISOString(), free_left: 1, sent: 0 },
+    free: 1, extra,
+    free_left: w === 'free' || w === 'kept' || w === 'extraone' ? 1 : w === 'extra' || w === 'extrakept' ? 2 : 0,
+    credits: w === 'credits' ? 2 : w === 'kept' || w === 'extrakept' ? 1 : 0,
+    sent: w === 'free' || w === 'kept' || w === 'extra' || w === 'extrakept' ? 0 : 1, ceiling: 10, price_cents: 299,
+    next: { reveal_at: new Date(at + 7 * DAY).toISOString(), extra: 0, free_left: 1, sent: 0 },
   }
 }
 
@@ -1055,10 +1080,10 @@ const RPC = {
     pings: [
       {
         handle: NOTES === 'cjk' ? 'seoyeon.kim' : 'jules.k',
-        time: MUTUAL_AT,
-        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        time: NIGHT && NIGHT !== 'mutual' ? MUTUAL_AT - 14 * DAY : MUTUAL_AT,
+        expires_at: new Date(NIGHT_TOLD()).toISOString(),
         mutual: true,
-        revealed_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        revealed_at: new Date(NIGHT_TOLD()).toISOString(),
         ...(NOTES === 'long' ? {
           card: { words: 'i have wanted to say this since the second week of term, when you lent me a pen in the lecture on tides and forgot to ask for it back. i still have it. i used it to write this. every thursday i sat two rows behind you and said next week, and then it was week ten.' },
           their_card: { words: 'i kept nearly saying something after class and then not saying it. you always packed up slowly, like you were waiting for something, and i hoped it was me. if this is you then yes: the library steps, friday, after the last lecture. i will be the one pretending to read.' },
@@ -1114,7 +1139,27 @@ const RPC = {
         mutual: false,
         lapsed: true,
         card: { words: 'the library steps, the day it hailed.' },
+        // (0075) what its night cost and gave back
+        ...(NIGHT ? NIGHT_ROW(NIGHT === 'many' ? 'extra' : NIGHT) : {}),
       },
+      // (0075) the night of three: a bought one back, and one from before
+      ...(NIGHT === 'many' ? [{
+        handle: 'aya.nakamura',
+        time: now - 10 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        mutual: false,
+        lapsed: true,
+        card: { words: 'the blue umbrella outside dwinelle.' },
+        ...NIGHT_ROW('kept'),
+      }, {
+        handle: 'sofiaaa.reyes',
+        time: now - 13 * DAY,
+        expires_at: new Date(NEXT_REVEAL - 7 * DAY).toISOString(),
+        mutual: false,
+        lapsed: true,
+        card: null,
+        ...NIGHT_ROW('old'),
+      }] : []),
     ],
   }),
 }
@@ -1548,6 +1593,62 @@ const ROUTES = [
   { label: 'you-hover',     path: '/berkeley/you', acts: [['wait', 1400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
   { label: 'you-revealed-hover', path: '/berkeley/you', store: { revealSeen: 1, noteSpans: [[now - 9 * DAY, NEXT_REVEAL - 7 * DAY]] },
     acts: [['wait', 3400], ['mouse', '.wl-vault-row.is-mutual .wl-slot-open', 0, 'hover']], settle: 300 },
+
+  // ── the night that was not (0075, the not-mutual stream) ────────────────
+  // The night's own screen in the private notes (Night.jsx `NightCard`),
+  // once a reveal: one note, its free ping back as this week's extra, and
+  // the week's foot saying it; a bought one back; the second free one of a
+  // night, which brings nothing back; a note from before pings; three at
+  // once; a night that also told a mutual; the share, copied; and still.
+  // Then a note that was not this time, opened on its report, its menu, its
+  // words, and at its own reveal's address, where `nothing here.` stood
+  { label: 'night', path: '/berkeley/you', night: 'extra', week: 'extra',
+    store: { revealSeen: 1, nightSeen: null, noteSpans: [[now - 11 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
+  { label: 'night-foot', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
+    acts: [['wait', 1600], ['end', '.wl-you.is-card']], settle: 900 },
+  { label: 'night-kept', path: '/berkeley/you', night: 'kept', week: 'kept', store: { nightSeen: null }, settle: 1600 },
+  { label: 'night-capped', path: '/berkeley/you', night: 'capped', week: 'extra', store: { nightSeen: null }, settle: 1600 },
+  { label: 'night-old', path: '/berkeley/you', night: 'old', week: 'free', store: { nightSeen: null }, settle: 1600 },
+  { label: 'night-many', path: '/berkeley/you', night: 'many', week: 'extrakept', store: { nightSeen: null }, settle: 1600 },
+  { label: 'night-mutual', path: '/berkeley/you', night: 'mutual', week: 'extra',
+    store: { revealSeen: 1, nightSeen: null, noteSpans: [[now - 11 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 3400 },
+  { label: 'night-menu', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l']], settle: 900 },
+  { label: 'night-many-menu', path: '/berkeley/you', night: 'many', week: 'extrakept', store: { nightSeen: null },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l']], settle: 900 },
+  { label: 'night-let-go', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l'], ['wait', 400], ['click', '.wl-night .wl-scr-menu li:last-child']], settle: 900 },
+  { label: 'night-shared', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-l'], ['wait', 400], ['click', '.wl-night .wl-scr-menu li:nth-child(2)']], settle: 900 },
+  { label: 'night-ok', path: '/berkeley/you', night: 'extra', week: 'extra', store: { nightSeen: null },
+    acts: [['wait', 1600], ['click', '.wl-night .wl-sk.is-r']], settle: 900 },
+  { label: 'night-still', path: '/berkeley/you', night: 'extra', week: 'extra', still: true,
+    store: { revealSeen: 1, nightSeen: null, noteSpans: [[now - 11 * DAY, NEXT_REVEAL - 7 * DAY]] }, settle: 900 },
+  { label: 'night-seen', path: '/berkeley/you', night: 'extra', week: 'extra', settle: 1400 },
+  { label: 'night-note', path: '/berkeley/you', night: 'extra', week: 'extra',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
+  { label: 'night-note-kept', path: '/berkeley/you', night: 'kept', week: 'kept',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
+  { label: 'night-note-capped', path: '/berkeley/you', night: 'capped', week: 'extra',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
+  { label: 'night-note-old', path: '/berkeley/you', night: 'old', week: 'free',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 900 },
+  { label: 'night-note-menu', path: '/berkeley/you', night: 'extra', week: 'extra',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open'], ['wait', 900],
+           ['click', '.wl-you-ping .wl-sk.is-l']], settle: 900 },
+  { label: 'night-note-read', path: '/berkeley/you', night: 'extra', week: 'extra',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open'], ['wait', 900],
+           ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(4)']], settle: 900 },
+  { label: 'night-note-let-go', path: '/berkeley/you', night: 'extra', week: 'extra',
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open'], ['wait', 900],
+           ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
+  { label: 'night-note-still', path: '/berkeley/you', night: 'extra', week: 'extra', still: true,
+    acts: [['wait', 1400], ['end', '.wl-sheet'], ['wait', 300], ['click', '.wl-vault-row.is-lapsed .wl-vault-open']], settle: 600 },
+  { label: 'reveal-ended', path: '/berkeley/reveal/maya.okafor?beat=4', night: 'extra', week: 'extra', settle: 1400 },
+  { label: 'reveal-ended-kept', path: '/berkeley/reveal/maya.okafor?beat=4', night: 'kept', week: 'kept', settle: 1400 },
+  { label: 'reveal-ended-still', path: '/berkeley/reveal/maya.okafor?beat=4', night: 'extra', week: 'extra', still: true, settle: 900 },
+  // and the composer, with the free one spent and the extra left
+  { label: 'ping-extra', path: '/berkeley/ping/pilar.echevarria', week: 'extraone', settle: 1400 },
 
   // the addresses Main used to draw, landing on the wall
   { label: 'legacy-sky',    path: '/sky' },
@@ -2221,6 +2322,7 @@ for (const r of list) {
   TAPPED = false
   HELD = r.held === true
   THREAD = r.thread || 'empty'
+  NIGHT = r.night || ''
   for (const v of VIEWPORTS) {
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
@@ -2275,7 +2377,7 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE, NIGHT_SEEN }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
           member: ANON || GOOGLE || EMAIL ? null : 'someone@berkeley.edu',
@@ -2285,6 +2387,9 @@ for (const r of list) {
           written: WRITTEN,
           proof: 'a'.repeat(64),
           draft: DRAFT,
+          // (0075) the night's screen seen, so a route shows it only by
+          // asking (`store: { nightSeen: null }`)
+          nightSeen: NIGHT_SEEN,
           // anything else a route needs in the blob (`store`)
           ...STORE,
         }))
@@ -2302,7 +2407,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE: r.store || {} })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON, GOOGLE, EMAIL, STORE: r.store || {}, NIGHT_SEEN: NEXT_REVEAL })
     // The letter's deck leans toward the next letter the first times a
     // device opens it (screens/Letter.jsx `nudge`), which would catch a shot
     // part way through. Every device here has turned it, but the one the
