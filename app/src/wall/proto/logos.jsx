@@ -7,7 +7,7 @@
 // /logos.html, which the build never takes (app/logos.html).
 //
 //   /logos.html               all of them, each playing once
-//   /logos.html?only=bench    one of them, larger
+//   /logos.html?only=bench    one of them, larger (as its `larger` does)
 //   /logos.html?t=4200        every one held at 4200ms (for pictures), and
 //   /logos.html?t=900,2400    each held at each of those, side by side
 //   /logos.html?loop=1        each told again after it lands, for good
@@ -27,14 +27,13 @@ import { ensureFaces } from '../type.js'
 import { SCENES } from '../scenes/index.js'
 
 const ask = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-const ONLY = ask.get('only') || ''
 const HELDS = ask.get('t') === null ? [null] : ask.get('t').split(',').map((v) => Math.max(0, Number(v) || 0))
 const LOOK = { tint: 'night' }
 const NO_KEYS = {}
 // how long a landed mark stands before a looping telling starts again
 const REST = 1800
 
-function Card({ scene, run, loop, held: HELD = null }) {
+function Card({ scene, run, loop, held: HELD = null, only, setOnly }) {
   const story = useMemo(() => scene.make(), [scene])
   const [from, setFrom] = useState(null)
   const [n, setN] = useState(0)
@@ -71,7 +70,9 @@ function Card({ scene, run, loop, held: HELD = null }) {
       <p className="lg-line">{scene.line}</p>
       <div className="lg-row">
         <button type="button" className="lg-btn is-main" onClick={again}>replay</button>
-        {ONLY ? <a href="/logos.html">all of them</a> : <a href={`/logos.html?only=${scene.id}`}>larger</a>}
+        <button type="button" className="lg-btn is-quiet" onClick={() => { setOnly(only ? '' : scene.id); window.scrollTo(0, 0) }}>
+          {only ? 'all of them' : 'larger'}
+        </button>
       </div>
     </article>
   )
@@ -85,11 +86,12 @@ function Logos() {
   }, [])
   const [run, setRun] = useState(0)
   const [loop, setLoop] = useState(ask.get('loop') === '1')
-  const shown = SCENES.filter((s) => !ONLY || s.id === ONLY)
+  const [only, setOnly] = useState(ask.get('only') || '')
+  const shown = SCENES.filter((s) => !only || s.id === only)
   return (
     <PhoneChrome.Provider value>
       <style>{'@keyframes lg-run { from { transform: scaleX(0); } to { transform: scaleX(1); } }'}</style>
-      <div className={`wl-root is-room lg-root${ONLY && HELDS.length === 1 ? ' is-one' : ''}`}>
+      <div className={`wl-root is-room lg-root${only && HELDS.length === 1 ? ' is-one' : ''}`}>
         <header className="lg-head">
           <h1>the mark, told other ways</h1>
           <div className="lg-row">
@@ -99,7 +101,7 @@ function Logos() {
           <p>tap a phone to tell it again. each ends on the mark; the one on the site today is the run and the catch.</p>
         </header>
         <main className="lg-grid">
-          {shown.flatMap((s) => HELDS.map((h) => <Card key={`${s.id}${h}`} scene={s} run={run} loop={loop} held={h} />))}
+          {shown.flatMap((s) => HELDS.map((h) => <Card key={`${s.id}${h}`} scene={s} run={run} loop={loop} held={h} only={only} setOnly={setOnly} />))}
         </main>
       </div>
     </PhoneChrome.Provider>
