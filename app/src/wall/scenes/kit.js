@@ -24,6 +24,7 @@
 
 import { markOn, transport, washFrom, MARK_CUT } from '../pixmark.js'
 import { ECL, rad } from '../mark.js'
+import { body as folkBody, lay, lit, sheet } from '../folk.js'
 
 export const COLS = 95
 export const ROWS = 75
@@ -53,6 +54,64 @@ export const spring = (k, bounce = 0.35) => {
 // how far through [a, b] the clock is, 0 to 1
 export const span = (t, a, b) => clamp((t - a) / (b - a))
 export const D = Math.PI / 180
+// smootherstep: still at both ends, and still in its acceleration, which is
+// what makes a movement look carried by a body rather than slid
+export const sm5 = (k) => { const x = clamp(k); return x * x * x * (x * (6 * x - 15) + 10) }
+// arriving and settling: a little past, and back, the way a head turns
+export const settle = (k, over = 0.06) => {
+  const x = clamp(k)
+  return sm5(x) + over * Math.sin(Math.PI * sm5(x)) * Math.sin(Math.PI * x) * (x > 0.5 ? 1 : 0.3)
+}
+// A value made of moves: `v0`, and each [from, to, by, ease] adds `by` over
+// the clock from `from` to `to` on its ease (sm5 unless given). Moves may
+// overlap, and do, the way one part of a gesture starts before the last
+// has finished; none of them overshoots unless its ease does.
+export function moves(t, v0, list) {
+  let v = v0
+  for (const [a, b, by, ease] of list) {
+    if (t <= a) continue
+    v += by * (t >= b ? 1 : (ease || sm5)((t - a) / (b - a)))
+  }
+  return v
+}
+// A spring, following `target(t)` from `t0` to `t1`, worked out once at
+// `dt` ms a step: `hz` how quick, `damp` how soon it settles (1 none past).
+// Answers its value at any t: what hangs from a body (her hair) lagging
+// behind it and swinging on when it stops.
+export function springOf(target, t0, t1, { hz = 2.2, damp = 0.45, dt = 2 } = {}) {
+  const n = Math.ceil((t1 - t0) / dt) + 1
+  const out = new Float32Array(n)
+  let x = target(t0)
+  let v = 0
+  const w = 2 * Math.PI * hz / 1000
+  for (let i = 0; i < n; i++) {
+    const tt = t0 + i * dt
+    const a = w * w * (target(tt) - x) - 2 * damp * w * v
+    v += a * dt
+    x += v * dt
+    out[i] = x
+  }
+  return (t) => {
+    const f = (clamp(t, t0, t1) - t0) / dt
+    const i = Math.floor(f)
+    const j = Math.min(n - 1, i + 1)
+    return out[i] + (out[j] - out[i]) * (f - i)
+  }
+}
+// an outline rounded: each corner cut, `n` times (Chaikin), closed
+export function round(pts, n = 2) {
+  let p = pts
+  for (let k = 0; k < n; k++) {
+    const q = []
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i]
+      const b = p[(i + 1) % p.length]
+      q.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75])
+    }
+    p = q
+  }
+  return p
+}
 // a number from two others, the same every time it is asked
 export const hash = (a, b = 0) => {
   let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35)
@@ -78,6 +137,9 @@ export class Pad {
     this.a = new Float32Array(PW * PH)
     this.touched = new Int32Array(PW * PH)
     this.count = 0
+    // a camera: everything laid is scaled `k` about (cx, cy), for a slow
+    // push in; null is none
+    this.zoom = null
   }
   clear() {
     for (let k = 0; k < this.count; k++) { const i = this.touched[k]; this.ink[i] = 0; this.a[i] = 0 }
@@ -91,7 +153,18 @@ export class Pad {
   }
   // a cell, lit outright (or cut, with ink 0)
   set(x, y, ink, a = 1) {
+    const z = this.zoom
+    if (z) { x = z.cx + (x - z.cx) * z.k; y = z.cy + (y - z.cy) * z.k }
     const i = this.at(Math.round(x), Math.round(y))
+    if (i < 0) return
+    if (!this.ink[i] && !this.a[i]) this.touched[this.count++] = i
+    this.ink[i] = ink
+    this.a[i] = ink ? a : 0
+  }
+  // a cell as it is, past the camera (what is already laid in the glass's
+  // own cells: the intro's bodies, `folkInto`)
+  put(x, y, ink, a = 1) {
+    const i = this.at(x, y)
     if (i < 0) return
     if (!this.ink[i] && !this.a[i]) this.touched[this.count++] = i
     this.ink[i] = ink
@@ -116,6 +189,13 @@ export class Pad {
   }
   // any shape, by whether a point is in it, over the box it is in
   fill(inside, x0, y0, x1, y1, ink, a = 1) {
+    const z = this.zoom
+    if (z) {
+      const f = inside
+      inside = (x, y) => f(z.cx + (x - z.cx) / z.k, z.cy + (y - z.cy) / z.k)
+      x0 = z.cx + (x0 - z.cx) * z.k; x1 = z.cx + (x1 - z.cx) * z.k
+      y0 = z.cy + (y0 - z.cy) * z.k; y1 = z.cy + (y1 - z.cy) * z.k
+    }
     const X0 = Math.max(-M, Math.floor(x0))
     const Y0 = Math.max(-M, Math.floor(y0))
     const X1 = Math.min(COLS + M - 1, Math.ceil(x1))
@@ -380,6 +460,54 @@ export function figure(pad, o) {
   return { head, shoulder, hip: [hx, hipY], hand: [armN.wr, armF.wr], neckTop }
 }
 
+// ── the intro's two, at any size, in silhouette ─────────────────────────────
+// folk.js draws the boy and the girl from a skeleton, posed, and lays them
+// on the grid at its own size. These lay the same bodies `k` cells to a
+// unit, anywhere, through a pad's camera, and put them on the pad as one
+// ink by how much of each cell they cover: a silhouette, with the soft edge
+// the intro's bodies have. `folkCut` clears the ring of cells just outside
+// a body where it lies over what is already laid, so two people who touch
+// are two, with a line of light between them.
+const FOLK_D = Math.PI / 180
+export function folkLay(who, pose, X, G, flip, k, S, zoom = null) {
+  const z = zoom || { k: 1, cx: 0, cy: 0 }
+  const K = k * z.k
+  const x0 = z.cx + (X - z.cx) * z.k
+  const g0 = z.cy + (G - z.cy) * z.k
+  const sx = flip ? -1 : 1
+  const P = (p) => [x0 + sx * K * p[0], g0 - K * p[1]]
+  const { shapes, joints } = folkBody(who, pose)
+  const placed = shapes.map((s) => {
+    if (s.k === 'cap') return { ...s, a: P(s.a), b: P(s.b), ra: s.ra * K, rb: s.rb * K }
+    if (s.k === 'ell') return { ...s, c: P(s.c), rx: s.rx * K, ry: s.ry * K, ex: [sx * Math.cos(s.rot * FOLK_D), -Math.sin(s.rot * FOLK_D)] }
+    return { ...s, pts: s.pts.map(P) }
+  })
+  lay(placed, S)
+  return { S, joints, at: P }
+}
+export function folkSheet() { return sheet(-24, -24, COLS + 48, ROWS + 48) }
+export function folkInto(pad, S, ink = INK, a = 1) {
+  for (let q = 0; q < S.count; q++) {
+    const i = S.touched[q]
+    const v = lit(S.cov[i], 1, 0) * a
+    if (v < 0.03) continue
+    const x = S.x0 + (i % S.w)
+    const y = S.y0 + Math.floor(i / S.w)
+    pad.put(x, y, ink, Math.round(v * 16) / 16)
+  }
+}
+export function folkCut(pad, S) {
+  for (let q = 0; q < S.count; q++) {
+    const i = S.touched[q]
+    if (S.cov[i] < 0.45) continue
+    for (const d of [1, -1, S.w, -S.w]) {
+      const n = i + d
+      if (S.cov[n] >= 0.3) continue
+      pad.put(S.x0 + (n % S.w), S.y0 + Math.floor(n / S.w), 0)
+    }
+  }
+}
+
 // ── blossom, falling ────────────────────────────────────────────────────────
 // Each petal has its own column, pace, sway and turn, all from its number,
 // so a frame is a function of the clock and the fall never repeats in a way
@@ -435,6 +563,32 @@ export function petals(pad, t, o) {
     list.push([X, Y])
   }
   return list
+}
+
+// The same fall, drawn soft: each petal a small ellipse turning as it
+// falls, laid between the cells, so it drifts rather than steps. Same
+// options as `petals`, and `size` how large.
+export function softPetals(pad, t, o) {
+  const { n = 24, seed = 1, v = 0.012, drift = 0.004, sway = 2.2, from = -Infinity, a = 0.95, ink = ROSE, size = 1 } = o
+  const [x0, y0, x1, y1] = o.box || [-4, -6, COLS + 4, ROWS + 2]
+  const W = x1 - x0
+  const H = y1 - y0
+  for (let i = 0; i < n; i++) {
+    const r1 = hash(i, seed)
+    const r2 = hash(i, seed + 11)
+    const r3 = hash(i, seed + 23)
+    const r4 = hash(i, seed + 37)
+    const pace = v * (0.65 + 0.7 * r3)
+    const age = t - (from + r1 * (H / pace) * 0.9)
+    if (age < 0) continue
+    const y = y0 + wrap(age * pace, H)
+    const x = x0 + wrap(r2 * W + age * drift * (0.6 + r4) + sway * Math.sin(age * 0.0019 * (0.7 + r4) + r1 * 6.28) + (o.gust ? o.gust(t) * (0.5 + r3) : 0), W)
+    const spin = age * 0.004 * (0.6 + r4) + r1 * 10
+    const k = size * (0.8 + 0.5 * r3)
+    const al = a * (o.alpha ? o.alpha(x, y, i) : 1)
+    if (al <= 0.02) continue
+    pad.ell(x, y, (0.55 + 0.75 * Math.abs(Math.cos(spin))) * k, 0.62 * k, (spin * 40) % 180, ink, al)
+  }
 }
 
 // ── the stars ───────────────────────────────────────────────────────────────

@@ -1,226 +1,269 @@
 // ── the umbrella ────────────────────────────────────────────────────────────
-// Rain, at night, on a street; the two of them in the wet pavement upside
-// down. He is standing under an umbrella, waiting. She runs in from the
-// right with no umbrella, and he tilts his toward her as she comes, and she
-// is under it, the rain drumming on it and not on her, and she takes his
-// arm. The rain slows; the last of it turns, drop by drop, into petals,
-// falling slower and turning as they fall. The pink goes out from under the
-// umbrella. The canopy lifts off the shaft and opens into the ring, and the
-// two of them and the shaft gather into the star; the petals go on falling
-// round the mark.
+// Rain, at night, on a wet street under a lamp, in silhouette, the two of
+// them upside down in the pavement. He is standing under an umbrella,
+// waiting, his head a little down. She comes running in from the right
+// with nothing over her, the intro's girl and the intro's run (folk.js),
+// her hair and her hem streaming, and she brakes: a long step, a short one,
+// the feet together, her hair and her skirt going on past her and swinging
+// back. He has turned his head to her and tilted the umbrella her way as
+// she came. She looks up at him. She slips her hand into the crook of his
+// arm and leans into him a little. The rain eases, and the last of it comes
+// down as petals, slow and turning. The pink goes out from under the
+// umbrella; the canopy lifts off the shaft and opens into the ring, and
+// the two of them and the shaft gather into the star.
 //
-//      0   the rain, him under the umbrella
-//    500   she runs in over the right edge
-//   1700   under it; he has tilted it to her
-//   2150   she takes his arm
-//   2500   the rain slows, and turns to petals
-//   3500   the pink, from under the umbrella
-//   3650   the canopy into the ring, the two of them into the star
+// The bodies are the intro's, posed from their skeletons, their feet planted
+// where they land and rolling heel to toe (folk.js `walker`), laid at a
+// smaller size and in one ink; nothing is a cross-fade of drawings.
+//
+//      0   the rain; him under the umbrella
+//    250   she runs in over the right edge
+//   1650   she brakes; stopped by 2070
+//   1700   he turns his head to her and tilts the umbrella over her
+//   2350   she looks up at him
+//   2800   her hand into the crook of his arm; she leans in
+//   3100   the rain eases into petals
+//   4050   the pink, from under the umbrella
+//   4200   the canopy into the ring, the two of them into the star
 
 import {
-  Pad, figure, petals, mark, glideOf, tale, INK, FAR, ROSE, clamp, lerp, smooth, span, outCubic, hash, D,
+  Pad, softPetals, mark, glideOf, tale, folkLay, folkSheet, folkInto, folkCut,
+  INK, ROSE, clamp, lerp, span, sm5, settle, moves, hash, D,
 } from './kit.js'
+import { standing, walker, lifted, runTop, follow, keyed, mixPose, slowing, stance } from '../folk.js'
 
-const G = 59
-const HIM_X = 37
-const HER_STOP = 52
-const RUN = [500, 1800]
-const TILT = [900, 1700]
-const ARM = [2150, 2600]
-const EASE = [2500, 3400]
-const PETALS_IN = 2600
-const WASH_AT = 3500
-const MORPH = 3650
-const S = 1.36
-const SHAFT = 31
-const RX = 17.5
-const RY = 8.2
+const G = 64
+const K = 0.88
+const HIM_X = 34.5
+const HER_X = 55
+const TB = 1650
+const DB = 420
+const EASE = [3100, 3900]
+const WASH_AT = 4050
+const MORPH = 4200
+const END = MORPH + 1300
+const SHAFT = 26
+const RX = 17
+const RY = 7.4
 
-// the umbrella: a dome with a scalloped hem on eight ribs, a shaft to the
-// hand and a hooked handle. `tilt` turns it about the hand, toward her.
-function canopyAt(t) {
-  const tilt = smooth(span(t, ...TILT)) * 11
-  return { hx: HIM_X + 6.6, hy: G - 21.5, tilt }
+// ── her: the intro's run, braking to a stand ──
+const RUN = { T: 720, S: 0.38, A: 6.2, H: 23.05, bob: 0.55 }
+RUN.v = (RUN.A * 2.3) / (RUN.S * RUN.T)
+const phi = (t) => (t - TB) / RUN.T
+const bob = (t) => RUN.H - RUN.bob * Math.cos(4 * Math.PI * (phi(t) - RUN.S / 2))
+const REST_Y = stance('her', standing('her')).hipY
+const GO = (RUN.v * DB) / 2
+function hipAt(t) {
+  if (t <= TB) return { x: -GO - RUN.v * (TB - t), y: bob(t) }
+  const u = (t - TB) / DB
+  return { x: -GO + RUN.v * DB * slowing(u), y: lerp(bob(t), REST_Y, sm5(clamp(u * 1.1))) }
 }
-function umbrella(pad, t, a = 1, shaftOnly = false, canopyOnly = false) {
-  const { hx, hy, tilt } = canopyAt(t)
-  const r = tilt * D
-  const c = Math.cos(r)
-  const s = Math.sin(r)
-  // a point in the umbrella's own frame (x across, y down from the hand),
-  // turned about the hand
-  const P = (x, y) => [hx + x * c - y * s, hy + x * s + y * c]
-  const apex = P(0, -SHAFT)
-  if (!canopyOnly) {
-    pad.cap(hx, hy, apex[0], apex[1], 0.45, 0.45, INK, 0.9 * a)
-    // the handle, hooked back under the hand
-    const h1 = P(0, 1.5)
-    const h2 = P(-1.6, 2.6)
-    pad.cap(hx, hy, h1[0], h1[1], 0.55, 0.55, INK, a)
-    pad.cap(h1[0], h1[1], h2[0], h2[1], 0.55, 0.55, INK, a)
+const steps = []
+for (let k = -12; k <= 0; k++) {
+  const t = TB + (k * RUN.T) / 2
+  steps.push({ leg: k & 1, t, fx: hipAt(t).x + RUN.A, off: t + RUN.S * RUN.T })
+}
+steps[steps.length - 1].off = TB + 250
+steps.push({ leg: 1, t: TB + 175, fx: hipAt(TB + 175).x + 2.4, off: Infinity })
+steps.push({ leg: 0, t: TB + 370, fx: 1.4, off: Infinity })
+const herLegs = walker('her', steps, hipAt, RUN.v * RUN.T)
+// her top: the run's arms, then arriving, a hand up to the rain in her hair,
+// looking up at him, her near hand into his arm
+const REST = standing('her')
+const HER_KEYS = [
+  [TB - 60, runTop('her', phi(TB - 60))],
+  [TB, runTop('her', 0)],
+  [TB + 150, { ...mixPose(runTop('her', 0.2), REST, 0.45), lean: 7, neck: -3 }],
+  [TB + 420, { ...REST, lean: 2.5, neck: 1, nod: 3, sN: 20, eN: 70, sF: -6, eF: 26 }],
+  [2350, { ...REST, lean: 1.5, neck: -2, nod: 1, sN: 14, eN: 55, sF: -5, eF: 22 }],
+  [2700, { ...REST, lean: 0.5, neck: -7, nod: -9, sN: 16, eN: 48, sF: -5, eF: 20 }],
+  [3050, { ...REST, lean: 3, neck: -6, nod: -8, sN: 44, eN: 62, handN: 'flat', sF: -4, eF: 20 }],
+  [3500, { ...REST, lean: 4.5, neck: -3, nod: -4, sN: 42, eN: 66, handN: 'flat', sF: -4, eF: 20 }],
+]
+const tail = follow((t) => (hipAt(t + 1).x - hipAt(t - 1).x) / 2, 0, END)
+function herPose(t) {
+  const top = t < TB - 60 ? runTop('her', phi(t)) : keyed(HER_KEYS, t)
+  const p = lifted('her', { ...top, ...herLegs(t) }, hipAt(t).y)
+  const f = tail(t)
+  // running, her hair and her hem lift and drop with each step, a beat behind
+  const run = t < TB ? 1 : Math.max(0, 1 - (t - TB) / 300)
+  const ph = 4 * Math.PI * (phi(t) - RUN.S / 2)
+  return {
+    ...p,
+    hair: f.hair.map((a, i) => a + run * [1, 2.2, 3.6, 5, 6][i] * Math.sin(ph - 0.5 - 0.4 * i)),
+    skirt: f.skirt + run * 3.5 * Math.sin(ph - 1.1),
   }
-  if (shaftOnly) return
-  // the dome: half an ellipse, its hem in eight scallops between the ribs
-  const top = -SHAFT
-  const base = top + RY
-  const ic = Math.cos(-r)
-  const is = Math.sin(-r)
-  const inside = (px, py) => {
+}
+const herX = (t) => HER_X - K * hipAt(t).x
+
+// ── him: still, the umbrella up in his near hand ──
+function himPose(t) {
+  const look = settle(span(t, 1700, 2300), 0.05)
+  const breath = Math.sin((t / 3400) * Math.PI * 2)
+  return standing('him', {
+    lean: 1 + 0.3 * breath + moves(t, 0, [[2800, 3300, 1.5]]),
+    neck: lerp(2, 9, look) - moves(t, 0, [[2700, 3200, 2]]),
+    nod: lerp(1, 7, look),
+    sN: lerp(22, 30, look), eN: lerp(96, 90, look), handN: 'fist',
+    sF: -4, eF: 16,
+  })
+}
+const tiltAt = (t) => moves(t, 0, [[1650, 2350, 13, (k) => settle(k, 0.08)]])
+
+// the umbrella: a shaft from his hand, a dome with a scalloped hem on eight
+// ribs, a tip, a hooked handle; tilted about the hand
+function umbrella(pad, t, hand, parts = 'all') {
+  const tilt = tiltAt(t) * D
+  const c = Math.cos(tilt)
+  const s = Math.sin(tilt)
+  const [hx, hy] = hand
+  const P = (x, y) => [hx + x * c - y * s, hy + x * s + y * c]
+  if (parts !== 'canopy') {
+    const top = P(0, -SHAFT)
+    pad.cap(hx, hy + 1.2, top[0], top[1], 0.42, 0.42, INK, 1)
+    const h1 = P(0, 2.4)
+    const h2 = P(-1.5, 3.4)
+    pad.cap(hx, hy, h1[0], h1[1], 0.5, 0.5, INK, 1)
+    pad.cap(h1[0], h1[1], h2[0], h2[1], 0.5, 0.45, INK, 1)
+  }
+  if (parts === 'shaft') return
+  const base = -SHAFT + RY
+  const ic = Math.cos(-tilt)
+  const is = Math.sin(-tilt)
+  pad.fill((px, py) => {
     const dx = px - hx
     const dy = py - hy
     const x = dx * ic - dy * is
     const y = dx * is + dy * ic
     if (x < -RX || x > RX) return false
-    const dome = base - RY * Math.sqrt(Math.max(0, 1 - (x / RX) ** 2))
+    const dome = base - RY * Math.sqrt(Math.max(0, 1 - (x / RX) ** 2)) ** 0.9
     const seg = ((x + RX) / (2 * RX)) * 8
-    const scallop = base - 1.3 * Math.sin(Math.PI * (seg - Math.floor(seg)))
-    return y >= dome && y <= scallop + 0.2
-  }
-  pad.fill(inside, hx - RX - 4, hy + top - 4, hx + RX + 4, hy + base + 4, INK, 0.94 * a)
-  // a line of light along the top of the dome, where the lamp catches it
-  for (let k = -0.8; k <= 0.8; k += 0.04) {
-    const x = RX * k
-    const y = base - RY * Math.sqrt(1 - k * k) + 1.1
-    const [px, py] = P(x, y)
-    if (Math.abs(k) < 0.7) pad.set(px, py, INK, 0.55 * a)
-  }
-  // the rib tips
-  for (let i = 0; i <= 8; i++) {
-    const x = -RX + (i * 2 * RX) / 8
-    const [px, py] = P(x, base + 0.6)
-    pad.set(px, py, INK, a)
-  }
+    const scallop = base - 1.15 * Math.sin(Math.PI * (seg - Math.floor(seg)))
+    return y >= dome && y <= scallop + 0.25
+  }, hx - RX - 5, hy - SHAFT - 5, hx + RX + 5, hy + base + 5, INK, 1)
+  const tip = P(0, -SHAFT - 1.8)
+  const tip0 = P(0, -SHAFT + 0.5)
+  pad.cap(tip0[0], tip0[1], tip[0], tip[1], 0.4, 0.25, INK, 1)
 }
-// how high the canopy is at a column, for the rain to stop on (and none
-// under it): the dome's top, turned, near enough
-function roofAt(t, x) {
-  const { hx, hy, tilt } = canopyAt(t)
-  const dx = x - hx + (SHAFT - RY) * Math.tan(tilt * D) * 0.9
-  if (Math.abs(dx) > RX + 0.5) return null
-  return hy - SHAFT + RY * (1 - Math.sqrt(Math.max(0, 1 - (dx / RX) ** 2))) + (x - hx) * Math.tan(tilt * D)
+// where the canopy's top is over a column, for the rain to stop on
+function roofAt(t, hand, x) {
+  const tilt = tiltAt(t) * D
+  const [hx, hy] = hand
+  const cx = hx + Math.sin(tilt) * (SHAFT - RY)
+  const dx = (x - cx) / Math.cos(tilt)
+  if (Math.abs(dx) > RX) return null
+  return hy - Math.cos(tilt) * (SHAFT - RY) - RY * Math.sqrt(1 - (dx / RX) ** 2) + (x - cx) * Math.tan(tilt)
 }
 
-// the rain: drops three cells long, slanting, stopped by the umbrella and
-// the pavement, where each lands in a small splash. `k` how hard.
-function rain(pad, t, k) {
+// the rain: fine slanting lines, laid between the cells, each stopped by the
+// canopy (a spray) or the pavement (a ring opening in the wet)
+function rain(pad, t, k, hand) {
   if (k <= 0.01) return
-  const n = 110
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < 90; i++) {
     if (hash(i, 51) > k) continue
-    const v = 0.1 + 0.05 * hash(i, 52)
-    const H = G + 22
-    const y = ((t * v + hash(i, 53) * 400) % H) - 6
-    const x = hash(i, 54) * 110 - 8 + y * 0.28
-    const roof = roofAt(t, x)
-    const under = roof !== null && y > roof - 1
-    if (under && y < roof + 1.5) {
-      // on the canopy: a spray either side
-      pad.set(Math.round(x) - 1, Math.round(roof) - 1, FAR, 0.7)
-      pad.set(Math.round(x) + 1, Math.round(roof) - 1, FAR, 0.7)
-      continue
-    }
-    if (under) continue
-    if (y >= G - 1 && y < G + 1.5) {
-      pad.set(Math.round(x) - 1, G - 1, FAR, 0.75); pad.set(Math.round(x) + 1, G - 1, FAR, 0.75)
-      continue
-    }
-    // and on the wet pavement, a ring that opens where a drop has landed
-    if (y >= G + 1.5) {
-      const land = ((y - G) / v) | 0
-      if (land < 160 && hash(i, 55) < 0.5) {
-        const rr = 1 + land / 70
-        const py = G + 2 + Math.round(hash(i, 56) * 12)
-        pad.set(Math.round(x - rr), py, INK, 0.35 * (1 - land / 160))
-        pad.set(Math.round(x + rr), py, INK, 0.35 * (1 - land / 160))
+    const v = 0.085 + 0.04 * hash(i, 52)
+    const H = G + 26
+    const y = ((t * v + hash(i, 53) * 900) % H) - 8
+    const x = hash(i, 54) * 118 - 12 + y * 0.22
+    const roof = roofAt(t, hand, x)
+    if (roof !== null && y > roof - 0.5) {
+      if (y < roof + 2.2) {
+        pad.set(x - 1.2, roof - 0.8, INK, 0.45)
+        pad.set(x + 1.2, roof - 1.1, INK, 0.45)
       }
       continue
     }
-    for (let j = 0; j < 3; j++) pad.set(Math.round(x - j * 0.28), Math.round(y - j), INK, 0.5 * (1 - j * 0.25))
-  }
-}
-
-function him(pad, t) {
-  const tilt = smooth(span(t, ...TILT))
-  const { hx, hy } = canopyAt(t)
-  return figure(pad, {
-    x: HIM_X, g: G, s: S, dir: 1, reach: [[hx, hy], null], armF: [-6, 18],
-    tilt: -6 * tilt, hx: 0.2 * tilt, lean: 2 + 3 * tilt,
-  })
-}
-function her(pad, t) {
-  const k = span(t, ...RUN)
-  const e = k < 0.75 ? (k / 0.75) * 0.8 : 0.8 + 0.2 * outCubic((k - 0.75) / 0.25)
-  const x = lerp(108, HER_STOP, e)
-  const pace = k < 1 ? clamp((1 - k) * 4) : 0
-  const arm = smooth(span(t, ...ARM))
-  const breath = t > RUN[1] ? 0.12 * Math.sin((t - RUN[1]) / 380) : 0
-  const him0 = figure(new Pad(), { x: HIM_X, g: G, s: S, dir: 1, reach: [[canopyAt(t).hx, canopyAt(t).hy], null] })
-  const elbow = [lerp(him0.shoulder[0] + 3, HIM_X + 5, 0.5), him0.shoulder[1] + 6]
-  return figure(pad, {
-    her: true, ribbon: true, x, g: G, s: S * 0.93, dir: -1,
-    walk: (t - RUN[0]) / 640, stride: pace, lean: 10 * pace + 2,
-    reach: arm > 0.02 ? [[lerp(x - 4, elbow[0], arm), lerp(him0.shoulder[1] + 11, elbow[1], arm)], null] : null,
-    tilt: 6 * smooth(span(t, 1900, 2400)), hy: breath, hair: 1.5 * pace + 0.3,
-  })
-}
-
-// the pair and the umbrella upside down in the wet pavement, broken by the
-// rain and moving
-function reflect(pad, t, k = 1) {
-  const cells = pad.cells()
-  for (const c of cells) {
-    const [x, y, ink, , a] = c
-    if (y >= G || y < G - 60) continue
-    const ry = 2 * G - y + 1
-    if (ry > 84) continue
-    const wob = Math.round(Math.sin(ry * 1.3 + t * 0.012) * 0.9)
-    if (((ry + x) & 1) && ry > G + 8) continue
-    pad.set(x + wob, ry, ink === ROSE ? ROSE : INK, a * 0.6 * k * (1 - (ry - G) / 26))
+    if (y >= G - 0.5) {
+      const age = (y - G) / v
+      if (age < 220 && hash(i, 55) < 0.6) {
+        const r = 0.6 + age / 60
+        const py = G + 2 + hash(i, 56) * 11
+        pad.ell(x, py, r, r * 0.3, 0, INK, 0.4 * (1 - age / 220))
+      }
+      continue
+    }
+    pad.line(x, y, x - 0.66, y - 3, INK, 0.42, 0.3)
   }
 }
 
 export function umbrellaStory() {
   const pad = new Pad()
   const src = new Pad()
+  const SH = folkSheet()
+  const SS = folkSheet()
   let glide = null
+  const camera = (t) => ({ k: 1 + 0.06 * sm5(span(t, 0, MORPH)), cx: 47, cy: 44 })
+  // the two of them and the umbrella, on a pad, through the camera
+  const scene = (p, t, parts = 'all') => {
+    const zoom = camera(t)
+    p.zoom = zoom
+    const h = folkLay('him', himPose(t), HIM_X, G, false, K, SH, zoom)
+    const wrist = h.joints.AN.wrist
+    const hand = h.at([wrist[0] + 0.6, wrist[1] + 0.4])
+    // (the hand in the pad's own frame, before its camera)
+    const handW = [zoom.cx + (hand[0] - zoom.cx) / zoom.k, zoom.cy + (hand[1] - zoom.cy) / zoom.k]
+    if (parts === 'canopy') { umbrella(p, t, handW, 'canopy'); return handW }
+    folkInto(p, SH)
+    if (t > 150) {
+      folkLay('her', herPose(t), herX(t), G, true, K, SS, zoom)
+      folkCut(p, SS)
+      folkInto(p, SS)
+    }
+    umbrella(p, t, handW, parts === 'people' ? 'shaft' : 'all')
+    return handW
+  }
   const prep = (ms) => {
     if (typeof document === 'undefined') return
     if (!glide) {
       const M = mark()
-      src.clear(); umbrella(src, MORPH, 1, false, true)
+      src.clear(); scene(src, MORPH, 'canopy')
       const ringFrom = src.cells()
-      src.clear(); him(src, MORPH); her(src, MORPH); umbrella(src, MORPH, 1, true)
-      const starFrom = src.cells().filter((c) => c[4] >= 0.2)
-      const { hx, hy } = canopyAt(MORPH)
+      src.clear()
+      const hand = scene(src, MORPH, 'people')
+      const starFrom = src.cells().filter((c) => c[4] >= 0.25)
+      const hx = hand[0]
       glide = {
-        ring: glideOf(ringFrom, M.ring.map((p) => [p.x, p.y]), { delay: (p) => 40 + Math.abs(p[0] - hx) * 6, flight: 700, bend: 3.5 }),
-        star: glideOf(starFrom, M.star.map((p) => [p.x, p.y]), { delay: (p) => 150 + Math.hypot(p[0] - hx, p[1] - hy + 12) * 5, flight: 640, bend: 2.2 }),
+        ring: glideOf(ringFrom, M.ring.map((p) => [p.x, p.y]), { delay: (p) => 40 + Math.abs(p[0] - hx) * 7, flight: 760, bend: 3.5 }),
+        star: glideOf(starFrom, M.star.map((p) => [p.x, p.y]), { delay: (p) => 140 + Math.hypot(p[0] - hx - 6, p[1] - 30) * 5.5, flight: 700, bend: 2.2 }),
       }
     }
     if (glide.ring.step(ms)) glide.star.step(ms)
   }
-  const end = MORPH + 1250
+  // the pair and the umbrella upside down in the wet, broken into bands by
+  // the ripples and moving
+  const reflect = (t, k) => {
+    const cells = pad.cells()
+    for (const [x, y, ink, , a] of cells) {
+      if (y >= G || y < G - 60) continue
+      const ry = 2 * G - y + 1
+      if (ry > 86) continue
+      const band = Math.sin(ry * 1.7 + t * 0.006)
+      if (band < -0.55) continue
+      const wob = Math.round(Math.sin(ry * 0.9 + t * 0.009) * 0.8)
+      pad.put(x + wob, ry, ink === ROSE ? ROSE : INK, a * 0.42 * k * (1 - (ry - G) / 28))
+    }
+  }
   const draw = (t) => {
     pad.clear()
-    const hard = 1 - smooth(span(t, ...EASE))
-    const street = 1 - smooth(span(t, MORPH - 100, MORPH + 500))
-    // the street: the pavement's edge, and a lamp at the left
-    for (let x = -6; x < 101; x++) pad.set(x, G, INK, 0.6 * street)
-    pad.cap(8, 10, 8, G, 0.65, 0.8, INK, 0.9 * street)
-    pad.cap(8, 10, 12.5, 8.5, 0.55, 0.55, INK, 0.9 * street)
-    pad.poly([[11, 8.5], [15.5, 8.5], [14.8, 11], [11.7, 11]], INK, 0.9 * street)
+    const zoom = camera(t)
+    pad.zoom = zoom
+    const hard = 1 - sm5(span(t, ...EASE))
+    const street = 1 - sm5(span(t, MORPH - 100, MORPH + 500))
+    // the pavement's edge, and the lamp at the left
+    for (let x = -12; x < 108; x += 0.5) pad.set(x, G, INK, 0.55 * street)
+    pad.cap(7, 8, 7, G, 0.65, 0.85, INK, street)
+    pad.cap(7, 8, 11.5, 6.4, 0.55, 0.5, INK, street)
+    pad.poly([[9.8, 6.4], [14.4, 6.4], [13.6, 9.2], [10.6, 9.2]], INK, street)
+    let hand = null
     if (t < MORPH) {
-      her(pad, t)
-      him(pad, t)
-      umbrella(pad, t)
-      reflect(pad, t, 1)
-    }
-    rain(pad, t, hard)
-    // the rain turning to petals: in from above as the rain goes
-    const pk = smooth(span(t, PETALS_IN, PETALS_IN + 900))
-    petals(pad, t, {
-      n: 44, seed: 29, v: 0.013, drift: -0.004, sway: 2.6, from: PETALS_IN - 2200, box: [-6, -6, 104, G + 16],
-      a: 0.9 * pk, alpha: (x, y) => (t >= MORPH ? 1 : roofAt(t, x) !== null && y > roofAt(t, x) - 1 ? 0 : 1),
+      hand = scene(pad, t)
+      reflect(t, 1)
+    } else hand = scene(new Pad(), MORPH, 'canopy')
+    rain(pad, t, hard, hand)
+    const pk = sm5(span(t, EASE[0] - 100, EASE[0] + 900))
+    softPetals(pad, t, {
+      n: 40, seed: 29, v: 0.009, drift: -0.003, sway: 2.6, from: EASE[0] - 3000, box: [-8, -8, 106, G + 14], size: 1.45,
+      a: 0.95 * pk, alpha: (x, y) => (t >= MORPH || roofAt(t, hand, x) === null || y < roofAt(t, hand, x) - 1 ? 1 : 0),
     })
     const cells = pad.cells()
     if (t >= MORPH) {
@@ -228,7 +271,9 @@ export function umbrellaStory() {
       glide.ring.at(t - MORPH, cells)
       glide.star.at(t - MORPH, cells)
     }
-    return { cells, glow: street > 0.01 ? { x: 13, y: 10, r: 9, a: 0.45 * street, inner: 0.9 } : null }
+    const lx = zoom.cx + (12.1 - zoom.cx) * zoom.k
+    const ly = zoom.cy + (8.4 - zoom.cy) * zoom.k
+    return { cells, glow: street > 0.01 ? { x: lx, y: ly, r: 11, a: 0.5 * street, inner: 0.9 } : null }
   }
-  return tale({ end, draw, prep, live: true, wash: { at: WASH_AT, x: 45, y: 26, ms: 1300 } })
+  return tale({ end: END, draw, prep, live: true, wash: { at: WASH_AT, x: 45, y: 24, ms: 1350 } })
 }
