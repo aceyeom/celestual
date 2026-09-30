@@ -41,10 +41,12 @@
 -- ── the pair, found by the server ───────────────────────────────────────────
 -- The browser never holds a key to the pair. Every door here takes the
 -- caller's @ and its proof, and the other @, and finds the pair itself:
--- first that the caller holds a told mutual with that @ now (a told row of
--- theirs, or a keepsake, from any of their @s to any of the other's, through
--- celestual_group, the way celestual_mutual_forget finds the nights it takes
--- off), and then the row whose two handles are one of each person's, found
+-- first that the other @ is one the caller's own told mutual names, exactly
+-- (below), then that the caller holds a told mutual with that @ now (a told
+-- row of theirs, or a keepsake, from any of their @s to any of the other's,
+-- through celestual_group, the way celestual_mutual_forget finds the nights
+-- it takes off), and then the row whose two handles are one of each
+-- person's, found
 -- the same way, the oldest if two of their @s ever made two, so both sides
 -- always come to the same one. A row is made the first time either of them
 -- asks, on the two @s that asked, in order. So the face is the two people's
@@ -65,6 +67,22 @@
 -- opening) marks nothing (`p_told`, as forget takes it): opening last week's
 -- mutual is not opening this one.
 --
+-- ── the other @, as the caller's own list names it ──────────────────────────
+-- The caller's side of the pair is read through their own group, since
+-- which @s are theirs is theirs to know. The other side's is not: an @ the
+-- caller names is taken only when it is exactly the @ one of the caller's
+-- own told rows or keepsakes names, the @ they wrote to (its hash, as the
+-- row holds it) or the @ that wrote back and made it a mutual
+-- (`matched_handle`, the one the list shows; a keepsake's `other_hash` and
+-- `other_handle`, which are the same two). It is never widened through the
+-- other person's links. If it were, anybody holding a told mutual could ask
+-- here about any @ at all and be answered with the face for every @ their
+-- partner has privately linked and `none` for every other: which @s are one
+-- person, and that each of them is a proved member, read without writing
+-- and as often as they liked. Once the @ is one of those two, the pair is
+-- the two people's as below, and every @ that is not is answered `none`, the
+-- same answer, byte for byte, as every other refusal here.
+--
 -- ── the doors ───────────────────────────────────────────────────────────────
 --   celestual_mutual_face(handle, proof, them)
 --     the face as it stands: { ok, tint, bat, at, topic, opened, opened_at },
@@ -84,11 +102,13 @@
 -- a lookup), runs the reveal after the proof as every door here does, and
 -- answers { ok: false, error: 'unverified' } to a proof it refuses and
 -- { ok: false, error: 'none' } to anybody who does not hold a told mutual
--- with that @ now. That second answer is one answer, byte for byte, whether
--- the caller never wrote to them, wrote and it lapsed, wrote and is waiting,
--- took the mutual off, or named an @ nobody has ever proved: whether the
--- other person is on celestual at all is never said here, as it is never
--- said anywhere (docs/SECURITY.md, 0072's header).
+-- with that @ now, by that @. That second answer is one answer, byte for
+-- byte, whether the caller never wrote to them, wrote and it lapsed, wrote
+-- and is waiting, took the mutual off, named an @ nobody has ever proved,
+-- or named an @ their partner has linked that their own list never named:
+-- whether the other person is on celestual at all, and which @s are one
+-- person, is never said here, as it is never said anywhere
+-- (docs/SECURITY.md, 0072's header).
 --
 -- ── why it is the two of theirs, and nobody else's ──────────────────────────
 -- This is new information between two people, and it only ever flows
@@ -208,6 +228,25 @@ language sql stable security definer set search_path = public as $$
              and k.other_hash in (select celestual_hash_handle(g) from celestual_group(p_them) g)) x
 $$;
 
+-- Whether the other @ is exactly one that a told row or a keepsake of the
+-- caller's names: the @ it was written to, by its hash, or the @ that wrote
+-- back and made it a mutual, which the caller's list already shows them.
+-- Only a told one, since a note still waiting says nothing about who is
+-- linked to whom and naming one would be a way to ask. The caller's own @s
+-- are read through their group; the other @ never is, so a handle linked to
+-- the partner that no row of the caller's names is not taken here (the
+-- header). Internal.
+create or replace function celestual_mutual_named(p_me text, p_them text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from celestual_entries e
+                  where e.from_handle in (select celestual_group(p_me))
+                    and e.matched_at is not null
+                    and (e.to_hash = celestual_hash_handle(p_them) or e.matched_handle = p_them))
+      or exists (select 1 from celestual_keepsakes k
+                  where k.handle in (select celestual_group(p_me))
+                    and (k.other_hash = celestual_hash_handle(p_them) or k.other_handle = p_them))
+$$;
+
 -- ── 3. the pair's row ────────────────────────────────────────────────────────
 -- Found by the two people's groups, the oldest if there are two, and made on
 -- the two @s asking when there is none. Two sides asking for the first time
@@ -287,6 +326,7 @@ begin
   end if;
   perform celestual_reveal_due();
   if nt in (select celestual_group(nh)) then return celestual_mutual_face_none(); end if;
+  if not celestual_mutual_named(nh, nt) then return celestual_mutual_face_none(); end if;
   v_told := celestual_mutual_told(nh, nt);
   if v_told is null then return celestual_mutual_face_none(); end if;
   f := celestual_mutual_face_row(nh, nt);
@@ -317,6 +357,7 @@ begin
     return jsonb_build_object('ok', false, 'error', 'invalid');
   end if;
   if nt in (select celestual_group(nh)) then return celestual_mutual_face_none(); end if;
+  if not celestual_mutual_named(nh, nt) then return celestual_mutual_face_none(); end if;
   v_told := celestual_mutual_told(nh, nt);
   if v_told is null then return celestual_mutual_face_none(); end if;
   f := celestual_mutual_face_row(nh, nt);
@@ -350,6 +391,7 @@ begin
   end if;
   perform celestual_reveal_due();
   if nt in (select celestual_group(nh)) then return celestual_mutual_face_none(); end if;
+  if not celestual_mutual_named(nh, nt) then return celestual_mutual_face_none(); end if;
   v_told := celestual_mutual_told(nh, nt);
   if v_told is null then return celestual_mutual_face_none(); end if;
   f := celestual_mutual_face_row(nh, nt);
@@ -413,6 +455,7 @@ grant execute on function celestual_mutual_seen(text, text, text, timestamptz) t
 
 revoke all on function celestual_mutual_tints()                                              from public, anon, authenticated;
 revoke all on function celestual_mutual_told(text, text)                                     from public, anon, authenticated;
+revoke all on function celestual_mutual_named(text, text)                                    from public, anon, authenticated;
 revoke all on function celestual_mutual_face_row(text, text)                                 from public, anon, authenticated;
 revoke all on function celestual_mutual_side(celestual_mutual_faces, text)                   from public, anon, authenticated;
 revoke all on function celestual_mutual_face_answer(celestual_mutual_faces, text, timestamptz) from public, anon, authenticated;

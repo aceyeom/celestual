@@ -137,16 +137,18 @@ both: the screenshot exists before the decision does.
 
 ```
   writing        layer 1  regex, over the words as typed and folded flat
-                          (moderate.js `norm`): slurs in any plural or
-                          disguise, links, phones, addresses, room numbers,
-                          and on public words only, a sexual proposition
-                          aimed at the person and telling them to hurt
-                          themselves. Runs at the keyboard (moderate.js) and
-                          again on the server, because a client-side check is
-                          a courtesy to the writer, not a control on the
-                          writer. A catch is a hard refusal: the card shakes,
-                          the line under it says what was caught, and nothing
-                          is sent.
+                          (moderate.js `norm`): slurs in the plural each
+                          really takes and in disguise, links, phones,
+                          addresses, room numbers, and on public words only,
+                          a sexual proposition aimed at the person and
+                          telling them to kill themselves, in the shapes no
+                          joke could share (anything a joke might share is
+                          left to layers 2 and 3). Runs at the keyboard
+                          (moderate.js) and again on the server, because a
+                          client-side check is a courtesy to the writer,
+                          not a control on the writer. A catch is a hard
+                          refusal: the card shakes, the line under it says
+                          what was caught, and nothing is sent.
                  layer 2  the lexicon, server side: a wide list of the words a
                           letter with a consequence in it carries (violence,
                           sex, abuse, a minor, a routine, exposure). A gate,
@@ -514,7 +516,11 @@ offered in three places: the letter's options (`take it back`, then
 post (`Wall.jsx` `Up`: "your letter to Sofia is up." with `take it back` and
 `ok`, holding the tab back while it stands); and the composer's held screen,
 a quiet `take it back` under `back to the wall`. The account's list reads
-`you took it back` for such a letter, and the wall's notice never rises for
+`you took it back` for such a letter, with `undo` beside it for as long as
+the day to put it back runs (`wall_mine` `undo_until`, `You.jsx` `Wrote`),
+the one way back once the sheet or the card it was taken back on is gone,
+and the row stays on the list for that whole day however often it has been
+seen. The wall's notice never rises for
 it (`moderate.js` `whyDown` has the sentence all the same). Nothing is filed
 and no name is shut; to the person it was written to it is a letter that came
 down, as any other. A database without 0074 answers 'missing' and the row is

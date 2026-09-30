@@ -14,7 +14,10 @@
 -- wrote and it lapsed, named an @ nobody proved, or took the mutual off; the
 -- one who took it off can neither read nor set after, and the other side
 -- reads exactly what they read before. Two linked @s are one person on one
--- face. Erasure takes every face naming the handle. The browser has the
+-- face, from either of their own; but the other side names that person only
+-- by the @ its own list names, and an @ of theirs it was never told is
+-- answered `none` like any other, so the doors are no way to learn which @s
+-- are one person. Erasure takes every face naming the handle. The browser has the
 -- three doors and nothing under them. Nights are brought forward by moving
 -- the rows' own reveal back, and an opening is moved back in time the same
 -- way, since a whole test is one transaction and one `now()`. Run through
@@ -275,13 +278,28 @@ select celestual_submit('mf_g1', 'mf_t', null, 'proof-mf_g1', '{"words":"the one
 select celestual_submit('mf_t', 'mf_g1', null, 'proof-mf_t', '{"words":"the one who hums back"}'::jsonb);
 select mf_ok('a pair told on one of a person''s two @s', mf_night(interval '2 days') = 1);
 select mf_set('mf_g2', 'mf_t', 'green', 3);
-select mf_ok('either @ of that person reads and sets the one face, and so does the other side, by either',
+select mf_ok('either @ of that person reads and sets the one face, and so does the other side, by the @ it was told',
   mf_face('mf_g1', 'mf_t')->>'tint' = 'green'
-  and mf_face('mf_t', 'mf_g2')->>'topic' = mf_face('mf_g1', 'mf_t')->>'topic'
+  and mf_face('mf_t', 'mf_g1')->>'topic' = mf_face('mf_g1', 'mf_t')->>'topic'
   and mf_face('mf_t', 'mf_g1')->>'topic' = mf_face('mf_g2', 'mf_t')->>'topic'
   and (select count(*) from celestual_mutual_faces
         where (handle_a in ('mf_g1', 'mf_g2') and handle_b = 'mf_t')
            or (handle_b in ('mf_g1', 'mf_g2') and handle_a = 'mf_t')) = 1);
+-- mf_t's list names that person as mf_g1 and nothing else. mf_g2 is theirs,
+-- linked and proved, and asking by it must answer as asking by an @ nobody
+-- ever proved does, or the doors say which @s are one person
+create temp table mf_unnamed as
+  select (select jsonb_agg(to_jsonb(m) order by m.id) from celestual_mutual_faces m
+           where m.handle_a = 'mf_t' or m.handle_b = 'mf_t') as r,
+         mf_face('mf_t', 'mf_g2') as face, mf_set('mf_t', 'mf_g2', 'night', 0) as set,
+         mf_seen('mf_t', 'mf_g2', mf_told('mf_t', 'mf_g1')) as seen,
+         mf_face('mf_t', 'mf_ghost') as ghost;
+select mf_ok('a linked @ of the partner that the caller''s list never named is none, byte for byte',
+  (select face = celestual_mutual_face_none() and set = celestual_mutual_face_none()
+      and seen = celestual_mutual_face_none() and face = ghost from mf_unnamed));
+select mf_ok('and asking by it moves nothing and makes no face',
+  (select jsonb_agg(to_jsonb(m) order by m.id) from celestual_mutual_faces m
+    where m.handle_a = 'mf_t' or m.handle_b = 'mf_t') = (select r from mf_unnamed));
 select mf_seen('mf_g2', 'mf_t');
 select mf_ok('and an opening from either is the person''s',
   (mf_face('mf_t', 'mf_g1')->>'opened')::boolean);

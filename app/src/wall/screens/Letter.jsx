@@ -2345,7 +2345,17 @@ export default function Letter({
   // and iOS takes a drag it has not been told is ours as the start of a
   // scroll, and cancels the pointer under it: once the drag is the card's,
   // sideways or up and down raising its replies, the touch is the card's
-  const gone = one === null
+  //
+  // The stage is not drawn whenever the sheet stands on a gone letter, and
+  // that is not only when there is no letter at all: a name whose letter
+  // was just taken down here stands on the undo while the name's next
+  // letter sits in `one` (`downHere`, below, where the gone screen is
+  // drawn). So the listener is keyed on whether the stage is drawn, not on
+  // whether there is a letter, or an undo pressed on that screen would
+  // bring back a fresh stage the listener never reached, and every swipe
+  // on it after would be Safari's scroll and spring back.
+  const downHere = !!removedAt && !!one && !byId && removedAt.to === handle && removedAt.id !== one.id
+  const gone = one === null || downHere
   useEffect(() => {
     const st = stage.current
     if (!st) return undefined
@@ -2680,8 +2690,9 @@ export default function Letter({
   // was just taken down here stands on the undo, as a sheet on a letter's
   // id does, until the undo is pressed or the sheet is left, and never
   // slides a letter the person did not ask for under their thumb.
-  const downHere = !!removedAt && !!one && !byId && removedAt.to === handle && removedAt.id !== one.id
-  if (one === null || downHere) {
+  // (`downHere` is worked out above, where the stage's touch listener is
+  // keyed on it too.)
+  if (gone) {
     const mineGone = removedAt && (removedAt.id === param || removedAt.to === handle) ? removedFace(removedAt) : null
     return (
       <Sheet onClose={leave} onClosing={stop} labelledBy="wl-letter-h" className={wrap} aside={aside} room>

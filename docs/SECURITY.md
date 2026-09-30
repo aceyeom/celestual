@@ -39,7 +39,7 @@ small status objects — never other people's rows. Internal helpers
 `celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`,
 and since 0072 `celestual_place`, `celestual_mutual_keep` and
 `celestual_keepsake_forget`, and since 0077 `celestual_mutual_told`,
-`celestual_mutual_face_row`, `celestual_mutual_side`,
+`celestual_mutual_named`, `celestual_mutual_face_row`, `celestual_mutual_side`,
 `celestual_mutual_face_answer`, `celestual_mutual_face_none` and
 `celestual_mutual_tints`)
 and the operator / service-role paths (`celestual_complete_ig_verification`,
@@ -388,13 +388,18 @@ piece of state in the product that one person writes and another reads.
 - **Who can read it.** Only the two people of a told mutual, each through
   their own proof. Every door (`celestual_mutual_face`, `_face_set`,
   `_seen`) takes the caller's @ and proof and the other @, runs the reveal,
-  and first finds a told mutual between the two people's groups on the
-  caller's own side (a told row or a keepsake, as `celestual_mutual_forget`
-  finds one); the browser never holds a key to the pair. Anybody without one
-  gets `{ ok: false, error: 'none' }`, the same bytes whether they never
-  wrote, wrote and are waiting, wrote and it lapsed, took the mutual off, or
-  named an @ nobody has ever proved, so none of it says whether the other
-  person is on celestual (§5 is untouched). RLS on, zero policies, every
+  takes the other @ only when it is exactly the @ one of the caller's own
+  told rows or keepsakes names (the @ written to, by its hash, or the @
+  that wrote back, which the caller's list already shows), never widened
+  through the other person's links (`celestual_mutual_named`), and then
+  finds a told mutual between the two people's groups on the caller's own
+  side (a told row or a keepsake, as `celestual_mutual_forget` finds one);
+  the browser never holds a key to the pair. Anybody without one gets
+  `{ ok: false, error: 'none' }`, the same bytes whether they never wrote,
+  wrote and are waiting, wrote and it lapsed, took the mutual off, named an
+  @ nobody has ever proved, or named an @ their partner has linked that
+  their own list never named, so none of it says whether the other person
+  is on celestual or which @s are one person (§5 is untouched). RLS on, zero policies, every
   grant revoked, the helpers the service role's alone.
 - **Why it is fine that one of them learns this about the other.** Both
   wrote, both were told: this is between the two people a mutual already

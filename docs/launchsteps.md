@@ -45,26 +45,36 @@ migration, two functions and the wall, in this order. Nobody in this
 repository applies or deploys any of it; it is verified against a bare
 PostgreSQL (`scripts/verify-migrations.sh --test`, the 0078 lines in
 `scripts/sql/test-one-wall.sql` and `test-replies.sql`) and by
-`npm run check:moderation`, which holds the keyboard and both functions to
-one must-refuse and one must-pass table.
+`npm run check:moderation`, which holds the keyboard, both functions and
+the migration's copy to one must-refuse and one must-pass table, holds the
+three copies of the rules to one source character for character, and holds
+the lexicon to a must-read table.
 
 1. [ ] **Apply `0078_the_filter_hears_plurals.sql`.** Re-runnable. It adds
        `celestual_text_norm` and `celestual_public_caught` and redefines
        `celestual_text_caught` and `wall_reply_caught`, all four the service
        role's alone. From this moment a private note's words and line are
-       read with slurs heard in the plural, and no longer refused for "the
+       read with slurs heard in the plural each stem really takes (so
+       "spices", "chinks of light" and the surnames Dykes and Coons are not
+       slurs), and no longer refused for "the
        same dorm 2 years ago" or "#2019"; nothing sexual is on that list,
        so a private note may flirt however plainly. A reply is refused for a
-       proposition ("babe lets fuck", "dtf") or "kys" by the database too.
+       proposition ("babe lets fuck", "dtf") or "kys" by the database too,
+       and never for a joke that shares a shape with one ("you're gonna
+       smash it", "i could just die", "cut yourself some slack").
 2. [ ] **`supabase functions deploy celestual-wall-moderate`.** The same list
-       folded flat, the proposition and self harm rules, the lexicon with the
-       fuck word, the propositions, the sexual emoji and a new `abuse` row,
-       and the prompt rewritten to the ruling with its examples and the new
-       `abuse` category. No new secret; `MODERATION_MODEL` stays unset (the
+       folded flat, the proposition and self harm rules in the shapes no
+       joke could share, the lexicon with the fuck word (inside a longer
+       word too, for "l e t s f u c k"), the propositions and their slang,
+       the sexual emoji, a new `abuse` row wide enough for "stfu loser" and
+       "neck yourself", and a `threat` row that hears "hope you die" and
+       "be careful walking home", and the prompt rewritten to the ruling
+       with its examples, the new `abuse` category and a death wish said as
+       a hope named as a threat. No new secret; `MODERATION_MODEL` stays unset (the
        prompt was written for `claude-haiku-4-5-20251001`, and a thinking
        model would spend the 256 tokens before it answered).
 3. [ ] **`supabase functions deploy celestual-wall-reply`.** The same list,
-       and the replies' prompt rewritten the same way.
+       and the replies' prompt rewritten the same way, the death wish too.
 4. [ ] **Ship the front end**, after 2 and 3: the composer refuses the
        proposition when the wall is chosen, with the server's own sentence,
        and a front end ahead of the function would refuse at the keyboard

@@ -453,9 +453,23 @@ select ow_ok('0078: a slur is heard in the plural and through its disguises',
   and celestual_text_caught('you are a f a g') = array['slur']
   and celestual_text_caught('niggerrr') = array['slur']
   and celestual_text_caught('trannies') = array['slur']);
-select ow_ok('0078: and two idioms are not slurs',
+select ow_ok('0078: and three idioms are not slurs',
   cardinality(celestual_text_caught('spic and span')) = 0
-  and cardinality(celestual_text_caught('a chink in the armor')) = 0);
+  and cardinality(celestual_text_caught('a chink in the armor')) = 0
+  and cardinality(celestual_text_caught('chinks of light through the blinds')) = 0);
+-- each stem takes only the plural it really has: "spices" is not spic and
+-- es, and "Dykes" and "Coons" are surnames, so those two take none
+select ow_ok('0078: a word or a name with a slur''s letters in it is not a slur',
+  cardinality(celestual_text_caught('i love the spices')) = 0
+  and cardinality(celestual_text_caught('you add all the spices')) = 0
+  and cardinality(celestual_text_caught('Dykes')) = 0
+  and cardinality(celestual_text_caught('professor Dykes grades so hard')) = 0
+  and cardinality(celestual_text_caught('the coons got into our trash again')) = 0);
+select ow_ok('0078: and the plurals a stem does take still are',
+  celestual_text_caught('spics') = array['slur']
+  and celestual_text_caught('niggaz') = array['slur']
+  and celestual_text_caught('you chinks') = array['slur']
+  and celestual_text_caught('dyke') = array['slur']);
 select ow_ok('0078: memories are not contact',
   cardinality(celestual_text_caught('we lived in the same dorm 2 years ago')) = 0
   and cardinality(celestual_text_caught('room 4 of my heart')) = 0

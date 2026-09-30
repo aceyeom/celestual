@@ -4360,6 +4360,13 @@ a.wl-lq { text-decoration: none; }
 .wl-wrote-row:not(:disabled):active { transform: scale(0.99); transition-duration: 120ms; }
 .wl-wrote-row:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.45); outline-offset: -1px; }
 .wl-wrote-row.is-down { opacity: 0.5; cursor: default; }
+/* a letter its writer took back, while the day to put it back runs
+   (screens/You.jsx `Wrote`): the row as it is, dimmed and opening nothing,
+   and beside it `undo` on the key a note's `edit` stands on (profile.css
+   `.wl-vault-edit`), a sibling of the row and never inside it, at full
+   light since it is the one thing on the row that still does anything */
+.wl-wrote-line { display: flex; align-items: stretch; gap: 8px; width: 100%; padding-right: 8px; }
+.wl-wrote-line > .wl-wrote-row { flex: 1 1 auto; min-width: 0; width: auto; }
 .wl-wrote-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .wl-wrote-name {
   font-family: var(--f-id); font-size: var(--t-ctrl); letter-spacing: var(--tr-tight);

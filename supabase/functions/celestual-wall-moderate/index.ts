@@ -162,15 +162,20 @@ function norm(s: string): string {
 // Slurs against a protected class are a consequence, not a tone: on a public
 // wall under somebody's name they are harassment of that person, whatever
 // the framing. Profanity is not on this list and never will be. Read over
-// the folded words, every letter allowed to repeat and a plural on the end
-// (30 September: "you niggers" and "faggots" went past the singular), with
-// two idioms that carry a slur's letters and none of its meaning taken out.
+// the folded words, every letter allowed to repeat and the plural that stem
+// really takes (30 September: "you niggers" and "faggots" went past the
+// singular, and a first cut that let every stem take `es` refused "spices"),
+// with three idioms that carry a slur's letters and none of its meaning
+// taken out. moderate.js has the long reasons, "coon" and "dyke" among them.
 const SLURS = [
-  'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'trannie', 'retard', 'retarded', 'kike',
-  'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',
+  'nigger/s', 'nigga/s|z', 'faggot/s', 'fag/s', 'tranny/', 'trannie/s', 'retard/s', 'retarded/', 'kike/s',
+  'spic/s', 'chink/s', 'gook/s', 'wetback/s', 'coon/', 'dyke/', 'shemale/s',
 ]
-const SLUR_RES = SLURS.map((s) => new RegExp(`\\b${s.split('').map((c) => `${c}+`).join('')}(?:s|es|z|ies)?\\b`))
-const NOT_SLURS = /\bspick? (?:and|n) span\b|\bchinks? in (?:the|his|her|my|your|their) armou?r\b/g
+const SLUR_RES = SLURS.map((x) => {
+  const [s, pl] = x.split('/')
+  return new RegExp(`\\b${s.split('').map((c) => `${c}+`).join('')}${pl ? `(?:${pl})?` : ''}\\b`)
+})
+const NOT_SLURS = /\bspick? (?:and|n) span\b|\bchinks? in (?:the|his|her|my|your|their) armou?r\b|\bchinks? of (?:light|sunlight|daylight|sun|hope|blue)\b/g
 function slurred(n: string): boolean {
   const t = n.replace(NOT_SLURS, ' ')
   return SLUR_RES.some((re) => re.test(t))
@@ -199,34 +204,45 @@ function phoneLike(m: string): boolean {
 // aimed at the person in its surest shapes, and telling them to hurt
 // themselves. Never the fuck word alone ("fuck you for leaving" goes up), and
 // never in a private note's list (`celestual_text_caught`), where flirting is
-// between two people who both asked. moderate.js has the long reasons.
+// between two people who both asked. Narrowed the same day to shapes no joke
+// could share ("you're gonna smash it", "i could just die" and "cut yourself
+// some slack" go up), with everything a joke might share left to the lexicon
+// and the reading. moderate.js has the long reasons, rule by rule.
 const FK0 = '(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)'
 const FK = `${FK0}(?:ing|in|n|ed|s)?`
 const LEADS = 'lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\\b(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you'
-const NOT_SEX = '(?!\\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\\b)(?!\\s+(?:you|u|ya|me|him|her|them) (?:up|over)\\b)'
+const NOT_SEX = '(?!\\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\\b)(?!(?:\\s+\\S+){0,3}\\s+(?:up|over|around)\\b)'
+const WANTS = '(?<!\\b(?:my|your|his|her|the|an|their|student|photo) )id|i would|i wanna|i want to|i tryna|i need to|i gotta|let me|lemme|can i|could i'
 const AFTER = '(?=\\s*$|\\s+(?:tbh|ngl|lol|lmao|fr|ong|rn|tonight|already|babe|baby|honestly|and|but|anyway|though|tho)\\b)'
 const EM = '(?:emeggplant|empeach|emdroplets|emtongue)'
+const NEG = '(?<!\\b(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\\b.*)'
+const NOT_ME = '(?<!\\b(?:i|im|ill|id|ive|we|lets|gonna|wanna|imma|finna|will|would|could|might|may|well|to|all|can|should|gotta|just|pls|please|plz|now|so|then)\\s)'
+const SELF = '(?:yourself|urself|yourselves|your self|ur self|yoself)'
 const WALL_ONLY: Array<{ id: string; re: RegExp }> = [
   { id: 'sexual', re: new RegExp([
     `\\b(?:${LEADS})(?:\\s+(?:just|finally|so|really|already|now))?\\s+${FK0}\\b${NOT_SEX}`,
-    `\\b${FK} me (?:daddy|mommy|mami|papi|baby|babe|harder|hard|senseless)\\b`,
+    `\\b(?:lets|letus|letme|lemme|wanna|wana|tryna|wantto)${FK0}(?:you|u|me)?\\b`,
+    `\\b${FK} me (?:daddy|mommy|mami|papi)\\b`,
+    `^(?:(?:babe|baby|please|pls|plz|just|now|come on|so) )*${FK0} me(?: (?:harder|hard|senseless|baby|babe|already|now|tonight|rn|pls|please|plz|daddy|mommy|papi|mami))+$`,
     '\\bdtf\\b',
     '\\b(?:send|drop|show) (?:me )?(?:(?:your|ur|some) )?(?:nudes|noods|nudez|nude pics|naked pics|tits|titties|boobs|dick pics?|cock|pussy)\\b',
     '\\bsit on (?:my|your|ur) (?:face|dick|cock)\\b',
     '\\bride (?:my|your|ur) (?:face|dick|cock)\\b',
     '\\bsuck (?:my|me|your|ur) (?:dick|cock|balls|tits)\\b|\\bsuck (?:you|u|me) off\\b',
     '\\b(?:eat|lick) (?:you|u|me) out\\b|\\b(?:eat|lick) (?:your|ur|my) (?:pussy|cock|dick)\\b',
-    '\\b(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\\b',
-    `\\b(?:${LEADS}|would)\\s+(?:smash|bang|rail|pipe|hit it|hit that|tap that|tap it|clap (?:you|ya|u|it|them cheeks|those cheeks))(?:\\s+(?:you|u|ya|that|it))?${AFTER}`,
+    '\\b(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\\b(?!\\s+(?:pats?|scratches|rubs?|massages?|starts?|to toe|over heels|first|games?|space|phones?)\\b)',
+    `\\b(?:${WANTS})(?:\\s+(?:so|totally|def|definitely|lowkey|highkey|honestly|really|just|fr))?\\s+(?:(?:smash|bang|rail|pipe)(?:\\s+(?:you|u|ya|her|him|them|that|dat))?|(?:hit|tap) (?:it|that|dat)|clap (?:you|ya|u|them cheeks|those cheeks|dem cheeks))${AFTER}`,
     `\\b(?:${LEADS})\\s+${EM}`,
     '\\bempoke\\b',
-    `\\b(?:emeggplant|empeach)\\b.*\\b${EM}\\b|\\b(?:emdroplets|emtongue)\\b.*\\b(?:emeggplant|empeach)\\b`,
+    '\\bemeggplant (?:empeach|emdroplets|emtongue)\\b|\\bempeach (?:emeggplant|emdroplets|emtongue)\\b|\\b(?:emdroplets|emtongue) (?:emeggplant|empeach)\\b',
   ].join('|')) },
   { id: 'harm', re: new RegExp([
     '\\bkys\\b',
-    '^(?:kill|unalive|hang) (?:yourself|urself|your self|ur self)\\b',
-    '\\b(?:go|just|pls|please|plz|should|shoulda|gotta|need to|hope you|hope u|why dont you|why dont u|can you|can u)\\s+(?:(?!dont|do|not|never|wont)[a-z]+\\s+)?(?:kill|unalive|hang|off|end|drown|shoot|hurt|cut) (?:yourself|urself|yourselves|your self|ur self|yoself)\\b',
-    '\\b(?:go|pls|please|plz|just|should)\\s+(?:die|drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit your wrists|end it all)\\b',
+    `${NEG}(?:^|\\b(?:go|pls|please|plz|just|you should|u should|you need to|u need to|you gotta|u gotta|why dont you|why dont u|hope you|hope u|you can|u can|you could|u could)\\s)(?:(?:just|go|and|fucking|fkn|fking|already|pls|please|ahead and|actually|really|seriously)\\s){0,3}(?:kill|unalive|hang|drown|end|shoot) ${SELF}\\b(?!\\s+(?:laughing|over|in the foot|trying|with|doing|for|on|by|out|off)\\b)`,
+    `${NEG}\\b(?:you|u|ya) (?:(?:should|shoulda|need to|oughta)(?: just)?(?: go)?(?: and)?|can (?:just )?go) die\\b(?!\\s+(?:on|for|laughing|of|trying|inside|happy|a|in peace|in my arms|with|from|when|if|before|after)\\b)`,
+    `${NEG}\\bwhy dont (?:you|u|ya) (?:just )?(?:go )?(?:and )?die\\b(?!\\s+(?:on|for|laughing|of|trying|inside|happy|a|with|from)\\b)`,
+    `${NEG}${NOT_ME}(?:\\b(?:just|pls|please|plz|now|so|then) )?\\bgo die\\b(?=\\s*$|\\s+(?:already|pls|please|plz|lol|lmao|loser|bitch|asshole|idiot|in a (?:fire|ditch|hole))\\b)`,
+    `${NEG}${NOT_ME}(?:\\b(?:just|pls|please|plz|now|so|then) )?\\bgo (?:drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit (?:your|ur) wrists)\\b`,
   ].join('|')) },
 ]
 
@@ -258,8 +274,9 @@ function deterministic(text: string) {
 // ones it sends. A false alarm here costs one small call. A miss here costs
 // a letter standing.
 //
-// Not on it, on purpose: "hate", "hurt" in the sense of feelings, "die" in
-// "I could die", break-up words, mockery. Those are the wall. Swearing is on
+// Not on it, on purpose: "hate", "hurt" in the sense of feelings, "die" on
+// its own as in "i would die for you", break-up words, mockery. Those are
+// the wall. Swearing is on
 // it since 30 September, and only as a gate: a letter that said "lets fuck
 // babe" matched no row (the row wanted "fuck you" with its pronoun), so on a
 // verified @-note it would have gone up with no model ever reading it. The
@@ -269,18 +286,33 @@ function deterministic(text: string) {
 // "fuck you for leaving" and "you're a bad bitch" the way the prompt says.
 // A hit is never a verdict: it costs one small call, and the call decides.
 //
+// Widened again the same evening, when the first layer was narrowed to the
+// shapes no joke could share (moderate.js has the rule by rule), because
+// every shape it gave up has to land here or it goes up unread on a verified
+// @-note: "you should die", "just go die in a fire", "hope you die",
+// "neck yourself", "jump off a bridge loser", "be careful walking home
+// tonight", "it would be a shame if something happened to you", "wanna
+// bone", "lets shag", "i want you inside me", "blow me", "fk u", "stfu
+// loser", "you ugly fat pig" all matched no row. So did "l e t s f u c k",
+// which folds to one word, "letsfuck", with no boundary before the f, so the
+// sexual row now also reads the fuck word inside a longer word. Words like
+// "ugly", "fat", "loser" and "be careful" send a great many harmless letters
+// to the model, and that is the trade the gate is for: "i hope you die
+// laughing at this" and "you're gonna smash it" cost a call each, and the
+// call passes them.
+//
 // Every row reads the words as typed AND folded flat (`norm`), so "f*ck",
 // "n i g g e r" and a Cyrillic letter reach the row they belong to, while
 // the rows that need digits ("at 9pm", "16 years") still have them.
 const LEXICON: Array<{ id: string; re: RegExp }> = [
   // a threat or violence promised, or wished on somebody, or a weapon
-  { id: 'threat',   re: /\b(kill|murder|stab|shoot|shot|gun|knife|blade|beat (you|him|her|them) up|hurt (you|him|her|them)|break (your|his|her) (legs|face|neck)|burn (your|his|her)|rape|assault|attack|choke|strangle|drown|poison|bomb|slit|bury you|find you|coming for you|watch(ing)? your back|you('ll| will) (pay|regret|see)|know where you (live|sleep|are)|dead (to me|man|girl|woman)|end you|hunt)\b/i },
+  { id: 'threat',   re: /\b(kill|murder|stab|shoot|shot|gun|knife|blade|beat (you|him|her|them) up|hurt (you|him|her|them)|break (your|his|her) (legs|face|neck)|burn (your|his|her)|rape|assault|attack|choke|strangle|drown|poison|bomb|slit|bury you|find you|coming for you|watch(ing)? your back|you('ll| will) (pay|regret|see)|know where you (live|sleep|are)|dead (to me|man|girl|woman)|end you|hunt|hope (you|u|ya) (\w+ )?(die|dies|rot|burn|suffer)|wish (you|u) (were|was) dead|(die|burn|rot) in (a )?(fire|hell|ditch|hole)|walking home|something (bad )?(happens?|happened) to (you|u)|shame if|be careful)\b/i },
   // sexual content, a body described that way, a proposition, or the emoji
   // that say it
-  { id: 'sexual',   re: /\b(sex|sexy|sexual|f+u+c*k+\w*|f+v+c*k+\w*|f+c+k+\w*|ph+u+c*k+\w*|dtf|smash|rail|bang|screw|hit (it|that)|tap (it|that)|sit on|bend (you )?over|suck|eat (you|u|me) out|ride (me|my|your)|breed|head|wet|hard for|blow ?job|hand ?job|bj|dick|cock|pussy|cunt|tits?|titties|boobs?|ass(hole)?|nude|naked|nudes|noods|clothes off|onlyfans|horny|orgasm|cum|slut|whore|hoe|thot|body count|virgin|thicc|thick thighs|rack|bulge|hooked up|hook up|hookup|one night|in bed|sleep with|slept with|moan|69|netflix and chill|emeggplant|empeach|emdroplets|emtongue|empoke)\b/i },
+  { id: 'sexual',   re: /\b(sex|sexy|sexual|f+u+c*k+\w*|f+v+c*k+\w*|f+c+k+\w*|f+c+u+k+\w*|f+k+\w*|ph+u+c*k+\w*|ph+k+\w*|\w+(f+u+c*k+|f+v+c*k+|ph+u+c*k+)\w*|bon(e|er|ed|ing)|shag\w*|inside (you|u|me)|go down on|ride (you|u)|blow me|(spread|open) (your|ur|those|them) legs|grind(ing)? on|dtf|smash|rail|bang|screw|hit (it|that)|tap (it|that)|sit on|bend (you )?over|suck|eat (you|u|me) out|ride (me|my|your)|breed|head|wet|hard for|blow ?job|hand ?job|bj|dick|cock|pussy|cunt|tits?|titties|boobs?|ass(hole)?|nude|naked|nudes|noods|clothes off|onlyfans|horny|orgasm|cum|slut|whore|hoe|thot|body count|virgin|thicc|thick thighs|rack|bulge|hooked up|hook up|hookup|one night|in bed|sleep with|slept with|moan|69|netflix and chill|emeggplant|empeach|emdroplets|emtongue|empoke)\b/i },
   // a letter that may be nothing but abuse: the gendered and sexual slurs
   // used as attacks, degradation, telling them to hurt themselves
-  { id: 'abuse',    re: /\b(bitch(es|y)?|whore|slut|hoe|thot|skank|cunt|twat|dickhead|motherf\w*|piece of shit|eat shit|suck my|worthless|waste of (space|air|oxygen)|nobody (loves|likes|wants) you|kys|kill (yo|ur|your)(self| self)|unalive|go die|die alone|drink bleach)\b/i },
+  { id: 'abuse',    re: /\b(bitch(es|y)?|whore|slut|hoe|thot|skank|cunt|twat|dickhead|motherf\w*|piece of shit|eat shit|suck my|worthless|waste of (space|air|oxygen)|nobody (loves|likes|wants|will ever love) you|kys|(kill|hang|hurt|cut|shoot|off|end|drown|neck|unalive) (yo|ur|your)(self| self)|unalive|(go|just|pls|please|plz|should|u|you) (just )?(go )?die|hope (you|u|ya) (\w+ )?die|die alone|drink bleach|rope|jump off|slit|miss you if|better (off )?without you|ugly|fat|pig|loser|stupid|pathetic|disgusting|stfu|gtfo)\b/i },
   // a minor, stated or implied
   { id: 'minor',    re: /\b(1[0-7] ?(years|yrs|yo|year old|y\/o)|(you'?re|you are|she'?s|she is|he'?s|he is|they'?re|only|just|turned|turning|is|are) 1[0-7]|1[0-2]th grade|grade 1[0-2]|under ?age|underage|minor|middle school|freshman in high|high school (freshman|sophomore|junior)|child|kid|little (girl|boy)|sixteen|fifteen|fourteen|thirteen|jailbait|loli)\b/i },
   // a routine, a schedule, a way to find somebody at a time
@@ -289,7 +321,7 @@ const LEXICON: Array<{ id: string; re: RegExp }> = [
   { id: 'expose',   re: /\b(gay|lesbian|bi(sexual)?|trans(gender)?|queer|closet(ed)?|out (you|him|her|them)|outed|pregnan(t|cy)|abortion|miscarriage|hiv|aids|std|sti|herpes|chlamydia|positive for|diagnos(ed|is)|bipolar|schizo|anorexi|bulimi|eating disorder|rehab|overdose|self.?harm|cutting|suicid|kill (my|your|him|her)self|kys|undocumented|illegal (immigrant|alien)|deport|ice will|visa|green card|owes? money|debt|bankrupt|arrest(ed)?|charged with|felony|criminal record|dui|cheated on|affair|nudes? of|leak|revenge)\b/i },
   // a slur, or hatred by group. The stems take any ending now: the row had
   // `n[i1]gg` closed by a word boundary, which no real word ever met
-  { id: 'hate',     re: /\b(n+i+g+g+\w*|f+a+g+\w*|tr+a+n+n+\w*|r+e+t+a+r+d+\w*|k+i+k+e+s?|sp+i+c+k?s?|ch+i+n+k+s?|w+e+t+b+a+c+k+s?|towel ?heads?|sand ?n\w*|go back to (your|ur) country|your kind|(all|every) (jews|muslims|blacks|asians|mexicans|indians|whites|arabs|gays|women|men) (are|should))\b/i },
+  { id: 'hate',     re: /\b(n+i+g+g+\w*|f+a+g+\w*|tr+a+n+n+\w*|r+e+t+a+r+d+\w*|k+i+k+e+s?|sp+i+c+k?s?|ch+i+n+k+s?|w+e+t+b+a+c+k+s?|c+o+o+n+s?|d+y+k+e+s?|towel ?heads?|sand ?n\w*|go back to (your|ur) country|your kind|(all|every) (jews|muslims|blacks|asians|mexicans|indians|whites|arabs|gays|women|men) (are|should))\b/i },
 ]
 
 function needsReading(text: string): string[] {
@@ -311,7 +343,10 @@ function needsReading(text: string): string[] {
 // Rewritten on 30 September to the owner's ruling, after it passed "lets fuck
 // babe": its sexual rule named explicit content, a body and a history, and a
 // two word proposition was none of those, while "swearing at them: allowed"
-// and "never reject for being crude" told it the rest. So the rule names a
+// and "never reject for being crude" told it the rest. Its threat rule took
+// a death wish only "stated as intent or a promise", so a plain "hope you die
+// in a fire" fit no rule and read as a pass beside "i hope you're
+// miserable"; it now names the wish itself, with an example on each side. So the rule names a
 // proposition aimed at the person, however short, joking or misspelled, and
 // the sexual emoji; a new category, `abuse`, takes the letter that is nothing
 // but profanity or degradation hurled at the person, telling them to hurt
@@ -332,11 +367,11 @@ Always PASS:
 - roasts, insults and cruelty with a point: "your playlist is a war crime", "you're a coward and you know why", "you were selfish to me all year and you know it"
 - anger with a reason, heartbreak, "i hope you're miserable", "you ruined my year"
 - flirting and attraction, and romantic innuendo that is not explicit: "you're so fine it's rude", "kiss me already", "marry me", "i think about your hands too much"
-- comic hyperbole: "i'd fight a bear for you", "kill it at your recital", "i could kill you for that haha"
+- comic hyperbole: "i'd fight a bear for you", "kill it at your recital", "i could kill you for that haha", "you're so cute i could just die", "you're gonna smash it"
 - money jokes and ordinary detail: "you owe me $5", a class, a building, a bar, a party, a bus line, a job, one remembered day
 
 Moderate the CONSEQUENCE, not the emotion. REJECT only if one of these is clearly true:
-1. threat: a threat of violence, plainly or veiled ("watch your back", "i know where you live", "you'll see what happens to you"), a wish for their death or injury stated as intent or a promise, intimidation, stalking, or any promised consequence to their body, home or safety. Obvious comic hyperbole is not a threat.
+1. threat: a threat of violence, plainly or veiled ("watch your back", "i know where you live", "you'll see what happens to you"), a wish for their death or serious injury, whether stated as intent, a promise or a hope ("i hope you die", "hope you die in a fire", "you should die"), intimidation, stalking, or any promised consequence to their body, home or safety. Obvious comic hyperbole is not a threat, and "i hope you're miserable" is anger, not a death wish.
 2. locate: a physical description or their name COMBINED WITH a recurring schedule, route, address, workplace shift, or room, precise enough to find them at a predictable time. A place alone is not this. One remembered day is not this.
 3. sexual: a sexual proposition, invitation or request aimed at the person, however short, joking, misspelled or spaced out ("lets fuck", "babe lets fuck", "dtf?", "wanna fuck", "sit on my face", "send nudes", "i'd smash"), including sexual emoji used that way (eggplant, peach, droplets, tongue); an explicit sex act; a sexualised description of their body; or a claim about their sexual history. Flirting, attraction and a kiss are not this.
 4. minor: the person is stated or clearly implied to be under 18 in a sexual or romantic letter.
@@ -352,12 +387,14 @@ maya: your playlist is a war crime and i still miss you => pass
 @ren.t: you're so fine it's rude. kiss me already => pass
 @ren.t: i could kill you for that haha. you owe me $5 => pass
 maya: i'd fight a bear for you => pass
+maya: you're so cute i could just die => pass
 @ren.t: babe lets fuck => reject ["sexual"]
 @ren.t: dtf? => reject ["sexual"]
 maya: 🍆🍑💦 tonight? => reject ["sexual"]
 @ren.t: fuck you bitch => reject ["abuse"]
 maya: kys => reject ["abuse"]
 @ren.t: i know where you live. watch your back => reject ["threat"]
+@ren.t: hope you die in a fire => reject ["threat"]
 
 Judge the addressee too: a name or handle that is itself a slur, a proposition, abuse or a contact detail is part of the letter. Judge the sealed line with the letter; it is private until the recipient asks for it.
 

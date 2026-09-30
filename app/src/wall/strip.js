@@ -18,8 +18,12 @@
 // drew the whole sheet again under it (the owner, 29 September: swiping
 // through the letters is slow). So a hold is kept for each asker by name
 // (`key`), the last of each, and all of them are let go together once the
-// strip is still. The shell's is `rev`, a thread's is `thread`, a face's is
-// its handle's.
+// strip is still. The shell's is `rev`, and there is one shell, so only its
+// newest notice is kept. Every other asker keys its hold on its own callback
+// (Replies.jsx `load`, parts.jsx `useProfile`), since a key shared between
+// askers would keep only the last of them: two faces for one handle are
+// answered by the same peek in the same breath, and under one key the first
+// would never be drawn at all.
 let moving = false
 const held = new Map()
 let wake = 0

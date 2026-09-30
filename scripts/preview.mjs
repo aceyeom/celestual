@@ -248,6 +248,9 @@ let MANY = false
 // the band with three figures on both of its counts.
 let YOURS = false
 let TOOK = false
+// Whether the letter taken back in `TOOK` has been put back (0074
+// wall_writer_restore), so the list read after the undo draws it up again.
+let RESTORED = false
 let HEARTS = null
 // Whether the fixture browser is nobody at all: signed in to nothing, so the
 // gates draw their doors rather than the account.
@@ -1087,13 +1090,26 @@ const RPC = {
     }] : TOOK ? [
       { id: '11110111-2222-4333-8444-555566660000', handle: 'pilar.echevarria', status: 'live', down_by: null,
         body: LINES[0], hearts: 12, reasons: [], flagged: false, at: new Date(now - 1 * DAY).toISOString() },
-      { id: '11110111-2222-4333-8444-555566660001', handle: 'ren.tanaka', status: 'removed', down_by: 'writer',
-        undo_until: new Date(now + 20 * 3600000).toISOString(),
-        body: LINES[1], hearts: 0, reasons: [], flagged: false, at: new Date(now - 4 * 3600000).toISOString() },
+      RESTORED
+        ? { id: '11110111-2222-4333-8444-555566660001', handle: 'ren.tanaka', status: 'live', down_by: null,
+          body: LINES[1], hearts: 0, reasons: [], flagged: false, at: new Date(now - 4 * 3600000).toISOString() }
+        : { id: '11110111-2222-4333-8444-555566660001', handle: 'ren.tanaka', status: 'removed', down_by: 'writer',
+          undo_until: new Date(now + 20 * 3600000).toISOString(),
+          body: LINES[1], hearts: 0, reasons: [], flagged: false, at: new Date(now - 4 * 3600000).toISOString() },
       { id: '11110111-2222-4333-8444-555566660002', handle: '~sofia', kind: 'name', name: 'Sofia', status: 'pending', down_by: 'held',
         body: LINES[2], hearts: 0, reasons: [], flagged: false, at: new Date(now - 1 * 3600000).toISOString() },
+      // and one taken back two days ago, whose day to put it back is over:
+      // the row with no `undo` beside it
+      { id: '11110111-2222-4333-8444-555566660003', handle: 'jules.k', status: 'removed', down_by: 'writer',
+        undo_until: new Date(now - 1 * DAY).toISOString(),
+        body: LINES[3], hearts: 0, reasons: [], flagged: false, at: new Date(now - 2 * DAY).toISOString() },
     ] : [],
   }),
+  // 0074: the writer puts a letter they took back where it was
+  wall_writer_restore: () => {
+    RESTORED = true
+    return { ok: true, status: 'live' }
+  },
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
   // the week (0069): a mutual told at the last reveal, a note running to the
   // next, and one that was not this time at the last. The mutual carries both
@@ -2190,6 +2206,10 @@ const ROUTES = [
     acts: [['wait', 700], ['click', '.wl-write-foot .wl-pill.is-light'], ['wait', 700], ['click', '.wl-how-opt.is-wall .wl-how-go'],
            ['wait', 1400], ['click', '.wl-write-takeback']], settle: 1000 },
   { label: 'lu-you-took',    path: '/berkeley/you', took: true, acts: [['wait', 1400], ['click', '#wl-you-tab-letters']], settle: 900 },
+  // the list's own `undo` (You.jsx `Wrote`), pressed: the letter is put
+  // back, read again, and drawn as up
+  { label: 'lu-you-took-undo', path: '/berkeley/you', took: true,
+    acts: [['wait', 1400], ['click', '#wl-you-tab-letters'], ['wait', 600], ['click', '.wl-wrote-undo']], settle: 1200 },
 
   // ── the replies (0068) ──
   // The thread, a sheet raised over the letter (app/src/wall/Replies.jsx
@@ -2432,6 +2452,8 @@ for (const r of list) {
   THREAD = r.thread || 'empty'
   NIGHT = r.night || ''
   for (const v of VIEWPORTS) {
+    // an undo pressed on one viewport's page is not pressed on the next's
+    RESTORED = false
     // a check run on the last pass cleared the line; it is put back
     CANARY = r.canary || 'ok'
     // keepsake stream: a face moved on the last pass is put back

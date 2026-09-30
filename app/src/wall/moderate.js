@@ -125,16 +125,26 @@ export function norm(s) {
 // a swear word is a feeling.
 //
 // Each slur is read over the folded words with every letter allowed to
-// repeat and a plural allowed on the end (`s`, `es`, `z`, `ies`), since
-// 30 September: "you niggers", "faggots" and "retards" went past a list that
-// only knew the singular, and so did "niggerrr". Two idioms that carry a
-// slur's letters and none of its meaning are taken out before the read.
+// repeat and, since 30 September, the plural that stem really takes: "you
+// niggers", "faggots" and "retards" went past a list that only knew the
+// singular, and so did "niggerrr". The plural is written beside each stem
+// (`stem/plural`, nothing after the slash for none) and not one suffix for
+// all of them, because the first cut allowed `s`, `es`, `z` and `ies` after
+// every stem and so read "spices" as spic and es, and refused a recipe as a
+// slur with no way past it. "coon" and "dyke" take no plural at all: "Coons"
+// and "Dykes" are surnames, "coons" are raccoons and "dykes" hold back the
+// sea, and a plural used as a slur is still the reading's to see (the
+// lexicon's `hate` row sends it). Three idioms that carry a slur's letters
+// and none of its meaning are taken out before the read.
 const SLURS = [
-  'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'trannie', 'retard', 'retarded', 'kike',
-  'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',
+  'nigger/s', 'nigga/s|z', 'faggot/s', 'fag/s', 'tranny/', 'trannie/s', 'retard/s', 'retarded/', 'kike/s',
+  'spic/s', 'chink/s', 'gook/s', 'wetback/s', 'coon/', 'dyke/', 'shemale/s',
 ]
-const SLUR_RES = SLURS.map((s) => new RegExp(`\\b${s.split('').map((c) => `${c}+`).join('')}(?:s|es|z|ies)?\\b`))
-const NOT_SLURS = /\bspick? (?:and|n) span\b|\bchinks? in (?:the|his|her|my|your|their) armou?r\b/g
+const SLUR_RES = SLURS.map((x) => {
+  const [s, pl] = x.split('/')
+  return new RegExp(`\\b${s.split('').map((c) => `${c}+`).join('')}${pl ? `(?:${pl})?` : ''}\\b`)
+})
+const NOT_SLURS = /\bspick? (?:and|n) span\b|\bchinks? in (?:the|his|her|my|your|their) armou?r\b|\bchinks? of (?:light|sunlight|daylight|sun|hope|blue)\b/g
 function slurred(n) {
   const t = n.replace(NOT_SLURS, ' ')
   return SLUR_RES.some((re) => re.test(t))
@@ -191,42 +201,82 @@ function phoneLike(m) {
 //   sexual  a proposition aimed at the person, in its surest shapes: "lets
 //           fuck", "babe lets fuck", "wanna fuck", "i'd fuck you", "dtf",
 //           "sit on my face", "send nudes", "i'd smash", "suck my dick", and
-//           the emoji that say it (an eggplant or a peach beside another of
-//           them, or the finger into the ring). The fuck word alone is never
+//           the emoji that say it (an eggplant or a peach right beside a
+//           different one of them, one of them after a proposition's lead,
+//           or the finger into the ring). The fuck word alone is never
 //           this: "fuck you for leaving" and "you're the fucking best" pass,
 //           and so does a lead that is not about sex ("lets fuck shit up",
 //           "wanna fuck around and find out", "i'll fuck you up", "i'd smash
 //           that exam"). What is subtler than these shapes is the reading's.
-//   harm    telling them to kill or hurt themselves: "kys", "go kill
-//           yourself", "you should kill yourself", "just go die". Not "don't
-//           kill yourself over finals", which is care.
+//   harm    telling them to kill themselves, aimed at them: "kys", "go kill
+//           yourself", "you should kill yourself", "just go die", "you
+//           should die". Not "don't kill yourself over finals", which is
+//           care, and never the writer about themselves or a joke.
+//
+// Narrowed the same day, after a review ran the first cut against the kind
+// of letter the wall is for and found it refusing, with no way past, "you're
+// gonna smash it", "this song would bang", "lets hit it", "lets fuck some
+// shit up", "this semester fucked me hard", "give me head pats", "you're a
+// peach" with two peaches, "i made eggplant parm and peach cobbler" in
+// emoji, "i could just die", "let's go die on this hill", "you should cut
+// yourself some slack", "you just shoot yourself in the foot" and "don't
+// go kill yourself over one exam". The rule this block keeps now is the
+// owner's: a shape goes here only if no joke could plausibly share it, and
+// anything a joke might share is left to the lexicon, which sends it to the
+// reading, which reads what it means. So:
+//   smash, bang and their like need a first person who wants to ("i'd",
+//     "i wanna", "let me", "can i") and a person or nothing after, never
+//     "it": "i'll smash it" is an exam, and "let me hit it" is still refused
+//   fuck with a lead is not sex when up, over or around follows within
+//     three words, whatever the words between ("fuck ur shit up at smash")
+//   "fuck me" is sexual only as the bare imperative, the whole letter and
+//     nothing after it but "harder", "baby" and their like, or beside
+//     "daddy", so "fuck me, baby shark is stuck in my head" is a feeling
+//   two different sexual emoji only when they touch, so a peach for
+//     emphasis and a menu in emoji go up
+//   killing yourself only after a lead that tells them to ("go", "just",
+//     "you should", "hope you"), with no negation anywhere before it and no
+//     "laughing", "over" or "in the foot" after it
+//   dying only told to them: "go die" with nobody in the first person in
+//     front of it and nothing after it but the end or an insult, or "you
+//     should die", "why don't you just die" with no hill, no laughing and no
+//     "for" after it. "hope you die" is not here; the reading has it, since
+//     "i hope you die laughing at this" is a joke and the list cannot tell
 const FK0 = '(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)'
 const FK = `${FK0}(?:ing|in|n|ed|s)?`
 const LEADS = 'lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\\b(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you'
-const NOT_SEX = '(?!\\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\\b)(?!\\s+(?:you|u|ya|me|him|her|them) (?:up|over)\\b)'
+const NOT_SEX = '(?!\\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\\b)(?!(?:\\s+\\S+){0,3}\\s+(?:up|over|around)\\b)'
+const WANTS = '(?<!\\b(?:my|your|his|her|the|an|their|student|photo) )id|i would|i wanna|i want to|i tryna|i need to|i gotta|let me|lemme|can i|could i'
 const AFTER = '(?=\\s*$|\\s+(?:tbh|ngl|lol|lmao|fr|ong|rn|tonight|already|babe|baby|honestly|and|but|anyway|though|tho)\\b)'
 const EM = '(?:emeggplant|empeach|emdroplets|emtongue)'
+const NEG = '(?<!\\b(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\\b.*)'
+const NOT_ME = '(?<!\\b(?:i|im|ill|id|ive|we|lets|gonna|wanna|imma|finna|will|would|could|might|may|well|to|all|can|should|gotta|just|pls|please|plz|now|so|then)\\s)'
+const SELF = '(?:yourself|urself|yourselves|your self|ur self|yoself)'
 const WALL_ONLY = [
   { id: 'sexual', re: new RegExp([
     `\\b(?:${LEADS})(?:\\s+(?:just|finally|so|really|already|now))?\\s+${FK0}\\b${NOT_SEX}`,
-    `\\b${FK} me (?:daddy|mommy|mami|papi|baby|babe|harder|hard|senseless)\\b`,
+    `\\b(?:lets|letus|letme|lemme|wanna|wana|tryna|wantto)${FK0}(?:you|u|me)?\\b`,
+    `\\b${FK} me (?:daddy|mommy|mami|papi)\\b`,
+    `^(?:(?:babe|baby|please|pls|plz|just|now|come on|so) )*${FK0} me(?: (?:harder|hard|senseless|baby|babe|already|now|tonight|rn|pls|please|plz|daddy|mommy|papi|mami))+$`,
     '\\bdtf\\b',
     '\\b(?:send|drop|show) (?:me )?(?:(?:your|ur|some) )?(?:nudes|noods|nudez|nude pics|naked pics|tits|titties|boobs|dick pics?|cock|pussy)\\b',
     '\\bsit on (?:my|your|ur) (?:face|dick|cock)\\b',
     '\\bride (?:my|your|ur) (?:face|dick|cock)\\b',
     '\\bsuck (?:my|me|your|ur) (?:dick|cock|balls|tits)\\b|\\bsuck (?:you|u|me) off\\b',
     '\\b(?:eat|lick) (?:you|u|me) out\\b|\\b(?:eat|lick) (?:your|ur|my) (?:pussy|cock|dick)\\b',
-    '\\b(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\\b',
-    `\\b(?:${LEADS}|would)\\s+(?:smash|bang|rail|pipe|hit it|hit that|tap that|tap it|clap (?:you|ya|u|it|them cheeks|those cheeks))(?:\\s+(?:you|u|ya|that|it))?${AFTER}`,
+    '\\b(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\\b(?!\\s+(?:pats?|scratches|rubs?|massages?|starts?|to toe|over heels|first|games?|space|phones?)\\b)',
+    `\\b(?:${WANTS})(?:\\s+(?:so|totally|def|definitely|lowkey|highkey|honestly|really|just|fr))?\\s+(?:(?:smash|bang|rail|pipe)(?:\\s+(?:you|u|ya|her|him|them|that|dat))?|(?:hit|tap) (?:it|that|dat)|clap (?:you|ya|u|them cheeks|those cheeks|dem cheeks))${AFTER}`,
     `\\b(?:${LEADS})\\s+${EM}`,
     '\\bempoke\\b',
-    `\\b(?:emeggplant|empeach)\\b.*\\b${EM}\\b|\\b(?:emdroplets|emtongue)\\b.*\\b(?:emeggplant|empeach)\\b`,
+    '\\bemeggplant (?:empeach|emdroplets|emtongue)\\b|\\bempeach (?:emeggplant|emdroplets|emtongue)\\b|\\b(?:emdroplets|emtongue) (?:emeggplant|empeach)\\b',
   ].join('|')) },
   { id: 'harm', re: new RegExp([
     '\\bkys\\b',
-    '^(?:kill|unalive|hang) (?:yourself|urself|your self|ur self)\\b',
-    '\\b(?:go|just|pls|please|plz|should|shoulda|gotta|need to|hope you|hope u|why dont you|why dont u|can you|can u)\\s+(?:(?!dont|do|not|never|wont)[a-z]+\\s+)?(?:kill|unalive|hang|off|end|drown|shoot|hurt|cut) (?:yourself|urself|yourselves|your self|ur self|yoself)\\b',
-    '\\b(?:go|pls|please|plz|just|should)\\s+(?:die|drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit your wrists|end it all)\\b',
+    `${NEG}(?:^|\\b(?:go|pls|please|plz|just|you should|u should|you need to|u need to|you gotta|u gotta|why dont you|why dont u|hope you|hope u|you can|u can|you could|u could)\\s)(?:(?:just|go|and|fucking|fkn|fking|already|pls|please|ahead and|actually|really|seriously)\\s){0,3}(?:kill|unalive|hang|drown|end|shoot) ${SELF}\\b(?!\\s+(?:laughing|over|in the foot|trying|with|doing|for|on|by|out|off)\\b)`,
+    `${NEG}\\b(?:you|u|ya) (?:(?:should|shoulda|need to|oughta)(?: just)?(?: go)?(?: and)?|can (?:just )?go) die\\b(?!\\s+(?:on|for|laughing|of|trying|inside|happy|a|in peace|in my arms|with|from|when|if|before|after)\\b)`,
+    `${NEG}\\bwhy dont (?:you|u|ya) (?:just )?(?:go )?(?:and )?die\\b(?!\\s+(?:on|for|laughing|of|trying|inside|happy|a|with|from)\\b)`,
+    `${NEG}${NOT_ME}(?:\\b(?:just|pls|please|plz|now|so|then) )?\\bgo die\\b(?=\\s*$|\\s+(?:already|pls|please|plz|lol|lmao|loser|bitch|asshole|idiot|in a (?:fire|ditch|hole))\\b)`,
+    `${NEG}${NOT_ME}(?:\\b(?:just|pls|please|plz|now|so|then) )?\\bgo (?:drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit (?:your|ur) wrists)\\b`,
   ].join('|')) },
 ]
 

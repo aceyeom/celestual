@@ -143,7 +143,7 @@ import {
 import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait, PixIcon, useWake, POWER_MS } from '../screen.jsx'
 import { Provider } from '../art.jsx'
 import {
-  labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
+  labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY, unwithdraw,
 } from '../data.js'
 import { stampOf } from '../looks.js'
 import { getState, patch } from '../store.js'
@@ -396,17 +396,29 @@ const SHOWN = 4
 // is, and goes from the list the same way once it has been seen. A letter
 // that is up opens on its own glass, where `take it back` is the second
 // row of its options, so the list carries no key of its own for it.
+//
+// But one taken back is not on any glass any more, and the server keeps
+// the way back open for a day after (0074 `undo_until`, api.js `mine`).
+// The sheet it was taken back on and the wall's card after a post both
+// offer `undo`, and both are gone the moment they are left; this list is
+// the one place that outlasts them, and Letter.jsx and Wall.jsx both say
+// so. So while that day runs the row carries `undo` beside it, a sibling
+// of the row as a note's `edit` is (Slot.jsx `EditKey`), and it stays on
+// the list for the whole of the day however often it has been seen: a
+// row that went after one look would take the only way back with it.
+// Once the day is over it is a row that has been seen like any other.
 const isDown = (l) => !!l.downBy && l.downBy !== 'held'
+const undoOpen = (l) => l.downBy === 'writer' && (l.undoUntil || 0) > Date.now()
 function wroteRows() {
   const own = mine()
   const read = getState().noticed || {}
   return own && own.length
-    ? own.filter((l) => !(isDown(l) && read[l.id])).map((l) => ({
+    ? own.filter((l) => undoOpen(l) || !(isDown(l) && read[l.id])).map((l) => ({
       id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
       held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
-      took: l.downBy === 'writer',
+      took: l.downBy === 'writer', undo: undoOpen(l),
     }))
-    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true, took: false }))
+    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true, took: false, undo: false }))
 }
 
 // A letter held to be read before it goes up (wall_mine's `down_by: 'held'`,
@@ -426,34 +438,67 @@ function Wrote({ go, rows }) {
     if (!shownDown.current.size) return
     patch({ noticed: { ...(getState().noticed || {}), ...Object.fromEntries([...shownDown.current].map((id) => [id, true])) } })
   }, [])
+  // what an `undo` pressed on this list is doing, by the letter's id: out
+  // (`busy`), refused (`said`, in the row's own small words), or refused
+  // for good (`done`, the day is over), when the key goes. A letter that
+  // came back is read again by `unwithdraw` (data.js), and the list is
+  // drawn from that read, as a row that is up or being read
+  const [back, setBack] = useState({})
   if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const open = (r) => {
     if (!r.live) return
     go('letter', r.id || r.to)
   }
+  const undo = async (r) => {
+    if (back[r.id]?.busy) return
+    setBack((m) => ({ ...m, [r.id]: { busy: true } }))
+    const out = await unwithdraw(r.id, r.to)
+    if (out?.ok) { setBack((m) => { const n = { ...m }; delete n[r.id]; return n }); return }
+    const over = out?.error === 'expired' || out?.error === 'gone'
+    setBack((m) => ({ ...m, [r.id]: { said: over ? 'the day to put it back is over' : 'it did not come back. try again', done: over } }))
+  }
+  const said = (r) => {
+    const b = r.undo ? back[r.id] : null
+    if (b?.busy) return 'putting it back'
+    if (b?.said) return b.said
+    return r.held ? 'being read' : r.took ? 'you took it back' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'
+  }
+  const line = (r, i) => (
+    <button
+      type="button" key={r.undo ? undefined : r.id || `${r.to}-${i}`}
+      className={`wl-wrote-row${r.down ? ' is-down' : ''}`}
+      onClick={() => open(r)} disabled={!r.live}
+      aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.took ? ', you took it back' : r.down ? ', taken down' : ''}`}
+    >
+      <Face handle={r.to} size={30} />
+      <span className="wl-wrote-who">
+        <span className="wl-wrote-name">{labelFor(r.to)}</span>
+        <span className="wl-wrote-meta" aria-live={r.undo ? 'polite' : undefined}>{said(r)}</span>
+      </span>
+      {r.hearts !== null && r.live ? (
+        <span className="wl-wrote-n" aria-hidden="true">
+          <Heart size={13} on={r.hearts > 0} />
+          <span>{r.hearts || ''}</span>
+        </span>
+      ) : null}
+    </button>
+  )
   return (
     <>
       <div className={`wl-wrote${cut ? ' is-cut' : ''}`}>
-        {shown.map((r, i) => (
-          <button
-            type="button" key={r.id || `${r.to}-${i}`}
-            className={`wl-wrote-row${r.down ? ' is-down' : ''}`}
-            onClick={() => open(r)} disabled={!r.live}
-            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.took ? ', you took it back' : r.down ? ', taken down' : ''}`}
-          >
-            <Face handle={r.to} size={30} />
-            <span className="wl-wrote-who">
-              <span className="wl-wrote-name">{labelFor(r.to)}</span>
-              <span className="wl-wrote-meta">{r.held ? 'being read' : r.took ? 'you took it back' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
-            </span>
-            {r.hearts !== null && r.live ? (
-              <span className="wl-wrote-n" aria-hidden="true">
-                <Heart size={13} on={r.hearts > 0} />
-                <span>{r.hearts || ''}</span>
-              </span>
-            ) : null}
-          </button>
-        ))}
+        {shown.map((r, i) => (r.undo ? (
+          <div key={r.id} className="wl-wrote-line">
+            {line(r, i)}
+            {back[r.id]?.done || back[r.id]?.busy ? null : (
+              <button
+                type="button" className="wl-vault-edit wl-wrote-undo" onClick={() => undo(r)}
+                aria-label={`undo: put your letter to ${labelFor(r.to)} back where it was`}
+              >
+                <span aria-hidden="true">undo</span>
+              </button>
+            )}
+          </div>
+        ) : line(r, i)))}
       </div>
       {cut ? (
         <button type="button" className="wl-quiet wl-wrote-more" onClick={() => setMore(true)}>

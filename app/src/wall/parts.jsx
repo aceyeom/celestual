@@ -1575,8 +1575,17 @@ export function useProfile(handle) {
     let alive = true
     setP(null)
     // drawn once a turn of the letters is still (strip.js), since a face
-    // that lands under the hand draws the screen it is on again there
-    peekServer(h).then((r) => afterStrip(() => { if (alive) setP(r) }, `face:${h}`))
+    // that lands under the hand draws the screen it is on again there. The
+    // hold is this asker's own, keyed on its own answer and not on the
+    // handle: every face waiting on one handle is answered by the same peek
+    // in the same breath (api/handles.js), the next card and the far one
+    // and a thread's rows all at once mid-turn, and a hold kept once per
+    // handle would let only the last of them draw and leave the others
+    // reading `dear you` for as long as they stand
+    peekServer(h).then((r) => {
+      const land = () => { if (alive) setP(r) }
+      afterStrip(land, land)
+    })
     return () => { alive = false }
   }, [h])
   return p && p.state === 'found' ? p : null

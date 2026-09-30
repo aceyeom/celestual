@@ -39,10 +39,15 @@
 -- to spaces, a run of three or more single letters joined, leet inside a
 -- word with a letter in it and never in a bare number, anything else to a
 -- space, a run of three of one letter cut to two, and the spaces closed.
--- Each slur is then read with every letter allowed to repeat and a plural
--- on the end (`s`, `es`, `z`, `ies`), after two idioms that carry a slur's
--- letters and none of its meaning ("spic and span", "a chink in the armor")
--- are taken out. `trannie` joins the list, for its plural.
+-- Each slur is then read with every letter allowed to repeat and the plural
+-- that stem really takes, written beside it (`spic/s`, `nigga/s|z`, and
+-- `coon/` and `dyke/` with none), after three idioms that carry a slur's
+-- letters and none of its meaning ("spic and span", "a chink in the armor",
+-- "chinks of light") are taken out. `trannie` joins the list, for its
+-- plural. One suffix for every stem was the first cut, and it read the word
+-- "spices" as spic and es and refused a recipe as a slur; "Coons" and
+-- "Dykes" are surnames, and a plural of those two used as a slur is left to
+-- the reading, which sees it through the lexicon's `hate` row.
 --
 -- ── 2. memories are not addresses ───────────────────────────────────────────
 -- The list refused, at the keyboard and here: "we lived in the same dorm 2
@@ -60,9 +65,16 @@
 -- ── 3. what only public words may not carry ─────────────────────────────────
 -- `celestual_public_caught`: a sexual proposition aimed at the person, in
 -- its surest shapes ("lets fuck", "dtf", "sit on my face", "send nudes",
--- "i'd smash", the emoji that say it), as `sexual`, and telling them to hurt
--- themselves ("kys", "go kill yourself"), as `harm`. Never the fuck word
--- alone: "fuck you for leaving" and "lets fuck shit up" pass. It is read by
+-- "i'd smash", two different sexual emoji side by side), as `sexual`, and
+-- telling them to kill themselves ("kys", "go kill yourself", "you should
+-- die"), as `harm`. Only the shapes no joke could share: never the fuck word
+-- alone ("fuck you for leaving", "lets fuck some shit up" pass), never the
+-- writer about themselves or hyperbole ("i could just die", "let's go die
+-- on this hill", "cut yourself some slack", "shoot yourself in the foot"
+-- pass), and never smash or bang without a first person who wants to
+-- ("you're gonna smash it", "this song would bang" pass). A refusal here
+-- leaves a writer no way past it, so anything a joke might share is the
+-- reading's (celestual-wall-moderate's lexicon and prompt), not this list's. It is read by
 -- wall_reply_caught, since a reply is as public as the letter it sits under,
 -- and it is NOT read by celestual_text_caught, and must never be: a private
 -- note is read by one person, and only if they sent one back, so flirting
@@ -153,10 +165,17 @@ declare
   r text[] := '{}';
 begin
   f := regexp_replace(celestual_text_norm(t),
-    '\yspick? (?:and|n) span\y|\ychinks? in (?:the|his|her|my|your|their) armou?r\y', ' ', 'g');
-  foreach s in array array['nigger', 'nigga', 'faggot', 'fag', 'tranny', 'trannie', 'retard', 'retarded', 'kike',
-                           'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale'] loop
-    if f ~ ('\y' || regexp_replace(s, '(.)', '\1+', 'g') || '(?:s|es|z|ies)?\y') then r := r || 'slur'::text; exit; end if;
+    '\yspick? (?:and|n) span\y|\ychinks? in (?:the|his|her|my|your|their) armou?r\y|\ychinks? of (?:light|sunlight|daylight|sun|hope|blue)\y', ' ', 'g');
+  -- each stem with the plural it really takes, after the slash (moderate.js
+  -- SLURS, entry for entry): nothing after it is no plural at all
+  foreach s in array array[
+    'nigger/s', 'nigga/s|z', 'faggot/s', 'fag/s', 'tranny/', 'trannie/s', 'retard/s', 'retarded/', 'kike/s',
+    'spic/s', 'chink/s', 'gook/s', 'wetback/s', 'coon/', 'dyke/', 'shemale/s'] loop
+    if f ~ ('\y' || regexp_replace(split_part(s, '/', 1), '(.)', '\1+', 'g')
+            || case when split_part(s, '/', 2) = '' then '' else '(?:' || split_part(s, '/', 2) || ')?' end
+            || '\y') then
+      r := r || 'slur'::text; exit;
+    end if;
   end loop;
   if t ~* '(https?://|www\.|\y(?!(?:you|u|me|us|it|so|to|and|love|miss|home|time|here|there|this|that|with|for|all|see|call|text)\.(?:me|co|ly|io|gg)\y)[a-z0-9-]+\.(com|net|org|io|co|edu|gg|me|ly)\y)' then
     r := r || 'url'::text;
@@ -183,7 +202,9 @@ $$;
 
 -- ── 3. what only public words may not carry ─────────────────────────────────
 -- moderate.js `caughtOnWall`, regular expression for regular expression (the
--- JavaScript's `\b` is `\y` here). Read by wall_reply_caught alone.
+-- JavaScript's `\b` is `\y` here), one `n ~` for each entry in its list, so
+-- scripts/check-moderation.mjs can hold the two to the same source and run
+-- this copy's patterns against its tables. Read by wall_reply_caught alone.
 create or replace function celestual_public_caught(p text)
 returns text[]
 language plpgsql immutable set search_path = public as $$
@@ -191,19 +212,29 @@ declare
   n text := celestual_text_norm(p);
   r text[] := '{}';
 begin
-  if n ~ '\y(?:lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\y(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you)(?:\s+(?:just|finally|so|really|already|now))?\s+(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)\y(?!\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\y)(?!\s+(?:you|u|ya|me|him|her|them) (?:up|over)\y)'
-     or n ~ '\y(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)(?:ing|in|n|ed|s)? me (?:daddy|mommy|mami|papi|baby|babe|harder|hard|senseless)\y|\ydtf\y'
+  if n ~ '\y(?:lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\y(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you)(?:\s+(?:just|finally|so|really|already|now))?\s+(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)\y(?!\s+(?:up|around|about|off|over|with|it|this|that|shit|stuff|things|everything|the|my|his|her|their|our|them|us|school|class|work|your (?:life|shit|day|car|plans|world|stuff|game|chances))\y)(?!(?:\s+\S+){0,3}\s+(?:up|over|around)\y)'
+     or n ~ '\y(?:lets|letus|letme|lemme|wanna|wana|tryna|wantto)(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)(?:you|u|me)?\y'
+     or n ~ '\y(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+)(?:ing|in|n|ed|s)? me (?:daddy|mommy|mami|papi)\y'
+     or n ~ '^(?:(?:babe|baby|please|pls|plz|just|now|come on|so) )*(?:f+u+c*k+|f+v+c*k+|f+c+k+|f+k+|ph+u+c*k+) me(?: (?:harder|hard|senseless|baby|babe|already|now|tonight|rn|pls|please|plz|daddy|mommy|papi|mami))+$'
+     or n ~ '\ydtf\y'
      or n ~ '\y(?:send|drop|show) (?:me )?(?:(?:your|ur|some) )?(?:nudes|noods|nudez|nude pics|naked pics|tits|titties|boobs|dick pics?|cock|pussy)\y'
-     or n ~ '\ysit on (?:my|your|ur) (?:face|dick|cock)\y|\yride (?:my|your|ur) (?:face|dick|cock)\y|\ysuck (?:my|me|your|ur) (?:dick|cock|balls|tits)\y|\ysuck (?:you|u|me) off\y'
-     or n ~ '\y(?:eat|lick) (?:you|u|me) out\y|\y(?:eat|lick) (?:your|ur|my) (?:pussy|cock|dick)\y|\y(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\y'
-     or n ~ '\y(?:lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\y(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you|would)\s+(?:smash|bang|rail|pipe|hit it|hit that|tap that|tap it|clap (?:you|ya|u|it|them cheeks|those cheeks))(?:\s+(?:you|u|ya|that|it))?(?=\s*$|\s+(?:tbh|ngl|lol|lmao|fr|ong|rn|tonight|already|babe|baby|honestly|and|but|anyway|though|tho)\y)'
-     or n ~ '\y(?:lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\y(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you)\s+(?:emeggplant|empeach|emdroplets|emtongue)|\yempoke\y'
-     or n ~ '\y(?:emeggplant|empeach)\y.*\y(?:emeggplant|empeach|emdroplets|emtongue)\y|\y(?:emdroplets|emtongue)\y.*\y(?:emeggplant|empeach)\y' then
+     or n ~ '\ysit on (?:my|your|ur) (?:face|dick|cock)\y'
+     or n ~ '\yride (?:my|your|ur) (?:face|dick|cock)\y'
+     or n ~ '\ysuck (?:my|me|your|ur) (?:dick|cock|balls|tits)\y|\ysuck (?:you|u|me) off\y'
+     or n ~ '\y(?:eat|lick) (?:you|u|me) out\y|\y(?:eat|lick) (?:your|ur|my) (?:pussy|cock|dick)\y'
+     or n ~ '\y(?:give|gimme) (?:me )?(?:head|a blowjob|a bj|a handjob)\y(?!\s+(?:pats?|scratches|rubs?|massages?|starts?|to toe|over heels|first|games?|space|phones?)\y)'
+     or n ~ '\y(?:(?<!\y(?:my|your|his|her|the|an|their|student|photo) )id|i would|i wanna|i want to|i tryna|i need to|i gotta|let me|lemme|can i|could i)(?:\s+(?:so|totally|def|definitely|lowkey|highkey|honestly|really|just|fr))?\s+(?:(?:smash|bang|rail|pipe)(?:\s+(?:you|u|ya|her|him|them|that|dat))?|(?:hit|tap) (?:it|that|dat)|clap (?:you|ya|u|them cheeks|those cheeks|dem cheeks))(?=\s*$|\s+(?:tbh|ngl|lol|lmao|fr|ong|rn|tonight|already|babe|baby|honestly|and|but|anyway|though|tho)\y)'
+     or n ~ '\y(?:lets|let us|wanna|wana|want to|tryna|trying to|gonna|going to|finna|(?<!\y(?:my|your|his|her|the|an|their|student|photo) )id|ill|i would|i will|we should|lemme|let me|can i|could i|come|down to|would you|will you)\s+(?:emeggplant|empeach|emdroplets|emtongue)'
+     or n ~ '\yempoke\y'
+     or n ~ '\yemeggplant (?:empeach|emdroplets|emtongue)\y|\yempeach (?:emeggplant|emdroplets|emtongue)\y|\y(?:emdroplets|emtongue) (?:emeggplant|empeach)\y' then
     r := r || 'sexual'::text;
   end if;
-  if n ~ '\ykys\y|^(?:kill|unalive|hang) (?:yourself|urself|your self|ur self)\y'
-     or n ~ '\y(?:go|just|pls|please|plz|should|shoulda|gotta|need to|hope you|hope u|why dont you|why dont u|can you|can u)\s+(?:(?!dont|do|not|never|wont)[a-z]+\s+)?(?:kill|unalive|hang|off|end|drown|shoot|hurt|cut) (?:yourself|urself|yourselves|your self|ur self|yoself)\y'
-     or n ~ '\y(?:go|pls|please|plz|just|should)\s+(?:die|drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit your wrists|end it all)\y' then
+  if n ~ '\ykys\y'
+     or n ~ '(?<!\y(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\y.*)(?:^|\y(?:go|pls|please|plz|just|you should|u should|you need to|u need to|you gotta|u gotta|why dont you|why dont u|hope you|hope u|you can|u can|you could|u could)\s)(?:(?:just|go|and|fucking|fkn|fking|already|pls|please|ahead and|actually|really|seriously)\s){0,3}(?:kill|unalive|hang|drown|end|shoot) (?:yourself|urself|yourselves|your self|ur self|yoself)\y(?!\s+(?:laughing|over|in the foot|trying|with|doing|for|on|by|out|off)\y)'
+     or n ~ '(?<!\y(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\y.*)\y(?:you|u|ya) (?:(?:should|shoulda|need to|oughta)(?: just)?(?: go)?(?: and)?|can (?:just )?go) die\y(?!\s+(?:on|for|laughing|of|trying|inside|happy|a|in peace|in my arms|with|from|when|if|before|after)\y)'
+     or n ~ '(?<!\y(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\y.*)\ywhy dont (?:you|u|ya) (?:just )?(?:go )?(?:and )?die\y(?!\s+(?:on|for|laughing|of|trying|inside|happy|a|with|from)\y)'
+     or n ~ '(?<!\y(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\y.*)(?<!\y(?:i|im|ill|id|ive|we|lets|gonna|wanna|imma|finna|will|would|could|might|may|well|to|all|can|should|gotta|just|pls|please|plz|now|so|then)\s)(?:\y(?:just|pls|please|plz|now|so|then) )?\ygo die\y(?=\s*$|\s+(?:already|pls|please|plz|lol|lmao|loser|bitch|asshole|idiot|in a (?:fire|ditch|hole))\y)'
+     or n ~ '(?<!\y(?:dont|do not|never|not|wont|didnt|shouldnt|cant|no need)\y.*)(?<!\y(?:i|im|ill|id|ive|we|lets|gonna|wanna|imma|finna|will|would|could|might|may|well|to|all|can|should|gotta|just|pls|please|plz|now|so|then)\s)(?:\y(?:just|pls|please|plz|now|so|then) )?\ygo (?:drink bleach|jump off (?:a|the) (?:bridge|building|roof|cliff)|slit (?:your|ur) wrists)\y' then
     r := r || 'harm'::text;
   end if;
   return r;
