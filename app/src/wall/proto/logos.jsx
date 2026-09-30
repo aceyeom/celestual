@@ -11,8 +11,8 @@
 //   /logos.html?t=4200        every one held at 4200ms (for pictures), and
 //   /logos.html?t=900,2400    each held at each of those, side by side
 //   /logos.html?loop=1        each told again after it lands, for good
-//   /logos.html?pitch=1       drawn at the intro's own pitch (95 by 75), not
-//                             the fine one (189 by 149), as its toggle does
+//   /logos.html?pitch=2       drawn at the fine pitch (189 by 149), twice
+//                             the phone's own (95 by 75), as its toggle does
 //
 // A tap on a phone, or its replay, tells it again from the empty glass.
 
@@ -29,7 +29,7 @@ import { ensureFaces } from '../type.js'
 import { SCENES } from '../scenes/index.js'
 
 const ask = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-const PITCH = ask.get('pitch') === '1' ? 1 : 2
+const PITCH = ask.get('pitch') === '2' ? 2 : 1
 const HELDS = ask.get('t') === null ? [null] : ask.get('t').split(',').map((v) => Math.max(0, Number(v) || 0))
 const LOOK = { tint: 'night' }
 const NO_KEYS = {}
@@ -123,10 +123,10 @@ function Logos() {
           <div className="lg-row">
             <button type="button" className="lg-btn is-main" onClick={() => setRun((k) => k + 1)}>play all</button>
             <button type="button" className="lg-btn" aria-pressed={loop} onClick={() => setLoop((v) => !v)}>loop</button>
-            <button type="button" className="lg-btn" aria-pressed={pitch === 2} onClick={() => setPitch(2)}>fine pitch</button>
             <button type="button" className="lg-btn" aria-pressed={pitch === 1} onClick={() => setPitch(1)}>the phone&rsquo;s pitch</button>
+            <button type="button" className="lg-btn" aria-pressed={pitch === 2} onClick={() => setPitch(2)}>fine pitch</button>
           </div>
-          <p>tap a phone to tell it again. each ends on the mark. the fine pitch is twice the phone&rsquo;s, for a closer look at the people; the site today is drawn at the phone&rsquo;s.</p>
+          <p>tap a phone to tell it again. each ends on the mark. each is drawn at the phone&rsquo;s own pitch, as the site is; the fine pitch is twice it, for a closer look at the people.</p>
         </header>
         <main className="lg-grid">
           {shown.flatMap((s) => HELDS.map((h) => <Card key={`${s.id}${h}`} scene={s} run={run} loop={loop} held={h} only={only} setOnly={setOnly} pitch={pitch} />))}

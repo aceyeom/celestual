@@ -10,62 +10,51 @@
 // She turns to look at him: her head first, her neck a beat after it and
 // her shoulders last, as anybody turns, and her profile comes round out of
 // the back of her head as it goes. She holds the look. Then she moves along
-// the bench to him, twice, the way anybody does: her hands to the seat
+// the bench to him, once, the way anybody does: her hands to the seat
 // beside her, the weight onto them, the shoulders coming up, the hips
 // lifting and sliding, her body a beat behind them and then a little past,
 // her ponytail swinging after her, and her eyes on him all the while, her
-// head holding its aim as the rest of her moves under it (`aim`). She puts
-// her hands back in her lap. She leans, and tilts her head, and lays it on
-// his shoulder: her head goes to his shoulder and not to where his
-// shoulder was, it comes to rest there, it sinks a little, and it rides his
-// breathing from then on (`restOn`). A moment; he turns his head to her and
-// lays his cheek on her hair. A star falls. The backlight turns pink out
-// from their heads; the bench bends into the ring and the two of them
-// gather into the star, and the petals go on falling round the mark.
+// head holding its aim as the rest of her moves under it (`aim`). And as
+// she settles, her hands going back to her lap, she leans on into him and
+// lays her head on his shoulder, the one movement: her head goes to his
+// shoulder and not to where his shoulder was, it comes to rest there, it
+// sinks a little, and it rides his breathing from then on (`restOn`). A
+// moment; he turns his head to her and lays his cheek on her hair. A star
+// falls. The backlight turns pink out from their heads; the bench bends
+// into the ring and the two of them gather into the star, and the petals
+// go on falling round the mark.
 //
 //      0   the two of them sitting apart; he looks at the moon
 //    900   she turns her head to him
 //   1700   she holds the look
-//   2700   her hands to the seat; she moves along to him, and again at 3660
-//   4380   her hands back in her lap
-//   4600   she leans, and rests her head on his shoulder
-//   5650   he turns his head into her, and lays his cheek on her hair
-//   6450   the star falls
-//   6850   the pink, from their heads
-//   7000   the bench into the ring, the two of them into the star
+//   2450   her hands to the seat; she moves along the bench to him, once
+//   3620   her hands back in her lap
+//   3900   she leans, and rests her head on his shoulder
+//   5000   he turns his head into her, and lays his cheek on her hair
+//   5850   the star falls
+//   6250   the pink, from their heads
+//   6400   the bench into the ring, the two of them into the star
 
 import { Pad, softPetals, mark, glideOf, tale, INK, FAR, ROSE, lerp, span, sm5, settle, moves, hash, clamp } from './kit.js'
-import { HIM, HER, withHair, solve, solid, flat, camera, chains, strands, breath, wander, V, mv, at, onHead } from './rig.js'
+import { HIM, HER, withHair, solve, solid, flat, camera, chains, strands, breath, wander, V, mv, at, onHead, aim } from './rig.js'
 
 const SEAT = 45
 // her hair up, the sides drawn back over the tops of her ears
 const HER_UP = withHair(HER, { from: 11.8, nape: 7.2, back: 0.55, side: 0.45, top: 0.85, temple: 0.9, front: 0.55, behind: -2.3 })
 const Z0 = -9
-const SC = [
-  { hands: [2700, 2960], push: [2900, 3060], slide: [3030, 3450], land: [3450, 3660], by: 11 },
-  { hands: [3640, 3870], push: [3820, 3940], slide: [3910, 4240], land: [4240, 4420], by: 8 },
-]
-const LAP = [4380, 4740]
-const LEAN = [4600, 5500]
-const HIS = [5650, 6400]
-const STAR = [6450, 7000]
-const WASH_AT = 6850
-const MORPH = 7000
+// the one move along the bench: her hands to the seat, her weight onto
+// them, the slide, and the settle
+const SC = [{ hands: [2450, 2780], push: [2720, 2900], slide: [2870, 3480], land: [3480, 3760], by: 18 }]
+const LAP = [3620, 4060]
+const LEAN = [3900, 4850]
+const HIS = [5000, 5750]
+const STAR = [5850, 6400]
+const WASH_AT = 6250
+const MORPH = 6400
 const END = MORPH + 1300
 const HIM_X = 22
 
 const bump = (t, a, b) => Math.sin(Math.PI * span(t, a, b))
-
-// ── looking at something ────────────────────────────────────────────────────
-// How far a body must turn its head, and lift or bow it, to face `target`
-// from where its chest is: a yaw (positive to its left) and a pitch
-// (positive bowing), in its own frame.
-function aim(F, target) {
-  const d = V.sub(target, at(F.neck, [0, 12, 4]))
-  const R = F.s2.R
-  const l = [R[0] * d[0] + R[3] * d[1] + R[6] * d[2], R[1] * d[0] + R[4] * d[1] + R[7] * d[2], R[2] * d[0] + R[5] * d[1] + R[8] * d[2]]
-  return { yaw: (Math.atan2(l[0], l[2]) * 180) / Math.PI, pitch: (-Math.atan2(l[1], Math.hypot(l[0], l[2])) * 180) / Math.PI }
-}
 
 // ── her ─────────────────────────────────────────────────────────────────────
 // She faces away from us, into the park (-z): her right is our right, toward
@@ -82,7 +71,7 @@ function herBase(t) {
     lift += 1.3 * bump(t, c.slide[0] - 30, c.land[0] + 40)
     press += moves(t, 0, [[c.push[0], c.push[1], 1], [c.land[0], c.land[1], -1]])
     // the body a beat behind the hips as they slide, then a little past
-    const k = c.by / 11
+    const k = Math.min(1.25, c.by / 11)
     lag += k * moves(t, 0, [[c.slide[0], c.slide[0] + 150, -3.0], [c.slide[0] + 150, c.land[0] + 30, 5.0], [c.land[0] + 30, c.land[1] + 80, -2.0]])
   }
   return {
@@ -104,15 +93,14 @@ function herArms(t, x) {
   const lap = (side) => [x - side * 8, SEAT + 14.5, Z0 - 16]
   const seat = (side, x0) => [x0 - side * 19, SEAT + 4, Z0 - 8]
   const x1 = herX(SC[0].hands[0])
-  const x2 = herX(SC[1].hands[0])
-  const down1 = sm5(span(t, ...SC[0].hands))
-  const reset = sm5(span(t, ...SC[1].hands))
+  const down = sm5(span(t, ...SC[0].hands))
   const back = sm5(span(t, ...LAP))
   return [1, -1].map((side) => {
-    let p = V.lerp(lap(side), seat(side, x1), down1)
-    p = V.lerp(p, seat(side, x2), reset)
-    p = V.add(p, [0, 4 * bump(t, ...SC[1].hands), 0])
+    // the hand lifts a little on its way down to the seat, and back
+    let p = V.lerp(lap(side), seat(side, x1), down)
+    p = V.add(p, [0, 2.5 * bump(t, ...SC[0].hands), 0])
     p = V.lerp(p, lap(side), back)
+    p = V.add(p, [0, 2 * bump(t, ...LAP), 0])
     return { ik: p, pole: [-side * 0.7, -0.3, -0.6] }
   })
 }
@@ -126,7 +114,7 @@ function herLook(t, pose, him) {
   const rest = 1 - 0.58 * sm5(span(t, LEAN[0] + 100, LEAN[1]))
   const w = HER_LOOK.map(([t0, t1]) => sm5(span(t, t0, t1)) * rest)
   // (holding the look, her head softens: a small tilt, a small nod)
-  const soft = sm5(span(t, 1650, 2300)) * (1 - sm5(span(t, 2700, 3000)))
+  const soft = sm5(span(t, 1650, 2250)) * (1 - sm5(span(t, 2350, 2700)))
   return {
     ...pose,
     s2: [pose.s2[0], a.yaw * HER_LOOK[2][2] * w[2], pose.s2[2]],
@@ -197,8 +185,8 @@ function herPose(t, him) {
 function himBase(t) {
   const b = breath(t, 4600, 1900)
   // after a while, their breath the same
-  const bb = lerp(b, breath(t, 4200, 700), sm5(span(t, 5900, 7400)))
-  const notice = sm5(span(t, 3600, 4200))
+  const bb = lerp(b, breath(t, 4200, 700), sm5(span(t, 5200, 6600)))
+  const notice = sm5(span(t, 3100, 3800))
   return {
     root: [HIM_X, SEAT + 9.5, Z0], yaw: 180, pitch: -8,
     s1: [7, 0, 0],
@@ -342,7 +330,7 @@ function falling(pad, t, f) {
   pad.layers([[seg[0], INK, fade], [seg[1], INK, fade * 0.45], [seg[2], INK, fade * 0.15]])
 }
 
-export function benchStory(f = 2) {
+export function benchStory(f = 1) {
   const pad = new Pad(f)
   const src = new Pad(f)
   const camAt = (t) => camera({

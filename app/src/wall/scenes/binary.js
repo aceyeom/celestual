@@ -57,7 +57,7 @@ function light(x, y, r) {
   return { core, rays }
 }
 
-export function binaryStory(f = 2) {
+export function binaryStory(f = 1) {
   const pad = new Pad(f)
   const draw = (t) => {
     const M = mark(f)

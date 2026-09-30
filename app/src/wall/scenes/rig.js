@@ -217,20 +217,21 @@ export const HIM = {
   who: 'him',
   root: 96, hip: [9, -2, 0.5], thigh: 42.5, shin: 43.5, ankle: 8, heel: 5, ball: 14,
   spine1: [0, 11, -1.5], spine2: [0, 14, -1], neck: [0, 28, -4.5], head: [0, 10, 2.8],
-  shoulder: [18.5, 23.5, -3.2], upper: 30.5, fore: 26, handLen: 19,
-  // in a jacket
+  shoulder: [18.0, 23.5, -3.2], upper: 30.5, fore: 26, handLen: 19,
+  // lean, in a jacket; the shoulders come off the neck on the slope of the
+  // trapezius, and round over the top of the arm
   torso: [
-    [0, -13, 15.6, 11.8, -2.2], [0, -7, 16.8, 12.4, -1.8], [0, 0, 16.2, 11.6, -0.8], [0, 7, 15.3, 10.7, 0.2],
-    [1, 6, 15.1, 10.5, 0.8], [2, 2, 15.7, 11.1, 1.4], [2, 10, 16.9, 12.0, 1.8], [2, 17, 17.9, 12.2, 1.2],
-    [2, 23.2, 18.8, 11.0, -0.6], [2, 25.4, 17.8, 9.8, -1.8], [2, 27.2, 14.8, 8.9, -2.8], [2, 28.8, 10.8, 7.8, -3.4],
-    [2, 30.0, 7.8, 7.0, -3.6],
+    [0, -13, 15.0, 11.4, -2.2], [0, -7, 16.0, 12.0, -1.8], [0, 0, 15.4, 11.0, -0.8], [0, 7, 14.4, 10.2, 0.2],
+    [1, 6, 14.2, 10.0, 0.8], [2, 2, 14.9, 10.6, 1.4], [2, 10, 16.2, 11.6, 1.8], [2, 17, 17.4, 11.8, 1.2],
+    [2, 21.5, 18.4, 10.8, -0.4], [2, 23.6, 18.8, 9.8, -1.4], [2, 25.2, 17.2, 8.8, -2.3], [2, 26.6, 14.4, 8.0, -2.9],
+    [2, 27.8, 11.2, 7.2, -3.3], [2, 28.9, 8.4, 6.6, -3.5], [2, 29.9, 6.8, 6.3, -3.6],
   ],
-  neckRings: [['neck', -1.5, 6.4, 6.4, 1.8], ['neck', 3.5, 6.0, 6.1, 2.4], ['neck', 7.5, 5.8, 5.9, 2.9], ['head', -4.0, 5.6, 6.0, 1.3], ['head', -1.2, 5.4, 5.8, 0.6]],
+  neckRings: [['neck', 1.4, 6.6, 6.2, 1.0], ['neck', 4.5, 6.0, 6.0, 2.0], ['neck', 7.5, 5.8, 5.9, 2.9], ['head', -4.0, 5.6, 6.0, 1.3], ['head', -1.2, 5.4, 5.8, 0.6]],
   limbs: {
-    thigh: [[0, 8.6, 8.8, -0.4], [0.12, 8.4, 8.6, 0.3], [0.35, 7.7, 7.9, 0.8], [0.6, 6.8, 7.0, 0.6], [0.82, 5.9, 6.0, 0.3], [0.95, 5.5, 5.7, 0.8], [1, 5.4, 5.6, 1.0]],
-    shin: [[0, 5.5, 5.8, 0.7], [0.1, 5.4, 5.9, -0.2], [0.28, 5.6, 6.3, -1.0], [0.45, 5.3, 5.8, -0.8], [0.7, 4.7, 4.9, -0.3], [0.9, 4.4, 4.5, 0], [1, 4.4, 4.5, 0]],
-    upper: [[0.14, 5.4, 5.9, 0], [0.35, 5.0, 5.3, 0.3], [0.65, 4.5, 4.7, 0.3], [0.9, 4.2, 4.3, 0], [1, 4.1, 4.2, -0.2]],
-    fore: [[0, 4.1, 4.1, -0.3], [0.2, 4.2, 4.0, 0], [0.5, 3.8, 3.5, 0], [0.8, 3.4, 3.1, 0], [0.94, 3.4, 3.2, 0], [1, 2.6, 2.1, 0]],
+    thigh: [[0, 8.4, 8.6, -0.4], [0.12, 8.2, 8.4, 0.3], [0.35, 7.5, 7.7, 0.8], [0.6, 6.6, 6.8, 0.6], [0.82, 5.8, 5.9, 0.3], [0.95, 5.4, 5.6, 0.8], [1, 5.3, 5.5, 1.0]],
+    shin: [[0, 5.4, 5.7, 0.7], [0.1, 5.3, 5.8, -0.2], [0.28, 5.4, 6.1, -1.0], [0.45, 5.1, 5.6, -0.8], [0.7, 4.5, 4.7, -0.3], [0.9, 4.3, 4.4, 0], [1, 4.3, 4.4, 0]],
+    upper: [[0.16, 5.0, 5.5, 0], [0.35, 4.8, 5.1, 0.3], [0.65, 4.3, 4.5, 0.3], [0.9, 4.0, 4.1, 0], [1, 3.9, 4.0, -0.2]],
+    fore: [[0, 3.9, 3.9, -0.3], [0.2, 4.0, 3.8, 0], [0.5, 3.6, 3.3, 0], [0.8, 3.2, 2.9, 0], [0.94, 3.2, 3.0, 0], [1, 2.5, 2.0, 0]],
     hand: [[0, 1.9, 2.8, 0.3], [0.25, 1.6, 4.1, 0.5], [0.52, 1.35, 4.2, 0.4], [0.62, 1.15, 3.9, 0.2], [0.85, 0.95, 3.4, -0.2], [1, 0.7, 2.4, -0.6]],
   },
   thumb: [[0, -3.5, 3.0], [0.9, -9.5, 5.4], 1.15, 0.85],
@@ -239,45 +240,52 @@ export const HIM = {
   parts: {
     pelvis: [],
     // the collar of his jacket, stood round the neck
-    spine2: [e([0, 29.8, -4.4], [8.3, 3.2, 6.9])],
+    spine2: [e([0, 29.9, -4.4], [7.8, 2.8, 6.6])],
     head: [
       // his ears
       e([7.25, 4.6, 0.9], [1.0, 3.1, 1.9], [-12, 0, 0]), e([-7.25, 4.6, 0.9], [1.0, 3.1, 1.9], [-12, 0, 0]),
     ],
     foot: [e([0, -4.6, 6.6], [4.6, 3.4, 12.4]), s([0, -4.9, -2.6], 3.8), e([0, -6.2, 14.5], [4.0, 2.2, 4.6])],
-    // the deltoid, round over the top of the arm
-    upper: [e([0.4, -5.0, 0.2], [5.3, 6.4, 6.0])],
+    // the deltoid, round over the top of the arm and no higher than the
+    // shoulder's own line
+    upper: [e([0.5, -5.0, 0.2], [5.0, 5.8, 5.6])],
   },
 }
 
+// Slender: a narrow waist and ribcage, slim arms and legs, and a long neck
+// that flows down into sloping shoulders (the trapezius, a gentle curve out
+// from the neck to the point of the shoulder), the top of each arm rounding
+// off under that line and never above it.
 export const HER = {
   who: 'her',
-  root: 88.5, hip: [9.4, -2, 0.5], thigh: 39.5, shin: 40, ankle: 7.5, heel: 4.5, ball: 12.5,
-  spine1: [0, 10.5, -1.6], spine2: [0, 12.5, -1.1], neck: [0, 25, -4.6], head: [0, 9.6, 2.9],
-  shoulder: [16.3, 21, -3.4], upper: 28, fore: 23.5, handLen: 17,
+  root: 88.5, hip: [9.0, -2, 0.5], thigh: 39.5, shin: 40, ankle: 7.5, heel: 4.5, ball: 12.5,
+  spine1: [0, 10.5, -1.6], spine2: [0, 12.5, -1.1], neck: [0, 25, -4.6], head: [0, 9.8, 2.9],
+  shoulder: [15.8, 21.2, -3.2], upper: 28, fore: 23.5, handLen: 17,
   torso: [
-    [0, -13, 16.8, 12.6, -2.6], [0, -7, 17.8, 12.9, -2.3], [0, 0, 16.4, 11.4, -1.0], [0, 6, 13.8, 9.9, 0],
-    [1, 4.5, 12.5, 9.2, 0.4], [2, 0, 12.9, 9.6, 0.9], [2, 7, 13.9, 10.4, 1.2], [2, 12, 14.5, 10.6, 1.0],
-    [2, 17.5, 15.0, 9.6, -0.4], [2, 21.2, 15.4, 8.6, -1.6], [2, 23.0, 13.4, 7.6, -2.8], [2, 24.4, 9.8, 6.4, -3.4],
-    [2, 25.4, 6.3, 5.6, -3.6],
+    [0, -13, 15.4, 11.6, -2.6], [0, -7, 16.4, 12.2, -2.3], [0, 0, 14.6, 10.4, -1.0], [0, 6, 11.8, 8.6, 0],
+    [1, 4.0, 10.6, 7.8, 0.3], [2, 0, 11.4, 8.4, 0.8], [2, 6, 12.6, 9.2, 1.0], [2, 11, 13.2, 9.6, 0.8],
+    [2, 16, 13.6, 9.0, 0.0], [2, 19.4, 14.8, 8.0, -1.2], [2, 21.4, 15.9, 7.2, -2.0], [2, 22.7, 15.0, 6.4, -2.6],
+    [2, 23.8, 12.8, 5.8, -3.0], [2, 24.9, 10.0, 5.3, -3.3], [2, 25.9, 7.2, 4.9, -3.5], [2, 26.9, 5.6, 4.6, -3.6],
+    [2, 27.6, 5.1, 4.5, -3.6],
   ],
-  neckRings: [['neck', -1.5, 5.1, 4.9, 1.8], ['neck', 3.5, 4.5, 4.4, 2.4], ['neck', 7.5, 4.3, 4.3, 2.9], ['head', -3.8, 4.3, 4.5, 1.2], ['head', -1.0, 4.2, 4.4, 0.6]],
+  neckRings: [['neck', 1.6, 5.3, 4.6, 1.0], ['neck', 4.2, 4.8, 4.4, 1.8], ['neck', 7.0, 4.5, 4.3, 2.5], ['head', -3.8, 4.4, 4.4, 1.2], ['head', -1.0, 4.2, 4.3, 0.6]],
   limbs: {
-    thigh: [[0, 8.8, 8.8, -0.8], [0.15, 8.2, 8.3, 0], [0.4, 7.0, 7.2, 0.4], [0.65, 5.9, 6.0, 0.3], [0.85, 4.8, 4.9, 0.2], [1, 4.4, 4.7, 0.9]],
-    shin: [[0, 4.4, 4.6, 0.6], [0.12, 4.3, 4.8, -0.3], [0.3, 4.6, 5.4, -1.2], [0.5, 4.0, 4.6, -0.8], [0.75, 3.0, 3.2, -0.2], [0.92, 2.5, 2.7, 0], [1, 2.5, 2.8, 0.2]],
-    upper: [[0.14, 4.2, 4.6, 0], [0.4, 3.8, 4.1, 0.2], [0.7, 3.3, 3.5, 0.2], [0.92, 3.0, 3.1, 0], [1, 2.9, 3.0, -0.2]],
-    fore: [[0, 2.9, 2.9, -0.2], [0.2, 3.2, 3.0, 0], [0.55, 2.6, 2.3, 0], [0.85, 2.1, 1.7, 0], [1, 2.0, 1.5, 0]],
-    hand: [[0, 1.6, 2.4, 0.3], [0.25, 1.35, 3.6, 0.4], [0.52, 1.15, 3.7, 0.3], [0.62, 1.0, 3.4, 0.1], [0.85, 0.8, 2.9, -0.2], [1, 0.6, 2.0, -0.5]],
+    thigh: [[0, 8.2, 8.3, -0.8], [0.15, 7.6, 7.8, 0], [0.4, 6.5, 6.8, 0.4], [0.65, 5.4, 5.6, 0.3], [0.85, 4.4, 4.6, 0.2], [1, 4.1, 4.4, 0.9]],
+    shin: [[0, 4.1, 4.3, 0.6], [0.12, 4.0, 4.5, -0.3], [0.3, 4.2, 4.9, -1.1], [0.5, 3.6, 4.2, -0.8], [0.75, 2.7, 2.9, -0.2], [0.92, 2.2, 2.4, 0], [1, 2.2, 2.5, 0.2]],
+    upper: [[0.16, 3.7, 4.0, 0], [0.4, 3.3, 3.6, 0.2], [0.7, 2.9, 3.1, 0.2], [0.92, 2.6, 2.7, 0], [1, 2.5, 2.6, -0.2]],
+    fore: [[0, 2.5, 2.5, -0.2], [0.2, 2.8, 2.6, 0], [0.55, 2.3, 2.0, 0], [0.85, 1.8, 1.5, 0], [1, 1.75, 1.35, 0]],
+    hand: [[0, 1.4, 2.2, 0.3], [0.25, 1.2, 3.3, 0.4], [0.52, 1.05, 3.4, 0.3], [0.62, 0.9, 3.1, 0.1], [0.85, 0.75, 2.6, -0.2], [1, 0.55, 1.8, -0.5]],
   },
-  thumb: [[0, -3.2, 2.6], [0.8, -8.6, 4.8], 0.95, 0.7],
+  thumb: [[0, -3.0, 2.4], [0.75, -8.2, 4.4], 0.85, 0.62],
   face: HER_FACE,
   hair: { from: 9.0, nape: 5.5, back: 0.75, side: 0.6, top: 0.9, temple: -0.6, front: 0.7, behind: -2.2 },
   parts: {
     pelvis: [],
-    spine2: [e([4.9, 11.6, 7.0], [5.1, 5.5, 4.5]), e([-4.9, 11.6, 7.0], [5.1, 5.5, 4.5])],
+    spine2: [e([4.5, 11.2, 6.4], [4.5, 4.9, 4.1]), e([-4.5, 11.2, 6.4], [4.5, 4.9, 4.1])],
     head: [],
-    foot: [e([0, -4.0, 6.0], [3.8, 2.8, 10.9]), s([0, -4.4, -2.2], 3.1), e([0, -5.4, 12.6], [3.2, 1.8, 4.0])],
-    upper: [e([0.3, -4.6, 0.2], [4.2, 5.8, 4.8])],
+    foot: [e([0, -4.0, 6.0], [3.6, 2.7, 10.8]), s([0, -4.4, -2.2], 3.0), e([0, -5.4, 12.6], [3.0, 1.7, 4.0])],
+    // the top of the arm, rounding off under the shoulder's line
+    upper: [e([0.5, -4.4, 0.1], [3.7, 4.9, 4.1])],
   },
 }
 // the heads' sections and their hair, made once
@@ -296,8 +304,9 @@ export const onHead = (B, x, y, z) => [x, y - B.face.pivot[0], z - B.face.pivot[
 // `root` where the pelvis is (and `yaw`, `pitch`, `roll` its turn), then
 // the turn of each joint of the spine, the neck and the head, [pitch, yaw,
 // roll]; `shrug` how far each shoulder is lifted, left and right; and each
-// arm and leg, left then right. An arm is `{ ik, pole, hand }` (a point for
-// the wrist and the way the elbow points, and a turn of the hand) or `{ fk:
+// arm and leg, left then right. An arm is `{ ik, pole, hand, curl }` (a
+// point for the wrist and the way the elbow points, a turn of the hand, and
+// how far its fingers are closed round something, 0 to 1) or `{ fk:
 // [forward, out, twist, elbow] }`. A leg is `{ ik, pole, foot: [yaw,
 // pitch] }` (a point for the ankle and the foot's heading and toe up, in
 // the world) or `{ fk: [flex, out, twist, knee, ankle] }`, in degrees.
@@ -331,7 +340,7 @@ export function solve(B, P) {
     const Rf = along(E, W, front, V.sub(sh.p, E))
     F.upper.push({ p: sh.p, R: Ru })
     F.fore.push({ p: E, R: Rf })
-    F.hand.push({ p: W, R: A.hand ? mm(Rf, turn(...A.hand)) : Rf })
+    F.hand.push({ p: W, R: A.hand ? mm(Rf, turn(...A.hand)) : Rf, curl: A.curl || 0 })
     const hip = child(root, [side * B.hip[0], B.hip[1], B.hip[2]])
     const L = (P.legs && P.legs[i]) || { fk: [2, 2, 0, 4, 0] }
     if (L.fk) {
@@ -396,9 +405,11 @@ export function solid(B, F, { skip = null, only = null } = {}) {
       for (const p of B.parts.upper) out.push(place(F.upper[i], i ? { ...p, c: [-p.c[0], p.c[1], p.c[2]] } : p))
       out.push({ k: 'rings', rings: limbRings(F.upper[i], B.upper, B.limbs.upper) })
       out.push({ k: 'rings', rings: limbRings(F.fore[i], B.fore, B.limbs.fore) })
-      out.push({ k: 'rings', rings: limbRings(F.hand[i], B.handLen, B.limbs.hand) })
+      // (a hand closed round something is shorter by its fingers)
+      const k = 1 - 0.5 * (F.hand[i].curl || 0)
+      out.push({ k: 'rings', rings: limbRings(F.hand[i], B.handLen * k, B.limbs.hand) })
       const [a, b, ra, rb] = B.thumb
-      out.push({ k: 'c', a: at(F.hand[i], [0, a[1], a[2]]), b: at(F.hand[i], [b[0] * (i ? -1 : 1), b[1], b[2]]), ra, rb })
+      out.push({ k: 'c', a: at(F.hand[i], [0, a[1] * k, a[2]]), b: at(F.hand[i], [b[0] * (i ? -1 : 1), b[1] * k, b[2]]), ra, rb })
     }
     if (want('leg' + side)) {
       out.push({ k: 'rings', rings: limbRings(F.thigh[i], B.thigh, B.limbs.thigh) })
@@ -882,4 +893,80 @@ export function track(keys, t) {
   const m1 = ((v2 - v0) / (t2 - t0)) * dt
   const m2 = ((v3 - v1) / (t3 - t1)) * dt
   return (2 * u ** 3 - 3 * u ** 2 + 1) * v1 + (u ** 3 - 2 * u ** 2 + u) * m1 + (-2 * u ** 3 + 3 * u ** 2) * v2 + (u ** 3 - u ** 2) * m2
+}
+// A smooth path through points at moments, [[t, [x, y, z]], ...]: still at
+// the first and the last, and through each between at the pace its
+// neighbours set (Catmull-Rom tangents, by time), so it never stops or
+// jerks at one.
+export function path(keys, t) {
+  const n = keys.length
+  if (t <= keys[0][0]) return keys[0][1]
+  if (t >= keys[n - 1][0]) return keys[n - 1][1]
+  let i = 0
+  while (i < n - 2 && t >= keys[i + 1][0]) i++
+  const [t1, p1] = keys[i]
+  const [t2, p2] = keys[i + 1]
+  const tan = (j) => (j <= 0 || j >= n - 1 ? [0, 0, 0] : V.mul(V.sub(keys[j + 1][1], keys[j - 1][1]), 1 / (keys[j + 1][0] - keys[j - 1][0])))
+  const m1 = tan(i)
+  const m2 = tan(i + 1)
+  const dt = t2 - t1
+  const u = (t - t1) / dt
+  const h00 = 2 * u ** 3 - 3 * u ** 2 + 1
+  const h10 = u ** 3 - 2 * u ** 2 + u
+  const h01 = -2 * u ** 3 + 3 * u ** 2
+  const h11 = u ** 3 - u ** 2
+  return [0, 1, 2].map((k) => h00 * p1[k] + h10 * m1[k] * dt + h01 * p2[k] + h11 * m2[k] * dt)
+}
+// A direction turned `k` of the way from `a` to `b` round the axis `ax`,
+// both first laid square to it: how an elbow's way is turned from one
+// gesture to the next without passing through the arm.
+export function turnRound(a, b, ax, k) {
+  const n = V.norm(ax)
+  const sq = (v) => { const q = V.sub(v, V.mul(n, V.dot(v, n))); return V.len(q) < 1e-6 ? null : V.norm(q) }
+  const pa = sq(a)
+  const pb = sq(b)
+  if (!pa || !pb || k <= 0) return pa || a
+  if (k >= 1) return pb
+  const ang = Math.atan2(V.dot(V.cross(pa, pb), n), V.dot(pa, pb)) * k
+  const c = Math.cos(ang)
+  const s = Math.sin(ang)
+  // Rodrigues, round n, of pa (which is square to n)
+  return V.add(V.mul(pa, c), V.mul(V.cross(n, pa), s))
+}
+// ── looking at something ────────────────────────────────────────────────────
+// How far a body must turn its head, and lift or bow it, to face `target`
+// from where its chest is: a yaw (positive to its left) and a pitch
+// (positive bowing), in its own frame.
+export function aim(F, target) {
+  const d = V.sub(target, at(F.neck, [0, 12, 4]))
+  const R = F.s2.R
+  const l = [R[0] * d[0] + R[3] * d[1] + R[6] * d[2], R[1] * d[0] + R[4] * d[1] + R[7] * d[2], R[2] * d[0] + R[5] * d[1] + R[8] * d[2]]
+  return { yaw: Math.atan2(l[0], l[2]) / D, pitch: -Math.atan2(l[1], Math.hypot(l[0], l[2])) / D }
+}
+// Two turns, found by Newton's method, that bring a point on a body to a
+// target where the camera sees it (its x and y): `pose(a, b)` the pose with
+// them, `point(F)` the point on the posed body, `a` and `b` where to begin
+// and the ranges each is kept to. How a head comes to rest on a shoulder,
+// or lips to a forehead.
+export function reach2(B, pose, point, target, [a0, b0], [loA, hiA], [loB, hiB]) {
+  // (the arms and the legs have nothing to do with it)
+  const P = (a, b) => point(solve(B, { ...pose(a, b), arms: null, legs: null }))
+  let a = a0
+  let b = b0
+  for (let it = 0; it < 6; it++) {
+    const p = P(a, b)
+    const ex = p[0] - target[0]
+    const ey = p[1] - target[1]
+    if (Math.abs(ex) + Math.abs(ey) < 0.03) break
+    const pa = P(a + 0.5, b)
+    const pb = P(a, b + 0.5)
+    const j11 = (pa[0] - p[0]) / 0.5
+    const j21 = (pa[1] - p[1]) / 0.5
+    const j12 = (pb[0] - p[0]) / 0.5
+    const j22 = (pb[1] - p[1]) / 0.5
+    const det = j11 * j22 - j12 * j21 || 1e-6
+    a = clamp(a - (j22 * ex - j12 * ey) / det, loA, hiA)
+    b = clamp(b - (-j21 * ex + j11 * ey) / det, loB, hiB)
+  }
+  return pose(a, b)
 }
