@@ -55,7 +55,7 @@ would buy, because each gate protects somebody who cannot be asked.
 | G1 | **The subject's veto** | Does it add to what is said, shown, scored or inferred about a person who did not agree to be here? Their name and the count against it are already public, by the wall's first rule, and that is the whole of their exposure. Anything that ranks them, compares them, times them, or draws more attention to them than a letter does is new exposure they never agreed to. | the Target |
 | G2 | **Silence in, silence out** | Does it tell anybody that a specific person did something, or tell a specific person that something was done about them? Who read, who hearted, who searched, whether the subject has seen their letters, that a letter exists for you. Counts only, never names, and never a nudge aimed at one person. This is the line the FTC took NGL apart for, and a true nudge is still a nudge. | the Target, the reader, the product |
 | G3 | **Anonymity is structural** | Does it open a second channel from the wall back to the writer, or give a writer a way to be recognised by behaviour? A reply, a thread, a signature, a habit, a colour only they use, a face only they have. The author is absent from anything the browser can reach, and every letter is made of the same parts. A paper chosen from a short menu every writer shares is a choice, not a signature; a paper only one writer could produce is a signature (the ruling on customisable letters, below). | the writer |
-| G4 | **The screen covers it** | Can every word or picture it adds go through the same three layers a letter does: the list at the keyboard and on the server, the classifier after it is up, and a person at the desk? Anything the list cannot read is a hole the size of the feature. Today the list reads text and nothing else. | the Target, the campus |
+| G4 | **The screen covers it** | Can every word or picture it adds go through the same four layers a letter does: the list at the keyboard and on the server (over the words as typed and folded flat, `norm`, and for public words the proposition and self harm rules, since 0078), the lexicon, the classifier (before it is written for an open note or a reply, after it is up for a verified @-note), and a person at the desk? Anything the list cannot read is a hole the size of the feature. Today the list reads text and nothing else, and `npm run check:moderation` holds its copies to one table. | the Target, the campus |
 | G5 | **A door, not a room** | Does it make the wall somewhere to stay rather than somewhere to pass through? A feed to scroll, a thread to return to, a reason to check back. Every minute spent on the wall that is not reading, writing, or taking the tab is a minute taken from the product the wall exists to fill. | the product |
 | G6 | **A fact, never a race** | Does it turn a number into a contest? The count against a name is a fact and it is public. A rank, a chart, a "most", a "trending", a velocity, a weekly winner, a number one: each of those is the same count with a finish line drawn on it, and a finish line is something a group of friends with three campus addresses can run at. | the Target, the wall |
 | G7 | **Drawn, rationed, one bright thing** | Is every mark it adds drawn from the system's own numbers, does it spend the accent at most once, and does it leave the paper as the one bright thing? Emoji are on the ban list. A downloaded glyph, a catalogue of pictures, a second bright surface, a second saturated colour: no. | the design |
@@ -113,6 +113,25 @@ proposal can be checked against each one by name.
 | a private @ stored beside a letter to a first name | no | no | | | | | | no | | **no**, plain or hashed. The @ is asked on the ping sheet, as the ping's target |
 | the search hears names, accents and misspellings | | | | | | | | | | **yes**, over the public index only. Migration 0054 |
 | a nickname table (Alex finds Alexandra) | no | | | | | | | | | **no**. An inference about a person, not a fact about a string |
+| on a mutual: whether the other has opened it, and a colour and a battery the two share | | | | | | | | | | **yes**, by the owner's call on 29 September, and not on the wall. Migration 0077. The ruling below says why G2 is not crossed |
+
+**The mutual's report, and G2 (29 September).** G2 names "whether the subject
+has seen their letters" as a thing never told, and the mutual's keepsake now
+says `opened` under your note once the other person has opened it. It is
+not the thing G2 forbids, and the difference is the whole of the ruling. G2
+guards the wall, where one side (the subject) never agreed to be there and
+the other (the reader, the writer) is anonymous to them: telling a writer
+that the subject has seen the letter is a nudge aimed at a person who did not
+ask for any of it. A told mutual is two people who each wrote privately and
+were each told, by name, at the same moment; the keepsake is one phone they
+both hold, and what either does to it (its colour, its battery, opening it)
+is between those two and nobody else. It is symmetric (each sees the same
+about the other, and nothing about themselves they do not know), it is
+never on the wall, the picture or a mail, it is one steady word and never a
+time or a count, and it is refused, byte for byte, to anybody who is not one
+of the two now, a person who took the mutual off included. So G2 still holds
+for the wall exactly as written, and the mutual is the one place in the
+product where two people have already agreed to be seen by each other.
 
 What follows is the argument behind each row, because a table is a verdict and
 not a reason.

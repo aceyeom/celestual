@@ -22,6 +22,7 @@ import LiquidButton from './LiquidButton.jsx'
 import { setAfterGate } from './store.js'
 import { revealWaiting } from './pings.js'
 import { href } from './router.js'
+import { afterStrip } from './strip.js'
 // the owner's parts at the foot of this file (the toast, the switch, the
 // address field), and the sheets built from them
 import './owner.css'
@@ -830,9 +831,9 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // whichever of the four it was.
 //
 // `onClosing` is told the moment the way out is taken, and by what: the
-// letter uses it to fly its card back into the disc it came out of, and
-// declines when the sheet was dragged down, since a sheet already half off
-// the glass is not a sheet a card flies home from. A `ref` gets the same
+// letter uses it to stop a turn still running on, so it cannot land on a
+// letter after the letter has been closed (it flew its card back into the
+// disc it came out of, once), and the ping keeps what closed it. A `ref` gets the same
 // `dismiss`, for a screen that has to leave without anybody pressing
 // anything: the composer goes the moment its letter is up, and the wall
 // under it receives the name.
@@ -874,10 +875,17 @@ export function Sheet({ children, onClose, onClosing = null, onEscape = null, ta
     let done = false
     const finish = () => { if (done) return; done = true; onClose() }
     // the section's own drop (wall.css `wl-drop-sheet`, or `wl-dialog-out`
-    // on a spread, or `wl-glass-out` when a card is flying home), and not
-    // the end of anything animating inside it
+    // on a spread), and not the end of anything animating inside it. And the
+    // way a phone in the black room goes, its screen put out and the column
+    // gone (wall.css `wl-letter-out`: the letter, the composer and its two
+    // siblings, and the mutual at rest): heard as the others are, since the
+    // route used to wait out the whole floor for it, a quarter second of a
+    // closed letter that still held the page, and the black round it is
+    // timed to have lifted by the time it ends (wall.css, on and off). The
+    // `wl-glass-out` a card flying home into its disc once ended on is gone
+    // with the flight (29 September).
     const onEnd = (e) => {
-      if (e.target === el && /^wl-(drop-sheet|dialog-out|glass-out)$/.test(e.animationName)) finish()
+      if (e.target === el && /^wl-(drop-sheet|dialog-out|letter-out)$/.test(e.animationName)) finish()
     }
     if (el) el.addEventListener('animationend', onEnd)
     const t = setTimeout(finish, SHEET_OUT_MS + 260)
@@ -902,20 +910,41 @@ export function Sheet({ children, onClose, onClosing = null, onEscape = null, ta
   // and a paint a step, and under a letter that was work on every frame for
   // a picture nobody could see. They are back on the frame the way out is
   // taken, before the scrim starts to lift, where their clock has them.
+  //
+  // The wall under the black is not drawn at all while it is covered
+  // (wall.css `data-covered`), and drawing all of it again is the dearest
+  // frame the way out has. So a finger coming down on a way out, the close
+  // mark or the black itself, lights the room a moment early, while it is
+  // still black: the wall is drawn in the time the finger is down, and the
+  // way out starts from a wall already drawn when it comes up. A finger
+  // that comes down and is taken away puts the room out again.
   useLayoutEffect(() => {
     const el = box.current
     const root = room && !closing && el ? el.closest('.wl-root') : null
-    const scrim = root ? el.parentElement.querySelector(':scope > .wl-scrim') : null
+    const wrap = root ? el.parentElement : null
+    const scrim = wrap ? wrap.querySelector(':scope > .wl-scrim') : null
     if (!scrim) return undefined
-    const cover = () => { root.dataset.covered = '' }
+    let up = false
+    let dark = 0
+    const cover = () => { up = true; root.dataset.covered = '' }
     const onEnd = (e) => { if (e.target === scrim && e.animationName === 'wl-fade') cover() }
     scrim.addEventListener('animationend', onEnd)
     // and a scrim whose fade never reports, or never ran, is up by then: the
     // slowest comes up in 480ms (wall.css `.wl-scrim`)
     const t = setTimeout(cover, 900)
+    const onDown = (e) => {
+      const tg = e.target
+      if (!up || !e.isPrimary || !tg || !(tg === scrim || (tg.closest && tg.closest('.wl-close')))) return
+      delete root.dataset.covered
+      clearTimeout(dark)
+      dark = setTimeout(() => { if (!closingRef.current) root.dataset.covered = '' }, 900)
+    }
+    wrap.addEventListener('pointerdown', onDown, true)
     return () => {
       scrim.removeEventListener('animationend', onEnd)
+      wrap.removeEventListener('pointerdown', onDown, true)
       clearTimeout(t)
+      clearTimeout(dark)
       delete root.dataset.covered
     }
   }, [room, closing])
@@ -1545,7 +1574,18 @@ export function useProfile(handle) {
     if (known) { setP(known); return undefined }
     let alive = true
     setP(null)
-    peekServer(h).then((r) => { if (alive) setP(r) })
+    // drawn once a turn of the letters is still (strip.js), since a face
+    // that lands under the hand draws the screen it is on again there. The
+    // hold is this asker's own, keyed on its own answer and not on the
+    // handle: every face waiting on one handle is answered by the same peek
+    // in the same breath (api/handles.js), the next card and the far one
+    // and a thread's rows all at once mid-turn, and a hold kept once per
+    // handle would let only the last of them draw and leave the others
+    // reading `dear you` for as long as they stand
+    peekServer(h).then((r) => {
+      const land = () => { if (alive) setP(r) }
+      afterStrip(land, land)
+    })
     return () => { alive = false }
   }, [h])
   return p && p.state === 'found' ? p : null

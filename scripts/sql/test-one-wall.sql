@@ -431,6 +431,66 @@ select ow_ok('and leaves a sentence alone',
   cardinality(celestual_text_caught('since 2019. 2020 was the year i met you, on the 51b')) = 0
   and cardinality(celestual_text_caught('소피아, 보고 싶어')) = 0);
 
+-- 0078: the words folded flat, as the keyboard folds them (moderate.js
+-- `norm`, the strings on the right are what it answers), a slur heard in
+-- its plural and its disguises, and memories no longer refused as contact
+select ow_ok('0078: the fold is the keyboard''s',
+  celestual_text_norm('Ｌｅｔ’s f.u.c.k, BABE!!!') = 'lets fuck babe'
+  and celestual_text_norm('(k y s)') = 'kys'
+  and celestual_text_norm('you are a f a g') = 'you are a fag'
+  and celestual_text_norm('a b c,d e f') = 'abc def'
+  and celestual_text_norm('n1gg3r $5 café') = 'nigger 5 cafe'
+  and celestual_text_norm('hello!!! b!tch $hit a$$') = 'hello bitch shit ass'
+  and celestual_text_norm('ЅЕΝD nudes') = 'send nudes'
+  and celestual_text_norm('🍆🍑💦 tonight?') = 'emeggplant empeach emdroplets tonight');
+select ow_ok('0078: a slur is heard in the plural and through its disguises',
+  celestual_text_caught('you niggers') = array['slur']
+  and celestual_text_caught('faggots') = array['slur']
+  and celestual_text_caught('retards lol') = array['slur']
+  and celestual_text_caught('n i g g e r') = array['slur']
+  and celestual_text_caught('nіgger') = array['slur']
+  and celestual_text_caught('ｆａｇ') = array['slur']
+  and celestual_text_caught('you are a f a g') = array['slur']
+  and celestual_text_caught('niggerrr') = array['slur']
+  and celestual_text_caught('trannies') = array['slur']);
+select ow_ok('0078: and three idioms are not slurs',
+  cardinality(celestual_text_caught('spic and span')) = 0
+  and cardinality(celestual_text_caught('a chink in the armor')) = 0
+  and cardinality(celestual_text_caught('chinks of light through the blinds')) = 0);
+-- each stem takes only the plural it really has: "spices" is not spic and
+-- es, and "Dykes" and "Coons" are surnames, so those two take none
+select ow_ok('0078: a word or a name with a slur''s letters in it is not a slur',
+  cardinality(celestual_text_caught('i love the spices')) = 0
+  and cardinality(celestual_text_caught('you add all the spices')) = 0
+  and cardinality(celestual_text_caught('Dykes')) = 0
+  and cardinality(celestual_text_caught('professor Dykes grades so hard')) = 0
+  and cardinality(celestual_text_caught('the coons got into our trash again')) = 0);
+select ow_ok('0078: and the plurals a stem does take still are',
+  celestual_text_caught('spics') = array['slur']
+  and celestual_text_caught('niggaz') = array['slur']
+  and celestual_text_caught('you chinks') = array['slur']
+  and celestual_text_caught('dyke') = array['slur']);
+select ow_ok('0078: memories are not contact',
+  cardinality(celestual_text_caught('we lived in the same dorm 2 years ago')) = 0
+  and cardinality(celestual_text_caught('room 4 of my heart')) = 0
+  and cardinality(celestual_text_caught('#2019 was ours')) = 0
+  and cardinality(celestual_text_caught('it''s 20 minutes each way')) = 0
+  and cardinality(celestual_text_caught('23 points on court and you still ghosted me')) = 0
+  and cardinality(celestual_text_caught('i loved you.me? never')) = 0
+  and cardinality(celestual_text_caught('i miss you.co-star')) = 0
+  and cardinality(celestual_text_caught('i owe you 1000000000 hugs')) = 0);
+select ow_ok('0078: and contact still is',
+  celestual_text_caught('meet me at 2650 Durant Ave') = array['address']
+  and celestual_text_caught('apt 3b') = array['room']
+  and celestual_text_caught('dorm 12') = array['room']
+  and celestual_text_caught('#204') = array['room']
+  and celestual_text_caught('jules.me') = array['url']
+  and celestual_text_caught('www.jules.me') = array['url']);
+select ow_ok('0078: a private note may flirt, however plainly: nothing sexual is on its list',
+  cardinality(celestual_text_caught('babe lets fuck')) = 0
+  and cardinality(celestual_text_caught('sit on my face')) = 0
+  and cardinality(celestual_text_caught('🍆🍑')) = 0);
+
 create or replace function ow_proof(p_handle text, p_proof text) returns void
 language plpgsql as $$
 begin

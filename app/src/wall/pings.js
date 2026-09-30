@@ -30,6 +30,7 @@ import { learnHandle, avatarUrl } from '../api/handles.js'
 import { heldProof, verified, proofFor, renewProof } from './auth.js'
 import { isNameKey, validHandle, mine } from './data.js'
 import { getState, patch } from './store.js'
+import { seeFace } from './keepface.js'
 
 export { PING_DAYS, SLOT_CAP }
 
@@ -163,11 +164,13 @@ function dropHeldMutual(handle, them) {
 // this is that shape made plain:
 //
 //   revealAt   the reveal a note sent now runs to
-//   freeLeft   how many of its free pings are unspent: 1 or 0, and up to ten
-//              on a plan from before
+//   extra      the free ping a night that was not mutual gave back for this
+//              reveal (0075): 1 or 0, never more, whatever came back
+//   freeLeft   how many of its free pings are unspent, the extra counted:
+//              up to 2, and up to ten on a plan from before
 //   credits    pings bought and not spent, which never lapse
 //   sent       pings spent on that reveal
-//   left       what can still be sent to it: the free one and the bought
+//   left       what can still be sent to it: the free ones and the bought
 //              ones, up to the ceiling of ten a reveal
 //   next       the reveal after it, where a note kept for next week goes
 //
@@ -179,17 +182,21 @@ export function shapeAllowance(a) {
   const n = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
   const ceiling = n(a.ceiling, MAX_BUY)
   const sent = n(a.sent)
-  // one, or none; ten while a plan from before (0021's steady) is paid through
+  // one, or none; ten while a plan from before (0021's steady) is paid
+  // through; and one more in a week a night gave its free ping back
+  const extra = Math.max(0, Math.min(1, n(a.extra)))
   const freeLeft = Math.max(0, n(a.free_left, 1))
   const credits = Math.max(0, n(a.credits))
   const next = a.next && typeof a.next === 'object' ? {
     revealAt: Date.parse(a.next.reveal_at || 0) || 0,
+    extra: Math.max(0, Math.min(1, n(a.next.extra))),
     freeLeft: Math.max(0, n(a.next.free_left, 1)),
     sent: n(a.next.sent),
   } : null
   return {
     revealAt: Date.parse(a.reveal_at || 0) || 0,
     free: n(a.free, 1),
+    extra,
     freeLeft,
     credits,
     sent,
@@ -224,12 +231,24 @@ export async function loadAllowance(handle = myHandle()) {
 }
 
 // Which ping a note sent now would be, in the words the composer says it:
-// the week's free one, or one of those bought, or none left.
+// the week's free one, the extra a night gave back once the free one is
+// spent (the two are alike on the server, and the free one is said first),
+// or one of those bought, or none left.
 export function pingWords(a) {
   if (!a) return ''
   if (a.left <= 0) return a.sent >= a.ceiling ? 'ten this week, which is the most' : 'no pings left this week'
-  if (a.freeLeft) return 'your free ping this week'
+  if (a.freeLeft) return a.extra && a.freeLeft <= a.extra ? 'your extra ping this week' : 'your free ping this week'
   return a.credits === 1 ? 'your last ping' : `1 of your ${a.credits} pings`
+}
+
+// The week's free pings, in the words the private notes' foot says them
+// (screens/You.jsx `Week`): the free one, and the extra beside it in a week
+// a night gave one back, the free one said spent first.
+export function freeWords(a) {
+  if (!a) return 'one free ping every week'
+  if (!a.extra) return a.freeLeft ? 'free ping this week' : 'free ping used this week'
+  if (a.freeLeft > a.extra) return 'free ping and 1 extra this week'
+  return a.freeLeft ? '1 extra ping left this week' : 'free ping and extra used this week'
 }
 
 // ── a note waiting on pings ─────────────────────────────────────────────────
@@ -238,8 +257,8 @@ export function pingWords(a) {
 // or evicted on the way, so it is kept on this device (store.js `waiting`)
 // rather than in memory, for two hours, and sent the moment the pings land
 // (screens/Pings.jsx). What it is: a note to send, with its words and the
-// face they were written on (the line across the top, `greet`, and the
-// battery, `bat`, 0073), a lapsed one to send again, or a running one to keep
+// face they were written on (the line across the top, `greet`, and, for a
+// note from before 30 September, the battery it kept, `bat`, 0073), a lapsed one to send again, or a running one to keep
 // for next week. The face waits with the words, since the send that finally
 // goes replaces the card whole and a face left behind here would be gone.
 const WAIT_MS = 2 * 3600000
@@ -314,6 +333,13 @@ function shapePing(p) {
     bat: batOf(p.card),
     theirGreet: greetOf(p.theirCard),
     theirBat: batOf(p.theirCard),
+    // On a note that is not mutual, the night it last stood in (0075): what
+    // it cost ('free', 'paid', or null for one that held no ping for it) and
+    // what came back ('extra', 'kept', or null). Its own night once it has
+    // lapsed; the last reveal while it runs on past one (kept for next week,
+    // or sent again after it lapsed). Nothing about the other person.
+    cost: p.mutual ? null : p.cost || null,
+    returned: p.mutual ? null : p.returned || null,
     // The moment it opened is not on the wire either. A mutual opens when the
     // second of the two is placed, and the only timestamp either side holds is
     // its own, so a screen says how long each has been standing rather than
@@ -430,10 +456,14 @@ export async function placeAgain(note) {
 // the answer's own refusals named rather than read as the network.
 //
 // The card is the words and the face they were written on (0073): the line
-// across the top and the battery. The server replaces a card whole, so every
-// send that carries words carries the face too, or the face is gone; a send
-// with no words (`null`) keeps the card as it was, face and all, and words
-// taken off (`''`) take the face with them.
+// across the top, and the battery only for a note from before 30 September,
+// when the battery left the private notes for the wall letters (0076): no
+// screen sets one now, so a new note carries none, and one a note already
+// had is handed back by its screen with its words and sent again as it was.
+// The server still takes one (0073 is left as it stands). It replaces a card
+// whole, so every send that carries words carries the face too, or the face
+// is gone; a send with no words (`null`) keeps the card as it was, face and
+// all, and words taken off (`''`) take the face with them.
 async function placing(rpc, { me: mineNow, them, email, proof, words, greet, bat } = {}) {
   const face = {}
   const g = typeof greet === 'string' ? greet.replace(/\s+/g, ' ').trim().slice(0, 40) : ''
@@ -681,6 +711,36 @@ export function sawReveal(at = Date.now()) {
   patch({ revealSeen: lastReveal(at) })
 }
 
+// ── the night that was not ──────────────────────────────────────────────────
+// What the last reveal said about this person's notes that were not mutual,
+// for the night's own screen (Night.jsx) to tell: every note that lapsed on
+// it, and every note still running that held a ping for it (kept for next
+// week, or lapsed and sent again since), with what each night cost and what
+// came back (0075). A note sent on the afternoon of the night runs to the
+// Saturday after and held no ping for it, so it is not in it. The counts are
+// the server's own, off each note, so the night says exactly what the
+// allowance under it holds.
+export function nightOf(pings, at = Date.now()) {
+  const last = lastReveal(at)
+  const notes = listOf(pings).filter((p) => p && (
+    (p.state === 'lapsed' && NEAR_MS > Math.abs(p.expires - last))
+    || (p.state === 'standing' && !!p.cost)))
+  const count = (w) => notes.filter((p) => p.returned === w).length
+  return { at: last, notes, extra: count('extra'), kept: count('kept') }
+}
+// The night's screen is shown once a reveal, on this device, the way the
+// bar's light is: until the person has seen it with their notes under it,
+// and for the rest of that visit unless they put it away. A device that has
+// never seen one is owed this one, since the notes it would tell of are on
+// the list it is drawn over.
+export function nightWaiting(at = Date.now()) {
+  const s = getState().nightSeen
+  return !(typeof s === 'number' && s >= lastReveal(at))
+}
+export function sawNight(at = Date.now()) {
+  patch({ nightSeen: lastReveal(at) })
+}
+
 // ── time, in words ──────────────────────────────────────────────────────────
 // The same voice the wall uses. A note is a week long now, and its clock
 // reads in nights, not days.
@@ -782,6 +842,14 @@ export function mutualWhen(p, at = Date.now()) {
 // not inherit a count of the mutuals the last one watched. The last sixty
 // four, which is more mutuals than anybody has. Storage switched off reads
 // every mutual as not yet opened, which is the right way to be wrong.
+//
+// And since 0077 the other person can see it was: the moment this device
+// marks a mutual watched, the server is told this side has opened it
+// (keepface.js `seeFace`), which turns `delivered` under their note into
+// `opened`. That is asked of the server whether or not this device had
+// marked it before, once a tab, so a mutual watched here before the server
+// could be told, or on a visit whose word did not get through, is told on
+// the next one; what the device keeps is unchanged.
 const OPENED = 64
 function openedMark(me, p) {
   const s = `${normHandle(me)}>${p && p.key ? p.key : ''}`
@@ -798,7 +866,9 @@ export function wasOpened(me, p) {
   return (getState().toldSeen || []).includes(openedMark(me, p))
 }
 export function markOpened(me, p) {
-  if (!p || !p.key || wasOpened(me, p)) return
+  if (!p || !p.key) return
+  seeFace(me, p)
+  if (wasOpened(me, p)) return
   patch({ toldSeen: [...(getState().toldSeen || []), openedMark(me, p)].slice(-OPENED) })
 }
 

@@ -25,6 +25,14 @@
 //
 // That is the guarantee the printed card makes.
 //
+// One answer comes near it, and is not it (0074): a letter read by the
+// session that wrote it says `yours`, so its writer can take it back
+// (`isYours`, `withdraw`, below). It is a fact about the person asking,
+// told only to them; every other reader is told no, and learns nothing by
+// it. The cache holds it on the letter as it holds `hearted`, which is the
+// same kind of fact, and drops both whenever the person changes
+// (`forgetLetters`).
+//
 // ── every letter arrives whole ──────────────────────────────────────────────
 // A letter's `body` is its words, for every reader, always (0066). It used to
 // be null past the eighth letter a browser read, until a proof: the redaction,
@@ -34,6 +42,7 @@
 // which counts in this browser because it gates nothing.
 
 import * as api from './api.js'
+import { writerRemove, writerRestore } from '../api/alerts.js'
 import { learnHandle, warmFaces, isNameKey } from '../api/handles.js'
 import { learnLook, lookKey } from './looks.js'
 import { getState, patch } from './store.js'
@@ -386,6 +395,22 @@ export function loadMine(force = false) {
   })
 }
 
+// What a letter's own read said about the person reading it, kept when the
+// read of its name says nothing about it. A letter opened by its id arrives
+// with `mine` (the reader holds its @) and `yours` (the reader wrote it), and
+// the letter's name is read straight after for the turn (Letter.jsx), whose
+// answer used to take the letter's place in the cache without either: the
+// owner's `remove this letter` was on the menu for as long as that read took
+// and then gone. A name's read carries both since 0074, and one from before
+// it is `undefined` on both, which is "not said" and never "no".
+function kept(l) {
+  const was = l && BY_ID.get(l.id)
+  if (!was) return l
+  const mine = l.mine === undefined ? was.mine : l.mine
+  const yours = l.yours === undefined ? was.yours : l.yours
+  return mine === l.mine && yours === l.yours ? l : { ...l, mine, yours }
+}
+
 export function loadHandle(raw, force = false) {
   const h = targetKey(raw)
   if (!h) return Promise.resolve()
@@ -396,7 +421,7 @@ export function loadHandle(raw, force = false) {
     if (!out.ok) return
     if (out.kind === 'name') learnName(h, out.name)
     if (out.letters.length) learnLook(h, out.letters[0].look)
-    const letters = out.letters.map((l) => held(l, asked))
+    const letters = out.letters.map((l) => kept(held(l, asked)))
     BY_HANDLE.set(h, letters)
     for (const l of letters) BY_ID.set(l.id, l)
     bump()
@@ -476,6 +501,77 @@ export async function removeLetter(id) {
     for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.filter((l) => l.id !== id))
     TILES_AT = 0
     await loadWall(true)
+    bump()
+  }
+  return out || { ok: false, error: 'network' }
+}
+
+// ── and the writer takes it back ────────────────────────────────────────────
+// The third door, and the only one that is the writer's (0074, the owner's
+// ruling of 29 September): the person who put a letter up takes it back
+// down, at any time while it stands or waits on the desk, and puts it back
+// where it was within a day. It proves nothing but the session that wrote
+// it, files nothing and shuts nothing, so it costs the person it was written
+// to nothing either: to them it is a letter that came down, as any other.
+//
+// Whose a letter is is the server's answer, told to its writer alone
+// (`yours`, api.js); a database from before 0074 says nothing, and this
+// device's own record of what it put up stands in: the ids it wrote
+// (store.js `written`) and the rows the server lists as this session's
+// (`mine`). Where the server has answered, its answer is the one, since a
+// device can hold the id of a letter a session it no longer is wrote.
+export function isYours(l) {
+  if (!l || !l.id) return false
+  if (typeof l.yours === 'boolean') return l.yours
+  return (getState().written || []).includes(l.id) || (MINE || []).some((m) => m.id === l.id)
+}
+
+// Whether the database has the take back at all. The first 'missing' answer
+// says it does not, and every `take it back` is then not offered for the rest
+// of the tab: there is no older way down for a writer to fall back on, as the
+// owner's removal has (Letter.jsx `removeForGood`), and a row that can only
+// fail is not a row.
+let WITHDRAW_MISSING = false
+export function canTakeBack() { return !WITHDRAW_MISSING }
+
+// Down, and off every read this tab holds, as a report or a removal takes a
+// letter off (above): the letter's own entry is `null`, which the letter's
+// sheet draws as gone and asks nothing more about, and the names' lists and
+// the index forget it. Resolved as soon as the server has answered, with the
+// cache already moved, so the screen that asked draws its own answer on the
+// same render the letter leaves on; the index and the writer's list are read
+// again after, and bump when they land.
+export async function withdraw(id) {
+  const out = await writerRemove(id)
+  if (out?.error === 'missing') WITHDRAW_MISSING = true
+  if (out?.ok) {
+    BY_ID.set(id, null)
+    for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.filter((l) => l.id !== id))
+    TILES_AT = 0
+    if (MINE) MINE = MINE.map((m) => (m.id === id ? { ...m, downBy: 'writer', undoUntil: out.undo_until ? new Date(out.undo_until).getTime() : 0 } : m))
+    bump()
+    Promise.all([loadWall(true), loadMine(true)]).catch(() => {})
+  }
+  return out || { ok: false, error: 'network' }
+}
+
+// And back. The letter is read again under its id and its name, so the
+// sheet that took it down draws it where it was, its entry standing as gone
+// until the read lands rather than as not asked, which a sheet draws as a
+// screen with nothing on it yet; and a letter that went back to waiting on
+// the desk (`status` 'pending') stays gone to every read, as a letter that is
+// waiting always has been. `key` is the name it is filed under.
+export async function unwithdraw(id, key = '') {
+  const out = await writerRestore(id)
+  if (out?.error === 'missing') WITHDRAW_MISSING = true
+  if (out?.ok) {
+    TILES_AT = 0
+    const h = targetKey(key)
+    await Promise.all([
+      out.status === 'pending' ? Promise.resolve() : loadLetter(id, true),
+      h ? loadHandle(h, true) : Promise.resolve(),
+      loadWall(true), loadMine(true),
+    ]).catch(() => {})
     bump()
   }
   return out || { ok: false, error: 'network' }
@@ -908,10 +1004,20 @@ function held(l, asked) {
 
 export async function heart(id, on) {
   const was = BY_ID.get(id) || null
+  // Only the list that holds the letter is made again. Every name's list
+  // was, on every press and every answer, so every screen that keeps a list
+  // (the deck's neighbours, the wall's names) saw a new one and drew again,
+  // for one heart on one letter (the owner, 29 September, the lag).
   const set = (fn) => {
     const cur = BY_ID.get(id)
     if (cur) BY_ID.set(id, fn(cur))
-    for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.map((l) => (l.id === id ? fn(l) : l)))
+    for (const [h, list] of BY_HANDLE) {
+      const i = list.findIndex((l) => l.id === id)
+      if (i < 0) continue
+      const next = list.slice()
+      next[i] = fn(list[i])
+      BY_HANDLE.set(h, next)
+    }
     bump()
   }
   PRESSED.set(id, { on: !!on, at: 0 })

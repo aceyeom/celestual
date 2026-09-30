@@ -36,7 +36,10 @@ equivalent.
 | let it go (a private note of your own) | delete, withdraw |
 | take it off my list (a mutual, from your own list only) | delete, remove, unmatch, let it go |
 | send them a new note (writing to a mutual again) | message, reply, ping again |
+| delivered, opened (the report under your note on a mutual) | seen, read, viewed, read receipt |
+| change its colour (the mutual's, for both of you) | theme, customise, design, style |
 | remove it (a letter about you, by the owner of its @) | delete, take it down |
+| take it back (a wall letter of your own, by its writer; done, `taken back.`) | delete, unsend, retract, withdraw, remove |
 | keep it standing, renew | extend, refresh, resubscribe |
 | lapses | expires |
 | the wall | the feed, the board, the community |
@@ -45,6 +48,9 @@ equivalent.
 | count me in | sign up, join the waitlist, register |
 | a ping (what a note spends: one free every week, more bought) | credit, token, quota, slot |
 | get pings, add more pings | buy now, top up, unlock more |
+| not this time (a night that was not mutual) | no match, rejected, unrequited, they didn't respond |
+| came back, an extra (a ping a night that was not mutual gave back) | refund, credit, bonus, reward |
+| share celestual (a generic invite: the wall's how it works door) | invite them, tell them to join, refer a friend |
 
 A ping is a ping in the code, on the desk and in the docs, and never a "lil
 ping". On the wall it is what it now literally is: a note sent privately
@@ -85,14 +91,33 @@ note, since offering a new one over it said something that was not so.
 The picture of a mutual is shared like a letter's (`share`, `to someone`,
 `save the picture`), and carries both notes unless the person says `leave the
 notes off`, which then reads `put the notes back` and takes each note's line
-and battery off with its words. It names the two by their first names or not
+off with its words. It names the two by their first names or not
 at all, never by an @, and it carries no link; a picture that names nobody
 says whose each note is as `from them` and `from me`, and a note's line that
 would have named the other by an @ is `dear you`. The keepsake says the two
 names once, `Jules & Ace`, under `it's mutual.`, and each note says the rest:
 the line its writer set across it, and `from Jules` under the words. A menu
-on it is named on its own small screen, `options` or `share`, with where in
-it the chosen row is, `1/2`.
+on it is named on its own small screen, `options`, `share` or `colour`, with
+where in it the chosen row is, `1/3`.
+
+**The mutual's face is the two of theirs, and says what happened, exactly.**
+The options carry `change its colour`, which puts the colours up by the names
+the letters' panel gives them (`rose`, `ice`, `lilac`), `select` and `back`;
+the phone is lit in each as it is chosen, and says nothing else, since the
+colour itself is the answer. The battery on its band says nothing at all: no
+line under it, no tip, and no word for what it does, since the owner asked
+for it as a mechanism nobody is told about (29 September); a screen reader
+hears it as `the battery, 3 of 4`, which is what it is. Under your own note,
+after your name, the phone's delivery report, one word: `delivered`, and once
+the other person has opened the mutual since it was told, `opened`, with the
+phone's tick. They are the words a phone used for a message it had sent, and
+each is exactly true (section 4): `delivered` because a told mutual is on
+both lists, `opened` only once their side has opened it, never inferred from
+a mail sent or a DM handed over. Never `seen`, `read`, `viewed` or a time
+("opened 2h ago"), which would turn a keepsake into a thing to watch; never
+a word under their note about you; and never either word on the picture.
+Where the server has not said, nothing is printed: no `delivered` it cannot
+stand behind.
 
 ---
 
@@ -137,6 +162,13 @@ banned at the copy level, not only the policy level.
 **Resolution, never pursuit.** Copy is about settling a feeling, never about
 chasing a person. Silence is the product working, not a failure of it.
 
+A night that was not mutual is the test of all four at once (29 September,
+app/src/wall/Night.jsx). It says `not this time.` and then answers the one
+fear first (nobody was told), says both things the silence can mean and that
+celestual will never say which, and says exactly what came back of the ping.
+It never names or hints at the other person, never asks the reader to chase
+them, and its share is the wall's own door with nobody in it.
+
 ---
 
 ## 5. Errors
@@ -146,6 +178,16 @@ Stay in world, name what happened, give the one next step, keep composure.
 Write: "it did not go through. give it a moment, then send it again."
 
 Never: "Something went wrong. Try again."
+
+A refusal of the words is the same shape: the one thing found, and the one
+edit that gets past it, never the rule's name. "a street address cannot go
+on a public wall", "it is only abuse. say what they did, and send it again."
+A proposition on the wall (30 September) says where the same words may go,
+since a private note is read only by somebody who sent one back: "it's
+sexual, and the wall is public. say it another way, or send it privately."
+Under a reply, which has no private way, it is only "that's sexual, and
+replies are public. say it another way." The keyboard and the server say
+the same sentence for the same words (moderate.js `whyNot`).
 
 ---
 
@@ -183,6 +225,16 @@ that the control is unclear. Fix the control.
 | "drag to orbit, pinch to zoom" | a sky you can drag is discovered by dragging it |
 | the panel explaining the countdown | the one line that mattered, moved into the panel already there |
 
+The one kind of line that stays is the first-use line under a screen whose
+glyph is also a key, because a battery that can be pressed looks exactly like
+one that cannot: said once on a device, one fact, gone for good at the first
+touch, and never saying what the thing means. On the composer it is `tap the
+greeting to change it`, and once that has gone, `the battery is yours to
+set.` (a wall letter's battery is its writer's since 0076, and nothing says
+what they meant by it); on a private note it is `the greeting is yours to
+set.`, which said `the greeting and battery are yours to set.` for the one
+day a note's battery was its writer's (0073).
+
 And never write about somebody's own account in the conditional. The server
 knows whether there is an email on file, so the screen names the inbox it sent
 to rather than guessing at one.
@@ -198,6 +250,9 @@ to rather than guessing at one.
 | lapses in 4 days. still feel it? | Your entry expires soon. Renew now. |
 | this gives its ping back. they never find out you sent it. | Are you sure you want to delete? |
 | this week’s ping is spent. get 3 pings · $8.97 | You’ve hit your limit. Upgrade to Premium! |
+| not this time. they didn't send you one. they'll never know you did. | They didn't match with you. Better luck next time! |
+| share celestual | @maya isn't on celestual yet. Invite her to join! |
+| +1 free ping this week | We've credited 1 bonus ping to your account. |
 | the rest is yours. celestual's part is done. | Start chatting now. |
 | celestual opens at reed when 300 are in. current count: 214. | Join the hottest new app on campus. |
 

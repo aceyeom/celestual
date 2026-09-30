@@ -36,6 +36,94 @@ tier has no point in time recovery.
 
 ---
 
+## The filter hears plurals: the deploy (migration 0078)
+
+The owner, 30 September: "lets fuck babe" was read, passed and put up, and
+the filter is to be tuned, not tightened. The wall keeps its jokes and loses
+only the plainly bad (app/src/wall/moderate.js has the ruling). One
+migration, two functions and the wall, in this order. Nobody in this
+repository applies or deploys any of it; it is verified against a bare
+PostgreSQL (`scripts/verify-migrations.sh --test`, the 0078 lines in
+`scripts/sql/test-one-wall.sql` and `test-replies.sql`) and by
+`npm run check:moderation`, which holds the keyboard, both functions and
+the migration's copy to one must-refuse and one must-pass table, holds the
+three copies of the rules to one source character for character, and holds
+the lexicon to a must-read table.
+
+1. [ ] **Apply `0078_the_filter_hears_plurals.sql`.** Re-runnable. It adds
+       `celestual_text_norm` and `celestual_public_caught` and redefines
+       `celestual_text_caught` and `wall_reply_caught`, all four the service
+       role's alone. From this moment a private note's words and line are
+       read with slurs heard in the plural each stem really takes (so
+       "spices", "chinks of light" and the surnames Dykes and Coons are not
+       slurs), and no longer refused for "the
+       same dorm 2 years ago" or "#2019"; nothing sexual is on that list,
+       so a private note may flirt however plainly. A reply is refused for a
+       proposition ("babe lets fuck", "dtf") or "kys" by the database too,
+       and never for a joke that shares a shape with one ("you're gonna
+       smash it", "i could just die", "cut yourself some slack").
+2. [ ] **`supabase functions deploy celestual-wall-moderate`.** The same list
+       folded flat, the proposition and self harm rules in the shapes no
+       joke could share, the lexicon with the fuck word (inside a longer
+       word too, for "l e t s f u c k"), the propositions and their slang,
+       the sexual emoji, a new `abuse` row wide enough for "stfu loser" and
+       "neck yourself", and a `threat` row that hears "hope you die" and
+       "be careful walking home", and the prompt rewritten to the ruling
+       with its examples, the new `abuse` category and a death wish said as
+       a hope named as a threat. No new secret; `MODERATION_MODEL` stays unset (the
+       prompt was written for `claude-haiku-4-5-20251001`, and a thinking
+       model would spend the 256 tokens before it answered).
+3. [ ] **`supabase functions deploy celestual-wall-reply`.** The same list,
+       and the replies' prompt rewritten the same way, the death wish too.
+4. [ ] **Ship the front end**, after 2 and 3: the composer refuses the
+       proposition when the wall is chosen, with the server's own sentence,
+       and a front end ahead of the function would refuse at the keyboard
+       what an older function still reads (harmless, and short lived).
+5. [ ] **Look at the flagged queue.** About fourteen letters from 20 to 24
+       September are still flagged `unparsed` from before structured output;
+       the desk now says under each letter which reading passed it, and a
+       pass by the word list alone is drawn in the hold colour.
+
+Check: send `babe lets fuck` as an open note and see the card shake with
+"it's sexual, and the wall is public. say it another way, or send it
+privately."; send `fuck you for leaving` and see it go up. With a key in the
+environment, `MODERATION_API_KEY=... npm run check:moderation` also sends both
+tables to the reading and reports how it read them.
+
+## The battery is the writer's: the deploy (migration 0076)
+
+The owner, 30 September: the battery is for wall letters, set with a tap,
+and not for private notes. One migration, the moderation function, then the
+wall. It goes after 0073 in the order and needs 0055 applied (the look it
+widens). Nobody in this repository applies it to any real database; it is
+verified against a bare PostgreSQL only (`scripts/verify-migrations.sh
+--test`, `scripts/sql/test-looks.sql`).
+
+1. [ ] **Apply `0076_the_battery_is_the_writers.sql`.** Re-runnable. It
+       redefines `wall_look_clean` alone, which the write and the row's
+       check both read, so a look may carry `bat`, 0 to 4, beside its colour.
+       Every look already stored passes it unchanged, and no letter is
+       rewritten.
+2. [ ] **Deploy `celestual-wall-moderate`**, whose `cleanLook` passes the
+       battery on to the write. Before it, a letter's battery is dropped on
+       the way in and the letter goes up with none, which draws by its age as
+       before: nothing breaks, the writer's charge is only lost.
+3. [ ] **Ship the front end**, after both. Letters from before carry no
+       battery and keep drawing theirs by their age; the ping sheet stops
+       offering one, and a note that had one keeps it.
+
+Check: write a letter, press the battery until it shows one bar, and put it
+up. In a SQL editor:
+
+```sql
+select look from wall_letters order by created_at desc limit 1;   -- {"bat": 1, "tint": ...}
+```
+
+and the letter, its picture and its name's small screen on the wall all show
+one bar whatever its age.
+
+---
+
 ## The note has a face: the deploy (migration 0073)
 
 The owner, 29 September: the line across the top of a private note and its
@@ -58,7 +146,9 @@ against a bare PostgreSQL only (`scripts/verify-migrations.sh --test`,
        writer is shown a face on the screen that went out without it.
 
 Check: from one account open a note's screen, change the greeting to `to the
-one at the bus stop`, press the battery twice and send it. In a SQL editor:
+one at the bus stop`, press the battery twice and send it (since 0076 the
+battery is not a key on a note; the greeting alone checks it, and `bat` is
+null for a new note). In a SQL editor:
 
 ```sql
 select card->>'greet', card->'bat' from celestual_entries

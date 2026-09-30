@@ -157,6 +157,11 @@
    greeting's line) */
 .wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) .wl-scr-bat.is-key::before { opacity: 1; }
 .wl-root .wl-scr-bat.is-key:active { opacity: 0.45; transition-duration: 0ms; }
+/* the empty one blinks as the phone's did, and on a key only the glyph does:
+   the dotted line under it stays lit, so the battery never goes out as a
+   thing that can be pressed (the composer's letter, 0076) */
+.wl-scr-bat.is-key.is-low { animation: none; }
+.wl-scr-bat.is-key.is-low > .wl-px { animation: wl-blink 1.06s steps(1) infinite; }
 .wl-root .wl-scr-bat.is-key:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: 0.6cqw; border-radius: 0.6cqw; }
 .wl-px { display: block; flex: 0 0 auto; fill: currentColor; }
 /* the words on the glass bloom, the way a lit word does in a photograph of
@@ -268,6 +273,31 @@
 .wl-sk.is-c.is-long { font-size: 9cqw; }
 .wl-sk.is-r { justify-self: end; }
 .wl-sk.is-empty { visibility: hidden; }
+/* ── the letter's band ──
+   `options` alone on the left, where every screen on the wall keeps it and
+   where a phone kept its menu, and the heart and the replies' bubble
+   together on the right, each with its count (screens/Letter.jsx, the
+   owner's ruling of 30 September, turning round the one of the 29th). The
+   two are one group at the end of the band (screen.jsx `keys.r` as a list),
+   set at the middle key's size, and the middle of the band is empty. Every
+   count but the last keeps the room of two figures, "12", whatever it holds,
+   so the heart does not move under the thumb when its count grows by a
+   figure, on the press or when the server answers; the bubble's, against
+   the edge, takes only what it needs. Three figures are a step smaller
+   (`is-long`), as they always were. */
+.wl-scr-bot.is-grouped { grid-template-columns: auto 1fr auto; }
+.wl-sk-group {
+  justify-self: start; display: flex; align-items: center; height: 100%; min-width: 0;
+  gap: 2.2cqw;
+}
+.wl-sk-group.is-r { justify-self: end; }
+/* a glyph and its count a hair further apart than a word's key keeps them,
+   so three figures set a step smaller do not touch the heart */
+.wl-root .wl-sk-group .wl-sk { gap: 1.8cqw; }
+.wl-root .wl-sk.is-heart { font-size: 11cqw; }
+.wl-root .wl-sk.is-heart.is-long { font-size: 9cqw; }
+.wl-sk-n { display: inline-block; min-width: 1.02em; }
+.wl-sk.is-long .wl-sk-n { min-width: 1.36em; }
 .wl-root .wl-sk:active { opacity: 0.45; transition-duration: 0ms; }
 .wl-root .wl-sk:disabled { opacity: 0.5; cursor: default; }
 .wl-sk:focus-visible { outline: 0.5cqw solid var(--s-lit); outline-offset: -0.5cqw; }
@@ -470,6 +500,51 @@
 .wl-scr-note .wl-px { height: 9cqw; width: auto; }
 
 /* ── the screen's own states ── */
+/* ── powering on ──
+   screen.jsx `useWake`, where a card opens: the letter's first card, the
+   composer's card, the ping's and the pings' (the owner, 29 September: a
+   phone turning on, not a page opening, subtle, smooth and still quick).
+   The glass is black for a beat and then its backlight rises, one smooth
+   ramp with no flicker, no dip and no blur, on a curve that starts slow
+   and lands soft (a light coming up reads even to the eye when it is let
+   up slowly at first); the light it throws on the room follows a beat
+   behind; and the phone settles from a hair under its size to its size,
+   where it already stands, with no travel. All of it is opacity and a
+   scale, the compositor's alone: the veil is a black pane inside the
+   glass (`.wl-scr-veil`, drawn only while it powers on), and nothing on
+   the glass is painted again while it rises. It was `wl-wake` below, a
+   blurred flicker of nearly a second that dipped to a third on its way up,
+   which read as a screen glitching and cost a repaint of the whole glass
+   on every frame; the intro and the door keep it, and PixelStory listens
+   for its name. A print is uncovered quickly instead, since it is lit and
+   does not light, and the square not at all. */
+.wl-scr.is-power { animation: wl-power 380ms var(--ease, cubic-bezier(0.16, 1, 0.3, 1)) both; }
+@keyframes wl-power { from { scale: 0.985; } to { scale: 1; } }
+.wl-scr-veil {
+  position: absolute; inset: 0; z-index: 40; pointer-events: none;
+  background: #000; opacity: 0;
+  animation: wl-power-veil 380ms linear both;
+}
+@keyframes wl-power-veil {
+  0%, 12% { opacity: 1; animation-timing-function: cubic-bezier(0.45, 0.05, 0.25, 1); }
+  100%    { opacity: 0; }
+}
+/* the light it throws, a beat behind the glass */
+@keyframes wl-power-light {
+  0%, 24% { opacity: 0; animation-timing-function: cubic-bezier(0.45, 0.05, 0.25, 1); }
+  100%    { opacity: 1; }
+}
+:where(.wl-scene[data-state='power']) .wl-scene-halo-2 { animation: wl-power-light 380ms linear both; }
+/* the room's light keeps its own fade first in the list, as with the wake
+   below, so it carries on finished when the power on ends. The letter says
+   when its card is powering on (Letter.jsx `data-power`), and so does the
+   composer's card (Write.jsx, Ping.jsx, Pings.jsx) */
+:where(.wl-letter[data-power], .wl-write-card[data-power]) .wl-room-light {
+  animation: wl-fade 700ms var(--ease, ease) both, wl-power-light 380ms linear both;
+}
+.wl-scr.is-power:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox'], [data-kind='brat']) { animation: none; }
+.wl-scr-press.is-power { animation: wl-uncover 240ms var(--ease, ease) both; }
+
 .wl-scr.is-waking { animation: wl-wake 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @keyframes wl-wake {
   0%   { filter: blur(9px) brightness(0); }
@@ -507,7 +582,8 @@
 .wl-scr.is-dip { animation: wl-dip 300ms ease; }
 @keyframes wl-dip { 0% { filter: blur(0.35px) brightness(1); } 45% { filter: blur(1.2px) brightness(0.25); } 100% { filter: blur(0.35px) brightness(1); } }
 .wl-scr-press.is-dip { animation: wl-uncover 300ms ease; }
-/* and put out: the letter's close (wall.css `wl-letter-out`) */
+/* and put out: the letter's close and the composer's (wall.css
+   `wl-letter-out`), in 200ms, quicker than it came on */
 @keyframes wl-sleep {
   0%   { filter: blur(0.35px) brightness(1); }
   30%  { filter: blur(0.6px) brightness(0.32); }
@@ -666,8 +742,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
-  .wl-scene[data-state='waking'] .wl-scene-halo-2, .wl-letter[data-waking] .wl-room-light { animation: none !important; }
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .wl-scr-draft, .wl-caret, .is-blink, .wl-scr-bat.is-low, .wl-scr-bat.is-low > .wl-px, .wl-sk.is-on .wl-px,
+  .wl-scene[data-state='waking'] .wl-scene-halo-2, .wl-letter[data-waking] .wl-room-light,
+  .wl-scr.is-power, .wl-scr-press.is-power, .wl-scene[data-state='power'] .wl-scene-halo-2,
+  .wl-letter[data-power] .wl-room-light, .wl-write-card[data-power] .wl-room-light { animation: none !important; }
+  /* and the black pane is never there: the screen lands lit (screen.jsx
+     `useWake` never powers anything under this preference, this is the
+     floor under it) */
+  .wl-scr-veil { display: none; }
   /* the words are fitted by measuring them at each size (`useFit`), and a
      transition, even the 1ms one this preference gives everything
      (wall.css), hands the measure the size before, so the fit ran off the

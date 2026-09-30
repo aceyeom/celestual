@@ -169,6 +169,68 @@ select rp_ok('nor a first name alone, or a sentence break between two words',
 select rp_ok('the letter list is here too',
   'url' = any(wall_reply_caught('read it at x.com'))
   and 'phone' = any(wall_reply_caught('call 510 555 0199 now')));
+-- 0078: a reply is as public as its letter, so it carries what the wall
+-- refuses and a private note may say
+select rp_ok('0078: a proposition aimed at them is caught',
+  'sexual' = any(wall_reply_caught('babe lets fuck'))
+  and 'sexual' = any(wall_reply_caught('dtf?'))
+  and 'sexual' = any(wall_reply_caught('lets f*ck'))
+  and 'sexual' = any(wall_reply_caught('i''d smash'))
+  and 'sexual' = any(wall_reply_caught('send nudes'))
+  and 'sexual' = any(wall_reply_caught('🍆🍑💦 tonight?'))
+  and 'sexual' = any(wall_reply_caught('l e t s f u c k'))
+  and 'sexual' = any(wall_reply_caught('let me smash you'))
+  and 'sexual' = any(wall_reply_caught('fuck me harder')));
+select rp_ok('0078: and telling them to hurt themselves',
+  'harm' = any(wall_reply_caught('kys'))
+  and 'harm' = any(wall_reply_caught('k y s'))
+  and 'harm' = any(wall_reply_caught('go kill yourself'))
+  and 'harm' = any(wall_reply_caught('just go die'))
+  and 'harm' = any(wall_reply_caught('you should die'))
+  and 'harm' = any(wall_reply_caught('you ruined my year. go die'))
+  and 'harm' = any(wall_reply_caught('i hope you kill yourself'))
+  and 'harm' = any(wall_reply_caught('nobody likes you, go kill yourself')));
+-- the first layer takes only what no joke could share (moderate.js): these
+-- are the lines a review found the first cut refusing, and PostgreSQL's own
+-- regular expressions, lookbehinds and all, must pass every one
+select rp_ok('0078: and never hyperbole, the writer about themselves, or care',
+  coalesce(array_length(wall_reply_caught('i could just die'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('let''s go die on this hill'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''m gonna go die in my bed now'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i will just go die in a corner lol'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('this is the hill i would die on and you should die on it too'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('you should cut yourself some slack'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('you just shoot yourself in the foot every time'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('dont go kill yourself over one exam lol'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('you don''t need to kill yourself over finals'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('hope you didn''t hurt yourself at the game'), 1), 0) = 0);
+select rp_ok('0078: nor slang, school, food or emphasis',
+  coalesce(array_length(wall_reply_caught('you''re gonna smash it'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('this song would bang'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('ok lets hit it'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''ll smash it'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('lets fuck some shit up this weekend'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''m going to fuck myself over again'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('this semester fucked me hard'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('fuck me, baby shark is stuck in my head'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('give me head pats'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('you''re a peach 🍑🍑'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i made 🍆 parm and 🍑 cobbler'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i love the spices'), 1), 0) = 0);
+select rp_ok('0078: but a joke, a swear and care are not',
+  coalesce(array_length(wall_reply_caught('fuck, this is so real'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('fuck you for leaving'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('lets fuck shit up this weekend'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''ll fuck you up at mario kart'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('my id fucking expired'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('i''d smash that exam for you'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('don''t kill yourself over finals'), 1), 0) = 0
+  and coalesce(array_length(wall_reply_caught('kiss them already'), 1), 0) = 0);
+select rp_ok('0078: the slurs in the plural here too',
+  'slur' = any(wall_reply_caught('you niggers')) and 'slur' = any(wall_reply_caught('faggots')));
+select rp_ok('0078: and the write refuses the proposition, storing nothing',
+  rp_write('rp-token-school-0000000', rp_letter(1), 'babe lets fuck')->>'error' = 'caught'
+  and not exists (select 1 from wall_replies where body = 'babe lets fuck'));
 select rp_ok('and the write refuses what it catches, storing nothing',
   rp_write('rp-token-school-0000000', rp_letter(1), 'Maria Delgado wrote this')->>'error' = 'caught'
   and not exists (select 1 from wall_replies where body like 'Maria%'));

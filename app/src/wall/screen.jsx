@@ -26,7 +26,7 @@
 // looks.js `quirks`, off the letter's id.
 
 import { isValidElement, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS, alpha } from './looks.js'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, hexRgb, rgbTile, onRgbTile, RGB_CELLS, PRESS, alpha, batOfLetter } from './looks.js'
 import { Caret } from './caret.jsx'
 import { stickerLabel } from './schools.js'
 import { langOf } from './type.js'
@@ -480,6 +480,17 @@ function Press({ id, colour, q }) {
 // `keys` is the three soft keys, `l`, `c` and `r`, each
 // `{ label, onClick, aria }` or nothing; `keepFocus` leaves the focus where
 // it was when the key is pressed with a pointer. The body is the children.
+// `l` or `r` can be a list instead, keys that stand together at that end of
+// the band, and only a letter asks for one (screens/Letter.jsx): `options`
+// alone on the left, where every other screen keeps it, and its heart and
+// its replies' bubble side by side on the right, each with its count (the
+// owner's ruling of 30 September, which turned round the one of the 29th).
+// The band says so (`is-grouped`), and every count in the group but the
+// last keeps the room of two figures whatever it holds (`.wl-sk-n`), so a
+// heart going from nine to ten does not move under the thumb that pressed
+// it; the last count, against the band's edge, takes only the room it
+// needs, so an empty one leaves no hole at the end. Every other screen
+// hands one key or none to each place and is drawn exactly as it was.
 //
 // `salutation` is the whole of that line when the writer set one of their
 // own ("to the girl on the 51B"), and with none it is "dear" and the name
@@ -495,8 +506,10 @@ function Press({ id, colour, q }) {
 //
 // `bat` is the battery's charge, 0 to 4, and `null` for a phone that draws
 // none. With `onBat` (and `live`) the battery is a key its writer presses to
-// set it, a bar at a time and round again, named by `batLabel` (a private
-// note's face, 0073). `mail` puts the envelope by the aerial, steady: the
+// set it, a bar at a time and round again, named by `batLabel`: the
+// composer's letter since 30 September (0076, screens/Write.jsx), whose
+// battery goes up with it, and no longer a private note's, which had it from
+// 0073 until then. `mail` puts the envelope by the aerial, steady: the
 // phone's own light for something having come in (a letter the person it
 // is to has answered, Replies.jsx).
 //
@@ -532,8 +545,9 @@ export function Screen({
     name = '', dear = false, date = '', counter = '', stamp = '', icon = '', handle = '', pos = '', bat: charge = 4, onBat = null, batLabel = '',
     mail = false, salutation = '', greet = null, tag = '',
   } = top
-  // a battery of `null` is a phone that draws none (the keepsake, whose two
-  // notes carry their own); anything else out of range is a full one
+  // a battery of `null` is a phone that draws none (the keepsake, until the
+  // pair's face has been said, Keepsake.jsx); anything else out of range is
+  // a full one
   const bat = charge === null ? null : Number.isInteger(charge) && charge >= 0 && charge <= 4 ? charge : 4
   const said = salutation || (dear && name ? `dear ${name}` : name)
   // the line has the row to itself where nothing stands on its right (no
@@ -551,24 +565,36 @@ export function Screen({
   // the light went to the status row (`mail`). A key that opens something
   // stays struck out of its band while that is open (`open`), as the phone
   // lit the tab it was on.
+  // `n` is a key in a group whose count keeps its room when it is empty
+  // (the list above)
+  const soft = (d, cls, n = false, k = undefined) => (
+    <button
+      key={k} type="button" id={live ? d.id : undefined}
+      className={`wl-sk${cls ? ` ${cls}` : ''}${d.on ? ' is-on' : ''}${d.open ? ' is-open' : ''}${d.cls ? ` ${d.cls}` : ''}`}
+      onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
+      onMouseDown={live && d.keepFocus ? (e) => e.preventDefault() : undefined}
+      aria-label={d.aria || undefined} aria-pressed={d.pressed}
+      aria-expanded={d.expanded} aria-controls={live ? d.controls : undefined}
+      tabIndex={live ? undefined : -1}
+    >
+      {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
+      {n && d.glyph ? <span className="wl-lit wl-sk-n">{d.label || ''}</span>
+        : d.label ? <span className="wl-lit">{d.label}</span> : null}
+    </button>
+  )
   const key = (k, cls) => {
     const d = keys[k]
+    if (Array.isArray(d)) {
+      const ds = d.filter((x) => x && (x.label || x.glyph))
+      // at the right end the last key is against the edge, and its count
+      // takes only its own room
+      const end = cls === 'is-r'
+      return <span className={`wl-sk-group ${cls}`}>{ds.map((x, i) => soft(x, '', !(end && i === ds.length - 1), i))}</span>
+    }
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
-    return (
-      <button
-        type="button" id={live ? d.id : undefined}
-        className={`wl-sk ${cls}${d.on ? ' is-on' : ''}${d.open ? ' is-open' : ''}${d.cls ? ` ${d.cls}` : ''}`}
-        onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
-        onMouseDown={live && d.keepFocus ? (e) => e.preventDefault() : undefined}
-        aria-label={d.aria || undefined} aria-pressed={d.pressed}
-        aria-expanded={d.expanded} aria-controls={live ? d.controls : undefined}
-        tabIndex={live ? undefined : -1}
-      >
-        {d.glyph ? <Pix name={d.glyph} h={6.8} className="wl-lit-g" /> : null}
-        {d.label ? <span className="wl-lit">{d.label}</span> : null}
-      </button>
-    )
+    return soft(d, cls)
   }
+  const grouped = Array.isArray(keys.l) || Array.isArray(keys.r)
   // What the stylesheet needs to know about what is on the glass, said on
   // the elements it styles: the screen's state on the scene round it (the
   // light it throws wakes and sleeps with it), and a menu on the body that
@@ -588,7 +614,7 @@ export function Screen({
           `.wl-scr-press`), and a print is uncovered here. Always drawn, so a
           screen turned from lit to print keeps the field in it */}
       <div
-        className={`wl-scr-press${s.paper && state ? ` is-${state}` : ''}`}
+        className={`wl-scr-press${s.paper && state && !(state === 'power' && s.kind === 'brat') ? ` is-${state}` : ''}`}
         style={press ? { filter: `url(#${fid})` } : undefined}
       >
         <div
@@ -642,7 +668,7 @@ export function Screen({
             </div>
           </div>
           <div className={`wl-scr-body${menu ? ' is-menu' : ''}`}>{children}</div>
-          <div className="wl-scr-bot">
+          <div className={`wl-scr-bot${grouped ? ' is-grouped' : ''}`}>
             {key('l', 'is-l')}
             {key('c', 'is-c')}
             {key('r', 'is-r')}
@@ -655,6 +681,10 @@ export function Screen({
           <span className="wl-scr-fx is-glass" aria-hidden="true" />
           <span className="wl-scr-fx is-glare" aria-hidden="true" />
           <span className="wl-scr-fx is-shine" aria-hidden="true" />
+          {/* the glass before its backlight has come up (`useWake`): black,
+              over everything on it, and gone once it is lit. A print is
+              not lit, and is uncovered instead (screen.css) */}
+          {state === 'power' && !s.paper ? <span className="wl-scr-veil" aria-hidden="true" /> : null}
         </div>
       </div>
     </div>
@@ -782,6 +812,41 @@ function RgbLayer({ url, late }) {
 // crossfades when the screen is lit in another colour (keyed by the colour
 // where it is drawn). It is the room's and not the screen's (screen.css
 // `.wl-room-light`), because a glow cut by a clip is a lit rectangle.
+// ── the screen, powering on ─────────────────────────────────────────────────
+// Where a card opens, its phone comes on the way a phone does when it is
+// picked up (the owner, 29 September: "make it feel like a phone turning
+// on, not just a sudden opening of a page ... subtle and smooth and still
+// quick"): the glass is black for a beat, then the backlight rises
+// smoothly, with no flicker, no dip and no blur, and the light the screen
+// throws follows it a beat behind, while the phone settles from a hair
+// under its size to its size, where it already stands. `state='power'` on
+// a Screen is that (screen.css `is-power`), and this is how long it lasts
+// and the hook that holds it for the first beat after a card is put on the
+// glass. It is drawn by the compositor alone: a black veil inside the
+// glass whose opacity falls, the halo's opacity rising, the glass's
+// `scale`, and nothing laid out or painted again while it runs. A print is
+// not lit, so it is uncovered quickly instead, and the square not at all.
+// The old wake (`waking`, `wl-wake`, a blurred flicker of nearly a second)
+// is the intro's and the door's still, and nothing else's.
+//
+// `useWake(reduce, ms, key)` is 'power' for `ms` after the component that
+// calls it is put on the page, and again whenever `key` changes to a new
+// value (the composer's card, put on the glass by a step of a sheet that is
+// already up); under reduced motion it is '' from the start, and the screen
+// is simply lit (DESIGN.md 6.4).
+export const POWER_MS = 380
+export function useWake(reduce = false, ms = POWER_MS, key = 'on') {
+  const [s, set] = useState(() => ({ key, on: !reduce }))
+  if (s.key !== key) set({ key, on: !reduce })
+  const on = s.on && s.key === key
+  useEffect(() => {
+    if (!on) return undefined
+    const t = setTimeout(() => set((x) => (x.key === key ? { key, on: false } : x)), ms + 60)
+    return () => clearTimeout(t)
+  }, [on, key, ms])
+  return on && !reduce ? 'power' : ''
+}
+
 export function RoomLight({ look, seed = '' }) {
   const v = skinVars(colourOf(look, seed))
   return <span className="wl-room-light" style={{ '--s-halo': v['--s-halo'] }} aria-hidden="true" />
@@ -1042,8 +1107,9 @@ export function ScreenNote({ glyph = '', title, children }) {
 const TILE_GLAZE = { lit: 0.14, neg: 0.1, brat: 0.2, print: 0.18, xerox: 0.26 }
 
 // A name on the wall: its newest letter's screen, in that letter's colour,
-// small. The aerial across the top, the battery how long since the last
-// letter, and an envelope blinks on a name that heard from
+// small. The aerial across the top, the battery its newest letter's (the one
+// its writer left it on, or for a letter from before, how long since it went
+// up), and an envelope blinks on a name that heard from
 // somebody today. The middle is the name's picture, in its own colours
 // under a little of the screen's light, or its monogram.
 export function Tile({ look, seed = '', mono = '', src = '', at = 0, className = '' }) {
@@ -1055,7 +1121,9 @@ export function Tile({ look, seed = '', mono = '', src = '', at = 0, className =
   const [shownFor, setShownFor] = useState('')
   const shown = !!src && shownFor === src
   const hrs = at ? (Date.now() - at) / 3600000 : 99
-  const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
+  // the newest letter's battery: its writer's where they set one (0076),
+  // and otherwise how long it has been up, empty with no letter to date it
+  const bat = batOfLetter({ look, at }, 0)
   const fresh = hrs < 24
   // a print's light is its colour's (`--t-spot`, looks.js), laid where this
   // phone's backlight is brightest, as it is on the letter

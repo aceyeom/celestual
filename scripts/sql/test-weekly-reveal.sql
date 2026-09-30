@@ -194,13 +194,19 @@ select wr_ok('it cannot be kept, only sent again',
   and celestual_renew('wr_e', 'wr_f', 'proof-wr_e')->>'error' = 'lapsed');
 select wr_ok('and it no longer holds a slot',
   (celestual_slots_for('wr_e', 'proof-wr_e')->>'standing')::int = 0);
--- two others take this week's pings. Until 0071 these were the free two
--- standing slots and the refusal was no_slots; now it is the week's free
--- ping and one bought, and the refusal is no_pings.
+-- others take this week's pings. Until 0071 these were the free two
+-- standing slots and the refusal was no_slots; then it was the week's free
+-- ping and one bought, and the refusal no_pings. Since 0075 the free ping
+-- the lapsed note spent came back at its night as this week's extra, so the
+-- week holds three: the free one, the extra and the one bought.
 insert into celestual_entitlements (handle, ping_credits) values ('wr_e', 1)
 on conflict (handle) do update set ping_credits = 1;
+select wr_ok('the night it lapsed at gave its free ping back, as this week''s extra',
+  (celestual_ping_allowance('wr_e', 'proof-wr_e')->'allowance'->>'extra')::int = 1
+  and (celestual_ping_allowance('wr_e', 'proof-wr_e')->'allowance'->>'free_left')::int = 2);
 select celestual_submit('wr_e', 'wr_g', null, 'proof-wr_e', null);
 select celestual_submit('wr_e', 'wr_h', null, 'proof-wr_e', null);
+select celestual_submit('wr_e', 'wr_i', null, 'proof-wr_e', null);
 select wr_ok('sending it again with this week''s pings spent is refused',
   celestual_submit('wr_e', 'wr_f', null, 'proof-wr_e', null)->>'error' = 'no_pings');
 select celestual_withdraw('wr_e', 'wr_h', 'proof-wr_e');

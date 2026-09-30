@@ -48,10 +48,13 @@
 //      September, and forty took the foot of the phone off the picture.
 //      And the lines across the notes' strips (since 29 September): their
 //      own, forty characters each, Korean and Japanese at forty, and `dear
-//      you`, both at one size and inside their strips beside the battery,
-//      cut only with an ellipsis; every battery from 0 to 4 its own glyph,
-//      whole pixels to a row and inside the strip; and with the notes left
-//      off, no note, no line and no battery laid out at all.
+//      you`, both at one size and inside their strips, cut only with an
+//      ellipsis; with the notes left off, no note and no line laid out at
+//      all. And the one battery on the band, the pair's (0077), since the
+//      notes' own went the same day: every charge from 0 to 4 its own glyph,
+//      whole pixels to a row, inside the band and clear of the night in the
+//      middle of it, and the layout the same whatever the charge and
+//      whatever the colour, since neither takes any room.
 //
 // It reads the stories as functions of the clock, in node, with no page and
 // no canvas: the bodies and the notes are arithmetic until they are drawn,
@@ -355,7 +358,7 @@ function typed(text) {
 
 // ── 7. the picture ──
 {
-  const { layoutOf, topOf, CROP_TOP, CROP_BOT, SIGN_GAP, SIGN_H, TITLE_ROOM, BAT_W, BAT_H, HEAD } = await import(wall('keeplayout.js'))
+  const { layoutOf, topOf, CROP_TOP, CROP_BOT, SIGN_GAP, SIGN_H, TITLE_ROOM, BAND, BAND_BAT_W, BAND_BAT_H, BAND_END, PW, SU } = await import(wall('keeplayout.js'))
   // a canvas's measure, for the face: every character 0.6 of the size wide
   // (Jersey 10's own run nearer half), a CJK one the whole size
   const measure = {
@@ -391,56 +394,63 @@ function typed(text) {
     ['a Japanese line of forty and a short one', [forty('きんようびにとしょかんのかいだんでまってる'), 'dear Ace']],
     ['nobody named', ['dear you', 'dear you']],
   ]
-  // and every battery a writer can leave a note on, each note's its own
-  const BATS = [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [0, 4], [4, 0]]
+  // and every charge and colour the pair's face can hold (0077), which the
+  // band carries and which take no room, so the layout is the same for each
+  const FACES = [[4, 'rose'], [0, 'night'], [2, 'ice'], [3, 'amber'], [1, 'lilac']]
   let worst = null
   let least = null
   for (const names of [['Jules', 'Ace'], null]) {
     for (const [what, notes] of NOTES) {
       for (const [said, titles] of TITLES) {
-        for (const bats of BATS) {
-          for (const on of [true, false]) {
-            const L = layoutOf(measure, { names, notes: on ? notes : null, titles: on ? titles : null, bats: on ? bats : null })
-            const top = topOf(L)
-            const bottom = top + L.ph + SIGN_GAP + SIGN_H
-            const where = `the picture, ${what}, ${said}, batteries ${bats.join(' and ')}${names ? '' : ', nobody named'}${on ? '' : ', the notes left off'}`
-            if (top < CROP_TOP || bottom > CROP_BOT) fail(`${where}: the phone and its signature run from y ${top} to ${bottom}, outside ${CROP_TOP} to ${CROP_BOT}`)
-            else if (L.mark < 5 * 75) fail(`${where}: the mark's panel is ${L.mark} tall, under five pixels to a cell`)
-            else if (on && !L.title) fail(`${where}: the notes have no lines across their strips`)
-            else if (!on && (L.title || L.notes)) fail(`${where}: the notes are off, and a note, a line or a battery is still laid out`)
-            else {
-              if (!worst || bottom > worst[1]) worst = [where, bottom]
-              if (on) {
-                // each line one size, the pair's, on its strip beside the
-                // battery, cut with an ellipsis only when it must be
-                const size = L.title.size
-                for (const t of L.title.lines) {
-                  measure.font = `400 ${size}px x`
-                  const w = measure.measureText(t).width
-                  if (w > TITLE_ROOM + 0.5) fail(`${where}: the line "${t}" is ${Math.round(w)} wide at ${size}, over the ${TITLE_ROOM} its strip has beside the battery`)
-                }
-                if (size < 26 || size > 46) fail(`${where}: the lines are set at ${size}`)
-                if (titles.some((t, i) => L.title.lines[i] !== t && !L.title.lines[i].endsWith('…'))) fail(`${where}: a line was changed without being cut`)
-                if (!least || size < least[1]) least = [where, size]
+        for (const on of [true, false]) {
+          const at = FACES.map(([bat, tint]) => layoutOf(measure, { names, notes: on ? notes : null, titles: on ? titles : null, bat, tint }))
+          const L = at[0]
+          const top = topOf(L)
+          const bottom = top + L.ph + SIGN_GAP + SIGN_H
+          const where = `the picture, ${what}, ${said}${names ? '' : ', nobody named'}${on ? '' : ', the notes left off'}`
+          if (top < CROP_TOP || bottom > CROP_BOT) fail(`${where}: the phone and its signature run from y ${top} to ${bottom}, outside ${CROP_TOP} to ${CROP_BOT}`)
+          else if (L.mark < 5 * 75) fail(`${where}: the mark's panel is ${L.mark} tall, under five pixels to a cell`)
+          else if (on && !L.title) fail(`${where}: the notes have no lines across their strips`)
+          else if (!on && (L.title || L.notes)) fail(`${where}: the notes are off, and a note or a line is still laid out`)
+          else if (at.some((x) => JSON.stringify(x) !== JSON.stringify(L))) fail(`${where}: the charge or the colour moved something on the picture`)
+          else {
+            if (!worst || bottom > worst[1]) worst = [where, bottom]
+            if (on) {
+              // each line one size, the pair's, on its strip, cut with an
+              // ellipsis only when it must be
+              const size = L.title.size
+              for (const t of L.title.lines) {
+                measure.font = `400 ${size}px x`
+                const w = measure.measureText(t).width
+                if (w > TITLE_ROOM + 0.5) fail(`${where}: the line "${t}" is ${Math.round(w)} wide at ${size}, over the ${TITLE_ROOM} its strip has`)
               }
+              if (size < 26 || size > 46) fail(`${where}: the lines are set at ${size}`)
+              if (titles.some((t, i) => L.title.lines[i] !== t && !L.title.lines[i].endsWith('…'))) fail(`${where}: a line was changed without being cut`)
+              if (!least || size < least[1]) least = [where, size]
             }
           }
         }
       }
     }
   }
-  // the battery is the glyph a note's screen draws (looks.js `bata0` to
-  // `bata4`), at the size the picture gives it, whole pixels to its rows,
-  // and it stands inside the strip
+  // The battery on the band is the glyph a phone's status row draws
+  // (looks.js `bata0` to `bata4`), at the size the picture gives it, whole
+  // pixels to its rows, inside the band, and clear of the night, which is
+  // set in the middle of the row at 11 units, `MM/DD/YY`, eight characters
+  // the measure takes at 0.6 of the size each
   const { PIX } = await import(wall('looks.js'))
+  const r1 = 2.6 * SU + (10.4 * SU) / 2
+  const night = 8 * 0.6 * 11 * SU
   for (let n = 0; n <= 4; n++) {
     const rows = PIX[`bata${n}`]
     if (!rows) fail(`the picture: there is no battery glyph for ${n}`)
-    else if (Math.abs((rows[0].length / rows.length) * BAT_H - BAT_W) > 0.01) fail(`the picture: the battery at ${n} is ${BAT_W} by ${BAT_H}, and its glyph is ${rows[0].length} by ${rows.length}`)
-    else if (BAT_H % rows.length || BAT_H > HEAD) fail(`the picture: the battery at ${n} is ${BAT_H} high, in a strip of ${HEAD}`)
+    else if (Math.abs((rows[0].length / rows.length) * BAND_BAT_H - BAND_BAT_W) > 0.01) fail(`the picture: the battery at ${n} is ${BAND_BAT_W} by ${BAND_BAT_H}, and its glyph is ${rows[0].length} by ${rows.length}`)
+    else if (BAND_BAT_H % rows.length) fail(`the picture: the battery at ${n} is ${BAND_BAT_H} high, not a whole number of pixels to each of its ${rows.length} rows`)
+    else if (Math.round(r1 - BAND_BAT_H / 2) < 0 || Math.round(r1 - BAND_BAT_H / 2) + BAND_BAT_H > BAND) fail(`the picture: the battery at ${n} runs off the band`)
+    else if (PW - BAND_END - BAND_BAT_W < PW / 2 + night / 2) fail(`the picture: the battery at ${n} stands over the night`)
   }
-  if (worst) pass(`the picture: every shape of notes, of their lines and of their batteries inside the crop, the lowest ${worst[0]} at y ${worst[1]} of ${CROP_BOT}`)
-  if (least) pass(`the picture: the two lines on their strips at one size and inside them beside the battery, the least ${least[1]} (${least[0]}), and every battery from 0 to 4 its glyph`)
+  if (worst) pass(`the picture: every shape of notes and of their lines inside the crop, at every charge and colour alike, the lowest ${worst[0]} at y ${worst[1]} of ${CROP_BOT}`)
+  if (least) pass(`the picture: the two lines on their strips at one size and inside them, the least ${least[1]} (${least[0]}), and the band's battery at every charge from 0 to 4 its glyph, on the band and clear of the night`)
 }
 
 process.exit(bad ? 1 : 0)

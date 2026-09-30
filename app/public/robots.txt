@@ -1,0 +1,14 @@
+# celestual.us. The front door, how it works and the legal pages are for
+# anybody to find. A letter names a real person, so letters, accounts and the
+# desk are never indexed (vercel.json also sends X-Robots-Tag on them).
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /letter/
+Disallow: /you
+Disallow: /r
+Disallow: /signin
+Disallow: /copy
+Disallow: /reveal/
+
+Sitemap: https://celestual.us/sitemap.xml

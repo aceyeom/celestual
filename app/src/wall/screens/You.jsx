@@ -80,15 +80,27 @@
 // land on what they are. A note that was not this time stays a week, to be
 // sent again; one that is still running can be kept for the week after, so
 // a person who will not look on Saturday says so on Wednesday.
+//
+// A night that was not mutual is told, not just shown (the owner, 29
+// September, and made short and plain on the 30th): a notice stands in the
+// frame once a reveal (Night.jsx `NightCard`) saying `not this time.`, who
+// did not send one, that they will never know you did, and what came back:
+// every ping a night that was not mutual held comes back (migration 0075), a
+// free one as one extra this week, a bought one on hand. Each note that was
+// not this time opens on the same few lines of its own (`NoteScreen`), and
+// its row says what came back of it.
 
 // ── and only ever their own ─────────────────────────────────────────────────
 // Nothing here is about anybody else. A standing ping says who and how long
 // it has left, and nothing about whether they have seen it, whether they are
-// on celestual, or whether anybody else has placed one on them, because none
-// of that is knowable without telling somebody something they did not agree
-// to being told. And nothing here is ever on the wall: a ping is sealed until
-// both sides exist, and showing one anywhere a second person can look would
-// be the double blind broken by the product itself.
+// reachable here, or whether anybody else has placed one on them, because
+// none of that is knowable without telling somebody something they did not
+// agree to being told. A note that was not this time says `they didn't send
+// you one.`, which is true whichever it was and claims neither, since the
+// server answers it the same either way (0075). And nothing here is ever on
+// the wall: a ping is sealed until both sides exist, and showing one anywhere
+// a second person can look would be the double blind broken by the product
+// itself.
 //
 // ── the three ways the list can not be there ────────────────────────────────
 // "nothing out yet." used to be drawn for three different facts: no @ proved
@@ -125,12 +137,12 @@
 // you?").
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile,
+  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart, DoorFoot, Switch, useProfile, prefersReducedMotion,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait, PixIcon } from '../screen.jsx'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, Wait, PixIcon, useWake, POWER_MS } from '../screen.jsx'
 import { Provider } from '../art.jsx'
 import {
-  labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY,
+  labelFor, allowance, loadQuota, mine, loadMine, sinceline, atHandle, normHandle, nameKey, cleanName, DAY, unwithdraw,
 } from '../data.js'
 import { stampOf } from '../looks.js'
 import { getState, patch } from '../store.js'
@@ -139,8 +151,9 @@ import { loadPending } from '../handoff.js'
 import {
   myHandle, myPings, heldPings, forgetPings, renew, release, sendAgain, stateWords,
   nextReveal, lastReveal, revealStamp, countdown, endsWords, endedWords, keptAhead, revealWaiting, sawReveal,
-  heldAllowance, waitForPings, forgetWeek, liveOf, mutualsOf,
+  heldAllowance, waitForPings, forgetWeek, liveOf, mutualsOf, freeWords, nightOf, nightWaiting, sawNight,
 } from '../pings.js'
+import { NightCard, NightReport, NIGHT, backMark, shareCelestual, SHARED_SAYS } from '../Night.jsx'
 import { takeReturn } from '../revealfrom.js'
 import { Aerial } from '../aerial.jsx'
 import { MutualSlot, EditKey, movingOf } from '../Slot.jsx'
@@ -297,11 +310,11 @@ function RevealStrip({ fresh, told, onInfo }) {
   const words = c.d ? `${c.d} ${c.d === 1 ? 'day' : 'days'} and ${c.h} ${c.h === 1 ? 'hour' : 'hours'}` : `${c.h} hours and ${c.m} minutes`
   const said = told.mutual ? (told.mutual === 1 ? 'it’s mutual' : `${told.mutual} are mutual`) : 'not this time'
   return (
-    <div className={`wl-vault-bar${tell ? ' is-told' : ''}${soon && !tell ? ' is-soon' : ''}`}>
+    <div className={`wl-vault-bar${tell ? ' is-told' : ''}${tell && !told.mutual ? ' is-none' : ''}${soon && !tell ? ' is-soon' : ''}`}>
       <span className="wl-vault-title" id="wl-vault-h" tabIndex={-1}>
         <Seal />
         {tell ? (
-          <span className="wl-vault-now">the reveal is in · <b>{said}</b></span>
+          <span className="wl-vault-now"><span className="wl-sr">the reveal is in: </span><b>{said}</b></span>
         ) : (
           <span className="wl-vault-now">
             <span aria-hidden="true">reveals in <b>{left}</b></span>
@@ -319,11 +332,13 @@ function RevealStrip({ fresh, told, onInfo }) {
 
 // ── the week's pings ────────────────────────────────────────────────────────
 // At the frame's foot, under the notes they are for, where the slots stood:
-// one cell for the week's free ping, lit while it is still to spend, and one
-// for each ping bought, lit, since a bought one waits until it is used
-// (docs/PINGS-BY-THE-WEEK.md). The words say the same for a person who does
-// not read cells, and `add more pings` is the way to the paywall when it is
-// wanted rather than when a note meets it.
+// one cell for the week's free ping, lit while it is still to spend, one
+// beside it in a week a night that was not mutual gave its free ping back
+// (the extra, 0075), and one for each ping bought, lit, since a bought one
+// waits until it is used (docs/PINGS-BY-THE-WEEK.md). The words say the same
+// for a person who does not read cells (pings.js `freeWords`: `free ping and
+// 1 extra this week`), and `add more pings` is the way to the paywall when
+// it is wanted rather than when a note meets it.
 //
 // It is there only once the week has none left to spend (pings.js
 // `shapeAllowance`, `left`), the same test on which the composer raises the
@@ -334,17 +349,19 @@ function RevealStrip({ fresh, told, onInfo }) {
 const SHOW_BOUGHT = 9
 function Week({ a, onMore }) {
   const bought = a ? a.credits : 0
-  const free = a ? (a.freeLeft ? 'free ping this week' : 'free ping used this week') : 'one free ping every week'
+  // the free one, and the extra beside it; lit while still to spend
+  const frees = 1 + (a && a.extra ? 1 : 0)
+  const lit = a ? Math.min(a.freeLeft, frees) : 1
   const spent = !!a && a.left <= 0
   return (
     <div className="wl-vault-week">
       <span className="wl-vault-pings">
         <span className="wl-slots-cells" aria-hidden="true">
-          <i className={!a || a.freeLeft ? 'is-lit' : ''} />
+          {Array.from({ length: frees }, (_, i) => <i key={`f${i}`} className={i < lit ? 'is-lit' : ''} />)}
           {Array.from({ length: Math.min(bought, SHOW_BOUGHT) }, (_, i) => <i key={i} className="is-lit is-bought" />)}
         </span>
         <span className="wl-vault-pings-say">
-          <span>{free}</span>
+          <span>{freeWords(a)}</span>
           {bought ? <span className="is-dim">{bought === 1 ? '1 bought, waiting' : `${bought} bought, waiting`}</span> : null}
         </span>
       </span>
@@ -371,16 +388,36 @@ const SHOWN = 4
 // in the notice at the foot of the wall, and then it is gone from both
 // (store.js `noticed`): the owner asked for it, and a list that carries a
 // takedown for thirty days is a list that keeps saying so.
+//
+// A letter its writer took back themselves (`down_by` 'writer', 0074, the
+// owner's ruling of 29 September) is not "taken down", which is somebody
+// else's hand: it says `you took it back`, greyed as a letter off the wall
+// is, and goes from the list the same way once it has been seen. A letter
+// that is up opens on its own glass, where `take it back` is the second
+// row of its options, so the list carries no key of its own for it.
+//
+// But one taken back is not on any glass any more, and the server keeps
+// the way back open for a day after (0074 `undo_until`, api.js `mine`).
+// The sheet it was taken back on and the wall's card after a post both
+// offer `undo`, and both are gone the moment they are left; this list is
+// the one place that outlasts them, and Letter.jsx and Wall.jsx both say
+// so. So while that day runs the row carries `undo` beside it, a sibling
+// of the row as a note's `edit` is (Slot.jsx `EditKey`), and it stays on
+// the list for the whole of the day however often it has been seen: a
+// row that went after one look would take the only way back with it.
+// Once the day is over it is a row that has been seen like any other.
 const isDown = (l) => !!l.downBy && l.downBy !== 'held'
+const undoOpen = (l) => l.downBy === 'writer' && (l.undoUntil || 0) > Date.now()
 function wroteRows() {
   const own = mine()
   const read = getState().noticed || {}
   return own && own.length
-    ? own.filter((l) => !(isDown(l) && read[l.id])).map((l) => ({
+    ? own.filter((l) => undoOpen(l) || !(isDown(l) && read[l.id])).map((l) => ({
       id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0,
       held: l.downBy === 'held', down: !!l.downBy && l.downBy !== 'held', live: !l.downBy,
+      took: l.downBy === 'writer', undo: undoOpen(l),
     }))
-    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true }))
+    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, held: false, down: false, live: true, took: false, undo: false }))
 }
 
 // A letter held to be read before it goes up (wall_mine's `down_by: 'held'`,
@@ -400,34 +437,67 @@ function Wrote({ go, rows }) {
     if (!shownDown.current.size) return
     patch({ noticed: { ...(getState().noticed || {}), ...Object.fromEntries([...shownDown.current].map((id) => [id, true])) } })
   }, [])
+  // what an `undo` pressed on this list is doing, by the letter's id: out
+  // (`busy`), refused (`said`, in the row's own small words), or refused
+  // for good (`done`, the day is over), when the key goes. A letter that
+  // came back is read again by `unwithdraw` (data.js), and the list is
+  // drawn from that read, as a row that is up or being read
+  const [back, setBack] = useState({})
   if (!rows.length) return <p className="wl-profile-none">no letters yet</p>
   const open = (r) => {
     if (!r.live) return
     go('letter', r.id || r.to)
   }
+  const undo = async (r) => {
+    if (back[r.id]?.busy) return
+    setBack((m) => ({ ...m, [r.id]: { busy: true } }))
+    const out = await unwithdraw(r.id, r.to)
+    if (out?.ok) { setBack((m) => { const n = { ...m }; delete n[r.id]; return n }); return }
+    const over = out?.error === 'expired' || out?.error === 'gone'
+    setBack((m) => ({ ...m, [r.id]: { said: over ? 'the day to put it back is over' : 'it did not come back. try again', done: over } }))
+  }
+  const said = (r) => {
+    const b = r.undo ? back[r.id] : null
+    if (b?.busy) return 'putting it back'
+    if (b?.said) return b.said
+    return r.held ? 'being read' : r.took ? 'you took it back' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'
+  }
+  const line = (r, i) => (
+    <button
+      type="button" key={r.undo ? undefined : r.id || `${r.to}-${i}`}
+      className={`wl-wrote-row${r.down ? ' is-down' : ''}`}
+      onClick={() => open(r)} disabled={!r.live}
+      aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.took ? ', you took it back' : r.down ? ', taken down' : ''}`}
+    >
+      <Face handle={r.to} size={30} />
+      <span className="wl-wrote-who">
+        <span className="wl-wrote-name">{labelFor(r.to)}</span>
+        <span className="wl-wrote-meta" aria-live={r.undo ? 'polite' : undefined}>{said(r)}</span>
+      </span>
+      {r.hearts !== null && r.live ? (
+        <span className="wl-wrote-n" aria-hidden="true">
+          <Heart size={13} on={r.hearts > 0} />
+          <span>{r.hearts || ''}</span>
+        </span>
+      ) : null}
+    </button>
+  )
   return (
     <>
       <div className={`wl-wrote${cut ? ' is-cut' : ''}`}>
-        {shown.map((r, i) => (
-          <button
-            type="button" key={r.id || `${r.to}-${i}`}
-            className={`wl-wrote-row${r.down ? ' is-down' : ''}`}
-            onClick={() => open(r)} disabled={!r.live}
-            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.held ? ', being read' : r.down ? ', taken down' : ''}`}
-          >
-            <Face handle={r.to} size={30} />
-            <span className="wl-wrote-who">
-              <span className="wl-wrote-name">{labelFor(r.to)}</span>
-              <span className="wl-wrote-meta">{r.held ? 'being read' : r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
-            </span>
-            {r.hearts !== null && r.live ? (
-              <span className="wl-wrote-n" aria-hidden="true">
-                <Heart size={13} on={r.hearts > 0} />
-                <span>{r.hearts || ''}</span>
-              </span>
-            ) : null}
-          </button>
-        ))}
+        {shown.map((r, i) => (r.undo ? (
+          <div key={r.id} className="wl-wrote-line">
+            {line(r, i)}
+            {back[r.id]?.done || back[r.id]?.busy ? null : (
+              <button
+                type="button" className="wl-vault-edit wl-wrote-undo" onClick={() => undo(r)}
+                aria-label={`undo: put your letter to ${labelFor(r.to)} back where it was`}
+              >
+                <span aria-hidden="true">undo</span>
+              </button>
+            )}
+          </div>
+        ) : line(r, i)))}
       </div>
       {cut ? (
         <button type="button" className="wl-quiet wl-wrote-more" onClick={() => setMore(true)}>
@@ -449,15 +519,29 @@ function Wrote({ go, rows }) {
 // menu's rows:
 //
 //   running      keep it for next week, change the words, let it go
-//   not this     send it again, send it with new words, let it go
-//   time
+//   not this     send it again, send it with new words, share celestual,
+//   time         read your note, let it go
 //
-// Keeping it is free and undoes nothing; it runs a week further, once ahead,
-// and a mutual is still told on the night it is found. Changing the words
-// opens the note's sheet on them (screens/Ping.jsx `editNote`), and they
-// change until the reveal. Sending it again takes a slot, like any note going
-// out, with the words it had or new ones. Letting it go frees the slot and
-// asks once, on the screen, in the words the product always asks it in.
+// Keeping it spends next week's ping (0071) and undoes nothing; it runs a
+// week further, once ahead, and a mutual is still told on the night it is
+// found, the kept ping coming back. Changing the words opens the note's
+// sheet on them (screens/Ping.jsx `editNote`), and they change until the
+// reveal. Sending it again spends a ping, like any note going out, with the
+// words it had or new ones. Letting it go asks once, on the screen, in the
+// words the product always asks it in, and gives back what the note still
+// holds for a night to come.
+//
+// ── and one that was not this time ──────────────────────────────────────────
+// It opens on what its night said (Night.jsx `NightReport`, the owner's
+// request of 29 September, made short and plain on the 30th): `not this
+// time.`, that they didn't send you one and will never know you did, and
+// what came back of the ping it spent (0075), the note's own line across
+// the top and the night's date by the battery. The
+// phone is in the night's colour, lit, so it reads; `read your note` on its
+// menu turns it to the words, dimmed as a phone dims a message that is done,
+// with `back` to the report. The same screen answers /reveal/<handle> for a
+// note that was not this time (screens/Reveal.jsx), which is why it is
+// exported, as `NoteScreen`.
 //
 // The screen can be up across a reveal, and is read again at its moment as
 // the card is (`useNight`): a note that was not this time turns into one on
@@ -476,15 +560,22 @@ const AGAIN_SAYS = {
 // paywall, the note waiting behind it (pings.js `waitForPings`)
 const NO_PINGS = new Set(['no_pings', 'no_slots', 'cap'])
 
-function PingScreen({ p, me, go, onBack, onChange }) {
-  // line · menu · ask · kept · sent
-  const [mode, setMode] = useState('line')
+export function NoteScreen({ p, me, go, onBack, onChange }) {
+  // face · menu · ask · kept · sent · shared, where the face is the note's
+  // words (`line`) or, for one that was not this time, its night (`told`)
+  const [mode, setMode] = useState('face')
+  const [face, setFace] = useState(p.state === 'lapsed' ? 'told' : 'line')
   const [at, setAt] = useState(0)
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')
+  const [shared, setShared] = useState('')
   const [expires, setExpires] = useState(p.expires)
   const [gone, setGone] = useState(p.state === 'lapsed')
-  useEffect(() => { if (p.state === 'lapsed') setGone(true) }, [p.state])
+  // a note opened out of the list powers on like the letter and the
+  // composer do (screen.jsx `useWake`), and under reduced motion lands lit
+  const power = useWake(prefersReducedMotion(), POWER_MS)
+  // the night came while the screen was up: it turns to what the night said
+  useEffect(() => { if (p.state === 'lapsed') { setGone(true); setFace('told') } }, [p.state])
   useNight(onChange)
   const prof = useProfile(p.to)
   const first = prof && prof.name ? String(prof.name).trim().split(/\s+/)[0] : ''
@@ -494,11 +585,11 @@ function PingScreen({ p, me, go, onBack, onChange }) {
     setBusy(true)
     const out = await renew({ me, them: p.to })
     setBusy(false)
-    setMode('line')
+    setMode('face')
     if (!out.ok) {
       // its reveal came while the screen was up: not this time, or mutual
       // (or let go elsewhere), which the list read again says
-      if (out.error === 'lapsed') { setGone(true); onChange(); return }
+      if (out.error === 'lapsed') { setGone(true); setFace('told'); onChange(); return }
       if (out.error === 'none') { onChange(); onBack(); return }
       // next week's ping is spent, and none are bought: the paywall
       if (NO_PINGS.has(out.error)) { waitForPings({ kind: 'keep', to: p.to }); go('pings'); return }
@@ -515,9 +606,10 @@ function PingScreen({ p, me, go, onBack, onChange }) {
     const out = await sendAgain({ me, them: p.to })
     setBusy(false)
     if (!out.ok && NO_PINGS.has(out.error)) { waitForPings({ kind: 'again', to: p.to }); go('pings'); return }
-    if (!out.ok) { setSaid(AGAIN_SAYS[out.error] || 'it did not go through. try again.'); setMode('line'); return }
+    if (!out.ok) { setSaid(AGAIN_SAYS[out.error] || 'it did not go through. try again.'); setMode('face'); return }
     setExpires(Date.parse(out.expires_at || 0) || nextReveal())
     setGone(false)
+    setFace('line')
     setMode('sent')
     onChange()
   }
@@ -527,18 +619,36 @@ function PingScreen({ p, me, go, onBack, onChange }) {
     setBusy(false)
     // one that went mutual as it was let go is not let go (0069): the card
     // tells it
-    if (!out.ok && out.error !== 'mutual') { setSaid('it did not go through. try again.'); setMode('line'); return }
+    if (!out.ok && out.error !== 'mutual') { setSaid('it did not go through. try again.'); setMode('face'); return }
     onChange()
     onBack()
   }
+  // Celestual, passed on: the link to how it works, nobody named (Night.jsx).
+  // Asked for inside the press, so the phone's share sheet can open; what it
+  // says after, if anything, stands on the glass until `ok`
+  const share = () => {
+    setMode('face')
+    shareCelestual().then((r) => {
+      if (!SHARED_SAYS[r]) return
+      setShared(SHARED_SAYS[r])
+      setMode('shared')
+    })
+  }
 
-  const items = [
-    ...(gone ? [{ t: 'send it again', run: again }] : ahead ? [] : [{ t: 'keep it for next week', run: keep }]),
-    { t: gone ? 'send it with new words' : 'change the words', run: () => editNote(go, p.to, p.line, p) },
+  const items = gone ? [
+    { t: 'send it again', run: again },
+    { t: 'send it with new words', run: () => editNote(go, p.to, p.line, p) },
+    { t: 'share celestual', run: share },
+    ...(face === 'told' ? [{ t: 'read your note', run: () => { setFace('line'); setMode('face') } }] : []),
+    { t: 'let it go', run: () => setMode('ask') },
+  ] : [
+    ...(ahead ? [] : [{ t: 'keep it for next week', run: keep }]),
+    { t: 'change the words', run: () => editNote(go, p.to, p.line, p) },
     { t: 'let it go', run: () => setMode('ask') },
   ]
   const sel = Math.min(at, items.length - 1)
   const pick = (j) => { const it = items[j]; if (it) { setSaid(''); it.run() } }
+  const toFace = () => setMode('face')
 
   // the day it was placed by the battery, as a letter that is up carries
   // its own, and the same row under the menu so nothing moves when it opens.
@@ -547,8 +657,13 @@ function PingScreen({ p, me, go, onBack, onChange }) {
   // has none, runs down with its week as it always did. And the line across
   // the top is the note's own where its writer set one, whole, with the
   // handle giving the row up to it as on the sheet that set it
-  // (screens/Ping.jsx); the menu keeps its own name, `options`
-  const dated = { stamp: stampOf(p.at), bat: Number.isInteger(p.bat) ? p.bat : gone ? 0 : batOf(expires) }
+  // (screens/Ping.jsx); the menu keeps its own name, `options`. On its
+  // night's report the day is the night's, since that is what it tells
+  const told = gone && face === 'told'
+  const dated = {
+    stamp: told ? revealStamp(expires) : stampOf(p.at),
+    bat: Number.isInteger(p.bat) ? p.bat : gone ? 0 : batOf(expires),
+  }
   let top = {
     ...dated, icon: 'pen',
     ...(p.greet ? { salutation: p.greet } : { name: first || atHandle(p.to), handle: first ? atHandle(p.to) : '', dear: true }),
@@ -560,27 +675,40 @@ function PingScreen({ p, me, go, onBack, onChange }) {
     body = (
       <ScreenMenu
         items={items.map((x) => x.t)} at={sel} onAt={setAt} onPick={pick} label="options"
-        onBack={() => setMode('line')}
+        onBack={toFace}
       />
     )
     keys = {
       l: { label: 'select', onClick: () => pick(sel), aria: `select ${items[sel]?.t || ''}` },
-      r: { label: 'back', onClick: () => setMode('line'), aria: 'back to the note' },
+      r: { label: 'back', onClick: toFace, aria: 'back to the note' },
     }
   } else if (mode === 'ask') {
-    // one that was not this time spent its ping on that night, and only a
-    // running one has a ping to give back (the note's settings ask the same)
+    // one that was not this time gave back what it spent at its night
+    // (0075), so only a running one has a ping still to give back (the
+    // note's settings ask the same)
     body = <ScreenNote title="let it go?">{gone ? '' : 'this gives its ping back. '}they never find out you sent it.</ScreenNote>
     keys = {
       l: { label: 'let it go', onClick: drop, disabled: busy, aria: 'let it go' },
-      r: { label: 'keep it', onClick: () => setMode('line'), aria: 'keep it' },
+      r: { label: 'keep it', onClick: toFace, aria: 'keep it' },
     }
   } else if (mode === 'kept') {
     body = <ScreenNote glyph="check" title="kept for next week">it runs to {endsWords(expires)}, on next week&rsquo;s ping. if it&rsquo;s mutual sooner, you find out sooner, and that ping comes back.</ScreenNote>
-    keys = { l: { label: 'ok', onClick: () => setMode('line'), aria: 'back to the note' } }
+    keys = { l: { label: 'ok', onClick: toFace, aria: 'back to the note' } }
   } else if (mode === 'sent') {
     body = <ScreenNote glyph="check" title="sent again">it runs to {endsWords(expires)}.</ScreenNote>
-    keys = { l: { label: 'ok', onClick: () => setMode('line'), aria: 'back to the note' } }
+    keys = { l: { label: 'ok', onClick: toFace, aria: 'back to the note' } }
+  } else if (mode === 'shared') {
+    body = <ScreenNote glyph="link" title={shared} />
+    keys = { l: { label: 'ok', onClick: toFace, aria: 'back to the note' } }
+  } else if (told) {
+    body = <NightReport p={p} />
+    keys = {
+      l: {
+        label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy,
+        aria: `options: ${items.map((x) => x.t).join(', ')}`,
+      },
+      r: { label: 'back', onClick: onBack, aria: 'back to your private notes' },
+    }
   } else {
     body = p.line
       ? <ScreenText text={p.line} />
@@ -590,13 +718,19 @@ function PingScreen({ p, me, go, onBack, onChange }) {
         label: 'options', onClick: () => { setAt(0); setMode('menu') }, disabled: busy,
         aria: `options: ${items.map((x) => x.t).join(', ')}`,
       },
-      r: { label: 'back', onClick: onBack, aria: 'back to your private notes' },
+      // a note that was not this time goes back to what its night said
+      r: gone
+        ? { label: 'back', onClick: () => setFace('told'), aria: 'back to what the night said' }
+        : { label: 'back', onClick: onBack, aria: 'back to your private notes' },
     }
   }
 
+  // a note that was not this time is on the night's own phone, lit for its
+  // report and dimmed for its words, as a phone dims a message that is done
+  const dim = gone && face === 'line' && mode === 'face'
   return (
     <div className="wl-you-ping">
-      <Screen look={null} seed={`ping:${p.to}`} top={top} keys={keys} live nameId="wl-you-h" state={gone ? 'dim' : ''}>
+      <Screen look={gone ? NIGHT : null} seed={`ping:${p.to}`} top={top} keys={keys} live nameId="wl-you-h" state={dim ? 'dim' : power}>
         {body}
       </Screen>
       <p className="wl-you-floor" aria-live="polite">
@@ -786,6 +920,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // on another device, or a reveal that came while the sheet was up
   const [fresh, setFresh] = useState(() => revealWaiting())
   const [tab, setTab] = useState(() => (fresh ? 'notes' : readTab()))
+  // the night's own screen, for notes that were not mutual on it (Night.jsx):
+  // owed once a reveal on this device, and up for the rest of the visit it
+  // was first drawn on, unless it is put away (`ok`)
+  const [nightOn, setNightOn] = useState(() => nightWaiting())
   // the rows land once a visit: back from a note, or from the letters, they
   // are simply what they are
   const [landed, setLanded] = useState(false)
@@ -818,6 +956,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
       if (!on) return
       setList({ loading: false, pings: out.pings, allowance: out.allowance || null, error: out.ok ? null : out.error })
       if (out.ok && revealWaiting()) setFresh(true)
+      if (out.ok && nightWaiting()) setNightOn(true)
     })
     return () => { on = false }
   }, [rev, handle])
@@ -831,6 +970,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // screen up across the night has told one note, not the night
   const read = !list.loading && !list.error && tab === 'notes' && !!scroller
   useEffect(() => { if (fresh && read) sawReveal() }, [fresh, read])
+  // and the night's screen is told once it is drawn over the notes it tells
+  const night = nightOf(list.pings)
+  const showNight = read && !view && nightOn && night.notes.length > 0
+  useEffect(() => { if (showNight) sawNight() }, [showNight])
   const landing = fresh && !landed
   const seen = useSeen(landing && tab === 'notes', scroller, list.pings)
 
@@ -974,7 +1117,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
       <Sheet onClose={up} labelledBy="wl-you-h" className="is-you">
         <div className="wl-sheet-in wl-you is-screen">
           <SheetHead onClose={up} label={upLabel} />
-          <PingScreen
+          <NoteScreen
             key={opened.to} p={opened} me={handle} go={go}
             onBack={() => setView(null)}
             onChange={() => { forgetPings(); setRev((n) => n + 1) }}
@@ -997,12 +1140,14 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   const lapsed = list.pings.filter((p) => p.state === 'lapsed')
   const settled = !list.loading && !list.error
   // what the last reveal said, for the screen over the frame to tell: the
-  // mutuals told that night and the notes that ended on it
+  // mutuals told that night and the notes that were not mutual on it, the
+  // ones that ended there and the ones that ran on through it holding its
+  // ping (pings.js `nightOf`)
   const last = lastReveal()
   const near = (t) => NEAR_MS >= Math.abs(t - last)
   const told = {
     mutual: mutuals.filter((p) => near(p.revealedAt)).length,
-    missed: lapsed.filter((p) => near(p.expires)).length,
+    missed: night.notes.length,
   }
   told.total = told.mutual + told.missed
   const d = getState().draft
@@ -1020,6 +1165,17 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // leaving the notes, once they have landed
   const leave = () => { if (fresh && tab === 'notes') setLanded(true) }
   const pick = (t) => { if (t !== tab) leave(); setTab(t); keepTab(t) }
+  // the night's notice's one act on a night of one note (Night.jsx
+  // `NightCard`), the same as that note's own menu takes: sent again, or the
+  // paywall where no ping is left; the list read again after
+  const reread = () => { forgetPings(); setRev((n) => n + 1) }
+  const nightAgain = async (p) => {
+    const out = await sendAgain({ me: handle, them: p.to })
+    if (!out.ok && NO_PINGS.has(out.error)) { waitForPings({ kind: 'again', to: p.to }); go('pings'); return null }
+    if (!out.ok) return { said: AGAIN_SAYS[out.error] || 'it did not go through. try again.' }
+    reread()
+    return { ends: Date.parse(out.expires_at || 0) || nextReveal() }
+  }
   // the arrow keys move between the two tabs, as a tab list's do
   const keys = (e) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
@@ -1048,7 +1204,18 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // comes into sight (`useSeen`). A note's row is its press and its `edit`,
   // two keys side by side, and the key's name starts with the word on it, so
   // a voice asking for `edit` finds every one, then says what it is for in
-  // the words the note's own menu uses.
+  // the words the note's own menu uses. A row that was not this time says,
+  // after it, what came back of its ping (Night.jsx `backMark`: `+1 free
+  // ping`, `ping back`), the note's own share of what the night's notice
+  // says in all.
+  //
+  // And after a reveal that had notes in it that were not mutual, the
+  // night's notice (Night.jsx `NightCard`) stands at the head of what was
+  // not, under the mutuals, so a night with a mutual in it tells that first:
+  // once a reveal on this device, with the acts on its keys (`send again`
+  // for a night of one note, and `share celestual`). After an act its `ok`
+  // puts it away for the visit, and the focus goes back to the frame's
+  // title.
   const row = (p, cls, onClick, aria) => (
     <div
       key={p.key} data-key={p.key}
@@ -1061,7 +1228,9 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
           <span className="wl-wrote-name">{atHandle(p.to)}</span>
           <span className="wl-wrote-meta">
             {landing ? <span className="wl-vault-seek" aria-hidden="true">searching…</span> : null}
-            <span className="wl-vault-said">{stateWords(p)}</span>
+            <span className="wl-vault-said">
+              {stateWords(p)}{p.state === 'lapsed' && backMark(p) ? ` · ${backMark(p)}` : ''}
+            </span>
           </span>
         </span>
         <Aerial state={aerialOf(p)} land={landing} />
@@ -1101,6 +1270,16 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               ))}
             </div>
           ) : null}
+          {showNight ? (
+            <NightCard
+              night={night} endsOf={endsWords}
+              onAgain={nightAgain}
+              onOk={() => {
+                setNightOn(false)
+                document.getElementById('wl-vault-h')?.focus({ preventScroll: true })
+              }}
+            />
+          ) : null}
           {standing.length || waiting ? (
             <div className="wl-vault-list">
               {standing.map((p) => row(p, 'is-standing', () => { leave(); setView(p.key) },
@@ -1122,7 +1301,7 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
             <div className="wl-vault-past">
               <span className="wl-vault-past-h">{endedWords(Math.max(...lapsed.map((p) => p.expires)))}</span>
               {lapsed.map((p) => row(p, 'is-lapsed', () => { leave(); setView(p.key) },
-                `your private note to ${atHandle(p.to)}, not this time. open it to send it again`))}
+                `your private note to ${atHandle(p.to)}, not this time${backMark(p) ? `, ${backMark(p)}` : ''}. open it for what came back, or to send it again`))}
             </div>
           ) : null}
         </div>

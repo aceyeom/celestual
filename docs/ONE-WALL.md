@@ -66,8 +66,9 @@ The other side reads it whole on the mutual (`match_card.words`, and
 carries its face too: the line across its top (`greet`, forty characters, the
 composer's greeting where its writer changed it, left off by the server when
 the list catches it and refused at the keyboard) and the battery its writer
-left it on (`bat`, 0 to 4, set on the ping's own screen; the composer sends a
-running note's own, or a full one). Both come back as `card.greet` and
+left it on (`bat`, 0 to 4, set on the ping's own screen from 29 September
+until 0076 moved the battery to the wall letters on the 30th: a new note
+carries none, and a note from that day is sent again with its own). Both come back as `card.greet` and
 `card.bat`, and the other side's as `their_card.greet` and `their_card.bat`.
 
 **The salutation.** The `dear {name}` line is the writer's to edit: up to 40
@@ -197,8 +198,11 @@ screen, because the screen is the letter.
   replies' own, that a reply names nobody else (no @, no word shaped like a
   handle, no full name), then the classifier, with two more names on its list:
   `third` (somebody other than the addressee named or pointed at) and `pile`
-  (a reply that is only abuse aimed at the addressee), and a `pile` can only
-  hold a reply, never refuse it. A pass goes up; a review, or no classifier,
+  (a reply that urges others on, or joins a crowd going after the
+  addressee), and a `pile` can only hold a reply, never refuse it. A reply
+  that is nothing but abuse hurled at the person is `abuse` since 30
+  September (migration 0078 and the prompts), and refused, and the list
+  refuses a proposition and "kys" before the classifier is asked. A pass goes up; a review, or no classifier,
   is held for the desk and shown to its writer alone; a reject is refused and
   kept for the desk. 280 characters. Forty replies a day, and six under one
   letter in ten minutes.
@@ -446,6 +450,21 @@ error    { ok: false, error: 'edu' | 'locked' | 'closed' | 'gone' | 'terms' | 't
   claimed owner of the letter's @ takes it down. This files no claim, so it
   shuts nothing else.
 - **`wall_owner_restore(p_token, p_letter)`** → `{ ok }`, within 24 hours.
+- **`wall_writer_remove(p_token, p_letter)`** → `{ ok, letter_id, undo_until }`
+  (0074, the owner's ruling of 29 September). The letter's WRITER takes it
+  back down, up or still waiting on the desk: the session must be the
+  letter's author. Status `removed` with `moderation.desk` `{ via: 'writer',
+  at, undo_until, was, prev }`. It files no claim and no report, so it shuts
+  nothing. Twice is ok.
+- **`wall_writer_restore(p_token, p_letter)`** → `{ ok, letter_id, status }`,
+  within 24 hours, by the same author, back to where it was (`live`, or
+  `pending` for a letter that was waiting, never up unread). Not when the
+  reading refused it meanwhile, the name is shut or its person left, or its
+  thirty days are over.
+- **Letter objects** from `wall_letter` and `wall_letters_for` carry `yours`
+  (0074): true when the session asking wrote it, answered about the caller
+  alone and never anything else about authorship; and `wall_letters_for`'s
+  carry `mine` as `wall_letter`'s always did.
 - **`wall_remove_by_token(p_token)`** → `{ ok, letter_id, undo_until }`, or
   errors `invalid`, `expired` (30 days) and `used`. The email's removal link.
 - **`wall_restore_by_token(p_token)`** → `{ ok, letter_id }`, within 24 hours
@@ -575,7 +594,14 @@ did. Nothing here removes or renames anything above.
   standing letter's), and read `wall_index_all`, so a key is one row.
 - `wall_mine` letters also carry `campus`. A letter its owner took down reads
   `down_by: 'report'`, as a claim always did, which tells the writer nothing
-  about who.
+  about who. A letter its writer took back reads `down_by: 'writer'` (0074),
+  asked before that, with `undo_until` while the day to put it back is open.
+- `wall_writer_remove` errors `no_session`, `not_yours` and `gone` (not up or
+  waiting). `wall_writer_restore` errors `no_session`, `not_yours`, `gone`
+  (not taken back by its writer, refused by the reading, or the name shut)
+  and `expired`. The desk's switch (`celestual_desk_letter_set`) will not put
+  a letter its writer took back up or back in the queue (`writer`), and a
+  dismissed report no longer puts back a letter its writer or owner took down.
 - `wall_owner_remove` errors `no_session`, `gone` (not up) and `unverified` (not
   the claimed owner, or a name note). Twice is ok. `wall_owner_restore` errors
   `no_session`, `unverified`, `gone` and `expired`.

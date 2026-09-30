@@ -11,7 +11,11 @@
 // Two things are caught here:
 //
 //   the list        a letter's (moderate.js `fault`): slurs, links, emails,
-//                   phone numbers, street addresses, rooms
+//                   phone numbers, street addresses, rooms, and the two rules
+//                   only public words carry (moderate.js `caughtOnWall`, 30
+//                   September): a sexual proposition aimed at the person, and
+//                   telling them to hurt themselves. A reply is as public as
+//                   the letter it sits under
 //   nobody else     a reply is about the letter and the person it is to, and
 //                   it never names or tags anybody else. An @ anywhere, a
 //                   word shaped like a handle (`jane.doe`, `j_doe`), and a
@@ -27,7 +31,7 @@
 // that is (white, young, park) are left off on purpose, so the rule catches
 // "sarah kim" and not "sam do it".
 
-import { fault } from './moderate.js'
+import { fault, caughtOnWall } from './moderate.js'
 
 const FIRST = new Set(('aaron abby abigail adam adrian ahmed aidan aiden aisha alan alex alexa alexander alexis ali alice alicia alina alison alyssa amanda amelia amir amy ana andre andrea andrew andy angela anika anna annie anthony antonio arjun ari ariana ariel ashley austin ava aya ayesha bella ben benjamin beth bianca blake brandon brendan brian brianna brittany brooke bryan caleb cameron camila carlos carmen caroline carter catherine charlotte chelsea chloe chris christian christina christopher claire clara colin connor dani daniel daniela danielle darius david derek devin diana diego dominic dylan eduardo eli elena eliana elias elijah elizabeth ella ellie emily emma eric erica erik ethan evan evelyn farah fatima felix fernando gabby gabriel gabriela gabriella george gianna greg hailey hana hannah harry hassan hector henry hugo ian isaac isabel isabella isabelle ivan jacob jake james jamie jane jared jasmine jason javier jayden jen jenna jennifer jenny jeremy jesse jessica jin joel joey john jonah jonathan jordan jorge jose joseph josh joshua juan jules julia julian juliana julie justin kai karen karina kate katherine katie kayla kaylee keith kelly kenji kevin kim kimberly kyle laila laura lauren layla leah leila leo leon liam linda lisa logan lorenzo lucas lucia lucy luis luke lydia madeline madison marco marcus maria mariah mariana marissa martin mason matt matthew maya megan melissa mia michael michelle miguel mike mila mina mohamed mohammed muhammad nadia naomi natalia natalie nathan nicholas nick nicole nikhil nina noah noor nora nour olivia omar oscar owen pablo paige paul pilar priya rachel rafael rahul raj rebecca ren riley rohan ryan sabrina sam samantha samir samuel sara sarah sean sebastian serena shreya simon sofia sophia sophie stephanie steven tara taylor thom thomas tiffany timothy tony tyler valentina valeria vanessa victor victoria vivian wei william xavier yasmin yuki yusuf zach zachary zara zoe').split(' '))
 const SURNAMES = new Set(('smith johnson williams brown jones garcia miller davis rodriguez martinez hernandez lopez gonzalez wilson anderson thomas taylor moore jackson martin lee perez thompson harris sanchez clark ramirez lewis robinson walker allen wright scott torres nguyen flores adams nelson baker rivera campbell mitchell carter roberts gomez phillips evans turner diaz parker cruz edwards collins reyes stewart morris morales murphy rogers gutierrez ortiz morgan cooper peterson bailey kelly howard ramos kim cox richardson watson chavez james bennett mendoza ruiz hughes alvarez castillo sanders patel myers ross foster jimenez chen wang li zhang liu yang huang zhao wu zhou xu lin guo luo tran pham huynh dang bui ngo duong choi jung kang cho yoon jang lim han seo shin kwon hwang ahn yoo singh kumar shah sharma gupta khan hussain cohen levy friedman schwartz silva santos oliveira costa rossi russo muller schmidt fischer weber meyer wagner becker tanaka suzuki sato takahashi watanabe ito yamamoto nakamura kobayashi kato echevarria okonkwo kwarteng haddad brandt iversen villarreal arroyo yeom').split(' '))
@@ -73,11 +77,22 @@ export function third(text) {
   return null
 }
 
+// What the wall's own two rules say under a reply's field. Not the letter's
+// sentence (moderate.js `whyNot`), which offers to send the words privately:
+// a reply has no private way, so the one step is to change it.
+const PUBLIC_SAY = {
+  sexual: 'that’s sexual, and replies are public. say it another way.',
+  harm: 'take out the part telling them to hurt themselves.',
+}
+
 // The first thing wrong with a reply, said in words, or ''. The list first,
-// since a link or a phone number is the graver thing, then nobody else.
+// since a link or a phone number is the graver thing, then what only public
+// words may not carry, then nobody else.
 export function replyFault(text) {
   const f = fault(text)
   if (f) return f.endsWith('.') ? f : `${f}.`
+  const w = caughtOnWall(text)
+  if (w) return PUBLIC_SAY[w]
   const o = third(text)
   if (!o) return ''
   if (o.id === 'tag') {
@@ -100,6 +115,8 @@ const WHY = {
   contact: 'it carries contact details.',
   third: 'it names somebody else.',
   pile: 'it only goes after the person this is to.',
+  abuse: 'it is only abuse aimed at them.',
+  harm: 'it tells somebody to hurt themselves.',
   slur: 'it carries a slur.',
   url: 'links do not go under a letter.',
   email: 'it carries an email address.',

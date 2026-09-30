@@ -183,15 +183,23 @@ aerial, the signal bars, the name, by the battery the day it went up as
 `09/24/26`, or on a draft the characters it has left, and never a second date
 beside the aerial, and after the aerial an envelope, steady, once the person
 the letter is to has answered it; the pen, the mode, the handle), the words,
-and the three soft keys at the foot (`options`, the heart and its count, the
-replies' speech bubble and its count, drawn exactly as the heart is, with no
-plate and no light on it; `share` where a letter has no thread), set in one
-face, Jersey 10, the Series 40 grid (`--f-s40`). The only thing a writer
-chooses about how a letter looks is the COLOUR it is lit in (the greeting
-across its top is words, and theirs; a private note, lit in the colour its
-person's name picks, has no colour to choose, and its writer sets its face
-instead, the line across its top and its battery, 0073, below and 2.6), and
-each colour carries its own treatment with it:
+and the soft keys at the foot: `options` alone on the left, whose first row
+is always `share`, and the heart and its count and the replies' speech
+bubble and its count, drawn exactly as the heart is, with no plate and no
+light on it, together on the right (the heart alone where a letter has no
+thread). The owner's ruling of 30 September, turning round the one of the
+29th: the menu where every screen on the wall keeps it and a phone kept it,
+and likes and comments together at the other end, under the thumb. Every
+count but the last holds the room of two figures, so a heart counted up does
+not move under the thumb that pressed it (`screen.css` `.wl-sk-n`); while a
+menu is open the band is `select` and `back`, as on every screen. Set in one
+face, Jersey 10, the Series 40 grid (`--f-s40`). The only things a writer
+chooses about how a letter looks are the COLOUR it is lit in and the charge
+its battery shows (0076, below; the greeting across its top is words, and
+theirs; a private note, lit in the colour its person's name picks, has no
+colour to choose and no battery to set, and its writer sets the line across
+its top instead, 0073, below and 2.6), and each colour carries its own
+treatment with it:
 
 | kind | colours | what it is |
 | --- | --- | --- |
@@ -304,20 +312,49 @@ small on purpose. The screen reads as one object on every letter, the way a
 row of phones on a table is one object, and nothing a quirk does moves a key,
 changes a word or makes a letter harder to read.
 
-The bars and the battery are not decoration: the signal is how many people
-hearted the letter, the battery how long it has been sitting there unsaid,
-and on the wall's small screens the bars are how many letters the name has
-and an envelope blinks on a name that heard from somebody today.
+The bars are not decoration: the signal is how many people hearted the
+letter, and on the wall's small screens the bars are how many letters the
+name has and an envelope blinks on a name that heard from somebody today.
 
-On a private note the battery is its writer's own (the owner, 29 September,
-and 0073). They set it on the note's screen a bar at a time, full to start,
-the empty one blinking as the phone's did, and it is kept with the note and
-read with the words by the other person if it is ever mutual: how much they
-had left in them, or whatever else they meant by it. It counts nothing, so it
-claims nothing (VOICE.md 4, truth exactly), and it is drawn only where the
-note is, on the writer's own screens and, once it is mutual, the other's. A
-note from before 0073, which has none, still draws the battery running down
-with its week on the account's screen, the only place it ever drew one.
+The battery on a wall letter is its writer's own (the owner, 30 September,
+and 0076: "battery state customizations shouldnt be for pings only for wall
+letters and it can just be clicked to change its charge state"). It is a key
+on the composer's status row, full to start, a bar off at each press, the
+empty one blinking as the phone's did and the next round to full, and it goes
+up with the letter in its look beside the colour (looks.js `withBat`), so
+every reader's phone draws the charge the writer left it on: on the letter,
+on its picture, and on the name's small screen on the field, which draws its
+newest letter's. How much they had left in them, or whatever else they meant
+by it: nothing on the wall says, which is the owner's (the untold
+mechanism). It counts nothing, so it claims nothing (VOICE.md 4, truth
+exactly). A letter from before 0076, which has none, draws it as every letter
+did until then, by how long it has been up: full for its first day, a bar
+off at sixty hours, at five and a half days and at ten, and empty after that
+(looks.js `batOfLetter`, `chargeOf`), so no letter already up changed its
+face the night the writers were given it. The first time the composer is
+used on a device, once the line about the greeting has gone, one line under
+the card says `the battery is yours to set.`, and the first press puts it
+away for good.
+
+A private note's battery is no longer set. Its writer set it a bar at a time
+from 29 September (0073) until the owner moved it to the wall letters the
+next day; the key is gone from the note's screen, which draws the phone's own
+full battery, and a new note carries none. A note written in that day keeps
+the one it was left on, drawn where it was and sent again with its words as
+it came, and a note from before 0073 still draws the battery running down
+with its week on the account's screen.
+
+On the keepsake there is one battery, the phone's own, at the far end of its
+band as every phone had it, and it is the two people's (the owner, 29
+September: "put the battery sign at the top of the card not for each message
+card", and "the entire cards battery sign (hidden untold mechanism)"). The
+two notes carried a battery each, the one its writer left it on, until then;
+their strips carry only their lines now. Either of the two taps it and a bar
+goes, the empty one coming round to full, and the other sees it move while
+their keepsake is open (0077, `keepface.js`). Nothing says it can be tapped
+or that anybody else sees it: no dotted line under it, no tip, no row in a
+menu, only its name to a screen reader. It counts nothing, and it never
+blinks, even empty, because the keepsake is still.
 
 **A person is a picture on a screen.** There is no round face anywhere. A
 profile picture is cut square round the face (a fifth in from the edges, a
@@ -379,7 +416,7 @@ on the wall now, built of the wall's own parts and nothing new:
 
 | Sheet | What it is made of |
 | --- | --- |
-| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `sent privately.` as a note on that screen (`ScreenNote`). The screen's status rows are the note's face and the writer's to set (0073): the greeting is the composer's (`Greet`, `dear` and their first name until it is changed, forty characters, the dotted pixel line under it), and the battery is a key on the row with the same dotted line under it, a bar off at each press, the empty one blinking, and round to full. A line the writer set has the row to itself and the handle gives way to it. The first time on a device one line under the screen says `the greeting and battery are yours to set.`, and it fades where it stands at the first touch of either, the screen having given up that line's height. One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
+| the ping (`screens/Ping.jsx`) | the composer's room (`.is-write`): the step dots, the field in its body with the resolver's answer in the field's place, the wall's names under it, the people written to as the same rows, then the ping's own lit screen with the line on it (`Screen`, `ScreenDraft`), the gate's Instagram door when a proof is needed, and `sent privately.` as a note on that screen (`ScreenNote`). The screen's second row is the note's face and the writer's to set (0073): the greeting is the composer's (`Greet`, `dear` and their first name until it is changed, forty characters, the dotted pixel line under it). The battery beside the stamp is the phone's own and full, and not a key since 0076, which gave it to the wall letters (2.5); a note from 29 September keeps the one it was left on. A line the writer set has the row to itself and the handle gives way to it. The first time on a device one line under the screen says `the greeting is yours to set.`, and it fades where it stands at the first touch of it, the screen having given up that line's height. One lit key under it. On a spread it keeps the phone's one column, since it has no colours to stand beside the screen |
 | the person (`screens/You.jsx`) | the account card on an unlit panel, its rows the letters' rows, with the key held at the foot of the panel over a dashed seam while the card scrolls under it. A standing ping opens onto its own lit screen, on the face its writer left it on (its greeting across the top and its battery, or `dear` and the name and a battery running down with its week for a note from before 0073), whose options key is the phone's menu (`ScreenMenu`) and whose `let it go?` is a note with two soft keys |
 
 Nothing about a ping is ever drawn anywhere a second person can look. The
@@ -464,15 +501,22 @@ in its own pixels, theirs over yours, and are gone before the two of them
 come in; the mark gathers up to the top of the story's grid (the top of the
 glass on a desk, a little under half way down an upright phone's) and
 `it's mutual.` is typed under it; and the camera pulls back and the glass closes onto the
-head of one rose phone, the keepsake (`Keepsake.jsx`). The mark crowns it,
+head of one phone, the keepsake (`Keepsake.jsx`), lit rose until the two of
+them light it in another colour. The mark crowns it,
 alive across the head of the glass with `it's mutual.` in its cells, the two
 first names under that as one line, `Jules & Ace`, and under them the two
 notes, theirs and then yours, each a small screen on the glass as the
 phone's inbox showed a message: a panel a little brighter than the glass
-with a hairline of the ink round it, a strip of darker rose across its top
-carrying the line its writer set (`dear` and the other's name when they set
-none) and the battery they left it on, both lines at the one size the longer
-needs, then the words and `from Jules`. Nothing cuts the glass: the unlit
+with a hairline of the ink round it, a strip a darker band of the glass's
+colour across its top carrying the line its writer set (`dear` and the
+other's name when they set none), both lines at the one size the longer
+needs, then the words and `from Jules`, and under your own note, after your
+name, the phone's delivery report: `from Ace · delivered` until the other
+has opened the mutual since it was told, then `from Ace · opened` with the
+phone's tick before it, one steady word in the caption's own ink that
+changes once and never blinks (the owner, 29 September: "a feature to see if
+they've opened up the mutual letters"). Only under yours: theirs is in your
+hands, and you know you opened it; and never on the picture. Nothing cuts the glass: the unlit
 dots run on under everything on the story's own cells, and each small
 screen's edges and the foot of its strip lie on the grid's lines between
 them, never through a row of pixels (owner, 29 September: the three panels
@@ -482,11 +526,22 @@ note after a press are a third small screen of the same kind, as tall as
 their rows, in the mark's place with the mark and the names stood still and
 out of sight under it, the menu's name and where in it the chosen row is on
 its strip, and framed in the ink while it has the keys; the notes stay in
-view under it, and the band is the aerial and the night whatever is up. On a
+view under it, and the band is the aerial, the night and the battery
+whatever is up. `change its colour`, in the options, is that small screen
+with the seven lit colours on it (`colour` and `n/7` on its strip, a step
+smaller than the other menus so the seven stand in the mark's place), and the
+whole phone is lit in the one the chosen row stands on as it moves, its
+room light with it; `select` lights it in that one for both of them, and
+`back` puts it as it was. The mark is inked in the colour it wears, and its
+glint, which was the rose on every phone, is that colour's deep step
+(`heatOf`). The prints and the negative are not offered: the small screens'
+panels and strips are the screen's own greys mixed over the glass, which a
+press would come out of as flat bands of ink. On a
 desk the phone is as wide as it is tall and the two notes stand side by side
 under the mark; on a phone on its side they stand beside it. Its light no longer drifts through the
-colours: the rose is the colour of the mutual, and a loop that turned it to
-green was a different phone every few seconds. Nothing in it is a picture. The two
+colours: the rose is the colour of the mutual until the two of them choose
+another, and then that one holds, and a loop that turned it to green was a
+different phone every few seconds. Nothing in it is a picture. The two
 of them are bodies (`folk.js`): a head, a neck, a torso with a chest and a
 back, arms and legs thick at the top and thin at the wrist and the ankle,
 her hair and her hem with weight, posed for every frame, their feet planted
@@ -502,7 +557,8 @@ camera and loses the photograph's pixel grid and moire, because a canvas of
 square cells under a tilt and a second grid beats into a moire of its own;
 its dust, glare and backlight stay, but for the ghost column, which on the
 keepsake's glass read as the old cut come back. The status row names nobody,
-the keepsake's included, whose band is the aerial and the night it was told:
+the keepsake's included, whose band is the aerial, the night it was told and
+the pair's battery:
 the two are named on its glass under the mark, `Jules & Ace`, first names
 when both are known and both @s when either is not (the row was `Jules ·
 Ace` until 29 September). The two of them are posed afresh at
@@ -512,6 +568,25 @@ goes on, ten frames a second). At the size of the screen the film's glass is
 drawn a whole number of device pixels to a cell (`crisp`), at no more than
 two million of them, and only where the frame changed (8.4).
 Under reduced motion every story is drawn on its last frame.
+
+**A night that was not mutual.** Told since 29 September, and made short
+and plain on the 30th, when the owner found the first telling "too wordy and
+hard to understand": three lines and what came back (`Night.jsx`). `not this
+time.`, `they didn't send you one.`, `they'll never know you did.`, and, where
+a ping came back, a small lit tag with the phone's check, `+1 free ping this
+week` or `your ping is back`. On a note's own screen, the face a lapsed note
+opens on and its `/reveal/<handle>`, it is set in the middle of the glass as
+the phone set a message it had finished with, under the phone's two
+envelopes (the one that went, a dotted line, and the ghost of the one that
+never came), the title in a screen note's large face (11cqw), the lines at a
+note's (7.4cqw), the tag inverted as a chosen row is; the phone is the
+night's colour (`looks.js` `night`), lit, never the rose, which is the
+mutual's alone. In the private notes' frame it is not a second phone but the
+wall's own notice (`.wl-down`, the card after a post): the face it was
+about, the title in chalk, the lines in ash, the tag lit in chalk, and the
+keys that act under the dotted seam, `send again` and `share celestual`. And
+the frame's strip says `not this time` in chalk, not rose, on a night with
+no mutual in it.
 
 **The context.** `PhoneChrome` (`parts.jsx`) is turned on at the wall's root
 (`index.jsx`) and read by the shared parts that draw rather than lay out:
@@ -548,7 +623,7 @@ the product changes in every picture the next time they are made.
 | a mail (`supabase/functions/_shared/mail.ts`) | the night screen with the mark standing at the top of its glass and one line typed under it with the phone's cursor, where the mutual's says "it's mutual." (`tap to sign in.`, `tap to confirm.`, `a letter to you.`, `still feel it?`, `your code.`); for the mutual, that screen itself, rose, the mark alive. Under the phone the sentences, in the mail's own Helvetica and centred on its axis, one lit key as wide as the phone, the bezel key beside it when a mail offers a second thing, and the lockup signing the foot over the colophon |
 | the card (`app/public/og.png`) | the frame the intro ends on, the mark on the rose letter, with the lockup beside it |
 | Instagram (`design/instagram/`) | the same frame, larger, with the lockup signed under it as the shared picture is: a post and a story |
-| the mutual's picture (`app/src/wall/keepshare.js`) | the keepsake itself, as it stands on the page, drawn on a canvas in the reader's browser when they share it: the rose phone, a story's 1080 by 1920 with everything that matters inside the feed's 4:5 crop; its band the aerial and the night it was told; the mark crowning the glass with `it's mutual.` in its cells, at six pixels to a cell whenever the notes keep words of 28 beside it and never under five; the two first names under it, `Jules & Ace`, only when both are known, and never an @ or a link (no line of names otherwise); the two notes, each a small screen with its panel and strip laid on the grid's lines, the line its writer set at the strip's start (their own unless it holds an @ or an address, else `dear` and the other's first name, else `dear you`), both lines at the one size the longer needs, and the battery they left it on at its end in the glyph a note's screen draws, then the words and `from` its writer (`from them` and `from me` when nobody is named); the words fitted at one size for both and, when even the least size will not hold them (a note of many short lines), each kept to its share of the room and cut with an ellipsis, so nothing ever leaves the crop (`keeplayout.js`, held by `check-stories.mjs` with lines of forty characters, Korean and Japanese lines and every battery); the unlit dots under all of it on the mark's cells, and the signature under the phone. `leave the notes off` draws the phone with the mark and the names alone, the mark larger, and no line and no battery either |
+| the mutual's picture (`app/src/wall/keepshare.js`) | the keepsake itself, as it stands on the page, drawn on a canvas in the reader's browser when they share it: the phone in the colour the pair lit it in (the rose until they choose), a story's 1080 by 1920 with everything that matters inside the feed's 4:5 crop; its band the aerial, the night it was told and the pair's battery at its charge, in the glyph a status row draws at eight pixels to its rows; the mark crowning the glass with `it's mutual.` in its cells, at six pixels to a cell whenever the notes keep words of 28 beside it and never under five; the two first names under it, `Jules & Ace`, only when both are known, and never an @ or a link (no line of names otherwise); the two notes, each a small screen with its panel and strip laid on the grid's lines, the line its writer set at the strip's start (their own unless it holds an @ or an address, else `dear` and the other's first name, else `dear you`), both lines at the one size the longer needs and the whole of the strip theirs, then the words and `from` its writer (`from them` and `from me` when nobody is named), and never whether anybody opened it; the words fitted at one size for both and, when even the least size will not hold them (a note of many short lines), each kept to its share of the room and cut with an ellipsis, so nothing ever leaves the crop (`keeplayout.js`, held by `check-stories.mjs` with lines of forty characters, Korean and Japanese lines, and the band's battery at every charge and colour, which take no room); the unlit dots under all of it on the mark's cells, and the signature under the phone. `leave the notes off` draws the phone with the mark and the names alone, the mark larger, and no line either; the band keeps its battery. Until 29 September each note carried its writer's battery at the end of its strip |
 
 A mail client runs no stylesheet and loads no web font, so everything in a mail
 that is the phone is a picture (`scripts/export-mail.mjs`): the screens are
@@ -1025,10 +1100,11 @@ Chosen per element, never a default applied everywhere.
 
 | | |
 | --- | --- |
-| 200 to 240ms | a colour, a border, a hover |
-| 220ms | a control's whole state change |
-| 260 to 340ms | a dimming, an entrance |
-| 380 to 420ms | a sheet arriving, the close mark's quarter turn |
+| 200 to 240ms | a colour, a border, a hover; a screen put out |
+| 220ms | a control's whole state change; the replies laid down |
+| 260 to 340ms | a dimming, an entrance; the replies raised (280) |
+| 380 to 420ms | a card powering on (380), the close mark's quarter turn |
+| 460 to 540ms | a sheet arriving: 540 off the foot of a phone, 460 as a dialog from 900 wide |
 | 520ms | the focus line drawing across a field |
 | 620 to 900ms | the field changing speed, a rise, a sweep |
 | 1200 to 1600ms | a bloom, a starfield fading out |
@@ -1040,21 +1116,22 @@ Chosen per element, never a default applied everywhere.
 | `wl-rise` | 22px up and in. The default entrance |
 | `wl-fade` | opacity only, for something that must not move |
 | `wl-rise-sheet`, `wl-drop-sheet` | a sheet off and back to the bottom edge |
+| the power on (`screen.jsx` `useWake`, `screen.css` `is-power`) | where a card opens, its phone comes on the way a phone does when it is picked up (owner, 29 September: a phone turning on, not a page opening; subtle, smooth, still quick). The letter's first card, the composer's card, the ping's and the pings'. The glass is black for its first 45ms and then its backlight rises, one smooth ramp to full at 380ms on a curve that starts slow and lands soft (`cubic-bezier(0.45, 0.05, 0.25, 1)`), with no flicker, no dip and no blur; the light it throws, the halo and the room's light, follows 90ms behind on the same ramp; and the phone settles from .985 of its size to its size where it stands, on `--ease`, with no travel. Compositor work only: a black pane inside the glass whose opacity falls (`.wl-scr-veil`), the lights' opacity and the glass's `scale`. A print is uncovered in 240ms instead, since it is lit and does not light, and the square not at all. Put out, the screen dims to nothing in 200ms (`wl-sleep`) as the column leaves (`wl-letter-out`, 260ms, the card holding for 60 percent of it) and the room lifts from 60ms to 260ms, and the route changes when the column has gone (parts.jsx `Sheet` hears `wl-letter-out`). The composer's column no longer rises off the foot of the window: its room fades up in 320ms, the phone powers on where it stands, and the head, the question and the foot settle 6px into place over 300ms from 60ms. A step that puts the card on the glass of a sheet that is already up powers it on too. The old wake (`wl-wake`, a blurred flicker of 900ms that dipped to a third) is the intro's and the door's alone. Under reduced motion the screen is simply lit |
 | `wl-twinkle` | the sparkle, 3600ms, scale and rotation, staggered by `--spark-delay` |
 | `wl-shake`, `wl-cell-pop` | the composer's card refusing a press, a short travel side to side losing amplitude; and a name that has just arrived on the wall rising past its size and settling, under the pulse the wall sends out from its disc. No ring leaves the disc |
 | `wl-cell-turn` | the wall turning over. Every couple of seconds one disc on the hive, out of the light and in off the rim, recedes and fades over 320ms and somebody else on the same wall comes up in its place over 510ms, both on `--ease-out`, with the face changed in the 150ms between where the orb is at nought opacity. No overshoot, no ring, no light and no pulse: an arrival is a claim that a letter went up and is drawn as one, and a turn claims nothing (`wall/Hive.jsx`, the cycle). Nothing turns over under the veil, under a sheet, during the opening, under a pulse or a pull, or under reduced motion |
 | `wl-acts-in`, `wl-act-in` | the pane the flag opens on a letter, and its two rows arriving a beat apart |
-| the deck (`screens/Letter.jsx`) | the letter before and the letter after stand either side of an opened letter, asleep: dimmer and a little smaller, a sliver at the edges of a phone and whole in a wide room, coming up over 480ms from 420ms into the card's wake. A hand has the card one to one and each screen is lit by how near the middle it stands. Let go, the strip runs on in 240 to 420ms at the speed it was let go at, on the travel curve bent to leave at the hand's speed, or springs home in 220 to 380ms; a press on a neighbour turns it in 340ms and an arrow key in 260ms. The first two times a device opens it the card leans 26px toward the next letter and back, 380ms out and 680ms home. Under reduced motion a turn is a cut and nothing leans |
-| the replies (`Replies.jsx` `ThreadSheet`, `screens/Letter.jsx` the sheet) | a letter's right soft key raises its replies. On a phone a sheet comes up from the foot of the glass in 440ms on the sheet's curve (`--ease-sheet`), and on the same clock the letter's phone squares up, rises and steps back about its top until it stands whole between the close mark and the sheet's edge (never under half its size); the neighbours go dark in the first 180ms, the turn keys and the foot go. It goes down in 340ms, the neighbours coming back 240ms from 40 percent in. The rows come up behind it, the first six 40ms apart, 8px and a fade over 280ms from 120ms in, closer than the house's sixty since they are the rows of one list and not six objects. A hand has the sheet one to one by its head, or by the list at its top pulled down; let go past three tenths of the way or thrown down faster than 0.11px/ms it goes, short it springs back, pulled up it gives; a press anywhere off it, the grip, the key or Escape lays it down, and anything that catches it moving catches it where it is seen. From 900 wide, or on a phone on its side, the letter slides left and a panel rises 24px into place at its right as it fades up, on the same clock. Over a phone's keyboard the sheet rides up by what the keys cover, 280ms. The letter's own close takes it down in 300ms. Under reduced motion nothing travels: the letter stands where it is going and the sheet crossfades in 160ms, its rows with it |
+| the deck (`screens/Letter.jsx`) | the letter before and the letter after stand either side of an opened letter, asleep: dimmer and a little smaller, a sliver at the edges of a phone and whole in a wide room, drawn once the card has powered on and the page is idle, and coming up out of the dark over 420ms on `--ease`. A turn's landing changes one attribute on two screens and nothing that is laid out (`data-side`, every screen in one box). A hand has the card one to one and each screen is lit by how near the middle it stands. Let go, the strip runs on in 240 to 420ms at the speed it was let go at, on the travel curve bent to leave at the hand's speed, or springs home in 220 to 380ms; a press on a neighbour turns it in 340ms and an arrow key in 260ms. The first two times a device opens it the card leans 26px toward the next letter and back, 1050ms in, 380ms out and 680ms home; a press on the card's keys while it leans ends the lean and is answered. Under reduced motion a turn is a cut and nothing leans |
+| the replies (`Replies.jsx` `ThreadSheet`, `screens/Letter.jsx` the sheet) | a letter's right soft key raises its replies. On a phone a sheet comes up from the foot of the glass in 280ms on the sheet's curve (`--ease-sheet`), and on the same clock the letter's phone squares up, rises and steps back about its top until it stands whole between the close mark and the sheet's edge (never under half its size); the neighbours go dark in the first 140ms, the turn keys and the foot go. The motion starts on the frame after the press, on the compositor, before the letter has drawn anything for it. It goes down in 220ms, the neighbours coming back over 180ms from a fifth of the way in, and the letter takes a press or a hand from the moment it starts down (a press on the black round it is let go of until 160ms after it lands, so a second tap never closes the letter). The rows are on the sheet as it rises, with no stagger: the first twelve are there before it is raised and the rest of a long thread are put under them while it rises; a reply that arrives while it is up rises into its place on its own (`wl-rp-new`, 260ms). It was 440ms up and 340ms down with the rows coming up 40ms apart from 120ms in, and the letter swallowed every press for 620ms after a lay down, which the owner felt as a good second (29 September). A hand has the sheet one to one by its head, or by the list at its top pulled down; let go past three tenths of the way or thrown down faster than 0.11px/ms it goes, short it springs back, pulled up it gives; a press anywhere off it, the grip, the key or Escape lays it down, and anything that catches it moving catches it where it is seen. From 900 wide, or on a phone on its side, the letter slides left and a panel rises 24px into place at its right as it fades up, on the same clock, its light three quarters of it from a tenth in. Over a phone's keyboard the sheet rides up by what the keys cover, 280ms. The letter's own close takes it down in 220ms. Under reduced motion nothing travels: the letter stands where it is going and the sheet is simply there, and gone |
 | `wl-mast-ring` | the ring leaving the veil's capsule every 1600ms, the shape of the pulse a tap sends through the crowd |
-| `wl-glass-out`, `wl-tab-drop` | a sheet's glass fading in place while a card flies home to its disc; the tab at the foot of the wall being put away |
+| `wl-tab-drop` | the tab at the foot of the wall being put away. (`wl-glass-out`, a sheet's glass fading in place while a card flew home to its disc, went with the flight; parts.jsx `Sheet` no longer listens for it) |
 | the story (`PixelStory`) | a guy and a girl running in on a letter's night screen, the catch that carries her on into his arms and half behind him, and the mark (2.6). They are posed afresh at the display's rate with their feet planted where they land; the hold breathes; the backlight turns pink in a wave from the couple to the glass's edges and the phone becomes the rose letter (`PANEL` in `pixmark.js`, `turn.js`); then the ground and the pair glide into the ring and the star, easing in and out, each pixel landing on the grid. The mark is whole on the rose screen at about 2.9s. Tap to land |
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its dimmed, out of focus hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens and the focus arrive with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
-| the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
+| the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it and the field travelling to bring it into the light (a 300ms time constant), under the letter, which opens on the press itself and powers on (the power on, above). It goes the way it came, put out where it stands, and does not fly back into the disc |
 | the intro (`.hi`) | the same four seconds at `/` and at `/berkeley`, once per tab: a letter's night screen on black, and the story on it. Black, then at 40ms the screen wakes (`wl-wake`, 500ms) and throws its light on the black; the two run in at 780 and meet at 1690. At 2110 the backlight turns from where they hold each other, and at 2190, in the same movement, they and the ground glide into the mark, whole at 2780 while the last corners turn. The look is drawn on every load out of a bag of fifteen kept on the device (`Intro.jsx LOOKS`, `drawLook`), every colour in it a lit letter's own and only neighbours on the wheel side by side: five one colour, the rose, lilac, ice, green or amber letter's; five rainbows, in the bag twice, four round the wheel out from where they hold each other, each colour an equal share of the glass and their light on the black a wheel of the five turning once in 4.5s, two one way and two the other, and the prism, the five laid across the glass; and five gradients, peach, seaglass and twilight out from them and dusk and lagoon laid across, a look across throwing its light laid across behind the phone, still. Of every twenty loads ten are a rainbow, five a gradient and five one colour; never the same look, the same colour round the two of them or two pinks running. The bands and the status follow the colours of the glass under them. The lift at 3780, which waits on the page being ready: the screen goes to sleep (`wl-sleep`, 560ms), the phone rises 18px and dissolves, and the black goes over 610ms, gone at 4390. The status row carries the aerial and the battery and nothing that would say a message had come in. Skippable on any tap or key, which lands the mark and lifts at once. Under reduced motion it draws the mark and lifts after 1200ms. `?beat=` and `?t=` hold it in the rose for the screenshot loop in development, `?tint=` in any look, any lit colour or `rainbow`, and `?intro=ascii` and `?screen=green` draw it typed or on the classic green, for comparison |
 | the door (`.wl-join-scr`) | the mechanic, on the same screen: @you runs in at 800, once the screen is on, and stands; @them at 1700 and stands, each lit in the status row as they arrive; at 2600 both set off on the same frame and meet, and the mark forms. The three lines arrive on those beats and the key as they touch |
-| the mutual (`.is-reveal`, `Film.jsx`, `Keepsake.jsx`) | the first time on a device, a film over the whole screen in the black room. The slot's glass grows to the screen in 560ms on `--ease`, asleep under the slot's .38, the bands sliding in over its last quarter; out of nothing the backlight flickers on over 900ms instead. From the glass's nought: the two notes, then the two names from 760ms, a block of the glass at a time 40ms apart, whole from 1080ms for 1200ms (they stood 540ms, too short to read the second, until the review of 28 September) and gone the same way from 2280ms; the two of them in at 2890ms; the pink from 4220ms, the phone turning rose with it; the mark whole at 5370ms and gathering up at 5870ms; `it's mutual.` typed from 6030ms at 70ms a character with the caret after it. 300ms after it is said the camera pulls back, 900ms on the sweep, and the glass closes onto the keepsake's mark at the head of its glass while its room light comes up; the film goes out over the keepsake in 140ms as it unfolds from the mark (380ms on `--ease`, the strip squeezed onto its mark and the squeeze undone inside it, two transforms and no clip-path), the two names and both notes waking on one frame and the keys 240ms after. A menu, the question and a note after a press come up in the mark's place at once, as a phone put one on its screen, and nothing moves under them. A tap not on a control, a key that is not a modifier alone, or `skip` jumps to the sentence and pulls back 160ms later, in 600ms; in the push-in or the wake it waits for the glass, and in the pull-back it runs what is left two and a half times as fast. Every time after, it opens as the keepsake: the slot's glass flies to its mark in 360ms, the phone unfolds out from under it from 150ms in 280ms with its notes already there, the lit key 80ms behind it in 200ms, and the glass goes into the mark over 90ms, all of it in 450ms (it was 480ms of flight, the film's landing after it, and the notes a second from the press, until the review of 28 September). A tab opened on it does not play the intro first: it is the same story, and the second telling would be the one waited through |
+| the mutual (`.is-reveal`, `Film.jsx`, `Keepsake.jsx`) | the first time on a device, a film over the whole screen in the black room. The slot's glass grows to the screen in 560ms on `--ease`, asleep under the slot's .38, the bands sliding in over its last quarter; out of nothing the backlight flickers on over 900ms instead. From the glass's nought: the two notes, then the two names from 760ms, a block of the glass at a time 40ms apart, whole from 1080ms for 1200ms (they stood 540ms, too short to read the second, until the review of 28 September) and gone the same way from 2280ms; the two of them in at 2890ms; the pink from 4220ms, the phone turning rose with it; the mark whole at 5370ms and gathering up at 5870ms; `it's mutual.` typed from 6030ms at 70ms a character with the caret after it. 300ms after it is said the camera pulls back, 900ms on the sweep, and the glass closes onto the keepsake's mark at the head of its glass while its room light comes up; the film goes out over the keepsake in 140ms as it unfolds from the mark (380ms on `--ease`, the strip squeezed onto its mark and the squeeze undone inside it, two transforms and no clip-path), the two names and both notes waking on one frame and the keys 240ms after. A menu, the question and a note after a press come up in the mark's place at once, as a phone put one on its screen, and nothing moves under them. A tap not on a control, a key that is not a modifier alone, or `skip` jumps to the sentence and pulls back 160ms later, in 600ms; in the push-in or the wake it waits for the glass, and in the pull-back it runs what is left two and a half times as fast. Every time after, it opens as the keepsake: the slot's glass flies to its mark in 360ms, the phone unfolds out from under it from 150ms in 280ms with its notes already there, the lit key 80ms behind it in 200ms, and the glass goes into the mark over 90ms, all of it in 450ms (it was 480ms of flight, the film's landing after it, and the notes a second from the press, until the review of 28 September); a pair that lit theirs in another colour has the slot's rose go out of the flying glass over the same 360ms. Opened any other way once it has been watched (its link, the ping sheet, a reload) it powers on where it stands (owner, 29 September: "like its a phone turning on ... subtle and smooth and still quick"): black glass, a veil over the whole phone lifted from 1 to nothing in 380ms on (0.4, 0, 0.2, 1), no flicker and no dip, the pair and the notes coming up 90ms behind it in 300ms, the room's light rising round it in 700ms and breathing from there, and the lit key from 200ms in 220ms; opacity only, laid on before the first frame is painted, and never a filter on glass this size. It waits for the pair's face up to 350ms first, so it is lit in their colour from its first frame. It goes out the same way, quicker: the veil back down in 200ms on (0.4, 0, 1, 1) under the column's 260ms, where it was a blur and a brightness on the whole glass. Under reduced motion it is simply there, lit. A tab opened on it does not play the intro first: it is the same story, and the second telling would be the one waited through |
 | the slot (`Slot.jsx`) | a mutual in the private notes, and what it opens, small: the night screen along the row, a 20px band over a 40px panel, its backlight asleep (black at .38 over the panel) and the rose letter's edge light round it, a hairline and a trace of glow, so it reads as a mutual before it is watched and never as a key greyed out. Two sealed notes step toward each other a cell every 110ms (WAAPI transforms on `steps(n)`), each trailing what it has just left at .30, .15 and .07, stop two cells apart, hold 700ms, go out in three steps 110ms apart (.45, .15, nothing) and stay dark 550ms, n·110 + 1470ms a loop (3.56s on a phone), each slot at its own place in it. They never meet: the meeting is the film's. The pointer wakes the backlight (120ms, in two steps) and the notes lean in at twice the rate from where they are; the focus wakes it too, at once; a press inverts the panel and holds them. Opened once on this device it is the rose letter with one note on it, backlit (no veil: under it the keepsake read dimmer than the rows round it), the note blinking out and back in three steps 110ms apart (.45, .15, .45) every 4s, each slot at its own place in that. On the night it is dark and `searching…` until it is in sight, then wakes in the screen's flicker (500ms) and the notes set out 500ms after. Only the three newest not yet opened move and the three newest opened blink, none out of sight or on a hidden tab; under reduced motion each is its held frame (owner, 28 September: more beautiful, pixels moving across it, suspense) |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
@@ -1069,6 +1146,14 @@ Everything ends where it was going, it just does not move to get there.
 
 Every surface has to be correct as a still frame. If it is not, the motion is
 carrying meaning that the layout should have carried.
+
+The stylesheet's floor under all of it (wall.css, REDUCED MOTION) takes every
+animation and transition on the wall to a millisecond, with `!important`, so a
+gentler fade a file asks for under this preference is a millisecond too unless
+it is itself `!important` and more specific; and it does not take delays away,
+so an entrance held for a delay under it is held, and then lands. The power on
+is never started under the preference (`useWake` answers nothing), and the
+words round the composer's phone are simply there.
 
 ---
 
@@ -1238,7 +1323,7 @@ on a pale panel.
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands on the account screen beside each of a person's letters (`Gate.jsx`), and on the wall it is the screen's own pixel heart, outlined and filled (`PIX.heartO`, `PIX.heart`, 2.6). A letter's heart is not this component: it is the centre soft key on the letter's screen (2.5). It stood in a letter's foot while letters were paper |
 | `Roll` | a count whose figures turn: each digit a window one figure tall over a column of the ten, slid to the figure it shows, 640ms on `--ease` when the number changes and still on mount. Keyed from the right so a hundredth letter mounts a column at the head and keeps the two it had. The wall's count in the ear. Under reduced motion the columns do not slide (`.wl-roll`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the root wall's poster, the seal on the hero's scene and a mutual on the sky. The flat mark stands under it until the metal is opaque and leaves after, 900ms on `--ease-out` then 320ms: a fade in over the flat, never a crossfade, because two opaque shapes of one silhouette crossfading on black dip to three quarters halfway and blink. See 3.5 |
-| `PixelStory` | the story on a screen's body: a canvas of the phone's cells, drawn from `pixmark.js` and `folk.js` (the two of them, the notes and the hearts, the mark on its grid, and the three stories as functions of the clock). `at` holds the clock on a frame, `mode="ascii"` sets each lit cell as a character instead, for comparison only. `SQUARE` holds the screen square to the camera. `crisp` is for a glass the size of the screen (the mutual's film): a whole number of device pixels to a cell, up to three to a point and two million pixels in all, drawn only where the frame changed, its pink a pixel to four cells. `onLayout` says where the cells are each time the glass is laid out, so the film can land on the keepsake's. `paintStill` draws one frame on a canvas with no screen round it (the mutual's picture). `dots` off leaves its unlit dots to the page, which lays them over the whole of the keepsake's glass on the same cells, and to the picture, which does the same. See 2.6 |
+| `PixelStory` | the story on a screen's body: a canvas of the phone's cells, drawn from `pixmark.js` and `folk.js` (the two of them, the notes and the hearts, the mark on its grid, and the three stories as functions of the clock). `at` holds the clock on a frame, `mode="ascii"` sets each lit cell as a character instead, for comparison only. `SQUARE` holds the screen square to the camera. `crisp` is for a glass the size of the screen (the mutual's film): a whole number of device pixels to a cell, up to three to a point and two million pixels in all, drawn only where the frame changed, its pink a pixel to four cells. `onLayout` says where the cells are each time the glass is laid out, so the film can land on the keepsake's. `paintStill` draws one frame on a canvas with no screen round it (the mutual's picture). A story may carry its own `heat`, the colour its glint is carried toward in place of the rose: the keepsake's is the deep step of the colour it wears (`keepface.js` `heatOf`). `dots` off leaves its unlit dots to the page, which lays them over the whole of the keepsake's glass on the same cells, and to the picture, which does the same. See 2.6 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
 
 ### 8.5 The door

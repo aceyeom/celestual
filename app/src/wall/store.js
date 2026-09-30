@@ -58,9 +58,15 @@ const EMPTY = {
   hinted: 0,          // how many times it has been shown the lean, which is
                       // twice at most (screens/Letter.jsx `nudge`)
   faceSeen: false,    // the note's face has been touched once on this device:
-                      // its greeting or its battery (screens/Ping.jsx), so the
-                      // line under the screen saying both are the writer's
-                      // to set is not shown again. Never whose note it was
+                      // its greeting (screens/Ping.jsx; its battery too until
+                      // 30 September, when the battery went to the wall
+                      // letters, 0076), so the line under the screen saying
+                      // it is the writer's to set is not shown again. Never
+                      // whose note it was
+  batSeen: false,     // the composer's battery has been pressed once on this
+                      // device (screens/Write.jsx, 0076), so the line under
+                      // the card saying it is the writer's to set is not
+                      // shown again. Never which letter it was
   tabHid: 0,          // when the tab at the foot of the wall was last put away,
                       // and how many letters this device had put up by then.
                       // The tab comes back after a while, and at once after
@@ -88,6 +94,9 @@ const EMPTY = {
   revealSeen: null,   // the weekly reveal this device has opened, by the
                       // moment it fell (pings.js `lastReveal`): until it has
                       // been, the account's key in the bar carries a light
+  nightSeen: null,    // the reveal whose night this device has told, when
+                      // notes on it were not mutual (pings.js `nightWaiting`,
+                      // Night.jsx): once a reveal, by the moment it fell
   noteSpans: [],      // when each of this person's private notes went out and
                       // when it ended or was told, as the list last said it
                       // (pings.js `revealWaiting`). Never who it was to
@@ -192,8 +201,13 @@ export function drop(bucket, value) {
   return write({ ...s, [bucket]: list.filter((v) => v !== value) })
 }
 
+// A mark already made is not written again: the letter marks itself opened
+// every time a turn lands on it (screens/Letter.jsx), and writing the whole
+// blob back to storage, the same as it was, on every landing was work done
+// on the frame the card settled for nothing.
 export function mark(bucket, id) {
   const s = read()
+  if (s[bucket] && s[bucket][id] === true) return s
   return write({ ...s, [bucket]: { ...s[bucket], [id]: true } })
 }
 

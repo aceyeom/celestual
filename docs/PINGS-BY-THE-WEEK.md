@@ -35,10 +35,12 @@ always the allowance of the reveal a note sent now would run to.
 | Write again to somebody you are mutual with (0072) | one ping for its reveal, as a new note | |
 | Let a running note go | | every ping it holds for a reveal still to come |
 | A note that turns out mutual | | any ping it held for a reveal after the one that told it |
-| A note that was not this time | | nothing: the ping was used |
+| A note that was not this time (0075) | | the ping its night held: a bought one back on hand, a free one as one extra for the week after (one a person a week) |
 
 A ping that comes back is the free one if the free one was what it spent, and
-a bought one otherwise. Letting go before the reveal still tells nobody
+a bought one otherwise. Since 0075 a note costs a ping only when it is mutual:
+every ping a Saturday held for a note that was not mutual comes back at nine
+that night (section 9), and the wall says what came back, exactly. Letting go before the reveal still tells nobody
 anything (0069), so giving the ping back costs the double blind nothing.
 
 The free ping is spent first. A bought ping is spent only once the week's free
@@ -245,10 +247,13 @@ celestual_ping_allowance(p_handle text, p_proof text) -> jsonb       anon, authe
   { ok: false, allowance: A for nobody }          no proof, or not this handle's
   raises 'invalid handle' when the handle is not one (as celestual_my_pings does)
 
-A = { reveal_at, free, free_left, credits, sent, ceiling: 10, price_cents: 299,
-      next: { reveal_at, free_left, sent } }
+A = { reveal_at, free, extra, free_left, credits, sent, ceiling: 10, price_cents: 299,
+      next: { reveal_at, extra, free_left, sent } }
   reveal_at, next.reveal_at   'YYYY-MM-DDTHH:MM:SSZ'
   free                        1 (10 while an old 'steady' plan is paid through)
+  extra, next.extra           0 or 1: the free ping a night that was not mutual
+                              gave back for that reveal (0075), counted in its
+                              free_left
   credits                     bought pings on hand, across the linked @s
 
 slots = { standing: A.sent, cap: least(A.ceiling, A.sent + A.free_left + A.credits) }
@@ -276,6 +281,9 @@ celestual_my_pings(p_handle, p_proof) -> jsonb                       anon, authe
   { ok: false, pings: [] }
   since 0072 one handle can come back twice, a mutual (a told row or a
   keepsake, the latest told) and a new note to the same person
+  since 0075 a row that is not mutual adds cost: 'free' | 'paid' | null and
+  returned: 'extra' | 'kept' | null, for the night it last stood in; a
+  mutual's row is unchanged, key for key
 
 celestual_mutual_again(p_from, p_to, p_proof, p_card default null,
   p_email default null) -> jsonb                                       anon, authenticated
@@ -322,3 +330,55 @@ celestual-stripe { action: 'checkout', handle, proof, kind: 'pings', quantity: 1
 celestual-stripe { action: 'confirm', session_id }
   { ok: true, paid, applied, kind, quantity, credits } | { ok: false, error }
 ```
+
+## 9. A night that was not mutual (migration 0075)
+
+The owner's ruling of 29 September: what is shown when it is not mutual, what
+if the other person is not here, give an extra ping for next week and ask
+people to share celestual, give a bought ping back, and do it so it is honest.
+What the database and the wall settled:
+
+* **Every ping a Saturday held for a note that was not mutual comes back.**
+  At the reveal, in the same transaction that tells the pairs it tells and
+  under the same lock, every ledger row whose night has come is settled once
+  (`celestual_ping_settle`, `settled_at`). A row whose pair was told that
+  night was used by the mutual. Every other row gives back: a bought one as a
+  bought one, on the spender's own row, to keep (`returned` 'kept'); a free
+  one as one extra free ping for the reveal after its night (`returned`
+  'extra', `celestual_ping_extras`).
+* **One extra a person a week, and never more.** The extra is counted across
+  every @ a person has linked. A second free ping that lapses the same night
+  gives back nothing (`returned` null), and the wall says exactly that: `one
+  extra a week is the most, so nothing comes back for this one.` An extra that
+  lapses in its turn comes back as the next week's extra, one, so nothing
+  piles up and nothing compounds.
+* **Each Saturday is judged on its own Saturday.** A note kept for next week
+  holds a ping for each of the two reveals it stands in. If the first is not
+  mutual, its ping comes back that night and the note runs on, holding the
+  second, which is judged on its own night. Every row is settled once and
+  marked, so nothing is given back twice.
+* **Before the night, and after it.** Letting a note go before its night
+  gives its pings back, as it always has. Letting one go after its night gives
+  nothing more, since its night already gave back what it held. A mutual uses
+  the ping of the night that told it. A note from before 0071 holds no row,
+  cost nothing, and gives nothing back.
+* **Late is never lost.** The reveal's cheap check returns at once only when
+  nothing sealed is due and no row waits to be settled, so a night with no
+  pair in it still settles. The broom (`celestual_purge_expired`, and the two
+  per cent sweep in `celestual_place`) runs the reveal first and sweeps only
+  settled rows. A night settled late (the database down over a Saturday) gives
+  its extra for the reveal a note sent now runs to, never one already gone.
+* **The answer never says who.** A night that was not mutual answers the same,
+  byte for byte, whether the other person never wrote, wrote and let go
+  before the night, or is not reachable here: the settlement reads only the
+  sender's own ledger and whether the pair was told. Nothing says whether the
+  other person is reachable. The wall says `they didn't send you one.`, which
+  is true in every one of those cases and claims none of them (SECURITY.md
+  section 5 has why).
+* **The share is generic.** The night's screen offers `share celestual`: the
+  wall's how it works door (`/join`) and the line it opens on, never a name,
+  never a word about who sent what. It is never a condition of anything.
+
+The wall's side is `app/src/wall/Night.jsx`: the night's notice in the
+private notes once a reveal (`NightCard`), and the same three lines on each
+note that was not this time and at its own `/reveal/<handle>`.

@@ -57,19 +57,27 @@
 // the mutual stacked on itself, until the review of 28 September.
 //
 // ── the face it is written on (0073) ─────────────────────────────────────────
-// The owner, 29 September: the line across the top of a private note and its
-// battery are the writer's to set. The line is the composer's greeting
-// (screen.jsx `Greet`, as screens/Write.jsx draws it): `dear` and their first
-// name, or their @, until the writer changes it, forty characters, with the
-// dotted line under it that says it is theirs. The battery is a key on the
-// status row (screen.jsx `onBat`): each press takes a bar off, the empty one
-// blinks as the phone's did, and the next comes round to full; it starts
-// full. Neither is explained: the first time a note is written on a device
-// one line under the screen says both are the writer's to set, and the first
-// touch of either puts it away (store.js `faceSeen`).
+// The owner, 29 September: the line across the top of a private note is the
+// writer's to set. The line is the composer's greeting (screen.jsx `Greet`,
+// as screens/Write.jsx draws it): `dear` and their first name, or their @,
+// until the writer changes it, forty characters, with the dotted line under
+// it that says it is theirs. It is not explained: the first time a note is
+// written on a device one line under the screen says the greeting is the
+// writer's to set, and the first touch of it puts that away (store.js
+// `faceSeen`).
 //
-// The face is kept with the note (pings.js `placing`, `card.greet` and
-// `card.bat`) and goes wherever the words go: through the proof's pending
+// The battery was the writer's too, a key on the status row, from 29
+// September until the owner's next word on 30 September: "battery state
+// customizations shouldnt be for pings only for wall letters". So the key is
+// gone from this screen and went to the composer's letter (0076,
+// screens/Write.jsx), and the screen draws the phone's own full battery. A
+// note written before then keeps the battery it was left on: it comes back
+// with the note (`faceOf`, `putFace`), is drawn where it was, and goes out
+// again with the note's words, since the server replaces a card whole; it
+// can no longer be changed, and a new note has none (pings.js `placing`).
+//
+// The face is kept with the note (pings.js `placing`, `card.greet`, and the
+// kept `card.bat`) and goes wherever the words go: through the proof's pending
 // record, a note waiting on pings, the words kept while the mutual is open,
 // and a note's settings, which open on the face the note has. The server
 // replaces a card whole, so every send with words carries the face, and a
@@ -99,7 +107,7 @@ import {
   Sheet, SheetHead, Display, Label, Pill, HandleField, Addressed, Light, Who, DmCode, VerifyHead,
   DoorHead, DoorFoot, PixMark, useResolver, confirmWord, useSuggest, Suggest, useProfile,
 } from '../parts.jsx'
-import { Screen, ScreenDraft, ScreenNote, RoomLight } from '../screen.jsx'
+import { Screen, ScreenDraft, ScreenNote, RoomLight, useWake, POWER_MS } from '../screen.jsx'
 import { Dots, Provider } from '../art.jsx'
 import { normHandle, validHandle, atHandle, loadMine } from '../data.js'
 import { href } from '../router.js'
@@ -165,7 +173,7 @@ const SAY = {
 // height from the screen, which a window under 661 pixels tall has no more of
 // to give (wall.css `.has-tip` stops at its least width there), so on the
 // shortest phones it is not drawn and the lit key stays in view; the dotted
-// lines under the greeting and the battery still say they are theirs
+// line under the greeting still says it is theirs
 function tipFits() {
   try { return !window.matchMedia('(max-height: 660px)').matches } catch { return true }
 }
@@ -177,13 +185,14 @@ function words(s) {
 // The face a note came back with, off whichever of the records that hold one
 // (the proof's pending record, a note's settings, a note that waited on
 // pings, the words kept while the mutual was open) holds its words, and
-// otherwise the first there is: its line, or null to follow the name, and its
-// battery, or a full one.
+// otherwise the first there is: its line, or null to follow the name, and the
+// battery a note from before 30 September was left on, or null for a note
+// that has none, which is every new one (the head of this file).
 function faceOf(from) {
   const at = from.find((x) => x && x.line) || from.find(Boolean) || null
   return {
     greet: at && typeof at.greet === 'string' && at.greet ? at.greet.slice(0, MAX_GREET) : null,
-    bat: at && Number.isInteger(at.bat) && at.bat >= 0 && at.bat <= 4 ? at.bat : 4,
+    bat: at && Number.isInteger(at.bat) && at.bat >= 0 && at.bat <= 4 ? at.bat : null,
   }
 }
 // what the line across the top goes out as: its spaces closed, as the server
@@ -247,10 +256,11 @@ function clearOurs(use) {
 // others there, and a note let go from it closes the sheet onto whatever it
 // was raised over.
 //
-// The note comes with its face (0073): the line across its top and the
-// battery it was left on, which its writer set on this screen and changes
-// here as they change the words. A note from before, or one left as it came,
-// has neither, and the screen draws `dear` and the name and a full battery.
+// The note comes with its face (0073): the line across its top, which its
+// writer set on this screen and changes here as they change the words, and
+// the battery a note from before 30 September was left on, which is kept as
+// it was. A note left as it came has neither, and the screen draws `dear`
+// and the name and the phone's own full battery.
 let EDIT = null
 export function editNote(go, to, line, note = null) {
   const words = String(line || '')
@@ -524,22 +534,22 @@ export default function Ping({
   // The face the words are written on (0073), which comes back with them
   // from wherever they came back from: the line across the top as its writer
   // set it, or null while it follows the name (`dear` and their first name,
-  // or their @), and the battery, 0 to 4, full until it is pressed. Both are
-  // kept with the note and read by the other person if it is ever mutual.
+  // or their @), kept with the note and read by the other person if it is
+  // ever mutual; and the battery a note from before kept (null for none),
+  // which nothing on this screen sets any more and which goes out with the
+  // words as it came.
   const [greet, setGreet] = useState(() => faceOf([held, edit, kept, away]).greet)
   const [bat, setBat] = useState(() => faceOf([held, edit, kept, away]).bat)
-  // which half of the face was touched on this person's screen, each on its
-  // own, so the list arriving late puts a note's old line and battery on the
-  // screen with its words except the half being set; a battery pressed does
-  // not keep the note's own line off it, and the words then go out with the
-  // line they had. Back to nothing when the person changes
-  const faced = useRef({ greet: false, bat: false })
+  // whether the greeting was touched on this person's screen, so the list
+  // arriving late puts a note's old line on the screen with its words unless
+  // the line is being set. Back to nothing when the person changes
+  const faced = useRef({ greet: false })
   // the greeting is where the typing is: the right key takes a character
   // back from it, and there is something there to take
   const [atGreet, setAtGreet] = useState(false)
   const greetRef = useRef(null)
-  // the line under the screen saying the face is the writer's, until either
-  // half of it is touched once on this device (store.js `faceSeen`); and
+  // the line under the screen saying the greeting is the writer's, until it
+  // is touched once on this device (store.js `faceSeen`); and
   // whether this screen made room for it, which it keeps after the line has
   // gone, so the line fades where it stood and nothing under it moves
   const [hint, setHint] = useState(() => !getState().faceSeen)
@@ -564,6 +574,11 @@ export default function Ping({
   const [placing, setPlacing] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [dip, setDip] = useState('')
+  // the note's phone powers on when it is put on the glass (screen.jsx
+  // `useWake`): as the sheet opens on it, and when the name step hands on
+  // to it, and not again when it is sent, which is the same phone; the dip
+  // after a send is its own and wins while it runs
+  const power = useWake(reduce, POWER_MS, step === 'line' || step === 'done' ? 'card' : step)
   // Set when the DM came from an account other than the one typed. The
   // webhook's answer is the identity (0012), so the choice is not whether to
   // believe it: it is whether to place THIS ping under that name, and that
@@ -673,15 +688,14 @@ export default function Ping({
   const gone = editing && live?.state === 'lapsed'
   // a running note's own words, unchanged, are not sent, and the key that
   // would send them is not lit; cleared, they come off the note. Its face is
-  // part of it (0073): a new line across the top or the battery pressed is a
-  // change as new words are, and goes with the words it is on. A note with
+  // part of it (0073): a new line across the top is a change as new words
+  // are, and goes with the words it is on. A note with
   // no words has no face to change, since the face goes only with words
   const was = live ? live.line || '' : pinned ? edit.line : ''
   const greetOut = greetOf(greet)
   const wasGreet = live ? live.greet || '' : pinned ? edit.greet || '' : ''
-  const wasBat = live ? (Number.isInteger(live.bat) ? live.bat : 4) : pinned && Number.isInteger(edit.bat) ? edit.bat : 4
   const sameWords = line.trim() === was.trim()
-  const sameFace = !line.trim() || (greetOut === wasGreet && bat === wasBat)
+  const sameFace = !line.trim() || greetOut === wasGreet
   const same = editing && !gone && sameWords && sameFace
   const bare = editing && !gone && !unsure && !line.trim() && !!was.trim()
   // only the face changed: the key and the words over the screen say a
@@ -745,15 +759,16 @@ export default function Ping({
     setTo(k)
     setSaid('')
     // somebody else's screen is not the one a face was being set on
-    if (k !== h) faced.current = { greet: false, bat: false }
+    if (k !== h) faced.current = { greet: false }
     if (n && n.line && !line.trim()) { setLine(n.line); shown.current = k; putFace(n, k !== h) }
     setStep('line')
   }
-  // a note's face, put on the screen with its words: each half unless the
-  // writer is setting it on this screen (`fresh` for a screen just chosen)
+  // a note's face, put on the screen with its words: its line unless the
+  // writer is setting one on this screen (`fresh` for a screen just chosen),
+  // and the battery it kept from before, if it has one, always
   const putFace = (n, fresh = false) => {
     if (fresh || !faced.current.greet) setGreet(n.greet || null)
-    if (fresh || !faced.current.bat) setBat(Number.isInteger(n.bat) ? n.bat : 4)
+    setBat(Number.isInteger(n.bat) ? n.bat : null)
   }
   // A link to somebody with a note of theirs on them opens on that screen
   // before the list has come, and put nothing on it, so the note's words
@@ -948,8 +963,10 @@ export default function Ping({
   // answer on the phone's soft keys, the keeping one first under the focus
   // and under Escape. Then the sheet goes back onto the private notes, where
   // the note no longer is, or, reached from anywhere else, back onto what it
-  // was raised over. A note that was not this time has spent its ping on the
-  // night it was not, so only a running one says it gives it back, and one
+  // was raised over. A note that was not this time gave back what it held at
+  // the night it was not (0075: a bought one on hand, a free one as next
+  // week's extra), so it has nothing more to give and only a running one
+  // says it gives its ping back, and one
   // not known yet to be either says nothing of it; and one that went mutual
   // as it was let go is not let go (0069), which the list it lands on tells.
   const letGo = async () => {
@@ -1025,8 +1042,8 @@ export default function Ping({
     window.history.replaceState(window.history.state, '', window.location.pathname.replace(/\/ping\/[^/]*$/, '/ping'))
     setTo(''); setLine(''); setSettled(false); setSaid(''); setDip(''); setStep('who')
     setEdit(null); setAsk(false)
-    setGreet(null); setBat(4); setAtGreet(false); setTipRoom(!getState().faceSeen && tipFits())
-    faced.current = { greet: false, bat: false }
+    setGreet(null); setBat(null); setAtGreet(false); setTipRoom(!getState().faceSeen && tipFits())
+    faced.current = { greet: false }
     shown.current = ''
     setRev((n) => n + 1)
   }
@@ -1040,10 +1057,9 @@ export default function Ping({
   // ── the face, set ──
   // The line across the top is the composer's greeting (screen.jsx `Greet`,
   // screens/Write.jsx): "dear" and the name until the writer changes it,
-  // forty characters, a dotted line under it saying it is theirs. The battery
-  // is a key on the status row (screen.jsx `onBat`): a press takes a bar off,
-  // the empty one blinks as the phone's did, and the next comes round to full.
-  // The first touch of either puts the line under the screen away for good.
+  // forty characters, a dotted line under it saying it is theirs. The first
+  // touch of it puts the line under the screen away for good. The battery is
+  // not a key here any more (the head of this file).
   const defaultGreet = `dear ${first || atHandle(h)}`
   const greeting = greet === null ? defaultGreet : greet
   const seenFace = () => {
@@ -1055,12 +1071,6 @@ export default function Ping({
     faced.current.greet = true
     setGreet(v === defaultGreet ? null : v)
     setSaid('')
-  }
-  const pressBat = () => {
-    if (placing) return
-    faced.current.bat = true
-    seenFace()
-    setBat((b) => (b + 4) % 5)
   }
   // The line saying the face is theirs stands on a note being written, and
   // not over a new note to a mutual, whose floor has two lines already. Its
@@ -1075,7 +1085,7 @@ export default function Ping({
   if (step === 'buy') {
     body = (
       <BuyPings
-        out headId="wl-ping-h" backLabel="back to the note"
+        out headId="wl-ping-h" backLabel="back to the note" reduce={reduce}
         onBack={() => { dropWaiting(); setStep('line') }}
       />
     )
@@ -1137,10 +1147,10 @@ export default function Ping({
     // has, and gives the row up to a line the writer set, which is theirs
     // whole, as a letter's greeting is.
     const worded = !!line.trim()
-    const faceNow = done ? (worded ? { greet: greetOut, bat } : { greet: '', bat: 4 }) : { greet: greetOut, bat }
+    const faceNow = done ? (worded ? { greet: greetOut, bat } : { greet: '', bat: null }) : { greet: greetOut, bat }
     const top = done || ask ? {
       ...(faceNow.greet ? { salutation: faceNow.greet } : { name: first || atHandle(h), dear: true, handle: first ? atHandle(h) : '' }),
-      icon: 'pen', bat: faceNow.bat,
+      icon: 'pen', bat: faceNow.bat ?? 4,
     } : {
       greet: {
         value: greeting, onChange: onGreet, max: MAX_GREET, placeholder: defaultGreet,
@@ -1149,7 +1159,7 @@ export default function Ping({
         // done with the line, the typing goes on to the words
         onEnter: () => { if (lineRef.current) lineRef.current.focus({ preventScroll: true }) },
       },
-      handle: greet === null && first ? atHandle(h) : '', icon: 'pen', bat, onBat: pressBat,
+      handle: greet === null && first ? atHandle(h) : '', icon: 'pen', bat: bat ?? 4,
     }
     // what the right key takes a character back from: the greeting while
     // the typing is in it, and the words otherwise
@@ -1169,7 +1179,7 @@ export default function Ping({
         </Display>
         <div className="wl-write-step">
           <div
-            className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
+            className={`wl-write-card${shaking ? ' is-shaking' : ''}`} data-power={power ? '' : undefined}
             onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
           >
             <span className="wl-write-light" aria-hidden="true">
@@ -1190,7 +1200,7 @@ export default function Ping({
                 answered on its soft keys. Across the top, the face the note
                 is written on (`top`, above). */}
             <Screen
-              look={null} seed={seed} live state={dip}
+              look={null} seed={seed} live state={dip || power}
               top={{
                 ...top,
                 ...(done ? { stamp: stampOf(!spends && live?.at ? live.at : Date.now()) } : { counter: `${MAX_LINE - line.length}/1` }),
@@ -1226,10 +1236,9 @@ export default function Ping({
                 new note to a mutual says first, in one line, that the mutual
                 stays theirs as it was: the note is a new one beside it, not
                 in its place. The first time a note is written on this device,
-                one line under the rest says the greeting and the battery are
-                the writer's to set, the way the composer's first letter says
-                its greeting is (screens/Write.jsx `hint`), until either is
-                touched, and then it fades where it stood, the last line, so
+                one line under the rest says the greeting is the writer's to
+                set, the way the composer's first letter says its greeting
+                is (screens/Write.jsx `hint`), until it is touched, and then it fades where it stood, the last line, so
                 the room it leaves is only a little more air over the key. A
                 running note's change costs nothing, whether it is new words
                 or a new face. */}
@@ -1251,7 +1260,7 @@ export default function Ping({
                     ) : null}
                     {tip ? (
                       <Label tone="dim" className={`wl-write-hint wl-ping-face${hint ? '' : ' is-gone'}`}>
-                        <span aria-hidden={hint ? undefined : 'true'}>the greeting and battery are yours to set.</span>
+                        <span aria-hidden={hint ? undefined : 'true'}>the greeting is yours to set.</span>
                       </Label>
                     ) : null}
                   </>

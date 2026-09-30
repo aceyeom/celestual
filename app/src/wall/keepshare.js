@@ -6,20 +6,24 @@
 // canvas, as a picture two people can keep and pass round. The owner asked
 // for their names shown with the letters, and for it to be something worth
 // keeping and sharing, so it is the keepsake itself, as it stands on the
-// page: the rose phone held square in the black room, the aerial and the
-// night it was told on its band, the mark crowning the glass with `it's
-// mutual.` in its cells, their two first names under it, `Jules & Ace`, and
-// under them their note and yours, each a small screen of its own with its
-// strip across the top, the line its writer set there and the battery they
-// left it on, then the words and whose they are; and the product's
-// signature in the dark under the phone. One glass with nothing cutting it,
-// its unlit dots run on under everything on the story's own cells, and each
-// note's panel laid on the lines between them, as the page lays them. It
-// was going to carry the mark and the names and never the notes; the notes
-// are what the two of them wrote, and what they would keep. A person can
-// leave them off from the same menu (`notes: null`), and then the picture
-// is the phone with the mark and the names alone, the mark larger, and no
-// line and no battery either.
+// page: the phone held square in the black room, in the colour the two of
+// them light it in (`tint`, keepface.js, 0077; the rose until they choose),
+// the aerial, the night it was told and the pair's one battery on its band
+// at the charge they left it on (`bat`), the mark crowning the glass with
+// `it's mutual.` in its cells, their two first names under it, `Jules &
+// Ace`, and under them their note and yours, each a small screen of its own
+// with its strip across the top and the line its writer set there, then the
+// words and whose they are; and the product's signature in the dark under
+// the phone. One glass with nothing cutting it, its unlit dots run on under
+// everything on the story's own cells, and each note's panel laid on the
+// lines between them, as the page lays them. It was going to carry the mark
+// and the names and never the notes; the notes are what the two of them
+// wrote, and what they would keep. A person can leave them off from the
+// same menu (`notes: null`), and then the picture is the phone with the
+// mark and the names alone, the mark larger, and no line either. Each note
+// carried its writer's battery at the end of its strip until the owner put
+// the one battery at the top of the card (29 September). Whether either of
+// them has opened it is never on the picture: that is between the two.
 //
 // Never a handle and never a link: the picture is passed round among
 // people, and the reveal's own address says `nothing here.` to anybody but
@@ -44,14 +48,17 @@
 import { skinOf, quirks, rgbTileReady } from './looks.js'
 import { glyph, roundRect, backlight, signature, grainOver, imageOf, rgba } from './share.js'
 import {
-  W, H, PX, PW, SU, BAND, SIDE, NOTE_W, INSET, HEAD, HEAD_END, BAT_H, BAT_W, WORDS_TOP, FROM_LOW,
+  W, H, PX, PW, SU, BAND, BAND_BAT_H, BAND_BAT_W, BAND_END, SIDE, NOTE_W, INSET, HEAD, WORDS_TOP, FROM_LOW,
   SEAL_H, SEAL_GAP, SEAL_SAY, NAME_UP, NAME_GAP, SIGN_GAP, SIGN_H, LINE, capOf, faceOf, layoutOf, topOf, storyFoot,
 } from './keeplayout.js'
 import { paintStill } from './PixelStory.jsx'
 import { I_COLS, I_ROWS, NOTE } from './pixmark.js'
 import { langOf, ensureCjk } from './type.js'
+import { heatOf } from './keepface.js'
 
-const ROSE = skinOf('rose')
+// the skin of the colour it is lit in, the rose's unless the pair chose
+// another (the lit screens, keepface.js `TINTS`)
+const skinFor = (o) => skinOf(o.tint || 'rose')
 
 // The sealed note, as the stories draw it, `h` tall with its top left at
 // (x, y)
@@ -75,6 +82,7 @@ const lookOf = (o) => `mutual:${o.stamp || ''}:${[...(o.names || [])].sort().joi
 
 // ── the phone ──
 function drawPhone(o, L, tile) {
+  const S = skinFor(o)
   const q = quirks(lookOf(o))
   const ph = L.ph
   const cv = document.createElement('canvas')
@@ -88,30 +96,30 @@ function drawPhone(o, L, tile) {
   // is brightest at
   const markY = BAND
   const my = markY + L.mark / 2
-  // the panel: the rose, round that hot spot, an ellipse 120% by 95% of
+  // the panel: its colour, round that hot spot, an ellipse 120% by 95% of
   // the phone (screen.css `.wl-scr-bg`)
   g.save()
   g.translate(PW / 2, my)
   g.scale(1, (0.95 * ph) / (1.2 * PW))
   const pg = g.createRadialGradient(0, 0, 0, 0, 0, 1.2 * PW)
-  pg.addColorStop(0, ROSE.hi)
-  pg.addColorStop(0.52, ROSE.mid)
-  pg.addColorStop(1, ROSE.lo)
+  pg.addColorStop(0, S.hi)
+  pg.addColorStop(0.52, S.mid)
+  pg.addColorStop(1, S.lo)
   g.fillStyle = pg
   g.fillRect(-PW, -4 * ph, 2 * PW, 8 * ph)
   g.restore()
   // the band and the foot
   const tg = g.createLinearGradient(0, 0, 0, BAND)
-  tg.addColorStop(0, ROSE.top)
-  tg.addColorStop(1, ROSE.top2)
+  tg.addColorStop(0, S.top)
+  tg.addColorStop(1, S.top2)
   g.fillStyle = tg
   g.fillRect(0, 0, PW, BAND)
-  g.fillStyle = ROSE.bot
+  g.fillStyle = S.bot
   g.fillRect(0, ph - L.foot, PW, L.foot)
 
   // the mark, alive and still: the keepsake's frame on a canvas of cells,
   // which draws no unlit dots of its own; its grid is the glass's
-  const ink = ROSE.ink
+  const ink = S.ink
   let cell = 0
   let gap = 0
   let gx = 0
@@ -121,7 +129,7 @@ function drawPhone(o, L, tile) {
     mark = document.createElement('canvas')
     mark.width = PW
     mark.height = L.mark
-    const lay = paintStill(mark, o.frame, { cols: I_COLS, rows: I_ROWS, ink, dots: false })
+    const lay = paintStill(mark, o.frame, { cols: I_COLS, rows: I_ROWS, ink, dots: false, heat: heatOf(o.tint) })
     if (lay) {
       cell = lay.cell
       gap = lay.gap
@@ -155,14 +163,17 @@ function drawPhone(o, L, tile) {
   const lineX = (v) => (cell ? gx + d + Math.round((v - gx - d) / cell) * cell : Math.round(v))
   const lineY = (v) => (cell ? gy + d + Math.round((v - gy - d) / cell) * cell : Math.round(v))
 
-  // the status row, lit, with its bloom: the aerial, and the night in the
-  // middle of the row; no battery, since each note carries its own
-  const bloom = (fn) => { g.save(); g.shadowColor = ROSE.bloom; g.shadowBlur = 2.4 * SU; fn(); g.restore() }
+  // the status row, lit, with its bloom: the aerial, the night in the
+  // middle of the row, and the pair's battery at its far end, as far in
+  // from the edge as the aerial is at the other
+  const bloom = (fn) => { g.save(); g.shadowColor = S.bloom; g.shadowBlur = 2.4 * SU; fn(); g.restore() }
   const ex = 2.2 * SU
   const r1 = 2.6 * SU + (10.4 * SU) / 2
+  const bat = Number.isInteger(o.bat) && o.bat >= 0 && o.bat <= 4 ? o.bat : null
   bloom(() => {
-    glyph(g, 'ant', ex, r1 - 4.5 * SU, 9 * SU, ROSE.lit)
-    g.fillStyle = ROSE.lit
+    glyph(g, 'ant', ex, r1 - 4.5 * SU, 9 * SU, S.lit)
+    if (bat !== null) glyph(g, `bata${bat}`, PW - BAND_END - BAND_BAT_W, Math.round(r1 - BAND_BAT_H / 2), BAND_BAT_H, S.lit)
+    g.fillStyle = S.lit
     g.textBaseline = 'middle'
     g.textAlign = 'center'
     if (o.stamp) {
@@ -174,7 +185,7 @@ function drawPhone(o, L, tile) {
   // what is on the glass, in its ink, with the soft edge a lit word has
   const inked = (fn) => {
     g.save()
-    g.shadowColor = ROSE.soft
+    g.shadowColor = S.soft
     g.shadowBlur = 0.35 * SU * 2
     g.fillStyle = ink
     fn()
@@ -205,10 +216,10 @@ function drawPhone(o, L, tile) {
   }
 
   // The notes, as the keepsake sets them: a small screen each, its panel a
-  // little brighter than the glass with a hairline of the ink, its strip of
-  // darker rose with the writer's line and their battery, laid on the grid;
-  // then the words, and whose they are under them
-  const drawNote = (text, who, title, bat, n, y) => {
+  // little brighter than the glass with a hairline of the ink, its strip a
+  // darker band of the glass's colour with the writer's line, laid on the
+  // grid; then the words, and whose they are under them
+  const drawNote = (text, who, title, n, y) => {
     const x0 = SIDE
     const x1 = SIDE + NOTE_W
     const y1 = y + n.h
@@ -221,18 +232,18 @@ function drawPhone(o, L, tile) {
     g.save()
     roundRect(g, l, t, r - l, b - t, rad)
     g.clip()
-    g.fillStyle = rgba(ROSE.hi, 0.3)
+    g.fillStyle = rgba(S.hi, 0.3)
     g.fillRect(l, t, r - l, b - t)
     const sg = g.createLinearGradient(0, t, 0, s)
-    sg.addColorStop(0, rgba(ROSE.lo, 0.72))
-    sg.addColorStop(1, rgba(ROSE.lo, 0.9))
+    sg.addColorStop(0, rgba(S.lo, 0.72))
+    sg.addColorStop(1, rgba(S.lo, 0.9))
     g.fillStyle = sg
     g.fillRect(l, t, r - l, s - t)
     g.restore()
     g.save()
     roundRect(g, l + 1, t + 1, r - l - 2, b - t - 2, Math.max(1, rad - 1))
     g.lineWidth = 2
-    g.strokeStyle = rgba(ROSE.lo, 0.8)
+    g.strokeStyle = rgba(S.lo, 0.8)
     g.stroke()
     g.restore()
     const mid = (t + s) / 2
@@ -243,7 +254,6 @@ function drawPhone(o, L, tile) {
         g.textAlign = 'left'
         g.fillText(title, x0 + INSET, mid + 0.04 * L.title.size)
       }
-      if (bat !== null && bat !== undefined) glyph(g, `bata${bat}`, x1 - HEAD_END - BAT_W, Math.round(mid - BAT_H / 2), BAT_H, ink)
       g.textBaseline = 'top'
       g.textAlign = 'left'
       const wy = y + HEAD + WORDS_TOP
@@ -271,9 +281,8 @@ function drawPhone(o, L, tile) {
   if (L.notes) {
     const [a, b] = o.names || ['them', 'me']
     const lines = (L.title && L.title.lines) || []
-    const bats = o.bats || []
-    drawNote(o.notes[0], a, lines[0], bats[0], L.notes[0], L.tops[0])
-    drawNote(o.notes[1], b, lines[1], bats[1], L.notes[1], L.tops[1])
+    drawNote(o.notes[0], a, lines[0], L.notes[0], L.tops[0])
+    drawNote(o.notes[1], b, lines[1], L.notes[1], L.tops[1])
   }
 
   // the LCD over all of it, as a letter's picture has it (share.js
@@ -331,6 +340,7 @@ export async function renderMutual(o) {
   cv.height = H
   const g = cv.getContext('2d')
   const L = layoutOf(g, o)
+  const S = skinFor(o)
   // the phone and the signature under it, one block in the middle of the
   // feed's crop (keeplayout.js)
   const top = topOf(L)
@@ -341,14 +351,14 @@ export async function renderMutual(o) {
   const cx = W / 2
   const cy = top + my
   const hg = g.createRadialGradient(cx, cy, 168, cx, cy, 798)
-  hg.addColorStop(0, rgba(ROSE.glow, 0.34))
-  hg.addColorStop(0.55, rgba(ROSE.glow, 0.11))
-  hg.addColorStop(1, rgba(ROSE.glow, 0))
+  hg.addColorStop(0, rgba(S.glow, 0.34))
+  hg.addColorStop(0.55, rgba(S.glow, 0.11))
+  hg.addColorStop(1, rgba(S.glow, 0))
   g.fillStyle = hg
   g.fillRect(0, 0, W, H)
   // the phone, square to the camera, its edge lit
   g.save()
-  g.shadowColor = rgba(ROSE.glow, 0.5)
+  g.shadowColor = rgba(S.glow, 0.5)
   g.shadowBlur = 30
   g.drawImage(phone, PX, top)
   g.restore()
@@ -361,13 +371,13 @@ export async function renderMutual(o) {
 // As the letter's is (share.js `prepareLetter`): the share menu asks for it
 // as it opens, so the share sheet can be asked for inside the tap on `to
 // someone`; the last few are kept, and one that failed is dropped. Kept by
-// everything the picture prints, so a picture of other words, other lines
-// or other batteries is never the one handed on.
+// everything the picture prints, so a picture of other words, other lines,
+// another colour or another charge is never the one handed on.
 const READY = new Map()
 const SEP = String.fromCharCode(1)
 const keyOf = (o) => [
   o.stamp, (o.names || []).join('·'), o.notes ? o.notes.join(SEP) : '-',
-  o.titles ? o.titles.join(SEP) : '-', o.bats ? o.bats.join(',') : '-',
+  o.titles ? o.titles.join(SEP) : '-', o.tint || 'rose', Number.isInteger(o.bat) ? o.bat : '-',
 ].join('|')
 const painted = () => new Promise((done) => {
   if (typeof requestAnimationFrame !== 'function') { done(); return }

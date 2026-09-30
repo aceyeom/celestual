@@ -17,7 +17,7 @@ database."* Every control below exists to make both worthless.
 ## The controls
 
 ### §1 — No client access to the data
-All tables (`celestual_entries`, `celestual_keepsakes`, `celestual_matches`,
+All tables (`celestual_entries`, `celestual_keepsakes`, `celestual_mutual_faces`, `celestual_matches`,
 `celestual_notifications`, `celestual_ping_spends`,
 `celestual_attempts`, `celestual_suppressions`, `celestual_placements`,
 `celestual_members`, `celestual_handle_links`, `celestual_ig_verifications`,
@@ -28,6 +28,7 @@ policies**, and all privileges are revoked from `anon`/`authenticated`. The
 browser literally cannot `select` from them. The only entry points are the
 `SECURITY DEFINER` RPCs (`celestual_submit`, `celestual_withdraw`,
 `celestual_renew`, `celestual_mutual_again`, `celestual_mutual_forget`,
+`celestual_mutual_face`, `celestual_mutual_face_set`, `celestual_mutual_seen`,
 `celestual_ping_status`, `celestual_my_pings`,
 `celestual_slots_for`, `celestual_suppress`, `celestual_link`,
 `celestual_set_worlds`, `celestual_world_counts`, `celestual_campus`,
@@ -37,7 +38,10 @@ small status objects — never other people's rows. Internal helpers
 (`celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
 `celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`,
 and since 0072 `celestual_place`, `celestual_mutual_keep` and
-`celestual_keepsake_forget`)
+`celestual_keepsake_forget`, and since 0077 `celestual_mutual_told`,
+`celestual_mutual_named`, `celestual_mutual_face_row`, `celestual_mutual_side`,
+`celestual_mutual_face_answer`, `celestual_mutual_face_none` and
+`celestual_mutual_tints`)
 and the operator / service-role paths (`celestual_complete_ig_verification`,
 `celestual_relogin_store`, `celestual_relogin_redeem`, `celestual_campus_reveal`,
 `celestual_purge_expired`) are **not** granted to clients.
@@ -56,6 +60,17 @@ hash-to-hash, group-aware. Consequences, by design:
 - Cross-device restore (`celestual_my_pings`) returns named rows only for
   mutual pings; unmatched pings restore as anonymous standing rows. This is a
   feature, not a gap.
+
+**Corrected 29 September: the bullets above are the design of 0006, and they
+stopped being true in 0010.** Since 0010 `celestual_entries.to_handle` keeps
+the normalised target in plaintext beside the hash, so a person's notes
+restore BY NAME on any device they verify on (`celestual_my_pings` names
+every row, running, not this time and mutual). Matching and suppression
+still run on the salted hash, and the plaintext is never returned to anybody
+but the note's own sender behind their proof, but a database dump does read
+who each running note is to, and the renewal mail could name one (none does:
+§mail). The row goes with the note: let go, erased, or swept a week after it
+was not this time. Read the bullets above with that in mind.
 - The opt-out registry (`celestual_suppressions`) is itself hashed.
 - The renewal email can name no handle — the server doesn't know one.
 
@@ -81,6 +96,20 @@ with the ping given back, send, read, let go could be run without end. So
 the bit is answered only of a pair already told, and a note sent and let go
 before its reveal learns nothing a single note would not (a sealed pair
 answers as an unanswered one, 0069). docs/PINGS-BY-THE-WEEK.md section 8.
+
+**Since 0075 (a night that was not mutual) a note costs a ping only when it
+is mutual.** Every ping a Saturday held for a note that was not mutual comes
+back at the night: a bought one on hand, a free one as one extra free ping
+for the week after, at most one a person a week across their linked @s, so
+it cannot compound (docs/PINGS-BY-THE-WEEK.md section 9). That makes a note
+free to send whatever it learns, which is why nothing it learns may be a bit
+about the other person: the night's answer (`celestual_my_pings`' `cost` and
+`returned`) is read only off the sender's own ledger and whether the pair was
+told, and is the same, byte for byte, whether the other person never wrote,
+wrote and let go before the night, or is not reachable here
+(scripts/sql/test-pings-by-the-week.sql section 11d). The settlement is not
+conditioned on membership, since a refund that depended on it would itself be
+the bit.
 
 ### §4 — Rate limiting
 `celestual_submit` enforces trailing-hour caps: **per-IP (40/hr)**,
@@ -112,6 +141,21 @@ its @ has an account, which is what lets a note be sent and let go for
 nothing (§3).
 `celestual_ping_status` returns reachability only for targets the caller has
 actually placed.
+
+**And it is never answered for a note that was not mutual (0075, the owner's
+ruling of 29 September).** The owner asked what happens when the other person
+is not on celestual. The ruling is that nobody is ever told whether they are:
+the wall says, on the night, `they didn't send you one.`, which is true
+whether they sent nothing, let one go or are not reachable here, and claims
+none of them.
+Two reasons, either enough. Every ping of a night that was not mutual now
+comes back, so a bit answered at the night would be a free lookup of ten @s a
+week, the scan this section exists to prevent. And the answer would say
+something about a person who has agreed to nothing: that they are here and
+did not write back is a fact about them, told to somebody else. 0071's header
+said `reachable` was "answered at the reveal and not before"; no code ever
+answered it for a note that was not mutual, and none does now. It is said
+only of a pair already told, where both already know.
 
 ### §suggest — What a typeahead may list (0040)
 The wall's search and composer suggest names as a person types. They read
@@ -329,6 +373,67 @@ the other side writes a new one too).
   stays with nothing of theirs in it. The broom takes none; a keepsake lasts,
   as a mutual did, until its owner takes it off.
 
+### §face: a mutual's one face, and whether it was opened (0077)
+The owner, 29 September: the keepsake's colour and the one battery on its
+band are the two people's to change, "instantly viewable to the other
+person", and each can see whether the other has opened it. So a told mutual
+has one row in `celestual_mutual_faces`, the two people's, and it is the one
+piece of state in the product that one person writes and another reads.
+
+- **What it holds.** Two handles, one of each person's, the ones that first
+  asked; a colour off a fixed list (the lit screens, checked by a constraint
+  and by the door); a battery of 0 to 4; which side set either last, as the
+  letter `a` or `b`, never a handle; when; a random uuid, the `topic`; and
+  when each side first opened the mutual after its latest night. No words,
+  no names, no photograph, nothing about anybody outside the two.
+- **Who can read it.** Only the two people of a told mutual, each through
+  their own proof. Every door (`celestual_mutual_face`, `_face_set`,
+  `_seen`) takes the caller's @ and proof and the other @, runs the reveal,
+  takes the other @ only when it is exactly the @ one of the caller's own
+  told rows or keepsakes names (the @ written to, by its hash, or the @
+  that wrote back, which the caller's list already shows), never widened
+  through the other person's links (`celestual_mutual_named`), and then
+  finds a told mutual between the two people's groups on the caller's own
+  side (a told row or a keepsake, as `celestual_mutual_forget` finds one);
+  the browser never holds a key to the pair. Anybody without one gets
+  `{ ok: false, error: 'none' }`, the same bytes whether they never wrote,
+  wrote and are waiting, wrote and it lapsed, took the mutual off, named an
+  @ nobody has ever proved, or named an @ their partner has linked that
+  their own list never named, so none of it says whether the other person
+  is on celestual or which @s are one person (§5 is untouched). RLS on, zero policies, every
+  grant revoked, the helpers the service role's alone.
+- **Why it is fine that one of them learns this about the other.** Both
+  wrote, both were told: this is between the two people a mutual already
+  joined, about the one thing they now share, and it is nothing a third
+  person, the wall or the picture ever sees. The answer tells the caller the
+  colour, the battery, when either last changed, the topic, and whether the
+  OTHER side has opened the mutual since the caller's own night, and when;
+  never which side set anything, never the caller's own opening, never a
+  list of openings. `opened` is kept as a moment, compared with the
+  reader's own night, so a pair told again starts at `delivered` on both
+  sides, and a browser that drew an older night than the server has now
+  marks nothing.
+- **Taking it off, writing again and keeping still tell nothing.**
+  `celestual_my_pings` is not touched, so `test-mutual-kept.sql` holds byte
+  for byte. The one who takes a mutual off has no told night left on their
+  side, so every door answers them `none`; the row is not touched by the
+  forgetting, so the other person reads exactly what they read before, their
+  view of whether the forgetter had opened it included, and the topic does
+  not change (a new one would be a change they could see). The face simply
+  stops changing. Writing again keeps the pair and the face; the new telling
+  resets only `opened`.
+- **The nudge.** A change reaches the other keepsake while it is open as a
+  Realtime broadcast on the public channel `mutual:<topic>` that says
+  `moved` and carries nothing; the other browser reads the face again
+  through its own proof. A person who learns a topic learns when somebody
+  touched that face, never what, and anybody can send `moved`, which costs
+  the listener one proof gated read, debounced. The browser that made the
+  change sends it: SQL cannot broadcast without pg_net. Keepsakes also ask
+  every five seconds while they can be seen, a proof lookup each.
+- **Erasure.** `celestual_keepsake_forget` (and so erasure, the opt out and
+  the desk's delete, through `celestual_billing_forget`) deletes every face
+  naming the handle. `scripts/sql/test-mutual-face.sql` holds all of it.
+
 ### §card — What a ping carries, and what holds it shut (0022)
 Every ping now carries a **card**: a short message on a ground, in one of three
 faces, with the block where the person left it, plus one number for the light it
@@ -352,7 +457,12 @@ burns with. It lives in `celestual_entries.card`.
   between the two is caught; the server reads each on its own). The battery is
   matched against the numbers' regular expression before it is cast, then
   rounded and clamped to 0 to 4, so a hostile value can neither raise inside
-  the write path nor ride along. The validator reads the service role's list
+  the write path nor ride along. (No screen sets one on a new note since
+  0076; the validator still takes it, for a note that already had one.) A
+  wall letter's battery (0076) is kept in its look and cleaned the same way
+  by `wall_look_clean`: only a JSON number, cast only after `jsonb_typeof`
+  has called it one, rounded and clamped; anything else is dropped, and the
+  row's check holds every stored look to that function. The validator reads the service role's list
   now and is revoked from `public`, `anon` and `authenticated`; its one caller
   is `celestual_place`, which is SECURITY DEFINER.
 - **One door, and it is locked to a matched row.**
@@ -397,6 +507,20 @@ to be able to read them. And a card sits in `localStorage` on the device that
 placed it, exactly as the plaintext handles already do. The card system's
 design record went with the retired design on 4 September; 0022's header
 carries the seal rule.
+
+### §take it back: the writer, told only to the writer (0074)
+A letter's writer can take it back down and put it back within a day
+(`wall_writer_remove`, `wall_writer_restore`). The proof is the session: the
+letter's `author_id` must be `celestual_session_user(p_token)`, and a caller
+who is not its author is answered `not_yours`, which says that it is not
+theirs and nothing about whose it is. The two reads carry `yours`, true only when the session asking is the
+author and false for every other caller, the signed out included, the same
+kind of answer as a reply's `mine`: a fact about the caller, never about
+anybody else. A letter its writer took back reads to everybody else exactly
+as any letter that came down (`gone`), so the person it was written to never
+learns whose hand it was. The desk's switch will not put such a letter back up,
+and a dismissed report no longer resurrects a letter its writer or its owner
+took down.
 
 ### §replies — Anonymous to readers, not to the desk (0068)
 A letter has a thread of replies under it, and a reply is the one place on the
@@ -562,6 +686,10 @@ pages. If the doc viewer is ever removed, put this back to `'none'`.
   readout). The bound address is never returned in full — Postgres masks it to
   its first letter and domain before it leaves. The RPC is service-role only, so
   it is reachable only through the edge function, where rate limiting lives.
+  (Since 0071 `celestual_submit` answers `reachable` only of a pair already
+  told, and since 0075 a night that was not mutual never answers it at all,
+  §5; the router's answer to a person signing in is their own @, and stays
+  as bounded as it was.)
 - **A card is readable by the operator (0022)** — the words are stored in
   plaintext, because the person they were written to must be able to read them
   at a mutual and a hash cannot be un-hashed. The target handle beside them is

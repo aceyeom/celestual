@@ -136,26 +136,39 @@ unsure of is not held. Takedown is **post-hoc**, and the same asymmetry drives
 both: the screenshot exists before the decision does.
 
 ```
-  writing        layer 1  regex — slurs, links, phones, addresses, room numbers.
-                          Runs at the keyboard (moderate.js) and again on the
-                          server, because a client-side check is a courtesy to
-                          the writer, not a control on the writer.
-                          The ONLY thing that stops a letter going up: the
-                          card shakes, the line under it says what was
-                          caught, and nothing is sent.
-                 layer 2  one Haiku call, against explicit categories, AFTER
-                          the letter is on the wall. A pass and a review leave
-                          it up. Only a letter it reads as severely malicious
-                          comes down, and the writer is told on the wall that
-                          it went against the terms, with their words back.
-                 layer 3  anything ambiguous stays up, flagged, and a person
-                          reads it at the desk while it stands. If that person
-                          takes it down, the writer is told the same way.
+  writing        layer 1  regex, over the words as typed and folded flat
+                          (moderate.js `norm`): slurs in the plural each
+                          really takes and in disguise, links, phones,
+                          addresses, room numbers, and on public words only,
+                          a sexual proposition aimed at the person and
+                          telling them to kill themselves, in the shapes no
+                          joke could share (anything a joke might share is
+                          left to layers 2 and 3). Runs at the keyboard
+                          (moderate.js) and again on the server, because a
+                          client-side check is a courtesy to the writer,
+                          not a control on the writer. A catch is a hard
+                          refusal: the card shakes, the line under it says
+                          what was caught, and nothing is sent.
+                 layer 2  the lexicon, server side: a wide list of the words a
+                          letter with a consequence in it carries (violence,
+                          sex, abuse, a minor, a routine, exposure). A gate,
+                          never a verdict. On a verified @-note a letter that
+                          matches none of it goes up unread by any model, and
+                          the desk sees that it did.
+                 layer 3  one Haiku call, against explicit categories. An open
+                          note (the composer's default, and every name note)
+                          is read BEFORE it is written: a pass goes up, a
+                          review waits for the desk, a reject never goes up
+                          and the writer is told the one thing to change. A
+                          verified @-note is read AFTER it is up: a reject
+                          takes it down and the writer is told on the wall.
+                 layer 4  anything ambiguous is held for, or flagged to, a
+                          person at the desk.
 
   reporting      the tap  off the wall, the search and the count. Immediately.
                  the box  optional, three lines. Why.
-                 the read Haiku decides only WHERE it lands — confirmed, or a
-                          person looks at it. Never whether it comes down.
+                 the desk a person upholds it (it stays down) or dismisses
+                          it (it goes back up). No model reads a report.
                           -> held, never deleted. A desk can put it back up.
 ```
 
@@ -185,6 +198,33 @@ hand), and offers the words back on the composer. The notice is never raised
 for a reader's report, because telling the writer would point them at the
 person likeliest to have filed it. A classifier that does not answer leaves
 the letter up, flagged `unscreened`.
+
+**The balance, as the owner set it on 30 September.** A letter that said
+"lets fuck babe" was read, passed and put up, and the desk took it down
+eleven minutes later: the reading's sexual rule named explicit content, a
+body and a history, and a two word proposition was none of those, while the
+same prompt said swearing at a person was allowed. The owner asked for the
+balance to be tuned rather than tightened, since a wall too strict is as
+dead as one too loose. So the fun passes, and the prompt says so with the
+owner's own jokes as examples: swearing inside a feeling or a joke ("fuck you
+for leaving", "you're the fucking best"), roasts ("your playlist is a war
+crime"), anger with a reason, flirting and innuendo that is not explicit
+("you're so fine it's rude", "kiss me already"), comic hyperbole ("i'd fight a
+bear for you", "i could kill you for that haha") and money jokes ("you owe me
+$5"). What comes off: a proposition aimed at the person however short or
+misspelled, explicit sex or a sexualised body, a letter that is nothing but
+profanity or degradation hurled at the person (the new `abuse` category),
+telling them to hurt themselves, a slur used as an attack, and a threat,
+plainly or veiled. The list takes the surest shapes of the first and the
+fourth at the keyboard (`caughtOnWall`), where the composer shakes and says
+"it's sexual, and the wall is public. say it another way, or send it
+privately.": a private note is read only if the other person sent one back,
+so the same words may go there, and nothing sexual is on the private note's
+list (`celestual_text_caught`, migration 0078). Everything subtler is the
+reading's. `npm run check:moderation` holds the keyboard and both functions
+to a must-refuse table and a must-pass table of exactly these lines, and the
+same list stopped refusing memories as contact ("the same dorm 2 years ago",
+"#2019", "20 minutes each way", "you.me").
 
 ### 2 · Getting a letter down is free. Emptying a whole name is the one thing that asks.
 
@@ -234,7 +274,10 @@ each carry one line saying what they do, the reversible one first, because the
 one decision on this surface that must not be made by guessing at a label is
 the one between them. They were two bare outlined rows with an arrow each,
 which is a form drawn in a hurry; the pane is one object and the rows are
-parts of it.
+parts of it. (The flag has gone since, and both acts are rows of the letter's
+own `options`, the right soft key, with the heart and the replies' bubble on
+the left of the band; the soft keys, below. The one person who never had a
+row on it, the writer, has `take it back` there since 0074.)
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -457,13 +500,36 @@ still after the last word. Every letter is the same screen, set in one face
 
 | | |
 | --- | --- |
-| **the status rows** | the aerial, and by the battery (how long it has been sitting there unsaid) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. A letter from a verified Berkeley address carries the Berkeley mark in this row (below). Then the pen and `dear` with the writer's greeting, or the resolver's first name for the @, or, with neither, `dear you`. It used to be `dear` and the first name and then the handle, and `dear` and the handle alone where the resolver had no name; since 26 September the @ is never printed on a letter, its card while it loads, the letters asleep either side of it or its picture, and the handle is only the key the letter is filed and found under (`wall_search` still finds it by it). A sealed letter had a padlock where the pen is, until the seal went with 0066. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 280 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and since 0073 its second row and its battery are the note's face, which its writer sets on that screen (the greeting, as the composer's, and the battery as a key a bar at a time, each with the dotted pixel line under it that says it is theirs), kept with the note and read with it if it is ever mutual, a line they set having the row to itself with no handle beside it, and a story screen (the intro, the door) carries the glyphs and neither; the mutual carries the night it was told, its film and its keepsake alike, and the keepsake nothing more: no battery of the phone's own, since each of its two notes carries its writer's, and no second row, since the two names stand on its glass under the mark, `Jules & Ace` (Keepsake.jsx; the row was `Jules · Ace`, screen.jsx `top.pair`, until 29 September) |
+| **the status rows** | the aerial, and by the battery (the charge its writer left it on, a key on the composer's row since 30 September, 0076, full to start and a bar off at each press, the empty one blinking and the next round to full, kept in the letter's look and drawn on the letter, its picture and the name's small screen; a letter from before, with none, draws how long it has been sitting there unsaid, looks.js `batOfLetter`) the day it went up, `09/24/26` (looks.js `stampOf`, the reader's own clock). While it is a draft that place is the characters left of 280, so on the tap that puts it up the count turns into the day; the composer's row carries no date beside it and a letter's no count. A letter from a verified Berkeley address carries the Berkeley mark in this row (below). Then the pen and `dear` with the writer's greeting, or the resolver's first name for the @, or, with neither, `dear you`. It used to be `dear` and the first name and then the handle, and `dear` and the handle alone where the resolver had no name; since 26 September the @ is never printed on a letter, its card while it loads, the letters asleep either side of it or its picture, and the handle is only the key the letter is filed and found under (`wall_search` still finds it by it). A sealed letter had a padlock where the pen is, until the seal went with 0066. The menus keep the letter's first row, and the shared picture carries the same one. Every other screen keeps the one rule: a ping's line counts down from 280 while it is written and carries the day it was placed once it is out (screens/Ping.jsx, and its own screen on the account sheet, screens/You.jsx), and since 0073 its second row is the note's face, which its writer sets on that screen (the greeting, as the composer's, with the dotted pixel line under it that says it is theirs; the battery was a key there too from 29 September until 0076 gave it to the wall letters, and a note from that day keeps the one it was left on, while a new one draws the phone's own full battery), kept with the note and read with it if it is ever mutual, a line they set having the row to itself with no handle beside it, and a story screen (the intro, the door) carries the glyphs and neither; the mutual carries the night it was told, its film and its keepsake alike, and the keepsake the phone's one battery after it, the pair's (0077, `keepface.js`): a key either of the two taps to take a bar off, the empty one round to full, the other seeing it move, with no dotted line under it and nothing saying so, never blinking, even empty (the two notes each carried their writer's battery until 29 September); and no second row, since the two names stand on its glass under the mark, `Jules & Ace` (Keepsake.jsx; the row was `Jules · Ace`, screen.jsx `top.pair`, until 29 September) |
 | **the words** | as large as the screen holds them, stepping down four sizes and then scrolling with the phone's own bar. A sealed letter was its stars, until 0066 |
-| **the soft keys** | `options` (write to them, report it, take my name off, in a menu drawn the way the phone drew one), the heart and its count (the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; since 0068 a press is anybody's and goes straight to the server, where it used to be carried through the gate from outside it and pressed on the way back in; a read that set out before the press landed cannot take it back, `data.js` `heart`), and `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link). The picture is signed under the screen with the mark and `celestual.` (`share.js`) |
+| **the soft keys** | since 30 September, on the owner's ruling (which turned round the one of the 29th), `options` alone on the left and the heart and the replies' bubble together on the right, each with its count (`screen.jsx` `keys.r` as a list, `.wl-scr-bot.is-grouped`; every count but the last keeps the room of two figures, so the heart does not move under the thumb when it is counted up). The heart and its count: the hearts people pressed, and on a letter that was already up when migration 0059 ran, the hearts it was given to start from, added; since 0068 a press is anybody's and goes straight to the server, where it used to be carried through the gate from outside it and pressed on the way back in; a read that set out before the press landed cannot take it back, `data.js` `heart`. The bubble raises the replies (below); a letter with no thread to read has the heart alone. `options` is a menu drawn the way the phone drew one, and its first row is always `share` (to someone, which hands the letter's picture to the share sheet on a device that has one; save the picture; copy the link); then, for a stranger, write to them, report it and `this is about me`; for the person who holds the letter's @, remove this letter and take my name off; and for the person who WROTE it, `take it back` and nothing a stranger's menu has (0074, below). While a menu is up the band reads `select` and `back`, as on every screen. The picture is signed under the screen with the mark and `celestual.`, and its band is the card's, key for key (`share.js`) |
 
-The only thing a writer chooses about how a letter looks is the COLOUR it is
-lit in (a private note has no colour to choose, and its writer sets its face
-instead, the greeting across its top and its battery, 0073), from one pool of
+**Taking it back** (0074, the owner's ruling of 29 September). The person who
+wrote a letter can take it back down at any time while it stands or waits on
+the desk, and put it back where it was within a day. Whose a letter is is
+said to its writer's own session alone (`yours` on the two reads, answered
+only about the caller; `data.js` `isYours` falls back to this device's
+`written` ids and `wall_mine`), and nobody else learns anything by it. It is
+offered in three places: the letter's options (`take it back`, then
+`take it back?` with `take it back` and `keep it`, then `taken back.` with
+`undo` and `ok`); the card the wall stands at its foot right after a live
+post (`Wall.jsx` `Up`: "your letter to Sofia is up." with `take it back` and
+`ok`, holding the tab back while it stands); and the composer's held screen,
+a quiet `take it back` under `back to the wall`. The account's list reads
+`you took it back` for such a letter, with `undo` beside it for as long as
+the day to put it back runs (`wall_mine` `undo_until`, `You.jsx` `Wrote`),
+the one way back once the sheet or the card it was taken back on is gone,
+and the row stays on the list for that whole day however often it has been
+seen. The wall's notice never rises for
+it (`moderate.js` `whyDown` has the sentence all the same). Nothing is filed
+and no name is shut; to the person it was written to it is a letter that came
+down, as any other. A database without 0074 answers 'missing' and the row is
+simply not offered (`data.js` `canTakeBack`).
+
+The only things a writer chooses about how a letter looks are the charge its
+battery shows (0076, a key on the composer's status row) and the COLOUR it is
+lit in (a private note has no colour to choose and no battery to set, and its
+writer sets the greeting across its top instead, 0073), the colour from one pool of
 twelve under no heading, in the order of a spectrum (`Look.jsx`, under the
 composer's screen while its `colour` key is on): seven lit screens, the
 negative, two posters and a riso, which keep their own ground, and the
@@ -507,7 +573,8 @@ letter anybody posts on the wall, to an @ or a name, never does.
 The room an opened letter stands in is black, with the screen's own light
 falling on it (`.wl-room-light`); the wall goes out behind it. On the wall
 each name is its newest letter's screen, small (`Tile`): the aerial across the
-top, the battery how long since the last, an envelope blinks on a
+top, the battery its newest letter's (its writer's where they set one, 0076,
+and otherwise how long since it went up), an envelope blinks on a
 name written to today, and the middle is the name's picture, in its own
 colours cut to the phone's cells with a little of the screen's light laid
 over it (it was the screen's own tones until 26 September), or its monogram.
@@ -590,9 +657,9 @@ foot, at a width a thumb finds.
 Since 26 September a letter has a thread (`Replies.jsx`, `replies.css`,
 `replies-api.js`, `replies-check.js`, `avatars.js`; migration 0068 and
 `supabase/functions/celestual-wall-reply` are the rules). Since 28 September
-it is read the way every comment thread on a phone is read: the letter's
-right soft key, a pixel speech bubble and its count drawn exactly as the
-heart and its count beside it are, raises a sheet from the foot of the glass
+it is read the way every comment thread on a phone is read: the soft key
+beside the heart on the left of the band, a pixel speech bubble and its
+count drawn exactly as the heart and its count beside it are, raises a sheet from the foot of the glass
 (`ThreadSheet`), and the letter's phone rises and steps back on the same
 clock until the whole of it stands in the room left between the close mark
 and the sheet's edge, still lit, as a reel stands over its comments (at half
@@ -600,7 +667,16 @@ its size it steps back no further, and the sheet gives it back the sliver it
 would cover, or else covers its foot). A press anywhere off the sheet lays
 it down and does nothing else, as do the grip, a pull down by the head or by
 the list at its top (past three tenths of the way, or thrown), the key
-again, and Escape; the deck does not turn while it is up. From 900 wide, or
+again, and Escape; the deck does not turn while it is up. Since 29 September
+it goes up in 280ms and down in 220ms, and the motion starts on the frame
+after the press, on the compositor, before the letter draws anything for it;
+the rows are on it as it rises, with no stagger (a thread's first twelve
+before it is raised, the rest put under them as it rises); and the letter
+takes a press the moment the sheet starts down (a press on the black round
+it is let go of until the sheet has landed, so a second tap never closes the
+letter). It was 440ms up and 340ms down, the rows coming up one by one
+behind it, and the letter swallowed every press for six tenths of a second
+after it was laid down: the owner's good second. From 900 wide, or
 on a phone on its side, the letter slides left and the replies stand at its
 right as a panel as tall as its phone, with a close key at its head. When
 the person the letter is to has answered, the envelope stands by the letter's
@@ -638,13 +714,13 @@ under them, and the heart with its count in one column down the right.
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, to anybody (it was whole or redacted until 0066), the heart on its foot with the count beside it, its replies on a sheet its right soft key raises over it (The replies, above), a nudge under the card for somebody not signed in from the eighth letter (rule 1), and either side of it the letter before and the letter after, asleep: every letter on the wall is one card in one deck, turned by a finger or a mouse on the card, a press on a neighbour, a sideways swipe on a trackpad or the arrow keys. No count of the deck anywhere |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
-| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
+| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it, and the battery on its status row is a key (0076, `the battery, 3 of 4. press to change it`), full to start, a bar off at each press, the empty one blinking and the next round to full, which goes up with the letter in its look; the first time on a device, once the greeting's line has gone, `the battery is yours to set.` stands under the card until the first press (store.js `batSeen`). It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall**: Instagram first, then Google and an address. The address was a mailed six digit code, Supabase Auth's (0057), and is a mailed link since 0065 (`linkdoor.jsx`): `check your inbox.` with the address, `tap the link in the mail.`, `waiting for the link`, a resend after thirty seconds, and `use a different address`. It asks the link's status and lands the moment it is tapped in this browser. Tapped in another, that browser is the one signed in and never this one (0070, which took away the number 0065 asked for there), and the door says `you opened it somewhere else.` with a new link to open here. Signed in already, it is the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its note is doing, or `it's mutual · write a new note`, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, eighty words and 280 characters at most, as long as a letter and as the composer's private note (it said twenty words until 26 September, long after the card took eighty in 0063), read by them only if it is ever mutual. Its face is the writer's to set (0073, the owner's ask of 29 September): the greeting across the top (`dear` and their first name, or their @, until it is changed; forty characters; the dotted pixel line under it; a line they set has the row to itself and the handle gives way) and the battery, a key on the status row with the same dotted line under it, a bar off at each press, the empty one blinking, the next round to full, full to start (`the battery, 3 of 4. press to change it`). The first time on a device, `the greeting and battery are yours to set.` under the screen, fading where it stands at the first touch of either (store.js `faceSeen`). The greeting is read at the keyboard by the list the words are read by, on its own and with the words, and a caught one refuses the send with `the greeting can't go in a note as it is. take out links, addresses and numbers.` and the typing put back in it; the `clear` key takes a character from the greeting while the typing is in it. The face goes with the words wherever they go (the proof's pending record, a note waiting on pings, the words kept while the mutual is open, a note's settings) and only with words. The proof, only when this browser does not hold one and cannot get it back from its session (0065, for a person whose @ was proved before): the gate's Instagram door, in place. Then `sent privately.` and the saturday it reveals on, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen, with the words of a note running on them once the list has come. Somebody this person is mutual with, from the list, the field or a link, is no longer sent to the reveal (0072): it is their screen, for a new note, under `write them a new note.` `they only read it` `if they send one too.`, with `the mutual stays yours to keep.` and the ping it spends under it and `open the mutual` quietly under the key (which keeps the words for the way back, and steps back down onto the mutual when the mutual raised the sheet), sent through `placeAgain`, as the composer's `send privately` and /paid's waiting note are too. The composer's `send privately` sends the letter's greeting, where its writer changed it, as the note's line across the top, read the same way first (a caught one takes them back to the letter with the typing in the greeting, before any DM), and a note running on them keeps the battery its writer left it on, since the composer has no battery key; a new one goes out full, as its screen drew it (screens/Write.jsx `sentBat`). Opened by a note's own edit key or its screen's `change the words` (`editNote`), it is that note's settings, with no dot back to who it is for: `change your note.` `it runs till` `this saturday.` over its words and its face and `send the new words` (`send the change` when only the face changed, `send it with no words` when they are all taken off, which takes the face with them), in place and free (`already out. changing it costs nothing.`), or, for one that was not this time, `send it again.` and `send it again`, on a ping, and before the list has said which, `change your note.` `they only read it` `if it's mutual.` with the key unlit; `let it go` under either, asked on the phone (`let it go?`, `keep it`), which closes back onto the private notes; and `new words, sent privately.` (`the change, sent privately.` for a face alone) and `your private notes` at the end, the screen on the face that went. A note running on the person chosen any other way is the same settings, with its dot back to who it is for, and closes where it was raised; one whose note went mutual since it was opened opens the reveal instead |
-| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their private notes (the mutuals first, each its slot (`Slot.jsx`): a small night screen with two sealed notes stepping toward each other across it a cell at a time and never meeting, until its telling has been watched once on this device, and the rose letter with the one note on it after, backlit, the note blinking out and back in three steps every four seconds, a press on its glass opening the reveal out of that glass; then the notes running and the ones that were not this time, each row opening its own screen, on the face its writer left it on (its greeting and its battery, 0073, or `dear` and the name over a battery running down with its week for a note from before), whose options are `keep it for next week`, `change the words` and `let it go`, or, for one that was not this time, `send it again`, `send it with new words` and `let it go`; and beside every note and every mutual an `edit` key, a note's to its sheet to change the words or let it go (`Ping.jsx` `editNote`), a mutual's to the keepsake with its options up, to write them a new note or take it off one's own list, which the owner asked for on 28 September with the slot itself. Since 0072 a mutual and a new note to the same person stand side by side, and the rows go by each ping's `key`), the week's pings at the frame's foot, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `send a private note` or `write a letter` at the foot, and `sign out` under settings. With no @ proved here it says so and proves it; with nobody known it is the door. A person signed in on this device by any proof whose @ was proved before, anywhere, reads their private notes with the proof restored from the session (0065, `auth.js` `restoreProof`), and is never asked for a second DM |
-| `/berkeley/reveal/:handle` | **it's mutual.** Since 28 September, when the owner asked for both letters, the whole screen and something worth keeping: the first time a mutual is opened on a device it is a film (`Film.jsx`). The slot's glass grows until it is the screen (out of nothing it wakes in the black instead), the two notes and then the two names are set on it in the phone's own pixels (`pixtype.js`), theirs over yours, first names when both are known and both @s when either is not, the two of them run in and hold, the pink spreads and the phone turns rose, the mark gathers and `it's mutual.` is typed under it; then the camera pulls back and the glass closes onto the head of one rose phone, which is the keepsake (`Keepsake.jsx`) and is what opens every time after, flying out of the slot. A tap, a key or `skip` jumps to the sentence and pulls back; `back` or Escape puts the screen to sleep at any moment. The keepsake: one glass with nothing cutting it, the night it was told alone on the status row whatever is up, the mark alive at the head of the glass with the cursor after the sentence and the two first names under it as one line (`Jules & Ace`), then the two notes, theirs first, each as the phone's inbox showed a message, a small screen with a strip of darker rose across its top carrying the line its writer set there (`dear Ace` when they set none, both lines at the size the longer needs) and the battery they left it on (full when unset), then the words and `from Jules` (`sent without a note.` under the phone's own face when there were none), each small screen's edges on the grid's lines between the story's cells; a menu, the question and a note after a press are a third small screen of that kind in the mark's place, as tall as its rows, its name and `1/2` on its strip, the mark and the names out of sight under it and the notes in view; on a desk the phone is as wide as it is tall and the two notes stand side by side under the mark, and on a phone on its side beside it; and the soft keys `options` (`send Jules a new note`, which opens the ping sheet on them for a new note, or `your new note to Jules` once one is out, which opens that note to change or let go, and `take it off my list`, which asks `take it off your list?` with `take it off` and `keep it`; it leaves this person's list only, and the other keeps theirs and is not told) and `share` (a picture of this phone, the names only when both first names are known, both notes with their lines and batteries, `from them`, `from me` and `dear you` when nobody is named, `to someone`, `save the picture`, and `leave the notes off` or `put the notes back`, keepshare.js, laid out by keeplayout.js); under it the lit key `message @them on Instagram`. Its facts are who this is (`main/data.js` `me`, then `pings.js` `myHandle`), `celestual_my_pings` and the held copy (`pings.js`); a device remembers it has watched a mutual (`wasOpened`, the store's `toldSeen`). When there is nothing to show it says `nothing here.` whatever the reason, and its key is `your private notes`; with nobody signed in, `sign in to read it.` and `sign in`. Under reduced motion there is no film, only the keepsake, still. In development `?film=<ms>` holds the film on a moment (a negative one holds the push-in), `?keep` holds the keepsake (`=options`, `=confirm`, `=share` with a menu up), and `?slot=x,y,w,h` (with `&slotmenu=options`) opens it as from a slot there. At the root it is `/reveal/:handle`, which the wall took from Main |
+| `/berkeley/ping` · `/berkeley/ping/:handle` | **placing a ping**, in the composer's room and out of the composer's parts (`screens/Ping.jsx`). Who: the people this person has written to by handle (`wall_mine`, then the device's `wroteTo`), each with what its note is doing, or `it's mutual · write a new note`, and a field for anybody else with the wall's names under it and the resolver's answer in its place. The line: the ping's own lit screen, eighty words and 280 characters at most, as long as a letter and as the composer's private note (it said twenty words until 26 September, long after the card took eighty in 0063), read by them only if it is ever mutual. Its face is the writer's to set (0073, the owner's ask of 29 September): the greeting across the top (`dear` and their first name, or their @, until it is changed; forty characters; the dotted pixel line under it; a line they set has the row to itself and the handle gives way). The battery was a key there too until the owner gave it to the wall letters on 30 September (0076): the screen draws the phone's own full battery, a new note carries none, and a note from that one day keeps the one it was left on, drawn where it was and sent again with its words. The first time on a device, `the greeting is yours to set.` under the screen, fading where it stands at the first touch of it (store.js `faceSeen`). The greeting is read at the keyboard by the list the words are read by, on its own and with the words, and a caught one refuses the send with `the greeting can't go in a note as it is. take out links, addresses and numbers.` and the typing put back in it; the `clear` key takes a character from the greeting while the typing is in it. The face goes with the words wherever they go (the proof's pending record, a note waiting on pings, the words kept while the mutual is open, a note's settings) and only with words. The proof, only when this browser does not hold one and cannot get it back from its session (0065, for a person whose @ was proved before): the gate's Instagram door, in place. Then `sent privately.` and the saturday it reveals on, and `back to the wall` closes it onto the names with no veil left. It never says a mutual happened. A handle in the address opens on that person's screen, with the words of a note running on them once the list has come. Somebody this person is mutual with, from the list, the field or a link, is no longer sent to the reveal (0072): it is their screen, for a new note, under `write them a new note.` `they only read it` `if they send one too.`, with `the mutual stays yours to keep.` and the ping it spends under it and `open the mutual` quietly under the key (which keeps the words for the way back, and steps back down onto the mutual when the mutual raised the sheet), sent through `placeAgain`, as the composer's `send privately` and /paid's waiting note are too. The composer's `send privately` sends the letter's greeting, where its writer changed it, as the note's line across the top, read the same way first (a caught one takes them back to the letter with the typing in the greeting, before any DM), and never the composer's battery, which is the wall letter's: a new note goes with none, and a note running on them from before keeps the one it was left on (screens/Write.jsx `sentBat`). Opened by a note's own edit key or its screen's `change the words` (`editNote`), it is that note's settings, with no dot back to who it is for: `change your note.` `it runs till` `this saturday.` over its words and its face and `send the new words` (`send the change` when only the face changed, `send it with no words` when they are all taken off, which takes the face with them), in place and free (`already out. changing it costs nothing.`), or, for one that was not this time, `send it again.` and `send it again`, on a ping, and before the list has said which, `change your note.` `they only read it` `if it's mutual.` with the key unlit; `let it go` under either, asked on the phone (`let it go?`, `keep it`), which closes back onto the private notes; and `new words, sent privately.` (`the change, sent privately.` for a face alone) and `your private notes` at the end, the screen on the face that went. A note running on the person chosen any other way is the same settings, with its dot back to who it is for, and closes where it was raised; one whose note went mutual since it was opened opens the reveal instead |
+| `/berkeley/you` | **the person** (`screens/You.jsx`), from the face in the bar: their proofs, their private notes (the mutuals first, each its slot (`Slot.jsx`): a small night screen with two sealed notes stepping toward each other across it a cell at a time and never meeting, until its telling has been watched once on this device, and the rose letter with the one note on it after, backlit, the note blinking out and back in three steps every four seconds, a press on its glass opening the reveal out of that glass; then the notes running and the ones that were not this time, each row opening its own screen, on the face its writer left it on (its greeting and its battery, 0073, or `dear` and the name over a battery running down with its week for a note from before), whose options are `keep it for next week`, `change the words` and `let it go`, or, for one that was not this time, which opens on its night's three lines (`Night.jsx`: `not this time.`, `they didn't send you one.`, `they'll never know you did.`, and what came back of its ping as a lit tag, 0075), `send it again`, `send it with new words`, `share celestual`, `read your note` and `let it go`; after a reveal with notes that were not mutual, the night's notice once on this device (`NightCard`, the wall's own notice: the face, `not this time.`, who didn't send you one, `they'll never know you did.`, what came back as a lit tag, and `send again` and `share celestual`), and each such row says what came back (`+1 free ping`, `ping back`); and beside every note and every mutual an `edit` key, a note's to its sheet to change the words or let it go (`Ping.jsx` `editNote`), a mutual's to the keepsake with its options up, to write them a new note or take it off one's own list, which the owner asked for on 28 September with the slot itself. Since 0072 a mutual and a new note to the same person stand side by side, and the rows go by each ping's `key`), the week's pings at the frame's foot, the drafts (the composer's letter, a ping one DM from out), the letters they put up with the hearts on each, `send a private note` or `write a letter` at the foot, and `sign out` under settings. With no @ proved here it says so and proves it; with nobody known it is the door. A person signed in on this device by any proof whose @ was proved before, anywhere, reads their private notes with the proof restored from the session (0065, `auth.js` `restoreProof`), and is never asked for a second DM |
+| `/berkeley/reveal/:handle` | **it's mutual.** Since 28 September, when the owner asked for both letters, the whole screen and something worth keeping: the first time a mutual is opened on a device it is a film (`Film.jsx`). The slot's glass grows until it is the screen (out of nothing it wakes in the black instead), the two notes and then the two names are set on it in the phone's own pixels (`pixtype.js`), theirs over yours, first names when both are known and both @s when either is not, the two of them run in and hold, the pink spreads and the phone turns rose, the mark gathers and `it's mutual.` is typed under it; then the camera pulls back and the glass closes onto the head of one phone, which is the keepsake (`Keepsake.jsx`) and is what opens every time after, flying out of the slot, or, from its link, the ping sheet or a reload, powering on where it stands: black glass and its light rising in 380ms, the notes a beat behind, and back to black in 200ms as it closes. A tap, a key or `skip` jumps to the sentence and pulls back; `back` or Escape puts the screen to sleep at any moment. The keepsake: one glass with nothing cutting it, lit rose until the two of them light it in another colour, the aerial, the night it was told and the pair's battery on the status row whatever is up, the mark alive at the head of the glass with the cursor after the sentence and the two first names under it as one line (`Jules & Ace`), then the two notes, theirs first, each as the phone's inbox showed a message, a small screen with a strip a darker band of the glass's colour across its top carrying the line its writer set there (`dear Ace` when they set none, both lines at the size the longer needs), then the words and `from Jules` (`sent without a note.` under the phone's own face when there were none), and under your own, `from Ace · delivered` until the other has opened it since it was told and `from Ace · opened` with the phone's tick after (0077), each small screen's edges on the grid's lines between the story's cells; a menu, the question and a note after a press are a third small screen of that kind in the mark's place, as tall as its rows, its name and `1/3` on its strip, the mark and the names out of sight under it and the notes in view; on a desk the phone is as wide as it is tall and the two notes stand side by side under the mark, and on a phone on its side beside it; and the soft keys `options` (`send Jules a new note`, which opens the ping sheet on them for a new note, or `your new note to Jules` once one is out, which opens that note to change or let go; `change its colour`, the seven lit colours in the mark's place with the whole phone lit in the chosen row's as it moves, `select` lighting it so for both of them and `back` putting it as it was; and `take it off my list`, which asks `take it off your list?` with `take it off` and `keep it`; it leaves this person's list only, and the other keeps theirs and is not told) and `share` (a picture of this phone in its colour with its battery on the band, the names only when both first names are known, both notes with their lines, `from them`, `from me` and `dear you` when nobody is named, `to someone`, `save the picture`, and `leave the notes off` or `put the notes back`, keepshare.js, laid out by keeplayout.js); under it the lit key `message @them on Instagram`. Its facts are who this is (`main/data.js` `me`, then `pings.js` `myHandle`), `celestual_my_pings` and the held copy (`pings.js`), and the pair's face (`celestual_mutual_face`, 0077, asked as the reveal opens, every five seconds while it can be seen, and at once when the other side's keepsake nudges on the pair's channel; `keepface.js`); a device remembers it has watched a mutual (`wasOpened`, the store's `toldSeen`), and tells the server it opened it at the same moment (`celestual_mutual_seen`). For this person's own note to them that was not mutual on its night it is that note's screen, opened on its night's report (`Night.jsx`, the same as the private notes draw it, 0075); otherwise, when there is nothing to show, it says `nothing here.` whatever the reason, and its key is `your private notes`; with nobody signed in, `sign in to read it.` and `sign in`. Under reduced motion there is no film, only the keepsake, still. In development `?film=<ms>` holds the film on a moment (a negative one holds the push-in), `?keep` holds the keepsake (`=options`, `=confirm`, `=share` or `=colour` with a menu up, `&at=2` its third row chosen), `?power=<ms>` holds its powering on, and `?slot=x,y,w,h` (with `&slotmenu=options`) opens it as from a slot there. At the root it is `/reveal/:handle`, which the wall took from Main |
 | `/berkeley/join` | how the weekly reveal works, drawn, from the wall's tab and the `i` on the private notes: `find out if it's mutual.`, the phone telling it, three short lines with nothing under them (`you send them a note, privately.`, `they send you one too.`, `saturday at 9pm pacific, you both find out.`), and `send one privately` raises the ping sheet over the wall, giving this page's place in the history to the wall first |
 
 The wall at the root reads the same table: `/ping`, `/you` and the rest,
@@ -756,8 +832,8 @@ parts.jsx    display · label · prose · redaction · pill · paper · fields �
              sheet · row · icons · the close mark · the bar · step dots
 auth.js      the domain check, what it does and does not buy, and the
              Instagram handoff that stands on the one irreversible action
-moderate.js  the screen: layer 1 for real, layers 2 and 3 drawn honestly, and
-             the report's own triage
+moderate.js  the screen: layer 1 for real (`norm`, `fault`, `wallFault`,
+             `caughtOnWall`), and the sentences a refusal says (`whyNot`)
 data.js      handles, the deterministic hash everything derives from, the
              corpus, search, write, the reports (held, never deleted) and the
              removals
@@ -929,44 +1005,32 @@ thirteen pixels sliding past is a handle nobody reads.
 
 ### A name opens into the letter it carries
 
-Pressing a disc does not cut to a sheet, and it does not wait. On the frame
-of the press the letter's own card opens out of the circle that was pressed:
-the wall leaves the disc's rectangle behind on the way out (`morph.js`), the
-card claims it on the way in, and one transform puts the real card — words,
-crest, dateline and all — where the disc was, at the disc's size, with the
-paper's corner a circle's, and runs it out to where it stands on the
-travelling curve the sheets move on (`screens/Letter.jsx`, 440ms). At the
-same moment the wall answers the press the way it answers the tap that opens
-the veil: the same pulse is sent out from the disc through the crowd and the
-field travels to bring that disc into the light (`Hive.jsx tapAt`), both
-running out under the sheet's glass, so the name is in the light when the
-sheet comes down. It used to wait half a second for the crest to leave the
-disc before the card opened, and half a second between a finger and anything
-readable is the moment a surface stops feeling touched. The pulse's tail
-runs out under the sheet's glass, because a crowd frozen in the middle of a
-wave is a crowd that jumps when the sheet goes. And it closes the
-same way: the mark, the scrim or the key sends the card back into the disc of
-whichever name the deck is showing, if that disc is on the glass
-(`morph.js locate`), while the glass fades in place instead of dropping.
-Dragged down, the sheet falls the way every sheet falls.
-The sheet's glass comes up under it in place rather than rising, and its
-header and foot arrive a beat behind the card. The words are on the card from
-the first frame, and there is no stand-in: the card the flight starts on is
-the card the words land on, so a letter that arrives mid-flight arrives on a
-card that is opening rather than under one that is hiding it.
+Pressing a disc does not cut to a sheet, and it does not wait: the letter
+opens on the frame of the press, and it comes on the way a phone does when
+it is picked up (the owner, 29 September: "make it feel like a phone turning
+on, not just a sudden opening of a page"). The card is put on the glass
+black, where it stands, while the room goes black round it, and its
+backlight rises smoothly over about four tenths of a second, with no
+flicker, no dip and no blur, the light it throws following a beat behind
+and the phone settling from a hair under its size to its size
+(`screen.jsx` `useWake`, `screen.css` `is-power`). Only then are the letters
+either side of it drawn, and they come up out of the dark. At the same
+moment the wall answers the press the way it answers the tap that opens the
+veil: the same pulse is sent out from the disc through the crowd and the
+field travels to bring that disc into the light (`Hive.jsx tapAt`), running
+out under the black, because a crowd frozen in the middle of a wave is a
+crowd that jumps when the sheet goes. It closes the quicker way: the screen
+is put out in a fifth of a second, the card goes, the room lifts, and the
+wall is back a quarter second after the press.
 
-It used to be a stand-in flown by hand from the disc to a card that was read
-fresh every frame and switched on at the end, and it was glitchy for exactly
-the reasons that design tried to handle: the destination moved when the words
-landed, the sheet re-centred under it, the face inside the stand-in was a
-monogram set at the disc's size inside a thirty pixel circle, and the real
-card was invisible for two thirds of a second. The transform is measured once
-now, against the card's own final box, and is relative to it: whatever the
-layout does under the card, the card goes with it.
-
-A deep link, a refresh, a back button, a turn of the deck or a reader who has
-asked for less movement opens the ordinary way, because none of them has a
-circle to open out of.
+It used to open OUT of the disc, the card flown by one transform from the
+disc's circle to where it stands, and then to rise eighteen pixels and
+flicker on for nearly a second (`wl-wake`, the intro's and the door's
+still); both were a page arriving, and the flight dropped frames on every
+phone it was tried on. The composer, the ping and the pings come on the same
+way (wall.css, the composer's room): the room fades up, the phone powers on
+where it stands and the words round it settle a beat behind, where the whole
+column used to slide up the window.
 
 ### The deck
 
@@ -995,8 +1059,9 @@ the lit one on a table are there in the dark. On a phone the glass leaves a
 sliver of each at its edges (the screen gives up `--gutter` of the glass
 for it); in a wide room, and on a phone on its side, they are the two
 screens themselves, dim, a hand's width off the card (`wall.css --peek-*`).
-They come up out of the dark while the card wakes, a beat behind it, and
-one that comes to stand there later fades up where it stands. Two chevrons in the
+They are drawn once the card has powered on, when the page is next idle,
+and come up out of the dark where they stand, as does one that comes to
+stand there later. Two chevrons in the
 gutters said the same thing until 25 September, and a chevron is a control
 somebody has to find and read. There is no line saying to swipe (VOICE.md
 section 7), no dots and no count: the deck is the whole wall, and a count of
@@ -1023,13 +1088,15 @@ drawn on it (`.wl-turn`, `the letter before this one` and `the letter
 after this one`), which is also the turn a keyboard and a screen reader
 find, and which keeps a press on a neighbour from reaching the room behind
 it, the way out. The arrow keys turn it, and the soft key that had the
-focus has it again on the card the turn lands on. Two fingers sideways on a
+focus has it again on the card the turn lands on, found by what it is
+(`is-heart`, `is-thread`, `is-options`) since the heart and the bubble share
+one place on the band. Two fingers sideways on a
 trackpad turn it one letter a swipe, and the swipe is kept from the
 browser, which would take it as the history going back. A turn asked for
 past an end leans the card a little and brings it home.
 
 The first two times a device opens the deck, until it has turned it once,
-the card leans toward the next letter about a second after it has woken
+the card leans toward the next letter about a second after it has come on
 and comes home (`nudge`, `hinted` and `turned` in the store). Never under
 reduced motion and never over a menu, and a hand or a key that gets there
 first puts it off. Under reduced motion a turn is the next card, at once.
@@ -1050,8 +1117,23 @@ turn lands at once, where it is seen, and the hand has the card it was
 bringing in from there (`landNow`), so a second throw a moment after the
 first is the letter after, and never lost. A hand is written to the strip
 once a frame, whatever it reports, and while the strip moves whatever the
-network brings is held and drawn once it is still (`strip.js`), so no
-screen is drawn again under the hand.
+network brings is held and drawn once it is still (`strip.js`: the wall's
+corpus, the card's thread and a name's face, each held under its own name),
+so no screen is drawn again under the hand.
+
+And a landing changes almost nothing (the owner, 29 September: swiping
+through the letters is slow). Which of the three a screen is, card or
+neighbour, is one attribute on one element whose box is the same whichever
+it is (`data-side`, every screen in the one cell of a grid), so a landing
+lays nothing out; the neighbours are not `inert` (their keys are out of the
+Tab order and deaf to a press, and the glass under them takes none); the
+replies' sheet is one sheet for the whole deck and puts the next letter's
+thread on itself after the landing, not in it; the thread is asked for when
+the page is next idle, and a card only passed through is never asked about;
+the letter is marked opened then too, and only once; a heart pressed makes
+only its own name's list again; and the wall under the black is not drawn at
+all while a letter is open (`content-visibility`, wall.css `data-covered`),
+nor its field's clock asked for frames it would spend on nothing.
 
 The height settles as the card lands. A short letter beside a long one is a
 card beside a taller card. The track's height used to follow the strip, read

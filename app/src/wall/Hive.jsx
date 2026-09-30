@@ -1348,6 +1348,14 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // then, still under the black, so the room lifts on a crowd already
   // standing where it would have been and nothing is left to draw as it
   // goes (`redraw`, for a room that lifts before they have run out).
+  //
+  // And once they have run out under the black, the loop stops asking for
+  // frames at all: a frame asked for and spent on nothing still woke the
+  // page sixty times a second behind a letter, beside the letter's own
+  // work, for as long as it was read (the owner, 29 September, the lag).
+  // It starts again the moment the room is lit (`data-covered` taken off,
+  // which parts.jsx Sheet does on the frame the way out is taken), where
+  // the first frame finds the room lit and draws what is stale.
   useEffect(() => {
     if (!grid) return undefined
     let raf = 0
@@ -1368,6 +1376,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         // half turned over behind the glass has no frames coming to finish
         // it, so it is finished here, once, where nobody is looking at it.
         if (m.cycle.live.length) cycleEnd()
+        if (dark) { cancelAnimationFrame(raf); raf = 0 }
         return
       }
       const dt = last ? Math.min(64, now - last) : 16
@@ -1781,7 +1790,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       }
     }
     raf = requestAnimationFrame(frame)
-    return () => { cancelAnimationFrame(raf) }
+    // lit again: the loop is asked for once more
+    const lit = typeof MutationObserver === 'function' && root ? new MutationObserver(() => {
+      if (!raf && !root.hasAttribute('data-covered')) raf = requestAnimationFrame(frame)
+    }) : null
+    if (lit) lit.observe(root, { attributes: true, attributeFilter: ['data-covered'] })
+    return () => { cancelAnimationFrame(raf); raf = 0; if (lit) lit.disconnect() }
   }, [grid, names, nameAt, worldX, discOf, wave, applyZoom, cycleTick, cycleEnd])
 
   // ── the pull, and the pinch ──

@@ -13,8 +13,37 @@
          that has not arrived yet. -->
     <style>html { background: #000; }</style>
 
-    <title>celestual</title>
-    <meta name="description" content="anonymous letters to the people on your mind. find out if it's mutual." />
+    <!-- What a search result says. The name comes first and alone, because
+         "celestual" is one letter from "celestial" and a search engine that
+         is not sure the word is a name corrects it; the title, the canonical,
+         the site name and the structured data below all say it the same way,
+         so the name is read as a name. -->
+    <title>celestual · anonymous letters, and find out if it's mutual</title>
+    <meta name="description" content="celestual is a wall of anonymous letters to the people on your mind. send someone a private note, and if they send you one too, you both find out on saturday at 9pm. if not, nobody ever knows." />
+    <link rel="canonical" href="https://celestual.us/" />
+    <meta name="robots" content="index, follow" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://celestual.us/#website",
+          "url": "https://celestual.us/",
+          "name": "celestual",
+          "alternateName": ["Celestual", "celestual.us"],
+          "description": "anonymous letters to the people on your mind. find out if it's mutual."
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://celestual.us/#org",
+          "name": "celestual",
+          "url": "https://celestual.us/",
+          "logo": "https://celestual.us/apple-touch-icon.png"
+        }
+      ]
+    }
+    </script>
 
     <!-- Open Graph and the share preview: what a link to celestual.us unfurls
          into, which is how most people first see it. The image is a raster PNG
@@ -55,7 +84,17 @@
          every route paying for faces it does not use. -->
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Read before the app runs, by anything that does not run it (a
+         search engine's first pass, a link preview, a browser with scripts
+         off), and replaced by the wall the moment it mounts. -->
+    <div id="root">
+      <main style="color:#F4F1EA;font:16px/1.4 system-ui,sans-serif;max-width:460px;margin:0 auto;padding:40px 22px">
+        <h1>celestual</h1>
+        <p>anonymous letters to the people on your mind, on a wall anybody can read.</p>
+        <p>send someone a private note on their Instagram. they are never told. if they send you one too, you both find out on saturday at 9pm pacific. if it is never mutual, nobody ever knows.</p>
+        <p><a href="/join" style="color:#F4F1EA">how it works</a> · <a href="/ping" style="color:#F4F1EA">send a private note</a> · <a href="/terms" style="color:#F4F1EA">terms</a> · <a href="/privacy" style="color:#F4F1EA">privacy</a></p>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

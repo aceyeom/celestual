@@ -45,12 +45,14 @@
 /* ── the sheet ──
    Pinned to the foot of the glass, the width of a phone and never wider
    than the widest letter, `--th-h` tall (Letter.jsx `fitThread`: about two
-   thirds of the window). Down, it waits under the glass's edge, unseen and
-   `inert`; up, it stands on it. Every step between is Letter.jsx writing
-   its transform. Over a phone's keyboard it rides up by what the keys
-   cover, as the keys come. Its foot goes on under the glass (the shadow
-   drawn a hundred pixels under it, in the panel's own black), so a sheet
-   pulled up past its rest never shows a gap beneath it. */
+   thirds of the window). Down, it waits under the glass's edge, out of
+   sight (which takes it out of the keyboard's way and a screen reader's);
+   up, it stands on it. Every step between is Letter.jsx moving it, from
+   where it stands to where it is going on the compositor's own clock. Over
+   a phone's keyboard it rides up by what the keys cover, as the keys come.
+   Its foot goes on under the glass (the shadow drawn a hundred pixels under
+   it, in the panel's own black), so a sheet pulled up past its rest never
+   shows a gap beneath it. */
 .wl-th {
   --th-pad: 16px;
   /* the letter's light, and what stands on it: the screen's panel with its
@@ -98,8 +100,9 @@
   cursor: default; -webkit-tap-highlight-color: transparent;
 }
 /* the letter's own way out takes the sheet down with it, inside the time
-   the route waits for (parts.jsx `Sheet`, 580ms) */
-.wl-sheet-wrap.is-letter.is-closing > .wl-th.is-open { animation: wl-th-out 300ms var(--ease-in) both; }
+   the route waits for (parts.jsx `Sheet` hears the letter's own leaving,
+   260ms, wall.css `wl-letter-out`) */
+.wl-sheet-wrap.is-letter.is-closing > .wl-th.is-open { animation: wl-th-out 220ms var(--ease-in) both; }
 @keyframes wl-th-out { to { transform: translate3d(0, 100%, 0); } }
 
 /* ── the head ──
@@ -523,23 +526,21 @@
 .wl-rp-school :is(.wl-rp-again, .wl-resend, .wl-resend-go, .wl-rp-theirs) { align-self: flex-start; padding: 2px 0; text-align: left; text-wrap: pretty; }
 
 /* ── the way it comes up ──
-   The sheet rises on the letter's clock (Letter.jsx `runQ`), and what is on
-   it comes up a beat behind, row by row, a small rise and a fade forty
-   milliseconds apart, the first six and no more: the way a phone drew a
-   list it had just been asked for. Only on the way up: a thread read again
-   under a finger does not dance. A reply that comes while it is up
-   (Replies.jsx `fresh`, one just sent from here above all) arrives at once,
-   on its own. Every row of the list but the replies' own list is
-   `.wl-low-row`: a selector that ended in `:not()` or `*` under a class
-   that toggles made every toggle restyle the whole letter, some five
-   hundred elements, on the press that opens it. */
-.wl-th.is-open .wl-low-list > .wl-low-row { animation: wl-th-row 280ms var(--ease-out, ease-out) 120ms both; }
-.wl-th.is-open .wl-rp-list > .wl-rp-item { animation: wl-th-row 280ms var(--ease-out, ease-out) both; animation-delay: calc(120ms + var(--i, 0) * 40ms); }
+   The sheet rises on the letter's clock (Letter.jsx `runQ`), with what is
+   on it already on it, the way every comment sheet on a phone comes up: the
+   sheet's own rise is the entrance, and the thread is read the moment it
+   stops. The rows used to come up behind it one by one, from a tenth of a
+   second after the press and forty milliseconds apart, and every row of a
+   long thread was an animation of its own started on the press, so the
+   thread was whole six tenths of a second in and a thread of sixty held the
+   page on the press for a third of a second (the owner, 29 September: a
+   good second before the comments open). A reply that comes while it is up
+   (Replies.jsx `fresh`, one just sent from here above all) still arrives on
+   its own, the one row that does. Every row of the list but the replies'
+   own list is `.wl-low-row`: a selector that ended in `:not()` or `*` under
+   a class that toggles made every toggle restyle the whole letter, some
+   five hundred elements, on the press that opens it. */
 .wl-th.is-open .wl-rp-list > .wl-rp-item.is-new { animation: wl-rp-new 260ms var(--ease, ease) both; }
-@keyframes wl-th-row {
-  from { opacity: 0; transform: translate3d(0, 8px, 0); }
-  to   { opacity: 1; transform: none; }
-}
 @keyframes wl-rp-new {
   from { opacity: 0; transform: translate3d(0, 8px, 0); }
   to   { opacity: 1; transform: none; }
@@ -576,9 +577,9 @@
 }
 
 /* Asked for less movement: nothing travels. The letter stands where it is
-   going at once (Letter.jsx `runQ`), and the sheet cross fades in and out
-   where it stands, the rows with it and not after it; the field is simply
-   there. */
+   going at once (Letter.jsx `runQ`), and the sheet is simply there, and
+   gone, where it stands (the blanket in wall.css takes every length here
+   to a millisecond); the field is simply there. */
 @media (prefers-reduced-motion: reduce) {
   .wl-th {
     transform: none; opacity: 0;
@@ -586,7 +587,6 @@
   }
   .wl-th.is-open { opacity: 1; transition: opacity 160ms linear, visibility 0s; }
   .wl-sheet-wrap.is-letter.is-closing > .wl-th.is-open { animation: wl-unfade 160ms linear both; }
-  .wl-th.is-open .wl-low-list > .wl-low-row, .wl-th.is-open .wl-rp-list > .wl-rp-item,
   .wl-th.is-open .wl-rp-list > .wl-rp-item.is-new { animation: none; }
   .wl-tray .wl-low-as, .wl-rp-terms, .wl-low-said { animation: none; }
   .wl-tray-send, .wl-rp-field, .wl-tray-key, .wl-rp-key, .wl-rp-undo { transition: none; }

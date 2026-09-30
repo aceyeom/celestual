@@ -8,6 +8,7 @@
     "build": "npm --prefix app install && npm --prefix app run build",
     "lint": "npm --prefix app run lint",
     "lint:voice": "node scripts/voice-lint.mjs",
+    "check:moderation": "node --no-warnings scripts/check-moderation.mjs",
     "shots": "node scripts/shots.mjs",
     "mark": "node scripts/export-mark.mjs",
     "faces": "node scripts/fetch-faces.mjs",
