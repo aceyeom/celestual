@@ -116,7 +116,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-
    and nothing to lift onto a baseline. A press drops it a pixel. */
 .brand { display: inline-flex; align-items: center; color: var(--chalk); text-decoration: none; }
 .brand img {
-  display: block; width: 113px; height: 25px;
+  display: block; width: 112px; height: 33px;
   filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1));
 }
 .brand:hover { color: var(--chalk); }

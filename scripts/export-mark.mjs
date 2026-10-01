@@ -120,13 +120,13 @@ for (const g of GROUNDS) put(out, `ecliptic-${g.name}.svg`, eclipticSVG(g.fill).
 // ── the pictures ────────────────────────────────────────────────────────────
 for (const g of GROUNDS) {
   // the mark alone, transparent, at the three sizes anything ever asks for:
-  // forty, twenty and five pixels a cell, centred in the square
-  for (const [px, scale] of [[1024, 40], [512, 20], [128, 5]]) {
+  // thirty, fifteen and three pixels a cell, centred in the square
+  for (const [px, scale] of [[1024, 30], [512, 15], [128, 3]]) {
     const [a, b] = centre(N * scale, px)
     put(out, `mark-${g.name}-${px}.png`, png(mark, N, N, { scale, pad: [a, a, b, b], fill: g.fill }))
   }
   // and on its own ground, which is what a deck or a favicon preview wants:
-  // twenty six pixels a cell, 650 of the 1024, the rest its air
+  // twenty six pixels a cell, 858 of the 1024, the rest its air
   const [a, b] = centre(N * 26, 1024)
   put(out, `mark-${g.name}-on-${g.on}-1024.png`, png(mark, N, N, { scale: 26, pad: [a, a, b, b], fill: g.fill, ground: g.behind }))
   // the lockup, transparent for placement, at eight pixels a cell
@@ -152,11 +152,11 @@ const pub = join(root, 'app/public')
 put(pub, 'icon.svg', tabSVG(INK, CHALK) + '\n')
 
 // The home screen's icon. iOS takes a PNG and not an SVG, and fills what is
-// transparent with black anyway, so it is the room: the mark in chalk at six
-// pixels a cell on #000, 150 of the 180, clear of the corners iOS rounds off.
+// transparent with black anyway, so it is the room: the mark in chalk at five
+// pixels a cell on #000, 165 of the 180, clear of the corners iOS rounds off.
 {
-  const [a, b] = centre(N * 6, 180)
-  put(pub, 'apple-touch-icon.png', png(mark, N, N, { scale: 6, pad: [a, a, b, b], fill: CHALK, ground: ROOM }))
+  const [a, b] = centre(N * 5, 180)
+  put(pub, 'apple-touch-icon.png', png(mark, N, N, { scale: 5, pad: [a, a, b, b], fill: CHALK, ground: ROOM }))
 }
 
 // The lockup in chalk, for use ON A PAGE rather than on a tab strip: the legal
@@ -172,8 +172,8 @@ put(pub, 'mark.svg', markSVG(CHALK) + '\n')
 // (scripts/export-mail.mjs, `sign.png`); this stays for the mails already in
 // people's inboxes, which now show the mark they would be sent today.
 {
-  const [a, b] = centre(N * 10, 256)
-  put(pub, 'mark-chalk-256.png', png(mark, N, N, { scale: 10, pad: [a, a, b, b], fill: CHALK }))
+  const [a, b] = centre(N * 7, 256)
+  put(pub, 'mark-chalk-256.png', png(mark, N, N, { scale: 7, pad: [a, a, b, b], fill: CHALK }))
 }
 
 console.log(made.join('\n'))

@@ -10,36 +10,36 @@
 // in it. So the brand is drawn here, a cell at a time, and nothing in it is
 // type or a curve:
 //
-//   MARK       Ecliptic on a grid of 25, the one every lockup and every
-//              export is drawn from. It is the stories' own raster
-//              (pixmark.js `markCells` at 29, whose lit cells fill 25) with
-//              its two crossings drawn by hand: where the ring passes behind
-//              the star it stops a cell short either side of the needle, so
-//              the needle reads as in front; where it passes in front of the
-//              star it runs on unbroken and the needle stops a cell short of
-//              it above and below. The star keeps its concave sides, a cell
-//              narrower on each row than the raster gave it, which is what
-//              made it read as a sparkle rather than a diamond.
+//   MARK       Ecliptic on a grid of 33, the one every lockup and every
+//              export is drawn from (1 October: the 25 it was, a little finer,
+//              at the owner's ask). Its ring is mark.js's own, rastered alone
+//              at 37 and cut to its 33, so the ellipse steps a cell at a time;
+//              the star is drawn round the needle by hand with concave sides,
+//              so it reads as a sparkle rather than a diamond. Its crossings
+//              are drawn by hand: where the ring passes behind the star it
+//              stops a cell short either side of the needle; where it passes
+//              in front it runs on unbroken and the needle stops a cell short
+//              of it above and below.
 //   MARK_TAB   the same drawing again at 15, for the tab, where a pixel is a
 //              pixel of the screen: each cell chosen by hand so the crossing
 //              still reads at 16px, rather than the 25 scaled down, which is
 //              a blur. It stands in a 16 by 16 icon a cell in from the top
 //              and the left.
-//   FACE       the word's own letters: stems two cells wide and horizontals
-//              one, an x-height of eleven and ascenders of three, corners cut
-//              a cell. Two cells of air between letters, and the stop a two
-//              cell square on the baseline. Drawn and not set, so the word
-//              is the same object at every size and on every surface, a
-//              canvas and a mail included, and it needs no face to load.
+//   FACE       the word's own letters, the letter's hand (1 October): a
+//              serif on the grid, stems two cells wide and hairlines one, an
+//              x-height of nine and ascenders of four, a ball on the c, a flag
+//              on the l, a spur on the u and the a, one cell between letters
+//              and the stop a two cell square on the baseline. Drawn and not
+//              set, so the word is the same object at every size and on every
+//              surface, a canvas and a mail included, and needs no face.
 //   LOCKUP     the mark, six cells of air, and the word, on one grid and one
-//              baseline: the word's x-height stands on the mark's middle row
-//              (rows 7 to 17 of the mark's 25), which puts the stop on the
-//              ring's near band.
+//              baseline: the word's x-height is centred on the mark's middle
+//              row (rows 12 to 20 of the mark's 33).
 //
 // Every drawing is whole cells, drawn with `crispEdges` at a whole number of
 // pixels to a cell and never at a fraction of one, so it is as sharp as the
 // phone's own glyphs (screen.jsx `PixIcon`). On a screen the lockup is drawn
-// at one pixel a cell, 25 tall; the exports and the pictures draw it at two,
+// at one pixel a cell, 33 tall; the exports and the pictures draw it at two,
 // four, five and so on. It takes `currentColor` wherever it can.
 //
 // Pure data and string builders, like mark.js: parts.jsx draws it, share.js
@@ -53,31 +53,39 @@ import { INK } from './mark.js'
 // `#` the star, `o` the ring, `.` nothing. The two are one ink; they are told
 // apart here only so the drawing can be read.
 export const MARK = [
-  '............#............',
-  '............#............',
-  '............#............',
-  '............#............',
-  '............#............',
-  '............#.oooooooo...',
-  '.........oo.#........ooo.',
-  '.......oo...#.........oo.',
-  '.....oo....###.........oo',
-  '....o......###.........oo',
-  '...o......#####........oo',
-  '..o......#######.......o.',
-  '.o....#############...oo.',
-  'oo.......#######.....oo..',
-  'oo........#####.....oo...',
-  'oo.........###....ooo....',
-  'oo.........###..oooo.....',
-  '.ooo..........oooo.......',
-  '.ooooooooooooooo.........',
-  '...ooooooooo.............',
-  '............#............',
-  '............#............',
-  '............#............',
-  '............#............',
-  '............#............',
+  '.................................',
+    '.................................',
+    '................#................',
+    '................#................',
+    '................#................',
+    '................#................',
+    '................#................',
+    '................#.oooooooooo.....',
+    '..............o.#........ooooo...',
+    '...........ooo..#...........ooo..',
+    '.........oo....###...........ooo.',
+    '.......oo......###............ooo',
+    '......o........###............ooo',
+    '.....o........#####...........ooo',
+    '....o.........#####...........oo.',
+    '...o........#########........ooo.',
+    '..o.....#################....oo..',
+    '.oo.........#########.......oo...',
+    '.oo...........#####........oo....',
+    'ooo...........#####......ooo.....',
+    'ooo............###......ooo......',
+    'ooo............###....oooo.......',
+    '.oooo..........###.ooooo.........',
+    '..ooooo...........oooo...........',
+    '...oooooooooooooooo..............',
+    '.....oooooooooooo................',
+    '.................................',
+    '................#................',
+    '................#................',
+    '................#................',
+    '................#................',
+    '.................................',
+    '.................................',
 ]
 
 export const MARK_TAB = [
@@ -100,24 +108,24 @@ export const MARK_TAB = [
 
 const fill = (n, row) => Array.from({ length: n }, () => row)
 export const FACE = {
-  x: 11,
-  asc: 3,
-  gap: 2,
+  x: 9,
+  asc: 4,
+  gap: 1,
   glyphs: {
-    c: ['.XXXXXXX', 'XX.....X', ...fill(7, 'XX......'), 'XX.....X', '.XXXXXXX'],
-    e: ['.XXXXXXX.', ...fill(4, 'XX.....XX'), 'XXXXXXXXX', ...fill(4, 'XX.......'), '.XXXXXXXX'],
-    l: fill(14, 'XX'),
-    s: ['.XXXXXXX', ...fill(4, 'XX......'), '.XXXXXX.', ...fill(4, '......XX'), 'XXXXXXX.'],
-    t: ['.XX...', '.XX...', 'XXXXXX', ...fill(9, '.XX...'), '..XXXX'],
-    u: [...fill(10, 'XX.....XX'), '.XXXXXXXX'],
-    a: ['.XXXXXXX.', ...fill(4, '.......XX'), '.XXXXXXXX', ...fill(4, 'XX.....XX'), '.XXXXXXXX'],
-    '.': ['XX', 'XX'],
+    c: ['..#####.', '.##...##', '##....##', '##......', '##......', '##......', '##......', '.##....#', '..#####.'],
+    e: ['..####..', '.##..##.', '##....##', '########', '##......', '##......', '##......', '.##....#', '..#####.'],
+    l: ['###.', '.##.', ...fill(10, '.##.'), '####'],
+    s: ['.######', '##...##', '##.....', '.###...', '...###.', '.....##', '.....##', '##...##', '######.'],
+    t: ['..#...', '.##...', '.##...', '######', ...fill(6, '.##...'), '.##..#', '..###.'],
+    u: ['###..###.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##...##.', '.##..###.', '..###.###'],
+    a: ['.#####..', '##...##.', '.....##.', '..#####.', '.##..##.', '##...##.', '##...##.', '##..###.', '.###.###'],
+    '.': ['##', '##'],
   },
 }
 export const WORD = 'celestual.'
 
 // the lockup's own measures, in cells
-export const LOCK = { gap: 6, base: 18 }
+export const LOCK = { gap: 6, base: 21 }
 
 // The lit cells of a drawing, as [x, y]
 export function cellsOf(rows, dx = 0, dy = 0) {
