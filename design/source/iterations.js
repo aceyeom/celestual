@@ -28,6 +28,67 @@ const fill = (n, row) => Array.from({ length: n }, () => row)
 // ── the marks ────────────────────────────────────────────────────────────────
 // `now` is brand.js's own, for comparison.
 export const MARKS = {
+  // the mark as it is, a little finer (owner, 1 October: "rebuild it so its
+  // slightly higher fidelity"): Ecliptic's ring rastered alone at 37 from
+  // mark.js and cut to its 33, so the ellipse steps a cell at a time where
+  // the 25 stepped two, the star drawn round it by hand with the 25's
+  // concave sides and a longer reach, and the two crossings as brand.js
+  // draws them. The tab keeps `MARK_TAB`, which is drawn for 16 already
+  ecliptic: {
+    name: 'the mark, finer',
+    rows: [
+  '.................................',
+        '.................................',
+        '................#................',
+        '................#................',
+        '................#................',
+        '................#................',
+        '................#................',
+        '................#.oooooooooo.....',
+        '..............o.#........ooooo...',
+        '...........ooo..#...........ooo..',
+        '.........oo....###...........ooo.',
+        '.......oo......###............ooo',
+        '......o........###............ooo',
+        '.....o........#####...........ooo',
+        '....o.........#####...........oo.',
+        '...o........#########........ooo.',
+        '..o.....#################....oo..',
+        '.oo.........#########.......oo...',
+        '.oo...........#####........oo....',
+        'ooo...........#####......ooo.....',
+        'ooo............###......ooo......',
+        'ooo............###....oooo.......',
+        '.oooo..........###.ooooo.........',
+        '..ooooo...........oooo...........',
+        '...oooooooooooooooo..............',
+        '.....oooooooooooo................',
+        '.................................',
+        '................#................',
+        '................#................',
+        '................#................',
+        '................#................',
+        '.................................',
+        '.................................',
+    ],
+    tab: [
+      '.......#.......',
+      '.......#.......',
+      '.......#.......',
+      '.......#.ooooo.',
+      '....oo.#.....oo',
+      '..oo...#......o',
+      '.o....###.....o',
+      'o...#######..oo',
+      'o.....###...oo.',
+      'o.........oo...',
+      'ooo....oooo....',
+      '.oooooo........',
+      '.......#.......',
+      '.......#.......',
+      '.......#.......',
+    ],
+  },
   // the screen: the phone itself, its two bands of glass, the aerial and the
   // battery on the top one and the soft keys on the bottom, and the panel lit
   // with the star struck out of it, which is how the mark stands on every
@@ -456,6 +517,7 @@ export const WORDS = {
 // lit in. Weight is what pairs them: a solid mark with the bold word, a
 // mark of lines with a word of hairlines.
 export const LOCKUPS = [
+  { key: 'finer', name: 'the mark, finer, in the letter\'s hand', mark: 'ecliptic', word: 'serif', tint: 'rose' },
   { key: 'left-on', name: 'left on', mark: 'screen', word: 'draft', tint: 'night' },
   { key: 'sealed', name: 'sealed', mark: 'envelope', word: 'serif', tint: 'amber' },
   { key: 'binary', name: 'two stars', mark: 'binary', word: 'italic', tint: 'rose' },
