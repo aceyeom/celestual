@@ -1503,6 +1503,7 @@ every route shoots an empty wall reading `not connected here`.
 | `design/components.html` | every component, colour, type size and state |
 | `design/source/eclipse.html` | the mark's specimen sheet |
 | `design/logo/` | the exports, all generated |
+| `design/source/iterations.js` | the logo told other ways (1 October): six marks, four words and five lockups on the phone's grid, none adopted; `design/logo/iterations/` is them as files |
 | `app/src/wall/wall.css` | the tokens and the components, in code |
 | `app/src/wall/phone.css` | the wall's phone: the tokens remapped for `.wl-root.is-room`, and the parts both surfaces share, drawn as the phone (2.6) |
 | `app/src/wall/mark.js` | the mark's geometry |
@@ -1511,6 +1512,7 @@ every route shoots an empty wall reading `not connected here`.
 | `app/src/wall/art.jsx` | every drawn ornament |
 | `app/public/fonts/` | the three faces, and the `faces.css` that declares them |
 | `scripts/export-mark.mjs` | writes `design/logo/`, and the tab's icon, the home screen's, the legal pages' lockup and the chalk marks in `app/public/` |
+| `scripts/export-iterations.mjs` | writes `design/logo/iterations/` from `design/source/iterations.js` |
 | `scripts/export-liquid.mjs` | writes `app/public/liquid-mark.png`, the shader's mask, from the same geometry |
 | `scripts/fetch-faces.mjs` | writes `app/public/fonts/` |
 | `scripts/shots.mjs` | the screenshot loop |
