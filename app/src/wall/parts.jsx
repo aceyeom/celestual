@@ -367,9 +367,9 @@ export function PixMark({ scale = 2, className = '' }) {
 // It was Ecliptic as a smooth vector and the word set in Newsreader, the one
 // object on the wall in the room's hand. The owner asked for the logo to take
 // the phone's digital style and to be beautiful in it, so both halves are
-// drawn now, a cell at a time (brand.js): the mark on its grid of 25 and the
+// drawn now, a cell at a time (brand.js): the mark on its grid of 33 and the
 // word in its own drawn letters on the same grid and baseline, at one pixel a
-// cell, 25 tall, with `crispEdges` so no cell is ever a blur. Two drawings and
+// cell, 33 tall, with `crispEdges` so no cell is ever a blur. Two drawings and
 // not one, so the narrowest phones can give the word back and keep the mark
 // (wall.css). The name is the anchor's label; the drawings are hidden from a
 // reader, as a glyph is.

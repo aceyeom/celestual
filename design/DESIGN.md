@@ -683,10 +683,10 @@ grid is a raster of these constants, and then every cell of it is looked at.
 
 | | Grid | What |
 | --- | --- | --- |
-| `MARK` | 25 by 25 | the brand's mark: the bar, the site's foot, the pictures, the exports. It is the stories' own raster (`pixmark.js` `markCells` at 29, whose lit cells fill 25) with the two crossings drawn by hand. At the back the ring stops a cell short of the needle on either side, so the needle reads as passing in front of it; at the front the ring runs on unbroken and the needle stops a cell short of it above and below, which is the gutter. The star keeps its concave sides, a cell narrower on each row than the raster gave it, so it reads as a sparkle rather than a diamond, and the ring's right end loses a cell at each corner, so it is round and not a bracket. The near half stays two cells deep along the bottom and the far half one, which is the band's three to one |
+| `MARK` | 33 by 33 | the brand's mark: the bar, the site's foot, the pictures, the exports. Since 1 October it is the 25 it was, a little finer at the owner's ask: the ring is `mark.js`'s own rastered alone at 37 and cut to its 33, so the ellipse steps a cell at a time, and the star is drawn round the needle by hand, with the two crossings drawn by hand too. At the back the ring stops a cell short of the needle on either side, so the needle reads as passing in front of it; at the front the ring runs on unbroken and the needle stops a cell short of it above and below, which is the gutter. The star keeps its concave sides, a cell narrower on each row than the raster gave it, so it reads as a sparkle rather than a diamond, and the ring's right end loses a cell at each corner, so it is round and not a bracket. The near half stays two cells deep along the bottom and the far half one, which is the band's three to one |
 | `MARK_TAB` | 15 by 15 | the tab's, in a 16 pixel icon a cell in from the top and the left. Every cell is chosen by hand so the two crossings still read at one pixel a cell: at 16px the 25 scaled down is a grey blur, and so was the vector |
 | the stories' | 47, 51, 77 | the page's seal, the mail's gathered mark, and the mark on the stories' 95 by 75 glass (the intro, the film, the keepsake): `markCells` cut at `MARK_CUT`, drawn by `PixelStory`, and not touched by any of this |
-| `FACE` | x-height 11, ascenders 3 | the word's own letters: stems two cells wide and horizontals one, corners cut a cell, the `c` with a cell of terminal at each end, two cells between letters, the stop a two cell square on the baseline |
+| `FACE` | x-height 9, ascenders 4 | the word's own letters, the letter's hand (1 October): a serif on the grid, stems two cells wide and hairlines one, a ball on the `c`, a flag on the `l`, a spur on the `u` and the `a`, one cell between letters, the stop a two cell square on the baseline. It replaced a clean pixel sans that could have signed anything; the iterations it was chosen from are `design/source/iterations.js` |
 
 **The word is drawn, not set.** Three were drawn before one was kept, each as a
 lockup at 25, 50 and 150 pixels on the room's black and on chalk: Jersey 10's
@@ -739,10 +739,10 @@ It writes into `app/public/` as well:
 
 - **Whole pixels, always.** The mark and the lockup are drawn at a whole number
   of pixels a cell with `crispEdges` and are never scaled by a fraction: on a
-  screen at one pixel a cell, 25 tall, and in the pictures and the exports at
+  screen at one pixel a cell, 33 tall, and in the pictures and the exports at
   two, three, five, six, eight and so on. A size between two steps is the
   smaller step. A press drops the drawing a pixel; nothing scales it.
-- **Smallest size.** 25 pixels for the lockup and `MARK`, one a cell. Under that
+- **Smallest size.** 33 pixels for the lockup and `MARK`, one a cell. Under that
   the only drawing is the tab's, `MARK_TAB`, at 16 (its 15 cells in a 16 pixel
   icon), which is where it stops. The old floor was 12px, below which the
   vector's far band closed up; a pixel drawing does not close up, it loses
@@ -751,9 +751,9 @@ It writes into `app/public/` as well:
   cells at whatever size it is drawn. The exports on a ground carry it. On a bar
   the lockup is a control, and the row gives it its air.
 - **In the lockup**, the word stands six cells after the mark, on the mark's
-  grid and its baseline: the x-height is rows 7 to 17 of the mark's 25, centred
-  on the star's arms, so the stop sits on the ring's near band and the needle
-  runs past the word at both ends. The whole is 113 cells by 25.
+  grid and its baseline: the x-height is rows 12 to 20 of the mark's 33,
+  centred on the star's arms, and the needle runs past the word at both ends.
+  The whole is 112 cells by 33.
 - **Light.** On a dark ground it has the close bloom a lit thing has on the
   phone (`screen.css` `.wl-lit-g`): the room's glow as two drop shadows, 3
   pixels at 30 percent and 9 at 10, and never a large soft shadow. On chalk it
@@ -795,7 +795,7 @@ metal is the light.
 ### 3.6 The brand, on every bar
 
 `Brand` in `parts.jsx` is the lockup as a control: the mark and the word drawn
-on their grid at one pixel a cell, 25 tall and 113 wide, both chalk while the
+on their grid at one pixel a cell, 33 tall and 112 wide, both chalk while the
 row around them is ash, each in the close bloom a lit thing has. It is the way
 home on every bar in the product, the front door's, Main's flow screens' and
 the wall's, and it stands again at the head of the site's foot. It used to be
@@ -1503,6 +1503,7 @@ every route shoots an empty wall reading `not connected here`.
 | `design/components.html` | every component, colour, type size and state |
 | `design/source/eclipse.html` | the mark's specimen sheet |
 | `design/logo/` | the exports, all generated |
+| `design/source/iterations.js` | the logo told other ways (1 October): six marks, four words and five lockups on the phone's grid, none adopted; `design/logo/iterations/` is them as files |
 | `app/src/wall/wall.css` | the tokens and the components, in code |
 | `app/src/wall/phone.css` | the wall's phone: the tokens remapped for `.wl-root.is-room`, and the parts both surfaces share, drawn as the phone (2.6) |
 | `app/src/wall/mark.js` | the mark's geometry |
@@ -1511,6 +1512,7 @@ every route shoots an empty wall reading `not connected here`.
 | `app/src/wall/art.jsx` | every drawn ornament |
 | `app/public/fonts/` | the three faces, and the `faces.css` that declares them |
 | `scripts/export-mark.mjs` | writes `design/logo/`, and the tab's icon, the home screen's, the legal pages' lockup and the chalk marks in `app/public/` |
+| `scripts/export-iterations.mjs` | writes `design/logo/iterations/` from `design/source/iterations.js` |
 | `scripts/export-liquid.mjs` | writes `app/public/liquid-mark.png`, the shader's mask, from the same geometry |
 | `scripts/fetch-faces.mjs` | writes `app/public/fonts/` |
 | `scripts/shots.mjs` | the screenshot loop |
