@@ -16,10 +16,11 @@
 // Nothing here ships. The fixtures are a fixture and app/.env.local is
 // gitignored; what ships is the screenshots, in design/shots, and the critique
 // they are for.
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
+import { spawnSync } from 'node:child_process'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.env.PREVIEW_OUT || join(root, 'design/shots')
@@ -1610,6 +1611,14 @@ const ROUTES = [
   { label: 'you-let-go',    path: '/berkeley/you',
     acts: [['wait', 1400], ['click', '.wl-vault-row.is-standing .wl-vault-open'], ['wait', 900], ['click', '.wl-you-ping .wl-sk.is-l'], ['wait', 500],
            ['click', '.wl-scr-menu li:last-child']], settle: 900 },
+  // the letters' tab and the settings behind the person's key
+  { label: 'you-letters',   path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-you-tab[data-tab="letters"]']], settle: 700 },
+  { label: 'you-settings',  path: '/berkeley/you', acts: [['wait', 1400], ['click', '.wl-you-set']], settle: 900 },
+  // the card opening and its tabs pressed there and back, to be filmed
+  // (`PREVIEW_VIDEO=1`)
+  { label: 'you-motion',    path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3400], ['film'], ['wait', 300], ['click', '.wl-memberbtn'], ['wait', 2600],
+           ['click', '.wl-you-tab[data-tab="letters"]'], ['wait', 1500], ['click', '.wl-you-tab[data-tab="notes"]']], settle: 1800 },
   { label: 'you-unproved',  path: '/berkeley/you', verified: false },
   { label: 'you-door',      path: '/berkeley/you', anon: true },
   { label: 'you-home',      path: '/you' },
@@ -2403,6 +2412,14 @@ const ROUTES = [
   { label: 'admin-wall-read', path: '/admin', desk: true, click: 'wall', acts: [['click', '.ad-tabs button:last-child']], settle: 900 },
 ]
 
+// The account's two other looks (screens/You.jsx `LOOK`, `?profile=1` the
+// quiet one and `?profile=2` the lit one), each of its states shot again in
+// both, labelled `-v1` and `-v2` after the state, for setting beside it.
+for (const label of ['you', 'you-motion', 'you-letters', 'you-settings', 'you-reveal', 'you-revealed', 'you-again', 'you-unproved', 'you-ping', 'you-hover', 'night', 'night-foot', 'night-mutual', 'you-still']) {
+  const r = ROUTES.find((x) => x.label === label)
+  for (const v of [1, 2]) ROUTES.push({ ...r, label: `${label}-v${v}`, path: `${r.path}${r.path.includes('?') ? '&' : '?'}profile=${v}` })
+}
+
 // one label, or several separated by commas
 const want = process.argv[2]
 const wants = want ? want.split(',') : null
@@ -2457,12 +2474,17 @@ for (const r of list) {
     Object.assign(FACE_ASKS, { face: 0, set: 0, seen: 0, nudge: 0, last: null })
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
+    // `PREVIEW_VIDEO=1` films the page as well, from the moment the intro
+    // has gone to the shot, for a movement a still cannot show (written
+    // beside the shot as .webm, trimmed with ffmpeg where there is one)
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
       deviceScaleFactor: v.scale,
+      recordVideo: process.env.PREVIEW_VIDEO ? { dir: join(out, '.film'), size: { width: v.width, height: v.height } } : undefined,
       // a route marked `still` is shot under prefers-reduced-motion
       reducedMotion: r.still ? 'reduce' : 'no-preference',
     })
+    const born = Date.now()
     const problems = []
     page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
     page.on('pageerror', (e) => problems.push(process.env.PREVIEW_STACK ? String(e.stack) : String(e)))
@@ -2556,6 +2578,7 @@ for (const r of list) {
     if (!/[?&](beat|t)=/.test(r.path)) {
       await page.waitForFunction(() => !document.querySelector('.hi'), null, { timeout: 8000 }).catch(() => {})
     }
+    let filmFrom = Date.now()
 
     // Some states only exist once somebody has typed: the result card is the
     // one spec section 5 calls the main affordance, and it does not draw until
@@ -2589,6 +2612,8 @@ for (const r of list) {
     // whatever the last one drew.
     for (const [act, sel, arg, more] of r.acts || []) {
       if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      // the film starts here rather than when the intro has gone
+      if (act === 'film') { filmFrom = Date.now(); continue }
       // the browser's own back, as a person takes it off a sheet another
       // opened over this one, and then `sel` to let what it lands on settle
       if (act === 'back') { await page.goBack().catch(() => {}); await page.waitForTimeout(Number(sel) || 900); continue }
@@ -2776,7 +2801,16 @@ for (const r of list) {
       console.error(`  ${r.label} ${v.name}: ${problems.length} console error(s)`)
       for (const p of problems.slice(0, 4)) console.error(`    ${p}`)
     }
+    const filmed = page.video()
+    const filmAt = filmed ? (filmFrom - born) / 1000 : 0
     await page.close()
+    if (filmed) {
+      const raw = await filmed.path()
+      const to = join(out, `${r.label}-${v.name}.webm`)
+      const cut = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', String(Math.max(0, filmAt - 0.3)), '-i', raw, '-c:v', 'libvpx-vp9', '-b:v', '1.4M', to])
+      if (cut.status !== 0) renameSync(raw, to)
+      made.push(to)
+    }
   }
 }
 

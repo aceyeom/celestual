@@ -1,0 +1,203 @@
+/* ═══ THE PERSON, THE LIT LOOK (?profile=2) ═════════════════════════════════
+   screens/You.jsx `LOOK`. The card is a handset: a screen of its own at its
+   head (`Handset`), lit in the night glass the letters and the slots are lit
+   in, the two tabs as the soft keys under it, and the lists in one panel
+   below, each part under a strip of its own, the way the phone's own lists
+   were. The account had no lit thing on it, so nothing on it led; now the
+   glass is where the eye lands, and it says the one thing to know about the
+   tab under it.
+
+   The person moves up into the sheet's head, beside the close, so the glass
+   is the first thing under it. Rose is a mutual's, on the glass when a
+   reveal with one in it is told, on its strip, and nowhere else.
+
+   Motion is the phone's, never a web page's: the glass comes on as the
+   letter's does (the black pane over it lifted in 380ms, the glass settling
+   from .985), a soft key changes what is on the glass in the two steps an
+   LCD takes, and the rows are drawn on a line at a time, 60ms apart. */
+
+/* ── the person, in the head ──────────────────────────────────────────────── */
+.wl-you.is-v2 > .wl-head { padding-bottom: 16px; }
+.wl-you.is-v2 > .wl-head > .wl-head-lead { flex: 1 1 auto; }
+.wl-you.is-v2 .wl-you-id { flex: 1 1 auto; gap: 11px; animation: none; }
+.wl-you.is-v2 .wl-you-who { gap: 3px; }
+.wl-you.is-v2 .wl-you-id .wl-profile-addr { font-size: var(--t-ctrl); line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-you.is-v2 .wl-you-id .wl-you-also { font-size: var(--t-small); line-height: 1; color: var(--ash-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-you.is-v2 .wl-face.wl-profile-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.2), 0 0 10px -3px rgba(210, 210, 210, 0.3); }
+.wl-you.is-v2 :is(.wl-you-set, .wl-you-back) { min-height: 40px; padding: 0 13px; }
+
+/* ── the handset ──────────────────────────────────────────────────────────── */
+.wl-hand {
+  position: relative; isolation: isolate;
+  display: flex; flex-direction: column;
+  border-radius: 4px; overflow: hidden; overflow: clip;
+  background: var(--s-bot); color: var(--s-ink);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 0 2px var(--s-edge), 0 12px 36px -14px var(--s-glow);
+  animation: wl-hand-on 420ms var(--ease) both;
+}
+.wl-hand-band {
+  flex: 0 0 26px; display: flex; align-items: center; gap: 8px; min-width: 0;
+  padding: 0 10px;
+  background: linear-gradient(180deg, var(--s-top), var(--s-top-2));
+  color: var(--s-lit);
+  font-family: var(--f-s40); font-size: var(--t-small); line-height: 1; white-space: nowrap;
+  text-shadow: 0 0 1px var(--s-lit), 0 0 6px var(--s-bloom);
+}
+.wl-hand-band .wl-aerial { margin: 0; color: var(--s-lit); filter: drop-shadow(0 0 2px var(--s-bloom)); }
+.wl-hand-at { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wl-hand-when { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; margin-left: auto; opacity: 0.85; }
+.wl-hand-when .wl-heart-glyph { color: var(--s-lit); }
+
+.wl-hand-panel {
+  position: relative; z-index: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+  min-height: 146px; padding: 13px 14px 15px;
+  background: radial-gradient(120% 110% at 78% 30%, var(--s-hi), var(--s-mid) 52%, var(--s-lo));
+  font-family: var(--f-s40);
+  text-shadow: 0 0 1.2px var(--s-soft);
+}
+.wl-hand-panel.is-turned { animation: wl-hand-swap 150ms steps(2, end) both; }
+/* the glass's own cells, unlit, on the slots' pitch, under the words */
+.wl-hand-dots {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--s-ink); opacity: 0.06;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='3' height='3'/%3E%3C/svg%3E") 0 0 / 4px 4px repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='3' height='3'/%3E%3C/svg%3E") 0 0 / 4px 4px repeat;
+}
+.wl-hand-label { font-size: var(--t-small); line-height: 1; opacity: 0.72; }
+.wl-hand-label:focus { outline: none; }
+.wl-hand-label:focus-visible { outline: 1px solid var(--s-ink); outline-offset: 4px; }
+.wl-hand-big {
+  margin-top: 10px;
+  font-size: 40px; line-height: 0.9; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.wl-hand-big small { font-size: var(--t-ctrl); opacity: 0.66; margin: 0 1px 0 2px; }
+.wl-hand-line { margin-top: auto; padding-top: 12px; max-width: 32ch; font-size: var(--t-small); line-height: 1.2; opacity: 0.8; }
+/* the `i`, drawn on the glass in its ink, inverted under the press */
+.wl-hand-info {
+  position: absolute; top: 10px; right: 10px;
+  display: inline-grid; place-items: center; width: 26px; height: 26px; padding: 0;
+  border: 1px solid color-mix(in srgb, var(--s-ink) 45%, transparent); border-radius: 2px; background: transparent;
+  font-family: var(--f-s40); font-size: 18px; line-height: 1; color: var(--s-ink); cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-hand-info:hover { border-color: var(--s-ink); }
+}
+.wl-hand-info:active { background: var(--s-ink); color: var(--s-lit); }
+.wl-hand-info:focus-visible { outline: 1px solid var(--s-ink); outline-offset: 2px; }
+
+/* the power on (DESIGN.md 6.3): black for 45ms, then the backlight up in
+   one smooth ramp, the glass settling where it stands */
+.wl-hand-veil {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: #000; opacity: 0;
+  animation: wl-hand-veil 380ms cubic-bezier(0.45, 0.05, 0.25, 1) 45ms backwards;
+}
+@keyframes wl-hand-veil { from { opacity: 1; } to { opacity: 0; } }
+@keyframes wl-hand-on { from { transform: scale(0.985); } to { transform: none; } }
+/* a soft key pressed: what is on the glass is drawn again, in two steps */
+@keyframes wl-hand-swap { from { opacity: 0.2; } to { opacity: 1; } }
+
+/* ── the soft keys ──────────────────────────────────────────────────────────
+   Two keys under the glass. The chosen one a step lighter, its bezel lit
+   and a bar of chalk across its foot, the way the phone marked the key it
+   was on; never a chalk plate, which is the foot's one lit key. At once,
+   as a phone's keys were. */
+.wl-you.is-v2 .wl-you-tabs { gap: 8px; margin-top: 10px; padding: 0; border: 0; background: none; }
+.wl-you.is-v2 .wl-you-tab {
+  min-height: 42px; border-radius: var(--r-lcd);
+  background: var(--lcd); box-shadow: inset 0 0 0 1px var(--lcd-edge);
+}
+.wl-you.is-v2 .wl-you-tab[aria-selected='true'] {
+  background: var(--lcd-2);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge-hi), inset 0 -3px 0 var(--chalk);
+}
+.wl-you.is-v2 .wl-you-tab:active { background: var(--chalk); color: #000; box-shadow: none; }
+.wl-you.is-v2 .wl-you-tab:active .wl-you-tab-n { color: #000; }
+
+/* ── the lists, in one panel ────────────────────────────────────────────────
+   The notes' frame keeps its place and loses its double rule: one bezel,
+   and each part under a strip, the phone's band, where the seams were */
+.wl-you.is-v2 .wl-you-panel { margin-top: 12px; }
+.wl-you.is-v2 :is(.wl-vault, .wl-you-letters) {
+  padding: 0; overflow: hidden; overflow: clip;
+  border-radius: var(--r-lcd);
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+}
+.wl-you.is-v2 .wl-vault-body { padding: 1px 1px 0; background: none; }
+.wl-you.is-v2 .wl-vault-body > :is(.wl-you-ask, .wl-you-wait, .wl-vault-none) { padding: 14px 13px; }
+.wl-you.is-v2 :is(.wl-vault-news, .wl-vault-past) { gap: 0; margin: 0; padding: 0; }
+.wl-you.is-v2 .wl-vault-news:not(:last-child)::after,
+.wl-you.is-v2 .wl-vault-past::before { display: none; }
+.wl-you.is-v2 .wl-vault-past-h {
+  display: flex; align-items: center; min-height: 28px; padding: 0 12px;
+  background: var(--lcd-2);
+  box-shadow: inset 0 -1px 0 var(--lcd-edge);
+  font-size: var(--t-small); line-height: 1; color: var(--ash);
+}
+.wl-you.is-v2 .wl-vault-body > * + * .wl-vault-past-h,
+.wl-you.is-v2 .wl-vault-body > * + .wl-vault-list > .wl-vault-past-h { box-shadow: inset 0 1px 0 var(--lcd-edge), inset 0 -1px 0 var(--lcd-edge); }
+.wl-you.is-v2 .wl-vault-past-h.is-rose {
+  padding-top: 0; opacity: 1; color: var(--rose);
+  background: linear-gradient(90deg, rgba(233, 162, 189, 0.16), rgba(233, 162, 189, 0.03) 70%), var(--lcd-2);
+}
+
+/* a row, the width of the panel: the press inverts edge to edge */
+.wl-you.is-v2 .wl-vault-row { gap: 0; padding: 0; }
+.wl-you.is-v2 .wl-vault-row + .wl-vault-row { box-shadow: inset 0 1px 0 var(--hair); }
+.wl-you.is-v2 .wl-vault-open { gap: 12px; padding: 11px 12px; border-radius: 0; }
+.wl-you.is-v2 .wl-vault-row .wl-wrote-who { gap: 5px; }
+.wl-you.is-v2 .wl-vault-row.is-standing .wl-vault-said { color: var(--ash); }
+.wl-you.is-v2 .wl-vault-row.is-lapsed .wl-face { opacity: 0.5; }
+.wl-you.is-v2 .wl-vault-edit { flex: 0 0 64px; padding-right: 12px; }
+.wl-you.is-v2 .wl-vault-edit > span { width: 52px; height: 32px; }
+.wl-you.is-v2 .wl-vault-row.wl-slot { padding: 12px 0 12px 12px; }
+.wl-you.is-v2 .wl-slot:not(.is-opened) { --veil: 0.3; }
+.wl-you.is-v2 .wl-slot-open { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(233, 162, 189, 0.45), 0 0 18px -2px rgba(233, 162, 189, 0.4); }
+.wl-you.is-v2 .wl-vault-body > .wl-night { margin: 10px 10px 12px; }
+
+/* the letters, in the same panel and the same rows */
+.wl-you.is-v2 .wl-wrote { margin: 0; padding: 0; }
+.wl-you.is-v2 .wl-wrote-row { padding: 11px 12px; gap: 12px; border-radius: 0; }
+.wl-you.is-v2 .wl-wrote > * + * { box-shadow: inset 0 1px 0 var(--hair); }
+.wl-you.is-v2 .wl-wrote-who { gap: 5px; }
+.wl-you.is-v2 .wl-you-letters > .wl-wrote-row.is-draft { margin: 0; width: 100%; box-shadow: inset 0 -1px 0 var(--lcd-edge); background: var(--lcd-2); }
+.wl-you.is-v2 .wl-you-letters > .wl-wrote-row.is-draft::after { display: none; }
+.wl-you.is-v2 .wl-you-letters > .wl-profile-none { margin: 0; padding: 14px 13px; }
+.wl-you.is-v2 .wl-wrote-more { margin: 0 12px; padding: 10px 0; }
+.wl-you.is-v2 .wl-wrote-line { padding-right: 12px; }
+.wl-you.is-v2 .wl-you-letters > .wl-profile-cap { margin: 0; padding: 14px 13px; border-top: 1px solid var(--hair); }
+
+/* ── drawn on, a line at a time ── */
+.wl-you.is-v2 .wl-you-panel:not(.is-turned) :is(.wl-vault-past-h, .wl-vault-row, .wl-wrote > *, .wl-you-letters > .wl-wrote-row) {
+  animation: wl-hand-line 160ms steps(2, end) both;
+}
+.wl-you.is-v2 :is(.wl-vault-news, .wl-vault-list, .wl-vault-past, .wl-wrote) > :nth-child(1) { --n: 0; }
+.wl-you.is-v2 :is(.wl-vault-news, .wl-vault-list, .wl-vault-past, .wl-wrote) > :nth-child(2) { --n: 1; }
+.wl-you.is-v2 :is(.wl-vault-news, .wl-vault-list, .wl-vault-past, .wl-wrote) > :nth-child(3) { --n: 2; }
+.wl-you.is-v2 :is(.wl-vault-news, .wl-vault-list, .wl-vault-past, .wl-wrote) > :nth-child(n+4) { --n: 3; }
+.wl-you.is-v2 .wl-vault-body > :nth-child(2) { --m: 1; }
+.wl-you.is-v2 .wl-vault-body > :nth-child(3) { --m: 2; }
+.wl-you.is-v2 .wl-vault-body > :nth-child(n+4) { --m: 3; }
+.wl-you.is-v2 .wl-you-panel:not(.is-turned) :is(.wl-vault-past-h, .wl-vault-row, .wl-wrote > *) {
+  animation-delay: calc(380ms + (var(--m, 0) * 3 + var(--n, 0)) * 60ms);
+}
+@keyframes wl-hand-line { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── the week, in the foot ── */
+.wl-you.is-v2 .wl-you-week { padding: 0 0 12px; }
+
+/* ── settings: each part's label a strip on its panel ── */
+.wl-you.is-v2.is-settings .wl-set-h {
+  display: flex; align-items: center; min-height: 28px; margin: 0; padding: 0 12px;
+  border-radius: var(--r-lcd) var(--r-lcd) 0 0;
+  background: var(--lcd-2); box-shadow: inset 0 0 0 1px var(--lcd-edge);
+  color: var(--ash);
+}
+.wl-you.is-v2.is-settings .wl-set-panel { border-radius: 0 0 var(--r-lcd) var(--r-lcd); margin-top: -1px; background-image: var(--lcd-grid); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-hand, .wl-hand-panel.is-turned, .wl-hand-veil,
+  .wl-you.is-v2 .wl-you-panel:not(.is-turned) :is(.wl-vault-past-h, .wl-vault-row, .wl-wrote > *, .wl-you-letters > .wl-wrote-row) { animation: none; }
+}

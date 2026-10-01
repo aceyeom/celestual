@@ -1,0 +1,183 @@
+/* ═══ THE PERSON, THE QUIET LOOK (?profile=1) ═══════════════════════════════
+   screens/You.jsx `LOOK`. The card as it was, made one thing: everything on
+   it an unlit panel or the sheet itself, every key one height and one
+   bezel, one frame where there were three nested, and rose for a mutual
+   and nothing else. Nothing is lit but the key at the foot.
+
+   What reads first is the reveal: a panel of its own over the notes with
+   the count in large figures, where it was a line of sixteen pixels in the
+   frame's strip. The notes stand on the sheet under their labels (the
+   mutuals, what is sealed, what was not this time), hairlines between the
+   rows, the aerial at the head of each row's words so the glyph and what it
+   means are read together. The week's pings stand in the foot, over the key
+   that spends them.
+
+   Motion: the card's parts rise in a beat apart as it opens (wl-v1-rise, 6px
+   on --ease, 50ms apart), the tabs' plate slides to the tab chosen (260ms),
+   and a change of tab is the panel alone, in from the side of its tab. */
+
+/* ── the person ─────────────────────────────────────────────────────────── */
+.wl-you.is-v1 .wl-you-id { gap: 14px; animation: wl-v1-rise 340ms var(--ease) both; }
+.wl-you.is-v1 .wl-you-who { gap: 4px; }
+.wl-you.is-v1 .wl-you-id .wl-profile-addr { font-size: var(--t-subject); line-height: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-you.is-v1 .wl-you-id .wl-you-also { font-size: var(--t-small); line-height: 1; color: var(--ash-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the face is the person looking, and the only face on the card set large;
+   its glow a step quieter than the old one, so it does not lead the card */
+.wl-you.is-v1 .wl-face.wl-profile-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.2), 0 0 14px -4px rgba(210, 210, 210, 0.3); }
+/* every quiet key on the card stands as tall as the close (40) */
+.wl-you.is-v1 .wl-you-set, .wl-you.is-v1 .wl-you-back { min-height: 40px; padding: 0 14px; }
+
+/* ── the tabs: one plate, sliding ───────────────────────────────────────────
+   The chosen tab's plate is one element under both keys (`--at`, You.jsx),
+   carried across to the one pressed, so the eye follows the press across
+   and lands on what it opened. Only its transform moves. */
+.wl-you.is-v1 .wl-you-tabs {
+  position: relative; gap: 0; margin-top: 22px;
+  animation: wl-v1-rise 340ms var(--ease) 50ms both;
+}
+.wl-you.is-v1 .wl-you-tabs-plate {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px);
+  border-radius: 2px; background: var(--lcd-2); box-shadow: inset 0 0 0 1px var(--lcd-edge-hi);
+  transform: translate3d(calc(var(--at, 0) * 100%), 0, 0);
+  transition: transform 260ms var(--ease);
+}
+.wl-you.is-v1 .wl-you-tab { z-index: 1; transition: color 200ms var(--ease); }
+.wl-you.is-v1 .wl-you-tab[aria-selected='true'] { background: none; box-shadow: none; }
+
+/* ── the panel under them ───────────────────────────────────────────────────
+   In from the side of its tab: the notes from the left, the letters from
+   the right, 8px and a fade, so the switch says which way it went */
+.wl-you.is-v1 .wl-you-panel { margin-top: 16px; animation: wl-v1-rise 340ms var(--ease) 100ms both; }
+.wl-you.is-v1 .wl-you-panel.is-turned { animation: wl-v1-from-l 240ms var(--ease) both; }
+.wl-you.is-v1 .wl-you-panel.is-turned[aria-labelledby='wl-you-tab-letters'] { animation-name: wl-v1-from-r; }
+
+/* ── the reveal ─────────────────────────────────────────────────────────────
+   You.jsx `RevealPanel`. One unlit panel, one bezel: what it is and when on
+   its first line with the `i` at the end, the count in figures at 40 (the
+   face's own pixels twice over, so it stays crisp), the units a step down
+   in ash, and the one line of what the night does. */
+.wl-rv {
+  position: relative;
+  padding: 14px 14px 16px;
+  border-radius: var(--r-lcd);
+  background-color: var(--lcd); background-image: var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px var(--lcd-edge);
+}
+.wl-rv-top { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+.wl-rv-label {
+  flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash); white-space: nowrap;
+}
+.wl-rv-label .wl-vault-seal { color: var(--chalk); }
+.wl-rv-label:focus { outline: none; }
+.wl-rv-label:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 4px; }
+.wl-rv-when { flex: 0 0 auto; font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--ash-dim); white-space: nowrap; }
+.wl-rv .wl-vault-info { margin: 0; }
+.wl-rv-big {
+  margin: 14px 0 0;
+  font-family: var(--f-display); font-size: 40px; line-height: 0.9; letter-spacing: 0;
+  color: var(--chalk); font-variant-numeric: tabular-nums; white-space: nowrap;
+  text-shadow: 0 0 1px rgba(244, 241, 234, 0.4);
+}
+.wl-rv-big small { font-size: var(--t-ctrl); color: var(--ash); margin: 0 1px 0 2px; }
+.wl-rv-line { margin: 12px 0 0; max-width: 40ch; font-family: var(--f-util); font-size: var(--t-small); line-height: 1.2; color: var(--ash); }
+/* the night, told: rose for a mutual, the panel's bezel lit rose with it
+   and a breath of it from the far corner; chalk for a night without one */
+.wl-rv.is-told:not(.is-none) {
+  background-image: radial-gradient(90% 140% at 100% 0%, rgba(233, 162, 189, 0.14), rgba(233, 162, 189, 0.04) 50%, transparent 78%), var(--lcd-grid);
+  box-shadow: inset 0 0 0 1px rgba(233, 162, 189, 0.38);
+}
+.wl-rv.is-told:not(.is-none) .wl-rv-big { color: var(--rose); text-shadow: 0 0 1px rgba(233, 162, 189, 0.6), 0 0 18px rgba(233, 162, 189, 0.32); }
+.wl-rv.is-told:not(.is-none) .wl-rv-label,
+.wl-rv.is-told:not(.is-none) .wl-rv-label .wl-vault-seal { color: var(--rose); }
+
+/* ── the notes, out of their frame ──────────────────────────────────────────
+   The double rule and the strip are gone; the body is the sheet's column,
+   each part under its label, 22px between parts, and nothing dashed */
+.wl-you.is-v1 .wl-vault { margin-top: 22px; padding: 0; background: none; box-shadow: none; }
+.wl-you.is-v1 .wl-vault-body { gap: 22px; padding: 0; background: none; }
+.wl-you.is-v1 .wl-vault-body > .wl-you-ask { padding: 0; }
+.wl-you.is-v1 .wl-vault-body > .wl-you-wait { padding: 0; }
+.wl-you.is-v1 .wl-vault-none { padding: 0; }
+.wl-you.is-v1 :is(.wl-vault-news, .wl-vault-past) { gap: 0; margin: 0; padding: 0; }
+.wl-you.is-v1 .wl-vault-news:not(:last-child)::after,
+.wl-you.is-v1 .wl-vault-past::before { display: none; }
+
+/* a part's label: what it is, in ash, a hairline under it, and the rows
+   standing on that line; the mutuals' in rose, the one rose word on the
+   card while the night is not being told */
+.wl-you.is-v1 .wl-vault-past-h {
+  display: block; padding: 0 0 9px;
+  border-bottom: 1px solid var(--hair);
+  font-size: var(--t-small); line-height: 1; color: var(--ash);
+}
+.wl-you.is-v1 .wl-vault-past-h.is-rose { padding-top: 0; color: var(--rose); opacity: 1; border-bottom-color: rgba(233, 162, 189, 0.22); }
+
+/* ── a row ──────────────────────────────────────────────────────────────────
+   The face, the name, and under it the aerial with the words it stands for;
+   `edit` at the end, the only thing in the right column. Hairlines between
+   rows, and the press the full width of the column less its key */
+.wl-you.is-v1 .wl-vault-row { gap: 10px; padding: 0; border-bottom: 1px solid var(--hair); }
+.wl-you.is-v1 .wl-vault-open { gap: 13px; margin-left: -8px; padding: 10px 8px; }
+.wl-you.is-v1 .wl-vault-row .wl-wrote-who { gap: 5px; }
+.wl-you.is-v1 .wl-vault-row.is-standing .wl-vault-said { color: var(--ash); }
+.wl-you.is-v1 .wl-vault-row.is-lapsed .wl-face { opacity: 0.5; }
+.wl-you.is-v1 .wl-vault-edit { flex-basis: 52px; }
+.wl-you.is-v1 .wl-vault-edit > span { width: 52px; height: 32px; }
+
+/* the mutual's slot, on the same column; its glass asleep a little less
+   deep, so it reads as the news it is and never as a key greyed out */
+.wl-you.is-v1 .wl-vault-row.wl-slot { padding: 10px 0; }
+.wl-you.is-v1 .wl-slot:not(.is-opened) { --veil: 0.3; }
+.wl-you.is-v1 .wl-slot-open { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(233, 162, 189, 0.5), 0 0 22px -2px rgba(233, 162, 189, 0.45); }
+
+/* the night's notice, on the column with the rest */
+.wl-you.is-v1 .wl-vault-body > .wl-night { margin: 0; }
+
+/* ── the letters ────────────────────────────────────────────────────────────
+   The same rows as the notes: hairlines between them, the faces a size up */
+.wl-you.is-v1 .wl-you-letters > .wl-wrote-row.is-draft { margin: 0 -8px; width: calc(100% + 16px); border-bottom: 1px solid var(--hair); }
+.wl-you.is-v1 .wl-you-letters > .wl-wrote-row.is-draft::after { display: none; }
+.wl-you.is-v1 .wl-wrote { padding-top: 0; }
+.wl-you.is-v1 .wl-wrote-row { padding: 10px 8px; gap: 13px; border-radius: var(--r-lcd); }
+.wl-you.is-v1 .wl-wrote > :is(.wl-wrote-row, .wl-wrote-line) { position: relative; }
+.wl-you.is-v1 .wl-wrote > :is(.wl-wrote-row, .wl-wrote-line) + :is(.wl-wrote-row, .wl-wrote-line)::before {
+  content: ''; position: absolute; top: 0; left: 8px; right: 8px; height: 1px; background: var(--hair);
+}
+.wl-you.is-v1 .wl-wrote-who { gap: 5px; }
+
+/* ── the week, in the foot ──────────────────────────────────────────────────
+   Over the key that spends it, so what a note costs is read where a note
+   is sent */
+.wl-you.is-v1 .wl-you-week { padding: 0 0 12px; }
+
+/* ── the first look: each part a beat after the one above ── */
+.wl-you.is-v1 .wl-you-panel:not(.is-turned) :is(.wl-vault-body, .wl-you-letters) > * { animation: wl-v1-rise 320ms var(--ease) both; }
+.wl-you.is-v1 .wl-you-panel:not(.is-turned) :is(.wl-vault-body, .wl-you-letters) > :nth-child(1) { animation-delay: 160ms; }
+.wl-you.is-v1 .wl-you-panel:not(.is-turned) :is(.wl-vault-body, .wl-you-letters) > :nth-child(2) { animation-delay: 210ms; }
+.wl-you.is-v1 .wl-you-panel:not(.is-turned) :is(.wl-vault-body, .wl-you-letters) > :nth-child(3) { animation-delay: 260ms; }
+.wl-you.is-v1 .wl-you-panel:not(.is-turned) :is(.wl-vault-body, .wl-you-letters) > :nth-child(n+4) { animation-delay: 310ms; }
+
+@keyframes wl-v1-rise {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-v1-from-l {
+  from { opacity: 0; transform: translate3d(-8px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-v1-from-r {
+  from { opacity: 0; transform: translate3d(8px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── settings ───────────────────────────────────────────────────────────────
+   The panels the reveal is drawn on, with the panel's grid */
+.wl-you.is-v1 .wl-set-panel { background-image: var(--lcd-grid); }
+.wl-you.is-v1 .wl-you-title { margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-you.is-v1 :is(.wl-you-id, .wl-you-tabs, .wl-you-panel, .wl-you-panel.is-turned),
+  .wl-you.is-v1 .wl-you-panel:not(.is-turned) :is(.wl-vault-body, .wl-you-letters) > * { animation: none; }
+  .wl-you.is-v1 .wl-you-tabs-plate { transition: none; }
+}

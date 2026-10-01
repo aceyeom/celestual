@@ -185,6 +185,29 @@
   color: var(--chalk); text-align: left; cursor: pointer;
 }
 .wl-vault-row .wl-wrote-meta { color: var(--ash); }
+/* in the two looks (You.jsx `LOOK`, profile-v1.css and -v2.css) the aerial
+   stands small at the head of the row's words, the glyph and what it means
+   read as one; the words give way to the row's width with an ellipsis */
+.wl-vault-state { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.wl-vault-state .wl-aerial { margin: 0; }
+/* In both looks the card is one height whichever tab is open, and what is
+   longer scrolls under the foot: a sheet that grew and shrank under the
+   thumb with every press of a tab read as two sheets, and the notes, being
+   longer than the letters, made it do exactly that */
+.wl-sheet-wrap.is-you:is(.is-v1, .is-v2) .wl-sheet:has(> .wl-you.is-card:not(.is-settings)) { height: min(88dvh, 760px); }
+
+/* the searching and what it lands on share one cell, so the words are as
+   wide as the longer of the two and nothing is cut while the night lands */
+.wl-vault-words { display: inline-grid; min-width: 0; }
+.wl-vault-words > * { grid-area: 1 / 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-vault-row.is-landing .wl-vault-words .wl-vault-seek + .wl-vault-said { position: static; }
+/* and both stand the week's pings in the foot, over the key that spends
+   them, on one line: the cells, what they are, and what was bought after a
+   middot. The bought cells are chalk there, since rose is a mutual's */
+.wl-you-week .wl-vault-week { min-height: 24px; }
+.wl-you-week .wl-vault-pings-say { flex-direction: row; flex-wrap: wrap; column-gap: 0; row-gap: 4px; }
+.wl-you-week .wl-vault-pings-say .is-dim::before { content: '\00a0·\00a0'; }
+.wl-you-week .wl-slots-cells i.is-bought { background: var(--ash); box-shadow: none; }
 .wl-vault-row.is-draft .wl-wrote-meta { color: var(--ash-dim); }
 .wl-vault-open:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: -1px; }
 /* not sent: the face and the name a step back, since nothing is out yet */
