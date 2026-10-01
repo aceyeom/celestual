@@ -277,7 +277,7 @@ const hash = (a, b) => {
 // the mark on the grid at `n` cells, its ring and its star, placed at
 // (`ox`, `oy`), each ring cell with its place along the ring's long axis
 // (`u`), which half it is on, and its angle round the middle
-function markOn(n, ox, oy, cut = MARK_CUT) {
+export function markOn(n, ox, oy, cut = MARK_CUT) {
   const m = markCells(n, cut)
   const t = rad(ECL.tilt)
   const c = (n - 1) / 2
@@ -360,7 +360,7 @@ const I_CUT = { ...MARK_CUT, ss: 6 }
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
 // a cell as one number (the grid is never 4096 wide)
 const cellKey = (x, y) => y * 4096 + x
-function* transport(from, to, rounds = 24) {
+export function* transport(from, to, rounds = 24) {
   const n = from.length
   const px = Float64Array.from(from, (p) => p[0])
   const py = Float64Array.from(from, (p) => p[1])
@@ -738,7 +738,7 @@ const washP = (k) => 1 - (1 - Math.max(0, Math.min(1, k))) ** WASH_EASE
 // the moment the front is `f` through the glass, on the wash's own clock,
 // for a wash `ms` long
 const washAtP = (f, ms = TOLD.wash) => ms * (1 - (1 - f) ** (1 / WASH_EASE))
-function washFrom(u, x, y, ms = TOLD.wash) {
+export function washFrom(u, x, y, ms = TOLD.wash) {
   if (u < 0) return null
   if (u >= ms) return { x, y, p: null }
   const i = Math.floor(u / WASH_STEP)
@@ -751,8 +751,14 @@ function washFrom(u, x, y, ms = TOLD.wash) {
 // third of the way down the glass, the top edge is about two fifths of the
 // way to the farthest corner and the bottom band about two thirds.
 const REACH = { top: 0.4, bottom: 0.68 }
+// When a wash leaving at `at`, `ms` to the corners, reaches the top band and
+// the bottom band, and covers the glass: the moments a phone's glass turns
+// on (the tellings, scenes/kit.js `tale`, as `introStory` has them)
+export const washTimes = (at, ms = TOLD.wash) => ({
+  top: Math.round(at + washAtP(REACH.top, ms)), bottom: Math.round(at + washAtP(REACH.bottom, ms)), covered: at + ms,
+})
 // two hex colours mixed, `k` of the way
-function mixHex(a, b, k) {
+export function mixHex(a, b, k) {
   const A = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16))
   const B = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16))
   return `#${A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join('')}`
