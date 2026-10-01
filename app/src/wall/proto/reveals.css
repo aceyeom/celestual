@@ -1,0 +1,156 @@
+/* ═══ THE MUTUAL, TOLD OTHER WAYS (reveals.jsx) ═════════════════════════════
+   Development only. Each telling stands on the keepsake's own phone
+   (mutual.css `.wl-keep`), sized in its units, `--su`, a hundredth of the
+   phone's width; what is new is only what is on the glass. */
+
+/* ── the page ── */
+.rv-root { min-height: 100dvh; padding: 28px clamp(16px, 4vw, 40px) 64px; background: #000; color: var(--chalk); }
+.rv-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; max-width: 880px; margin: 0 auto 30px; }
+.rv-top h1 { margin: 0; font-family: var(--f-display); font-size: 36px; font-weight: 400; line-height: 1; }
+.rv-top p { flex-basis: 100%; margin: 0; color: var(--ash); font-family: var(--f-util); font-size: 16px; }
+.rv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 400px)); justify-content: center; gap: 44px 56px; }
+.rv-card { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.rv-card .wl-keep { width: 100%; }
+/* the phone sized by the column alone, so a picture is the same phone
+   whatever the window's height */
+.rv-card :is(.wl-keep-strip, .wl-keep-foot) { --su: calc(min(100cqw, 400px) / 100); }
+.rv-tap { display: block; cursor: pointer; border-radius: calc(1.2 * var(--su)); }
+.rv-tap:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 4px; }
+.rv-meta { display: flex; flex-direction: column; gap: 8px; font-family: var(--f-util); }
+.rv-name { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 20px; line-height: 1; }
+.rv-name b { font-weight: 400; color: var(--chalk); }
+.rv-name span { color: var(--ash-dim); font-size: 16px; }
+.rv-line { margin: 0; color: var(--ash); font-size: 16px; line-height: 1.2; }
+.rv-row { display: flex; gap: 8px; margin-top: 4px; }
+.rv-btn {
+  min-height: 36px; padding: 0 13px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd);
+  font-family: var(--f-util); font-size: 16px; line-height: 1; color: var(--chalk); cursor: pointer;
+}
+.rv-btn.is-main { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.rv-btn:active { transform: translateY(1px); }
+.rv-root.is-one { padding: 10px 0 0; }
+.rv-root.is-one .rv-grid { grid-template-columns: minmax(0, 1fr); padding: 0 16px; }
+.rv-root.is-one .rv-meta { display: none; }
+
+/* ── the glass ── */
+.rv-body {
+  position: relative; overflow: hidden;
+  color: var(--s-ink); font-family: var(--f-s40);
+  text-shadow: 0 0 calc(0.3 * var(--su)) var(--s-soft);
+}
+.rv-cells { position: absolute; z-index: 1; image-rendering: pixelated; pointer-events: none; }
+/* the night's panel over the glass, opened from where the two met */
+.rv-wash {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    conic-gradient(at var(--dot-d) var(--dot-d), transparent 75%, rgba(19, 19, 19, 0.07) 0) var(--dot-x) var(--dot-y) / var(--dot-p) var(--dot-p),
+    radial-gradient(120% 95% at 50% 26%, #BABABA, #9D9D9D 52%, #6E6E6E);
+  -webkit-mask: radial-gradient(circle at var(--wx) var(--wy), transparent var(--wr), #000 calc(var(--wr) + 7%));
+  mask: radial-gradient(circle at var(--wx) var(--wy), transparent var(--wr), #000 calc(var(--wr) + 7%));
+}
+/* typed: what is still to come keeps its room, so nothing reflows as the
+   words go down, and the cursor stands where the next one will */
+.rv-unwritten { visibility: hidden; }
+.rv-caret { position: relative; display: inline-block; width: 0; height: 0.86em; vertical-align: -0.1em; }
+.rv-caret::after {
+  content: ''; position: absolute; left: 0.04em; top: 0; width: 0.42em; height: 100%;
+  background: currentColor; animation: rv-caret 1060ms steps(1, end) infinite;
+}
+@keyframes rv-caret { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+.rv-said { position: relative; z-index: 2; margin: 0; font-size: calc(13 * var(--su)); line-height: 0.9; white-space: nowrap; }
+.rv-pair { position: relative; z-index: 2; margin: calc(1.8 * var(--su)) 0 0; font-size: calc(7.6 * var(--su)); line-height: 1; }
+.rv-pair span { opacity: 0.55; }
+
+/* ═══ A · YOUR CONSTELLATION ═══ */
+.rv-sky { position: relative; z-index: 1; aspect-ratio: 66 / 38; margin-top: calc(1.2 * var(--su)); }
+/* the light the meeting throws on the glass, under its cells: the
+   backlight's hot spot, where the two reached each other */
+.rv-glow {
+  position: absolute; z-index: 0; width: calc(64 * var(--su)); aspect-ratio: 1; pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--s-lit) 72%, transparent), color-mix(in srgb, var(--s-lit) 22%, transparent) 46%, transparent);
+}
+.rv-star-name {
+  position: absolute; z-index: 2; transform: translateX(-50%);
+  font-size: calc(5 * var(--su)); line-height: 1; white-space: nowrap; opacity: 0.78;
+}
+.rv-body.is-a .rv-said { margin-top: calc(1.6 * var(--su)); text-align: center; }
+.rv-body.is-a .rv-pair { text-align: center; }
+.rv-notes { position: relative; z-index: 2; display: flex; flex-direction: column; gap: calc(2.6 * var(--su)); padding: calc(4.4 * var(--su)) calc(3.4 * var(--su)) calc(3.4 * var(--su)); }
+/* each note on its writer's side of the sky: theirs from the left, yours
+   from the right */
+.rv-note {
+  width: 86%; overflow: hidden;
+  border-radius: calc(0.8 * var(--su));
+  background: color-mix(in srgb, var(--s-hi) 60%, var(--s-lit));
+  box-shadow: inset 0 0 0 max(1px, calc(0.28 * var(--su))) color-mix(in srgb, var(--s-ink) 20%, transparent);
+  will-change: transform;
+}
+.rv-note.is-yours { align-self: flex-end; }
+.rv-note-to {
+  margin: 0; padding: calc(1.6 * var(--su)) calc(2.6 * var(--su)) calc(1.3 * var(--su));
+  background: linear-gradient(180deg, var(--s-top), var(--s-top-2));
+  color: var(--s-lit); font-size: calc(5.2 * var(--su)); line-height: 1;
+  text-shadow: 0 0 1px var(--s-lit), 0 0 calc(1.6 * var(--su)) var(--s-bloom);
+}
+.rv-note.is-yours .rv-note-to { text-align: right; }
+.rv-note-words { margin: 0; padding: calc(2.4 * var(--su)) calc(2.6 * var(--su)) calc(1.2 * var(--su)); font-size: calc(6.6 * var(--su)); line-height: 1.08; }
+.rv-note-from {
+  display: flex; align-items: center; gap: calc(1.6 * var(--su));
+  margin: 0; padding: 0 calc(2.6 * var(--su)) calc(2.2 * var(--su));
+  font-size: calc(4.6 * var(--su)); line-height: 1; color: color-mix(in srgb, var(--s-ink) 78%, transparent);
+}
+.rv-note.is-yours .rv-note-from { justify-content: flex-end; }
+.rv-seal { flex: 0 0 auto; width: calc(9 * var(--su)); height: calc(9 * var(--su)); color: var(--s-ink); }
+
+/* ═══ B · TWO LETTERS, STAMPED ═══ */
+.rv-body.is-b { min-height: calc(132 * var(--su)); }
+.rv-cells.is-desk { z-index: 3; }
+.rv-head { position: relative; z-index: 2; padding: calc(4.4 * var(--su)) calc(4.4 * var(--su)) 0; }
+.rv-head-words { position: relative; z-index: 1; }
+/* the postmark, struck across the corner of the first letter and run off
+   the glass's edge, as a stamp is never put on square */
+.rv-post-at {
+  position: absolute; z-index: 4; right: calc(-14 * var(--su)); top: calc(10 * var(--su));
+  width: calc(70 * var(--su)); color: var(--s-ink);
+  transform-origin: 26% 50%; mix-blend-mode: multiply; pointer-events: none;
+}
+.rv-post { display: block; width: 100%; height: auto; }
+.rv-papers { position: relative; z-index: 2; display: flex; flex-direction: column; padding: calc(6 * var(--su)) calc(4 * var(--su)) calc(5 * var(--su)); }
+/* a letter: paper the glass's lightest, a soft shadow under it on the
+   glass, ruled the way a pad is, and laid a little askew. `--lay` is how
+   far it still has to come down onto the glass */
+.rv-paper {
+  --rule: calc(8.6 * var(--su));
+  position: relative;
+  padding: calc(3 * var(--su)) calc(3.6 * var(--su)) calc(2.8 * var(--su));
+  border-radius: calc(0.5 * var(--su));
+  background: color-mix(in srgb, var(--s-lit) 72%, var(--s-hi));
+  box-shadow:
+    0 calc(0.6 * var(--su)) calc(1.8 * var(--su)) color-mix(in srgb, var(--s-ink) 34%, transparent),
+    inset 0 0 0 max(1px, calc(0.22 * var(--su))) color-mix(in srgb, var(--s-ink) 10%, transparent);
+  text-shadow: none;
+  transform: translate3d(0, calc(var(--lay, 0) * 7 * var(--su)), 0) rotate(calc(var(--tilt) * (1 + var(--lay, 0))));
+}
+.rv-paper.is-theirs { --tilt: -1.6deg; margin-right: calc(8 * var(--su)); }
+.rv-paper.is-yours { --tilt: 1.3deg; margin-left: calc(8 * var(--su)); margin-top: calc(-1.2 * var(--su)); }
+.rv-paper-to { margin: 0; font-size: calc(5.2 * var(--su)); line-height: 1; color: color-mix(in srgb, var(--s-ink) 66%, transparent); }
+.rv-paper-words {
+  margin: calc(1.4 * var(--su)) 0 0;
+  font-size: calc(6.6 * var(--su)); line-height: var(--rule);
+  background-image: repeating-linear-gradient(180deg,
+    transparent 0 calc(var(--rule) - max(1px, calc(0.24 * var(--su)))),
+    color-mix(in srgb, var(--s-ink) 16%, transparent) calc(var(--rule) - max(1px, calc(0.24 * var(--su)))) var(--rule));
+  background-position: 0 calc(-1.3 * var(--su));
+}
+.rv-paper-from {
+  display: flex; align-items: flex-end; gap: calc(0.6 * var(--su));
+  margin: calc(1.6 * var(--su)) 0 0; font-size: calc(7.6 * var(--su)); line-height: 1;
+}
+.rv-hand { flex: 0 0 auto; height: calc(7.4 * var(--su)); width: auto; transform: translate3d(calc(-1.4 * var(--su)), calc(2.4 * var(--su)), 0); }
+.rv-paper-from small { margin-left: auto; font-size: calc(4.2 * var(--su)); color: color-mix(in srgb, var(--s-ink) 60%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-caret::after { animation: none; }
+}
