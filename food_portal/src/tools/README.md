@@ -1,7 +1,7 @@
 # tools — 네이버 상위글 수집·역설계 분석 (사용자 PC 실행용)
 
 2단계(네이버 1위 글 역설계)를 위한 수집·분석 도구. 방법론은
-`../docs/04-reverse-engineering-method.md` 참고.
+`../../docs/04-reverse-engineering-method.md` 참고.
 
 > ⚠️ **반드시 본인 PC(정상 가정용 IP·실제 브라우저)에서 실행한다.**
 > 클라우드/서버/데이터센터에서 돌리면 네이버가 차단한다. 이 도구는 저장소에
@@ -10,7 +10,7 @@
 ## 설치 (최초 1회)
 
 ```bash
-cd food_portal/tools
+cd food_portal/src/tools
 npm install
 npx playwright install chromium
 ```

@@ -28,7 +28,7 @@ TAAMs 게시판에도 업로드하기 위한 작업 공간이다.
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | **1단계** | TAAMs 제공 데이터 확인 → 사실 기반 주제·제목 확정 | ✅ 완료 (`docs/01-taams-data-capabilities.md`) |
-| **2단계** | 네이버 검색 1위 글 역설계 (목차·글자수·어투·형태 분석) | 🔧 방법론·도구 완성 (`docs/04-...md`, `tools/`) — 사용자 PC에서 수집 실행 대기 |
+| **2단계** | 네이버 검색 1위 글 역설계 (목차·글자수·어투·형태 분석) | 🔧 방법론·도구 완성 (`docs/04-...md`, `src/tools/`) — 사용자 PC에서 수집 실행 대기 |
 | **3단계** | TAAMs 실데이터로 본문 자동 생성 (1위 글 구조에 맞춰) | ⬜ 예정 |
 | **4단계** | 네이버 차단 회피 자동 포스팅(computer-use) + TAAMs 게시판 업로드 | ⬜ 예정 |
 
@@ -66,10 +66,11 @@ food_portal/
 │   ├── 02-blog-titles.md                  # 제목 3개 + 근거·대상 키워드
 │   ├── 03-constraints-and-architecture.md # 네트워크 제약 + 차단회피 아키텍처
 │   └── 04-reverse-engineering-method.md   # 2단계: 상위글 역설계 방법론·추출 지표·이기는 공식
-└── tools/                                 # 2단계 실행 도구 (사용자 PC에서 실행)
-    ├── README.md                          # 설치·실행·차단회피 가이드
-    ├── keywords.json                      # 주제별 타깃 키워드
-    ├── collect.mjs                        # 네이버 상위글 수집(API/수동 URL + Playwright)
-    ├── analyze.mjs                        # 수집결과 → "이기는 공식" 산출
-    └── urls.json.example                  # 수동 URL 입력 템플릿
+└── src/
+    └── tools/                             # 2단계 실행 도구 (사용자 PC에서 실행)
+        ├── README.md                      # 설치·실행·차단회피 가이드
+        ├── keywords.json                  # 주제별 타깃 키워드
+        ├── collect.mjs                    # 네이버 통합검색 상위글 수집(스크래핑/수동 URL + Playwright)
+        ├── analyze.mjs                    # 수집결과 → "이기는 공식" 산출
+        └── urls.json.example              # 수동 URL 입력 템플릿
 ```

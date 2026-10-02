@@ -13,7 +13,7 @@
 //      통합검색에서 눈으로 확인한 1~3위 글을 직접 지정하고 싶을 때.
 //
 // 실행:
-//   cd food_portal/tools
+//   cd food_portal/src/tools
 //   npm install && npx playwright install chromium
 //   npm run collect
 //   (로그인 세션 재사용) NAVER_USER_DATA_DIR="/path/to/chrome-profile" npm run collect

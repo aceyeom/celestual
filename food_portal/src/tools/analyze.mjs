@@ -3,7 +3,7 @@
 //
 // 산출 규칙은 docs/04-reverse-engineering-method.md 를 따른다.
 //
-// 실행: cd food_portal/tools && npm run analyze
+// 실행: cd food_portal/src/tools && npm run analyze
 // 결과: tools/output/formula-<topicId>.json  +  콘솔 요약표
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
