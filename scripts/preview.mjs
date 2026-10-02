@@ -16,7 +16,8 @@
 // Nothing here ships. The fixtures are a fixture and app/.env.local is
 // gitignored; what ships is the screenshots, in design/shots, and the critique
 // they are for.
-import { mkdirSync, renameSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
@@ -450,8 +451,11 @@ function thread() {
 // rather than a photograph, because a fixture face only has to prove the disc
 // draws an image over its monogram; the monogram state is the other half and
 // every other handle here is drawn in it.
+// (sized, not only a viewBox: a picture with no size of its own is laid on
+// the face's canvas at the browser's default of 300 by 150, and the face came
+// out a white square with the swatch in its corner)
 const swatch = (a, b) => `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="80" height="80" fill="url(#g)"/><circle cx="40" cy="31" r="13" fill="rgba(255,255,255,0.55)"/><ellipse cx="40" cy="66" rx="22" ry="16" fill="rgba(255,255,255,0.5)"/></svg>`,
+  `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="80" height="80" fill="url(#g)"/><circle cx="40" cy="31" r="13" fill="rgba(255,255,255,0.55)"/><ellipse cx="40" cy="66" rx="22" ry="16" fill="rgba(255,255,255,0.5)"/></svg>`,
 )}`
 const FACES = { 'jules.k': swatch('#5a6b8a', '#2b3550'), 'pilar.echevarria': swatch('#8a6a5a', '#4a3028') }
 // A real photograph, when one is to hand: PREVIEW_FACES names a directory
@@ -2420,6 +2424,56 @@ for (const label of ['you', 'you-motion', 'you-letters', 'you-settings', 'you-re
   for (const v of [1, 2]) ROUTES.push({ ...r, label: `${label}-v${v}`, path: `${r.path}${r.path.includes('?') ? '&' : '?'}profile=${v}` })
 }
 
+// A film is shot slowly and played back at speed: a page drawn at twice its
+// pixels by a machine with no graphics card paints about twelve frames a
+// second, and a movement filmed at that is a movement nobody can judge. So
+// with PREVIEW_VIDEO the page's whole sense of time runs at a quarter (its
+// clocks, its timers and frames, and the browser's own animations), every
+// wait here is as much longer, and the film is put together four times as
+// fast: every movement at its real speed, at thirty frames a second.
+const PACE = process.env.PREVIEW_VIDEO ? Number(process.env.PREVIEW_SLOW) || 4 : 1
+const slowTime = (k) => {
+  const s = 1 / k
+  const realNow = performance.now.bind(performance)
+  const realDate = Date.now
+  const t0 = realNow()
+  const d0 = realDate()
+  performance.now = () => t0 + (realNow() - t0) * s
+  Date.now = () => d0 + (realDate() - d0) * s
+  const RealDate = Date
+  // eslint-disable-next-line no-global-assign
+  Date = class extends RealDate { constructor(...a) { super(...(a.length ? a : [Date.now()])) } static now() { return d0 + (realDate() - d0) * s } }
+  const raf = window.requestAnimationFrame.bind(window)
+  window.requestAnimationFrame = (fn) => raf(() => fn(performance.now()))
+  const st = window.setTimeout.bind(window)
+  const si = window.setInterval.bind(window)
+  window.setTimeout = (fn, ms, ...a) => st(fn, (Number(ms) || 0) * k, ...a)
+  window.setInterval = (fn, ms, ...a) => si(fn, (Number(ms) || 0) * k, ...a)
+}
+
+// The screencast's frames from `from` on, as a film: each frame a picture,
+// held until the next came (the screencast sends one only when the page
+// changed), the last for a second, and ffmpeg's concat putting them
+// together at thirty frames a second
+function filmOf(frames, from, to) {
+  const kept = frames.filter((f, i) => f.at >= from || (frames[i + 1] && frames[i + 1].at > from))
+  if (kept.length < 2) return null
+  const dir = mkdtempSync(join(tmpdir(), 'film-'))
+  const list = []
+  kept.forEach((f, i) => {
+    const file = join(dir, `${String(i).padStart(5, '0')}.jpg`)
+    writeFileSync(file, Buffer.from(f.data, 'base64'))
+    const next = kept[i + 1] ? kept[i + 1].at : f.at + 1000
+    list.push(`file '${file}'`, `duration ${(Math.max(1, next - Math.max(f.at, from)) / 1000).toFixed(4)}`)
+  })
+  list.push(`file '${join(dir, `${String(kept.length - 1).padStart(5, '0')}.jpg`)}'`)
+  writeFileSync(join(dir, 'list.txt'), list.join('\n'))
+  const made = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'),
+    '-vf', `setpts=PTS/${PACE},fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2`, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '22', '-movflags', '+faststart', to])
+  rmSync(dir, { recursive: true, force: true })
+  return made.status === 0 ? to : null
+}
+
 // one label, or several separated by commas
 const want = process.argv[2]
 const wants = want ? want.split(',') : null
@@ -2428,6 +2482,9 @@ const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH
     || (process.env.PLAYWRIGHT_BROWSERS_PATH && join(process.env.PLAYWRIGHT_BROWSERS_PATH, 'chromium'))
     || undefined,
+  // a film is the screencast, and the screencast is drawn at the page's
+  // device pixels only when the browser itself is at that scale
+  args: process.env.PREVIEW_VIDEO ? [`--force-device-scale-factor=${Math.max(...VIEWPORTS.map((v) => v.scale))}`] : [],
 })
 
 const made = []
@@ -2474,17 +2531,29 @@ for (const r of list) {
     Object.assign(FACE_ASKS, { face: 0, set: 0, seen: 0, nudge: 0, last: null })
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
-    // `PREVIEW_VIDEO=1` films the page as well, from the moment the intro
-    // has gone to the shot, for a movement a still cannot show (written
-    // beside the shot as .webm, trimmed with ffmpeg where there is one)
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
       deviceScaleFactor: v.scale,
-      recordVideo: process.env.PREVIEW_VIDEO ? { dir: join(out, '.film'), size: { width: v.width, height: v.height } } : undefined,
       // a route marked `still` is shot under prefers-reduced-motion
       reducedMotion: r.still ? 'reduce' : 'no-preference',
     })
-    const born = Date.now()
+    // `PREVIEW_VIDEO=1` films the page as well, from the moment the intro
+    // has gone (or a route's `film`) to the shot, for a movement a still
+    // cannot show: the browser's own screencast, which is the page at its
+    // device pixels (Playwright's recorder draws a 2x page into the corner
+    // of a frame its own size), each frame held for as long as it stood,
+    // and put together by ffmpeg beside the shot as .mp4
+    const film = process.env.PREVIEW_VIDEO ? { frames: [], cdp: await page.context().newCDPSession(page) } : null
+    if (film) {
+      await page.addInitScript(slowTime, PACE)
+      await film.cdp.send('Animation.enable')
+      await film.cdp.send('Animation.setPlaybackRate', { playbackRate: 1 / PACE })
+      film.cdp.on('Page.screencastFrame', (f) => {
+        film.frames.push({ data: f.data, at: f.metadata.timestamp * 1000 })
+        film.cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {})
+      })
+      await film.cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: v.width * v.scale, maxHeight: v.height * v.scale })
+    }
     const problems = []
     page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
     page.on('pageerror', (e) => problems.push(process.env.PREVIEW_STACK ? String(e.stack) : String(e)))
@@ -2576,7 +2645,7 @@ for (const r of list) {
     // beat or a frame to be looked at (`?beat=`, `?t=`), where it never goes,
     // or on the last beat, which lifts it at once (`?beat=4`).
     if (!/[?&](beat|t)=/.test(r.path)) {
-      await page.waitForFunction(() => !document.querySelector('.hi'), null, { timeout: 8000 }).catch(() => {})
+      await page.waitForFunction(() => !document.querySelector('.hi'), null, { timeout: 8000 * PACE }).catch(() => {})
     }
     let filmFrom = Date.now()
 
@@ -2611,7 +2680,7 @@ for (const r of list) {
     // A state several presses deep: fill, click and wait, in order, each on
     // whatever the last one drew.
     for (const [act, sel, arg, more] of r.acts || []) {
-      if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      if (act === 'wait') { await page.waitForTimeout((Number(sel) || 500) * PACE); continue }
       // the film starts here rather than when the intro has gone
       if (act === 'film') { filmFrom = Date.now(); continue }
       // the browser's own back, as a person takes it off a sheet another
@@ -2764,7 +2833,7 @@ for (const r of list) {
       }
       await page.waitForTimeout(700)
     }
-    await page.waitForTimeout(r.settle ?? 2600)
+    await page.waitForTimeout((r.settle ?? 2600) * PACE)
     // a pointer on the field, a little off the middle, so the lens has a
     // person under it and the crowd has parted round them
     if (r.hover) {
@@ -2801,16 +2870,12 @@ for (const r of list) {
       console.error(`  ${r.label} ${v.name}: ${problems.length} console error(s)`)
       for (const p of problems.slice(0, 4)) console.error(`    ${p}`)
     }
-    const filmed = page.video()
-    const filmAt = filmed ? (filmFrom - born) / 1000 : 0
-    await page.close()
-    if (filmed) {
-      const raw = await filmed.path()
-      const to = join(out, `${r.label}-${v.name}.webm`)
-      const cut = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', String(Math.max(0, filmAt - 0.3)), '-i', raw, '-c:v', 'libvpx-vp9', '-b:v', '1.4M', to])
-      if (cut.status !== 0) renameSync(raw, to)
-      made.push(to)
+    if (film) {
+      await film.cdp.send('Page.stopScreencast').catch(() => {})
+      const to = filmOf(film.frames, filmFrom - 300, join(out, `${r.label}-${v.name}.mp4`))
+      if (to) made.push(to)
     }
+    await page.close()
   }
 }
 
