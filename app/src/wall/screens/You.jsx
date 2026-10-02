@@ -151,10 +151,12 @@ import { loadPending } from '../handoff.js'
 import {
   myHandle, myPings, heldPings, forgetPings, renew, release, sendAgain, stateWords,
   nextReveal, lastReveal, revealStamp, countdown, endsWords, endedWords, keptAhead, revealWaiting, sawReveal,
-  heldAllowance, waitForPings, forgetWeek, liveOf, mutualsOf, freeWords, nightOf, nightWaiting, sawNight,
+  heldAllowance, waitForPings, forgetWeek, liveOf, mutualsOf, freeWords, nightOf, nightWaiting, sawNight, wasOpened,
 } from '../pings.js'
-import { NightCard, NightReport, NIGHT, backMark, shareCelestual, SHARED_SAYS } from '../Night.jsx'
-import { takeReturn } from '../revealfrom.js'
+import {
+  NightCard, NightReport, NIGHT, backMark, shareCelestual, SHARED_SAYS, Tag, whoWords, backTag, backNote, backTotalTag, backTotalNote,
+} from '../Night.jsx'
+import { takeReturn, openReveal } from '../revealfrom.js'
 import { Aerial } from '../aerial.jsx'
 import { MutualSlot, EditKey, movingOf } from '../Slot.jsx'
 import { useProve, ProveDoor, editNote, takeNoteBack } from './Ping.jsx'
@@ -162,6 +164,7 @@ import { useAlertLink, AlertEmail } from './Alerts.jsx'
 import Gate from './Gate.jsx'
 import { alertsGet, alertsSet } from '../../api/alerts.js'
 import { skinVars } from '../looks.js'
+import { LOOK, LOOK_CLASS } from '../look.js'
 import '../profile.css'
 import '../profile-v1.css'
 import '../profile-v2.css'
@@ -171,37 +174,25 @@ import '../profile-v2.css'
 // owner to choose between (1 October: the card felt like parts that did not
 // belong together, its colours, its balance and its motion, and the news on
 // it was easy to read past). Both keep the phone and change how it is
-// arranged and lit:
+// arranged and lit (look.js reads which, from `?profile=`):
 //
-//   ?profile=1   the quiet one. Nothing lit but the key at the foot. The
-//                frame round the notes is gone; the reveal is a panel of its
-//                own over them, its count in large figures with the one line
-//                of what happens on the night; the lists stand on the sheet
-//                under labels, hairlines between their rows; the tabs' plate
-//                slides; what comes in rises a beat apart.
-//   ?profile=2   the lit one. The card has a screen of its own at its head,
-//                the night glass the letters and the slots are lit in, and it
-//                says what the tab under it is about: the count to the night
-//                over the notes, how many letters are up over the letters.
-//                The tabs are the soft keys under that glass, and the lists
-//                stand in one panel, each part under a strip of its own. It
-//                comes on the way a screen does, and its lines are drawn on.
-//   ?profile=0   this card as it was.
+//   1   the quiet one. Nothing lit but the key at the foot. The frame round
+//       the notes is gone; the reveal is a panel of its own over them, its
+//       count in large figures with the one line of what happens on the
+//       night; the lists stand on the sheet under labels, hairlines between
+//       their rows; the tabs' plate slides; what comes in rises a beat apart.
+//   2   the lit one. The card has a screen of its own at its head, the night
+//       glass the letters and the slots are lit in, and it says what the tab
+//       under it is about: the count to the night over the notes, how many
+//       letters are up over the letters. The tabs are the soft keys under
+//       that glass, and the lists stand in one panel, each part under a
+//       strip of its own. It comes on the way a screen does, and its lines
+//       are drawn on.
+//   0   this card as it was.
 //
-// Both say each note's state in words beside its aerial, and both stand the
-// week's pings in the foot, over the key that spends them. Read once, as the
-// page loads, since the address does not outlive the router, and kept for
-// the browser's tab, so the card opened again from the bar keeps its look.
-const LOOK_KEY = 'celestual.you.look'
-export const LOOK = (() => {
-  if (typeof location === 'undefined') return 0
-  const m = /[?&]profile=([012])\b/.exec(location.search)
-  try {
-    if (m) window.sessionStorage.setItem(LOOK_KEY, m[1])
-    return Number(m ? m[1] : window.sessionStorage.getItem(LOOK_KEY)) || 0
-  } catch { return m ? Number(m[1]) : 0 }
-})()
-const LOOK_CLASS = LOOK ? ` is-v${LOOK}` : ''
+// Both say each note's state in words beside its aerial, stand the week's
+// pings in the foot over the key that spends them, and open a reveal with a
+// press (`Reveal` below).
 
 // ── the nudge's way in ──────────────────────────────────────────────────────
 // The account, opened on the Instagram DM rather than on the three ways in,
@@ -392,36 +383,165 @@ function Figures({ c }) {
 // the card needs to read it by
 const HOW = 'sealed until then. if they send you one too, you both find out.'
 
-// ── the reveal, the quiet look's (?profile=1) ───────────────────────────────
+// ── the reveal, opened by a press ───────────────────────────────────────────
+// In both looks the night is the person's to open (the owner, 2 October: a
+// press to reveal, and one reveal however many notes were in it). The panel
+// the count stands in has three faces:
+//
+//   count     all week: when the night is, in large figures, and the one
+//             line of what it does
+//   waiting   from the night until a press: `the reveal is in`, how many of
+//             this person's notes were in it, and a sealed envelope, and
+//             nothing on the card that says what it said. The panel is the
+//             press, and so is the foot's lit key, which says `open the
+//             reveal` until it has been
+//   told      after it: what the night said, in one place, where the strip,
+//             the notice and the slot each told a part of it. `it's mutual.`
+//             in rose, or `not this time.` with who did not send one, that
+//             they will never know, and what came back; `open the next` when
+//             a second mutual is still to be watched, `send again` and
+//             `share celestual` when none was mutual. The count to the next
+//             night under it, small
+//
+// The press opens the envelope (its flap up, 240ms) and then the night: a
+// mutual's telling straight from the panel, the film as it is (Film.jsx),
+// with nothing to press a second time; and a night with none in it is told
+// where it stands, the panel turning to it and the rows under it landing a
+// beat apart, as they did on the night (`useSeen`).
+const OPENED = [
+  '.......X.......',
+  '.....XX.XX.....',
+  '...XX.....XX...',
+  '.XX.........XX.',
+  'XXXXXXXXXXXXXXX',
+  'X.............X',
+  'X.............X',
+  'X.............X',
+  'X.............X',
+  'X.............X',
+  'X.............X',
+  'X.............X',
+  'XXXXXXXXXXXXXXX',
+]
+const cellsD = (rows, dy = 0) => rows.flatMap((row, y) => [...row].map((c, x) => (c === 'X' ? `M${x} ${y + dy}h1v1h-1z` : ''))).join('')
+const SEALED_D = cellsD(SEAL, OPENED.length - SEAL.length)
+const OPENED_D = cellsD(OPENED)
+function Envelope({ open = false, scale = 4, className = '' }) {
+  return (
+    <svg
+      className={`wl-pxi wl-env${open ? ' is-open' : ''} ${className}`} viewBox={`0 0 15 ${OPENED.length}`}
+      width={15 * scale} height={OPENED.length * scale}
+      shapeRendering="crispEdges" fill="currentColor" aria-hidden="true" focusable="false"
+    >
+      <path d={open ? OPENED_D : SEALED_D} />
+    </svg>
+  )
+}
+
+// what the night said, for either look's panel to set in its own type
+// (`cls`, its big words and its lines): the title, who and what came back,
+// and the keys that act on it. After a key it says what happened in the
+// lines' place, the way the notice did (Night.jsx `NightCard`)
+function Told({ cls, told, night, more, onNext, onAgain }) {
+  const [said, setSaid] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const one = night.notes.length === 1 ? night.notes[0] : null
+  const tag = one ? backTag(one) : backTotalTag(night)
+  const note = one ? backNote(one) : backTotalNote(night)
+  const lines = told.mutual
+    ? (night.notes.length ? [`not this time for ${whoWords(night.notes)}.`] : [])
+    : [`${whoWords(night.notes)} didn’t send you one.`, 'they’ll never know you did.']
+  const again = async () => {
+    setBusy(true)
+    const out = await onAgain(one)
+    setBusy(false)
+    if (!out) return
+    setSaid(out.said ? ['not sent.', out.said] : ['sent again.', `it runs to ${endsWords(out.ends)}.`])
+  }
+  const share = () => shareCelestual().then((r) => { if (SHARED_SAYS[r]) setSaid([SHARED_SAYS[r], '']) })
+  return (
+    <>
+      <p className={`${cls}-big wl-told-big`}>{said ? said[0] : told.mutual ? `${saidOf(told)}.` : 'not this time.'}</p>
+      {said ? (said[1] ? <p className={`${cls}-line`}>{said[1]}</p> : null) : (
+        <>
+          {lines.map((l) => <p key={l} className={`${cls}-line`}>{l}</p>)}
+          {tag ? <Tag chrome>{tag}</Tag> : note ? <p className={`${cls}-line`}>{note}</p> : null}
+        </>
+      )}
+      {said ? null : (
+        <div className="wl-told-keys">
+          {more ? <button type="button" className="wl-told-key is-lit" onClick={onNext}>open the next</button> : null}
+          {!told.mutual && one && one.state === 'lapsed' ? (
+            <button type="button" className="wl-told-key" disabled={busy} onClick={again} aria-label={`send your note to ${atHandle(one.to)} again, for next saturday`}>send again</button>
+          ) : null}
+          {!told.mutual ? (
+            <button type="button" className="wl-told-key" disabled={busy} onClick={share} aria-label="share celestual. the link says nothing about you or your notes">share celestual</button>
+          ) : null}
+        </div>
+      )}
+    </>
+  )
+}
+const nextWords = (c) => `next reveal in ${c.d ? `${c.d}d ${c.h}h` : `${two(c.h)}:${two(c.m)}:${two(c.s)}`}`
+// the press, as a key is pressed: Enter or the space bar on the panel
+const pressKeys = (fn) => (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn() } }
+
+// ── the quiet look's (?profile=1) ──
 // An unlit panel of its own over the notes, where the strip was the head of
 // their frame: what it is (`next reveal`, with the sealed envelope) and when
 // on one line with the `i` at its end, the count under it in large figures,
-// and what the night does. After a reveal this person had a note in, until
-// they have seen it, it tells the night instead: `the reveal is in` and
-// what it said, in rose for a mutual and chalk for a night without one.
-function RevealPanel({ fresh, told, onInfo }) {
+// and what the night does. Waiting, the panel's bezel is lit and the
+// envelope stands large at its right; told, the night's words in the
+// figures' place, rose for a mutual.
+function RevealPanel({ phase, n, told, night, more, opening, panelRef, onReveal, onNext, onAgain, onInfo }) {
   const { now, soon, c, words } = useRevealClock()
-  const tell = fresh && told.total > 0
+  if (phase === 'waiting') {
+    return (
+      <div
+        className={`wl-rv is-waiting${opening ? ' is-opening' : ''}`} ref={panelRef} role="button" tabIndex={0}
+        onClick={onReveal} onKeyDown={pressKeys(onReveal)}
+        aria-label={`the reveal is in. ${n === 1 ? 'one of your notes was' : `${n} of your notes were`} in it. open the reveal`}
+      >
+        <div className="wl-rv-top">
+          <span className="wl-rv-label" id="wl-vault-h" tabIndex={-1}><Seal scale={1} /><span>the reveal is in</span></span>
+          <span className="wl-rv-when" aria-hidden="true">sat {revealStamp(lastReveal(now))}</span>
+        </div>
+        <p className="wl-rv-big" aria-hidden="true">{n}<small>{n === 1 ? ' note' : ' notes'}</small></p>
+        <p className="wl-rv-line" aria-hidden="true">sealed until you open {n === 1 ? 'it' : 'them'}.</p>
+        <Envelope open={opening} className="wl-rv-env" />
+      </div>
+    )
+  }
+  const tell = phase === 'told'
   return (
-    <div className={`wl-rv${tell ? ' is-told' : ''}${tell && !told.mutual ? ' is-none' : ''}${soon && !tell ? ' is-soon' : ''}`}>
+    <div className={`wl-rv${tell ? ' is-told' : ''}${tell && !told.mutual ? ' is-none' : ''}${soon && !tell ? ' is-soon' : ''}`} ref={panelRef}>
       <div className="wl-rv-top">
         <span className="wl-rv-label" id="wl-vault-h" tabIndex={-1}>
           <Seal scale={1} />
-          <span aria-hidden="true">{tell ? 'the reveal is in' : 'next reveal'}</span>
-          <span className="wl-sr">{tell ? `your private notes. the reveal is in: ${saidOf(told)}` : `your private notes. the reveal is saturday at 9pm pacific, in ${words}.`}</span>
+          <span aria-hidden="true">{tell ? 'the reveal' : 'next reveal'}</span>
+          <span className="wl-sr">{tell ? `your private notes. the reveal: ${saidOf(told)}` : `your private notes. the reveal is saturday at 9pm pacific, in ${words}.`}</span>
         </span>
         <span className="wl-rv-when" aria-hidden="true">{tell ? `sat ${revealStamp(lastReveal(now))}` : 'sat · 9pm pt'}</span>
         <button type="button" className="wl-vault-info" onClick={onInfo} aria-label="how the weekly reveal works">
           <span aria-hidden="true">i</span>
         </button>
       </div>
-      <p className="wl-rv-big" aria-hidden="true">{tell ? `${saidOf(told)}.` : <Figures c={c} />}</p>
-      {tell ? null : <p className="wl-rv-line">{HOW}</p>}
+      {tell ? (
+        <div className="wl-rv-told" aria-live="polite">
+          <Told cls="wl-rv" told={told} night={night} more={more} onNext={onNext} onAgain={onAgain} />
+          <p className="wl-rv-next">{nextWords(c)}</p>
+        </div>
+      ) : (
+        <>
+          <p className="wl-rv-big" aria-hidden="true"><Figures c={c} /></p>
+          <p className="wl-rv-line">{HOW}</p>
+        </>
+      )}
     </div>
   )
 }
 
-// ── the handset, the lit look's (?profile=2) ────────────────────────────────
+// ── the handset, the lit look's (?profile=2) ──
 // A screen at the head of the card, drawn as the slots are (Slot.jsx): the
 // band over the panel in the screen's own properties (looks.js `skinVars`),
 // the night glass, or the rose letter once a reveal with a mutual in it is
@@ -430,33 +550,63 @@ function RevealPanel({ fresh, told, onInfo }) {
 // many of this person's are up. It comes on where it stands the way the
 // letter's phone does (DESIGN.md 6.3, the power on), once, as the card
 // opens; a press on a soft key changes what is on the glass, in the two
-// steps an LCD takes to draw, and not the glass.
+// steps an LCD takes to draw, and not the glass. Waiting, it is a phone with
+// a message on it: the envelope by the aerial on its band, the sealed one
+// large on its glass, and the glass itself the press, `open` on its key.
 const glassOf = (c) => Object.fromEntries(Object.entries(skinVars(c)).filter(([k]) => k.startsWith('--s-')))
 const NIGHT_GLASS = glassOf('night')
 const ROSE_GLASS = glassOf('rose')
-function Handset({ tab, turned, fresh, told, up, hearts, onInfo }) {
+function Handset({ tab, turned, phase, n, told, night, more, opening, panelRef, up, hearts, onReveal, onNext, onAgain, onInfo }) {
   const { now, soon, c, words } = useRevealClock()
   const notes = tab === 'notes'
-  const tell = notes && fresh && told.total > 0
+  const waiting = notes && phase === 'waiting'
+  const tell = notes && phase === 'told'
   const rose = tell && told.mutual > 0
+  const press = waiting ? { role: 'button', tabIndex: 0, onClick: onReveal, onKeyDown: pressKeys(onReveal), 'aria-label': `the reveal is in. ${n === 1 ? 'one of your notes was' : `${n} of your notes were`} in it. open the reveal` } : {}
   return (
-    <div className={`wl-hand${rose ? ' is-rose' : ''}${soon && !tell && notes ? ' is-soon' : ''}`} style={rose ? ROSE_GLASS : NIGHT_GLASS}>
+    <div
+      className={`wl-hand${rose ? ' is-rose' : ''}${waiting ? ' is-waiting' : ''}${opening ? ' is-opening' : ''}${soon && phase === 'count' && notes ? ' is-soon' : ''}`}
+      style={rose ? ROSE_GLASS : NIGHT_GLASS} ref={notes ? panelRef : undefined} {...press}
+    >
       <div className="wl-hand-band" aria-hidden="true">
         <Aerial state={tell ? (rose ? 'full' : 'none') : notes ? 'seek' : 'kept'} scale={1} />
+        {waiting ? <PixIcon name="env" scale={1} className="wl-hand-mail" /> : null}
         <span className="wl-hand-at">{notes ? 'private notes' : 'letters'}</span>
         <span className="wl-hand-when">
-          {notes ? (tell ? `sat ${revealStamp(lastReveal(now))}` : 'sat · 9pm pt') : hearts ? <><Heart size={11} on /> {hearts}</> : null}
+          {notes ? (phase === 'count' ? 'sat · 9pm pt' : `sat ${revealStamp(lastReveal(now))}`) : hearts ? <><Heart size={11} on /> {hearts}</> : null}
         </span>
       </div>
-      <div className={`wl-hand-panel${turned ? ' is-turned' : ''}`} key={tab}>
-        {notes ? (
+      <div className={`wl-hand-panel${turned ? ' is-turned' : ''}`} key={`${tab}:${phase}`}>
+        {waiting ? (
+          <>
+            <span className="wl-hand-label" id="wl-vault-h" tabIndex={-1}>the reveal is in</span>
+            <span className="wl-hand-big" aria-hidden="true">{n}<small>{n === 1 ? ' note' : ' notes'}</small></span>
+            <span className="wl-hand-line" aria-hidden="true">sealed until you open {n === 1 ? 'it' : 'them'}.</span>
+            <Envelope open={opening} className="wl-hand-env" />
+            <span className="wl-hand-key" aria-hidden="true">open</span>
+          </>
+        ) : tell ? (
           <>
             <span className="wl-hand-label" id="wl-vault-h" tabIndex={-1}>
-              <span aria-hidden="true">{tell ? 'the reveal is in' : 'reveals in'}</span>
-              <span className="wl-sr">{tell ? `your private notes. the reveal is in: ${saidOf(told)}` : `your private notes. the reveal is saturday at 9pm pacific, in ${words}.`}</span>
+              <span aria-hidden="true">the reveal</span>
+              <span className="wl-sr">your private notes. the reveal: {saidOf(told)}</span>
             </span>
-            <span className="wl-hand-big" aria-hidden="true">{tell ? `${saidOf(told)}.` : <Figures c={c} />}</span>
-            <span className="wl-hand-line">{tell ? (rose ? 'yours to keep.' : 'they’ll never know you did.') : HOW}</span>
+            <div className="wl-hand-told" aria-live="polite">
+              <Told cls="wl-hand" told={told} night={night} more={more} onNext={onNext} onAgain={onAgain} />
+            </div>
+            <span className="wl-hand-next">{nextWords(c)}</span>
+            <button type="button" className="wl-hand-info" onClick={onInfo} aria-label="how the weekly reveal works">
+              <span aria-hidden="true">i</span>
+            </button>
+          </>
+        ) : notes ? (
+          <>
+            <span className="wl-hand-label" id="wl-vault-h" tabIndex={-1}>
+              <span aria-hidden="true">reveals in</span>
+              <span className="wl-sr">your private notes. the reveal is saturday at 9pm pacific, in {words}.</span>
+            </span>
+            <span className="wl-hand-big" aria-hidden="true"><Figures c={c} /></span>
+            <span className="wl-hand-line">{HOW}</span>
             <button type="button" className="wl-hand-info" onClick={onInfo} aria-label="how the weekly reveal works">
               <span aria-hidden="true">i</span>
             </button>
@@ -1046,6 +1196,15 @@ function draftKey(d) {
   return normHandle(d.to)
 }
 
+// ── a reveal opened, in the looks ───────────────────────────────────────────
+// Once the reveal has been opened by a press (`Reveal`), the night it was
+// and whether its rows have landed yet. Held here rather than on the card,
+// since a press with a mutual in it leaves for that mutual's telling, and
+// the card it closes back onto is a new one, which tells the night in the
+// panel where the waiting stood and lands the rest. Put down when the card
+// is shut any other way, so the next visit opens on the count.
+let TOLD = null
+
 export default function You({ go, up, upLabel = 'back to the wall', onOut = null }) {
   const who = member()
   const reads = isReader()
@@ -1078,6 +1237,16 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // panel is drawn, since a class that changed on a panel already standing
   // would start its movement again
   const [turned, setTurned] = useState(false)
+  // in the looks, the reveal opened by a press on this card or the one
+  // before it, the envelope opening under the press, and the panel the
+  // telling grows out of
+  const [revealed, setRevealed] = useState(() => !!LOOK && !!TOLD && TOLD.at === lastReveal())
+  const [opening, setOpening] = useState(false)
+  const panel = useRef(null)
+  useEffect(() => {
+    if (TOLD) TOLD.film = false
+    return () => { if (TOLD && !TOLD.film) TOLD = null }
+  }, [])
   const [scroller, setScroller] = useState(null)
   const tabs = useRef(null)
   const [rev, setRev] = useState(0)
@@ -1120,12 +1289,21 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   // shuts (`fresh` is this visit's). On the card, that is: a note's own
   // screen up across the night has told one note, not the night
   const read = !list.loading && !list.error && tab === 'notes' && !!scroller
-  useEffect(() => { if (fresh && read) sawReveal() }, [fresh, read])
+  // (in the looks it is seen when it is opened, by a press: `reveal` below)
+  useEffect(() => { if (fresh && read && !LOOK) sawReveal() }, [fresh, read])
   // and the night's screen is told once it is drawn over the notes it tells
+  // (the looks tell it in the panel instead, once opened)
   const night = nightOf(list.pings)
-  const showNight = read && !view && nightOn && night.notes.length > 0
+  const showNight = !LOOK && read && !view && nightOn && night.notes.length > 0
   useEffect(() => { if (showNight) sawNight() }, [showNight])
-  const landing = fresh && !landed
+  // What the last night held of this person's: the mutuals told on it and
+  // the notes it was not mutual for. A light with nothing under it (a note
+  // let go before its night, on another device) is put out without a press
+  const nightMutuals = mutualsOf(list.pings).filter((p) => NEAR_MS >= Math.abs((p.revealedAt || 0) - lastReveal()))
+  const nightTotal = nightMutuals.length + night.notes.length
+  const settledList = !list.loading && !list.error
+  useEffect(() => { if (LOOK && fresh && settledList && !nightTotal) sawReveal() }, [fresh, settledList, nightTotal])
+  const landing = LOOK ? revealed && !landed && !(TOLD && TOLD.landed) : fresh && !landed
   const seen = useSeen(landing && tab === 'notes', scroller, list.pings)
 
   // ── back from a mutual, or from a note's settings ──
@@ -1301,6 +1479,44 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
     missed: night.notes.length,
   }
   told.total = told.mutual + told.missed
+  // In the looks the night is the person's to open (`Reveal`, above): until
+  // it is, the panel waits, and nothing the night said is on the card, the
+  // mutuals told on it and the notes it was not mutual for kept off the
+  // lists (their count is on the panel); once it is, the panel tells it and
+  // the rows land
+  const toOpen = !!LOOK && fresh && !revealed && settled && told.total > 0
+  const phase = toOpen ? 'waiting' : revealed && told.total > 0 ? 'told' : 'count'
+  const nightKeys = new Set([...nightMutuals, ...night.notes].map((p) => p.key))
+  const shown = (p) => !toOpen || !nightKeys.has(p.key)
+  const shownMutuals = mutuals.filter(shown)
+  const shownStanding = standing.filter(shown)
+  const shownLapsed = lapsed.filter(shown)
+  // a second mutual told the same night, not watched yet: the panel's
+  // `open the next`, since each is told on its own
+  const nextMutual = revealed ? nightMutuals.find((p) => !wasOpened(handle, p)) : null
+  const toFilm = (p) => {
+    if (TOLD) TOLD.film = true
+    openReveal(go, p.to, panel.current)
+  }
+  // The press. The envelope opens, the night is seen (the bar's light goes
+  // with it), and then a mutual told on it is told, straight from the panel,
+  // or, with none, the panel turns to the night where it stands
+  const reveal = () => {
+    if (opening || !toOpen) return
+    const open = () => {
+      sawReveal()
+      sawNight()
+      TOLD = { at: lastReveal(), landed: false, film: false }
+      setRevealed(true)
+      setOpening(false)
+      const first = nightMutuals.find((p) => !wasOpened(handle, p))
+      if (first) { toFilm(first); return }
+      window.requestAnimationFrame(() => document.getElementById('wl-vault-h')?.focus({ preventScroll: true }))
+    }
+    if (prefersReducedMotion()) { open(); return }
+    setOpening(true)
+    window.setTimeout(open, 260)
+  }
   const d = getState().draft
   const letter = d && String(d.body || '').trim() ? { key: draftKey(d), name: d.kind === 'name' ? cleanName(d.name) : '' } : null
   const waiting = (() => { const r = loadPending(); return r && r.use === 'ping' && r.to ? normHandle(r.to) : '' })()
@@ -1314,7 +1530,11 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   const also = handle && who ? memberLabel(who) : ''
 
   // leaving the notes, once they have landed
-  const leave = () => { if (fresh && tab === 'notes') setLanded(true) }
+  const leave = () => {
+    if (LOOK ? !(revealed && tab === 'notes') : !(fresh && tab === 'notes')) return
+    setLanded(true)
+    if (TOLD) TOLD.landed = true
+  }
   const pick = (t) => { if (t !== tab) { leave(); setTurned(true) } setTab(t); keepTab(t) }
   // the night's notice's one act on a night of one note (Night.jsx
   // `NightCard`), the same as that note's own menu takes: sent again, or the
@@ -1407,7 +1627,12 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
   }
   const notes = (
     <>
-      {LOOK === 1 ? <RevealPanel fresh={fresh && !list.error} told={told} onInfo={() => go('join')} /> : null}
+      {LOOK === 1 ? (
+        <RevealPanel
+          phase={phase} n={told.total} told={told} night={night} more={!!nextMutual} opening={opening} panelRef={panel}
+          onReveal={reveal} onNext={() => nextMutual && toFilm(nextMutual)} onAgain={nightAgain} onInfo={() => go('join')}
+        />
+      ) : null}
       <div className="wl-vault" aria-labelledby="wl-vault-h">
         {LOOK ? null : <RevealStrip fresh={fresh && !list.error} told={told} onInfo={() => go('join')} />}
         <div className="wl-vault-body">
@@ -1423,10 +1648,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               ) : !list.pings.length && !waiting ? (
                 <p className="wl-profile-none wl-vault-none">none sent yet. the next reveal is saturday at 9pm pacific.</p>
               ) : null}
-          {mutuals.length ? (
+          {shownMutuals.length ? (
             <div className="wl-vault-news">
               <span className="wl-vault-past-h is-rose">mutual · yours to keep</span>
-              {mutuals.map((p) => (
+              {shownMutuals.map((p) => (
                 <MutualSlot
                   key={p.key} p={p} me={handle} go={go} still={!moving.has(p.key)}
                   writing={liveOf(list.pings, p.to)?.state === 'standing'}
@@ -1445,10 +1670,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               }}
             />
           ) : null}
-          {standing.length || waiting ? (
+          {shownStanding.length || waiting ? (
             <div className="wl-vault-list">
               {LOOK ? <span className="wl-vault-past-h is-sealed">sealed</span> : null}
-              {standing.map((p) => row(p, 'is-standing', () => { leave(); setView(p.key) },
+              {shownStanding.map((p) => row(p, 'is-standing', () => { leave(); setView(p.key) },
                 `your private note to ${atHandle(p.to)}, sealed, ${stateWords(p)}`))}
               {waiting ? (
                 <div className="wl-vault-row is-draft">
@@ -1463,10 +1688,10 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
               ) : null}
             </div>
           ) : null}
-          {lapsed.length ? (
+          {shownLapsed.length ? (
             <div className="wl-vault-past">
-              <span className="wl-vault-past-h">{endedWords(Math.max(...lapsed.map((p) => p.expires)))}</span>
-              {lapsed.map((p) => row(p, 'is-lapsed', () => { leave(); setView(p.key) },
+              <span className="wl-vault-past-h">{endedWords(Math.max(...shownLapsed.map((p) => p.expires)))}</span>
+              {shownLapsed.map((p) => row(p, 'is-lapsed', () => { leave(); setView(p.key) },
                 `your private note to ${atHandle(p.to)}, not this time${backMark(p) ? `, ${backMark(p)}` : ''}. open it for what came back, or to send it again`))}
             </div>
           ) : null}
@@ -1533,7 +1758,11 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
         {LOOK === 2 ? null : person}
 
         {LOOK === 2 ? (
-          <Handset tab={tab} turned={turned} fresh={fresh && !list.error} told={told} up={upCount} hearts={hearts} onInfo={() => go('join')} />
+          <Handset
+            tab={tab} turned={turned} phase={phase} n={told.total} told={told} night={night} more={!!nextMutual}
+            opening={opening} panelRef={panel} up={upCount} hearts={hearts}
+            onReveal={reveal} onNext={() => nextMutual && toFilm(nextMutual)} onAgain={nightAgain} onInfo={() => go('join')}
+          />
         ) : null}
 
         {/* ── the two tabs ── */}
@@ -1571,12 +1800,16 @@ export default function You({ go, up, upLabel = 'back to the wall', onOut = null
 
         <SheetFoot>
           {/* the week's pings over the key that spends them, in both looks */}
-          {LOOK && tab === 'notes' && settled ? (
+          {LOOK && tab === 'notes' && settled && !toOpen ? (
             <div className="wl-you-week"><Week a={week} onMore={() => { leave(); go('pings') }} /></div>
           ) : null}
-          {tab === 'notes'
-            ? <Pill tone="light" wide onClick={() => go('ping')}>send a private note</Pill>
-            : <Pill tone="light" wide onClick={() => toWrite(go)}>write a letter</Pill>}
+          {/* while a reveal waits to be opened, the foot's lit key is the
+              press that opens it, where a thumb is */}
+          {tab !== 'notes'
+            ? <Pill tone="light" wide onClick={() => toWrite(go)}>write a letter</Pill>
+            : toOpen
+              ? <Pill tone="light" wide onClick={reveal} disabled={opening}>open the reveal</Pill>
+              : <Pill tone="light" wide onClick={() => go('ping')}>send a private note</Pill>}
         </SheetFoot>
       </div>
     </Sheet>

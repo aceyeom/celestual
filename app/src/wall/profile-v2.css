@@ -86,6 +86,47 @@
 .wl-hand-info:active { background: var(--s-ink); color: var(--s-lit); }
 .wl-hand-info:focus-visible { outline: 1px solid var(--s-ink); outline-offset: 2px; }
 
+/* waiting to be opened: a phone with a message on it. The envelope by the
+   aerial on its band, the sealed one large at the glass's right, `open` on
+   an inverted key at its foot, and the whole glass the press: under it the
+   glass a step in, and the envelope opening (You.jsx `Envelope`) */
+.wl-hand.is-waiting { cursor: pointer; transition: transform 160ms var(--ease); }
+.wl-hand.is-waiting:active, .wl-hand.is-opening { transform: scale(0.99); }
+.wl-hand.is-waiting:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 3px; }
+.wl-hand-mail { flex: 0 0 auto; display: block; color: var(--s-lit); filter: drop-shadow(0 0 2px var(--s-bloom)); }
+.wl-hand.is-waiting .wl-hand-panel { padding-right: 96px; }
+.wl-hand-env { position: absolute; right: 18px; top: 50%; margin-top: -32px; color: var(--s-ink); }
+.wl-hand.is-opening .wl-hand-env { animation: wl-hand-open 240ms steps(2, end) both; }
+@keyframes wl-hand-open { from { transform: translateY(2px); } to { transform: none; } }
+.wl-hand-key {
+  position: absolute; right: 10px; bottom: 10px;
+  padding: 4px 9px 3px; border-radius: 2px;
+  background: var(--s-ink); color: var(--s-lit);
+  font-size: var(--t-small); line-height: 1; text-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-hand.is-waiting:hover .wl-hand-key { outline: 1px solid var(--s-ink); outline-offset: 2px; }
+}
+/* told: the night's words on the glass, rose for a mutual, and its keys
+   drawn in the glass's ink, the one that goes on inverted */
+.wl-hand-told { display: flex; flex-direction: column; align-items: flex-start; margin-top: 10px; }
+.wl-hand-told .wl-hand-big { margin-top: 0; }
+.wl-hand-told .wl-hand-line { margin-top: 8px; padding-top: 0; max-width: none; text-wrap: pretty; }
+.wl-hand-told .wl-hand-line + .wl-hand-line { margin-top: 2px; }
+.wl-hand-told .wl-night-tag {
+  align-self: flex-start; margin-top: 10px;
+  gap: 8px; padding: 5px 9px 4px; border-radius: 2px;
+  background: var(--s-ink); color: var(--s-lit); font-size: var(--t-small);
+}
+.wl-hand-told .wl-night-tag :is(.wl-px, .wl-pxi) { height: auto; }
+.wl-hand-told .wl-told-keys { margin-top: 12px; }
+.wl-hand-told .wl-told-key {
+  min-height: 32px; border: 1px solid color-mix(in srgb, var(--s-ink) 50%, transparent); background: transparent; color: var(--s-ink);
+  font-family: var(--f-s40); text-shadow: none;
+}
+.wl-hand-told .wl-told-key:active, .wl-hand-told .wl-told-key.is-lit { background: var(--s-ink); border-color: var(--s-ink); color: var(--s-lit); }
+.wl-hand-next { margin-top: 12px; font-size: var(--t-small); line-height: 1; opacity: 0.66; font-variant-numeric: tabular-nums; }
+
 /* the power on (DESIGN.md 6.3): black for 45ms, then the backlight up in
    one smooth ramp, the glass settling where it stands */
 .wl-hand-veil {
@@ -198,6 +239,7 @@
 .wl-you.is-v2.is-settings .wl-set-panel { border-radius: 0 0 var(--r-lcd) var(--r-lcd); margin-top: -1px; background-image: var(--lcd-grid); }
 
 @media (prefers-reduced-motion: reduce) {
+  .wl-hand.is-opening .wl-hand-env, .wl-hand.is-waiting,
   .wl-hand, .wl-hand-panel.is-turned, .wl-hand-veil,
   .wl-you.is-v2 .wl-you-panel:not(.is-turned) :is(.wl-vault-past-h, .wl-vault-row, .wl-wrote > *, .wl-you-letters > .wl-wrote-row) { animation: none; }
 }

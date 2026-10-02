@@ -2416,10 +2416,42 @@ const ROUTES = [
   { label: 'admin-wall-read', path: '/admin', desk: true, click: 'wall', acts: [['click', '.ad-tabs button:last-child']], settle: 900 },
 ]
 
+// The reveal opened by a press, in the account's looks (screens/You.jsx
+// `Reveal`), which the card as it was does not do: a night with a mutual in
+// it, pressed and its telling starting out of the panel; the same, the
+// telling skipped and the keepsake shut, back on the card with the night
+// told in the panel and the rest landing; and a night with none, pressed
+// and told where it stands. Each in both looks.
+const REVEAL_NIGHT = { revealSeen: 1, nightSeen: null, noteSpans: [[now - 11 * DAY, NEXT_REVEAL - 7 * DAY]] }
+const FOOT_KEY = '.wl-you .wl-foot .wl-pill.is-light'
+for (const v of [1, 2]) {
+  ROUTES.push(
+    { label: `you-reveal-film-v${v}`, path: `/berkeley/you?profile=${v}`, store: REVEAL_NIGHT,
+      acts: [['wait', 1400], ['click', FOOT_KEY], ['wait', 1300]], settle: 0 },
+    { label: `you-reveal-back-v${v}`, path: `/berkeley/you?profile=${v}`, store: REVEAL_NIGHT,
+      acts: [['wait', 1400], ['click', FOOT_KEY], ['wait', 1600], ['click', '.wl-film-stage .wl-scr-bg'], ['wait', 2600],
+             ['click', '.wl-sheet .wl-close'], ['wait', 900]], settle: 2600 },
+    { label: `night-open-v${v}`, path: `/berkeley/you?profile=${v}`, night: 'extra', week: 'extra', store: REVEAL_NIGHT,
+      acts: [['wait', 1400], ['click', FOOT_KEY]], settle: 2600 },
+    { label: `night-many-open-v${v}`, path: `/berkeley/you?profile=${v}`, night: 'many', week: 'extrakept', store: REVEAL_NIGHT,
+      acts: [['wait', 1400], ['click', FOOT_KEY]], settle: 2600 },
+    // and filmed (PREVIEW_VIDEO=1): the press, the telling a little way in
+    // and skipped to the keepsake, the keepsake shut, and the card after;
+    // and a night with none, pressed and told where it stands
+    { label: `reveal-flow-v${v}`, path: `/berkeley?profile=${v}`, store: REVEAL_NIGHT,
+      acts: [['click', '.wl-mast-go'], ['wait', 3400], ['film'], ['wait', 1400], ['click', '.wl-memberbtn'], ['wait', 1800],
+             ['click', FOOT_KEY], ['wait', 3400], ['click', '.wl-film-stage .wl-scr-bg'], ['wait', 2800],
+             ['click', '.wl-sheet .wl-close'], ['wait', 600]], settle: 2800 },
+    { label: `night-flow-v${v}`, path: `/berkeley?profile=${v}`, night: 'extra', week: 'extra', store: REVEAL_NIGHT,
+      acts: [['click', '.wl-mast-go'], ['wait', 3400], ['film'], ['wait', 1400], ['click', '.wl-memberbtn'], ['wait', 1800],
+             ['click', FOOT_KEY]], settle: 3400 },
+  )
+}
+
 // The account's two other looks (screens/You.jsx `LOOK`, `?profile=1` the
 // quiet one and `?profile=2` the lit one), each of its states shot again in
 // both, labelled `-v1` and `-v2` after the state, for setting beside it.
-for (const label of ['you', 'you-motion', 'you-letters', 'you-settings', 'you-reveal', 'you-revealed', 'you-again', 'you-unproved', 'you-ping', 'you-hover', 'night', 'night-foot', 'night-mutual', 'you-still']) {
+for (const label of ['you', 'you-motion', 'you-letters', 'you-settings', 'you-reveal', 'you-revealed', 'you-again', 'you-unproved', 'you-ping', 'you-hover', 'night', 'night-foot', 'night-mutual', 'night-many', 'you-still', 'you-reveal-bar']) {
   const r = ROUTES.find((x) => x.label === label)
   for (const v of [1, 2]) ROUTES.push({ ...r, label: `${label}-v${v}`, path: `${r.path}${r.path.includes('?') ? '&' : '?'}profile=${v}` })
 }

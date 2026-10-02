@@ -196,6 +196,23 @@
    longer than the letters, made it do exactly that */
 .wl-sheet-wrap.is-you:is(.is-v1, .is-v2) .wl-sheet:has(> .wl-you.is-card:not(.is-settings)) { height: min(88dvh, 760px); }
 
+/* the reveal's envelope (You.jsx `Envelope`), sealed until the press and
+   its flap up under it; and the keys a told night acts with, the settings
+   key's plate, the one that goes on lit as a lit key is */
+.wl-env { display: block; }
+.wl-told-keys { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.wl-told-keys:empty { display: none; }
+.wl-told-key {
+  min-height: 36px; padding: 0 13px;
+  border: 1px solid var(--lcd-edge); border-radius: var(--r-lcd); background: var(--lcd);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1; color: var(--chalk); cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) { .wl-told-key:hover { border-color: var(--lcd-edge-hi); } }
+.wl-told-key:active { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-told-key.is-lit { background: var(--chalk); border-color: var(--chalk); color: #000; }
+.wl-told-key:focus-visible { outline: 1px solid var(--lcd-edge-hi); outline-offset: 2px; }
+.wl-told-key:disabled { opacity: 0.5; cursor: default; }
+
 /* the searching and what it lands on share one cell, so the words are as
    wide as the longer of the two and nothing is cut while the night lands */
 .wl-vault-words { display: inline-grid; min-width: 0; }
@@ -511,6 +528,24 @@
   box-shadow: 0 0 0 2px #000, 0 0 10px 1px rgba(255, 90, 122, 0.7);
 }
 .wl-memberbtn.has-news { animation: wl-news-hop 620ms cubic-bezier(0.3, 1.6, 0.5, 1) 900ms both; }
+/* In the account's looks (look.js) the light is the phone's message light,
+   the sealed envelope lit, at the face's shoulder and over its edge: larger
+   than the light and steady, a ring going out from it twice as it arrives,
+   and the same whatever the night said (parts.jsx `TopBar`) */
+.wl-memberbtn-mark {
+  position: absolute; top: -6px; right: -7px; z-index: 1;
+  display: grid; place-items: center; width: 19px; height: 15px; border-radius: 2px;
+  background: var(--chalk); color: #000;
+  box-shadow: 0 0 0 2px #000, 0 0 12px 1px rgba(244, 241, 234, 0.42);
+}
+.wl-memberbtn-mark .wl-pxi { display: block; }
+.wl-memberbtn-mark::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 3px; pointer-events: none;
+  box-shadow: 0 0 0 1px var(--chalk); opacity: 0;
+  animation: wl-mark-ring 1500ms var(--ease-out) 1300ms 2;
+}
+@keyframes wl-mark-ring { from { opacity: 0.8; transform: scale(1); } to { opacity: 0; transform: scale(2.1); } }
+
 @keyframes wl-news-hop {
   0% { transform: translateY(0); }
   30% { transform: translateY(-7px); }
@@ -569,6 +604,7 @@
   .wl-vault-row.is-landing .wl-vault-open, .wl-vault-row.is-landing .wl-vault-open :is(.wl-wrote-name, .wl-wrote-meta, .wl-aerial),
   .wl-vault-row.is-landing .wl-vault-open .wl-aerial.is-landing:not(.is-seek),
   .wl-aerial.is-landing:not(.is-seek) :is(.wl-aerial-in, .wl-aerial-out, .wl-aerial-x), .wl-memberbtn.has-news { animation: none; }
+  .wl-memberbtn-mark::after { animation: none; }
   .wl-aerial.is-landing.is-full :is(.wl-aerial-in, .wl-aerial-out) { opacity: 1; }
   .wl-vault-row.is-landing .wl-vault-seek { display: none; }
   .wl-vault-row.is-landing .wl-vault-said { animation: none; position: static; }

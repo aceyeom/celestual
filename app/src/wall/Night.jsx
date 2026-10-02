@@ -107,12 +107,13 @@ export function backMark(p) {
 }
 
 // ── the tag ─────────────────────────────────────────────────────────────────
+// (the account's reveal panel sets it too, screens/You.jsx `Told`)
 // What came back, lit: the phone's small check and the words, on a plate of
 // whatever ink it stands in (night.css `.wl-night-tag`).
 // On the glass the check is the screen's own pixels (`Pix`, in `cqw`); on
 // the notice, which is the wall's chrome, it is the chrome's whole-pixel
 // glyph (`PixIcon`), so it is as crisp as the words beside it.
-function Tag({ children, chrome = false }) {
+export function Tag({ children, chrome = false }) {
   return (
     <span className="wl-night-tag">
       {chrome

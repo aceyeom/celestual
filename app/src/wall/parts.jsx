@@ -21,6 +21,7 @@ import { campus } from './campus.js'
 import LiquidButton from './LiquidButton.jsx'
 import { setAfterGate } from './store.js'
 import { revealWaiting } from './pings.js'
+import { LOOK } from './look.js'
 import { href } from './router.js'
 import { afterStrip } from './strip.js'
 // the owner's parts at the foot of this file (the toast, the switch, the
@@ -507,7 +508,16 @@ export function TopBar({ go, at = 'wall', acts = true, inert = false }) {
           {who || reads
             ? <Face handle={mine} size={30} resolve={!who && !!mine} />
             : <Icon name="key" size={22} />}
-          {news ? <i className="wl-memberbtn-news" aria-hidden="true" /> : null}
+          {/* In the account's two looks (look.js) the light is the phone's
+              message light: the sealed envelope, lit, at the face's
+              shoulder, larger than the light was and the same whatever
+              the night said, since what it said is the reveal's to tell
+              and the bar is seen by whoever is beside the phone. It stays
+              until the reveal is opened by a press, not until the notes are
+              looked at (screens/You.jsx `Reveal`) */}
+          {news ? (LOOK
+            ? <i className="wl-memberbtn-mark" aria-hidden="true"><PixIcon name="env" scale={1} /></i>
+            : <i className="wl-memberbtn-news" aria-hidden="true" />) : null}
         </button>
       </nav>
       )}
