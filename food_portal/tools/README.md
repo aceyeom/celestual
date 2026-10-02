@@ -15,22 +15,24 @@ npm install
 npx playwright install chromium
 ```
 
-## 상위글 URL 확보 — 두 방식 중 하나
+## 상위글 URL 확보 — 두 방식 (자동 선택)
 
-### 방식 1) 네이버 공식 검색 API (권장, 차단 위험 최저)
-1. https://developers.naver.com → 애플리케이션 등록 → **검색 API** 사용 설정
-2. 발급받은 Client ID / Secret 를 환경변수로 넣고 실행:
+> ❗ 네이버 공식 "검색 API"는 신규 애플리케이션 등록에서 제공되지 않는다
+> (개발자센터 "사용 API" 목록에 검색 없음). 그래서 API 방식은 쓰지 않는다.
+
+### 방식 1) [기본] 통합검색 결과 스크래핑
+`urls.json` 이 없으면 자동으로 이 방식을 쓴다. `keywords.json` 의 키워드로
+네이버 블로그탭 검색결과를 열어 상위 노출 글을 순서대로 수집 → 실제 통합검색
+순위를 그대로 반영.
 ```bash
-NAVER_CLIENT_ID=발급ID NAVER_CLIENT_SECRET=발급시크릿 npm run collect
+npm run collect
 ```
-- `keywords.json` 의 주제별 키워드로 상위글을 모은다.
-- ⚠ API 정렬(정확도순)은 통합검색 실제 노출순위와 **완전히 같지는 않다**(근사).
-  정확한 1위 분석이 필요하면 방식 2를 병행한다.
 
-### 방식 2) 실제 검색순위 URL 직접 입력 (정확)
-1. 네이버 통합검색에서 각 키워드로 검색해 눈으로 1~3위 블로그 글을 확인
-2. `urls.json.example` → `urls.json` 복사 후 주제별 URL 입력
-3. 실행:
+### 방식 2) 실제 순위 URL 직접 입력 (가장 정확)
+통합검색에서 눈으로 확인한 1~3위 글을 지정하고 싶을 때. `urls.json` 이 있으면
+스크래핑 대신 이 URL들을 우선 사용한다.
+1. `urls.json.example` → `urls.json` 복사 후 주제별(topicId) URL 입력
+2. 실행:
 ```bash
 npm run collect
 ```
@@ -58,14 +60,14 @@ NAVER_USER_DATA_DIR="/Users/나/naver-profile" npm run collect
 ## 출력물 흐름
 
 ```
-keywords.json ─┐
-urls.json ─────┤→ collect.mjs → output/collected-<topic>.json
-(or Naver API) ┘                      │
-                                      ▼
-                             analyze.mjs → output/formula-<topic>.json
-                                      │
-                                      ▼
-                        3단계: formula + TAAMs 실데이터 → 본문 자동 생성
+keywords.json → (통합검색 스크래핑) ┐
+urls.json(있으면 우선) ─────────────┤→ collect.mjs → output/collected-<topic>.json
+                                    ┘                      │
+                                                           ▼
+                                  analyze.mjs → output/formula-<topic>.json
+                                                           │
+                                                           ▼
+                             3단계: formula + TAAMs 실데이터 → 본문 자동 생성
 ```
 
 ## 참고
