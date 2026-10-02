@@ -1,0 +1,14 @@
+{
+  "name": "food-portal-tools",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "네이버 상위 블로그 수집·역설계 분석 도구 (사용자 PC에서 실행)",
+  "scripts": {
+    "collect": "node collect.mjs",
+    "analyze": "node analyze.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.62.1"
+  }
+}

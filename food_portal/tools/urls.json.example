@@ -1,0 +1,13 @@
+{
+  "comment": "네이버 공식 API 없이 수동으로 분석할 때 사용. 이 파일을 urls.json 으로 복사한 뒤, 각 주제(topicId: keywords.json 참고)에 대해 네이버 통합검색에서 눈으로 확인한 1~3위 블로그 글 URL을 넣는다.",
+  "customs-report": [
+    "https://blog.naver.com/example1/223000000001",
+    "https://blog.naver.com/example2/223000000002"
+  ],
+  "olive-oil": [
+    "https://blog.naver.com/example3/223000000003"
+  ],
+  "norway-salmon": [
+    "https://blog.naver.com/example4/223000000004"
+  ]
+}
