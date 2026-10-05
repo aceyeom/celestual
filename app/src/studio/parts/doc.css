@@ -1,0 +1,115 @@
+/* ── the lesson deck (parts/doc.jsx) ─────────────────────────────────────────
+   The page, the running head, the folio, and the type a lesson is set in:
+   the display cut for what a founder means, the text cut for the lesson,
+   the identifier face for what is numbered or named, and the phone's face
+   only on the phone. */
+
+.dc {
+  --dc-dim: rgba(244, 241, 234, 0.16);
+}
+
+/* the running head: the deck's title and the page's number */
+.dc-head {
+  position: absolute; z-index: 30; display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--st-mono); font-weight: 400; line-height: 1; letter-spacing: 0.08em;
+  color: var(--ash); pointer-events: none;
+}
+.dc-num { letter-spacing: 0.12em; }
+.dc-num b { font-weight: 500; color: var(--chalk); }
+
+/* the folio: the lockup, and the pages as the phone's cells */
+.dc-folio {
+  position: absolute; z-index: 30; display: flex; justify-content: space-between; align-items: flex-start;
+  pointer-events: none;
+}
+.dc-cells { display: flex; gap: 6px; margin-top: 30px; }
+.dc-cells i { display: block; width: 12px; height: 12px; background: var(--dc-dim); }
+.dc-cells i.is-read { background: rgba(156, 151, 142, 0.55); }
+.dc-cells i.is-on { background: var(--chalk); box-shadow: 0 0 3px rgba(255, 244, 228, 0.3), 0 0 9px rgba(255, 244, 228, 0.1); }
+
+/* a title: the display cut, large, lowercase, never a word alone on a line */
+.dc-title {
+  position: absolute; z-index: 30; margin: 0;
+  font-family: var(--st-serif); font-weight: 500; font-optical-sizing: none;
+  font-variation-settings: 'opsz' 60; letter-spacing: -0.022em;
+  color: var(--chalk); text-wrap: balance;
+}
+.dc-title em { font-style: italic; font-weight: 450; letter-spacing: -0.012em; }
+.dc-title .is-ash { color: var(--ash); }
+
+/* a lesson's words: the text cut at a size a phone can read */
+.dc-lesson {
+  position: absolute; z-index: 30; margin: 0;
+  font-family: var(--st-serif); font-weight: 400; font-optical-sizing: none;
+  font-variation-settings: 'opsz' 16; letter-spacing: -0.004em;
+  color: var(--ash); text-wrap: pretty;
+}
+.dc-lesson p { margin: 0; }
+.dc-lesson p + p { margin-top: 22.5px; }
+.dc-lesson b { font-weight: 400; color: var(--chalk); }
+
+/* a figure's caption: its number in the margin's column, then the words */
+.dc-cap {
+  position: absolute; z-index: 30; margin: 0; display: grid; grid-template-columns: 135px 1fr;
+  font-family: var(--st-mono); font-weight: 400; letter-spacing: 0.04em; color: var(--ash);
+}
+.dc-cap > span:first-child { color: var(--ash-dim); }
+
+/* a hairline on the grid */
+.dc-rule { position: absolute; z-index: 20; height: 0; border-top: 1px solid var(--hair); }
+
+/* the mark's cells, counted */
+.dc-markcells { position: absolute; z-index: 20; }
+.dc-markcells svg { display: block; }
+.dc-tick {
+  position: absolute; font: 400 16px/1 var(--st-mono); letter-spacing: 0.08em; color: var(--ash-dim);
+}
+.dc-tick.is-x { top: -30px; transform: translateX(-50%); }
+.dc-tick.is-y { left: -40px; transform: translateY(-50%); }
+
+/* ── a strip of frames (li-doc-02) ── */
+.dc-frame { position: absolute; z-index: 20; }
+.dc-frame:not(.is-lit) .st-phone { filter: brightness(0.42) saturate(0.7); }
+.dc-frame:not(.is-lit) .wl-scene-halo, .dc-frame:not(.is-lit) .wl-scene-halo-2 { display: none; }
+.dc-step { position: absolute; z-index: 30; font: 400 20px/1 var(--st-mono); letter-spacing: 0.08em; color: var(--ash-dim); }
+.dc-title.is-quiet { color: var(--ash); }
+
+/* a lesson's kicker: its number in ash, its name in chalk */
+.dc-kick {
+  position: absolute; z-index: 30; margin: 0; display: flex; gap: 0.9em; line-height: 1;
+  font-family: var(--st-mono); font-weight: 500; letter-spacing: 0.08em; color: var(--chalk);
+}
+.dc-kick > span:first-child { color: var(--ash); font-weight: 400; }
+.dc-said { position: absolute; z-index: 30; display: flex; align-items: center; }
+.dc-said .dc-title { position: static; }
+
+/* ── a plate: the board's full width, cut square ── */
+.dc-plate { position: absolute; z-index: 10; overflow: hidden; isolation: isolate; }
+
+/* ── the wall (li-doc-06): every backlight down but one ── */
+.dc-wall-one { position: absolute; z-index: 20; }
+.dc-wall-one:not(.is-lit) .st-phone { filter: brightness(0.3) saturate(0.75); }
+.dc-wall-one:not(.is-lit) .wl-scene-halo, .dc-wall-one:not(.is-lit) .wl-scene-halo-2 { display: none; }
+
+/* ── the end (li-doc-08) ── */
+.dc-end { position: absolute; z-index: 30; display: flex; justify-content: center; }
+.dc-url { font: 400 24px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash); }
+
+/* ── callouts: a hairline from a part to the words about it ── */
+.dc-callouts { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+.dc-lead { position: absolute; height: 0; border-top: 1px solid rgba(244, 241, 234, 0.42); }
+.dc-dot { position: absolute; width: 6px; height: 6px; background: var(--chalk); }
+.dc-call { position: absolute; }
+.dc-call-k { display: block; font: 400 20px/26px var(--st-mono); letter-spacing: 0.08em; color: var(--chalk); }
+.dc-call p {
+  margin: 10px 0 0; font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 16;
+  font-size: 34px; line-height: 40px; color: var(--ash); text-wrap: pretty;
+}
+
+/* a line the voice guide says, set apart */
+.dc-quote {
+  position: absolute; z-index: 30; margin: 0;
+  font-family: var(--st-serif); font-weight: 400; font-style: italic; font-variation-settings: 'opsz' 48;
+  letter-spacing: -0.01em; color: var(--chalk); text-wrap: balance;
+}
+.dc-quote-by { display: block; margin-top: 24px; font: 400 20px/1 var(--st-mono); font-style: normal; letter-spacing: 0.08em; color: var(--ash); }

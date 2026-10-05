@@ -67,21 +67,24 @@
 .ig-macro .wl-scr-fx.is-moire { display: none; }
 
 /* ── the two notes (ig-mutual) ──
-   As a phone sets a conversation: theirs at the left margin, and yours a
-   beat later at the right. Whose it is in the identifier face, the words
-   in the phone's, and the english under it in the serif's italic */
-.ig-notes { position: absolute; z-index: 30; display: grid; row-gap: 22px; }
-.ig-note { margin: 0; display: grid; gap: 12px; align-content: start; }
-.ig-note.is-me { justify-items: end; text-align: right; }
-.ig-note figcaption { font: 400 13px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash); }
-.ig-note-ko { margin: 0; font: 400 36px/1.05 var(--f-s40); color: var(--chalk); text-shadow: 0 0 1px rgba(244, 241, 234, 0.6), 0 0 14px rgba(255, 244, 228, 0.18); word-break: keep-all; }
-.ig-note-en { margin: 0; font: italic 400 22px/1.3 var(--st-serif); font-variation-settings: 'opsz' 18; color: var(--ash); }
+   As a script sets two voices: whose it is at the margin in the identifier
+   face, standing on the words' baseline, and the words from the phone's
+   left edge (`--col`), in the phone's face, with the english under them in
+   the serif's italic */
+.ig-notes { position: absolute; z-index: 30; display: grid; row-gap: 30px; }
+.ig-note { margin: 0; display: grid; grid-template-columns: var(--col) 1fr; row-gap: 8px; align-items: baseline; }
+.ig-note figcaption { grid-row: 1; font: 400 13px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash); }
+.ig-note-ko {
+  grid-column: 2; grid-row: 1; margin: 0; font: 400 44px/1.05 var(--f-s40); color: var(--chalk);
+  text-shadow: 0 0 1px rgba(244, 241, 234, 0.6), 0 0 16px rgba(255, 244, 228, 0.16); word-break: keep-all;
+}
+.ig-note-en { grid-column: 2; margin: 0; font: italic 400 24px/1.3 var(--st-serif); font-variation-settings: 'opsz' 20; color: var(--ash); }
 
 /* ── the wall (ig-wall) ──
    One plane, turned away from the lens, every letter pasted flat on it */
 .ig-wall {
   position: absolute; z-index: 1;
-  transform: perspective(1500px) rotateY(-24deg) scale(0.9); transform-origin: 100% 38%;
+  transform: perspective(1500px) rotateY(-24deg) scale(1.02); transform-origin: 100% 36%;
 }
 .ig-wall-surface { position: absolute; left: 0; top: 0; background: #050506; }
 /* the shutter's ribs: a lit lip, the face of the slat falling off into the
@@ -100,3 +103,14 @@
 .ig-wall-surface svg { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0.9; }
 .ig-wall-letter { position: absolute; }
 .ig-wall-letter .st-phone { position: absolute; left: 0; top: 0; }
+
+/* ── not this time (ig-not-this-time) ──
+   The note's own screen with its name row left off (the poster names
+   nobody), its title given to the serif under it, and its light going
+   down: the backlight at the strength a phone dims a done message to, and
+   the battery held empty rather than blinking */
+.ig-ntt-phone .wl-scr-r2 { display: none; }
+.ig-ntt-phone .wl-night-rep b { display: none; }
+.ig-ntt-phone .wl-scr-bat.is-low { animation: none; }
+.ig-ntt-phone .wl-scr { filter: blur(0.35px) brightness(0.86); }
+.ig-ntt-phone .wl-scene-halo, .ig-ntt-phone .wl-scene-halo-2 { opacity: 0.4; }

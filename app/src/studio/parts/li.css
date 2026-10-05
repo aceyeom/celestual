@@ -1,0 +1,163 @@
+/* ── the founder's register (parts/li.jsx) ───────────────────────────────────
+   The page, the running head, the signature, and the type the posts are set
+   in: the display cut for what a person means, the identifier face for what
+   is counted or named, and the phone's face only on the phone. */
+
+.li {
+  --li-ink: #0A0A0C;
+  --li-ink-2: #6A6357;
+  --li-paper: #F4F1EA;
+}
+.li.is-paper { color: var(--li-ink); }
+
+/* the paper's tooth: a slow unevenness, as a sheet takes ink, under the
+   grain's fibres. Two soft fields of the paper's own edge colour, nothing
+   that names a hue */
+.li-tooth {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(90% 70% at 18% 12%, rgba(255, 253, 248, 0.7), transparent 60%),
+    radial-gradient(80% 60% at 86% 92%, rgba(227, 223, 214, 0.55), transparent 70%);
+}
+
+/* the running head: two identifiers at the margins */
+.li-head {
+  position: absolute; z-index: 30; display: flex; justify-content: space-between; align-items: baseline;
+  font: 400 14px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash);
+  pointer-events: none;
+}
+.li.is-paper .li-head { color: var(--li-ink-2); }
+
+/* the signature: the lockup and the address on one line */
+.li-sign {
+  position: absolute; z-index: 30; display: flex; justify-content: space-between; align-items: center;
+  pointer-events: none;
+}
+.li-url { font: 400 15px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash); }
+.li-stack { position: absolute; z-index: 30; display: grid; justify-items: start; gap: 19px; pointer-events: none; }
+/* the address under the lockup, on the word's left edge rather than the mark's */
+.li-stack .li-url { margin-left: 78px; }
+.li.is-paper .li-url { color: var(--li-ink-2); }
+
+/* a line a person means: the display cut, large, lowercase */
+.li-line {
+  position: absolute; z-index: 30; margin: 0;
+  font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
+  font-variation-settings: 'opsz' 72; letter-spacing: -0.022em; line-height: 1;
+  color: var(--chalk);
+}
+.li.is-paper .li-line { color: var(--li-ink); }
+.li-line em { font-style: italic; letter-spacing: -0.01em; }
+
+/* an identifier: small, tracked, lowercase */
+.st-board.li .li-id {
+  position: absolute; z-index: 30; margin: 0;
+  font: 400 14px/1.5 var(--st-mono); letter-spacing: 0.1em; color: var(--ash);
+}
+.li.is-paper .li-id { color: var(--li-ink-2); }
+
+.li-markgrid { display: block; }
+
+/* ── a plate: a photograph tipped into the page ── */
+.li-plate {
+  position: absolute; z-index: 10; overflow: hidden; isolation: isolate; background: #000;
+  box-shadow: 0 0 0 1px rgba(10, 10, 12, 0.5);
+}
+/* printed: the plate's greys taken by the paper, so the black is ink on
+   chalk and the light is the paper showing through it */
+.li-plate.is-printed { mix-blend-mode: multiply; box-shadow: none; }
+
+/* the light on the table */
+.li-pool {
+  position: absolute; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--halo) 0%, color-mix(in srgb, var(--halo) 35%, transparent) 40%, transparent 100%);
+}
+
+/* a phone lying on the table: its own glow is the pool under it, and the
+   tight halo round the glass is drawn flat with it */
+.li-lying .wl-scene-halo, .li-lying .wl-scene-halo-2 { display: none; }
+.li-lying .wl-scr { box-shadow: 0 0 2cqw 0.4cqw var(--s-edge), 0 0 9cqw 2cqw color-mix(in srgb, var(--s-halo) 45%, transparent); }
+.li-lying .wl-scr { transform: perspective(var(--li-persp, 760px)) rotateX(var(--q-rx)) rotateY(var(--q-ry)) rotateZ(var(--q-rz)); }
+
+/* the table, lit only under the light */
+.li-table { position: absolute; left: 0; top: 0; pointer-events: none; mix-blend-mode: screen; }
+.li-table svg { display: block; }
+
+/* a plate's caption: the figure's number in the first column, the words
+   from the second */
+.li-cap { display: grid; grid-template-columns: 80px 1fr; }
+
+/* ── the rules (li-post-rules) ── */
+.li-rule { position: absolute; z-index: 20; border-top: 1px solid rgba(244, 241, 234, 0.16); }
+.li-rule-end { position: absolute; z-index: 20; height: 0; border-top: 1px solid rgba(244, 241, 234, 0.16); }
+.li-rule-n {
+  position: absolute; left: 0; top: 22px;
+  font: 400 14px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash);
+}
+.li-rule-h {
+  position: absolute; left: -3px; top: 64px; margin: 0;
+  font-family: var(--st-serif); font-weight: 500; font-variation-settings: 'opsz' 72;
+  font-size: 64px; line-height: 1.02; letter-spacing: -0.022em; color: var(--chalk);
+}
+.st-board.li .li-rule-why {
+  position: absolute; left: 0; top: 214px; width: 460px; margin: 0;
+  font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 16;
+  font-size: 19px; line-height: 1.45; color: var(--ash);
+}
+.li-dia { position: absolute; z-index: 21; }
+.li-dia-cap {
+  display: flex; align-items: center; gap: 12px; margin: 22px 0 0;
+  font: 400 13px/1 var(--st-mono); letter-spacing: 0.1em; color: var(--ash);
+}
+/* the accent, once, as the build spends it: a four pixel dot */
+.li-accent { display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+.li-pool-grid { display: grid; }
+.li-pool-grid figure { margin: 0; }
+.li-mini { display: block; }
+.li-mini .wl-mini { width: 100%; height: 100%; border-radius: 3px; box-shadow: var(--mini-in); }
+.li-wall { display: grid; }
+.li-wall .is-off { filter: brightness(0.2) saturate(0.6); }
+/* a copy is paper, and paper in the dark is darker than a panel left on */
+.li-wall .is-off[data-kind='xerox'] { filter: brightness(0.2); opacity: 0.4; }
+.li-wall .is-off .wl-scene-halo, .li-wall .is-off .wl-scene-halo-2 { display: none; }
+
+/* ── the diff (li-post-linter) ──
+   Set in the identifier face, on a 40 pixel line: the marker in its own
+   column, the struck words in ash with a rule through them, the product's
+   own in chalk with the close bloom a lit thing has */
+.li-diff { font: 400 24px/44px var(--st-mono); letter-spacing: 0; }
+.st-board.li .li-diff p { margin: 0; display: grid; grid-template-columns: 56px auto 1fr; justify-content: start; white-space: pre; line-height: 40px; }
+/* the linter's own word on a struck line, at the right margin */
+.li-diff-why { justify-self: end; align-self: center; font-size: 13px; line-height: 1; letter-spacing: 0.1em; color: var(--ash); font-style: normal; opacity: 0.8; }
+.li-diff p > span { color: var(--ash-dim); }
+.st-board.li .li-diff p.li-diff-file { color: var(--ash); font-size: 16px; line-height: 30px; letter-spacing: 0.06em; }
+.st-board.li .li-diff p.li-diff-file:nth-child(2) { margin-bottom: 20px; }
+.li-hunk { padding: 14px 0 18px; border-top: 1px solid rgba(244, 241, 234, 0.1); }
+.st-board.li .li-diff p.li-diff-at { color: var(--ash); font-size: 15px; line-height: 34px; letter-spacing: 0.1em; }
+.li-diff-out { color: var(--ash); }
+.li-diff-out s { text-decoration: none; background: linear-gradient(rgba(156, 151, 142, 0.9), rgba(156, 151, 142, 0.9)) 0 54% / 100% 2px no-repeat; }
+.li-diff-in { color: var(--chalk); text-shadow: 0 0 3px rgba(255, 244, 228, 0.3), 0 0 9px rgba(255, 244, 228, 0.1); }
+.li-diff-in > span { color: var(--chalk) !important; }
+
+/* the command at the foot, and the cursor after it */
+.li-cmd { display: inline-flex; align-items: center; gap: 12px; }
+.li-cmd > span { color: var(--ash-dim); }
+.li-cur { display: inline-block; width: 9px; height: 19px; background: var(--chalk); margin-left: -6px; box-shadow: 0 0 6px rgba(255, 244, 228, 0.4); }
+
+/* ── a row going away (li-banner, x-header) ──
+   The twelve in a line, turned away from the camera by `--li-turn` round
+   the near end, the eye at `--li-eye` so the row runs out toward it. Each
+   phone a little darker the further it stands (`--li-far`, 0 to 1), and
+   the nearest lit brighter than the rest */
+.li-row3d { position: absolute; width: 1000px; perspective: var(--li-persp, 1100px); perspective-origin: var(--li-eye, 520px) 50%; }
+.li-row3d-in { position: absolute; left: 0; top: 50%; display: flex; align-items: center; transform-origin: 0 50%; transform: translateY(-50%) rotateY(var(--li-turn, 64deg)); }
+.li-row3d-ph { flex: 0 0 auto; filter: brightness(calc(0.62 - var(--li-far) * 0.4)); }
+.li-row3d-ph:first-child { filter: none; }
+.li-row3d-ph:not(:first-child) .wl-scene-halo { display: none; }
+
+/* ── the shelf (x-header) ──
+   The twelve facing the camera, the one that is on at full light and the
+   rest lit by it, dimmer the further they stand (`--li-far`) */
+.li-shelf { position: absolute; transform: translateY(-50%); filter: brightness(calc(0.5 - var(--li-far) * 0.32)) saturate(calc(1 - var(--li-far) * 0.3)); }
+.li-shelf.is-on { filter: none; }
+.li-shelf:not(.is-on) .wl-scene-halo, .li-shelf:not(.is-on) .wl-scene-halo-2 { display: none; }

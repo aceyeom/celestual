@@ -19,7 +19,7 @@ const PX = (FS * 75) / 1400
 // the first baseline, from the top of the glass: the two status rows and
 // their padding, the body's lift, and the face's ascent in a line of 1.02
 const GY = 2.6 + 23.2 + 1.6 + 0.7779 * FS
-const LEFT = 37
+const LEFT = 2
 const TOP = -228
 
 const glass = {
@@ -59,7 +59,7 @@ function Poster() {
       </div>
       <Dust w={W} h={1120} seed="maya-glass" specks={110} hairs={1} lint={[600, 700, 300, 160]} opacity={0.5} style={{ left: 0, top: 0, zIndex: 25, mixBlendMode: 'screen' }} />
       <Dust w={W} h={1120} seed="maya-dark" specks={60} hairs={1} lint={[120, 760, 260, 120]} tone="#2A1A08" opacity={0.45} style={{ left: 0, top: 0, zIndex: 25, mixBlendMode: 'multiply' }} />
-      <LitPlaster x={534} y={1112} len={204} rot={-87} dark={0.7} from={270} soft={1.4} />
+      <LitPlaster x={510} y={1110} len={204} rot={-86} dark={0.7} from={270} soft={1.4} />
     </IgBoard>
   )
 }

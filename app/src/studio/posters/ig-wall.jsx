@@ -6,7 +6,7 @@
 // the rest falling away from it, softer and dimmer the further they are.
 
 import { Phone, Light } from '../kit.jsx'
-import { IgBoard, LitPlaster, WallSurface, rng, W, H, U } from '../parts/ig.jsx'
+import { IgBoard, LitPlaster, WallSurface, Headline, rng, W, H } from '../parts/ig.jsx'
 
 // the twelve, in the panel's own order, each to somebody
 const LETTERS = [
@@ -52,8 +52,10 @@ function layout() {
       y: OY + row * PITCH_Y + (r() - 0.5) * 40,
       rot: (r() - 0.5) * 7,
       tape: r() < 0.5 ? 'top' : r() < 0.6 ? 'both' : 'corners',
-      tr: (r() - 0.5) * 18,
-      br: (r() - 0.5) * 18,
+      tx: (r() < 0.5 ? -1 : 1) * (0.16 + r() * 0.14) * SW,
+      bx: (r() < 0.5 ? -1 : 1) * (0.1 + r() * 0.2) * SW,
+      tr: (r() - 0.5) * 24,
+      br: (r() - 0.5) * 24,
     }
   })
 }
@@ -67,8 +69,8 @@ function Letter({ l, focus }) {
   const dy = (l.y - f.y) / PITCH_Y
   const far = Math.hypot(dx, dy * 0.8)
   const on = l.i === f.i
-  const blur = on ? 0 : Math.min(7, 1.2 + Math.abs(dx) * 2.4 + Math.abs(dy) * 0.6)
-  const dim = on ? 1 : Math.max(0.12, 0.5 - far * 0.16)
+  const blur = on ? 0 : Math.min(7, 1.6 + Math.abs(dx) * 2.4 + Math.abs(dy) * 0.8)
+  const dim = on ? 1 : Math.max(0.12, 0.44 - far * 0.15)
   return (
     <div
       className={`ig-wall-letter${on ? ' is-on' : ''}`}
@@ -79,12 +81,12 @@ function Letter({ l, focus }) {
       }}
     >
       <Phone w={SW} tint={l.tint} seed={`wall-${l.to}`} mode="letter" name={l.to} stamp={l.day} hearts={0} text={l.text} cursor={false} />
-      {l.tape !== 'corners' ? <LitPlaster x={SW / 2 + l.tr} y={-4} len={92} rot={90 + l.tr * 0.6} dark={0.28} from={0} /> : null}
-      {l.tape === 'both' ? <LitPlaster x={SW / 2 + l.br} y={h + 2} len={86} rot={90 + l.br * 0.6} dark={0.34} from={180} /> : null}
+      {l.tape !== 'corners' ? <LitPlaster x={SW / 2 + l.tx} y={-6} len={76} rot={90 + l.tr} dark={0.3} from={0} /> : null}
+      {l.tape === 'both' ? <LitPlaster x={SW / 2 + l.bx} y={h + 4} len={72} rot={90 + l.br} dark={0.36} from={180} /> : null}
       {l.tape === 'corners' ? (
         <>
-          <LitPlaster x={10} y={8} len={88} rot={-42} dark={0.28} from={0} />
-          <LitPlaster x={SW - 10} y={h - 6} len={88} rot={-40} dark={0.34} from={180} />
+          <LitPlaster x={12} y={10} len={76} rot={-44} dark={0.3} from={0} />
+          <LitPlaster x={SW - 12} y={h - 8} len={76} rot={-42} dark={0.36} from={180} />
         </>
       ) : null}
     </div>
@@ -97,14 +99,12 @@ function Poster() {
   const pool = `radial-gradient(40% 48% at ${(focus.x / WW) * 100}% ${(focus.y / WH) * 100}%, #000 0%, rgba(0,0,0,0.55) 35%, rgba(0,0,0,0.14) 70%, transparent 100%)`
   return (
     <IgBoard className="ig-wall-board">
-      <div className="ig-wall" style={{ left: -350, top: -96, width: WW, height: WH }}>
+      <div className="ig-wall" style={{ left: -300, top: -120, width: WW, height: WH }}>
         <WallSurface w={WW} h={WH} tone="#DCE3EA" pool={pool} />
         <Light x={focus.x} y={focus.y} size={1500} tint={focus.tint} strength={1} />
         {all.map((l) => <Letter key={l.to} l={l} focus={focus} />)}
       </div>
-      <h2 className="ig-line" style={{ left: U, right: U, bottom: H - 1150, fontSize: 90 }}>
-        every letter on the wall<br />is to somebody.
-      </h2>
+      <Headline size={90}>every letter on the wall<br />is to somebody.</Headline>
     </IgBoard>
   )
 }

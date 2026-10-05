@@ -22,6 +22,16 @@ export const SIGN_CELL = 2
 export const SIGN = lockupSize(SIGN_CELL)
 // the top of the signature's row, and the room above it a picture can use
 export const SIGN_TOP = H - U - SIGN.h
+// the series' baseline: the last line of words in every one of the four
+// stands on it, a unit and a little over above the signature
+export const BASE = 1128
+
+// The night the last two tell (ig-mutual, ig-not-this-time): a saturday,
+// the reveal's, and the one phone both are told on, at one size and in one
+// place, so side by side on the grid they read as the same night told the
+// two ways it can go
+export const NIGHT = '10/03/26'
+export const PAIR = { w: 616, y: 92 }
 
 // the board, the slate and the signature
 export function IgBoard({ slate = null, sign = true, grain = 0.075, vignette = 0, children, className = '' }) {
@@ -31,6 +41,18 @@ export function IgBoard({ slate = null, sign = true, grain = 0.075, vignette = 0
       {slate ? <Slate {...slate} /> : null}
       {sign ? <Sign /> : null}
     </Board>
+  )
+}
+
+// A headline a person means, in the display cut, its last line standing on
+// the series' baseline. Newsreader's descent is 0.265 of its em, and a line
+// of 1.02 adds a hundredth above and below, so the box's foot is 0.275 of
+// the size under the baseline.
+export function Headline({ size = 90, base = BASE, children, style }) {
+  return (
+    <h2 className="ig-line" style={{ left: U, right: U, bottom: H - (base + 0.275 * size), fontSize: size, ...style }}>
+      {children}
+    </h2>
   )
 }
 

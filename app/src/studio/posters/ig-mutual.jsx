@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react'
 import { Phone, PixelStory, Light, filmOf, readyFilm, useHold, turnStyle } from '../kit.jsx'
 import { ensureCjk } from '../../wall/type.js'
-import { IgBoard, W, H, U } from '../parts/ig.jsx'
+import { IgBoard, W, H, U, BASE, NIGHT, PAIR } from '../parts/ig.jsx'
 
 // a frame of the film with the mark alive, its light up round the star,
 // the glint on the near side of the ring and the cursor lit
@@ -19,8 +19,12 @@ const NOTES = [
   { from: 'from me', ko: '잘 봤어 항상 응원할게', en: 'i saw you on tv. i’ll be rooting for you.' },
 ]
 
-const PW = 600
-const PY = 88
+// the phone, and the night it was told on its band, as the keepsake
+// carries it
+const PW = PAIR.w
+const PY = PAIR.y
+// the english under each note, in pixels
+const EN = 24
 
 function useReady() {
   const [ok, setOk] = useState(false)
@@ -39,21 +43,28 @@ function Poster() {
   const ok = useReady()
   const s = ok ? filmOf('Jules', 'Ace') : null
   return (
-    <IgBoard className="ig-mutual">
-      <Light x={W / 2} y={PY + 420} size={2100} tint="rose" strength={1} />
-      <Light x={W / 2} y={PY + 330} size={980} tint="rose" strength={0.75} />
+    <IgBoard className="ig-mutual" vignette={0.7}>
+      <Light x={W / 2} y={PY + 420} size={2200} tint="rose" strength={0.55} />
+      <Light x={W / 2} y={PY + 360} size={1150} tint="rose" strength={0.9} />
+      {/* and close round the glass, where its light is strongest */}
+      <Light x={W / 2} y={PY + 330} size={860} colour="rgba(232, 150, 182, 0.3)" />
       {s ? (
         <Phone
-          w={PW} mode="bare" square seed="intro" tint="rose" className="is-story"
-          screenStyle={{ '--mu-turn': 1, ...turnStyle('night', 'rose') }}
+          w={PW} mode="bare" seed="mutual" tint="rose" className="is-story" tilt={[1.6, -2.4, -0.9]}
+          top={{ stamp: NIGHT }} keys={{ l: { label: 'options' }, r: { label: 'share' } }}
+          screenStyle={{ '--mu-turn': 1, ...turnStyle('night', 'rose'), '--q-dust': 'none', '--q-scratch': 'none', '--q-streak-a': '0' }}
           style={{ position: 'absolute', left: (W - PW) / 2, top: PY }}
         >
           <PixelStory story={s} at={AT} />
         </Phone>
       ) : null}
-      <div className="ig-notes" style={{ left: U, right: U, top: 884 }}>
-        {NOTES.map((n, i) => (
-          <figure key={n.from} className={`ig-note is-${i ? 'me' : 'them'}`}>
+      {/* the notes as a script sets two voices: whose, at the margin, and
+          the words from the phone's left edge. The english of the second
+          stands on the series' baseline: a line of 1.3 puts the box's foot
+          0.415 of its size under it */}
+      <div className="ig-notes" style={{ left: U, right: U, bottom: H - (BASE + 0.415 * EN), '--col': `${(W - PW) / 2 - U}px` }}>
+        {NOTES.map((n) => (
+          <figure key={n.from} className="ig-note">
             <figcaption>{n.from}</figcaption>
             <p className="ig-note-ko" lang="ko">{n.ko}</p>
             <p className="ig-note-en">{n.en}</p>
