@@ -11,13 +11,13 @@
 /* the type */
 .cr-num, .cr-label, .cr-line, .cr-sub, .cr-mono { position: absolute; margin: 0; z-index: 5; }
 .cr-num {
-  font: 500 22px/1 var(--st-mono); letter-spacing: 0.08em; color: var(--chalk);
+  font: 500 26px/1 var(--st-mono); letter-spacing: 0.06em; color: var(--chalk);
   font-variant-numeric: tabular-nums; display: flex; gap: 2px;
 }
-.cr-num span { color: var(--ash); opacity: 0.7; }
+.cr-num span { color: var(--ash); opacity: 0.75; }
 .cr-label {
-  font: 400 20px/1 var(--st-mono); letter-spacing: 0.1em; color: var(--ash);
-  transform: translateX(-100%); white-space: nowrap; padding-top: 1px;
+  font: 400 24px/1 var(--st-mono); letter-spacing: 0.1em; color: var(--ash);
+  transform: translateX(-100%); white-space: nowrap;
 }
 .cr-line {
   font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
@@ -30,6 +30,12 @@
 }
 .cr-mono { font: 400 20px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash); }
 
+/* the light a lit phone throws close round itself, taken softer and
+   rounder than the wall's, so on a picture this size it falls off as light
+   does and does not draw a rim on the bezel */
+.cr-soft .wl-scene-halo { border-radius: 42%; filter: blur(13cqw); }
+.cr-soft .wl-scene-halo-2 { opacity: 0.45; filter: blur(6cqw); }
+
 /* the backlight asleep: the screen let down most of the way to the black
    it goes to (screen.css `wl-sleep`), and the light it throws on the room
    put out with it */
@@ -40,33 +46,32 @@
 .cr-sign { position: absolute; z-index: 5; line-height: 0; }
 
 /* ── the street story ──
-   The photograph under the room: its street let go to black round the lit
-   screen (`.cs-fall`), and the type over the dark of the coat */
-.cs-photo { position: absolute; display: block; max-width: none; }
-.cs-fall {
-  position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  background:
-    radial-gradient(44% 25% at 47% 35%, transparent 0%, transparent 30%, rgba(0, 0, 0, 0.5) 62%, rgba(0, 0, 0, 0.88) 84%, rgba(0, 0, 0, 0.97) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 16%, transparent 24%, transparent 48%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.95) 78%, #000 100%);
-}
-.cs-burn { position: absolute; z-index: 2; border-radius: 50%; background: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, 0.85) 45%, transparent 100%); pointer-events: none; }
-.cs-type { position: absolute; left: 0; right: 0; top: 1150px; z-index: 5; display: flex; flex-direction: column; align-items: center; }
+   The photograph printed in two grades under the room (`.cs-print`), the
+   letter's light laid over it as light is, and the type over the dark of
+   the coat: the line, and under it the signature across the line's width,
+   the url on the word's baseline */
+.cs-print { position: absolute; left: 0; top: 0; z-index: 1; }
+.cs-glow { position: absolute; inset: 0; z-index: 2; mix-blend-mode: screen; pointer-events: none; }
+.cs-type { position: absolute; left: 50%; top: 1176px; z-index: 5; transform: translateX(-50%); display: flex; flex-direction: column; align-items: stretch; }
 .cs-line {
   margin: 0; font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
   font-size: 196px; line-height: 0.92; letter-spacing: -0.022em; color: var(--chalk); white-space: nowrap;
 }
-.cs-sign { margin-top: 112px; display: flex; flex-direction: column; align-items: center; gap: 26px; }
-.cs-sign span { font: 400 22px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash); }
+.cs-sign { margin-top: 72px; display: flex; align-items: flex-start; justify-content: space-between; line-height: 0; }
+.cs-url { font: 400 22px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash); margin-top: 21px; }
 
 /* ── the write story ──
-   The words over the phone hang on the letter's own column (164, where
-   its first line starts), and the signature runs between the phone's two
-   edges */
-.cw-line, .cw-sub { position: absolute; left: 164px; margin: 0; z-index: 5; white-space: nowrap; }
+   One column, the phone's width: the line and the words under it hang on
+   its left edge, and the signature runs between its two edges, the url on
+   the word's baseline. The phone's close light is taken softer, as on the
+   carousel */
+.cw-line, .cw-sub { position: absolute; margin: 0; z-index: 5; white-space: nowrap; }
 .cw-line {
-  top: 268px; font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
-  font-size: 114px; line-height: 1; letter-spacing: -0.022em; color: var(--chalk); transform: translateX(-6px);
+  top: 262px; font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
+  font-size: 150px; line-height: 0.92; letter-spacing: -0.022em; color: var(--chalk);
 }
-.cw-sub { top: 404px; font: 400 40px/1.2 var(--st-serif); font-optical-sizing: auto; color: var(--ash); }
-.cw-sign { position: absolute; left: 145px; right: 128px; top: 1496px; z-index: 5; display: flex; align-items: center; justify-content: space-between; }
-.cw-sign span { font: 400 22px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash); }
+.cw-sub { top: 562px; font: 400 40px/1.2 var(--st-serif); font-optical-sizing: auto; letter-spacing: -0.006em; color: var(--ash); }
+.cw-sign { position: absolute; top: 1502px; z-index: 5; display: flex; align-items: flex-start; justify-content: space-between; line-height: 0; }
+.cw-url { font: 400 22px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash); margin-top: 21px; }
+.cw-phone .wl-scene-halo { border-radius: 42%; filter: blur(13cqw); }
+.cw-phone .wl-scene-halo-2 { opacity: 0.5; filter: blur(6cqw); }

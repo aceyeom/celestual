@@ -87,39 +87,43 @@
    from the second */
 .li-cap { display: grid; grid-template-columns: 80px 1fr; }
 
-/* ── the rules (li-post-rules) ── */
+/* ── the rules (li-post-rules) ──
+   The number hung in the margin, large and quiet, its right edge a gutter
+   short of the text; the rule in the display cut; the line that says why
+   in the text cut, set to a measure and broken by hand */
 .li-rule { position: absolute; z-index: 20; border-top: 1px solid rgba(244, 241, 234, 0.16); }
 .li-rule-end { position: absolute; z-index: 20; height: 0; border-top: 1px solid rgba(244, 241, 234, 0.16); }
-.li-rule-n {
-  position: absolute; left: 0; top: 22px;
-  font: 400 14px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash);
+.st-board.li .li-rule-n {
+  position: absolute; right: calc(100% + 22px); top: 30px;
+  font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 72;
+  font-size: 150px; line-height: 1; letter-spacing: -0.03em; color: rgba(156, 151, 142, 0.34);
+  font-variant-numeric: lining-nums proportional-nums;
 }
 .li-rule-h {
-  position: absolute; left: -3px; top: 64px; margin: 0;
+  position: absolute; left: -4px; top: 40px; margin: 0;
   font-family: var(--st-serif); font-weight: 500; font-variation-settings: 'opsz' 72;
-  font-size: 64px; line-height: 1.02; letter-spacing: -0.022em; color: var(--chalk);
+  font-size: 72px; line-height: 1; letter-spacing: -0.024em; color: var(--chalk);
 }
 .st-board.li .li-rule-why {
-  position: absolute; left: 0; top: 214px; width: 460px; margin: 0;
+  position: absolute; left: 0; top: 206px; width: 520px; margin: 0;
   font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 16;
-  font-size: 19px; line-height: 1.45; color: var(--ash);
+  font-size: 18px; line-height: 1.5; color: var(--ash);
 }
 .li-dia { position: absolute; z-index: 21; }
 .li-dia-cap {
   display: flex; align-items: center; gap: 12px; margin: 22px 0 0;
-  font: 400 13px/1 var(--st-mono); letter-spacing: 0.1em; color: var(--ash);
+  font: 400 14px/1 var(--st-mono); letter-spacing: 0.08em; color: var(--ash);
 }
 /* the accent, once, as the build spends it: a four pixel dot */
 .li-accent { display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
-.li-pool-grid { display: grid; }
-.li-pool-grid figure { margin: 0; }
-.li-mini { display: block; }
-.li-mini .wl-mini { width: 100%; height: 100%; border-radius: 3px; box-shadow: var(--mini-in); }
-.li-wall { display: grid; }
-.li-wall .is-off { filter: brightness(0.2) saturate(0.6); }
-/* a copy is paper, and paper in the dark is darker than a panel left on */
-.li-wall .is-off[data-kind='xerox'] { filter: brightness(0.2); opacity: 0.4; }
-.li-wall .is-off .wl-scene-halo, .li-wall .is-off .wl-scene-halo-2 { display: none; }
+/* the twelve: the same glass in both rows. In the pool each is a panel's
+   colour at a panel's strength, evened so none is louder than another; on
+   the wall all are off but one */
+.li-twelve { display: grid; }
+.li-twelve .wl-scene-halo, .li-twelve .wl-scene-halo-2 { display: none; }
+.li-twelve.is-pool .is-off { filter: brightness(calc(0.5 * var(--li-b, 1))) saturate(calc(0.8 * var(--li-s, 1))); }
+.li-twelve.is-wall .is-off { filter: brightness(calc(0.16 * var(--li-b, 1))) saturate(0.5); }
+.li-twelve.is-wall .is-lit .wl-scene-halo { display: block; }
 
 /* ── the diff (li-post-linter) ──
    Set in the identifier face, on a 40 pixel line: the marker in its own
@@ -151,13 +155,18 @@
    the nearest lit brighter than the rest */
 .li-row3d { position: absolute; width: 1000px; perspective: var(--li-persp, 1100px); perspective-origin: var(--li-eye, 520px) 50%; }
 .li-row3d-in { position: absolute; left: 0; top: 50%; display: flex; align-items: center; transform-origin: 0 50%; transform: translateY(-50%) rotateY(var(--li-turn, 64deg)); }
-.li-row3d-ph { flex: 0 0 auto; filter: brightness(calc(0.62 - var(--li-far) * 0.4)); }
+.li-row3d-ph { flex: 0 0 auto; filter: brightness(calc((0.42 - var(--li-far) * 0.3) * var(--li-b, 1))) saturate(var(--li-s, 1)); }
 .li-row3d-ph:first-child { filter: none; }
 .li-row3d-ph:not(:first-child) .wl-scene-halo { display: none; }
 
 /* ── the shelf (x-header) ──
    The twelve facing the camera, the one that is on at full light and the
    rest lit by it, dimmer the further they stand (`--li-far`) */
-.li-shelf { position: absolute; transform: translateY(-50%); filter: brightness(calc(0.5 - var(--li-far) * 0.32)) saturate(calc(1 - var(--li-far) * 0.3)); }
+.li-shelf { position: absolute; transform: translateY(-50%); filter: brightness(calc(var(--li-k) * var(--li-b, 1))) saturate(calc(var(--li-ks) * var(--li-s, 1))); }
 .li-shelf.is-on { filter: none; }
 .li-shelf:not(.is-on) .wl-scene-halo, .li-shelf:not(.is-on) .wl-scene-halo-2 { display: none; }
+/* the room past the row's far end: the black taken over what runs off
+   the left edge, under the grain */
+.li-x-dark { position: absolute; left: 0; top: 0; bottom: 0; width: 560px; z-index: 40; pointer-events: none; background: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.7) 30%, transparent 100%); }
+/* the fact, at a size X's 600 pixel header still reads */
+.st-board.li .li-x-cap { font-size: 24px; line-height: 1; white-space: nowrap; }

@@ -8,13 +8,13 @@
 //
 // On a grid of fifteen units across, sixty pixels each.
 
-import { Board, Phone, Lockup } from '../kit.jsx'
+import { Board, Phone, Lockup, Light } from '../kit.jsx'
 import { Tabs } from '../parts/print.jsx'
 
 const W = 900
 const H = 1200
 const U = 60
-const BASE = 778
+const BASE = 772
 const TABS = 950
 
 const DRAFTS = [
@@ -32,6 +32,7 @@ function Poster() {
       <h1 className="pr-head" style={{ left: U - 4, top: U - 16 }}>
         nothing happens<br />unless it&rsquo;s<br /><em>mutual.</em>
       </h1>
+      <Light x={W / 2} y={BASE - 174} size={760} tint="rose" strength={0.42} />
       {DRAFTS.map((d) => {
         const left = x
         x += d.w + GAP

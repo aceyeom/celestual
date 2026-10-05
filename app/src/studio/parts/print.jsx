@@ -25,10 +25,10 @@ export const A4 = { w: 827, h: 1169, scale: 3 }
 // so the words fill the glass the way the street's did. `seed` is the
 // phone: the copy is a hot one, and the drums slipped as far as they do.
 export const STREET = [
-  { id: '01', name: 'june', tint: 'ice', seed: 'street-june-0', fs: 13.6, text: 'your song came on\nat the laundromat\nand i let my\nclothes go round\nagain.' },
-  { id: '02', name: 'ren', tint: 'violet-yellow', seed: 'street-ren-95', fs: 15, text: 'the library\nseat by the\nwindow is free\non tuesdays.\ni check.' },
-  { id: '03', name: 'sam', tint: 'acid', seed: 'street-sam-0', fs: 14.8, text: 'you still have\nmy hoodie.\nkeep it. i just\nwanted you to\nknow i know.' },
-  { id: '04', name: 'eli', tint: 'xerox', seed: 'street-eli-228', fs: 13.2, vars: { '--q-dust': 'none' }, text: 'i kept the receipt\nfrom our first\ndinner. $41.80.\nbest money i\never spent.' },
+  { name: 'june', tint: 'ice', seed: 'street-june-0', fs: 13.6, text: 'your song came on\nat the laundromat\nand i let my\nclothes go round\nagain.' },
+  { name: 'ren', tint: 'violet-yellow', seed: 'street-ren-95', fs: 15, text: 'the library\nseat by the\nwindow is free\non tuesdays.\ni check.' },
+  { name: 'sam', tint: 'acid', seed: 'street-sam-0', fs: 14.8, text: 'you still have\nmy hoodie.\nkeep it. i just\nwanted you to\nknow i know.' },
+  { name: 'eli', tint: 'xerox', seed: 'street-eli-228', fs: 13.2, vars: { '--q-dust': 'none' }, text: 'i kept the receipt\nfrom our first\ndinner. $41.80.\nbest money i\never spent.' },
 ]
 
 // The sheet's proportions, in fractions of its width so one drawing is the
@@ -120,7 +120,7 @@ export function Tabs({ w, top, h, line = 'rgba(244, 241, 234, 0.5)', className =
       </svg>
       {KEYS.map(([k, abc]) => (
         <div className="pr-tab" key={k}>
-          <span className="pr-key"><b>{k}</b>{abc ? <i>{abc}</i> : null}</span>
+          <span className="pr-key"><b className={k === '*' ? 'is-star' : undefined}>{k}</b>{abc ? <i>{abc}</i> : null}</span>
           <span className="pr-tab-url">celestual.us</span>
         </div>
       ))}
@@ -146,8 +146,8 @@ export function Wall({ w, h, lamp = [180, -120], at = 260, to = null, tone = '#B
           <feTurbulence type="fractalNoise" baseFrequency="0.0022 0.0042" numOctaves="4" seed={seed} result="trowel" />
           <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed={seed + 4} result="grit" />
           <feTurbulence type="turbulence" baseFrequency="0.3" numOctaves="1" seed={seed + 9} result="pit0" />
-          <feColorMatrix in="pit0" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -24 0 0 0 0.5" result="pits" />
-          <feComposite in="trowel" in2="grit" operator="arithmetic" k2="0.95" k3="0.12" result="r0" />
+          <feColorMatrix in="pit0" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -20 0 0 0 0.56" result="pits" />
+          <feComposite in="trowel" in2="grit" operator="arithmetic" k2="0.95" k3="0.07" result="r0" />
           <feComposite in="r0" in2="pits" operator="arithmetic" k2="1" k3="-0.5" result="relief" />
           <feDiffuseLighting in="relief" surfaceScale="4.5" diffuseConstant="1" lightingColor={tone} result="lit">
             <feSpotLight x={lamp[0]} y={lamp[1]} z={at} pointsAtX={px} pointsAtY={py} pointsAtZ="0" specularExponent="4" limitingConeAngle="70" />
@@ -189,5 +189,31 @@ export function Pasted({ x, y, w, rot = 0, letter, seed = 5, children }) {
       </svg>
       {children}
     </div>
+  )
+}
+
+// What is left of a sheet somebody tore down: the strip that was under the
+// plaster, the paper's white edge along its top where the printer did not
+// reach and the black under it, torn ragged on the other three sides. `w`
+// across, its top at `x`, `y`, turned `rot`.
+export function Scrap({ x, y, w = 64, rot = 0, seed = 3 }) {
+  const id = useMemo(() => `pr-s-${Math.random().toString(36).slice(2, 8)}`, [])
+  const h = Math.round(w * 0.5)
+  const e = Math.max(2, Math.round(w * 0.06))
+  const torn = `M0 0 L${w} 0 L${w * 0.97} ${h * 0.52} L${w * 0.74} ${h * 0.44} L${w * 0.52} ${h * 0.7} L${w * 0.36} ${h} L${w * 0.18} ${h * 0.62} L${w * 0.04} ${h * 0.4} Z`
+  return (
+    <svg className="pr-scrap" width={w + 20} height={h + 20} viewBox={`-10 -10 ${w + 20} ${h + 20}`} style={{ left: x - w / 2 - 10, top: y - 10, transform: `rotate(${rot}deg)` }} aria-hidden="true">
+      <defs>
+        <filter id={id} x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves="3" seed={seed} result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+        <clipPath id={`${id}-c`}><rect x="-10" y={e} width={w + 20} height={h + 20} /></clipPath>
+      </defs>
+      <g filter={`url(#${id})`}>
+        <path d={torn} fill="#EDEAE3" />
+        <path d={torn} fill="#050505" clipPath={`url(#${id}-c)`} />
+      </g>
+    </svg>
   )
 }

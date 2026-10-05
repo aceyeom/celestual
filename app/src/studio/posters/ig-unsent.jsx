@@ -7,7 +7,7 @@
 // The key that would send it runs off the edge of the frame.
 
 import { Phone, Light } from '../kit.jsx'
-import { IgBoard, Focus, Dust, LitPlaster, W, H } from '../parts/ig.jsx'
+import { IgBoard, Focus, Dust, NearPlaster, W, H } from '../parts/ig.jsx'
 
 const TEXT = 'the coffee guy\nstill makes two.\ni drink both.'
 
@@ -16,16 +16,21 @@ const TEXT = 'the coffee guy\nstill makes two.\ni drink both.'
 const SW = 1207
 const FS = 14
 const PX = (FS * 75) / 1400
-// the first baseline, from the top of the glass: the two status rows and
-// their padding, the body's lift, and the face's ascent in a line of 1.02
-const GY = 2.6 + 23.2 + 1.6 + 0.7779 * FS
+// the two status rows stand a little further apart than a phone's do, so
+// the frame can cut cleanly between them: the name and the count above it,
+// the pen and `abc` in it
+const ROWS = 3.6
+// the first baseline, from the top of the glass: the two status rows, the
+// room between them and their padding, the body's lift, and the face's
+// ascent in a line of 1.02
+const GY = 2.6 + 10.4 + ROWS + 10.4 + 1.8 + 1.6 + 0.7779 * FS
 const LEFT = 2
-const TOP = -228
+const TOP = -200
 
 const glass = {
-  '--q-pad': '3cqw', '--q-top-pad': '2.6cqw', '--q-lift': '1.6cqw', '--q-ar': '1.13',
+  '--q-pad': '3cqw', '--q-top-pad': '2.6cqw', '--q-lift': '1.6cqw', '--q-ar': '0.98',
   '--q-pitch': `${PX.toFixed(4)}cqw`, '--ig-fs': `${FS}cqw`,
-  '--ig-gx': '3cqw', '--ig-gy': `${GY.toFixed(4)}cqw`,
+  '--ig-gx': '3cqw', '--ig-gy': `${GY.toFixed(4)}cqw`, '--ig-rows': `${ROWS}cqw`,
   // the backlight seen this close: brightest behind the words, a cloud
   // where the diffuser sits badly low on the right, the lamps bleeding in
   // along the top, and the far corner falling away
@@ -57,9 +62,9 @@ function Poster() {
           <Draft />
         </Focus>
       </div>
-      <Dust w={W} h={1120} seed="maya-glass" specks={110} hairs={1} lint={[600, 700, 300, 160]} opacity={0.5} style={{ left: 0, top: 0, zIndex: 25, mixBlendMode: 'screen' }} />
-      <Dust w={W} h={1120} seed="maya-dark" specks={60} hairs={1} lint={[120, 760, 260, 120]} tone="#2A1A08" opacity={0.45} style={{ left: 0, top: 0, zIndex: 25, mixBlendMode: 'multiply' }} />
-      <LitPlaster x={510} y={1110} len={204} rot={-86} dark={0.7} from={270} soft={1.4} />
+      <Dust w={W} h={1000} seed="maya-glass" specks={110} hairs={1} lint={[600, 640, 300, 140]} opacity={0.5} style={{ left: 0, top: 0, zIndex: 25, mixBlendMode: 'screen' }} />
+      <Dust w={W} h={1000} seed="maya-dark" specks={60} hairs={1} lint={[120, 700, 260, 120]} tone="#2A1A08" opacity={0.45} style={{ left: 0, top: 0, zIndex: 25, mixBlendMode: 'multiply' }} />
+      <NearPlaster x={120} y={1010} len={240} rot={-35} soft={1.6} />
     </IgBoard>
   )
 }

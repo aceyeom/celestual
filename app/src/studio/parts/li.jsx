@@ -11,7 +11,7 @@
 // are one unit and a half, the running head stands one unit in from the
 // top, and the signature's foot one unit in from the bottom.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Board, Lockup, Grain, useHold, lockupSize, skinOf, MARK } from '../kit.jsx'
 import { alpha } from '../../wall/looks.js'
 import './li.css'
@@ -89,15 +89,34 @@ export function Sign({ ink = false, url = 'celestual.us', h = H, l = M, r = M, f
 }
 
 // the lockup with the address under it, on the lockup's own left edge, the
-// pair centred on `y`: the signature where a wide picture has no foot row
+// pair centred on `y`: the signature where a wide picture has no foot row.
+// Without the address the lockup alone is centred on `y`
 export function Stack({ x, y, cell = SIGN_CELL, url = 'celestual.us' }) {
   const h = lockupSize(cell).h
   return (
-    <div className="li-stack" style={{ left: x, top: y - (h + 34) / 2 }}>
+    <div className="li-stack" style={{ left: x, top: y - (url ? h + 34 : h) / 2 }}>
       <Lockup cell={cell} />
       {url ? <span className="li-url">{url}</span> : null}
     </div>
   )
+}
+
+// a line set to a measure: its tracking opened or closed until it runs
+// exactly `w` wide, so both its ends can stand on lines of the picture. The
+// tracking after its last letter is taken back, so the ink ends on the edge
+export function Fit({ w, children, className = '', style }) {
+  const ref = useRef(null)
+  const [ls, setLs] = useState(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.letterSpacing = '0px'
+    const n = [...el.textContent].length
+    const w0 = el.getBoundingClientRect().width
+    setLs(n > 1 ? (w - w0) / n : 0)
+  }, [w, children])
+  const fit = ls == null ? null : { letterSpacing: `${ls}px`, marginRight: `${-ls}px` }
+  return <span ref={ref} className={`li-fit ${className}`} style={{ display: 'inline-block', whiteSpace: 'nowrap', ...style, ...fit }}>{children}</span>
 }
 
 // ── the mark, on its grid ───────────────────────────────────────────────────
@@ -159,6 +178,32 @@ export function Table({ bw, bh, x, y, w, h, squash = 2.6, tone = '#E8E6E0', opac
       </svg>
     </div>
   )
+}
+
+// ── the twelve, evened ──────────────────────────────────────────────────────
+// The twelve panels are not one brightness: measured off a render, the copy
+// is nearly twice the rose and the negative a third of it, and the square
+// and the riso are three times as saturated as anything lit. A screen left
+// off in a row is dimmed by how far it stands, times its own `b`, and its
+// colour held by its own `s`, so the loud ones sink as far as the quiet
+// ones and the one that is on stays the one bright thing.
+export const EVEN = {
+  night: { b: 1.05, s: 1 },
+  white: { b: 0.76, s: 1 },
+  ice: { b: 0.95, s: 0.9 },
+  teal: { b: 1.2, s: 0.9 },
+  green: { b: 0.9, s: 0.85 },
+  acid: { b: 0.55, s: 0.5 },
+  'violet-yellow': { b: 0.5, s: 0.45 },
+  amber: { b: 1, s: 0.9 },
+  rose: { b: 1, s: 1 },
+  lilac: { b: 1.15, s: 1 },
+  negative: { b: 1.4, s: 1 },
+  xerox: { b: 0.55, s: 1 },
+}
+export const evenOf = (tint) => {
+  const e = EVEN[tint] || { b: 1, s: 1 }
+  return { '--li-b': e.b, '--li-s': e.s }
 }
 
 // ── the twelve, each with its letter ────────────────────────────────────────

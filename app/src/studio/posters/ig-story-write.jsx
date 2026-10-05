@@ -1,24 +1,34 @@
 import { Board, Phone, Light, Lockup } from '../kit.jsx'
 import { useFaces } from '../parts/carousel.jsx'
 
-// The call to write one: the composer as big as the story will hold it,
-// mid letter, the cursor waiting where the next sentence starts, and the
-// mechanic said once over it in plain words.
+// The call to write one: the composer as big as the story will hold it
+// under the line, the letter whole and the cursor after it, and the
+// mechanic said once over it in plain words. Everything stands on one
+// column, the phone's own width: the line, the words under it, the glass
+// and the signature all start on its left edge and end inside its right.
 const W = 1080
 const H = 1920
-const NOTE = { name: 'noah', text: 'you said we’d see the cherry blossoms next year.' }
+// the column: the phone, 700 wide, in the middle
+const PW = 700
+const L = (W - PW) / 2
+// set as its writer would have broken it, a phrase to a line, so the two
+// years end two lines together and the turn has a line of its own
+const NOTE = { name: 'noah', text: 'you said we’d see\nthe cherry blossoms\nnext year.\nit’s next year.' }
 
 function Poster() {
   const ok = useFaces()
   return (
     <Board w={W} h={H} grain={0.08}>
-      <Light x={540} y={990} size={1700} tint="amber" strength={0.75} />
+      <Light x={540} y={1070} size={1700} tint="amber" strength={0.72} />
       {ok ? (
         <>
-          <h2 className="cw-line">send it privately.</h2>
-          <p className="cw-sub">they only read it if they send you one.</p>
-          <Phone w={800} x={540} y={986} tint="amber" seed="cw-noah" name={NOTE.name} text={NOTE.text} />
-          <div className="cw-sign"><Lockup cell={2} /><span>celestual.us</span></div>
+          <h2 className="cw-line" style={{ left: L - 7 }}>send it<br />privately.</h2>
+          <p className="cw-sub" style={{ left: L }}>they only read it if they send you one.</p>
+          <Phone
+            w={PW} x={540} y={1062} tint="amber" seed="cw-noah-3444" tilt={[1.1, 0.9, 0]}
+            name={NOTE.name} text={NOTE.text} className="cw-phone"
+          />
+          <div className="cw-sign" style={{ left: L, width: PW }}><Lockup cell={2} /><span className="cw-url">celestual.us</span></div>
         </>
       ) : null}
     </Board>

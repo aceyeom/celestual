@@ -6,7 +6,7 @@
 // the shadow's edge and eli's is nearly in the dark.
 
 import { Board, Plaster, Lockup } from '../kit.jsx'
-import { Wall, Pasted, STREET } from '../parts/print.jsx'
+import { Wall, Pasted, Scrap, STREET } from '../parts/print.jsx'
 
 const W = 1080
 const H = 1350
@@ -31,7 +31,9 @@ const EDGE = 'M 930 -40 L 1200 -40 L 1200 1400 L -40 1400 L -40 1290 Z'
 function Poster() {
   return (
     <Board w={W} h={H} grain={0.06} className="pr-mock">
-      <Wall w={W} h={H} lamp={[-60, -200]} at={340} to={[420, 520]} ghosts={GHOSTS} />
+      <Wall w={W} h={H} lamp={[-60, -200]} at={340} to={[420, 520]} tone="#C2B9A9" />
+      <Scrap x={548} y={62} w={84} rot={-4} />
+      <Plaster x={543} y={60} len={76} rot={93} />
       {PLACE.map((p, i) => (
         <Pasted key={i} x={p.x} y={p.y} w={SW} rot={p.rot} letter={STREET[i]} seed={i * 7 + 3}>
           {p.tape.map(([tx, ty, len, r], j) => (
@@ -41,7 +43,7 @@ function Poster() {
       ))}
       <svg className="pr-dark" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
         <defs>
-          <filter id="pr-mock-pen" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="22" /></filter>
+          <filter id="pr-mock-pen" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="16" /></filter>
           <radialGradient id="pr-mock-fall" cx="0.16" cy="0.06" r="1.05">
             <stop offset="0" stopColor="#000" stopOpacity="0" />
             <stop offset="0.55" stopColor="#000" stopOpacity="0.28" />

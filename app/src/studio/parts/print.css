@@ -32,7 +32,7 @@
 .pr-head {
   position: absolute; z-index: 5; margin: 0;
   font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
-  font-variation-settings: 'opsz' 72; font-size: 104px; line-height: 0.98; letter-spacing: -0.022em;
+  font-variation-settings: 'opsz' 72; font-size: 104px; line-height: 0.95; letter-spacing: -0.022em;
   color: var(--chalk);
 }
 .pr-head em { font-style: italic; font-weight: 400; }
@@ -55,6 +55,8 @@
 .pr-key { display: flex; align-items: baseline; gap: 3px; font-family: var(--st-pixel); line-height: 1; }
 .pr-key b { font-weight: 400; font-size: 36px; }
 .pr-key i { font-style: normal; font-size: 15px; color: var(--ash); }
+/* the face draws its star small and high; the key's is the size of a figure */
+.pr-key b.is-star { font-size: 60px; height: 36px; line-height: 0.9; }
 .pr-tab-url {
   writing-mode: vertical-rl; font: 400 30px/1 var(--st-pixel); letter-spacing: 0.02em; color: var(--chalk);
 }
@@ -74,3 +76,7 @@
   position: absolute; z-index: 45; display: flex; justify-content: space-between; align-items: center;
   font: 400 15px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash);
 }
+.pr-scrap { position: absolute; z-index: 15; transform-origin: 50% 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6)); }
+/* the square is paper, and throws less of its lime on the black than a
+   lit screen throws of its light */
+.pr-sheet .wl-scene[data-kind='brat'] .wl-scene-halo { opacity: 0.3; }
