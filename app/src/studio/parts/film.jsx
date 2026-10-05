@@ -162,8 +162,9 @@ export function Unsent({ t, L }) {
     { k: 'i', text: 'if they send you one.', o: shown(t, [4150, 4450, 5900, 6150]), row: 1 },
   ]
   const week = shown(t, [T.week, T.week + 300, T.glass + 650, T.glass + 950])
-  const endO = at([[T.back + 250, 0], [T.back + T.step, 1, 'power2.out']], t)
-  const endO2 = at([[T.back + 450, 0], [T.back + T.step + 200, 1, 'power2.out']], t)
+  // the line comes up only once the phone has stepped back past it
+  const endO = at([[T.back + 450, 0], [T.back + T.step + 150, 1, 'power2.out']], t)
+  const endO2 = at([[T.back + 600, 0], [T.back + T.step + 350, 1, 'power2.out']], t)
   const night = skinVars('night')['--s-halo']
   const rose = skinVars('rose')['--s-halo']
 
