@@ -1,0 +1,63 @@
+/* ── the studio (index.jsx, kit.jsx) ─────────────────────────────────────────
+   The campaign's own sheet. Development only. The faces are the product's
+   four and the phone's (app/public/fonts), named here for a poster's own
+   type, since `.wl-root.is-room` hands every token of the wall to the
+   phone's face. */
+
+.st-board {
+  --st-serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --st-pixel: 'Jersey 10', 'Geist Mono', ui-monospace, monospace;
+  --st-mono: 'Geist Mono', ui-monospace, monospace;
+  --st-sans: 'Inter Tight', system-ui, sans-serif;
+  --chalk: #F4F1EA; --ash: #9C978E; --ash-dim: #605C55; --accent: #74C7DE;
+  --hair: rgba(244, 241, 234, 0.09);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative; overflow: hidden; isolation: isolate;
+  color: var(--chalk); -webkit-font-smoothing: antialiased;
+  font-family: var(--st-pixel);
+  min-height: 0;
+}
+
+/* the grain over everything, and the room's edge taken to black */
+.st-grain { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+.st-vignette {
+  position: absolute; inset: 0; z-index: 49; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+/* the light a screen throws on the room */
+.st-light {
+  position: absolute; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--halo) 0%, color-mix(in srgb, var(--halo) 40%, transparent) 38%, transparent 100%);
+}
+
+/* the phone: the wall's screen, with a story's no second row */
+.st-phone { position: relative; }
+.st-phone.is-story .wl-scr-r2 { display: none; }
+/* no dead pixel on a screen that stands alone in a picture */
+.st-phone .wl-scr-fx.is-glass { background: var(--q-scratch, none), var(--q-dust, none); }
+.st-phone.is-quiet .wl-scr-fx.is-rgb { display: none; }
+/* the cursor is held lit unless a frame puts it out */
+.st-board .wl-scr-cur { animation: none !important; }
+.st-board .is-out .wl-scr-cur, .st-board.is-out .wl-scr-cur { opacity: 0; }
+
+/* the brand, drawn on its grid, with the close bloom a lit thing has */
+.st-brand { display: inline-block; line-height: 0; }
+.st-brand svg { display: block; }
+.st-brand.is-bloom svg { filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1)); }
+
+/* a plaster, laid over whatever it holds up */
+.st-plaster { position: absolute; z-index: 20; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35)); }
+
+/* a photograph cut to its box */
+.st-photo { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* ── the sheet, every poster small ── */
+.st-sheet { padding: 32px; color: #F4F1EA; font: 18px/1.2 'Jersey 10', monospace; background: #000; min-height: 100vh; }
+.st-sheet h1 { font-weight: 400; font-size: 28px; margin: 0 0 28px; }
+.st-sheet-grid { display: flex; flex-wrap: wrap; gap: 36px 28px; align-items: flex-end; }
+.st-sheet-card { display: grid; gap: 10px; color: inherit; text-decoration: none; }
+.st-sheet-frame { display: block; overflow: hidden; box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.12); }
+.st-sheet-name { color: #9C978E; font-size: 15px; }
+.st-one { display: inline-block; line-height: 0; }
+.st-one > * { line-height: normal; }

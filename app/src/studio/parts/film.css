@@ -1,0 +1,20 @@
+/* unsent, the film (film.jsx) */
+.fm-board .fm-ph { position: absolute; inset: 0; }
+/* the words not typed yet: laid out, so nothing jumps a line, and unseen */
+.fm-typed .fm-rest { color: transparent; text-shadow: none; }
+/* where a cursor that is out would stand, so the line does not move */
+.fm-typed .fm-nocur { display: inline-block; width: 0.107em; margin-left: 0.107em; }
+
+.fm-cap {
+  position: absolute; left: 0; right: 0; margin: 0; text-align: center;
+  font-family: var(--st-serif); font-weight: 500; letter-spacing: -0.022em; line-height: 1;
+  color: var(--chalk); font-optical-sizing: auto;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+}
+.fm-end { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; }
+.fm-line {
+  margin: 0; text-align: center; color: var(--chalk);
+  font-family: var(--st-serif); font-weight: 500; letter-spacing: -0.022em; line-height: 1.06;
+}
+.fm-sign { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.fm-url { font-family: var(--st-mono); color: var(--ash); letter-spacing: 0.06em; }

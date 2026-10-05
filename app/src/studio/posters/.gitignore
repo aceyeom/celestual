@@ -1,0 +1,3 @@
+# a lab, never a poster (studio.mjs skips any id that starts with _)
+_*
+!_test.jsx
