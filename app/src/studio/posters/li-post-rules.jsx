@@ -14,13 +14,13 @@ import { Page, MarkGrid, evenOf, W, H, U, M } from '../parts/li.jsx'
 
 const TOP = 2 * U + 20
 // two rows the same and the last taller, so the mark is large enough to count
-const ROWS = [300, 300, 440]
+const ROWS = [300, 300, 420]
 const AT = ROWS.map((_, i) => TOP + ROWS.slice(0, i).reduce((a, b) => a + b, 0))
 const END = TOP + ROWS.reduce((a, b) => a + b, 0)
 const COL = M + 7 * U
 const DW = W - M - COL
 // the diagrams stand on the rule's cap line
-const DY = 58
+const DY = 40
 // a swatch and a phone are the same object, so the two rows of six line up
 const SW = 56
 const GAP = (DW - SW * 6) / 5
@@ -29,7 +29,7 @@ const RG = 14
 const RULES = [
   { n: '1', rule: <>the accent<br />is rationed.</>, why: <>one saturated colour, its uses countable on one hand.<br />the screens’ twelve are the only other hues.</> },
   { n: '2', rule: <>one bright thing<br />per screen.</>, why: <>a lit surface or the bloom, never both,<br />and never two of either. the eye has to land somewhere.</> },
-  { n: '3', rule: <>everything<br />is drawn.</>, why: <>no icon set, no stock, no bitmap. the grain is generated,<br />and the mark is a grid of cells.</> },
+  { n: '3', rule: <>everything<br />is drawn.</>, why: <>no icon set, no stock, no bitmap texture. the grain is generated,<br />and the mark is a grid of cells.</> },
 ]
 
 // the twelve, two even rows of six in the order the composer's pool draws
@@ -52,7 +52,7 @@ const LIT_AT = COLOURS.findIndex((c) => c.slug === LIT)
 
 function Poster() {
   return (
-    <Page head={{ l: 'celestual · the three rules', r: 'this page keeps all three' }}>
+    <Page head={{ l: 'celestual · the three rules', r: 'from the design system' }}>
       {RULES.map((r, i) => (
         <section key={r.n} className="li-rule" style={{ top: AT[i], left: M, width: W - M * 2, height: ROWS[i] }}>
           <span className="li-rule-n">{r.n}</span>
@@ -70,7 +70,7 @@ function Poster() {
         <p className="li-dia-cap">twelve screens, one of them on</p>
       </div>
       <div className="li-dia" style={{ left: COL, top: AT[2] + DY, width: DW }}>
-        <MarkGrid cell={8} ink="#F4F1EA" line="rgba(244, 241, 234, 0.09)" />
+        <MarkGrid cell={8} fill={5} ink="#F4F1EA" line="rgba(244, 241, 234, 0.09)" />
         <p className="li-dia-cap">the mark, 33 by 33, a cell at a time</p>
       </div>
       <span className="li-rule-end" style={{ left: M, right: M, top: END }} />

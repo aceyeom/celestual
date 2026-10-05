@@ -13,7 +13,7 @@
 // lesson under it and a figure's caption all keep one baseline.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Board, Lockup, Grain, useHold, lockupSize, MARK } from '../kit.jsx'
+import { Board, Lockup, Grain, useHold, lockupSize, keepOf, MARK } from '../kit.jsx'
 import { joinStory } from '../../wall/pixmark.js'
 import { skinOf } from '../../wall/looks.js'
 import './doc.css'
@@ -53,12 +53,12 @@ export function useFaces() {
 // The room's black with the sensor's grain, the running head and the folio.
 // `n` is the page's number; `head` false leaves the running head off, for
 // a page that signs itself larger
-export function Page({ n, head = true, foot = true, sign = true, label = TITLE, grain = 0.075, vignette = 0, children, className = '' }) {
+export function Page({ n, head = true, num = true, foot = true, sign = true, label = TITLE, grain = 0.075, vignette = 0, children, className = '' }) {
   const ok = useFaces()
   return (
     <Board w={W} h={H} grain={grain} vignette={vignette} className={`dc ${className}`}>
       {ok ? children : null}
-      {head ? <Head n={n} label={label} /> : null}
+      {head ? <Head n={n} label={label} num={num} /> : null}
       {foot ? <Folio n={n} sign={sign} /> : null}
     </Board>
   )
@@ -67,14 +67,15 @@ export function Page({ n, head = true, foot = true, sign = true, label = TITLE, 
 // The running head: the deck's title at the left margin and the page's
 // number at the right, their caps hanging from the first row line (Geist
 // Mono's cap is 0.71 of its em, and a line of 1 puts the baseline 0.855 of
-// it under the box's top)
-export const HEAD = { size: 20 }
-export function Head({ n, label = TITLE }) {
+// it under the box's top). `num` false leaves the number off, for the cover,
+// whose folio already says which page it is
+export const HEAD = { size: 22 }
+export function Head({ n, label = TITLE, num = true }) {
   const top = row(1) + HEAD.size * 0.71 - HEAD.size * 0.855
   return (
     <div className="dc-head" style={{ left: M, right: M, top, fontSize: HEAD.size }}>
       <span>{label}</span>
-      <span className="dc-num"><b>{String(n).padStart(2, '0')}</b>/{String(PAGES).padStart(2, '0')}</span>
+      {num ? <span className="dc-num"><b>{String(n).padStart(2, '0')}</b>/{String(PAGES).padStart(2, '0')}</span> : null}
     </div>
   )
 }
@@ -120,8 +121,9 @@ export const lessonBase = (lines) => TITLE_BASE + (lines - 1) * TITLE_SIZE * TIT
 // size * (lh / 2 + 0.235) under the top of the box.
 const serifTop = (base, size, lh) => base - size * (lh / 2 + 0.235)
 
-// A title: the display cut, large, lowercase, balanced so no line is left
-// with one word on it
+// A title: the display cut, large, lowercase, broken by hand (`<br />`) one
+// thought to a line, so no line ends on an article and none is left with
+// one word on it
 export function Title({ x = M, base = TITLE_BASE, size = TITLE_SIZE, lh = TITLE_LH, width = W - 2 * M, children, className = '', style }) {
   return (
     <h1 className={`dc-title ${className}`} style={{ left: x, top: serifTop(base, size, lh), width, fontSize: size, lineHeight: lh, ...style }}>
@@ -131,7 +133,7 @@ export function Title({ x = M, base = TITLE_BASE, size = TITLE_SIZE, lh = TITLE_
 }
 
 // A lesson's words: the text cut, sized to be read on a phone held at arm's
-// length (36 on 45, a half unit a line)
+// length (36 on 45, a half unit a line), broken by hand as a title is
 export const LESSON = { size: 36, lh: 45 / 36 }
 export function Lesson({ x = M, base, width = 8 * U, size = LESSON.size, lh = LESSON.lh, children, className = '', style }) {
   return (
@@ -143,7 +145,7 @@ export function Lesson({ x = M, base, width = 8 * U, size = LESSON.size, lh = LE
 
 // A lesson's kicker: its number and its name in the identifier face, chalk,
 // its baseline on `base`
-export const KICK = { size: 22 }
+export const KICK = { size: 24 }
 export function Kicker({ x = M, base = KICK_BASE, n, children }) {
   const top = base - KICK.size * (0.5 + 0.355)
   return (
@@ -158,7 +160,7 @@ export function Kicker({ x = M, base = KICK_BASE, n, children }) {
 // column and the words from the next. Geist Mono's ascent is 1.005 of its em
 // and its descent 0.295, so its first baseline stands size * (lh / 2 + 0.355)
 // under the box's top.
-export const CAP = { size: 21, lh: 1.5 }
+export const CAP = { size: 26, lh: 1.4 }
 export function Caption({ x = M, base = CAP_BASE, width = W - 2 * M, n, children, style }) {
   const top = base - CAP.size * (CAP.lh / 2 + 0.355)
   return (
@@ -180,11 +182,30 @@ export function door() {
   return DOOR
 }
 
+// ── the keepsake, held ──
+// The mutual's keepsake (pixmark.js `keepStory`) as the deck ends on it:
+// the mark at rest, as it is the moment it comes alive, before the glint
+// goes round the ring and a cell or two of the star is lit; the backlight
+// behind it at the breath of the keepsake's own still; and `it's mutual.`
+// whole under it with the cursor on its off beat, since nothing more is
+// being typed. Each of the three is a moment of the keepsake's; held
+// together they are the one picture of it that is quiet.
+export function heldKeep(tint = 'rose') {
+  const k = keepOf(tint)
+  const rest = k.frame(0)
+  const lit = k.layers.sentence(0)
+  const off = k.layers.sentence(600)
+  const mark = rest.cells.slice(0, rest.cells.length - lit.cells.length)
+  const f = { key: 'held', cells: [...mark, ...off.cells], ink: rest.ink, glow: k.frame(k.still).glow }
+  return { ...k, live: null, end: 0, frame: () => f }
+}
+
 // ── the mark, on its grid ──
 // brand.js's 33 by 33 drawn large enough to count, every cell of the grid a
 // hairline square and the lit ones filled, at whole pixels a cell. `ticks`
 // numbers every eighth line along the top and the left, as a sheet of
-// squared paper is numbered.
+// squared paper is numbered, or along the top alone (`'x'`) where the left
+// is the page's margin and nothing may stand in it.
 export function MarkCells({ cell = 24, ink = '#F4F1EA', line = 'rgba(244, 241, 234, 0.12)', ticks = true, keys = [], className = '', style }) {
   const n = MARK.length
   const s = n * cell
@@ -209,9 +230,9 @@ export function MarkCells({ cell = 24, ink = '#F4F1EA', line = 'rgba(244, 241, 2
         </span>
       ))}
       {ticks ? [0, 8, 16, 24, 32].map((i) => (
-        <span key={`x${i}`} className="dc-tick is-x" style={{ left: i * cell + cell / 2 }}>{String(i).padStart(2, '0')}</span>
+        <span key={`x${i}`} className={`dc-tick is-x${i ? '' : ' is-first'}`} style={{ left: i ? i * cell + cell / 2 : 0 }}>{String(i).padStart(2, '0')}</span>
       )) : null}
-      {ticks ? [0, 8, 16, 24, 32].map((i) => (
+      {ticks === true ? [0, 8, 16, 24, 32].map((i) => (
         <span key={`y${i}`} className="dc-tick is-y" style={{ top: i * cell + cell / 2 }}>{String(i).padStart(2, '0')}</span>
       )) : null}
     </div>
@@ -238,8 +259,10 @@ export function Key({ x, top, width, items, step }) {
 // on the page once the figure has laid itself out (`sel`, a CSS selector
 // inside `within`), so a line always lands on the glyph it names wherever a
 // screen's own quirks put it; or it is given (`at`, a point on the board).
-// Each callout stands in the column from `x`, its label level with its part
-// and its words under the label, or over it when `up`.
+// Each callout stands in the column from `x`: its label first, level with
+// its part, and its words under the label. Where the words would run into
+// something under them the line turns (`elbow`, [x, y]): out from the part
+// to x, up or down to y, and on to the label, which stands on y.
 export function Callouts({ within = '', items, x, width, gap = 22 }) {
   const [at, setAt] = useState(null)
   const ref = useRef(null)
@@ -265,24 +288,32 @@ export function Callouts({ within = '', items, x, width, gap = 22 }) {
     return () => { on = false }
   }, [within, items])
   useHold(at != null)
+  if (!at) return <div ref={ref} className="dc-callouts" aria-hidden="true" />
+  const leads = items.map((it, i) => {
+    const p = at[i]
+    if (!p) return null
+    const from = Math.round(p.x + (it.at ? 0 : gap))
+    const y = Math.round(p.y)
+    const to = x - 18
+    const d = it.elbow
+      ? `M${from} ${y + 0.5}H${it.elbow[0] + 0.5}V${it.elbow[1] + 0.5}H${to}`
+      : `M${from} ${y + 0.5}H${to}`
+    return { it, from, y, d, ly: it.elbow ? it.elbow[1] : y }
+  })
   return (
     <div ref={ref} className="dc-callouts" aria-hidden="true">
-      {at ? items.map((it, i) => {
-        const p = at[i]
-        if (!p) return null
-        const from = p.x + (it.at ? 0 : gap)
-        return (
-          <div key={it.label}>
-            <span className="dc-lead" style={{ left: from, top: Math.round(p.y), width: x - 16 - from }} />
-            <span className="dc-dot" style={{ left: from - 3, top: Math.round(p.y) - 3 }} />
-            <div className={`dc-call${it.up ? ' is-up' : ''}`} style={it.up ? { left: x, bottom: H - Math.round(p.y) - 13, width } : { left: x, top: Math.round(p.y) - 13, width }}>
-              {it.up ? <p>{it.text}</p> : null}
-              <span className="dc-call-k">{it.label}</span>
-              {it.up ? null : <p>{it.text}</p>}
-            </div>
+      <svg className="dc-leads" width={W} height={H} viewBox={`0 0 ${W} ${H}`} shapeRendering="crispEdges">
+        {leads.map((l) => (l ? <path key={l.it.label} d={l.d} /> : null))}
+      </svg>
+      {leads.map((l) => (l ? (
+        <div key={l.it.label}>
+          <span className="dc-dot" style={{ left: l.from - 3, top: l.y - 3 }} />
+          <div className="dc-call" style={{ left: x, top: l.ly - 15, width }}>
+            <span className="dc-call-k">{l.it.label}</span>
+            <p>{l.it.text}</p>
           </div>
-        )
-      }) : null}
+        </div>
+      ) : null))}
     </div>
   )
 }

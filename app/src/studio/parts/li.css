@@ -79,6 +79,19 @@
 .li-lying .wl-scr { box-shadow: 0 0 2cqw 0.4cqw var(--s-edge), 0 0 9cqw 2cqw color-mix(in srgb, var(--s-halo) 45%, transparent); }
 .li-lying .wl-scr { transform: perspective(var(--li-persp, 760px)) rotateX(var(--q-rx)) rotateY(var(--q-ry)) rotateZ(var(--q-rz)); }
 
+/* the draft left on (li-post-silence): the panel at the room's dark, the
+   band and the keys held under it, and the cursor the one lit thing, in
+   chalk with the close bloom */
+.li-silence .li-lying .wl-scr { box-shadow: 0 0 1.4cqw 0.3cqw rgba(189, 189, 189, 0.12); }
+.li-silence .li-lying :is(.wl-scr-fx.is-light, .wl-scr-fx.is-moire, .wl-scr-fx.is-glare) { opacity: 0.2; }
+/* the keys lie nearest the eye, so they are held lower than the band */
+.li-silence .li-lying .wl-scr-top { opacity: 0.5; }
+.li-silence .li-lying .wl-scr-bot { opacity: 0.32; }
+.st-board.li-silence .li-lying .wl-scr-cur {
+  background: #F4F1EA;
+  box-shadow: 0 0 3px rgba(255, 244, 228, 0.7), 0 0 9px rgba(255, 244, 228, 0.35), 0 0 24px rgba(255, 244, 228, 0.12);
+}
+
 /* the table, lit only under the light */
 .li-table { position: absolute; left: 0; top: 0; pointer-events: none; mix-blend-mode: screen; }
 .li-table svg { display: block; }
@@ -94,9 +107,9 @@
 .li-rule { position: absolute; z-index: 20; border-top: 1px solid rgba(244, 241, 234, 0.16); }
 .li-rule-end { position: absolute; z-index: 20; height: 0; border-top: 1px solid rgba(244, 241, 234, 0.16); }
 .st-board.li .li-rule-n {
-  position: absolute; right: calc(100% + 22px); top: 30px;
+  position: absolute; right: calc(100% + 18px); top: 36px;
   font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 72;
-  font-size: 150px; line-height: 1; letter-spacing: -0.03em; color: rgba(156, 151, 142, 0.34);
+  font-size: 128px; line-height: 1; letter-spacing: -0.03em; color: rgba(156, 151, 142, 0.34);
   font-variant-numeric: lining-nums proportional-nums;
 }
 .li-rule-h {
@@ -121,7 +134,7 @@
    the wall all are off but one */
 .li-twelve { display: grid; }
 .li-twelve .wl-scene-halo, .li-twelve .wl-scene-halo-2 { display: none; }
-.li-twelve.is-pool .is-off { filter: brightness(calc(0.5 * var(--li-b, 1))) saturate(calc(0.8 * var(--li-s, 1))); }
+.li-twelve.is-pool .is-off { filter: brightness(calc(0.56 * var(--li-b, 1))) saturate(calc(0.8 * var(--li-s, 1))); }
 .li-twelve.is-wall .is-off { filter: brightness(calc(0.16 * var(--li-b, 1))) saturate(0.5); }
 .li-twelve.is-wall .is-lit .wl-scene-halo { display: block; }
 
@@ -131,13 +144,18 @@
    own in chalk with the close bloom a lit thing has */
 .li-diff { font: 400 24px/44px var(--st-mono); letter-spacing: 0; }
 .st-board.li .li-diff p { margin: 0; display: grid; grid-template-columns: 56px auto 1fr; justify-content: start; white-space: pre; line-height: 40px; }
-/* the linter's own word on a struck line, at the right margin */
-.li-diff-why { justify-self: end; align-self: center; font-size: 13px; line-height: 1; letter-spacing: 0.1em; color: var(--ash); font-style: normal; opacity: 0.8; }
+/* the linter's own words on a struck line, at the right margin, each
+   after its cross, as the script prints them */
+.li-diff-why { justify-self: end; align-self: center; display: flex; gap: 26px; font-size: 15px; line-height: 1; letter-spacing: 0.04em; color: var(--ash); font-style: normal; }
+.li-diff-why em { display: inline-flex; align-items: center; gap: 9px; font-style: normal; }
+.li-x { display: block; flex: 0 0 auto; }
 .li-diff p > span { color: var(--ash-dim); }
 .st-board.li .li-diff p.li-diff-file { color: var(--ash); font-size: 16px; line-height: 30px; letter-spacing: 0.06em; }
 .st-board.li .li-diff p.li-diff-file:nth-child(2) { margin-bottom: 20px; }
 .li-hunk { padding: 14px 0 18px; border-top: 1px solid rgba(244, 241, 234, 0.1); }
-.st-board.li .li-diff p.li-diff-at { color: var(--ash); font-size: 15px; line-height: 34px; letter-spacing: 0.1em; }
+.st-board.li .li-diff p.li-diff-at { color: var(--ash); font-size: 15px; line-height: 34px; letter-spacing: 0.06em; }
+/* the hunk's range, as git prints it, then what the line is for */
+.li-diff-at b { font-weight: 400; color: var(--ash-dim); margin-right: 1.2em; }
 .li-diff-out { color: var(--ash); }
 .li-diff-out s { text-decoration: none; background: linear-gradient(rgba(156, 151, 142, 0.9), rgba(156, 151, 142, 0.9)) 0 54% / 100% 2px no-repeat; }
 .li-diff-in { color: var(--chalk); text-shadow: 0 0 3px rgba(255, 244, 228, 0.3), 0 0 9px rgba(255, 244, 228, 0.1); }
@@ -161,7 +179,8 @@
 
 /* ── the shelf (x-header) ──
    The twelve facing the camera, the one that is on at full light and the
-   rest lit by it, dimmer the further they stand (`--li-far`) */
+   rest lit by it: `--li-k` is how much of its light reaches each, falling
+   off as a lamp's does, and `--li-ks` how much of its colour is left */
 .li-shelf { position: absolute; transform: translateY(-50%); filter: brightness(calc(var(--li-k) * var(--li-b, 1))) saturate(calc(var(--li-ks) * var(--li-s, 1))); }
 .li-shelf.is-on { filter: none; }
 .li-shelf:not(.is-on) .wl-scene-halo, .li-shelf:not(.is-on) .wl-scene-halo-2 { display: none; }
@@ -170,3 +189,9 @@
 .li-x-dark { position: absolute; left: 0; top: 0; bottom: 0; width: 560px; z-index: 40; pointer-events: none; background: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.7) 30%, transparent 100%); }
 /* the fact, at a size X's 600 pixel header still reads */
 .st-board.li .li-x-cap { font-size: 24px; line-height: 1; white-space: nowrap; }
+
+/* ── the link card (li-link) ──
+   The line and the lockup as one block in the text column, the line set
+   to end on the right margin */
+.li-link-say { position: absolute; z-index: 30; display: grid; justify-items: start; gap: 46px; }
+.li-link-say .li-line { position: static; font-size: 62px; line-height: 1.04; white-space: nowrap; }

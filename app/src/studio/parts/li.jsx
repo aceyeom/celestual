@@ -123,9 +123,13 @@ export function Fit({ w, children, className = '', style }) {
 // brand.js's 33 by 33 drawn large enough to count: every cell of the grid a
 // hairline square, the lit ones filled. `cell` is whole pixels a cell, so the
 // drawing is the brand's own at that size and never a scaled picture of it.
-export function MarkGrid({ cell = 12, ink = '#F4F1EA', line = 'rgba(244, 241, 234, 0.14)', className = '', style }) {
+// `fill` is how much of its cell a lit one fills, in whole pixels, centred:
+// the whole cell inside its hairline by default, less to show each one
+// counted on its own
+export function MarkGrid({ cell = 12, fill = cell - 1, ink = '#F4F1EA', line = 'rgba(244, 241, 234, 0.14)', className = '', style }) {
   const n = MARK.length
   const s = n * cell
+  const o = 1 + Math.floor((cell - 1 - fill) / 2)
   const lit = []
   MARK.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') lit.push([x, y]) }))
   const grid = []
@@ -136,7 +140,7 @@ export function MarkGrid({ cell = 12, ink = '#F4F1EA', line = 'rgba(244, 241, 23
   return (
     <svg className={`li-markgrid ${className}`} width={s + 1} height={s + 1} viewBox={`0 0 ${s + 1} ${s + 1}`} shapeRendering="crispEdges" style={style} aria-hidden="true">
       <path d={grid.join('')} stroke={line} strokeWidth="1" fill="none" />
-      <path d={lit.map(([x, y]) => `M${x * cell + 1} ${y * cell + 1}h${cell - 1}v${cell - 1}h${-(cell - 1)}z`).join('')} fill={ink} />
+      <path d={lit.map(([x, y]) => `M${x * cell + o} ${y * cell + o}h${fill}v${fill}h${-fill}z`).join('')} fill={ink} />
     </svg>
   )
 }
