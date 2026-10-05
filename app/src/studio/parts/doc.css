@@ -42,10 +42,10 @@
   position: absolute; z-index: 30; margin: 0;
   font-family: var(--st-serif); font-weight: 400; font-optical-sizing: none;
   font-variation-settings: 'opsz' 16; letter-spacing: -0.004em;
-  color: var(--ash); text-wrap: pretty;
+  color: var(--ash); text-wrap: balance;
 }
 .dc-lesson p { margin: 0; }
-.dc-lesson p + p { margin-top: 22.5px; }
+.dc-lesson p + p { margin-top: 0; }
 .dc-lesson b { font-weight: 400; color: var(--chalk); }
 
 /* a figure's caption: its number in the margin's column, then the words */
@@ -88,11 +88,11 @@
 
 /* ── the wall (li-doc-06): every backlight down but one ── */
 .dc-wall-one { position: absolute; z-index: 20; }
-.dc-wall-one:not(.is-lit) .st-phone { filter: brightness(0.3) saturate(0.75); }
+.dc-wall-one:not(.is-lit) .st-phone { filter: brightness(0.22) saturate(0.7); }
 .dc-wall-one:not(.is-lit) .wl-scene-halo, .dc-wall-one:not(.is-lit) .wl-scene-halo-2 { display: none; }
 
 /* ── the end (li-doc-08) ── */
-.dc-end { position: absolute; z-index: 30; display: flex; justify-content: center; }
+.dc-end { position: absolute; z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 50px; }
 .dc-url { font: 400 24px/1 var(--st-mono); letter-spacing: 0.14em; color: var(--ash); }
 
 /* ── callouts: a hairline from a part to the words about it ── */
@@ -101,6 +101,7 @@
 .dc-dot { position: absolute; width: 6px; height: 6px; background: var(--chalk); }
 .dc-call { position: absolute; }
 .dc-call-k { display: block; font: 400 20px/26px var(--st-mono); letter-spacing: 0.08em; color: var(--chalk); }
+.dc-call.is-up p { margin: 0 0 10px; }
 .dc-call p {
   margin: 10px 0 0; font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 16;
   font-size: 34px; line-height: 40px; color: var(--ash); text-wrap: pretty;
@@ -113,3 +114,20 @@
   letter-spacing: -0.01em; color: var(--chalk); text-wrap: balance;
 }
 .dc-quote-by { display: block; margin-top: 24px; font: 400 20px/1 var(--st-mono); font-style: normal; letter-spacing: 0.08em; color: var(--ash); }
+
+/* a figure's key: a numbered box round the cells, and the words beside */
+.dc-keybox { position: absolute; box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.7); pointer-events: none; }
+.dc-keyn {
+  position: absolute; transform: translate(-50%, -50%);
+  font: 500 17px/1 var(--st-mono); color: var(--chalk);
+}
+.dc-key { position: absolute; z-index: 30; }
+.dc-key-one p {
+  margin: 10px 0 0; font-family: var(--st-serif); font-weight: 400; font-variation-settings: 'opsz' 16;
+  font-size: 34px; line-height: 40px; color: var(--ash); text-wrap: balance;
+}
+.dc-call-k b { display: inline-block; width: 2em; font-weight: 500; color: var(--chalk); }
+
+/* a count or an identifier inside a sentence: the identifier face, a step
+   smaller so its x height sits with the text cut's */
+.dc-n { font-family: var(--st-mono); font-size: 0.84em; letter-spacing: 0; font-variation-settings: normal; }

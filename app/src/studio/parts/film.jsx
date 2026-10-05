@@ -3,20 +3,21 @@
 // Fifteen seconds, drawn from `t` and nothing else (index.jsx), so a frame
 // is exactly what it is told and scripts/studio-film.mjs can photograph it
 // a frame at a time. The motion is keyframes eased by GSAP's own curves
-// (`ease`), read at `t`; nothing runs on a clock of its own.
+// (`ease`), read at `t`; every key is a moment of film-time.js's, which the
+// sound is made from too.
 //
-//   0.0   the black room. A phone wakes, ice, and a note is typed on it to
-//         kai, the cursor after the last word. `write it.`
-//   3.7   `send` is pressed. The note goes, privately, and the phone goes to
-//         sleep and steps back. `send it privately.` `they never know.`
-//   6.0   another phone wakes, amber, and kai writes one back. `unless they
-//         send you one.`
-//   8.0   it goes. The first phone wakes with an envelope by its aerial, and
-//         the two come together into one glass
-//   8.6   the mutual's own film (pixmark.js `filmStory`, as Film.jsx tells
-//         it): the two names credited, the two of them run in and are held,
-//         the glass turns rose, the mark, `it's mutual.` typed in its cells
-//  13.3   the phone steps back, and the line and the lockup sign it
+//   0.0   a phone lit in the black room, a note to kai half typed on it, the
+//         cursor after the last word. `write it.`
+//   1.75  `send` is pressed, the words go up the glass, `sent privately.`,
+//         and the phone goes to sleep and steps back. `send it privately.`
+//   3.9   another phone wakes under it, amber, and kai writes one of their
+//         own. `they only read it` `if they send you one.`
+//   6.1   it goes, and that phone sleeps too. `saturday, 9pm pacific.`
+//   6.9   the two come together going dark, and one glass wakes where they
+//         met: the mutual's own film (pixmark.js `filmStory`, as Film.jsx
+//         tells it), the names, the two of them held, the glass turning
+//         rose, the mark, and `it's mutual.` typed in its cells
+//  12.46  the phone steps back, and the line and the lockup sign it
 //
 // `L` is the layout, for the two cuts: 9:16 (films/unsent.jsx) and 4:5
 // (films/unsent-45.jsx).
@@ -25,9 +26,8 @@ import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { Board, Phone, PixelStory, Lockup, Light, Grain, filmOf, readyFilm, useHold, turnStyle, skinVars } from '../kit.jsx'
 import { ScreenNote } from '../../wall/screen.jsx'
+import { MS, A, B, T, SEND, rhythm, storyAt } from './film-time.js'
 import './film.css'
-
-import { MS, A, B, T, rhythm, storyAt } from './film-time.js'
 
 export { MS }
 
@@ -65,10 +65,10 @@ export function wake(t, from, ms = 420) {
   return 0.4 + 0.6 * easeOf('power2.out')((u - 0.44) / 0.56)
 }
 
-// ── the typing ──────────────────────────────────────────────────────────────
-// (the rhythm is film-time.js's, so the keys are heard where they land)
-const typedAt = (times, t) => { let n = 0; while (n < times.length && times[n] <= t) n++; return n }
+// a line in and out: [in from, in to, out from, out to]
+const shown = (t, [a, b, c, d]) => at([[a, 0], [b, 1, 'power2.out'], [c, 1], [d, 0, 'power2.in']], t)
 
+const typedAt = (times, t) => { let n = 0; while (n < times.length && times[n] <= t) n++; return n }
 // The cursor keeps the phone's beat (screen.css `wl-blink`, 1.06s, half
 // lit), and is held lit while a key was just pressed, as a caret is
 const lit = (t, last) => t - last < 530 || Math.floor((t - last) / 530) % 2 === 1
@@ -76,40 +76,45 @@ const lit = (t, last) => t - last < 530 || Math.floor((t - last) / 530) % 2 === 
 // The words as they are being typed: laid out whole, so no word jumps a
 // line as it is typed, with what is not typed yet there and unseen, and the
 // cursor after the last typed character. At one size, the size the whole
-// note fits the glass at (`fs`, in the screen's cqw).
-function Typed({ text, n, cursor, fs }) {
+// note fits the glass at (`fs`, in the screen's cqw). `lift` is how many
+// lines they have gone up the glass, a line at a time, as an old screen
+// scrolled.
+function Typed({ text, n, cursor, fs, lift = 0 }) {
   return (
     <div className="wl-scr-msg fm-typed" style={{ '--fs': `${fs}cqw` }}>
-      {text.slice(0, n)}
-      {cursor ? <span className="wl-scr-cur" aria-hidden="true" /> : <span className="fm-nocur" />}
-      <span className="fm-rest">{text.slice(n)}</span>
+      <span className="fm-lift" style={lift ? { transform: `translateY(${-lift * 1.02}em)` } : undefined}>
+        {text.slice(0, n)}
+        {cursor ? <span className="wl-scr-cur" aria-hidden="true" /> : <span className="fm-nocur" />}
+        <span className="fm-rest">{text.slice(n)}</span>
+      </span>
     </div>
   )
 }
 
 // ── a phone with a note on it ───────────────────────────────────────────────
-function NotePhone({ who, w, x, y, t, typeFrom, beat, sendAt, fs, sleep = 0, bright = 1, mail = false, opacity = 1 }) {
+function NotePhone({ who, w, x, y, t, typeFrom, beat, sendAt, fs, sleep = 0, bright = 1 }) {
   const times = rhythm(who.text, typeFrom, beat)
   const n = typedAt(times, t)
   const last = n ? times[n - 1] : typeFrom
-  const sent = t >= sendAt + 240
-  const pressed = t >= sendAt && t < sendAt + 240
-  const counter = `${260 - n}/1`
+  const since = t - sendAt
+  const pressed = since >= 0 && since < SEND.key
+  const lifting = since >= SEND.key && since < SEND.key + SEND.lift
+  const sent = since >= SEND.key + SEND.lift
+  const lift = lifting ? 1 + Math.floor(((since - SEND.key) / SEND.lift) * 3) : 0
   const keys = { l: { label: 'options' }, c: { glyph: 'heartO', label: '0' }, r: { label: 'send', open: pressed } }
   return (
-    <div className="fm-ph" style={{ opacity, filter: `brightness(${(bright * (1 - sleep * 0.9)).toFixed(3)})` }}>
+    <div className="fm-ph" style={{ filter: `brightness(${(bright * (1 - sleep * 0.9)).toFixed(3)})` }}>
       <Phone
         w={w} x={x} y={y} tint={who.tint} seed={who.seed} mode="bare" square
-        top={{ counter, icon: 'pen', name: who.to, dear: true, bat: 4, mail }} keys={sent ? {} : keys}
+        top={{ counter: `${260 - n}/1`, icon: 'pen', name: who.to, dear: true, bat: 4 }} keys={sent ? {} : keys}
       >
         {sent
           ? <ScreenNote glyph="env" title="sent privately." />
-          : <Typed text={who.text} n={n} cursor={lit(t, last)} fs={fs} />}
+          : <Typed text={who.text} n={n} cursor={!lifting && lit(t, last)} fs={fs} lift={lift} />}
       </Phone>
     </div>
   )
 }
-
 
 // ── the film ────────────────────────────────────────────────────────────────
 export function Unsent({ t, L }) {
@@ -117,64 +122,68 @@ export function Unsent({ t, L }) {
   useEffect(() => { readyFilm(A.name, B.name).then(() => setOk(true)) }, [])
   useHold(ok)
   const film = ok ? filmOf(A.name, B.name, 'rose') : null
+  const E = T.meet + 600
 
-  // the first phone: wakes, types, sends, sleeps and steps back, wakes again
-  // with the envelope, and goes into the glass
+  // the first phone: lit from before the first frame; sends, sleeps and
+  // steps up out of the way, all before the second wakes; then down into
+  // the glass
   const aWake = wake(t, T.aWake, 460)
-  const aSleep = at([[4400, 0], [5300, 0.86, 'power2.inOut'], [8000, 0.86], [8300, 0, 'power2.out']], t)
-  const aX = at([[0, L.a.x], [4300, L.a.x], [5400, L.aSleep.x, 'power3.inOut'], [5700, L.aSleep.x], [6450, L.a2.x, 'power3.inOut'], [8150, L.a2.x], [8750, L.mid.x, 'power3.inOut']], t)
-  const aY = at([[0, L.a.y], [4300, L.a.y], [5400, L.aSleep.y, 'power3.inOut'], [5700, L.aSleep.y], [6450, L.a2.y, 'power3.inOut'], [8150, L.a2.y], [8750, L.mid.y, 'power3.inOut']], t)
-  const aW = at([[0, L.a.w * 0.985], [3500, L.a.w], [4300, L.a.w], [5400, L.aSleep.w, 'power3.inOut'], [5700, L.aSleep.w], [6450, L.a2.w, 'power3.inOut'], [8150, L.a2.w], [8750, L.mid.w, 'power3.inOut']], t)
-  // the second: wakes, types, sends, and goes into the glass
+  const aSleep = at([[T.aSleep, 0], [T.aSleep + 800, 0.86, 'power2.inOut']], t)
+  const aPos = (k) => at([[0, L.a[k] * (k === 'w' ? 0.985 : 1)], [T.aSend, L.a[k]], [T.aSleep, L.a[k]], [T.aSleep + 1000, L.a2[k], 'power3.inOut'], [T.meet, L.a2[k]], [E, L.mid[k], 'power3.inOut']], t)
+  // the second: wakes under it, writes, sends, sleeps, and into the glass
   const bWake = wake(t, T.bWake, 420)
-  const bX = at([[0, L.b.x], [8150, L.b.x], [8750, L.mid.x, 'power3.inOut']], t)
-  const bY = at([[0, L.b.y], [8150, L.b.y], [8750, L.mid.y, 'power3.inOut']], t)
-  const bW = at([[0, L.b.w], [8150, L.b.w], [8750, L.mid.w, 'power3.inOut']], t)
-  // the two meet in the middle going dark, as a phone does between one
-  // screen and the next, and the one glass wakes where they met
-  const dim = at([[8350, 1], [8600, 0.04, 'power2.in']], t)
-  const pair = t < T.glass - 20 ? 1 : 0
+  const bSleep = at([[T.bSleep, 0], [T.bSleep + 600, 0.86, 'power2.inOut']], t)
+  const bPos = (k) => at([[0, L.b[k]], [T.meet, L.b[k]], [E, L.mid[k], 'power3.inOut']], t)
+  // the two meet going dark, as a phone does between one screen and the
+  // next, and the one glass wakes where they met
+  const dim = at([[T.dim, 1], [T.glass - 40, 0.03, 'power2.in']], t)
+  const pair = t < T.glass ? 1 : 0
   const glass = wake(t, T.glass, 460)
 
   // the glass: the story at its own clock, the night turning rose with the
   // pink, and the step back at the end
   const st = storyAt(t)
   const turn = film ? Math.min(1, Math.max(0, (st - film.times.glow) / 700)) : 0
-  const gW = at([[0, L.mid.w], [T.back, L.mid.w], [T.back + 800, L.end.w, 'power3.inOut']], t)
-  const gY = at([[0, L.mid.y], [T.back, L.mid.y], [T.back + 800, L.end.y, 'power3.inOut']], t)
-  const push = at([[8600, 0.985], [12900, 1.02, 'sine.inOut'], [T.back, 1.02], [T.back + 800, 1, 'power3.inOut']], t)
+  const back = (k) => at([[0, L.mid[k]], [T.back, L.mid[k]], [T.back + T.step, L.end[k], 'power3.inOut']], t)
+  const gW = back('w')
+  const gY = back('y')
+  const push = at([[T.glass, 0.985], [T.back, 1.02, 'sine.inOut'], [T.back + T.step, 1, 'power3.inOut']], t)
 
   // the room's light: each phone's own, and the rose's when the glass turns
-  const aLight = aWake * (1 - aSleep * 0.85) * pair * dim
-  const bLight = bWake * pair * dim
+  const aLight = aWake * (1 - aSleep * 0.85) * dim * pair
+  const bLight = bWake * (1 - bSleep * 0.85) * dim * pair
   const gLight = glass * (0.35 + 0.65 * turn)
 
-  // the words under the phones
-  const cap = (track) => at(track, t)
+  // the words under the phones: what it is, in four lines, and the week
   const lines = [
-    { text: 'write it.', o: cap([[900, 0], [1250, 1, 'power2.out'], [3400, 1], [3700, 0, 'power2.in']]), y: L.cap },
-    { text: 'send it privately.', o: cap([[3850, 0], [4200, 1, 'power2.out'], [5500, 1], [5800, 0, 'power2.in']]), y: L.cap },
-    { text: 'they never know.', o: cap([[4750, 0], [5100, 1, 'power2.out'], [5500, 1], [5800, 0, 'power2.in']]), y: L.cap + L.capGap },
-    { text: 'unless they send you one.', o: cap([[6150, 0], [6500, 1, 'power2.out'], [8100, 1], [8400, 0, 'power2.in']]), y: L.cap },
+    { k: 'w', text: 'write it.', o: shown(t, [100, 400, 1500, 1750]), row: 0 },
+    { k: 's', text: 'send it privately.', o: shown(t, [1850, 2150, 3350, 3600]), row: 0 },
+    { k: 'r', text: 'they only read it', o: shown(t, [3700, 4000, 5900, 6150]), row: 0 },
+    { k: 'i', text: 'if they send you one.', o: shown(t, [4150, 4450, 5900, 6150]), row: 1 },
   ]
-  const endO = at([[T.back + 650, 0], [T.back + 1200, 1, 'power2.out']], t)
-  const endO2 = at([[T.back + 850, 0], [T.back + 1400, 1, 'power2.out']], t)
-  const ink = skinVars('rose')
+  const week = shown(t, [T.week, T.week + 300, T.glass + 650, T.glass + 950])
+  const endO = at([[T.back + 250, 0], [T.back + T.step, 1, 'power2.out']], t)
+  const endO2 = at([[T.back + 450, 0], [T.back + T.step + 200, 1, 'power2.out']], t)
+  const night = skinVars('night')['--s-halo']
+  const rose = skinVars('rose')['--s-halo']
 
   return (
     <Board w={L.w} h={L.h} grain={0} className="fm-board">
-      {aLight > 0.01 ? <Light x={aX} y={aY} size={aW * 2.6} tint={A.tint} strength={aLight} /> : null}
-      {bLight > 0.01 ? <Light x={bX} y={bY} size={bW * 2.6} tint={B.tint} strength={bLight} /> : null}
-      {gLight > 0.01 ? <Light x={L.mid.x} y={gY} size={gW * 2.8} colour={turn > 0.5 ? ink['--s-halo'] : skinVars('night')['--s-halo']} strength={gLight} /> : null}
+      {aLight > 0.01 ? <Light x={aPos('x')} y={aPos('y')} size={aPos('w') * 2.6} tint={A.tint} strength={aLight} /> : null}
+      {bLight > 0.01 ? <Light x={bPos('x')} y={bPos('y')} size={bPos('w') * 2.6} tint={B.tint} strength={bLight} /> : null}
+      {gLight > 0.01 ? <Light x={L.mid.x} y={gY} size={gW * 2.8} colour={turn > 0.5 ? rose : night} strength={gLight} /> : null}
 
-      {pair > 0 && t >= T.aWake ? (
+      {pair ? (
         <NotePhone
-          who={A} w={aW} x={aX} y={aY} t={t} typeFrom={T.aType} beat={T.aBeat} sendAt={T.aSend} fs={L.fsA}
-          sleep={aSleep} bright={aWake * dim} mail={t >= T.mail}
+          who={A} w={aPos('w')} x={aPos('x')} y={aPos('y')} t={t} typeFrom={T.aType} beat={T.aBeat} sendAt={T.aSend} fs={L.fsA}
+          sleep={aSleep} bright={aWake * dim}
         />
       ) : null}
-      {pair > 0 && t >= T.bWake ? (
-        <NotePhone who={B} w={bW} x={bX} y={bY} t={t} typeFrom={T.bType} beat={T.bBeat} sendAt={T.bSend} fs={L.fsB} bright={bWake * dim} />
+      {pair && bWake > 0.02 ? (
+        <NotePhone
+          who={B} w={bPos('w')} x={bPos('x')} y={bPos('y')} t={t} typeFrom={T.bType} beat={T.bBeat} sendAt={T.bSend} fs={L.fsB}
+          sleep={bSleep} bright={bWake * dim}
+        />
       ) : null}
 
       {film && glass > 0 ? (
@@ -189,14 +198,19 @@ export function Unsent({ t, L }) {
       ) : null}
 
       {lines.map((l) => (l.o > 0.002 ? (
-        <p key={l.text} className="fm-cap" style={{ top: `${l.y}px`, fontSize: `${L.capSize}px`, opacity: l.o, transform: `translateY(${((1 - l.o) * 14).toFixed(2)}px)`, filter: `blur(${((1 - l.o) * 6).toFixed(2)}px)` }}>
+        <p key={l.k} className="fm-cap" style={{ top: `${L.cap + l.row * L.capGap}px`, fontSize: `${L.capSize}px`, opacity: l.o, transform: `translateY(${((1 - l.o) * 6).toFixed(2)}px)` }}>
           {l.text}
         </p>
       ) : null))}
+      {week > 0.002 ? (
+        <p className="fm-week" style={{ top: `${L.weekY}px`, fontSize: `${L.weekSize}px`, opacity: week }}>saturday, 9pm pacific.</p>
+      ) : null}
 
       {endO > 0.002 ? (
         <div className="fm-end" style={{ top: `${L.endLine}px` }}>
-          <p className="fm-line" style={{ fontSize: `${L.lineSize}px`, opacity: endO, filter: `blur(${((1 - endO) * 5).toFixed(2)}px)` }}>nothing happens unless it’s mutual.</p>
+          <p className="fm-line" style={{ fontSize: `${L.lineSize}px`, opacity: endO, transform: `translateY(${((1 - endO) * 6).toFixed(2)}px)` }}>
+            nothing happens<br />unless it’s mutual.
+          </p>
           <div className="fm-sign" style={{ marginTop: `${L.signGap}px`, opacity: endO2 }}>
             <Lockup cell={L.cell} />
             <span className="fm-url" style={{ fontSize: `${L.urlSize}px` }}>celestual.us</span>
@@ -204,7 +218,7 @@ export function Unsent({ t, L }) {
         </div>
       ) : null}
 
-      <Grain opacity={0.085} seed={Math.floor(t / 66) % 12} />
+      <Grain opacity={0.06} seed={Math.floor(t / 133) % 12} />
       <span className="st-vignette" style={{ opacity: 0.55 }} aria-hidden="true" />
     </Board>
   )

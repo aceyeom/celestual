@@ -18,3 +18,14 @@
 }
 .fm-sign { display: flex; flex-direction: column; align-items: center; gap: 22px; }
 .fm-url { font-family: var(--st-mono); color: var(--ash); letter-spacing: 0.06em; }
+/* the words going up the glass a line at a time when the note is sent */
+.fm-typed .fm-lift { display: block; }
+/* `send`, pressed: struck out of its band for a beat, as a phone lit the
+   key under the thumb */
+.fm-board .wl-sk.is-open { background: var(--s-lit); color: var(--s-bot); border-radius: 1cqw; }
+.fm-board .wl-sk.is-open .wl-lit { color: var(--s-bot); text-shadow: none; }
+/* the week going by, in the identifiers' face */
+.fm-week {
+  position: absolute; left: 0; right: 0; margin: 0; text-align: center;
+  font-family: var(--st-mono); color: var(--ash); letter-spacing: 0.06em; line-height: 1;
+}

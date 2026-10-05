@@ -7,14 +7,16 @@
 // the backlight's tick where a phone wakes, two notes when `send` is
 // pressed, the hush where the two phones go dark, and a chord that opens
 // with the one glass and rings when it says `it's mutual.` The story's own
-// moments come from pixmark.js, as the picture's do.
+// moments come from pixmark.js, as the picture's do (film-time.js
+// `STORY_TIMES`). Mastered to -14 LUFS and a true peak a decibel under full
+// scale, as the reels round it are, by ffmpeg's loudnorm in two passes.
 //
 //   node scripts/studio-sound.mjs [out.wav]     48 kHz, 16 bit, stereo
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { MS, A, B, T, typedA, typedB, filmAt } from '../app/src/studio/parts/film-time.js'
-import { filmStory } from '../app/src/wall/pixmark.js'
+import { spawnSync } from 'node:child_process'
+import { MS, A, B, T, SEND, SAY, typedA, typedB, filmAt, STORY_TIMES, SAID } from '../app/src/studio/parts/film-time.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.argv[2] || join(root, 'design/campaign/film-unsent.wav')
@@ -77,12 +79,12 @@ function wakeSound(ms, pan = 0, gain = 0.3) {
 }
 
 // a bell: a sine and its inharmonic partials, struck and let ring
-function bell(ms, f, { gain = 0.05, decay = 1.4, pan = 0, wet = 0.45 } = {}) {
+function bell(ms, f, { gain = 0.05, decay = 1.4, pan = 0, wet = 0.45, p2 = 0.35 } = {}) {
   lay(ms, sec(decay * 3), (i) => {
     const t = i / SR
     const att = Math.min(1, i / sec(0.004))
     return att * (Math.sin(TAU * f * t) * Math.exp(-t / decay)
-      + 0.35 * Math.sin(TAU * f * 2.76 * t) * Math.exp(-t / (decay * 0.45))
+      + p2 * Math.sin(TAU * f * 2.76 * t) * Math.exp(-t / (decay * 0.45))
       + 0.12 * Math.sin(TAU * f * 5.4 * t) * Math.exp(-t / (decay * 0.2)))
   }, { gain, pan, wet })
 }
@@ -139,48 +141,43 @@ function pad(f, env, { gain = 0.02, pan = 0, wet = 0.6, bright = 0.18 } = {}) {
   lay(0, N, (i) => {
     b = (b + 0.02 * rnd()) * 0.996
     const t = i / SR
-    const fade = Math.min(1, t / 0.4) * Math.min(1, (MS / 1000 - t) / 0.6)
+    const fade = Math.min(1, t / 0.15) * Math.min(1, (MS / 1000 - t) / 1.0)
     const hush = t * 1000 > T.dim && t * 1000 < T.glass + 200 ? 0.45 : 1
     return b * fade * hush
   }, { gain: 0.035 })
 }
 
 // ── the first phone ─────────────────────────────────────────────────────────
-wakeSound(T.aWake, -0.1)
-typedA().forEach((ms, i) => {
-  const c = A.text[i]
+// lit before the first frame, so no wake: the film opens on its keys
+const keyOf = (c, i, side) => {
   const sp = c === ' '
-  key(ms, { pitch: sp ? 1300 : 1900 + ((i * 397) % 900), body: sp ? 260 : 380 + ((i * 53) % 120), gain: sp ? 0.12 : 0.15, pan: -0.18 })
-})
-key(T.aSend, { pitch: 1500, body: 300, gain: 0.2, pan: -0.15 })
-tone(T.aSend + 110, 1318.5, 0.07, { gain: 0.045, pan: -0.15 })
-tone(T.aSend + 200, 1760, 0.11, { gain: 0.04, pan: -0.15 })
-whoosh(T.aSend + 260, 0.45, { gain: 0.12, pan: -0.3 })
+  const [p0, pr, b0, br] = side < 0 ? [1900, 900, 380, 120] : [2100, 800, 400, 110]
+  return { pitch: sp ? 1280 : p0 + ((i * (side < 0 ? 397 : 271)) % pr), body: sp ? 250 : b0 + ((i * 53) % br), gain: sp ? 0.085 : 0.11, pan: side * 0.18 }
+}
+typedA().forEach((ms, i) => key(ms, keyOf(A.text[i], i, -1)))
+const send = (ms, pan) => {
+  key(ms, { pitch: 1500, body: 300, gain: 0.14, pan })
+  tone(ms + 60, 1318.5, 0.07, { gain: 0.04, pan })
+  tone(ms + 150, 1760, 0.1, { gain: 0.035, pan })
+  whoosh(ms + SEND.key, 0.42, { gain: 0.1, pan: pan * 1.6 })
+}
+send(T.aSend, -0.15)
 
 // ── the second ──────────────────────────────────────────────────────────────
-wakeSound(T.bWake, 0.25, 0.28)
-typedB().forEach((ms, i) => {
-  const c = B.text[i]
-  const sp = c === ' '
-  key(ms, { pitch: sp ? 1250 : 2100 + ((i * 271) % 800), body: sp ? 240 : 400 + ((i * 41) % 110), gain: sp ? 0.11 : 0.14, pan: 0.22 })
-})
-key(T.bSend, { pitch: 1500, body: 300, gain: 0.2, pan: 0.2 })
-tone(T.bSend + 110, 1318.5, 0.07, { gain: 0.045, pan: 0.2 })
-tone(T.bSend + 200, 1760, 0.11, { gain: 0.04, pan: 0.2 })
-whoosh(T.bSend + 260, 0.4, { gain: 0.1, pan: 0.3 })
-
-// the first wakes with the envelope by its aerial: one small note
-bell(T.mail, 1760, { gain: 0.025, decay: 0.5, pan: -0.3 })
+wakeSound(T.bWake, 0.1, 0.28)
+typedB().forEach((ms, i) => key(ms, keyOf(B.text[i], i, 1)))
+send(T.bSend, 0.15)
 
 // ── under it all ────────────────────────────────────────────────────────────
-// a low D held from the first wake, a little warmer once there are two, gone
+// a low D held from the first frame, with enough of its upper partials that
+// a phone's speaker carries it, a little warmer once there are two, and gone
 // in the hush where they meet
-pad(73.42, [[0, 0], [T.aWake, 0], [1800, 0.55], [5400, 0.5], [6000, 0.42], [7600, 0.75], [T.dim, 0.75], [T.glass, 0]], { gain: 0.05, wet: 0.2, bright: 0.12 })
-pad(110, [[0, 0], [T.bWake, 0], [7200, 0.4], [T.dim, 0.4], [T.glass, 0]], { gain: 0.02, pan: 0.2, wet: 0.4 })
+pad(73.42, [[0, 0.45], [1800, 0.55], [3200, 0.42], [T.bWake, 0.42], [5400, 0.6], [T.dim, 0.6], [T.glass, 0]], { gain: 0.05, wet: 0.2, bright: 0.35 })
+pad(146.83, [[0, 0.3], [T.aSleep, 0.3], [3400, 0.15], [T.bWake, 0.15], [5400, 0.35], [T.dim, 0.35], [T.glass, 0]], { gain: 0.016, wet: 0.35, bright: 0.2 })
+pad(110, [[0, 0], [T.bWake, 0], [5300, 0.4], [T.dim, 0.4], [T.glass, 0]], { gain: 0.02, pan: 0.2, wet: 0.4 })
 
 // ── the glass ───────────────────────────────────────────────────────────────
-const story = filmStory({})
-const S = story.times
+const S = STORY_TIMES
 const at = (s) => filmAt(s)
 wakeSound(T.glass, 0, 0.32)
 // the names
@@ -189,7 +186,7 @@ bell(at(S.credit) + 150, 1108.7, { gain: 0.018, decay: 0.9, pan: 0.2 })
 // the chord opens with the glass and comes fully in as they are held: D,
 // A, F sharp, C sharp, the A and the E above when the glass turns rose
 const END = MS
-const fall = [[END - 700, 1], [END, 0]]
+const fall = [[END - 1600, 1], [END, 0]]
 const chord = (f, from, peak, { gain = 0.02, pan = 0, bright = 0.15 } = {}) =>
   pad(f, [[0, 0], [from, 0], [from + 1800, peak], ...fall.map(([t, v]) => [t, v * peak])], { gain, pan, wet: 0.7, bright })
 chord(73.42, T.glass, 0.8, { gain: 0.05, bright: 0.1 })
@@ -198,24 +195,20 @@ chord(220.0, T.glass + 300, 0.7, { gain: 0.026, pan: -0.25 })
 chord(369.99, at(S.catch), 0.75, { gain: 0.022, pan: 0.25 })
 chord(554.37, at(S.glow), 0.7, { gain: 0.016, pan: -0.15, bright: 0.08 })
 chord(659.26, at(S.glow) + 400, 0.6, { gain: 0.012, pan: 0.3, bright: 0.05 })
-// the turn: the light going over the glass, a few points of it
-for (let k = 0; k < 14; k++) {
-  const f = [1760, 2217.5, 2637, 2960, 3520][k % 5]
-  bell(at(S.glow) + k * 70 + ((k * 37) % 30), f, { gain: 0.006 + 0.002 * (k % 3), decay: 0.35, pan: ((k * 0.37) % 1.4) - 0.7, wet: 0.7 })
-}
-// `it's mutual.` typed in the glass's cells, a soft tick a letter
-const SAY = 'it’s mutual.'
-for (let k = 0; k < SAY.length; k++) {
-  const ms = at(S.say + ((S.live - S.say) * k) / SAY.length)
-  if (SAY[k] !== ' ') key(ms, { pitch: 3000, body: 520, gain: 0.07, pan: -0.1 + k * 0.02 })
-}
-// and when it is said, the bell
-const said = at(S.live)
-;[[1174.66, 0, -0.35], [1479.98, 120, 0.1], [1760, 240, 0.35], [2349.32, 380, 0]].forEach(([f, d, p]) =>
-  bell(said + d, f, { gain: 0.05, decay: 1.6, pan: p }))
+// the turn: three points of the light going over the glass
+;[[2637, 0, -0.4], [3520, 140, 0.35], [2960, 300, 0]].forEach(([f, d, p]) =>
+  bell(at(S.glow) + d, f, { gain: 0.007, decay: 0.4, pan: p, wet: 0.7, p2: 0.2 }))
+// `it's mutual.` typed in the glass's cells, a soft tick on each letter as
+// it lands (pixmark.js: a letter every 70ms from `say`)
+const TYPE_MS = (S.said - S.say) / [...SAY].length
+;[...SAY].forEach((c, k) => {
+  if (c !== ' ') key(at(S.say + TYPE_MS * (k + 1)), { pitch: 3000, body: 520, gain: 0.05, pan: -0.1 + k * 0.02 })
+})
+// and when the last of it lands, the bell: low and warm, never bright
+;[[587.33, 0, -0.3], [739.99, 110, 0.15], [880, 220, 0.3], [1174.66, 360, 0]].forEach(([f, d, p]) =>
+  bell(SAID + d, f, { gain: 0.03, decay: 1.2, pan: p, p2: 0.2 }))
 // the step back, and the name: one low note under it
-bell(T.back + 250, 293.66, { gain: 0.05, decay: 1.8, pan: 0, wet: 0.6 })
-bell(T.back + 250, 587.33, { gain: 0.02, decay: 1.4, pan: 0.1, wet: 0.6 })
+bell(T.back + 250, 293.66, { gain: 0.03, decay: 1.8, pan: 0, wet: 0.6, p2: 0.2 })
 
 // ── the room's reverb ───────────────────────────────────────────────────────
 // Schroeder's: four combs in parallel and two all passes after, a little
@@ -260,10 +253,17 @@ buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.
 buf.writeUInt32LE(SR, 24); buf.writeUInt32LE(SR * 4, 28); buf.writeUInt16LE(4, 32); buf.writeUInt16LE(16, 34)
 buf.write('data', 36); buf.writeUInt32LE(N * 4, 40)
 for (let i = 0; i < N; i++) {
-  const f = Math.min(1, (N - i) / sec(0.5))
+  const f = Math.min(1, (N - i) / sec(1.0))
   buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, L[i] * g * f)) * 32767), 44 + i * 4)
   buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, R[i] * g * f)) * 32767), 46 + i * 4)
 }
 mkdirSync(dirname(out), { recursive: true })
-writeFileSync(out, buf)
-console.log(out.replace(`${root}/`, ''), `${(MS / 1000).toFixed(1)}s`, `peak gain ${g.toFixed(2)}`)
+const raw = `${out}.raw.wav`
+writeFileSync(raw, buf)
+// mastered: measured once, then brought to -14 LUFS with those numbers
+const probe = spawnSync('ffmpeg', ['-hide_banner', '-i', raw, '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' })
+const m = JSON.parse(probe.stderr.slice(probe.stderr.lastIndexOf('{')))
+const norm = `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`
+spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', raw, '-af', norm, '-ar', String(SR), '-c:a', 'pcm_s16le', out])
+spawnSync('rm', ['-f', raw])
+console.log(out.replace(`${root}/`, ''), `${(MS / 1000).toFixed(1)}s`, `from ${m.input_i} LUFS`)

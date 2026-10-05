@@ -6,15 +6,15 @@
 // first three with their backlight let down and the last one lit.
 
 import { Phone, PixelStory, Light } from '../kit.jsx'
-import { Page, Kicker, Caption, door, W, H, U, M, row, col } from '../parts/doc.jsx'
+import { Page, Kicker, Caption, door, W, H, M, HALF, row, col } from '../parts/doc.jsx'
 
-// the strip: four frames down the first two columns and a half, a row of
-// two units and a half each, from half a unit under the kicker; each line
-// set beside its frame, from the fourth column
-const TOP = row(2) + 45
-const STEP = 2.5 * U
-const FW = 186
-const FH = 222
+// the strip: four frames down the first two columns, from half a unit
+// under the kicker to a unit over the caption; each line set beside its
+// frame, from the fourth column
+const TOP = row(2) + HALF
+const STEP = 214
+const FW = 176
+const FH = 208
 const LINE = 66
 
 function Poster() {
@@ -27,7 +27,7 @@ function Poster() {
   ]
   return (
     <Page n={2}>
-      <Kicker base={row(2)} n={1}>the mechanic, in four sentences</Kicker>
+      <Kicker n={1}>the mechanic</Kicker>
       {FRAMES.map((f, i) => {
         const y = TOP + i * STEP
         return (
@@ -44,7 +44,7 @@ function Poster() {
           </div>
         )
       })}
-      <Caption n={2} base={row(13) - 8} x={M} style={{ gridTemplateColumns: `${col(4) - M}px 1fr` }}>the door’s own story, four frames of it.</Caption>
+      <Caption n={2} style={{ gridTemplateColumns: `${col(4) - M}px 1fr` }}>the story the product tells, in four frames.</Caption>
     </Page>
   )
 }

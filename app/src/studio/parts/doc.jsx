@@ -53,13 +53,13 @@ export function useFaces() {
 // The room's black with the sensor's grain, the running head and the folio.
 // `n` is the page's number; `head` false leaves the running head off, for
 // a page that signs itself larger
-export function Page({ n, head = true, foot = true, label = TITLE, grain = 0.075, vignette = 0, children, className = '' }) {
+export function Page({ n, head = true, foot = true, sign = true, label = TITLE, grain = 0.075, vignette = 0, children, className = '' }) {
   const ok = useFaces()
   return (
     <Board w={W} h={H} grain={grain} vignette={vignette} className={`dc ${className}`}>
       {ok ? children : null}
       {head ? <Head n={n} label={label} /> : null}
-      {foot ? <Folio n={n} /> : null}
+      {foot ? <Folio n={n} sign={sign} /> : null}
     </Board>
   )
 }
@@ -185,7 +185,7 @@ export function door() {
 // hairline square and the lit ones filled, at whole pixels a cell. `ticks`
 // numbers every eighth line along the top and the left, as a sheet of
 // squared paper is numbered.
-export function MarkCells({ cell = 24, ink = '#F4F1EA', line = 'rgba(244, 241, 234, 0.12)', ticks = true, className = '', style }) {
+export function MarkCells({ cell = 24, ink = '#F4F1EA', line = 'rgba(244, 241, 234, 0.12)', ticks = true, keys = [], className = '', style }) {
   const n = MARK.length
   const s = n * cell
   const lit = []
@@ -202,6 +202,12 @@ export function MarkCells({ cell = 24, ink = '#F4F1EA', line = 'rgba(244, 241, 2
         <path d={grid.join('')} stroke={line} strokeWidth="1" fill="none" />
         <path d={lit.map(([x, y]) => `M${x * cell + gap} ${y * cell + gap}h${cell - 2 * gap + 1}v${cell - 2 * gap + 1}h${-(cell - 2 * gap + 1)}z`).join('')} fill={ink} />
       </svg>
+      {keys.map((k) => (
+        <span key={k.n}>
+          <span className="dc-keybox" style={{ left: k.x0 * cell - 4, top: k.y0 * cell - 4, width: (k.x1 - k.x0 + 1) * cell + 9, height: (k.y1 - k.y0 + 1) * cell + 9 }} />
+          <span className="dc-keyn" style={{ left: k.nx * cell + cell / 2, top: k.ny * cell + cell / 2 }}>{k.n}</span>
+        </span>
+      ))}
       {ticks ? [0, 8, 16, 24, 32].map((i) => (
         <span key={`x${i}`} className="dc-tick is-x" style={{ left: i * cell + cell / 2 }}>{String(i).padStart(2, '0')}</span>
       )) : null}
@@ -212,49 +218,67 @@ export function MarkCells({ cell = 24, ink = '#F4F1EA', line = 'rgba(244, 241, 2
   )
 }
 
+// A figure's key: each numbered part of the figure, its name in the
+// identifier face and a line about it in the text cut, stacked from `top`
+export function Key({ x, top, width, items, step }) {
+  return (
+    <div className="dc-key" style={{ left: x, top, width }}>
+      {items.map((it, i) => (
+        <div key={it.n} className="dc-key-one" style={step ? { position: 'absolute', top: i * step, width } : undefined}>
+          <span className="dc-call-k"><b>{it.n}</b>{it.label}</span>
+          <p>{it.text}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── callouts ──
-// Hairlines from a part of a screen to the words about it. The parts are
-// found on the page once the screen has laid itself out (`sel` is a CSS
-// selector inside `within`), so a line always lands on the glyph it names,
-// wherever the screen's own quirks put it. Each callout stands in the
-// column from `x`, its first line level with its part.
-export function Callouts({ within, items, x, width, gap = 22 }) {
+// Hairlines from a part of a figure to the words about it. A part is found
+// on the page once the figure has laid itself out (`sel`, a CSS selector
+// inside `within`), so a line always lands on the glyph it names wherever a
+// screen's own quirks put it; or it is given (`at`, a point on the board).
+// Each callout stands in the column from `x`, its label level with its part
+// and its words under the label, or over it when `up`.
+export function Callouts({ within = '', items, x, width, gap = 22 }) {
   const [at, setAt] = useState(null)
   const ref = useRef(null)
   useLayoutEffect(() => {
     let on = true
     const look = () => {
       const board = ref.current && ref.current.closest('.st-board')
-      const box = board && board.querySelector(within)
-      if (!box) return
+      if (!board) return
+      const box = within ? board.querySelector(within) : board
       const b = board.getBoundingClientRect()
       const k = b.width / board.offsetWidth
       const out = items.map((it) => {
-        const el = box.querySelector(it.sel)
+        if (it.at) return { x: it.at[0], y: it.at[1] }
+        const el = box && box.querySelector(it.sel)
         if (!el) return null
         const r = el.getBoundingClientRect()
         return { x: (r.right - b.left) / k, y: (r.top + r.height / 2 - b.top) / k }
       })
       if (on) setAt(out)
     }
-    // two frames for the screen to fit its words, then a third for luck
+    // two frames for a screen to fit its words, and a third to be sure
     requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(look)))
     return () => { on = false }
   }, [within, items])
   useHold(at != null)
   return (
-    <div ref={ref} className="dc-callouts" aria-hidden={at ? undefined : 'true'}>
+    <div ref={ref} className="dc-callouts" aria-hidden="true">
       {at ? items.map((it, i) => {
         const p = at[i]
         if (!p) return null
-        const from = p.x + gap
+        const from = p.x + (it.at ? 0 : gap)
         return (
-          <div key={it.sel}>
-            <span className="dc-lead" style={{ left: from, top: p.y, width: x - gap - from }} />
-            <span className="dc-dot" style={{ left: from - 3, top: p.y - 3 }} />
-            <div className="dc-call" style={{ left: x, top: p.y - 13, width }}>
+          <div key={it.label}>
+            <span className="dc-lead" style={{ left: from, top: Math.round(p.y), width: x - 16 - from }} />
+            <span className="dc-dot" style={{ left: from - 3, top: Math.round(p.y) - 3 }} />
+            <div className={`dc-call${it.up ? ' is-up' : ''}`} style={it.up ? { left: x, bottom: H - Math.round(p.y) - 13, width } : { left: x, top: Math.round(p.y) - 13, width }}>
+              {it.up ? <p>{it.text}</p> : null}
               <span className="dc-call-k">{it.label}</span>
-              <p>{it.text}</p>
+              {it.up ? null : <p>{it.text}</p>}
             </div>
           </div>
         )

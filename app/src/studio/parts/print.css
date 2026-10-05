@@ -1,0 +1,76 @@
+/* ── the street, printed (parts/print.jsx) ────────────────────────────────────
+   The street sheet and what the print set lays round it. Every size on a
+   sheet is in its own `--k`, so the print and the thumbnail are one drawing. */
+
+.pr-sheet { position: relative; overflow: hidden; isolation: isolate; }
+.pr-black { position: absolute; }
+
+/* the address, in the identifier face, small, at the foot */
+.pr-url {
+  position: absolute; left: 0; right: 0; text-align: center; z-index: 2;
+  font: 400 calc(11px * var(--k)) / 1 var(--st-mono); letter-spacing: 0.08em; color: #8C877E;
+}
+
+/* the words at the size set for them, not the fit's: the street's filled
+   the glass. So nothing overflows, and the glass draws no scroll bar */
+:is(.pr-sheet, .pr-paste) .wl-scr-msg { font-size: var(--pr-fs) !important; max-height: none !important; }
+:is(.pr-sheet, .pr-paste) .wl-scr-sb { display: none; }
+/* a copy's glass burns towards its edges on a hot copier, and the
+   threshold speckles it into toner, as sasha's did on the fridge */
+.pr-sheet .wl-scr[data-kind='xerox'] .wl-scr-fx.is-light {
+  display: block; inset: 25cqw 0 14cqw;
+  background: radial-gradient(96% 92% at 36% 34%, transparent 44%, rgba(0, 0, 0, 0.66) 100%);
+}
+
+/* the ink over the glass (print.jsx `Ink`) */
+.pr-ink { position: absolute; z-index: 3; pointer-events: none; }
+/* the wide light stays near the glass, so the black stays black on paper */
+.pr-sheet .wl-scene-halo { opacity: 0.55; }
+
+/* ── the wheatpaste ── */
+/* the line, at a size read from across the street */
+.pr-head {
+  position: absolute; z-index: 5; margin: 0;
+  font-family: var(--st-serif); font-weight: 500; font-optical-sizing: auto;
+  font-variation-settings: 'opsz' 72; font-size: 104px; line-height: 0.98; letter-spacing: -0.022em;
+  color: var(--chalk);
+}
+.pr-head em { font-style: italic; font-weight: 400; }
+
+/* the signature: the lockup at the left margin, a line at the right */
+.pr-sign {
+  position: absolute; z-index: 5; display: flex; justify-content: space-between; align-items: center;
+  font: 400 26px/1 var(--st-pixel); color: var(--ash);
+}
+/* a screen whose backlight is down, beside the one that is lit */
+.pr-dim { filter: brightness(0.42) saturate(0.7); }
+
+/* the tabs: the twelve keys, the address down each */
+.pr-tabs { position: absolute; left: 0; display: flex; }
+.pr-cuts { position: absolute; inset: 0; }
+.pr-tab {
+  width: var(--tw); height: 100%; display: flex; flex-direction: column; align-items: center;
+  padding-top: 20px; gap: 18px; color: var(--chalk);
+}
+.pr-key { display: flex; align-items: baseline; gap: 3px; font-family: var(--st-pixel); line-height: 1; }
+.pr-key b { font-weight: 400; font-size: 36px; }
+.pr-key i { font-style: normal; font-size: 15px; color: var(--ash); }
+.pr-tab-url {
+  writing-mode: vertical-rl; font: 400 30px/1 var(--st-pixel); letter-spacing: 0.02em; color: var(--chalk);
+}
+
+/* ── the mockup ── */
+.pr-wall { position: absolute; left: 0; top: 0; }
+.pr-pasted { position: absolute; transform-origin: 50% 0; }
+.pr-pasted .pr-sheet { box-shadow: 0 1px 1px rgba(0, 0, 0, 0.75), 0 5px 12px rgba(0, 0, 0, 0.5); }
+/* the paper bowing where the paste let go: its own relief, lit from the
+   lamp's side, laid on the print in soft light */
+.pr-pasted-paper { position: absolute; left: 0; top: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: 0.55; }
+/* the dark the lamp does not reach, over everything */
+.pr-dark { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+/* the signature, over the dark: the lockup at the left margin, the
+   address at the right */
+.pr-mock-sign {
+  position: absolute; z-index: 45; display: flex; justify-content: space-between; align-items: center;
+  font: 400 15px/1 var(--st-mono); letter-spacing: 0.12em; color: var(--ash);
+}

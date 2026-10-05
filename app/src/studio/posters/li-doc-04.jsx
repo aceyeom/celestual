@@ -1,32 +1,30 @@
 // ── the lesson deck, 04: truth, exactly ─────────────────────────────────────
-// A letter's foot seen from a hand's width away: `options`, and the heart
-// with its count, which is nought, and says so. The plate runs the board's
-// full width, cut square at its top and foot as a frame of film is cut.
+// A letter on the wall as it stands, held square, and two of its parts
+// called out: the battery, which counts nothing and so claims nothing, and
+// the heart, whose count is nought and says so.
 
 import { Phone, Light } from '../kit.jsx'
-import { Page, Kicker, Title, Lesson, Caption, W, H, U, M, row } from '../parts/doc.jsx'
+import { Page, Kicker, Title, Lesson, Caption, Callouts, lessonBase, W, H, U, M, col } from '../parts/doc.jsx'
 
-// the plate, and the phone inside it, many times the plate's width, laid so
-// that its band of keys falls across the plate
-const PT = row(7)
-const PH = 5 * U
-const PW = 2300
+const PW = 400
+const PT = 600
+const CALLS = [
+  { sel: '.wl-scr-bat', label: 'the battery', text: 'the writer’s to set. it counts nothing, so it claims nothing.' },
+  { sel: '.wl-sk.is-heart', label: 'the heart', text: <>nobody has hearted it, so it says <span className="dc-n">0</span>.</>, up: true },
+]
 
 function Poster() {
   return (
     <Page n={4}>
-      <Kicker base={row(2)} n={3}>truth, exactly</Kicker>
-      <Title base={row(3)} size={88} lh={0.9} width={10 * U}>every count is exactly true, or it isn’t there.</Title>
-      <Lesson base={row(5)} width={9 * U}>no implied activity. no padded numbers. a letter nobody has hearted says 0.</Lesson>
-      <div className="dc-plate" style={{ left: 0, top: PT, width: W, height: PH }}>
-        <Light x={W * 0.42} y={PH * 0.6} size={1600} tint="amber" strength={0.6} />
-        <Phone
-          w={PW} tint="amber" seed="doc-truth" mode="letter" name="Theo" stamp="10/05/26" hearts={0} cursor={false}
-          text="i walk the long way home now. it passes your building."
-          style={{ position: 'absolute', left: -180, top: -2200 }}
-        />
+      <Kicker n={3}>counts</Kicker>
+      <Title>truth, exactly.</Title>
+      <Lesson base={lessonBase(1)} width={9 * U}>every count is exactly true, or it isn’t there. no implied activity, no padded numbers, no hint that someone likes you.</Lesson>
+      <Light x={M + PW / 2} y={PT + 230} size={1000} tint="amber" strength={0.6} />
+      <div className="dc-fig-truth" style={{ position: 'absolute', left: M, top: PT, width: PW }}>
+        <Phone w={PW} tint="amber" seed="doc-truth" mode="letter" name="Iris" stamp="10/05/26" hearts={0} cursor={false} square text="i walk the long way home now. it passes your building." />
       </div>
-      <Caption base={row(12) + 45} n={4}>the foot of a letter on the wall. the count is the count.</Caption>
+      <Callouts within=".dc-fig-truth" items={CALLS} x={col(7)} width={W - M - col(7)} />
+      <Caption n={4}>a letter on the wall, as it stands.</Caption>
     </Page>
   )
 }

@@ -17,7 +17,7 @@ function Poster() {
       <Title base={row(3)} size={122} lh={0.9} style={{ whiteSpace: 'nowrap' }}>how to build a<br />product where<br /><em>nothing</em> happens.</Title>
       <Light x={PX} y={PY} size={1300} tint="ice" strength={0.75} />
       <Phone w={PW} x={PX} y={PY} tint="ice" seed="doc-cover" name="jules" counter="224/1" text="do you still sleep on the left side?" />
-      <Lesson base={row(12) + 45} width={4 * U}>a founder’s notes on building celestual.</Lesson>
+      <Lesson base={row(12)} width={4 * U}>a founder’s notes on building celestual.</Lesson>
     </Page>
   )
 }
