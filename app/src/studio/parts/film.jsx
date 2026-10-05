@@ -121,10 +121,10 @@ export function Unsent({ t, L }) {
   // the first phone: wakes, types, sends, sleeps and steps back, wakes again
   // with the envelope, and goes into the glass
   const aWake = wake(t, T.aWake, 460)
-  const aSleep = at([[4400, 0], [5300, 1, 'power2.inOut'], [8000, 1], [8300, 0, 'power2.out']], t)
-  const aX = at([[0, L.a.x], [4300, L.a.x], [5500, L.a2.x, 'power3.inOut'], [8150, L.a2.x], [8750, L.mid.x, 'power3.inOut']], t)
-  const aY = at([[0, L.a.y], [4300, L.a.y], [5500, L.a2.y, 'power3.inOut'], [8150, L.a2.y], [8750, L.mid.y, 'power3.inOut']], t)
-  const aW = at([[0, L.a.w * 0.985], [3500, L.a.w], [4300, L.a.w], [5500, L.a2.w, 'power3.inOut'], [8150, L.a2.w], [8750, L.mid.w, 'power3.inOut']], t)
+  const aSleep = at([[4400, 0], [5300, 0.86, 'power2.inOut'], [8000, 0.86], [8300, 0, 'power2.out']], t)
+  const aX = at([[0, L.a.x], [4300, L.a.x], [5400, L.aSleep.x, 'power3.inOut'], [5700, L.aSleep.x], [6450, L.a2.x, 'power3.inOut'], [8150, L.a2.x], [8750, L.mid.x, 'power3.inOut']], t)
+  const aY = at([[0, L.a.y], [4300, L.a.y], [5400, L.aSleep.y, 'power3.inOut'], [5700, L.aSleep.y], [6450, L.a2.y, 'power3.inOut'], [8150, L.a2.y], [8750, L.mid.y, 'power3.inOut']], t)
+  const aW = at([[0, L.a.w * 0.985], [3500, L.a.w], [4300, L.a.w], [5400, L.aSleep.w, 'power3.inOut'], [5700, L.aSleep.w], [6450, L.a2.w, 'power3.inOut'], [8150, L.a2.w], [8750, L.mid.w, 'power3.inOut']], t)
   // the second: wakes, types, sends, and goes into the glass
   const bWake = wake(t, T.bWake, 420)
   const bX = at([[0, L.b.x], [8150, L.b.x], [8750, L.mid.x, 'power3.inOut']], t)
@@ -140,9 +140,9 @@ export function Unsent({ t, L }) {
   // pink, and the step back at the end
   const st = storyAt(t)
   const turn = film ? Math.min(1, Math.max(0, (st - film.times.glow) / 700)) : 0
-  const gW = at([[0, L.mid.w], [13300, L.mid.w], [14200, L.end.w, 'power3.inOut']], t)
-  const gY = at([[0, L.mid.y], [13300, L.mid.y], [14200, L.end.y, 'power3.inOut']], t)
-  const push = at([[8600, 0.985], [12900, 1.02, 'sine.inOut'], [13300, 1.02], [14200, 1, 'power3.inOut']], t)
+  const gW = at([[0, L.mid.w], [T.back, L.mid.w], [T.back + 800, L.end.w, 'power3.inOut']], t)
+  const gY = at([[0, L.mid.y], [T.back, L.mid.y], [T.back + 800, L.end.y, 'power3.inOut']], t)
+  const push = at([[8600, 0.985], [12900, 1.02, 'sine.inOut'], [T.back, 1.02], [T.back + 800, 1, 'power3.inOut']], t)
 
   // the room's light: each phone's own, and the rose's when the glass turns
   const aLight = aWake * (1 - aSleep * 0.85) * pair * dim
@@ -157,8 +157,8 @@ export function Unsent({ t, L }) {
     { text: 'they never know.', o: cap([[4750, 0], [5100, 1, 'power2.out'], [5500, 1], [5800, 0, 'power2.in']]), y: L.cap + L.capGap },
     { text: 'unless they send you one.', o: cap([[6150, 0], [6500, 1, 'power2.out'], [8100, 1], [8400, 0, 'power2.in']]), y: L.cap },
   ]
-  const endO = at([[13550, 0], [14150, 1, 'power2.out']], t)
-  const endO2 = at([[13800, 0], [14400, 1, 'power2.out']], t)
+  const endO = at([[T.back + 650, 0], [T.back + 1200, 1, 'power2.out']], t)
+  const endO2 = at([[T.back + 850, 0], [T.back + 1400, 1, 'power2.out']], t)
   const ink = skinVars('rose')
 
   return (

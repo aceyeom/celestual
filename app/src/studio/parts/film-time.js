@@ -13,7 +13,7 @@ export const B = { name: 'kai', to: 'lin', tint: 'amber', seed: 'kai', text: 'ev
 export const T = {
   aWake: 250, aType: 760, aBeat: 36, aSend: 3700, aSleep: 4400,
   bWake: 6000, bType: 6420, bBeat: 34, bSend: 7750,
-  mail: 8000, dim: 8350, glass: 8640, back: 13300,
+  mail: 8000, dim: 8350, glass: 8640, back: 13100,
 }
 
 // A person's rhythm, the same on every frame: a beat a letter, a longer one
@@ -35,9 +35,10 @@ export const typedA = () => rhythm(A.text, T.aType, T.aBeat)
 export const typedB = () => rhythm(B.text, T.bType, T.bBeat)
 
 // The mutual's own film against the film's clock: the names at half again
-// its pace, the rest at a fifth over it, then its own pace while the mark
-// lives. Pairs of [film ms, story ms], straight between.
-export const STORY = [[T.glass, 900], [9540, 2300], [12900, 6490], [16900, 10490]]
+// its pace, the empty glass after them at twice it, the two of them and the
+// mark a sixth over it, then its own pace while the mark lives. Pairs of
+// [film ms, story ms], straight between.
+export const STORY = [[T.glass, 900], [9560, 2300], [9860, 2890], [12950, 6490], [16950, 10490]]
 export function storyAt(t) {
   if (t <= STORY[0][0]) return STORY[0][1]
   for (let i = 1; i < STORY.length; i++) {
