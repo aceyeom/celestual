@@ -26,12 +26,12 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
-import { GodRays, ShaderMount } from '@paper-design/shaders-react'
+import { ShaderMount } from '@paper-design/shaders-react'
 import { liquidMetalFragmentShader, LiquidMetalShapes, ShaderFitOptions } from '@paper-design/shaders'
-import { Board, Phone, PixelStory, Lockup, Grain, filmOf, readyFilm, useHold, turnStyle, skinVars } from '../kit.jsx'
+import { Board, Phone, PixelStory, Grain, filmOf, readyFilm, useHold, turnStyle, skinVars } from '../kit.jsx'
 import { ScreenNote } from '../../wall/screen.jsx'
 import { glyphPath } from '../../wall/looks.js'
-import { MS, A, B, S, typedA, typedB, storyAt, A_LAND } from './reel-time.js'
+import { MS, A, B, S, typedA, typedB, storyAt, A_HOLD } from './reel-time.js'
 import './reel.css'
 
 export { MS }
@@ -196,7 +196,7 @@ const halo = (tint) => skinVars(tint)['--s-halo']
 
 // the envelope, the phone's own glyph, drawn at any size in whole cells
 const ENV = glyphPath('env')
-function Envelope({ x, y, w, o = 1, colour = '#F4F1EA', glow = 'rgba(255,244,228,0.6)', rz = 0 }) {
+function Envelope({ x, y, w, o = 1, colour = '#F4F1EA', glow = 'rgba(255,244,228,0.6)', rz = 0, solid = '' }) {
   const h = (w * ENV.h) / ENV.w
   return (
     <svg
@@ -204,6 +204,7 @@ function Envelope({ x, y, w, o = 1, colour = '#F4F1EA', glow = 'rgba(255,244,228
       style={{ left: x - w / 2, top: y - h / 2, width: w, height: h, opacity: o, transform: `rotate(${rz}deg)`, filter: `drop-shadow(0 0 ${Math.max(4, w * 0.06)}px ${glow})` }}
       aria-hidden="true"
     >
+      {solid ? <rect x="0" y="0" width={ENV.w} height={ENV.h} fill={solid} /> : null}
       <path d={ENV.d} fill={colour} />
     </svg>
   )
@@ -247,7 +248,7 @@ export function Reel({ t }) {
   const tA = useMemo(typedA, [])
   const tB = useMemo(typedB, [])
   // the shake on the drop and on the envelope at the lens, the whole frame
-  const sh = hit(t, S.drop, 170) * 16 + hit(t, 4120, 120) * 7 + hit(t, S.title, 110) * 6
+  const sh = hit(t, S.drop, 150) * 5 + hit(t, 4120, 120) * 7 + hit(t, S.title, 110) * 5
   const shake = sh > 0.3 ? `translate(${(Math.sin(t * 0.37) * sh).toFixed(1)}px, ${(Math.cos(t * 0.29) * sh).toFixed(1)}px)` : undefined
 
   return (
@@ -261,7 +262,6 @@ export function Reel({ t }) {
         {t >= S.send[0] && t < S.other[0] ? <SendScene t={t} times={tA} /> : null}
         {t >= S.other[0] && t < S.wait[0] ? <OtherScene t={t} times={tB} /> : null}
         <WaitScene t={t} />
-        <Rays t={t} />
         {film && t >= 8950 && t < 13300 ? <GlassScene t={t} film={film} /> : null}
         <EndScene t={t} />
       </div>
@@ -292,50 +292,64 @@ function Measure({ who, times, onMeasure }) {
 // ── 0.0 to 3.5: up close, and back into the wall ────────────────────────────
 function MacroWall({ t, m, times }) {
   const C = { x: 540, y: 930 }
-  // The camera up close does not chase the keys: it holds on the first
-  // words as they are typed, crosses the glass in one move while the middle
-  // of the note runs on out of the frame, and lands on its last word as the
-  // question mark comes, the way a lens on a slider would
   const lineH = m.m[0].h
-  const line = (i) => m.m[Math.min(i, m.m.length - 1)]
-  const at1 = line(4)
-  const at2 = line(A_LAND + 1)
-  const cross = easeOf('expo.inOut')(u(t, 820, 1180))
-  const px = lerp(at1.x + at1.w * 0.5 + u(t, -400, 820) * at1.w * 1.4, at2.x + at2.w * 0.5 + u(t, 1180, 1750) * at2.w * 0.8, cross)
-  const py = lerp(at1.y + at1.h * 0.5, at2.y + at2.h * 0.5, cross)
-  // the camera: a letter a hand high, then falling back to the wall
+  const ch = (i) => m.m[Math.min(i, m.m.length - 1)]
+  // The first frame is the cover: the first line of the note whole across
+  // the frame, the cursor after it. Then the camera pushes in on the note
+  // as it is typed, after the cursor, and arrives a letter a hand high as
+  // the question mark comes. Then it falls back, holds the whole phone for
+  // an eighth note (the campaign's own picture: a draft, the cursor after
+  // its last word), and falls back again into the wall
+  const first = { x0: ch(0).x, x1: ch(A_HOLD - 2).x + ch(A_HOLD - 2).w, y: ch(0).y + ch(0).h * 0.5 }
+  const z0 = (0.9 * 1080) / (first.x1 - first.x0)
   const zMacro = 330 / lineH
+  const push = easeOf('sine.inOut')(u(t, 0, 1650))
+  const cur = (tt) => {
+    const n = typedAt(times, tt)
+    const g = ch(n)
+    return { x: g.x, y: g.y + g.h * 0.5 }
+  }
+  let cx = 0
+  let cy = 0
+  for (let j = 0; j < 12; j++) { const p = cur(t - j * 25); cx += p.x; cy += p.y }
+  cx /= 12; cy /= 12
+  const mx = lerp((first.x0 + first.x1) / 2, cx, push)
+  const my = lerp(first.y, cy, push)
+  const zm = Math.exp(lerp(Math.log(z0), Math.log(zMacro), push))
+  const zHold = 0.86
   const zWall = 0.3
-  const fall = easeOf('expo.inOut')(u(t, S.wall[0], S.wall[0] + 1100))
-  const z = Math.exp(lerp(Math.log(zMacro), Math.log(zWall) - 0.06 * u(t, 2850, 3500), fall))
-  // the point the camera holds, eased over to the middle of the phone as it
-  // falls back, with a drift so the wall is never still
+  const fallA = easeOf('expo.inOut')(u(t, S.wall[0], 2050))
+  const fallB = easeOf('expo.inOut')(u(t, 2300, 2950))
+  const z = Math.exp(lerp(lerp(Math.log(zm), Math.log(zHold), fallA), Math.log(zWall) - 0.06 * u(t, 2950, 3500), fallB))
   const mid = { x: m.box.w / 2, y: m.box.h / 2 }
-  const P = { x: lerp(px, mid.x, fall) + Math.sin(t / 700) * 22 * fall, y: lerp(py, mid.y, fall) + Math.cos(t / 830) * 18 * fall }
+  const P = {
+    x: lerp(mx, mid.x, fallA) + Math.sin(t / 700) * 22 * fallB,
+    y: lerp(my, mid.y, fallA) + Math.cos(t / 830) * 18 * fallB,
+  }
   // up close the glass is turned away from the lens and the plane of focus
   // is a band through the line; it comes square as the camera falls back
-  const rx = lerp(17, 0, fall)
-  const ry = lerp(-9, 0, fall)
-  const rz = at([[0, -6], [1700, -2.5, 'sine.inOut'], [2900, 0, 'power3.inOut'], [3500, 1.5, 'sine.inOut']], t)
+  const rx = lerp(lerp(6, 15, push), 0, fallA)
+  const ry = lerp(lerp(-4, -9, push), 0, fallA)
+  const rz = at([[0, -3], [1700, -2, 'sine.inOut'], [2300, 0, 'power3.inOut'], [3500, 1.5, 'sine.inOut']], t)
   // the wall goes quiet under the title
   const hush = at([[S.title - 120, 1], [S.title + 260, 0.32, 'power2.out'], [3250, 0.32], [3480, 0.9]], t)
+  const dof = push * (1 - fallA)
   return (
     <div className="rl-cam" style={{ filter: hush < 0.999 ? `brightness(${hush.toFixed(3)})` : undefined }}>
       <div className="rl-tilt" style={{ transform: `rotate(${rz.toFixed(3)}deg)`, transformOrigin: `${C.x}px ${C.y}px` }}>
-        {fall > 0.01 ? WALL.map(([name, tint, text, gx, gy, d, rot], i) => {
-          // at rest, a phone stands at its place whatever its nearness; as
-          // the camera moves, the nearness carries it
-          const restX = C.x + gx * PW * 1.12 * zWall
-          const restY = C.y + gy * PH * 1.12 * zWall
-          const sx = restX + (mid.x - P.x) * z * d
-          const sy = restY + (mid.y - P.y) * z * d
+        {fallB > 0.001 ? WALL.map(([name, tint, text, gx, gy, d, rot], i) => {
+          // where a phone stands in the plane of lin's, pushed out by its
+          // nearness so that at rest it stands at its place; as the camera
+          // moves, its nearness carries it further or less
+          const sx = C.x + (mid.x - P.x) * z * d + gx * PW * 1.12 * z
+          const sy = C.y + (mid.y - P.y) * z * d + gy * PH * 1.12 * z
           // a phone near the lens is only seen as the camera comes to rest,
           // sweeping past an edge, and is never let grow over the shot
           const near = d > 1.5
-          const s = (near ? Math.min(z, zWall * 1.5) : z) * d * (0.94 + 0.06 * fall)
+          const s = (near ? Math.min(z, zWall * 1.5) : z) * d
           const off = Math.abs(1 - d)
           const blur = near ? 26 : off * 16
-          const lit = wake(t, S.wall[0] + 180 + rnd(i + 3) * 760, 360) * (near ? u(fall, 0.6, 0.9) : 1)
+          const lit = wake(t, 2320 + rnd(i + 3) * 620, 360) * (near ? u(fallB, 0.6, 0.9) : 1)
           if (lit <= 0.001) return null
           return (
             <Place
@@ -351,7 +365,7 @@ function MacroWall({ t, m, times }) {
         </Place>
         <Glow x={C.x + (mid.x - P.x) * z} y={C.y + (mid.y - P.y) * z} r={Math.min(1400, PW * z * 1.2)} colour={halo('ice')} o={0.75} z={2} />
       </div>
-      {fall < 0.06 ? <span className="rl-dof" style={{ opacity: 1 - fall / 0.06 }} aria-hidden="true" /> : null}
+      {dof > 0.05 ? <span className="rl-dof" style={{ opacity: dof.toFixed(3) }} aria-hidden="true" /> : null}
     </div>
   )
 }
@@ -362,7 +376,7 @@ function Title({ t }) {
   const on = blink(t, S.title + 520)
   return (
     <Line
-      text="unsent." t={t} from={S.title} to={3150} size={390} x={0} y={700} w={1080} align="center" stagger={36}
+      text="unsent." t={t} from={S.title} to={3150} size={296} x={0} y={790} w={1080} align="center" stagger={36}
       className="rl-title" tail={<TailCursor on={on && t > S.title + 260 && t < 3150} />}
     />
   )
@@ -371,36 +385,28 @@ function Title({ t }) {
 // ── 3.5 to 5.5: send ────────────────────────────────────────────────────────
 function SendScene({ t, times }) {
   const k = u(t, S.send[0], S.send[1])
-  // the phone, turned in depth and coming round as the camera pushes in
-  const s = at([[3500, 0.7], [4900, 0.77, 'sine.out']], t) * (1 + hit(t, S.press, 90) * 0.012)
-  const ry = lerp(-22, -6, easeOf('power2.out')(k))
-  const rx = lerp(9, 3, k)
+  // the phone too near to be whole, past the edges of the frame, coming
+  // round as the camera pushes in; the words stand over the black above it
+  const s = at([[3500, 1.15], [5500, 1.45, 'none']], t) * (1 + hit(t, S.press, 90) * 0.012)
+  const ry = lerp(-26, 14, easeOf('sine.inOut')(k))
+  const rx = lerp(7, 2, k)
   const x = 540
-  const y = 700
-  // the screen going out: down to a line, then to a point, then nothing
-  const sy = at([[S.off, 1], [S.off + 170, 0.008, 'power3.in']], t)
-  const sx = at([[S.off + 170, 1], [S.off + 330, 0.015, 'power2.in']], t)
-  const white = at([[S.off, 1], [S.off + 170, 2.6, 'power2.in'], [S.off + 330, 3.2], [S.off + 480, 0, 'power2.out']], t)
-  const dot = u(t, S.off + 300, S.off + 330) * (1 - u(t, S.off + 330, S.off + 520))
-  // the envelope, out of the glass and at the lens
-  const e = u(t, 3690, 4180)
-  const ek = easeOf('expo.in')(e)
-  const ew = lerp(70, 2300, ek)
-  const eo = (t < 3690 ? 0 : 1) * (1 - u(t, 4060, 4200))
+  const y = 1250
+  // the screen going out, as the phone puts it out: its light down to
+  // nothing in a fifth of a second, the light on the room a little after
+  const dim = at([[S.off, 1], [S.off + 200, 0.05, 'power2.in'], [S.off + 400, 0, 'power1.out']], t)
+  const glow = at([[S.off + 90, 1], [S.off + 290, 0, 'power2.in']], t)
+  // the envelope, out of the glass and at the lens, a solid thing that
+  // wipes the frame on the beat, and then is gone
+  const e = easeOf('expo.in')(u(t, 3690, 4120))
+  const eon = t >= 3690 && t <= 4140
   return (
     <div className="rl-cam">
-      <Glow x={x} y={y} r={720} colour={halo('ice')} o={sy * sx * 0.95} />
-      <div className="rl-off" style={{ transform: `scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`, transformOrigin: `${x}px ${y}px`, filter: `brightness(${white.toFixed(3)})` }}>
-        <Place x={x} y={y} s={s} rx={rx} ry={ry}>
-          <NoteScreen who={A} t={t} times={times} sendAt={S.press} fs={12.6} w={PW} quiet={false} />
-        </Place>
-      </div>
-      {dot > 0 ? <span className="rl-dot" style={{ left: x - 9, top: y - 9, opacity: dot }} /> : null}
-      {eo > 0 ? [4, 3, 2, 1, 0].map((g) => {
-        const eg = easeOf('expo.in')(u(t - g * 18, 3690, 4180))
-        return <Envelope key={g} x={x + Math.sin(eg * 2.4) * 40} y={y - 40 + eg * 260} w={lerp(70, 2300, eg)} o={eo * (g ? 0.16 : 1)} rz={eg * -8} glow="rgba(143,184,220,0.7)" />
-      }) : null}
-      <span className="rl-ewash" style={{ opacity: ew > 900 ? hit(t, 4110, 160) * 0.5 : 0 }} />
+      <Glow x={x} y={y - 80} r={900} colour={halo('ice')} o={glow * 0.95} />
+      <Place x={x} y={y} s={s} rx={rx} ry={ry} filter={dim < 0.999 ? `brightness(${dim.toFixed(3)})` : undefined}>
+        <NoteScreen who={A} t={t} times={times} sendAt={S.press} fs={12.6} w={PW} quiet={false} />
+      </Place>
+      {eon ? <Envelope x={x + Math.sin(e * 2.4) * 40} y={lerp(1180, 980, e)} w={lerp(90, 2600, e)} rz={e * -8} glow="rgba(143,184,220,0.7)" solid="#0E1822" /> : null}
     </div>
   )
 }
@@ -409,40 +415,44 @@ function SendScene({ t, times }) {
 function OtherScene({ t, times }) {
   const w = wake(t, S.bWake, 420)
   const k = easeOf('expo.out')(u(t, S.bWake, S.bWake + 800))
-  const s = lerp(0.22, 0.62, k) + u(t, 6300, 7500) * 0.03
-  const ry = lerp(30, -7, k)
+  const s = lerp(0.5, 1.25, k) + u(t, 6300, 7500) * 0.15
+  const ry = lerp(30, -8, k)
   const rx = lerp(-6, 4, k)
   const x = 540
-  const y = lerp(760, 610, k)
+  const y = lerp(1500, 1250, k)
   // after the send, the phone goes to sleep and steps back
   const sleep = at([[7150, 0], [7500, 0.85, 'power2.inOut']], t)
-  const back = at([[7150, 1], [7500, 0.9, 'power2.inOut']], t)
-  // the envelope, away into the dark
-  const e = easeOf('power3.in')(u(t, 7080, 7480))
+  const back = at([[7150, 1], [7500, 0.92, 'power2.inOut']], t)
+  // the envelope, off the glass after the send and away into the dark
+  const e = easeOf('power3.in')(u(t, S.bSend + 170, 7500))
   return (
     <div className="rl-cam">
-      <Glow x={x} y={y} r={700} colour={halo('amber')} o={w * (1 - sleep) * 0.95} />
+      <Glow x={x} y={y - 80} r={900} colour={halo('amber')} o={w * (1 - sleep) * 0.95} />
       <Place x={x} y={y} s={s * back} rx={rx} ry={ry} filter={`brightness(${(w * (1 - sleep * 0.9)).toFixed(3)})`}>
         <NoteScreen who={B} t={t} times={times} sendAt={S.bSend} fs={13.4} w={PW} quiet={false} />
       </Place>
-      {t > 7080 && t < 7500 ? [3, 2, 1, 0].map((g) => {
-        const eg = easeOf('power3.in')(u(t - g * 22, 7080, 7480))
-        return <Envelope key={g} x={x + eg * 120} y={y - 60 - eg * 520} w={lerp(150, 6, eg)} o={(1 - eg * 0.4) * (g ? 0.2 : 1)} colour="#F7D9A8" glow="rgba(224,169,90,0.8)" />
-      }) : null}
-      {e > 0 && e < 1 ? null : null}
+      {t > S.bSend + 170 && t < 7500 ? (
+        <Envelope x={x + e * 90} y={lerp(1120, 260, e)} w={lerp(170, 8, e)} o={1 - e * 0.5} colour="#F7D9A8" glow="rgba(224,169,90,0.8)" solid="#24170A" />
+      ) : null}
     </div>
   )
 }
 
-// the words set large over scenes C and D, each on its beat
+// the words set large over scenes C and D, each on its beat, and a shade
+// down from the top of the frame while they stand, so the phone's own
+// letters behind them go quiet
 function Words({ t }) {
+  const shade = t < S.send[1]
+    ? u(t, S.sendIt - 80, S.sendIt + 160)
+    : t < S.wait[0] ? u(t, S.read - 80, S.read + 160) : 0
   return (
     <>
-      <Line text="send it" t={t} from={S.sendIt} to={4930} size={250} x={74} y={1180} cut={S.send[1]} />
-      <Line text="privately." t={t} from={S.privately} to={4960} size={250} italic x={74} y={1400} stagger={22} cut={S.send[1]} />
-      <Line text="they only read it" t={t} from={S.read} to={7060} size={128} x={78} y={1020} stagger={16} cut={7500} />
-      <Line text="if they send" t={t} from={S.ifThey} to={7080} size={204} italic x={70} y={1170} stagger={20} cut={7500} />
-      <Line text="you one." t={t} from={S.ifThey + 250} to={7100} size={204} italic x={70} y={1360} stagger={22} cut={7500} />
+      {shade > 0 ? <div className="rl-shade" style={{ opacity: shade.toFixed(3) }} /> : null}
+      <Line text="send it" t={t} from={S.sendIt} to={4930} size={230} x={70} y={300} cut={S.send[1]} />
+      <Line text="privately." t={t} from={S.privately} to={4960} size={230} italic x={70} y={507} stagger={22} cut={S.send[1]} />
+      <Line text="they only read it" t={t} from={S.read} to={7060} size={124} x={74} y={300} stagger={16} cut={S.wait[0]} />
+      <Line text="if they send" t={t} from={S.ifThey} to={7080} size={176} x={66} y={432} stagger={20} cut={S.wait[0]} />
+      <Line text="you one." t={t} from={S.ifThey + 250} to={7100} size={176} x={66} y={590} stagger={22} cut={S.wait[0]} />
     </>
   )
 }
@@ -460,7 +470,7 @@ function Flap({ seq, times, t, w, h, size }) {
   while (k + 1 < times.length && times[k + 1] <= t) k++
   const cur = k >= 0 ? seq[k] : ' '
   const prev = k >= 1 ? seq[k - 1] : ' '
-  const p = k >= 0 ? clamp((t - times[k]) / 190) : 1
+  const p = k >= 0 ? clamp((t - times[k]) / 110) : 1
   const ch = (c) => <span className="rl-flap-ch" style={{ height: h, lineHeight: `${h}px`, fontSize: size }}>{c}</span>
   const upper = (c) => <div className="rl-flap-half is-top" style={{ height: h / 2 }}>{ch(c)}</div>
   const lower = (c) => <div className="rl-flap-half is-bot" style={{ height: h / 2, top: h / 2 }}><div style={{ marginTop: -h / 2 }}>{ch(c)}</div></div>
@@ -491,16 +501,17 @@ function WaitScene({ t }) {
   const cw = 284
   const chh = 384
   const gap = 20
-  const timeT = S.days[5] + 60
+  const timeT = S.time
   return (
     <div className="rl-cam" style={{ visibility: on ? 'visible' : 'hidden' }}>
       {CITY.map((name, i) => (
         <img
           key={name} className="rl-city" src={dither(name)} alt=""
-          style={{ opacity: i === d ? 1 : 0, transform: `scale(${zoom.toFixed(4)})`, filter: `brightness(${(0.86 * fl).toFixed(3)})` }}
+          style={{ opacity: i === d ? 1 : 0, transform: `scale(${zoom.toFixed(4)})`, filter: `brightness(${(0.45 * fl).toFixed(3)})` }}
         />
       ))}
       <div className="rl-board-shade" />
+      <div className="rl-housing" />
       <p className="rl-label" style={{ top: 548 }}>the reveal</p>
       <div className="rl-flaps" style={{ top: 604, gap }}>
         {[0, 1, 2].map((c) => (
@@ -508,9 +519,9 @@ function WaitScene({ t }) {
         ))}
       </div>
       <div className="rl-flaps" style={{ top: 604 + chh + 30, gap: 10 }}>
-        {[...TIME].map((c, i) => (t >= timeT + i * 36 ? (
-          <Flap key={i} seq={[c]} times={[timeT + i * 36]} t={t} w={c === ' ' ? 40 : c === ':' ? 70 : 118} h={170} size={160} />
-        ) : <span key={i} style={{ width: c === ' ' ? 40 : c === ':' ? 70 : 118 }} />))}
+        {[...TIME].map((c, i) => (c !== ' ' && t >= timeT + i * 24 ? (
+          <Flap key={i} seq={[c]} times={[timeT + i * 24]} t={t} w={c === ':' ? 70 : 118} h={170} size={160} />
+        ) : <span key={i} style={{ width: c === ' ' ? 34 : c === ':' ? 70 : 118 }} />))}
       </div>
       <p className="rl-label" style={{ top: 604 + chh + 30 + 170 + 36, opacity: u(t, timeT + 200, timeT + 400) }}>pacific.</p>
     </div>
@@ -539,7 +550,7 @@ function GlassScene({ t, film }) {
   const st = storyAt(t)
   const turn = clamp((st - film.times.glow) / 700)
   // the camera: the glass the height of the frame, then back to the phone
-  const back = easeOf('expo.inOut')(u(t, 10650, 11650))
+  const back = easeOf('expo.inOut')(u(t, 10450, 11450))
   const end = easeOf('power2.inOut')(u(t, S.end[0], S.end[0] + 500))
   let s = 1
   let x = 540
@@ -553,37 +564,20 @@ function GlassScene({ t, film }) {
   }
   const cx = g ? x - (g.x + g.w / 2) * s : 0
   const cy = g ? y - (g.y + g.h / 2) * s : 0
-  // the drop: the colours pulled apart for a moment, and let go
-  const ca = hit(t, S.drop, 140) * 9
   const fade = t < S.run[0] ? 0 : 1 - end
   return (
     <div className="rl-cam" style={{ opacity: fade.toFixed(3) }}>
-      <Glow x={540} y={y} r={lerp(1300, 900, back)} colour={turn > 0.5 ? halo('rose') : halo('night')} o={(0.35 + 0.65 * turn) * back} />
+      <Glow x={540} y={y} r={1100} colour={turn > 0.5 ? halo('rose') : halo('night')} o={(0.5 + 0.5 * turn) * back} />
       <div
         ref={ref} className="rl-glass"
         style={{
           transform: `translate(${cx.toFixed(2)}px, ${cy.toFixed(2)}px) scale(${s.toFixed(4)})`,
-          filter: ca > 0.3 ? `drop-shadow(${ca.toFixed(1)}px 0 0 rgba(255, 40, 110, 0.55)) drop-shadow(${(-ca).toFixed(1)}px 0 0 rgba(40, 190, 255, 0.55))` : undefined,
         }}
       >
         <Phone w={PW} mode="bare" square seed="intro" tint="rose" className="is-story" screenStyle={{ '--mu-turn': turn, ...turnStyle('night', 'rose') }}>
           <PixelStory story={film} at={st} />
         </Phone>
       </div>
-    </div>
-  )
-}
-
-// the light behind the glass once it turns: rays, in the rose
-function Rays({ t }) {
-  const o = at([[10150, 0], [10900, 0.85, 'power2.out'], [12400, 0.7], [13100, 0, 'power2.inOut']], t)
-  return (
-    <div className="rl-rays" style={{ opacity: o.toFixed(3), visibility: o > 0.002 ? 'visible' : 'hidden' }}>
-      <GodRays
-        style={{ width: '100%', height: '100%' }} speed={0} frame={t * 0.6} minPixelRatio={0.2} maxPixelCount={150000}
-        colorBack="#00000000" colorBloom="#DF93AF" colors={['#F7C6D9', '#DF93AF', '#A28CE0', '#FFE3EE']}
-        offsetX={0} offsetY={-0.14} density={0.32} spotty={0.3} midSize={0.2} midIntensity={0.5} intensity={0.55} bloom={0.4}
-      />
     </div>
   )
 }
@@ -602,38 +596,39 @@ const METAL = {
 }
 
 // ── 12.6 to 15.0: the end ───────────────────────────────────────────────────
+// The mark leaves the glass and is poured, and is hung on the axis the line
+// is set on, with nothing behind it: the metal is the light (DESIGN.md 3.5).
+// Its metal runs while it comes and slows to a stand as the last word lands,
+// so it is held at its brightest.
 function EndScene({ t }) {
   const k = easeOf('power3.inOut')(u(t, S.end[0], S.end[0] + 750))
   const o = u(t, S.end[0], S.end[0] + 420)
-  // from where the mark stood on the glass to where it is kept
-  const size = lerp(470, 640, k)
+  const size = lerp(470, 560, k)
+  const cx = lerp(540, 92 + 560 / 2, k)
   const cy = lerp(724, 520, k)
+  const settle = 13450
+  const frame = 2000 + 1.1 * (t < settle ? t : settle + (t - settle) * 0.12)
   const on = blink(t, 14000)
   return (
     <div className="rl-cam rl-end" style={{ visibility: o > 0.002 ? 'visible' : 'hidden' }}>
-      <Glow x={540} y={cy} r={760} colour="rgba(223, 147, 175, 0.42)" o={o * 0.9} />
-      <div className="rl-metal" style={{ left: 540 - size / 2, top: cy - size / 2, width: size, height: size, opacity: o }}>
+      <div className="rl-metal" style={{ left: cx - size / 2, top: cy - size / 2, width: size, height: size, opacity: o }}>
         <ShaderMount
           fragmentShader={liquidMetalFragmentShader} uniforms={METAL} mipmaps={['u_image']}
-          speed={0} frame={2000 + t * 1.1} minPixelRatio={1} maxPixelCount={700 * 700}
+          speed={0} frame={frame} minPixelRatio={1} maxPixelCount={700 * 700}
           style={{ width: '100%', height: '100%' }}
         />
       </div>
-      <Line text="nothing happens" t={t} from={12950} size={124} x={92} y={960} stagger={18} />
-      <Line text="unless it’s" t={t} from={13200} size={124} x={92} y={1080} stagger={20} />
-      <Line text="mutual." t={t} from={13450} size={250} italic x={80} y={1170} stagger={30} tail={<TailCursor on={on && t > 13900} />} />
-      <div className="rl-sign" style={{ opacity: easeOf('power2.out')(u(t, 13800, 14250)) }}>
-        <Lockup cell={3} />
-        <span className="rl-url">celestual.us</span>
-      </div>
+      <Line text="nothing happens" t={t} from={12950} size={116} x={92} y={880} stagger={18} />
+      <Line text="unless it’s" t={t} from={13200} size={116} x={92} y={985} stagger={20} />
+      <Line text="mutual." t={t} from={13450} size={250} italic x={80} y={1070} stagger={30} tail={<TailCursor on={on && t > 13900} />} />
+      <p className="rl-url" style={{ opacity: easeOf('power2.out')(u(t, 13500, 13850)), transform: `translateY(${((1 - easeOf('power2.out')(u(t, 13500, 13850))) * 10).toFixed(1)}px)` }}>celestual.us</p>
     </div>
   )
 }
 
 // the flashes: on the cut to send, on the envelope at the lens, on the drop
 function Flash({ t }) {
-  const a = hit(t, S.press - 10, 70) * 0.18 + hit(t, S.drop, 200) * 0.75 + hit(t, S.bWake, 60) * 0.12
+  const a = hit(t, S.press - 10, 70) * 0.18 + hit(t, S.drop, 35) * 0.25
   if (a < 0.004) return null
-  const rose = t >= S.drop - 20
-  return <span className="rl-flash" style={{ opacity: a.toFixed(3), background: rose ? 'radial-gradient(70% 55% at 50% 48%, #FFF4F8, #DF93AF 70%)' : '#EAF4FF' }} />
+  return <span className="rl-flash" style={{ opacity: a.toFixed(3), background: t >= S.drop - 20 ? '#FFFFFF' : '#EAF4FF' }} />
 }

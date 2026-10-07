@@ -3,7 +3,8 @@
 Posters and a film for celestual, drawn with the product's own parts. This is
 the brief every picture in `design/campaign/` was made against. The pictures
 are made by code (`app/src/studio/`), photographed by
-`node scripts/studio.mjs`, and the film by `node scripts/studio-film.mjs`.
+`node scripts/studio.mjs`, and the reel by `node scripts/studio-reel.mjs`
+(section 8).
 
 `design/DESIGN.md` and `design/VOICE.md` are the law. This file is how the
 campaign reads them.
@@ -178,3 +179,30 @@ it, and the founder would post it without changing a word. Typographic
 detail matters: optical alignment, real line lengths, no widows on a
 headline, no orphaned word on its own line, consistent margins from a grid
 (the board's width over 12 or 15 is a good unit).
+
+## 8. The reel
+
+`film-unsent.mp4` (30 fps) and `film-unsent-60.mp4` (60 fps), 1080 by 1920,
+15 seconds, cut to its own score at 120 beats a minute. One clock
+(`app/src/studio/parts/reel-time.js`) times the picture (`parts/reel.jsx`)
+and the score (`scripts/studio-score.mjs`), so a key is heard on the frame
+its letter lands and the drop is the frame the two meet.
+
+| ms | the shot |
+| --- | --- |
+| 0 | the glass up close, lin's note typed a letter at a time, the camera after the cursor to the question mark |
+| 1750 | the camera falls back through the phone into a wall of unsent notes (the letters in 5), lit one by one |
+| 2500 | `unsent.` |
+| 3500 | the hard cut on the bar: send, the envelope off the glass and through the lens, `send it privately.`, the screen going out |
+| 5500 | the other phone: kai's own note, `they only read it if they send you one.` |
+| 7500 | the week on a split flap board, a day a sixteenth, the city under it, to `sat 9:00 pm pacific.` |
+| 9000 | the product's own reveal (`filmOf`) on the glass at the size of the room: they run in |
+| 10000 | the drop: they are held, the glass turns rose, the pixels gather into the mark, `it's mutual.` |
+| 12600 | the mark in liquid metal (the product's `LiquidMark` shader), `nothing happens unless it's mutual.`, `celestual.us` |
+
+How it is made: `node scripts/studio-reel.mjs film-unsent --jobs 3`. The
+score is synthesised from the clock and mastered to −14 LUFS; three browsers
+each photograph a share of the 900 frames (`studio-film.mjs --frames`); one
+pass of ffmpeg lays the score under them, blooms the lights, parts the red
+and blue by a pixel, and moves a grain over it. The thirty is each pair of
+the sixty laid over each other, a shutter open half the frame.

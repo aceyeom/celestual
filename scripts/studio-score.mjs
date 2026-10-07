@@ -152,7 +152,7 @@ function bass(ms, m, len, { gain = 0.16 } = {}) {
   lay(MU, ms, L, (i) => {
     const t = i / SR
     const e = adsr(i, L, 0.004, 0.12, 0.7, 0.06)
-    return (Math.sin(TAU * f * t) * 0.8 + lp(o(f), 520) * 0.35) * e
+    return (Math.sin(TAU * f * t) * 0.8 + lp(o(f), 1100) * 0.35) * e
   }, { gain })
 }
 // a bell: a sine and its inharmonic partials, struck and let ring
@@ -186,15 +186,16 @@ function key(ms, { pitch = 2200, body = 420, gain = 0.1, pan = 0 } = {}) {
 // the drums
 const KICKS = []
 function kick(ms, { gain = 0.5, deep = 1 } = {}) {
-  KICKS.push(ms)
+  KICKS.push([ms, gain])
   gain *= 0.72
+  const hp = highpass(3200, 0.9)
   lay(DR, ms, sec(0.5), (i) => {
     const t = i / SR
-    const f = 46 + 110 * Math.exp(-t / 0.035) * deep
-    const ph = TAU * (46 * t + 110 * deep * 0.035 * (1 - Math.exp(-t / 0.035)))
+    const ph = TAU * (55 * t + 110 * deep * 0.035 * (1 - Math.exp(-t / 0.035)))
     const body = Math.sin(ph) * Math.exp(-t / (0.16 + 0.06 * deep))
-    const click = i < sec(0.002) ? rnd() * 0.5 : 0
-    return Math.tanh((body + click) * 1.6) * (f > 0 ? 1 : 1)
+    // the beater's click, where a phone's speaker hears a kick
+    const click = hp(i < sec(0.004) ? rnd() : 0) * 0.9
+    return Math.tanh((body + click) * 1.6)
   }, { gain })
 }
 function clap(ms, { gain = 0.16, pan = 0 } = {}) {
@@ -221,7 +222,9 @@ function boom(ms, { gain = 0.45, from = 120, to = 34, len = 1.1 } = {}) {
     const t = i / SR
     const f = to + (from - to) * Math.exp(-t / 0.09)
     ph += (TAU * f) / SR
-    return Math.sin(ph) * Math.exp(-t / (len * 0.45)) * Math.min(1, i / 40)
+    // and three times its pitch, driven and short, which a phone can play
+    const mid = Math.tanh(Math.sin(ph * 3) * 3) * Math.exp(-t / 0.08) * 0.45
+    return (Math.sin(ph) * Math.exp(-t / (len * 0.45)) + mid) * Math.min(1, i / 40)
   }, { gain })
 }
 // air: noise through a band that moves, swelling in or falling away
@@ -235,14 +238,12 @@ function air(ms, len, { gain = 0.08, from = 400, to = 9000, rise = true, pan = 0
   }, { gain, pan, verb })
 }
 // the screen going out: a whine falling to nothing, and the click
-function off(ms, { gain = 0.12 } = {}) {
-  let ph = 0
-  lay(FX, ms, sec(0.45), (i) => {
+function off(ms, { gain = 0.1 } = {}) {
+  lay(FX, ms, sec(0.32), (i) => {
     const t = i / SR
-    const f = 3200 * Math.exp(-t / 0.07) + 60
-    ph += (TAU * f) / SR
-    return Math.sin(ph) * Math.exp(-t / 0.16) * 0.6 + (i < sec(0.003) ? rnd() : 0)
-  }, { gain, verb: 0.35 })
+    const hum = (Math.sin(TAU * 118 * t) * 0.6 + Math.sin(TAU * 236 * t) * 0.25) * Math.exp(-t / 0.07)
+    return hum * 0.7 + (i < sec(0.003) ? rnd() * 0.8 : 0)
+  }, { gain, verb: 0.3 })
 }
 // a flap: the card's slap, the board's body under it
 function flap(ms, { gain = 0.13, pan = 0 } = {}) {
@@ -272,7 +273,7 @@ const A6 = [45, 52, 54, 57, 61]
 // first chord breathing in
 typedA().forEach((ms, i) => {
   const sp = A.text[i] === ' '
-  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.075 : 0.1, pan: -0.15 })
+  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.12 : 0.16, pan: -0.15 })
 })
 pad(0, 2600, Bm9, { gain: 0.032, cut: [300, 900], attack: 0.35, release: 0.7 })
 ;[0, b(2)].forEach((ms) => { kick(ms, { gain: 0.32, deep: 0.5 }); kick(ms + 180, { gain: 0.18, deep: 0.4 }) })
@@ -324,39 +325,43 @@ for (let k = 23; k < 30; k++) hat(b(k / 2), { gain: k % 2 ? 0.03 : 0.045 })
 key(S.bSend, { pitch: 1500, body: 300, gain: 0.15, pan: 0.15 })
 bell(S.bSend + 60, 88, { gain: 0.028, decay: 0.2, verb: 0.2 })
 bell(S.bSend + 150, 93, { gain: 0.024, decay: 0.3, verb: 0.2 })
-air(7080, 420, { gain: 0.08, from: 9000, to: 400, rise: false, pan: 0.1 })
+air(S.bSend + 170, 330, { gain: 0.08, from: 9000, to: 400, rise: false, pan: 0.1 })
 
 // 7.5 to 9: the week. A clack for every flap, the riser under them, the
 // roll quickening, the filter opening
 S.days.forEach((d) => [0, 28, 56].forEach((o, c) => flap(d + o, { gain: 0.12, pan: (c - 1) * 0.35 })))
-for (let i = 0; i < 7; i++) if (i !== 4) flap(S.days[5] + 60 + i * 36, { gain: 0.09, pan: (i / 3 - 1) * 0.5 })
-air(7500, 2500, { gain: 0.11, from: 200, to: 11000, q: 3.5 })
+for (let i = 0; i < 7; i++) if (i !== 4) flap(S.time + i * 24, { gain: 0.09, pan: (i / 3 - 1) * 0.5 })
+air(7500, 2250, { gain: 0.07, from: 200, to: 11000, q: 3.5 })
 {
   // the roll: eighths, then sixteenths, then thirty-seconds, into the drop
   const hits = []
   for (let ms = 8000; ms < 8750; ms += 250) hits.push(ms)
   for (let ms = 8750; ms < 9500; ms += 125) hits.push(ms)
-  for (let ms = 9500; ms < 9940; ms += 62.5) hits.push(ms)
-  hits.forEach((ms, i) => clap(ms, { gain: 0.03 + 0.07 * (i / hits.length), pan: ((i % 2) * 2 - 1) * 0.15 }))
+  for (let ms = 9500; ms < 9750; ms += 62.5) hits.push(ms)
+  hits.forEach((ms, i) => clap(ms, { gain: 0.02 + 0.05 * (i / hits.length), pan: ((i % 2) * 2 - 1) * 0.15 }))
 }
-pad(7500, 2400, [47, 54, 59, 62, 66], { gain: 0.035, cut: [300, 5200], attack: 1.6, release: 0.1, q: 2.4 })
+pad(7500, 2250, [47, 54, 59, 62, 66], { gain: 0.03, cut: [300, 5200], attack: 1.6, release: 0.1, q: 2.4 })
+// and the breath: from the moment they are held, the air drawn in, and nothing
+air(9790, 210, { gain: 0.035, from: 2500, to: 9000 })
 for (let k = 15; k <= 19; k++) kick(b(k), { gain: 0.34 })
 
-// 9 to 10: the run. A climbing arpeggio under the two of them running, a
-// breath of nothing before the drop
-;[59, 62, 66, 69, 71, 74, 78, 81].forEach((m, i) => pluck(9000 + i * 110, m, { gain: 0.04 + i * 0.004, decay: 0.16, cut: 4000, pan: ((i % 2) * 2 - 1) * 0.3, delay: 0.2 }))
+// 9 to 10: the run. A climbing arpeggio under the two of them running, and
+// from the moment they are held (9750) a breath of nothing before the drop
+;[59, 62, 66, 69, 71, 74, 78, 81].forEach((m, i) => pluck(8900 + i * 105, m, { gain: 0.04 + i * 0.004, decay: 0.16, cut: 4000, pan: ((i % 2) * 2 - 1) * 0.3, delay: 0.2 }))
 
 // 10: the drop. They are held: the chord, the kick, the crash, the motif
 const DROP = S.drop
 boom(DROP, { gain: 0.6, from: 140, to: 32, len: 1.6 })
-crash(DROP, { gain: 0.11 })
-pad(DROP, 2700, D9, { gain: 0.06, cut: [5200, 1800], attack: 0.01, release: 0.9, verb: 0.6, pan: 0.5 })
+crash(DROP, { gain: 0.15 })
+pad(DROP, 2700, D9, { gain: 0.09, cut: [5200, 1800], attack: 0.01, release: 0.9, verb: 0.6, pan: 0.5 })
+// the same chord an octave up, bright, for the light going over the glass
+pad(DROP, 2300, D9.slice(2).map((m) => m + 12), { gain: 0.03, cut: [7000, 2600], attack: 0.01, release: 0.8, verb: 0.7, pan: 0.6 })
 for (let k = 20; k <= 24; k++) kick(b(k), { gain: 0.45 })
-;[b(21), b(23)].forEach((ms) => clap(ms, { gain: 0.14 }))
+;[b(21), b(23)].forEach((ms) => clap(ms, { gain: 0.18 }))
 for (let k = 41; k < 50; k++) hat(b(k / 2), { gain: k % 2 ? 0.035 : 0.05, open: k % 4 === 3 })
 ;[38, 38, 45, 43].forEach((m, i) => bass(DROP + i * 500, m, 470, { gain: 0.16 }))
 // the motif: up to the D, and the C sharp under it
-;[[0, 78], [250, 81], [500, 86], [1000, 85], [1500, 81]].forEach(([d, m]) => bell(DROP + d, m, { gain: 0.035, decay: 0.9, pan: (d / 1000) - 0.4, delay: 0.35 }))
+;[[0, 78], [250, 81], [500, 86], [1000, 85], [1500, 81]].forEach(([d, m]) => bell(DROP + d, m, { gain: 0.045, decay: 0.9, pan: (d / 1000) - 0.4, delay: 0.35 }))
 // `it's mutual.` typed in the glass's cells, a soft tick a letter, and the
 // bell when the last of it lands
 const ST = STORY_TIMES
@@ -368,9 +373,9 @@ const SAID = reelAt(ST.said)
 // 12.6 to 15: the end. The drums go; the chord comes home, and the metal is
 // poured: a shimmer of glass harmonics, and the last note under the word
 air(S.end[0] - 300, 900, { gain: 0.05, from: 9000, to: 600, rise: false })
-pad(S.end[0], 2400, [43, 50, 54, 57, 62, 66], { gain: 0.05, cut: [1400, 600], attack: 0.3, release: 1.2, verb: 0.75 })
-pad(13450, 1550, [38, 50, 57, 62, 66, 69], { gain: 0.045, cut: [1800, 700], attack: 0.05, release: 1.2, verb: 0.8 })
-boom(13450, { gain: 0.3, from: 90, to: 36, len: 1.4 })
+pad(S.end[0], 2400, [43, 50, 54, 57, 62, 66], { gain: 0.03, cut: [1400, 600], attack: 0.3, release: 1.2, verb: 0.75 })
+pad(13450, 1550, [38, 50, 57, 62, 66, 69], { gain: 0.028, cut: [1800, 700], attack: 0.05, release: 1.2, verb: 0.8 })
+boom(13450, { gain: 0.18, from: 90, to: 36, len: 1.4 })
 ;[[86, 12700], [90, 12850], [93, 13000], [98, 13150]].forEach(([m, ms], i) => bell(ms, m, { gain: 0.012, decay: 0.8, pan: (i % 2) * 0.6 - 0.3, verb: 0.8, p2: 0.15 }))
 bell(13450, 74, { gain: 0.04, decay: 2.2, verb: 0.7 })
 bell(13453, 81, { gain: 0.03, decay: 2.0, verb: 0.7, pan: 0.2 })
@@ -378,9 +383,10 @@ bell(13453, 81, { gain: 0.03, decay: 2.0, verb: 0.7, pan: 0.2 })
 // ── the mix ─────────────────────────────────────────────────────────────────
 // the music ducks under every kick, as a pumping heart would
 const duck = new Float32Array(N).fill(1)
-for (const ms of KICKS) {
+for (const [ms, g] of KICKS) {
   const s0 = at(ms)
-  for (let i = 0; i < sec(0.3) && s0 + i < N; i++) duck[s0 + i] = Math.min(duck[s0 + i], 1 - 0.55 * Math.exp(-i / sec(0.09)))
+  const depth = 0.55 * Math.min(1, g / 0.42)
+  for (let i = 0; i < sec(0.3) && s0 + i < N; i++) duck[s0 + i] = Math.min(duck[s0 + i], 1 - depth * Math.exp(-i / sec(0.09)))
 }
 // a ping pong delay a dotted eighth long
 {

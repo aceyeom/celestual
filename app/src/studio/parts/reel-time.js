@@ -50,8 +50,9 @@ export const S = {
   send: [3500, 5500], press: beat(7), sendIt: beat(8), privately: beat(9), off: beat(10),
   // out of the black, the other phone, and the line in two halves
   other: [5500, 7500], bWake: beat(11), read: beat(12), ifThey: beat(13), bSend: 7100,
-  // the week on the flaps, an eighth note a day, the city under them
-  wait: [7500, 9000], days: [7500, 7680, 7860, 8040, 8220, 8400],
+  // the week on the flaps, a sixteenth a day, the city under them, and the
+  // time of the reveal whole on the beat (8500) and held for one
+  wait: [7500, 9000], days: [7500, 7625, 7750, 7875, 8000, 8125], time: 8250,
   // the run, on the glass at the size of the room, landing on the drop
   run: [9000, 10000],
   // the drop: they are held, the light goes over everything, the mark
@@ -60,23 +61,24 @@ export const S = {
   end: [12600, 15000],
 }
 
-// lin's note: the first words at a hand's pace where the camera holds on
-// them, the middle in a run while the camera crosses the glass, and the
-// last word slow again where it lands, on the question mark
-export const A_HOLD = 12
+// lin's note: the first line already there on the first frame, the rest
+// at a quick hand's pace as the camera pushes in on it, and the last word
+// slow, so the question mark is what the push in arrives at
+export const A_HOLD = 18
 export const A_LAND = 48
-export const typedA = () => rhythm(A.text, -400, (i) => (i < A_HOLD || i >= A_LAND ? 60 : 21))
+export const typedA = () => rhythm(A.text, -1100, (i) => (i < A_HOLD || i >= A_LAND ? 60 : 30))
 export const typedB = () => rhythm(B.text, 5640, 30)
 
 // ── the mutual's own film against the reel's clock ──────────────────────────
 // Its moments as the product tells them (pixmark.js `filmStory`), with a
 // sentence of SAY's length, so `said` is the moment its last letter lands.
 export const STORY_TIMES = filmStory({ say: { cells: [], w: 0, ends: Array.from(SAY, (_, i) => i + 1) } }).times
-// the run from where they come in to where they are held, landing on the
-// drop; then a fifth over the product's pace to the sentence said, and its
-// own pace while the mark lives
+// the run from just after they come in to where they are held, a breath
+// before the drop; the drop is the light going over the glass (the story's
+// `glow`), so the rose is the drop; then on to the sentence said, and the
+// story's own pace while the mark lives
 const ST = STORY_TIMES
-export const STORY = [[S.run[0], ST.enter], [S.drop, ST.catch], [12350, ST.said], [16350, ST.said + 4000]]
+export const STORY = [[S.run[0], ST.enter + 360], [9750, ST.catch], [S.drop, ST.glow], [12350, ST.said], [16350, ST.said + 4000]]
 export function storyAt(t) {
   if (t <= STORY[0][0]) return STORY[0][1]
   for (let i = 1; i < STORY.length; i++) {

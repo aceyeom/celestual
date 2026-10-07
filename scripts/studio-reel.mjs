@@ -72,7 +72,10 @@ const fc = (tail) => [
 const enc = ['-c:v', 'libx264', '-preset', 'slow', '-tune', 'grain', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart']
 const input = ['-framerate', String(fps), '-i', join(scratch, 'f%05d.jpg'), '-i', wav]
 console.log('finishing')
-const half = spawnSync('ffmpeg', ['-v', 'error', '-y', ...input, '-filter_complex', fc('tmix=frames=2,fps=30'), '-map', '[v]', '-map', '1:a', '-crf', '19', ...enc, join(outDir, `${id}.mp4`)], { stdio: 'inherit' })
+// the thirty: each frame the sixty's 2k and 2k+1 laid over each other, so a
+// cut on a beat (always an even frame of the sixty) is never half one shot
+// and half the next
+const half = spawnSync('ffmpeg', ['-v', 'error', '-y', ...input, '-filter_complex', fc('tmix=frames=2,select=mod(n\\,2),setpts=N/(30*TB)'), '-map', '[v]', '-map', '1:a', '-r', '30', '-crf', '19', ...enc, join(outDir, `${id}.mp4`)], { stdio: 'inherit' })
 if (half.status !== 0) throw new Error('ffmpeg, the thirty')
 const full = spawnSync('ffmpeg', ['-v', 'error', '-y', ...input, '-filter_complex', fc(''), '-map', '[v]', '-map', '1:a', '-crf', '20', ...enc, join(outDir, `${id}-60.mp4`)], { stdio: 'inherit' })
 if (full.status !== 0) throw new Error('ffmpeg, the sixty')

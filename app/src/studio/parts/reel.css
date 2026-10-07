@@ -29,7 +29,7 @@
 .rl-measure { position: absolute; left: -5000px; top: 0; width: 1000px; visibility: hidden; }
 
 /* the camera, and the things it carries, placed by their own transforms */
-.rl-cam, .rl-tilt, .rl-off { position: absolute; inset: 0; }
+.rl-cam, .rl-tilt { position: absolute; inset: 0; }
 .rl-obj { position: absolute; left: 0; top: 0; }
 .rl-glass { position: absolute; left: 0; top: 0; width: 1000px; transform-origin: 0 0; z-index: 4; }
 /* the depth of field of the glass up close: soft above and below the line */
@@ -44,15 +44,19 @@
   background: radial-gradient(closest-side, var(--c) 0%, color-mix(in srgb, var(--c) 38%, transparent) 40%, transparent 100%);
 }
 .rl-env { position: absolute; z-index: 30; overflow: visible; }
-.rl-ewash { position: absolute; inset: 0; z-index: 31; background: radial-gradient(60% 50% at 50% 50%, #EAF4FF, rgba(143, 184, 220, 0.4) 70%, transparent); mix-blend-mode: screen; }
-.rl-dot { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 0 24px 8px rgba(200, 230, 255, 0.8); z-index: 12; }
 
 /* the week: the city in the screens' inks, and the board over it */
 .rl-city {
   position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; image-rendering: pixelated;
   transform-origin: 50% 50%;
 }
-.rl-board-shade { position: absolute; inset: 0; background: radial-gradient(64% 26% at 50% 40%, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.06) 100%); }
+.rl-board-shade { position: absolute; inset: 0; background: radial-gradient(64% 26% at 50% 40%, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.1) 100%); }
+/* the board's own housing, so the city stays round it and not in it */
+.rl-housing {
+  position: absolute; left: 64px; right: 64px; top: 500px; height: 800px; border-radius: 24px;
+  background: linear-gradient(180deg, rgba(12, 12, 12, 0.93), rgba(5, 5, 5, 0.96));
+  box-shadow: 0 60px 140px -30px rgba(0, 0, 0, 0.95), inset 0 0 0 1px rgba(244, 241, 234, 0.09);
+}
 .rl-flaps { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
 .rl-flap {
   position: relative; border-radius: 10px; background: #0B0B0B;
@@ -73,17 +77,20 @@
 .rl-flap-hinge { position: absolute; left: 0; right: 0; height: 2px; background: rgba(0, 0, 0, 0.9); z-index: 3; }
 .rl-label {
   position: absolute; left: 0; right: 0; margin: 0; text-align: center; z-index: 5;
-  font-family: var(--st-mono); font-size: 30px; letter-spacing: 0.32em; text-transform: none; color: var(--ash);
+  font-family: var(--st-mono); font-size: 34px; letter-spacing: 0.3em; text-transform: none; color: rgba(244, 241, 234, 0.85);
 }
 
-/* the rays behind the glass */
-.rl-rays { position: absolute; inset: 0; z-index: 2; mix-blend-mode: screen; }
 
 /* the end */
 .rl-end { z-index: 6; }
 .rl-metal { position: absolute; z-index: 3; }
-.rl-sign { position: absolute; left: 96px; top: 1440px; display: flex; align-items: center; gap: 30px; z-index: 40; }
-.rl-url { font-family: var(--st-mono); font-size: 30px; letter-spacing: 0.08em; color: var(--ash); }
+.rl-url { position: absolute; left: 96px; top: 1360px; margin: 0; z-index: 40; font-family: var(--st-mono); font-size: 40px; letter-spacing: 0.08em; color: rgba(244, 241, 234, 0.82); }
+
+/* under the words, over the scene */
+.rl-shade {
+  position: absolute; inset: 0; z-index: 39; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.62) 28%, rgba(0, 0, 0, 0.2) 44%, rgba(0, 0, 0, 0) 56%);
+}
 
 /* a flash, over everything but the grain */
 .rl-flash { position: absolute; inset: 0; z-index: 45; mix-blend-mode: screen; pointer-events: none; }
