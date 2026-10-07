@@ -35,7 +35,8 @@ try {
   const page = await s.pageAt(scale)
   await s.open(page, `film=${encodeURIComponent(id)}`, f.w, f.h)
   const clip = await page.locator('.st-board').first().boundingBox()
-  const grab = (type = 'png') => page.screenshot({ type, ...(type === 'jpeg' ? { quality: 96 } : {}), clip: { x: clip.x, y: clip.y, width: f.w, height: f.h } })
+  // a heavy frame on a machine with no graphics card can take its time
+  const grab = (type = 'png') => page.screenshot({ type, timeout: 180000, ...(type === 'jpeg' ? { quality: 96 } : {}), clip: { x: clip.x, y: clip.y, width: f.w, height: f.h } })
   mkdirSync(out, { recursive: true })
 
   const stills = opt('stills')

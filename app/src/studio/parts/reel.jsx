@@ -417,9 +417,7 @@ function waveTint(tint, tw, t) {
 }
 
 // the whip out of the wall and into the dark: the frame cut to the phone's
-// cells and each cell's light drawn out along the move, the brightest
-// winning, as a sort of the pixels by their light would (`#rl-mb`, in the
-// reel)
+// cells, and the cells drawn out along the move (`#rl-mb`, in the reel)
 function whipOf(t) {
   if (t < S.whip[0] || t > S.whip[1]) return { x: 0, blur: 0 }
   if (t < 4000) {
@@ -1305,7 +1303,8 @@ export function Reel({ t }) {
           <feComposite width="12" height="12" />
           <feTile result="grid" />
           <feComposite in="SourceGraphic" in2="grid" operator="in" />
-          <feMorphology operator="dilate" radius={`${(6 + mb).toFixed(0)} 6`} />
+          <feMorphology operator="dilate" radius="6" />
+          <feGaussianBlur stdDeviation={`${(mb * 0.7).toFixed(1)} 0`} />
         </filter>
       </svg>
       <div className="rl-stage" style={{ transform: shake }}>
