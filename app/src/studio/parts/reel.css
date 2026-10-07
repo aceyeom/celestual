@@ -21,8 +21,7 @@
 /* the note: what is not typed yet is laid out and unseen */
 .rl-typed .rl-lift { display: block; }
 .rl-typed .rl-rest { color: transparent; text-shadow: none; }
-.rl-typed .rl-nocur { display: inline-block; width: 0.107em; margin-right: 0.107em; }
-.rl-typed .rl-cur { margin-left: 0; margin-right: 0.107em; }
+.rl-typed .rl-cur { margin-left: 0.02em; margin-right: -0.127em; }
 .rl-board .wl-sk.is-open { background: var(--s-lit); color: var(--s-bot); border-radius: 1cqw; }
 .rl-board .wl-sk.is-open .wl-lit { color: var(--s-bot); text-shadow: none; }
 

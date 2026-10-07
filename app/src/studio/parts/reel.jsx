@@ -31,7 +31,7 @@ import { liquidMetalFragmentShader, LiquidMetalShapes, ShaderFitOptions } from '
 import { Board, Phone, PixelStory, Lockup, Grain, filmOf, readyFilm, useHold, turnStyle, skinVars } from '../kit.jsx'
 import { ScreenNote } from '../../wall/screen.jsx'
 import { glyphPath } from '../../wall/looks.js'
-import { MS, A, B, S, typedA, typedB, storyAt } from './reel-time.js'
+import { MS, A, B, S, typedA, typedB, storyAt, A_LAND } from './reel-time.js'
 import './reel.css'
 
 export { MS }
@@ -131,7 +131,9 @@ function Typed({ text, n, cursor, fs, lift = 0, onMeasure = null }) {
     }), { w: root.offsetWidth, h: root.offsetHeight })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const chars = [...text]
-  const cur = cursor ? <span className="wl-scr-cur rl-cur" aria-hidden="true" /> : <span className="rl-nocur" />
+  // the cursor takes no room on the line, as a caret takes none, so the
+  // words wrap the same with it anywhere in them or after them
+  const cur = cursor ? <span className="wl-scr-cur rl-cur" aria-hidden="true" /> : null
   return (
     <div className="wl-scr-msg rl-typed" ref={ref} style={{ '--fs': `${fs}cqw` }}>
       <span className="rl-lift" style={lift ? { transform: `translateY(${-lift * 1.02}em)` } : undefined}>
@@ -250,7 +252,9 @@ export function Reel({ t }) {
 
   return (
     <Board w={1080} h={1920} grain={0} className="rl-board">
-      <Measure who={A} times={tA} onMeasure={setMA} />
+      {/* measured only once the phone's face is on the page (readyFilm waits
+          for it), or the letters would be measured in the fallback face */}
+      {ok ? <Measure who={A} times={tA} onMeasure={setMA} /> : null}
       <div className="rl-stage" style={{ transform: shake }}>
         {t < 3520 && mA ? <MacroWall t={t} m={mA} times={tA} /> : null}
         {t >= 3480 && t < 5560 ? <SendScene t={t} times={tA} /> : null}
@@ -287,26 +291,24 @@ function Measure({ who, times, onMeasure }) {
 // ── 0.0 to 3.5: up close, and back into the wall ────────────────────────────
 function MacroWall({ t, m, times }) {
   const C = { x: 540, y: 930 }
-  // where the cursor is, in the phone's pixels, smoothed over the last third
-  // of a second so the camera eases after it as a hand would
-  const cur = (tt) => {
-    const n = typedAt(times, tt)
-    const g = m.m[Math.min(n, m.m.length - 1)]
-    return { x: g.x + g.w * 0.2, y: g.y + g.h * 0.5 }
-  }
-  let px = 0
-  let py = 0
-  const N = 18
-  for (let j = 0; j < N; j++) { const p = cur(t - j * 22); px += p.x; py += p.y }
-  px /= N; py /= N
+  // The camera up close does not chase the keys: it holds on the first
+  // words as they are typed, crosses the glass in one move while the middle
+  // of the note runs on out of the frame, and lands on its last word as the
+  // question mark comes, the way a lens on a slider would
   const lineH = m.m[0].h
+  const line = (i) => m.m[Math.min(i, m.m.length - 1)]
+  const at1 = line(4)
+  const at2 = line(A_LAND + 1)
+  const cross = easeOf('expo.inOut')(u(t, 820, 1180))
+  const px = lerp(at1.x + at1.w * 0.5 + u(t, -400, 820) * at1.w * 1.4, at2.x + at2.w * 0.5 + u(t, 1180, 1750) * at2.w * 0.8, cross)
+  const py = lerp(at1.y + at1.h * 0.5, at2.y + at2.h * 0.5, cross)
   // the camera: a letter a hand high, then falling back to the wall
-  const zMacro = 430 / lineH
+  const zMacro = 330 / lineH
   const zWall = 0.3
   const fall = easeOf('expo.inOut')(u(t, S.wall[0], S.wall[0] + 1100))
   const z = Math.exp(lerp(Math.log(zMacro), Math.log(zWall) - 0.06 * u(t, 2850, 3500), fall))
-  // the point the camera holds: the cursor, eased over to the middle of the
-  // phone as it falls back, with a drift so the wall is never still
+  // the point the camera holds, eased over to the middle of the phone as it
+  // falls back, with a drift so the wall is never still
   const mid = { x: m.box.w / 2, y: m.box.h / 2 }
   const P = { x: lerp(px, mid.x, fall) + Math.sin(t / 700) * 22 * fall, y: lerp(py, mid.y, fall) + Math.cos(t / 830) * 18 * fall }
   // up close the glass is turned away from the lens and the plane of focus

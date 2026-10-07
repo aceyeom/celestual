@@ -22,15 +22,17 @@ export const B = { name: 'kai', to: 'lin', tint: 'amber', seed: 'kai', text: 'i 
 
 // A person's rhythm, the same on every frame: a beat a letter, a longer one
 // after a space, longer after a stop, and a small unevenness off the letter
-// itself. Answers the moment each character lands.
+// itself. `step` is the beat, or the beat for each letter. Answers the
+// moment each character lands.
 export function rhythm(text, from, step) {
   const out = []
   let t = from
   for (let i = 0; i < text.length; i++) {
     const c = text[i]
     const prev = text[i - 1] || ''
+    const st = typeof step === 'function' ? step(i) : step
     const wobble = ((Math.sin((i + 1) * 12.9898 + c.charCodeAt(0) * 78.233) * 43758.5453) % 1 + 1) % 1
-    t += step * (0.7 + wobble * 0.6) + (prev === ' ' ? step * 0.4 : 0) + (/[.?,]/.test(prev) ? step * 2.5 : 0)
+    t += st * (0.7 + wobble * 0.6) + (prev === ' ' ? st * 0.4 : 0) + (/[.?,]/.test(prev) ? st * 2.5 : 0)
     out.push(t)
   }
   return out
@@ -49,7 +51,7 @@ export const S = {
   // out of the black, the other phone, and the line in two halves
   other: [5500, 7500], bWake: beat(11), read: beat(12), ifThey: beat(13), bSend: 7100,
   // the week on the flaps, an eighth note a day, the city under them
-  wait: [7500, 9000], days: [7500, 7750, 8000, 8250, 8500, 8750],
+  wait: [7500, 9000], days: [7500, 7680, 7860, 8040, 8220, 8400],
   // the run, on the glass at the size of the room, landing on the drop
   run: [9000, 10000],
   // the drop: they are held, the light goes over everything, the mark
@@ -58,7 +60,12 @@ export const S = {
   end: [12600, 15000],
 }
 
-export const typedA = () => rhythm(A.text, -520, 30)
+// lin's note: the first words at a hand's pace where the camera holds on
+// them, the middle in a run while the camera crosses the glass, and the
+// last word slow again where it lands, on the question mark
+export const A_HOLD = 12
+export const A_LAND = 48
+export const typedA = () => rhythm(A.text, -400, (i) => (i < A_HOLD || i >= A_LAND ? 60 : 21))
 export const typedB = () => rhythm(B.text, 5640, 30)
 
 // ── the mutual's own film against the reel's clock ──────────────────────────
