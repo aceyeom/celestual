@@ -368,6 +368,8 @@ for (let i = 0; i < 16; i++) {
   pluck(2320 + r(i + 3) * 620, PENTA[(i * 5) % PENTA.length], { gain: 0.03, decay: 0.12, cut: 2600, pan: ((i % 5) / 2 - 1) * 0.7, delay: 0.35, verb: 0.4 })
 }
 air(S.wall[0], S.lines[0] - S.wall[0], { gain: 0.07, from: 300, to: 8000 })
+whoosh(S.wall[0] - 40, 560, { gain: 0.11, from: 5000, to: 400, panFrom: 0.3, panTo: -0.3 })
+boom(S.wall[0], { gain: 0.3, from: 110, to: 36, len: 0.9 })
 ;[[S.lines[0], Gmaj9], [S.lines[1], A6], [S.lines[2], D9]].forEach(([ms, ch], i) => {
   boom(ms, { gain: 0.24 + i * 0.08, from: 150, to: 40, len: 0.7 })
   pad(ms, i === 2 ? 1000 : 240, ch, { gain: 0.045, cut: [2600, 1100], attack: 0.005, release: i === 2 ? 0.6 : 0.15, verb: 0.6 })
@@ -404,7 +406,8 @@ tap(S.tap1, { gain: 0.16 })
 whoosh(S.open[0] + 20, 450, { gain: 0.07, from: 300, to: 3000, panFrom: 0.1, panTo: -0.1 })
 pad(S.open[0], 1400, Gmaj9, { gain: 0.035, cut: [900, 2600], attack: 0.15, release: 0.8, verb: 0.7 })
 tap(S.tap2, { gain: 0.15, pan: 0.2, pitch: 2400 })
-pop(S.tap2 + 10, { gain: 0.1, pan: 0.2 })
+pop(S.tap2 + 10, { gain: 0.16, pan: 0.2 })
+boom(S.tap2, { gain: 0.16, from: 180, to: 60, len: 0.35 })
 for (let i = 0; i < 8; i++) bell(S.tap2 + 30 + i * 28, [86, 90, 93, 95, 98, 93, 100, 102][i], { gain: 0.012, decay: 0.25, pan: (r(i + 40) - 0.5) * 1.2, verb: 0.5, p2: 0.1 })
 off(7290, { gain: 0.06 })
 
@@ -458,7 +461,8 @@ air(S.wait[0], 2250, { gain: 0.07, from: 200, to: 11000, q: 3.5 })
   hits.forEach((ms, i) => clap(ms, { gain: 0.02 + 0.05 * (i / hits.length), pan: ((i % 2) * 2 - 1) * 0.15 }))
 }
 pad(S.wait[0], 2250, [47, 54, 59, 62, 66], { gain: 0.03, cut: [300, 5200], attack: 1.6, release: 0.1, q: 2.4 })
-tap(S.tap3, { gain: 0.14 })
+tap(S.tap3, { gain: 0.2 })
+bell(S.tap3 + 20, 86, { gain: 0.03, decay: 0.5, verb: 0.4 })
 whoosh(S.tap3 + 30, 250, { gain: 0.09, from: 200, to: 7000, panFrom: 0, panTo: 0 })
 for (let k = 23; k <= 27; k++) kick(b(k), { gain: 0.34 })
 // the run: a climbing arpeggio under the two of them running, and from the
@@ -492,7 +496,8 @@ pad(S.ask[0], 2300, [43, 50, 54, 57, 62, 66], { gain: 0.034, cut: [700, 1500], a
 ;[S.q[0], S.q[1], S.q[2], S.q[2] + 500].forEach((ms) => beatHeart(ms, { gain: 0.3 }))
 ;[[S.q[0], 62], [S.q[1], 66], [S.q[2], 69]].forEach(([ms, m], i) => carillon(ms, m, { gain: 0.045 + i * 0.01, decay: 2, pan: (i - 1) * 0.2, verb: 0.75 }))
 // 18.5: the letters to pixels
-crackle(S.burst, 200, { gain: 0.07 })
+crackle(S.burst, 240, { gain: 0.12 })
+boom(S.burst, { gain: 0.2, from: 200, to: 70, len: 0.4 })
 bell(S.burst, 98, { gain: 0.02, decay: 0.4 })
 // 18.65 to 20: the two lights going round each other, quicker each turn: a
 // note a light at each half turn, heard where each light is, rising, and the

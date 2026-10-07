@@ -51,7 +51,7 @@ export const S = {
   // the berkeley wall: the campanile drawn as its elevation is, from the
   // ground up, its lantern lit on the beat, the campus's letters turning
   // round it; a finger stops them, opens one and hearts it
-  berk: [4000, 7500], guides: 4050, plot: [4250, 4950], lamp: 5000, title: 4500, ring: 4750,
+  berk: [4000, 7500], guides: 4000, plot: [4100, 4950], lamp: 5000, title: 4500, ring: 5000,
   stop: [5250, 5900], tap1: 6000, open: [6000, 6450], tap2: 6750,
   // send, the envelope through the lens, the words on the beats, the screen
   // going out
@@ -68,7 +68,7 @@ export const S = {
   drop: 14000, mutual: [14000, 16500], said: 16000,
   // the question, a line a beat, then its letters go to the phone's pixels,
   // two of them circling, and they meet on the last bar: the name, drawn
-  ask: [16500, 22000], q: [16500, 17000, 17500], burst: 18500, meet: 20000, lock: [20000, 20750], url: 20750,
+  ask: [16500, 22000], q: [16500, 17000, 17500], burst: 18500, meet: 20000, lock: [20000, 20650], url: 20650,
 }
 
 // the two lights at the end: each half of the question gathered into one

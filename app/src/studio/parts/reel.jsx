@@ -137,19 +137,27 @@ function useScene(t, build, after = null) {
 
 // ── type ────────────────────────────────────────────────────────────────────
 // One type system for the whole film: the display face, lowercase, at two
-// sizes, a line (M) and the word that carries it (XL, in italic), every
-// line on one margin in one band at the top of the frame, and the question
-// at the end in the middle of it. A line is split by SplitText into its
-// letters, each rising into place out of a mask the height of its line on
-// the line's beat, turned a little as a hand sets type, and going up and
-// out of it the same way. The words are React's only until they are split:
-// `Set` is kept as it is, so SplitText has them from then on.
+// sizes, a line (M) and the line that carries it (XL, in italic, always the
+// last), every line on one margin in one band at the top of the frame and
+// never wider than 920, and the question at the end in the middle of it.
+//
+// A line is set the way the phone's own pixels would set it. SplitText cuts
+// it into its letters; on the line's beat each letter comes, one after the
+// other, as coarse cells of the phone's grid, then finer, then finer again,
+// and then is the face itself, a twenty-fourth of a second a step; and goes
+// back the same way into the cells and out. The cells are cut once, off a
+// canvas with every letter drawn in the same face where the page set it, on
+// grids of 16, 8 and 4 pixels laid over the whole line, so the cells of one
+// letter line up with its neighbour's. So the end, where the question goes
+// to the phone's pixels, is the rule every line before it was set by.
 export const X0 = 80
 export const Y0 = 300
 export const M = 132
 export const XL = 210
 const LH = 0.9
 export const lineAt = (n, size = M) => Y0 + Math.round(n * size * LH)
+const STEPS = [16, 8, 4]
+const STEP_MS = 42
 
 const Set = memo(function Set({ text, italic }) {
   return <span className={`rl-set${italic ? ' is-it' : ''}`}>{text}</span>
@@ -158,13 +166,86 @@ export function Type({ t, from, to = Infinity, cut = Infinity, ...rest }) {
   if (t < from - 60 || t >= cut || t > to + 1200) return null
   return <TypeLive t={t} from={from} to={to} {...rest} />
 }
-function TypeLive({ t, text, from, to, size = M, italic = false, x = X0, y = Y0, w = 1080 - x, align = 'left', stagger = 0.024, fade = null, className = '' }) {
-  const root = useScene(t, (el) => {
-    const split = new SplitText(el.querySelector('.rl-set'), { type: 'chars,lines', mask: 'lines', charsClass: 'rl-c', linesClass: 'rl-l' })
-    const tl = gsap.timeline({ paused: true })
-    tl.fromTo(split.chars, { yPercent: 118, rotate: italic ? 7 : 4, transformOrigin: '0% 100%' }, { yPercent: 0, rotate: 0, duration: 0.74, ease: 'rl.type', stagger }, from / 1000)
-    if (to < Infinity) tl.to(split.chars, { yPercent: -118, rotate: -3, duration: 0.36, ease: 'power3.in', stagger: stagger * 0.55 }, to / 1000)
-    return tl
+function TypeLive({ t, text, from, to, size = M, italic = false, x = X0, y = Y0, w = 1080 - x, align = 'left', stagger = 26, fade = null, className = '' }) {
+  const root = useRef(null)
+  const canvas = useRef(null)
+  const cut = useRef(null)
+  useLayoutEffect(() => {
+    const el = root.current
+    const set = el.querySelector('.rl-set')
+    const split = new SplitText(set, { type: 'chars', charsClass: 'rl-c' })
+    const chars = split.chars
+    const cs = getComputedStyle(set)
+    const px = parseFloat(cs.fontSize)
+    const pad = Math.ceil(px * 0.4)
+    const W = Math.ceil(el.offsetWidth + pad * 2)
+    const H = Math.ceil(el.offsetHeight + pad * 2)
+    const c = document.createElement('canvas')
+    c.width = W
+    c.height = H
+    const g = c.getContext('2d', { willReadFrequently: true })
+    g.font = `${cs.fontStyle} ${cs.fontWeight} ${px}px ${cs.fontFamily}`
+    g.fillStyle = '#fff'
+    g.textBaseline = 'alphabetic'
+    const mt = g.measureText('Hg')
+    const asc = mt.fontBoundingBoxAscent
+    const desc = mt.fontBoundingBoxDescent
+    // every letter drawn where the page set it, from its own box (the
+    // letters' boxes are the page's layout, so a camera's transform on the
+    // scene never moves them)
+    const boxes = chars.map((ch) => ({ x: ch.offsetLeft + pad, y: ch.offsetTop + pad, w: ch.offsetWidth, h: ch.offsetHeight }))
+    chars.forEach((ch, i) => {
+      const b = boxes[i]
+      g.fillText(ch.textContent, b.x, b.y + (b.h - (asc + desc)) / 2 + asc)
+    })
+    const img = g.getImageData(0, 0, W, H).data
+    const owner = (cx) => {
+      let k = boxes.findIndex((b) => cx >= b.x && cx < b.x + b.w)
+      if (k < 0) {
+        let best = Infinity
+        boxes.forEach((b, i) => { const d = Math.abs(b.x + b.w / 2 - cx); if (d < best) { best = d; k = i } })
+      }
+      return k
+    }
+    const cells = STEPS.map((p) => {
+      const per = chars.map(() => [])
+      for (let yy = 0; yy + p <= H; yy += p) {
+        for (let xx = 0; xx + p <= W; xx += p) {
+          let a = 0
+          for (let j = 0; j < p; j++) for (let i = 0; i < p; i++) a += img[((yy + j) * W + xx + i) * 4 + 3]
+          if (a / (p * p * 255) > 0.36) per[owner(xx + p / 2)].push([xx, yy])
+        }
+      }
+      return per
+    })
+    const cv = canvas.current
+    cv.width = W
+    cv.height = H
+    cv.style.left = `${-pad}px`
+    cv.style.top = `${-pad}px`
+    cut.current = { chars, cells }
+    return () => { split.revert(); cut.current = null }
+  }, [])
+  // each letter at its step: none yet, cells at 16, 8 or 4, or the face;
+  // and back out
+  useLayoutEffect(() => {
+    const d = cut.current
+    const cv = canvas.current
+    if (!d || !cv) return
+    const g = cv.getContext('2d')
+    g.clearRect(0, 0, cv.width, cv.height)
+    g.fillStyle = '#F4F1EA'
+    d.chars.forEach((ch, i) => {
+      const a0 = from + i * stagger
+      let step = t < a0 ? -1 : Math.min(3, Math.floor((t - a0) / STEP_MS))
+      const e0 = to + i * stagger * 0.5
+      if (t >= e0) { const k = Math.floor((t - e0) / STEP_MS); step = k < 3 ? 2 - k : -1 }
+      ch.style.opacity = step === 3 ? '1' : '0'
+      if (step >= 0 && step < 3) {
+        const p = STEPS[step]
+        for (const [cx, cy] of d.cells[step][i]) g.fillRect(cx, cy, p, p)
+      }
+    })
   })
   return (
     <div
@@ -172,6 +253,7 @@ function TypeLive({ t, text, from, to, size = M, italic = false, x = X0, y = Y0,
       style={{ left: x, top: y, width: w, fontSize: size, textAlign: align, opacity: fade == null ? undefined : fade }}
     >
       <Set text={text} italic={italic} />
+      <canvas ref={canvas} className="rl-type-px" aria-hidden="true" />
     </div>
   )
 }
@@ -189,7 +271,7 @@ function Touch({ t, at: t0, x, y, size = 96 }) {
   const s = lerp(1.32, 1, come) * (1 - press * 0.14)
   return (
     <span className="rl-touch" style={{ left: x - size / 2, top: y - size / 2, width: size, height: size, opacity: (come * (1 - leave)).toFixed(3), transform: `scale(${s.toFixed(3)})` }} aria-hidden="true">
-      {k >= 0 ? <i className="rl-touch-ring" style={{ transform: `scale(${(1 + easeOf('expo.out')(ring) * 1.7).toFixed(3)})`, opacity: ((1 - ring) * 0.75).toFixed(3) }} /> : null}
+      {k >= 0 ? <i className="rl-touch-ring" style={{ transform: `scale(${(1 + easeOf('expo.out')(ring) * 0.5).toFixed(3)})`, opacity: ((1 - ring) * 0.8).toFixed(3) }} /> : null}
     </span>
   )
 }
@@ -334,8 +416,10 @@ function waveTint(tint, tw, t) {
   return TINTS[(i + 1 + Math.floor(k / STEP) * 3) % TINTS.length]
 }
 
-// the whip out of the wall and into the dark, the picture smeared along the
-// move as a shutter smears it (the smear is `#rl-mb`, in the reel)
+// the whip out of the wall and into the dark: the frame cut to the phone's
+// cells and each cell's light drawn out along the move, the brightest
+// winning, as a sort of the pixels by their light would (`#rl-mb`, in the
+// reel)
 function whipOf(t) {
   if (t < S.whip[0] || t > S.whip[1]) return { x: 0, blur: 0 }
   if (t < 4000) {
@@ -345,7 +429,7 @@ function whipOf(t) {
   const k = easeOf('expo.out')(u(t, 4000, S.whip[1]))
   return { x: (1 - k) * 1250, blur: (1 - k) * 80 }
 }
-const whipStyle = (w) => (w.blur > 0.5 ? { transform: `translateX(${w.x.toFixed(1)}px)`, filter: 'url(#rl-mb)' } : undefined)
+const whipStyle = (w) => (Math.abs(w.x) > 0.5 ? { transform: `translateX(${w.x.toFixed(1)}px)`, filter: w.blur > 12 ? 'url(#rl-mb)' : undefined } : undefined)
 
 // lin's phone at the size the camera starts at, and a letter of the
 // berkeley wall, laid out once and unseen, so every letter's place, the
@@ -465,7 +549,7 @@ function MacroWall({ t, m, times }) {
       {/* the wall's own line, its masthead's, a line an eighth */}
       <Type t={t} text="a wall of" from={S.lines[0]} cut={4000} />
       <Type t={t} text="the ones you" from={S.lines[1]} y={lineAt(1)} cut={4000} />
-      <Type t={t} text="never told." from={S.lines[2]} y={lineAt(2)} italic cut={4000} />
+      <Type t={t} text="never told." from={S.lines[2]} y={lineAt(2)} size={XL} italic stagger={30} cut={4000} />
     </div>
   )
 }
@@ -508,26 +592,34 @@ const LetterPhone = memo(function LetterPhone({ row, heart }) {
   return <Phone w={PW} tint={tint} seed={`cal-${name}`} mode="letter" text={text} cursor={false} square sticker={CAL} top={topOf(name)} keys={keysOf(hearts, heart)} />
 })
 
-// The ring: the letters stand round the tower on a circle seen a little from
-// above, as the mark's ring stands round its star, the near side passing in
-// front of the tower and the far side behind it. A letter at `a` degrees
-// (nought facing the lens) is drawn at its place on the frame, its size by
-// its nearness, and turned a little toward where it faces.
-const RING = { cx: 540, cy: 1200, r: 500, tilt: 21, f: 1500, s: 0.25 }
+// the tower, kept as React drew it, so the plotter has it to itself, its
+// lantern's star a little under the middle of the frame
+const TW = 420
+const TOWER = { x: 540 - TW / 2, y: 836 }
+const STAR = { x: 540, y: TOWER.y + 16 * (TW / 100) }
+
+// The ring: the campus's letters on an ellipse round the lantern's star, on
+// the tilt of the mark's own ring, the near side passing in front of the
+// tower and the far side behind it, so the frame is the mark drawn in the
+// campus's letters. A letter at `a` degrees (nought nearest the lens, at the
+// foot of the ring) is drawn at its place, its size by its nearness, turned
+// a little toward where it faces.
+const RING = { rx: 470, ry: 200, tilt: (-16 * Math.PI) / 180, near: 0.2, far: 0.12 }
 function ringPose(a, grow = 1) {
   const rad = (a * Math.PI) / 180
-  const r = RING.r * grow
-  const X = r * Math.sin(rad)
-  const Z = r * Math.cos(rad)
-  const tl = (RING.tilt * Math.PI) / 180
-  const k = RING.f / (RING.f - Z * Math.cos(tl))
-  return { x: RING.cx + X * k, y: RING.cy + Z * Math.sin(tl) * k, s: RING.s * k, near: Math.cos(rad), ry: -Math.sin(rad) * 30 }
+  const ex = Math.sin(rad) * RING.rx * grow
+  const ey = Math.cos(rad) * RING.ry * grow
+  const near = Math.cos(rad)
+  return {
+    x: STAR.x + ex * Math.cos(RING.tilt) - ey * Math.sin(RING.tilt),
+    y: STAR.y + ex * Math.sin(RING.tilt) + ey * Math.cos(RING.tilt),
+    s: lerp(RING.far, RING.near, (near + 1) / 2) * (1 + (grow - 1) * 0.35),
+    near, ry: -Math.sin(rad) * 34,
+  }
 }
-const REST = { x: 540, y: 1000, s: 0.9 }
-
-// the tower, kept as React drew it, so the plotter has it to itself
-const TW = 420
-const TOWER = { x: 540 - TW / 2, y: 650 }
+// where the opened letter rests: its keys clear of the buttons a reel lays
+// down the right of the frame and of the caption under it
+const REST = { x: 520, y: 800, s: 0.8 }
 const Tower = memo(function Tower() {
   return <Campanile width={TW} lit stands={false} className="rl-camp-svg" />
 })
@@ -561,12 +653,12 @@ function BerkeleyScene({ t, letter }) {
       const flat = /^M[\d.]+ [\d.]+H[\d.]+$/.test(d)
       const bottom = b.y + b.height
       const roof = bottom <= 61 && b.height > 20
-      const start = roof ? 4.62 : 4.25 + (1 - bottom / 300) * 0.5 + rnd(b.x * 3 + b.y) * 0.05
-      const dur = roof ? 0.36 : clamp(0.14 + (b.height / 300) * 0.55, 0.14, 0.42)
+      const start = roof ? 4.62 : 4.1 + (1 - bottom / 300) * 0.62 + rnd(b.x * 3 + b.y) * 0.05
+      const dur = roof ? 0.36 : clamp(0.16 + (b.height / 300) * 0.6, 0.16, 0.46)
       const from = down ? '100% 100%' : flat ? '50% 50%' : '0% 0%'
       tl.fromTo(node, { drawSVG: from }, { drawSVG: '0% 100%', duration: dur, ease: down || roof ? 'power2.inOut' : 'power1.inOut' }, start)
       const tip = document.createElementNS(ns, 'circle')
-      tip.setAttribute('r', '1.15')
+      tip.setAttribute('r', '1.5')
       tip.setAttribute('class', 'rl-tip')
       svg.appendChild(tip)
       return { node, tip, len: node.getTotalLength(), down, flat, tween: tl.getChildren(false, true, false).pop() }
@@ -577,7 +669,7 @@ function BerkeleyScene({ t, letter }) {
     const hands = list.filter((p) => /^M50 134[VH]/.test((p.node.getAttribute('d') || '').trim()))
     for (const p of hands) {
       const minute = /V/.test(p.node.getAttribute('d'))
-      tl.fromTo(p.node, { rotate: minute ? -1080 : 90, svgOrigin: '50 134' }, { rotate: minute ? 0 : 180, svgOrigin: '50 134', duration: 0.75, ease: 'power3.out' }, 4.42)
+      tl.fromTo(p.node, { rotate: minute ? -1080 : 90, svgOrigin: '50 134' }, { rotate: minute ? 0 : 180, svgOrigin: '50 134', duration: 0.5, ease: 'power3.out' }, 4.45)
     }
     // the lantern's light down the tower's lines once it is lit
     const warm = el.querySelector('#rl-warm stop.is-gold')
@@ -587,7 +679,7 @@ function BerkeleyScene({ t, letter }) {
     const guides = el.querySelectorAll('.rl-guides .is-axis, .rl-guides .is-level, .rl-guides .is-mark')
     guides.forEach((node, i) => {
       const axis = node.classList.contains('is-axis')
-      tl.fromTo(node, { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: axis ? 0.36 : 0.26, ease: 'rl.out' }, S.guides / 1000 + (axis ? 0 : 0.06 + i * 0.022))
+      tl.fromTo(node, { drawSVG: axis ? '100% 100%' : '0% 0%' }, { drawSVG: '0% 100%', duration: axis ? 0.62 : 0.24, ease: axis ? 'sine.inOut' : 'rl.out' }, S.guides / 1000 + (axis ? 0.04 : 0.06 + i * 0.11))
     })
     tl.to(el.querySelector('.rl-guides'), { opacity: 0, duration: 0.5, ease: 'power2.inOut' }, 5.15)
     // the lantern: a point of light that becomes the star, on the beat
@@ -606,13 +698,14 @@ function BerkeleyScene({ t, letter }) {
     el.querySelectorAll('.rl-heart').forEach((h, i) => {
       const at0 = S.tap2 / 1000 + i * 0.012
       tl.set(h, { opacity: 1 }, at0)
-      tl.fromTo(h, { x: 0, y: 0, rotate: 0, scale: 0.4 }, { physics2D: { velocity: 700 + rnd(i * 7) * 700, angle: -90 + (rnd(i * 3 + 1) - 0.5) * 120, gravity: 1700 }, rotate: (rnd(i + 9) - 0.5) * 60, scale: 1, duration: 0.8, ease: 'none' }, at0)
-      tl.to(h, { opacity: 0, duration: 0.3, ease: 'power1.in' }, at0 + 0.5)
+      tl.fromTo(h, { x: 0, y: 0, rotate: 0 }, { physics2D: { velocity: 1100 + rnd(i * 7) * 1100, angle: -90 + (rnd(i * 3 + 1) - 0.5) * 150, gravity: 2200 }, rotate: (rnd(i + 9) - 0.5) * 70, duration: 0.9, ease: 'none' }, at0)
+      tl.fromTo(h, { scale: 0.5 }, { scale: i % 5 === 0 ? 2.2 : 1, duration: i % 5 === 0 ? 0.8 : 0.16, ease: i % 5 === 0 ? 'power1.in' : 'power2.out' }, at0)
+      tl.to(h, { opacity: 0, duration: 0.3, ease: 'power1.in' }, at0 + 0.6)
     })
     const pop = el.querySelector('.rl-heart-pop')
     if (pop) {
       tl.set(pop, { opacity: 1 }, S.tap2 / 1000)
-      tl.fromTo(pop, { scale: 1 }, { scale: 1.9, duration: 0.42, ease: 'rl.buzz' }, S.tap2 / 1000)
+      tl.fromTo(pop, { scale: 1 }, { scale: 2.6, duration: 0.46, ease: 'rl.buzz' }, S.tap2 / 1000)
       tl.to(pop, { opacity: 0, duration: 0.2 }, S.tap2 / 1000 + 0.36)
     }
     return tl
@@ -632,11 +725,20 @@ function BerkeleyScene({ t, letter }) {
   // the ring: spun up as the scene comes, let run down by a hand so it comes
   // to rest with sofia's letter to the lens; the letters come in to it from
   // further out
-  const spin = at([[S.ring, -430], [S.stop[1], 0, 'rl.spin']], t)
-  const grow = lerp(2.4, 1, easeOf('expo.out')(u(t, S.ring, S.ring + 700)))
+  const spin = at([[S.ring, -300], [S.stop[1], 0, 'rl.spin']], t)
+  const grow = lerp(2.2, 1, easeOf('expo.out')(u(t, S.ring, S.ring + 650)))
   const open = easeOf('rl.inOut')(u(t, S.open[0], S.open[1]))
   const sleep = at([[7280, 1], [7480, 0.2, 'power2.in']], t)
-  const push = lerp(1, 1.05, easeOf('sine.inOut')(u(t, 4150, 6000)))
+  // the camera rides up the tower with the pen: on its foot as the plot
+  // starts, at the drawing's front all the way up (the plot's own schedule,
+  // the ground drawn first and the apex last), and back to the whole of it
+  // as the lantern is lit
+  const zc = at([[4000, 2.1], [4700, 1.75, 'sine.inOut'], [5100, 1, 'rl.inOut'], [7500, 1.04, 'sine.inOut']], t)
+  const kc = easeOf('rl.inOut')(u(t, 4720, 5100))
+  const front = TOWER.y + (TW / 100) * 300 * (1 - easeOf('sine.inOut')(u(t, 4060, 4720)))
+  const F = { x: 540, y: lerp(Math.min(front + 120, 1960), 960, kc) }
+  const P = { x: 540, y: lerp(1150, 960, kc) }
+  const cam = `translate(${(P.x - F.x * zc).toFixed(2)}px, ${(P.y - F.y * zc).toFixed(2)}px) scale(${zc.toFixed(4)})`
   const lampO = u(t, S.lamp - 20, S.lamp + 260) * (1 - 0.6 * open)
   const tower = 1 - 0.68 * open
   const heartState = t < S.tap2 ? 0 : t < S.tap2 + 150 ? 1 : 2
@@ -646,8 +748,8 @@ function BerkeleyScene({ t, letter }) {
   const hy = REST.y + (letter.heart.y - letter.letter.h / 2) * REST.s
   return (
     <div className="rl-cam" style={whipStyle(w)}>
-      <div ref={root} className="rl-cam" style={{ transform: `scale(${push.toFixed(4)})`, transformOrigin: '540px 1000px', filter: sleep < 0.999 ? `brightness(${sleep.toFixed(3)})` : undefined }}>
-        <Glow x={540} y={TOWER.y + 16 * (TW / 100)} r={760} colour="rgba(253,181,21,0.55)" o={lampO * 0.85} z={3} />
+      <div ref={root} className="rl-cam" style={{ transform: cam, transformOrigin: '0 0', filter: sleep < 0.999 ? `brightness(${sleep.toFixed(3)})` : undefined }}>
+        <Glow x={STAR.x} y={STAR.y} r={760} colour="rgba(253,181,21,0.55)" o={lampO * 0.85} z={3} />
         <svg className="rl-guides" width="1080" height="1920" viewBox="0 0 1080 1920" aria-hidden="true">
           <path className="is-axis" d={`M540 ${TOWER.y - 90}V1910`} />
           {LEVELS.map((y, i) => (
@@ -670,8 +772,8 @@ function BerkeleyScene({ t, letter }) {
         </div>
         {BERK.map((row, i) => {
           const a = spin + i * (360 / BERK.length)
-          const p = ringPose(a, grow + i * 0.03 * (1 - u(t, S.ring, S.ring + 700)))
-          const come = u(t, S.ring + i * 35, S.ring + 300 + i * 35)
+          const p = ringPose(a, grow + i * 0.03 * (1 - u(t, S.ring, S.ring + 650)))
+          const come = u(t, S.ring + i * 30, S.ring + 260 + i * 30)
           const isOpen = i === 0 && open > 0
           const x = isOpen ? lerp(p.x, REST.x, open) : p.x
           const y = isOpen ? lerp(p.y, REST.y, open) : p.y
@@ -690,7 +792,7 @@ function BerkeleyScene({ t, letter }) {
               filter={`${blur > 0.2 ? `blur(${blur.toFixed(1)}px) ` : ''}brightness(${(lit + hit(t, tw, 220) * 0.5).toFixed(3)})`}
             >
               <LetterPhone row={row} heart={i === 0 ? heartState : 0} />
-              {i === 0 ? <Touch t={t} at={S.tap2} x={letter.heart.x} y={letter.heart.y} size={150} /> : null}
+              {i === 0 ? <Touch t={t} at={S.tap2} x={letter.heart.x - letter.heart.w * 0.2} y={letter.heart.y} size={130} /> : null}
             </Place>
           )
         })}
@@ -698,16 +800,16 @@ function BerkeleyScene({ t, letter }) {
           const a = spin + i * (360 / BERK.length)
           const p = ringPose(a, grow)
           const tw = S.lamp + (1 - (1 - p.near) / 2) * 340
-          return <Glow key={row[0]} x={p.x} y={p.y} r={220 * p.s / RING.s} colour="rgba(253,181,21,0.5)" o={hit(t, tw, 260) * 0.7 * (1 - open) * u(t, S.ring, S.ring + 300)} z={2} />
+          return <Glow key={row[0]} x={p.x} y={p.y} r={1100 * p.s} colour="rgba(253,181,21,0.5)" o={hit(t, tw, 260) * 0.7 * (1 - open) * u(t, S.ring, S.ring + 300)} z={2} />
         })}
-        <Touch t={t} at={S.tap1} x={tapAt.x} y={tapAt.y - 40} size={110} />
+        <Touch t={t} at={S.tap1} x={tapAt.x} y={tapAt.y - 20} size={100} />
         {/* the heart lit, and the hearts it throws */}
         <svg className="rl-heart-pop" viewBox={`0 0 ${HEART.w} ${HEART.h}`} shapeRendering="crispEdges" style={{ left: hx - 30, top: hy - 26, width: 60, height: 52 }} aria-hidden="true">
           <path d={HEART.d} fill="#F4F1EA" />
         </svg>
-        {Array.from({ length: 22 }, (_, i) => {
-          const c = [4, 6, 5, 8][i % 4]
-          const fill = ['#E58FB0', GOLD, '#F4F1EA', '#E58FB0'][i % 4]
+        {Array.from({ length: 34 }, (_, i) => {
+          const c = [4, 6, 5, 8, 7][i % 5]
+          const fill = ['#FF5C93', GOLD, '#FFFFFF', '#FF8DB4'][i % 4]
           return (
             <svg key={i} className="rl-heart" viewBox={`0 0 ${HEART.w} ${HEART.h}`} shapeRendering="crispEdges" style={{ left: hx - (HEART.w * c) / 2, top: hy - (HEART.h * c) / 2, width: HEART.w * c, height: HEART.h * c }} aria-hidden="true">
               <path d={HEART.d} fill={fill} />
@@ -715,7 +817,8 @@ function BerkeleyScene({ t, letter }) {
           )
         })}
       </div>
-      <Type t={t} text="the berkeley wall." from={S.title} to={5700} />
+      <Type t={t} text="the berkeley" from={S.title} to={5700} />
+      <Type t={t} text="wall." from={S.title + 250} to={5720} size={XL} italic y={lineAt(1)} stagger={34} />
     </div>
   )
 }
@@ -728,8 +831,12 @@ function SendScene({ t, times, send }) {
   const s = at([[S.send[0], 1.15], [S.send[1], 1.45, 'none']], t) * (1 + hit(t, S.press, 90) * 0.012)
   const ry = lerp(-26, 14, easeOf('sine.inOut')(k))
   const rx = lerp(7, 2, k)
-  const x = 540
-  const y = 1250
+  // high in the frame for the finger on send, the keys clear of a reel's
+  // own buttons; and, from the frame the envelope covers, low, its top
+  // under the band the words stand in
+  const wiped = t >= S.press + 625
+  const x = wiped ? 540 : at([[S.press, 470], [S.press + 620, 520, 'power2.inOut']], t)
+  const y = wiped ? 1560 : 640
   // the screen going out, as the phone puts it out: its light down to
   // nothing in a fifth of a second, the light on the room a little after
   const dim = at([[S.off, 1], [S.off + 200, 0.05, 'power2.in'], [S.off + 400, 0, 'power1.out']], t)
@@ -746,22 +853,22 @@ function SendScene({ t, times, send }) {
         <NoteScreen who={A} t={t} times={times} sendAt={S.press} fs={12.6} w={PW} quiet={false} />
         {send ? <Touch t={t} at={S.press} x={send.x + send.w / 2} y={send.y + send.h / 2} size={130} /> : null}
       </Place>
-      {eon ? <Envelope x={x + Math.sin(e * 2.4) * 40} y={lerp(1180, 980, e)} w={lerp(90, 2600, e)} rz={e * -8} glow="rgba(143,184,220,0.7)" solid="#0E1822" /> : null}
+      {eon ? <Envelope x={x + Math.sin(e * 2.4) * 40} y={lerp(570, 980, e)} w={lerp(90, 2600, e)} rz={e * -8} glow="rgba(143,184,220,0.7)" solid="#0E1822" /> : null}
       <Type t={t} text="or send it" from={S.sendIt} to={9330} cut={S.send[1]} />
-      <Type t={t} text="privately." from={S.privately} to={9360} size={XL} italic y={lineAt(1)} stagger={0.03} cut={S.send[1]} />
+      <Type t={t} text="privately." from={S.privately} to={9360} size={XL} italic y={lineAt(1)} stagger={30} cut={S.send[1]} />
     </div>
   )
 }
 
 // ── 9.5 to 11.5: the other ──────────────────────────────────────────────────
-function OtherScene({ t, times, send }) {
+function OtherScene({ t, times }) {
   const w = wake(t, S.bWake, 420)
   const k = easeOf('expo.out')(u(t, S.bWake, S.bWake + 800))
   const s = lerp(0.5, 1.25, k) + u(t, 10300, S.other[1]) * 0.15
   const ry = lerp(30, -8, k)
   const rx = lerp(-6, 4, k)
   const x = 540
-  const y = lerp(1500, 1250, k)
+  const y = lerp(1820, 1560, k)
   // after the send, the phone goes to sleep and steps back
   const sleep = at([[S.bSend + 50, 0], [S.other[1], 0.85, 'power2.inOut']], t)
   const back = at([[S.bSend + 50, 1], [S.other[1], 0.92, 'power2.inOut']], t)
@@ -783,23 +890,27 @@ function OtherScene({ t, times, send }) {
       <Glow x={x} y={y - 80} r={900} colour={halo('amber')} o={w * (1 - sleep) * 0.95} />
       <Place x={x} y={y} s={s * back} rx={rx} ry={ry} filter={`brightness(${(w * (1 - sleep * 0.9)).toFixed(3)})`}>
         <NoteScreen who={B} t={t} times={times} sendAt={S.bSend} fs={13.4} w={PW} quiet={false} />
-        {send ? <Touch t={t} at={S.bSend} x={send.x + send.w / 2} y={send.y + send.h / 2} size={130} /> : null}
       </Place>
-      <Envelope className="rl-fly" x={x} y={1120} w={170} colour="#F7D9A8" glow="rgba(224,169,90,0.8)" solid="#24170A" />
-      <Type t={t} text="they only read it" from={S.read} to={11280} cut={S.other[1]} stagger={0.018} />
+      <Envelope className="rl-fly" x={x} y={1480} w={170} colour="#F7D9A8" glow="rgba(224,169,90,0.8)" solid="#24170A" />
+      <Type t={t} text="they only read it" from={S.read} to={11280} cut={S.other[1]} stagger={20} />
       <Type t={t} text="if they send" from={S.ifThey} to={11300} y={lineAt(1)} cut={S.other[1]} />
-      <Type t={t} text="you one." from={S.ifThey + 250} to={11320} y={lineAt(2)} cut={S.other[1]} />
+      <Type t={t} text="you one." from={S.ifThey + 250} to={11320} y={lineAt(2)} size={XL} italic stagger={30} cut={S.other[1]} />
     </div>
   )
 }
 
 // ── 11.5 to 13.0: the week, on the flaps ────────────────────────────────────
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-const CITY = ['street-four', 'street-spiders', 'wall-david', 'shutter-lin', 'fridge-sasha', 'shutter-ryan']
+const CITY = [['street-spiders', 0], ['wall-david', 0], ['street-four', 140], ['shutter-lin', 0], ['street-spiders', -170], ['street-four', 0]]
 const TIME = '9:00 pm'
-const FLAPS = { top: 604, cw: 284, ch: 384, gap: 20 }
-const TIME_ROW = { top: FLAPS.top + FLAPS.ch + 30, h: 170 }
-const TAP3 = { x: 540, y: TIME_ROW.top + TIME_ROW.h / 2 }
+const FLAPS = { top: 590, cw: 284, ch: 384, gap: 20 }
+// the time on cards nearly the days' height, so it is read as one board;
+// a card a figure, the colon and the space narrower
+const TIME_ROW = { top: FLAPS.top + FLAPS.ch + 26, h: 260, w: 150, colon: 90, space: 40, gap: 12 }
+const timeW = (c) => (c === ':' ? TIME_ROW.colon : c === ' ' ? TIME_ROW.space : TIME_ROW.w)
+const TIME_LEFT = 540 - ([...TIME].reduce((a, c) => a + timeW(c), 0) + (TIME.length - 1) * TIME_ROW.gap) / 2
+// the finger goes to the colon, between the hour and the minutes
+const TAP3 = { x: TIME_LEFT + TIME_ROW.w + TIME_ROW.gap + TIME_ROW.colon / 2, y: TIME_ROW.top + TIME_ROW.h / 2 }
 
 // One flap of a board: the card turning down from the last character to
 // the next, its upper half falling over the hinge and the lower half of the
@@ -844,29 +955,28 @@ function WaitScene({ t }) {
   const press = hit(t, S.tap3, 120) * 0.012
   return (
     <div className="rl-cam" style={{ visibility: on ? 'visible' : 'hidden' }}>
-      {CITY.map((name, i) => (
+      {CITY.map(([name, dx], i) => (
         <img
-          key={name} className="rl-city" src={dither(name)} alt=""
-          style={{ opacity: i === d ? 1 : 0, transform: `scale(${zoom.toFixed(4)})`, filter: `brightness(${(0.45 * fl).toFixed(3)})` }}
+          key={`${name}${i}`} className="rl-city" src={dither(name)} alt=""
+          style={{ opacity: i === d ? 1 : 0, transform: `translateX(${dx}px) scale(${(zoom + (dx ? 0.15 : 0)).toFixed(4)})`, filter: `blur(2px) brightness(${(0.36 * fl).toFixed(3)})` }}
         />
       ))}
       <div className="rl-board-shade" />
       <div className="rl-cam" style={{ transform: press ? `scale(${(1 - press).toFixed(4)})` : undefined, transformOrigin: `${TAP3.x}px ${TAP3.y}px` }}>
-        <div className="rl-housing" />
-        <p className="rl-label" style={{ top: 548 }}>the reveal</p>
+        <p className="rl-label" style={{ top: FLAPS.top - 58 }}>the reveal</p>
         <div className="rl-flaps" style={{ top: FLAPS.top, gap: FLAPS.gap }}>
           {[0, 1, 2].map((c) => (
             <Flap key={c} seq={DAYS.map((x) => x[c])} times={S.days.map((x) => x + c * 28)} t={t} w={FLAPS.cw} h={FLAPS.ch} size={360} />
           ))}
         </div>
-        <div className="rl-flaps" style={{ top: TIME_ROW.top, gap: 10 }}>
+        <div className="rl-flaps" style={{ top: TIME_ROW.top, gap: TIME_ROW.gap }}>
           {[...TIME].map((c, i) => (c !== ' ' && t >= timeT + i * 24 ? (
-            <Flap key={i} seq={[c]} times={[timeT + i * 24]} t={t} w={c === ':' ? 70 : 118} h={TIME_ROW.h} size={160} />
-          ) : <span key={i} style={{ width: c === ' ' ? 34 : c === ':' ? 70 : 118 }} />))}
+            <Flap key={i} seq={[c]} times={[timeT + i * 24]} t={t} w={timeW(c)} h={TIME_ROW.h} size={230} />
+          ) : <span key={i} style={{ width: timeW(c) }} />))}
         </div>
         <p className="rl-label" style={{ top: TIME_ROW.top + TIME_ROW.h + 36, opacity: u(t, timeT + 200, timeT + 400) }}>pacific.</p>
       </div>
-      {on ? <Touch t={t} at={S.tap3} x={TAP3.x} y={TAP3.y} size={120} /> : null}
+      {on ? <Touch t={t} at={S.tap3} x={TAP3.x} y={TAP3.y} size={110} /> : null}
     </div>
   )
 }
@@ -898,7 +1008,7 @@ function GlassScene({ t, film }) {
   let x = 540
   let y = 960
   if (g) {
-    const s0 = (1920 / g.h) * 1.04
+    const s0 = (1920 / g.h) * 0.96
     const s1 = 880 / g.w
     s = Math.exp(lerp(Math.log(s0), Math.log(s1), back)) * (1 + u(t, S.run[0], S.drop) * 0.05 * (1 - back))
     y = lerp(960, 830, back)
@@ -933,10 +1043,12 @@ const GlassPhone = ({ film, st, turn }) => (
 // screens' colours. They meet on the last bar; the flash goes out as a ring,
 // and every pixel comes back in to its cell of the name: the left light the
 // mark, the right one the word. Then the address, typed.
+const ASK_LH = [Math.round(M * LH), Math.round(M * LH), Math.round(XL * LH)]
+const ASK_TOP = 900 - Math.round(ASK_LH.reduce((x, y) => x + y, 0) / 2)
 const ASK = [
-  { text: 'do they still', at: S.q[0], y: 636 },
-  { text: 'think about', at: S.q[1], y: 636 + Math.round(XL * LH) },
-  { text: 'you?', at: S.q[2], y: 636 + 2 * Math.round(XL * LH), italic: true },
+  { text: 'do they still', at: S.q[0], y: ASK_TOP, size: M },
+  { text: 'think about', at: S.q[1], y: ASK_TOP + ASK_LH[0], size: M },
+  { text: 'you?', at: S.q[2], y: ASK_TOP + ASK_LH[0] + ASK_LH[1], size: XL, italic: true },
 ]
 const CELL = 7
 const LOCK = { x: 540 - Math.round((LOCKUP.w * CELL) / 2), y: 900 - Math.round((LOCKUP.h * CELL) / 2) }
@@ -947,6 +1059,11 @@ const LIGHTS = [
   ['#BFE3FF', '#9FCBF2', '#E2F2FF', '#8FC0EC'],
   ['#FFD59A', '#F7BE73', '#FFE7C2', '#F0AE5C'],
 ]
+const LIGHT = ['#CFEAFF', '#FFDDA8']
+// the head of each light: the mark's four pointed star in the phone's cells,
+// and the same with its points drawn in, for the twinkle
+const SPARK7 = ['...#...', '...#...', '..###..', '#######', '..###..', '...#...', '...#...']
+const SPARK5 = ['.......', '...#...', '..###..', '.#####.', '..###..', '...#...', '.......']
 
 // the question's letters as cells, off a canvas the size of the frame, each
 // cell lit where its letter covers more than two fifths of it
@@ -963,16 +1080,16 @@ function askCells() {
   g.textAlign = 'center'
   g.textBaseline = 'alphabetic'
   for (const l of ASK) {
-    g.font = `${l.italic ? 'italic 440' : '500'} ${XL}px Newsreader`
-    g.letterSpacing = `${(-0.04 * XL).toFixed(1)}px`
+    g.font = `${l.italic ? 'italic 440' : '500'} ${l.size}px Newsreader`
+    g.letterSpacing = `${(-0.04 * l.size).toFixed(1)}px`
     const mt = g.measureText(l.text)
     const asc = mt.fontBoundingBoxAscent
     const desc = mt.fontBoundingBoxDescent
-    g.fillText(l.text, 540, l.y + (XL * LH - (asc + desc)) / 2 + asc)
+    g.fillText(l.text, 540, l.y + (l.size * LH - (asc + desc)) / 2 + asc)
   }
   const img = g.getImageData(0, 0, W, H).data
   const cells = []
-  for (let y = 560; y < 1360; y += CELL) {
+  for (let y = ASK_TOP - 70; y < ASK_TOP + 520; y += CELL) {
     for (let x = 0; x < W; x += CELL) {
       let a = 0
       for (let yy = 0; yy < CELL; yy++) for (let xx = 0; xx < CELL; xx++) a += img[((y + yy) * W + x + xx) * 4 + 3]
@@ -990,9 +1107,6 @@ function askCells() {
   const n = cells.length
   const parts = new Array(n)
   const side = (x) => (x < 540 ? 0 : 1)
-  const cen = [[0, 0, 0], [0, 0, 0]]
-  cells.forEach(([x, y]) => { const s = side(x); cen[s][0] += x; cen[s][1] += y; cen[s][2] += 1 })
-  const centre = cen.map(([x, y, k]) => ({ x: x / Math.max(1, k), y: y / Math.max(1, k) }))
   const xs = cells.map(([x]) => x)
   const lo = Math.min(...xs)
   const hi = Math.max(...xs)
@@ -1004,42 +1118,78 @@ function askCells() {
     const lift = S.burst + 120 + (s ? (hi - sx) / Math.max(1, hi - 540) : (sx - lo) / Math.max(1, 540 - lo)) * 340 + rnd(i) * 40
     parts[i] = { sx, sy, tx, ty, s, lift, col: LIGHTS[s][(i * 7) % LIGHTS[s].length], seed: rnd(i * 13 + 5) }
   })
-  ASKED = { parts, centre }
+  // each light's tail: its pixels in the order they lifted, the first
+  // nearest the head, the last a little under half a second behind it on
+  // the orbit and faint
+  for (const sd of [0, 1]) {
+    const mine = parts.filter((q) => q.s === sd).sort((q, w) => q.lift - w.lift)
+    mine.forEach((q, k) => {
+      const r = k / Math.max(1, mine.length - 1)
+      q.lag = 16 + r * 440
+      q.fade = lerp(1, 0.16, r ** 0.8)
+      q.wide = (q.seed - 0.5) * (6 + r * 34)
+    })
+  }
+  ASKED = { parts }
   return ASKED
 }
 
-// where a pixel is at `t`, and in what light
-function pixAt(p, centre, t) {
+// where a pixel is at `t`, and in what light: lifting off its letter, then
+// one of a light's tail, a step behind the head on the orbit and a little
+// off its line, the tail widening as it goes back
+function pixAt(p, t) {
   if (t < p.lift) return { x: p.sx, y: p.sy, c: '#F4F1EA', a: 1 }
   if (t < S.meet) {
-    const o = orbitOf(p.s, t)
-    const c0 = centre[p.s]
-    const shrink = lerp(1, 0.08, easeOf('power3.out')(clamp(o.k / 0.55)))
-    const ox = (p.sx - c0.x) * shrink
-    const oy = (p.sy - c0.y) * shrink
-    const rot = o.turn * 0.7
-    const jx = Math.sin(t * 0.006 + p.seed * 40) * 9 * o.k
-    const jy = Math.cos(t * 0.005 + p.seed * 31) * 9 * o.k
-    const x = o.x + ox * Math.cos(rot) - oy * Math.sin(rot) + jx
-    const y = o.y + ox * Math.sin(rot) + oy * Math.cos(rot) + jy
+    const tt = t - p.lag
+    const o = orbitOf(p.s, tt)
+    const o2 = orbitOf(p.s, tt - 12)
+    const dx = o.x - o2.x
+    const dy = o.y - o2.y
+    const len = Math.hypot(dx, dy) || 1
+    const x = o.x - (dy / len) * p.wide
+    const y = o.y + (dx / len) * p.wide
     const l = easeOf('power3.inOut')(u(t, p.lift, p.lift + 440))
-    return { x: lerp(p.sx, x, l), y: lerp(p.sy, y, l), c: l > 0.35 ? p.col : '#F4F1EA', a: 1 }
+    return { x: lerp(p.sx, x, l), y: lerp(p.sy, y, l), c: l > 0.35 ? p.col : '#F4F1EA', a: lerp(1, p.fade, l) }
   }
   // the meeting: from the middle, out past its cell along its own line, and
   // back in to it, the cells nearest the middle first
-  const m = pixAt(p, centre, S.meet - 1)
   const dx = p.tx - ORBIT.cx
   const dy = p.ty - ORBIT.cy
   const dist = Math.hypot(dx, dy)
-  const s0 = S.meet + 30 + (dist / 520) * 170
-  const k = easeOf('expo.out')(u(t, s0, s0 + 600))
+  const s0 = S.meet + 40 + (dist / 520) * 110
+  const k = easeOf('expo.out')(u(t, s0, s0 + 460))
   const ang = Math.atan2(dy, dx) + (p.s ? 0.55 : -0.55)
   const far = dist * 1.45 + 90
+  const m = { x: ORBIT.cx + (p.seed - 0.5) * 30, y: ORBIT.cy + (rnd(p.seed * 99) - 0.5) * 30 }
   const p1x = ORBIT.cx + Math.cos(ang) * far
   const p1y = ORBIT.cy + Math.sin(ang) * far
   const x = (1 - k) ** 2 * m.x + 2 * (1 - k) * k * p1x + k * k * p.tx
   const y = (1 - k) ** 2 * m.y + 2 * (1 - k) * k * p1y + k * k * p.ty
-  return { x, y, c: k > 0.92 ? '#F4F1EA' : p.col, a: 1 }
+  return { x, y, c: k > 0.92 ? '#F4F1EA' : p.col, a: t < s0 ? 0 : 1 }
+}
+
+// a drawing of cells, centred at x, y
+function cellsAt(g, rows, x, y, cell) {
+  const w = rows[0].length
+  const h = rows.length
+  const x0 = Math.round(x - (w * cell) / 2)
+  const y0 = Math.round(y - (h * cell) / 2)
+  rows.forEach((row, j) => { for (let i = 0; i < w; i++) if (row[i] === '#') g.fillRect(x0 + i * cell, y0 + j * cell, cell, cell) })
+}
+// the orbit, or the ring the meeting sends out: the mark's ellipse in
+// dotted cells
+function ringAt(g, r, cell, a) {
+  if (r < 2 || a <= 0.003) return
+  const n = Math.max(24, Math.round(r / 6))
+  g.globalAlpha = a
+  for (let j = 0; j < n; j++) {
+    const th = (j / n) * Math.PI * 2
+    const ex = Math.cos(th) * r
+    const ey = Math.sin(th) * r * ORBIT.ratio
+    const x = ORBIT.cx + ex * Math.cos(ORBIT.tilt) - ey * Math.sin(ORBIT.tilt)
+    const y = ORBIT.cy + ex * Math.sin(ORBIT.tilt) + ey * Math.cos(ORBIT.tilt)
+    g.fillRect(Math.round(x - cell / 2), Math.round(y - cell / 2), cell, cell)
+  }
 }
 
 function AskScene({ t }) {
@@ -1053,38 +1203,38 @@ function AskScene({ t }) {
     g.clearRect(0, 0, 1080, 1920)
     if (!flying) return
     const show = u(t, S.burst, S.burst + 70)
-    // under them, the glow of each light while it is one
-    const gk = u(t, S.burst + 250, S.burst + 700) * (1 - u(t, S.meet, S.meet + 120))
-    if (gk > 0.01) {
-      g.globalCompositeOperation = 'lighter'
-      for (const side of [0, 1]) {
-        const o = orbitOf(side, t)
-        const r = lerp(260, 150, o.k)
-        const grad = g.createRadialGradient(o.x, o.y, 0, o.x, o.y, r)
-        grad.addColorStop(0, side ? 'rgba(255,190,110,0.55)' : 'rgba(150,205,255,0.55)')
-        grad.addColorStop(1, 'rgba(0,0,0,0)')
-        g.globalAlpha = gk
-        g.fillStyle = grad
-        g.fillRect(o.x - r, o.y - r, r * 2, r * 2)
-      }
+    // the orbit the two lights are on, in dotted cells, closing with them;
+    // then the same ring sent out by their meeting
+    g.fillStyle = '#F4F1EA'
+    const ok = orbitOf(0, t)
+    ringAt(g, ORBIT.a0 * (1 - ok.k ** 3), 5, u(t, ORBIT.from, ORBIT.from + 300) * (1 - u(t, S.meet - 200, S.meet)) * 0.24)
+    if (t >= S.meet) {
+      const w = u(t, S.meet, S.meet + 650)
+      ringAt(g, easeOf('expo.out')(w) * 1150, CELL, (1 - w) * 0.75)
     }
     // pixels in flight are light, added where they cross; once home they
     // are the name's chalk, laid down
     g.globalCompositeOperation = t > S.burst + 160 && t < S.lock[1] - 60 ? 'lighter' : 'source-over'
-    // a light trail behind each pixel in flight: where it was a frame and
-    // two frames ago, fainter
-    const trail = t > S.burst + 200 && t < S.lock[1] - 120 ? [[34, 0.16], [17, 0.34]] : []
     for (const p of data.parts) {
-      for (const [dt, a] of trail) {
-        const q = pixAt(p, data.centre, t - dt)
-        g.globalAlpha = a * show
-        g.fillStyle = q.c
-        g.fillRect(Math.round(q.x), Math.round(q.y), CELL, CELL)
-      }
-      const q = pixAt(p, data.centre, t)
-      g.globalAlpha = show
+      const q = pixAt(p, t)
+      if (q.a <= 0.003) continue
+      g.globalAlpha = q.a * show
       g.fillStyle = q.c
       g.fillRect(Math.round(q.x), Math.round(q.y), CELL, CELL)
+    }
+    // the heads: a star of cells in each light's colour, a white cell at its
+    // heart, twinkling a frame in five
+    if (t >= ORBIT.from && t < S.meet) {
+      g.globalCompositeOperation = 'source-over'
+      g.globalAlpha = u(t, ORBIT.from, ORBIT.from + 160)
+      for (const sd of [0, 1]) {
+        const o = orbitOf(sd, t)
+        const small = Math.floor(t / 83 + sd * 2) % 5 === 0
+        g.fillStyle = LIGHT[sd]
+        cellsAt(g, small ? SPARK5 : SPARK7, o.x, o.y, CELL)
+        g.fillStyle = '#FFFFFF'
+        cellsAt(g, ['#'], o.x, o.y, CELL)
+      }
     }
     g.globalAlpha = 1
     g.globalCompositeOperation = 'source-over'
@@ -1094,10 +1244,6 @@ function AskScene({ t }) {
     const tl = gsap.timeline({ paused: true })
     tl.set(el.querySelector('.rl-addr-t'), { text: '' }, 0)
     tl.to(el.querySelector('.rl-addr-t'), { text: 'celestual.us', duration: 0.46, ease: 'none' }, S.url / 1000)
-    // the ring the meeting sends out, on the tilt of the mark's
-    const ring = el.querySelector('.rl-shock')
-    tl.set(ring, { opacity: 0 }, 0)
-    tl.fromTo(ring, { attr: { rx: 10, ry: 4.2 }, opacity: 0.9 }, { attr: { rx: 980, ry: 412 }, opacity: 0, duration: 0.75, ease: 'expo.out' }, S.meet / 1000)
     return tl
   })
   const textOut = 1 - u(t, S.burst, S.burst + 70)
@@ -1106,15 +1252,12 @@ function AskScene({ t }) {
   return (
     <div className="rl-cam" ref={root}>
       {ASK.map((l) => (
-        <Type key={l.text} t={t} text={l.text} from={l.at} size={XL} italic={!!l.italic} x={0} w={1080} y={l.y} align="center" stagger={0.03} cut={S.burst + 80} fade={textOut < 1 ? textOut.toFixed(3) : null} />
+        <Type key={l.text} t={t} text={l.text} from={l.at} size={l.size} italic={!!l.italic} x={0} w={1080} y={l.y} align="center" stagger={30} cut={S.burst + 80} fade={textOut < 1 ? textOut.toFixed(3) : null} />
       ))}
-      <Glow x={ORBIT.cx} y={ORBIT.cy} r={900} colour="rgba(255,244,228,0.5)" o={hit(t, S.meet, 380) * 0.9} z={1} />
+      <Glow x={ORBIT.cx} y={ORBIT.cy} r={900} colour="rgba(255,244,228,0.5)" o={hit(t, S.meet, 300) * 0.7} z={1} />
       <canvas ref={canvas} className="rl-pix" width="1080" height="1920" style={{ visibility: flying ? 'visible' : 'hidden' }} />
-      <svg className="rl-shock-svg" width="1080" height="1920" viewBox="0 0 1080 1920" aria-hidden="true">
-        <ellipse className="rl-shock" cx={ORBIT.cx} cy={ORBIT.cy} rx="10" ry="4.2" transform={`rotate(-16 ${ORBIT.cx} ${ORBIT.cy})`} />
-      </svg>
       {whole ? <Lockup cell={CELL} className="rl-lock" style={{ left: LOCK.x, top: LOCK.y }} /> : null}
-      <p className="rl-addr" style={{ top: LOCK.y + LOCKUP.h * CELL + 92 }}>
+      <p className="rl-addr" style={{ top: LOCK.y + LOCKUP.h * CELL + 88 }}>
         <span className="rl-addr-t" />
         <span className="rl-addr-cur" style={{ opacity: t >= S.url && blink(t, lastTyped) ? 1 : 0 }} />
       </p>
@@ -1157,8 +1300,12 @@ export function Reel({ t }) {
           be measured in a fallback face */}
       {ok ? <Measure who={A} times={tA} onMeasure={setMA} /> : null}
       <svg className="rl-defs" width="0" height="0" aria-hidden="true">
-        <filter id="rl-mb" x="-30%" y="0%" width="160%" height="100%" colorInterpolationFilters="sRGB">
-          <feGaussianBlur stdDeviation={`${mb.toFixed(1)} 0`} />
+        <filter id="rl-mb" x="0" y="0" width="100%" height="100%" primitiveUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+          <feFlood x="5" y="5" width="2" height="2" floodColor="#fff" />
+          <feComposite width="12" height="12" />
+          <feTile result="grid" />
+          <feComposite in="SourceGraphic" in2="grid" operator="in" />
+          <feMorphology operator="dilate" radius={`${(6 + mb).toFixed(0)} 6`} />
         </filter>
       </svg>
       <div className="rl-stage" style={{ transform: shake }}>
@@ -1166,7 +1313,7 @@ export function Reel({ t }) {
         {t < 4000 && mA ? <MacroWall t={t} m={mA} times={tA} /> : null}
         {t >= 4000 && t < S.send[0] && mA ? <BerkeleyScene t={t} letter={mA} /> : null}
         {t >= S.send[0] && t < S.other[0] ? <SendScene t={t} times={tA} send={send} /> : null}
-        {t >= S.other[0] && t < S.wait[0] ? <OtherScene t={t} times={tB} send={send} /> : null}
+        {t >= S.other[0] && t < S.wait[0] ? <OtherScene t={t} times={tB} /> : null}
         <WaitScene t={t} />
         {film && t >= S.tap3 - 120 && t < S.ask[0] ? <GlassScene t={t} film={film} /> : null}
         {ok && t >= S.ask[0] ? <AskScene t={t} /> : null}
@@ -1182,7 +1329,8 @@ export function Reel({ t }) {
 
 // the flashes: on send, on the drop, on the meeting
 function Flash({ t }) {
-  const a = hit(t, S.press - 10, 70) * 0.18 + hit(t, S.drop, 35) * 0.25 + hit(t, S.meet, 60) * 0.55
+  const white = t >= S.meet && t < S.meet + 34
+  const a = white ? 1 : hit(t, S.press - 10, 70) * 0.18 + hit(t, S.drop, 35) * 0.25 + hit(t, S.meet + 34, 90) * 0.5
   if (a < 0.004) return null
   return <span className="rl-flash" style={{ opacity: a.toFixed(3), background: t >= S.drop - 20 ? '#FFFFFF' : '#EAF4FF' }} />
 }
