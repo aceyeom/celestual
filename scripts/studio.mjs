@@ -48,7 +48,11 @@ export async function studio() {
     // is never photographed with a tile of it not yet rastered (a heavy
     // filter on a large layer was drawn a frame late, and came out black)
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none',
-      '--run-all-compositor-stages-before-draw', '--disable-checker-imaging'],
+      '--run-all-compositor-stages-before-draw', '--disable-checker-imaging',
+      // and room enough for every layer of a frame: the default budget of a
+      // machine with no graphics card is small, and a frame of many large
+      // layers had some of them silently left undrawn
+      '--force-gpu-mem-available-mb=6144', '--force-gpu-mem-discardable-limit-mb=4096'],
   })
   const pages = new Map()
   async function pageAt(scale) {

@@ -85,8 +85,8 @@ const hit = (t, at0, ms = 260) => (t < at0 ? 0 : Math.exp(-(t - at0) / ms))
 // each letter rises out of its own line, sharpening as it comes, and goes
 // out the same way, faster. `size` in px; `italic` for the words that carry
 // the feeling; `tail` stands after the last letter (the phone's cursor).
-export function Line({ text, t, from, to = Infinity, size, italic = false, x = 0, y = 0, align = 'left', w = 1080, stagger = 24, rise = 0.42, tail = null, className = '', style }) {
-  if (t < from - 10 || t > to + 700) return null
+export function Line({ text, t, from, to = Infinity, cut = Infinity, size, italic = false, x = 0, y = 0, align = 'left', w = 1080, stagger = 24, rise = 0.42, tail = null, className = '', style }) {
+  if (t < from - 10 || t > to + 700 || t >= cut) return null
   const chars = [...text]
   return (
     <div className={`rl-line${italic ? ' is-it' : ''} ${className}`} style={{ left: x, top: y, width: w, fontSize: size, textAlign: align, ...style }}>
@@ -256,9 +256,10 @@ export function Reel({ t }) {
           for it), or the letters would be measured in the fallback face */}
       {ok ? <Measure who={A} times={tA} onMeasure={setMA} /> : null}
       <div className="rl-stage" style={{ transform: shake }}>
-        {t < 3520 && mA ? <MacroWall t={t} m={mA} times={tA} /> : null}
-        {t >= 3480 && t < 5560 ? <SendScene t={t} times={tA} /> : null}
-        {t >= 5480 && t < 7560 ? <OtherScene t={t} times={tB} /> : null}
+        {/* each scene owns exactly its own frames: a cut is a cut */}
+        {t < S.send[0] && mA ? <MacroWall t={t} m={mA} times={tA} /> : null}
+        {t >= S.send[0] && t < S.other[0] ? <SendScene t={t} times={tA} /> : null}
+        {t >= S.other[0] && t < S.wait[0] ? <OtherScene t={t} times={tB} /> : null}
         <WaitScene t={t} />
         <Rays t={t} />
         {film && t >= 8950 && t < 13300 ? <GlassScene t={t} film={film} /> : null}
@@ -357,12 +358,12 @@ function MacroWall({ t, m, times }) {
 
 // `unsent.` on the second beat of the second bar, with the phone's cursor
 function Title({ t }) {
-  if (t < S.title - 50 || t > 3560) return null
+  if (t < S.title - 50 || t >= S.send[0]) return null
   const on = blink(t, S.title + 520)
   return (
     <Line
-      text="unsent." t={t} from={S.title} to={3240} size={390} x={0} y={700} w={1080} align="center" stagger={36}
-      className="rl-title" tail={<TailCursor on={on && t > S.title + 260 && t < 3240} />}
+      text="unsent." t={t} from={S.title} to={3150} size={390} x={0} y={700} w={1080} align="center" stagger={36}
+      className="rl-title" tail={<TailCursor on={on && t > S.title + 260 && t < 3150} />}
     />
   )
 }
@@ -437,11 +438,11 @@ function OtherScene({ t, times }) {
 function Words({ t }) {
   return (
     <>
-      <Line text="send it" t={t} from={S.sendIt} to={4930} size={250} x={74} y={1180} />
-      <Line text="privately." t={t} from={S.privately} to={4960} size={250} italic x={74} y={1400} stagger={22} />
-      <Line text="they only read it" t={t} from={S.read} to={7280} size={128} x={78} y={1020} stagger={16} />
-      <Line text="if they send" t={t} from={S.ifThey} to={7300} size={204} italic x={70} y={1170} stagger={20} />
-      <Line text="you one." t={t} from={S.ifThey + 250} to={7320} size={204} italic x={70} y={1360} stagger={22} />
+      <Line text="send it" t={t} from={S.sendIt} to={4930} size={250} x={74} y={1180} cut={S.send[1]} />
+      <Line text="privately." t={t} from={S.privately} to={4960} size={250} italic x={74} y={1400} stagger={22} cut={S.send[1]} />
+      <Line text="they only read it" t={t} from={S.read} to={7060} size={128} x={78} y={1020} stagger={16} cut={7500} />
+      <Line text="if they send" t={t} from={S.ifThey} to={7080} size={204} italic x={70} y={1170} stagger={20} cut={7500} />
+      <Line text="you one." t={t} from={S.ifThey + 250} to={7100} size={204} italic x={70} y={1360} stagger={22} cut={7500} />
     </>
   )
 }
@@ -479,7 +480,7 @@ function Flap({ seq, times, t, w, h, size }) {
 }
 
 function WaitScene({ t }) {
-  const on = t >= S.wait[0] - 20 && t < S.wait[1]
+  const on = t >= S.wait[0] && t < S.wait[1]
   // the day it is, and the city under it
   let d = -1
   while (d + 1 < S.days.length && S.days[d + 1] <= t) d++
@@ -554,7 +555,7 @@ function GlassScene({ t, film }) {
   const cy = g ? y - (g.y + g.h / 2) * s : 0
   // the drop: the colours pulled apart for a moment, and let go
   const ca = hit(t, S.drop, 140) * 9
-  const fade = 1 - end
+  const fade = t < S.run[0] ? 0 : 1 - end
   return (
     <div className="rl-cam" style={{ opacity: fade.toFixed(3) }}>
       <Glow x={540} y={y} r={lerp(1300, 900, back)} colour={turn > 0.5 ? halo('rose') : halo('night')} o={(0.35 + 0.65 * turn) * back} />
