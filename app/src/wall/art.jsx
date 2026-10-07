@@ -36,7 +36,7 @@ import { hash, rand } from './data.js'
 // the whole difference between a sparkle and a plus sign. The control points
 // sit at 30% along each arm: pull them to 45% and it becomes a diamond, drop
 // them to 15% and it becomes a cross. 30% is the reference.
-const SPARK = 'M50 0C51.5 29 62 40.5 100 50C62 59.5 51.5 71 50 100C48.5 71 38 59.5 0 50C38 40.5 48.5 29 50 0Z'
+export const SPARK = 'M50 0C51.5 29 62 40.5 100 50C62 59.5 51.5 71 50 100C48.5 71 38 59.5 0 50C38 40.5 48.5 29 50 0Z'
 
 export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0, className = '', style }) {
   return (

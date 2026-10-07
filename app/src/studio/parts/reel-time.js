@@ -1,15 +1,15 @@
-// ── unsent, the reel's clock ────────────────────────────────────────────────
+// ── the reel's clock ────────────────────────────────────────────────────────
 //
-// Fifteen seconds cut to a score at 120 beats a minute: a beat is 500ms, a
-// bar 2s, and every cut, every word and every hit of the sound lands on one
-// of them. The picture (reel.jsx) and the score (scripts/studio-score.mjs)
-// both read this file, so a key is heard on the frame its letter lands and
-// the drop is the frame the two of them meet. Plain script, so node reads
-// it as the page does.
+// Twenty two seconds cut to a score at 120 beats a minute: a beat is 500ms,
+// a bar 2s, eleven bars, and every cut, every word and every hit of the
+// sound lands on one of them. The picture (reel.jsx) and the score
+// (scripts/studio-score.mjs) both read this file, so a key is heard on the
+// frame its letter lands and the drop is the frame the two of them meet.
+// Plain script, so node reads it as the page does.
 
 import { filmStory } from '../../wall/pixmark.js'
 
-export const MS = 15000
+export const MS = 22000
 export const BPM = 120
 export const BEAT = 60000 / BPM
 export const beat = (n) => n * BEAT
@@ -42,23 +42,52 @@ export function rhythm(text, from, step) {
 export const S = {
   // the glass up close, the letters a hand high, the camera after the cursor
   macro: [0, 2000],
-  // the camera falls back through the phone into the wall of letters, and
-  // the title lands on the second beat of the second bar
-  wall: [1750, 3500], title: beat(5),
-  // the hard cut on the bar: send, the note going, the envelope at the lens,
-  // the words on the beats, the screen going out
-  send: [3500, 5500], press: beat(7), sendIt: beat(8), privately: beat(9), off: beat(10),
-  // out of the black, the other phone, and the line in two halves
-  other: [5500, 7500], bWake: beat(11), read: beat(12), ifThey: beat(13), bSend: 7100,
-  // the week on the flaps, a sixteenth a day, the city under them, and the
-  // time of the reveal whole on the beat (8500) and held for one
-  wait: [7500, 9000], days: [7500, 7625, 7750, 7875, 8000, 8125], time: 8250,
+  // the camera falls back through the phone into the wall of letters, the
+  // wall's own line over it a line an eighth, and a wave of the twelve
+  // colours over every letter on the beat after
+  wall: [1750, 4000], lines: [2500, 2750, 3000], wave: 3000,
+  // the whip into the dark on the bar
+  whip: [3850, 4150],
+  // the berkeley wall: the campanile drawn as its elevation is, from the
+  // ground up, its lantern lit on the beat, the campus's letters turning
+  // round it; a finger stops them, opens one and hearts it
+  berk: [4000, 7500], guides: 4050, plot: [4250, 4950], lamp: 5000, title: 4500, ring: 4750,
+  stop: [5250, 5900], tap1: 6000, open: [6000, 6450], tap2: 6750,
+  // send, the envelope through the lens, the words on the beats, the screen
+  // going out
+  send: [7500, 9500], press: 7500, sendIt: 8000, privately: 8500, off: 9000,
+  // out of the black, the other phone, and the line in three
+  other: [9500, 11500], bWake: 9500, read: 10000, ifThey: 10500, bSend: 11100,
+  // the week on the flaps, a sixteenth a day, the city under them, the time
+  // of the reveal whole on the beat, and a finger on it that opens the glass
+  wait: [11500, 13000], days: [11500, 11625, 11750, 11875, 12000, 12125], time: 12250, tap3: 12750,
   // the run, on the glass at the size of the room, landing on the drop
-  run: [9000, 10000],
-  // the drop: they are held, the light goes over everything, the mark
-  drop: 10000, mutual: [10000, 12600],
-  // and the end, signed
-  end: [12600, 15000],
+  run: [13000, 14000],
+  // the drop: they are held, the light goes over everything, the mark, and
+  // the sentence said on the bar
+  drop: 14000, mutual: [14000, 16500], said: 16000,
+  // the question, a line a beat, then its letters go to the phone's pixels,
+  // two of them circling, and they meet on the last bar: the name, drawn
+  ask: [16500, 22000], q: [16500, 17000, 17500], burst: 18500, meet: 20000, lock: [20000, 20750], url: 20750,
+}
+
+// the two lights at the end: each half of the question gathered into one
+// and set circling the other on the tilt of the mark's ring, a turn and
+// three quarters, quicker each turn and closer, until they meet. The score
+// reads it too, so each light's notes are heard where it is
+export const ORBIT = { cx: 540, cy: 900, a0: 330, ratio: 0.42, tilt: (-16 * Math.PI) / 180, turns: 1.75, from: S.burst + 150 }
+export function orbitOf(side, t) {
+  const k = Math.min(1, Math.max(0, (t - ORBIT.from) / (S.meet - ORBIT.from)))
+  const r = ORBIT.a0 * (1 - k * k * k)
+  const turn = 2 * Math.PI * ORBIT.turns * k ** 1.8
+  const phi = Math.PI * (side ? 0 : 1) + turn
+  const ex = Math.cos(phi) * r
+  const ey = Math.sin(phi) * r * ORBIT.ratio
+  return {
+    x: ORBIT.cx + ex * Math.cos(ORBIT.tilt) - ey * Math.sin(ORBIT.tilt),
+    y: ORBIT.cy + ex * Math.sin(ORBIT.tilt) + ey * Math.cos(ORBIT.tilt),
+    k, turn,
+  }
 }
 
 // lin's note: the first line already there on the first frame, the rest
@@ -67,7 +96,7 @@ export const S = {
 export const A_HOLD = 18
 export const A_LAND = 48
 export const typedA = () => rhythm(A.text, -1100, (i) => (i < A_HOLD || i >= A_LAND ? 60 : 30))
-export const typedB = () => rhythm(B.text, 5640, 30)
+export const typedB = () => rhythm(B.text, S.bWake + 140, 30)
 
 // ── the mutual's own film against the reel's clock ──────────────────────────
 // Its moments as the product tells them (pixmark.js `filmStory`), with a
@@ -75,10 +104,9 @@ export const typedB = () => rhythm(B.text, 5640, 30)
 export const STORY_TIMES = filmStory({ say: { cells: [], w: 0, ends: Array.from(SAY, (_, i) => i + 1) } }).times
 // the run from just after they come in to where they are held, a breath
 // before the drop; the drop is the light going over the glass (the story's
-// `glow`), so the rose is the drop; then on to the sentence said, and the
-// story's own pace while the mark lives
+// `glow`), so the rose is the drop; then on to the sentence said on the bar
 const ST = STORY_TIMES
-export const STORY = [[S.run[0], ST.enter + 360], [9750, ST.catch], [S.drop, ST.glow], [12350, ST.said], [16350, ST.said + 4000]]
+export const STORY = [[S.run[0], ST.enter + 360], [S.drop - 250, ST.catch], [S.drop, ST.glow], [S.said, ST.said], [S.said + 4000, ST.said + 4000]]
 export function storyAt(t) {
   if (t <= STORY[0][0]) return STORY[0][1]
   for (let i = 1; i < STORY.length; i++) {

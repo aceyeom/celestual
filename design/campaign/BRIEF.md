@@ -80,7 +80,9 @@ label) beat many medium sizes. Ash `#9C978E` for secondary, never
 Lowercase. Says less. Never excited, never selling, never apologetic.
 Literally true. **No exclamation marks, no emoji, no em or en dashes, ever.**
 Never: match, matched, unlock, premium, hurry, don't miss, find out who
-likes you, someone entered you, swipe, dating. Courage-deficit framing is
+likes you, someone entered you, swipe, dating. And never `unsent.` set as a
+title: on its own and large it reads as The Unsent Project, which is
+somebody else's. Courage-deficit framing is
 banned ("too scared to tell them?"). Silence is the product working.
 
 ### The lines (use these, or write new ones as carefully)
@@ -96,7 +98,6 @@ banned ("too scared to tell them?"). Silence is the product working.
 - write a letter. put it up.
 - every letter on the wall is to somebody.
 - still feel it?
-- unsent.
 - the cursor is still blinking.
 - celestual.us
 
@@ -182,27 +183,30 @@ headline, no orphaned word on its own line, consistent margins from a grid
 
 ## 8. The reel
 
-`film-unsent.mp4` (30 fps) and `film-unsent-60.mp4` (60 fps), 1080 by 1920,
-15 seconds, cut to its own score at 120 beats a minute. One clock
-(`app/src/studio/parts/reel-time.js`) times the picture (`parts/reel.jsx`)
-and the score (`scripts/studio-score.mjs`), so a key is heard on the frame
-its letter lands and the drop is the frame the two meet.
+`celestual-reel.mp4` (30 fps) and `celestual-reel-60.mp4` (60 fps), 1080 by
+1920, 22 seconds, cut to its own score at 120 beats a minute: eleven bars,
+every cut, word and hit on a beat. One clock (`app/src/studio/parts/
+reel-time.js`) times the picture (`parts/reel.jsx`) and the score
+(`scripts/studio-score.mjs`), so a key is heard on the frame its letter lands
+and each of the two lights at the end is heard where it is on the frame.
 
 | ms | the shot |
 | --- | --- |
 | 0 | the glass up close, lin's note typed a letter at a time, the camera after the cursor to the question mark |
-| 1750 | the camera falls back through the phone into a wall of unsent notes (the letters in 5), lit one by one |
-| 2500 | `unsent.` |
-| 3500 | the hard cut on the bar: send, the envelope off the glass and through the lens, `send it privately.`, the screen going out |
-| 5500 | the other phone: kai's own note, `they only read it if they send you one.` |
-| 7500 | the week on a split flap board, a day a sixteenth, the city under it, to `sat 9:00 pm pacific.` |
-| 9000 | the product's own reveal (`filmOf`) on the glass at the size of the room: they run in |
-| 10000 | the drop: they are held, the glass turns rose, the pixels gather into the mark, `it's mutual.` |
-| 12600 | the mark in liquid metal (the product's `LiquidMark` shader), `nothing happens unless it's mutual.`, `celestual.us` |
+| 1750 | the camera falls back through the phone into a wall of letters (the letters in 5); the wall's own line, `a wall of / the ones you / never told.`, a line an eighth; the twelve colours go over every letter, out from lin's |
+| 4000 | the whip into the dark: the berkeley wall. the Campanile (art.jsx) plotted as an elevation is, construction first, then every line from the ground up, its clock's hands going round to nine; its lantern lit on the beat; the campus's letters, on the school's network, turning round it as the mark's ring turns round its star; a finger opens one and hearts it |
+| 7500 | send is pressed, the envelope through the lens, `or send it / privately.`, the screen going out |
+| 9500 | kai's phone, amber, a note of its own, `they only read it / if they send / you one.` |
+| 11500 | the week on a split flap board over the city to `sat 9:00 pm pacific.`; a finger on the time opens the glass out of that point |
+| 13000 | the product's own reveal (`filmOf`) at the size of the room: they run in, are held on the drop, the glass turns rose, the mark, `it's mutual.` |
+| 16500 | `do they still / think about / you?`, then its letters go to the phone's pixels, two lights of them (lin's ice, kai's amber) circling each other on the tilt of the mark's ring; they meet on the last bar, and every pixel comes home to its cell of the drawn lockup; `celestual.us` typed under it |
 
-How it is made: `node scripts/studio-reel.mjs film-unsent --jobs 3`. The
-score is synthesised from the clock and mastered to −14 LUFS; three browsers
-each photograph a share of the 900 frames (`studio-film.mjs --frames`); one
-pass of ffmpeg lays the score under them, blooms the lights, parts the red
-and blue by a pixel, and moves a grain over it. The thirty is each pair of
-the sixty laid over each other, a shutter open half the frame.
+How it is made: `node scripts/studio-reel.mjs celestual-reel --jobs 3`. The
+score is synthesised from the clock and mastered to -14 LUFS; three browsers
+each photograph a share of the 1320 frames (`studio-film.mjs --frames`);
+one pass of ffmpeg lays the score under them, blooms the lights, parts the
+red and blue by a pixel, and moves a grain over it. The thirty is each pair
+of the sixty laid over each other, a shutter open half the frame. GSAP moves
+everything: each scene builds one paused timeline and is put at the reel's
+moment every frame (DrawSVG, MorphSVG, SplitText, Physics2D, MotionPath,
+TextPlugin, CustomEase, CustomWiggle).

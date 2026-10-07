@@ -5,4 +5,4 @@ function Film({ t }) {
   return <Reel t={t} />
 }
 
-export default { id: 'film-unsent', w: 1080, h: 1920, ms: MS, fps: 60, Film }
+export default { id: 'celestual-reel', w: 1080, h: 1920, ms: MS, fps: 60, Film }

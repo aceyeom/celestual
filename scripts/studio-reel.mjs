@@ -14,7 +14,7 @@
 //                                 open half the frame blurs what moves
 //   design/campaign/<id>-60.mp4   the sixty, sharp
 //
-//   node scripts/studio-reel.mjs film-unsent [--jobs 3] [--fps 60] [--keep]
+//   node scripts/studio-reel.mjs celestual-reel [--jobs 3] [--fps 60] [--keep]
 import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -22,11 +22,11 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
-const id = args.find((a) => !a.startsWith('--')) || 'film-unsent'
+const id = args.find((a) => !a.startsWith('--')) || 'celestual-reel'
 const opt = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d }
 const jobs = Number(opt('jobs', 3))
 const fps = Number(opt('fps', 60))
-const ms = Number(opt('ms', 15000))
+const ms = Number(opt('ms', 22000))
 const scratch = process.env.FRAMES || join(root, '.studio-frames', id)
 const outDir = process.env.OUT || join(root, 'design/campaign')
 const wav = join(outDir, `${id}.wav`)

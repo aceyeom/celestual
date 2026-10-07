@@ -82,10 +82,11 @@ export function Light({ x, y, size, tint = 'night', strength = 1, colour = '' })
 // [x, y, z] degrees. `quiet` leaves off the pixels up close, which are a
 // haze at a poster's size. `screenStyle` goes on the screen itself, where
 // its colours live: the film turns night to rose with `turnStyle` there.
+// `sticker` is a school (schools.js `schoolOf`): the phone on its network.
 export function Phone({
   w, x, y, tint = 'night', seed = 'studio', mode = 'draft', text = '', name = '', counter = '', stamp = '',
   hearts = 0, replies = null, bat = 4, cursor = true, square = false, mail = false, tilt = null,
-  quiet = true, children, className = '', style, screenStyle = null, top: topOver = null, keys: keysOver = null,
+  quiet = true, children, className = '', style, screenStyle = null, top: topOver = null, keys: keysOver = null, sticker = null,
 }) {
   const look = { tint, bat }
   let top
@@ -108,7 +109,7 @@ export function Phone({
   const place = x != null && y != null ? { position: 'absolute', left: `${x - w / 2}px`, top: `${y}px`, transform: 'translateY(-50%)' } : null
   return (
     <div className={`st-phone${quiet ? ' is-quiet' : ''}${mode === 'bare' ? ' is-bare' : ''} ${className}`} style={{ width: `${w}px`, ...place, ...style }}>
-      <Screen look={look} seed={seed} top={top} keys={keys} live={false} style={tiltStyle || screenStyle ? { ...tiltStyle, ...screenStyle } : undefined}>
+      <Screen look={look} seed={seed} top={top} keys={keys} live={false} sticker={sticker} style={tiltStyle || screenStyle ? { ...tiltStyle, ...screenStyle } : undefined}>
         {mode === 'bare' ? children : <ScreenText text={text} cursor={cursor} />}
       </Screen>
     </div>
