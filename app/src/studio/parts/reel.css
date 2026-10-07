@@ -1,0 +1,91 @@
+/* unsent, the reel (reel.jsx) */
+.rl-board { background: #000; }
+.rl-board .st-phone { position: relative; }
+.rl-stage { position: absolute; inset: 0; }
+
+/* the display face, set large: a letter at a time */
+.rl-line {
+  position: absolute; margin: 0; white-space: pre; z-index: 40;
+  font-family: var(--st-serif); font-weight: 500; letter-spacing: -0.04em; line-height: 0.9;
+  color: var(--chalk); font-optical-sizing: auto;
+  text-shadow: 0 0 40px rgba(0, 0, 0, 0.55);
+}
+.rl-line.is-it { font-style: italic; font-weight: 440; letter-spacing: -0.035em; }
+.rl-ch { display: inline-block; }
+/* the phone's cursor after a line: a pixel of the face wide, a capital tall */
+.rl-tailcur {
+  display: inline-block; width: 0.07em; height: 0.66em; margin-left: 0.06em; vertical-align: -0.02em;
+  background: var(--chalk); box-shadow: 0 0 0.08em rgba(255, 244, 228, 0.55);
+}
+
+/* the note: what is not typed yet is laid out and unseen */
+.rl-typed .rl-lift { display: block; }
+.rl-typed .rl-rest { color: transparent; text-shadow: none; }
+.rl-typed .rl-nocur { display: inline-block; width: 0.107em; margin-right: 0.107em; }
+.rl-typed .rl-cur { margin-left: 0; margin-right: 0.107em; }
+.rl-board .wl-sk.is-open { background: var(--s-lit); color: var(--s-bot); border-radius: 1cqw; }
+.rl-board .wl-sk.is-open .wl-lit { color: var(--s-bot); text-shadow: none; }
+
+/* lin's phone laid out once, unseen, for its letters' places */
+.rl-measure { position: absolute; left: -5000px; top: 0; width: 1000px; visibility: hidden; }
+
+/* the camera, and the things it carries, placed by their own transforms */
+.rl-cam, .rl-tilt, .rl-off { position: absolute; inset: 0; }
+.rl-obj { position: absolute; left: 0; top: 0; }
+.rl-glass { position: absolute; left: 0; top: 0; width: 1000px; transform-origin: 0 0; z-index: 4; }
+/* the depth of field of the glass up close: soft above and below the line */
+.rl-dof {
+  position: absolute; inset: 0; z-index: 8; pointer-events: none;
+  backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 38%, transparent 60%, #000 100%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 38%, transparent 60%, #000 100%);
+}
+.rl-glow {
+  position: absolute; pointer-events: none; border-radius: 50%; mix-blend-mode: screen;
+  background: radial-gradient(closest-side, var(--c) 0%, color-mix(in srgb, var(--c) 38%, transparent) 40%, transparent 100%);
+}
+.rl-env { position: absolute; z-index: 30; overflow: visible; }
+.rl-ewash { position: absolute; inset: 0; z-index: 31; background: radial-gradient(60% 50% at 50% 50%, #EAF4FF, rgba(143, 184, 220, 0.4) 70%, transparent); mix-blend-mode: screen; }
+.rl-dot { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 0 24px 8px rgba(200, 230, 255, 0.8); z-index: 12; }
+
+/* the week: the city in the screens' inks, and the board over it */
+.rl-city {
+  position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; image-rendering: pixelated;
+  transform-origin: 50% 50%;
+}
+.rl-board-shade { position: absolute; inset: 0; background: radial-gradient(64% 26% at 50% 40%, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.06) 100%); }
+.rl-flaps { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
+.rl-flap {
+  position: relative; border-radius: 10px; background: #0B0B0B;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(244, 241, 234, 0.1);
+}
+.rl-flap-half {
+  position: absolute; left: 0; right: 0; top: 0; overflow: hidden; background: #111;
+  backface-visibility: hidden;
+}
+.rl-flap-half.is-top { border-radius: 10px 10px 0 0; transform-origin: 50% 100%; background: linear-gradient(#161616, #0E0E0E); }
+.rl-flap-half.is-bot { border-radius: 0 0 10px 10px; transform-origin: 50% 0; background: linear-gradient(#0C0C0C, #141414); }
+.rl-flap-half.is-fold { z-index: 2; }
+.rl-flap-ch {
+  display: block; text-align: center; color: var(--chalk);
+  font-family: var(--st-pixel); font-weight: 400;
+  text-shadow: 0 0 18px rgba(255, 244, 228, 0.35);
+}
+.rl-flap-hinge { position: absolute; left: 0; right: 0; height: 2px; background: rgba(0, 0, 0, 0.9); z-index: 3; }
+.rl-label {
+  position: absolute; left: 0; right: 0; margin: 0; text-align: center; z-index: 5;
+  font-family: var(--st-mono); font-size: 30px; letter-spacing: 0.32em; text-transform: none; color: var(--ash);
+}
+
+/* the rays behind the glass */
+.rl-rays { position: absolute; inset: 0; z-index: 2; mix-blend-mode: screen; }
+
+/* the end */
+.rl-end { z-index: 6; }
+.rl-metal { position: absolute; z-index: 3; }
+.rl-sign { position: absolute; left: 96px; top: 1440px; display: flex; align-items: center; gap: 30px; z-index: 40; }
+.rl-url { font-family: var(--st-mono); font-size: 30px; letter-spacing: 0.08em; color: var(--ash); }
+
+/* a flash, over everything but the grain */
+.rl-flash { position: absolute; inset: 0; z-index: 45; mix-blend-mode: screen; pointer-events: none; }
+.rl-title { text-shadow: 0 0 80px rgba(0, 0, 0, 0.9), 0 0 24px rgba(0, 0, 0, 0.7); }

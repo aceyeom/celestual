@@ -44,7 +44,11 @@ export async function studio() {
   const base = `http://127.0.0.1:${http.address().port}`
   const browser = await chromium.launch({
     executablePath: chromiumPath(),
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none'],
+    // every stage of the compositor run before a frame is drawn, so a frame
+    // is never photographed with a tile of it not yet rastered (a heavy
+    // filter on a large layer was drawn a frame late, and came out black)
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--font-render-hinting=none',
+      '--run-all-compositor-stages-before-draw', '--disable-checker-imaging'],
   })
   const pages = new Map()
   async function pageAt(scale) {
@@ -58,7 +62,7 @@ export async function studio() {
   }
   async function open(page, query, w, h) {
     await page.setViewportSize({ width: Math.max(200, Math.ceil(w)), height: Math.max(200, Math.ceil(h)) })
-    await page.goto(`${base}/studio.html?${query}`, { waitUntil: 'load' })
+    await page.goto(`${base}/studio.html?${query}`, { waitUntil: 'load', timeout: 240000 })
     await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 })
   }
   async function list() {

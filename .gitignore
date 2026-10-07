@@ -20,3 +20,4 @@ supabase/.temp/
 
 # the git worktrees background agents work in (Claude Code), never content
 .claude/worktrees/
+.studio-frames/

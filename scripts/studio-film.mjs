@@ -41,10 +41,34 @@ try {
   const stills = opt('stills')
   if (stills) {
     for (const t of stills.split(',').map(Number)) {
+      // a short run up to the moment, as the film itself comes to it, so
+      // what mounts on the way has settled when the still is taken
+      for (const pre of [t - 250, t - 120, t - 40]) if (pre >= 0) await page.evaluate((ms) => window.__seek(ms), pre)
       await page.evaluate((ms) => window.__seek(ms), t)
       const file = join(out, `${id}-${String(t).padStart(5, '0')}.png`)
       writeFileSync(file, await grab('png'))
       console.log(file.replace(`${root}/`, ''))
+    }
+  } else if (opt('frames')) {
+    // a run of the film as numbered pictures, for scripts/studio-reel.mjs,
+    // which has a few of these photograph a share each at once: every
+    // picture is named by its frame of the whole film, so the shares fall
+    // into place, and each share runs up to its first frame as the film
+    // itself comes to it
+    const fps = Number(opt('fps')) || f.fps || 30
+    const a = Number(opt('first')) || 0
+    const z = Number(opt('last'))
+    const dir = opt('frames')
+    mkdirSync(dir, { recursive: true })
+    const t0 = Date.now()
+    for (const pre of [-250, -120, -40]) {
+      const ms = (a * 1000) / fps + pre
+      if (ms >= 0) await page.evaluate((m) => window.__seek(m), ms)
+    }
+    for (let i = a; i <= z; i++) {
+      await page.evaluate((ms) => window.__seek(ms), (i * 1000) / fps)
+      writeFileSync(join(dir, `f${String(i).padStart(5, '0')}.jpg`), await grab('jpeg'))
+      if ((i - a) % 20 === 0) console.log(`${id} [${a}-${z}]: ${i - a + 1}/${z - a + 1}  ${((Date.now() - t0) / 1000).toFixed(0)}s`)
     }
   } else {
     const fps = Number(opt('fps')) || f.fps || 30
