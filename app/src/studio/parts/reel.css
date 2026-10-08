@@ -57,3 +57,7 @@
    a camera's of a screen held still: on a card that turns and comes nearer
    they crawl */
 .rl-card .wl-scr-fx:is(.is-grid, .is-moire, .is-streak, .is-shine, .is-rgb) { display: none; }
+
+/* the panel, alive: the flow's light in the screen's cells, under all the
+   rest (panel-fluid.js) */
+.rl-gl { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 0; }

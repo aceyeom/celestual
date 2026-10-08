@@ -201,13 +201,13 @@ times the picture (`parts/reel.jsx`) and the song
 | 0 | lin's note on the glass, the first sentence already there and the rest typed at a hand's pace: `i love`, a breath, `d` | `i never said this two years ago. i loved you. maybe i still do.` (on the phone) |
 | 3750 | one shot: the camera comes back from the glass and rests on the letter under lin's long enough to read it, then makes one move up the hall's height and round, lands a little past and settles; the backlights come on outward from lin's, each in its own colour, a few screens dead; lin's letter comes away from the wall to the camera | `a wall of the ones / you never told.` |
 | 10000 | send: every lit pixel of the letter's words leaves its place, the first words first, and goes into the envelope, so the envelope is made of the letter; sealed, a light goes over it and it lights; the phone goes out behind it as an old screen goes, to a bright line and a point; the envelope comes at the lens, the frames it was in a moment ago after it | `or send it / privately.` |
-| 12500 | through the lens into the dark, and the frame is a screen's panel, its cells unlit; the envelope goes away from us to its place on it, to wait | `they only read it if / they send you one.` |
-| 15000 | the sentence ends on a clock that runs through the week; the week's notes come in round it, each as a screen comes on, and on the thursday one in amber; the clock stops at nine and `pacific` comes on after it; the others go down; the camera leans in and down on the two, and they find each other, wait a moment apart, and touch | `every mutual is / revealed on / sat 9:00 pm pacific` |
-| 20000 | on the touch the two are one light, and out of it comes lin's letter, at us, white as a screen coming on: quickly out of the light, up and away on a curve and round, slowing, into the hand, banking into its curve and leaving its light behind it as an old screen's phosphor does. Before it has quite come to rest it turns over, leaning back a little first as a hand turns a thing and going a little past, its glass catching the light; on its edge, on the bar the song comes in on, it is a bright line, and from that line its other side comes on as a screen does, in the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on its other side), `it's mutual.` |
-| 23750 | kai's, held, and brought a little nearer to be read | `you both find out.` |
-| 25000 | the panel again, three notes alone on it, each going out as a screen does, to a line and a point, each in its own time | `if it isn't, / nobody ever knows.` |
-| 27500 | the question, a word on each note of the melody, and then left there, whole, for as long as it took to ask | `do they still / think about you?` |
-| 31250 | the name, lit a cell at a time from its star, on the words' margin, the camera come to rest for it; the address typed under it | `celestual.us` |
+| 12500 | through the lens into the dark, and the frame is a screen's panel; the envelope's light opens out in it as eleven arms that curl back on themselves, and the envelope goes away from us to its place, to wait, its light rising off it in a thread as breath does | `they only read it if / they send you one.` |
+| 15000 | the sentence ends on a clock that runs through the week; the week's notes come in round it, each as a screen comes on and drops its colour into the panel, and on the thursday one in amber, its light curling up in a wave; while the clock runs the light rushes, the week in a few seconds; the clock stops at nine and `pacific` comes on after it; the others go down and their light with them; the camera leans in and down on the two, and they find each other, their light streaming after them, wait a moment apart, and touch | `every mutual is / revealed on / sat 9:00 pm pacific` |
+| 20000 | on the touch the two are one light, filling the frame and opening out as a flower of the two colours, lin's ice on one side and kai's amber on the other, and out of it comes lin's letter, at us, white as a screen coming on: quickly out of the light, up and away on a curve and round, slowing, into the hand, banking into its curve and leaving its light behind it as an old screen's phosphor does. Before it has quite come to rest it turns over, leaning back a little first as a hand turns a thing and going a little past, its glass catching the light; on its edge, on the bar the song comes in on, it is a bright line, and from that line its other side comes on as a screen does, in the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on its other side), `it's mutual.` |
+| 23750 | kai's, held, and brought a little nearer to be read, the two colours round it, lin's coming in under it and kai's over it, turning into each other; then it goes back into the panel, away from us, and the light goes down | `you both find out.` |
+| 25000 | the panel again, dark, three notes alone on it, each a candle's small light, each going out as a screen does, to a line and a point, in its own time, its last light rising off it as smoke | `if it isn't, / nobody ever knows.` |
+| 27500 | the question, a word on each note of the melody, and then left there, whole, for as long as it took to ask, over everyone's light, faint, turning slowly low in the frame as a galaxy turns, a breath of it rising at `you?` | `do they still / think about you?` |
+| 31250 | the name, the light drawn round its star and into it as water into a drain, and the name lit a cell at a time from the star, on the words' margin, the camera come to rest for it; the address typed under it | `celestual.us` |
 
 The type is the phone's own face, Jersey 10, cut into its cells
 (`app/src/wall/pixtype.js`) as the glass's own words are: one size, a pixel
@@ -232,6 +232,20 @@ lands a little past and settles; on the dark panel and on the letter, a
 drift of a pixel or two and a breath of roll, under words that keep still
 as a film's titles do, coming to rest for the name, which is never drawn
 off its grid.
+
+The dark is never only dark: from the lens on, the panel is a screen and
+light moves in it as ink moves in water (`parts/panel-fluid.js`). It is a
+fluid, solved on the graphics card every sixtieth of a second (stable
+fluids, after Pavel Dobryakov's WebGL Fluid Simulation, MIT): its flow
+kept from piling up, its eddies kept alive, and its dye, the light, carried
+on a grid of exactly the panel's cells, so each cell of the screen shows
+the light that has drifted into it. A lit cell is lit as an LCD's is, in
+three stripes of red, green and blue, a little uneven in its backlight,
+and glowing into the dark between the cells. Every note on the panel is a
+light in it: its own colour comes off it, and what happens to the note
+happens to its light. The flow is stepped from the lens at a fixed rate, so
+every frame is the same however it is come to. It is drawn with three.js
+(MIT), its glow postprocessing's mipmap bloom (Zlib).
 
 Nothing moves as a machine would. Every word comes on a little early or
 late and at its own pace; the two notes come together on curves, kai's

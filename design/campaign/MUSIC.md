@@ -25,13 +25,15 @@ goes, onto a note that is not home.
   and voices swell as it comes at the lens and break on D as it goes through
 - the date: the piano ticks the clock round in eighths and stops at nine; a
   cello comes in with the note that comes in on the thursday
-- the reveal: the air of lin's letter coming out of the light at us, from
-  the left as it swings out there; a run up the piano, leaning into its
+- the reveal: a wide breath of air as the touch's light fills the frame;
+  the air of lin's letter coming out of the light at us, from the left as
+  it swings out there; a run up the piano, leaning into its
   last two notes, the melody's first, and a harp going up with it into the
   turn; on the turn, as kai's side comes on to the same pip and bells kai's
   note came in with on the thursday, the melody sung by everything
 - `you both find out.`: the cello answers the melody, down to the B the
-  next scene is on
+  next scene is on; the air drawn in after the letter as it goes back into
+  the panel, gone on the cut
 - the ones that go out: the piano alone, a note for each light
 - the question: the melody with its words, on the piano alone, `you?` on a
   note that is not home, and left open over A, its fourth letting go to the

@@ -575,6 +575,9 @@ key(S.lapse[1] + 150, { pitch: 2400, body: 480, gain: 0.018 })
 air(S.lean[0], S.touch[2] - S.lean[0], { gain: 0.007, from: 300, to: 2400 })
 glint(S.touch[2] - 6, 90, { gain: 0.012, decay: 1.4, pan: -0.08, verb: 0.7 })
 glint(S.touch[2] + 4, 83, { gain: 0.012, decay: 1.4, pan: 0.08, verb: 0.7 })
+// and their light filling the frame and opening out: a wide breath of air,
+// up and away
+air(S.touch[2] + 10, 900, { gain: 0.016, from: 500, to: 6500, q: 0.9, verb: 0.7 })
 // lin's letter out of the light at us: the air it moves, coming quickly and
 // falling away, from the left as it swings out there and back to the middle
 // as it comes into the hand
@@ -603,6 +606,9 @@ glint(S.touch[2] + 4, 83, { gain: 0.012, decay: 1.4, pan: 0.08, verb: 0.7 })
   glint(edge + 40, 81, { gain: 0.011, decay: 1.4, pan: 0.05 })
   glint(edge + 70, 88, { gain: 0.007, decay: 1.6, pan: 0.05 })
 }
+// the letter going back into the panel: the air drawn in after it, gone on
+// the cut
+air(S.rOut - 100, 400, { gain: 0.015, from: 700, to: 7000, shape: 'rise', q: 1.2, verb: 0.3 })
 // the lights that never met, going out, each as a screen goes, from its
 // place, with a bell
 ;[[S.lone[0], 88, -0.55], [S.lone[1], 83, 0.45], [S.lone[2], 78, -0.15]].forEach(([ms, m, pan]) => {
