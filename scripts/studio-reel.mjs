@@ -14,7 +14,7 @@
 //                                 open half the frame blurs what moves
 //   design/campaign/<id>-60.mp4   the sixty, sharp
 //
-//   node scripts/studio-reel.mjs celestual-reel [--jobs 3] [--fps 60] [--keep]
+//   node scripts/studio-reel.mjs celestual-reel [--jobs 2] [--fps 60] [--keep]
 import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -25,7 +25,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
 const id = args.find((a) => !a.startsWith('--')) || 'celestual-reel'
 const opt = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d }
-const jobs = Number(opt('jobs', 3))
+// two: the browsers draw on the processor, and each already spreads its
+// drawing over every core, so a third only makes all three wait on each
+// other (on four cores, three ran each frame slower than one alone)
+const jobs = Number(opt('jobs', 2))
 const fps = Number(opt('fps', 60))
 const ms = Number(opt('ms', MS))
 const scratch = process.env.FRAMES || join(root, '.studio-frames', id)

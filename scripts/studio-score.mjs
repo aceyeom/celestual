@@ -141,7 +141,9 @@ function piano(ms, m, { vel = 0.5, gain = 0.1, pan = 0, decay = 3.4, verb = 0.4,
       v += p.amp * e * (Math.sin(p.w * i + p.ph) + Math.sin(p.w2 * i + p.ph)) * 0.5
     }
     const knock = i < sec(0.03) ? lp(rnd(), 900 + 1800 * vel) * Math.exp(-i / sec(0.006)) * 0.25 : 0
-    return (v * Math.min(1, i / sec(0.005)) + knock) * (0.35 + 0.65 * vel)
+    // and let go of softly at the end of its time, never cut
+    const tail = Math.min(1, (L - i) / sec(0.4))
+    return (v * Math.min(1, i / sec(0.005)) + knock) * (0.35 + 0.65 * vel) * tail
   }, { gain, pan, verb, delay })
 }
 // a chord on the piano, its notes rolled up from the lowest a little apart
@@ -180,9 +182,10 @@ function low(ms, m, len, { gain = 0.07, attack = 0.35 } = {}) {
 // a bell: a sine and its inharmonic partials, struck and let ring
 function bell(ms, m, { gain = 0.03, decay = 1.6, pan = 0, verb = 0.6, delay = 0.2, p2 = 0.25 } = {}) {
   const f = hz(m)
-  lay(FX, ms, sec(decay * 3.2), (i) => {
+  const L = sec(decay * 3.2)
+  lay(FX, ms, L, (i) => {
     const t = i / SR
-    const a = Math.min(1, i / sec(0.003))
+    const a = Math.min(1, i / sec(0.003), (L - i) / sec(0.2))
     return a * (Math.sin(TAU * f * t) * Math.exp(-t / decay)
       + p2 * Math.sin(TAU * f * 2.76 * t) * Math.exp(-t / (decay * 0.4))
       + 0.08 * Math.sin(TAU * f * 5.4 * t) * Math.exp(-t / (decay * 0.18)))
@@ -225,13 +228,15 @@ function boom(ms, { gain = 0.2, from = 90, to = 36, len = 2 } = {}) {
     return Math.sin(ph) * Math.exp(-t / (len * 0.4)) * Math.min(1, i / sec(0.02))
   }, { gain })
 }
-// air: noise through a band that moves, swelling in or falling away
-function air(ms, len, { gain = 0.05, from = 400, to = 9000, rise = true, pan = 0, verb = 0.5, q = 2 } = {}) {
+// air: noise through a band that moves, swelling in, swelling and going,
+// or falling away
+function air(ms, len, { gain = 0.05, from = 400, to = 9000, rise = true, swell = false, pan = 0, verb = 0.5, q = 2 } = {}) {
   const lp = lowpass(q)
   const L = sec(len / 1000)
   lay(FX, ms, L, (i) => {
     const k = i / L
-    const e = rise ? Math.sin((k * Math.PI) / 2) ** 2.4 : (1 - k) ** 1.6
+    // a swell breathes out at its top rather than stopping there
+    const e = swell ? Math.sin(Math.PI * k) ** 1.5 : rise ? Math.sin((k * Math.PI) / 2) ** 2.4 * Math.min(1, (1 - k) / 0.12) : (1 - k) ** 1.6
     return lp(rnd(), from * (to / from) ** k) * e
   }, { gain, pan, verb })
 }
@@ -311,8 +316,7 @@ wallOf().forEach((l, n) => {
   const ms = wakeOf(l.dist, l.seed) + 70
   bell(ms, PENTA[Math.floor(r(n + 9) * PENTA.length)], { gain: 0.016 / (1 + l.dist / 4), decay: 0.7, pan: Math.max(-0.85, Math.min(0.85, l.i / 7)), verb: 0.7, delay: 0.25, p2: 0.12 })
 })
-air(S.wake, 2800, { gain: 0.05, from: 300, to: 6000 })
-air(S.wake + 2800, 2400, { gain: 0.035, from: 6000, to: 1200, rise: false })
+air(S.wake, 5200, { gain: 0.05, from: 300, to: 5000, swell: true })
 roll(5000, [50, 57, 66], { vel: 0.35, gain: 0.07 })
 ;[[S.lines[0], 81], [S.lines[1], 78], [S.lines[2], 76], [S.lines[2] + 312, 74]].forEach(([ms, m], i) => piano(ms, m, { vel: 0.45 - i * 0.03, gain: 0.1 }))
 roll(7500, [45, 52, 57], { vel: 0.3, gain: 0.065 })

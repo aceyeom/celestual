@@ -184,29 +184,43 @@ headline, no orphaned word on its own line, consistent margins from a grid
 ## 8. The reel
 
 `celestual-reel.mp4` (30 fps) and `celestual-reel-60.mp4` (60 fps), 1080 by
-1920, 22 seconds, cut to its own score at 120 beats a minute: eleven bars,
-every cut, word and hit on a beat. One clock (`app/src/studio/parts/
-reel-time.js`) times the picture (`parts/reel.jsx`) and the score
-(`scripts/studio-score.mjs`), so a key is heard on the frame its letter lands
-and each of the two lights at the end is heard where it is on the frame.
+1920, 33.75 seconds, cut to its own score at 96 beats a minute: thirteen
+bars and a half, every word and every sound on a beat. One story, told
+once, and one image for it: a feeling is a light. A letter is a lit screen;
+a note sent privately goes up as a light; two lights that meet are a
+mutual; the lights that never meet go out, and nobody knows. One clock
+(`app/src/studio/parts/reel-time.js`) times the picture (`parts/reel.jsx`)
+and the score (`scripts/studio-score.mjs`), so a key is heard on the frame
+its letter lands and every letter of the hall near the lens is heard as the
+light reaches it.
 
-| ms | the shot |
-| --- | --- |
-| 0 | the glass up close, lin's note typed a letter at a time, the camera after the cursor to the question mark |
-| 1750 | the camera falls back through the phone into a wall of letters (the letters in 5); the wall's own line, `a wall of / the ones you / never told.`, a line an eighth; the twelve colours go over every letter, out from lin's |
-| 4000 | the whip into the dark: the berkeley wall. the Campanile (art.jsx) plotted as an elevation is, construction first, then every line from the ground up, its clock's hands going round to nine; its lantern lit on the beat; the campus's letters, on the school's network, turning round it as the mark's ring turns round its star; a finger opens one and hearts it |
-| 7500 | send is pressed, the envelope through the lens, `or send it / privately.`, the screen going out |
-| 9500 | kai's phone, amber, a note of its own, `they only read it / if they send / you one.` |
-| 11500 | the week on a split flap board over the city to `sat 9:00 pm pacific.`; a finger on the time opens the glass out of that point |
-| 13000 | the product's own reveal (`filmOf`) at the size of the room: they run in, are held on the drop, the glass turns rose, the mark, `it's mutual.` |
-| 16500 | `do they still / think about / you?`, then its letters go to the phone's pixels, two lights of them (lin's ice, kai's amber) circling each other on the tilt of the mark's ring; they meet on the last bar, and every pixel comes home to its cell of the drawn lockup; `celestual.us` typed under it |
+| ms | the shot | the words |
+| --- | --- | --- |
+| 0 | lin's note on the glass, the whole phone in the frame, the first sentence already there and the rest typed at a hand's pace, the hardest words slowest | `i never said this two years ago. i loved you. maybe i still do.` (on the phone) |
+| 3750 | one shot: the camera falls back from the glass into a hall of letters (the letters in 5, on the wall's own screens), the light going out over it from lin's, each letter waking as an old backlight does and throwing its colour on the wall; up the hall's height and round | `a wall of / the ones you / never told.` |
+| 8300 | lin's letter comes away from the wall to the camera; send; the screen says `sent privately.`, and its envelope goes up as a light | `or send it / privately.` |
+| 12500 | somewhere else, kai's phone, amber, a note of its own to lin, sent, going up as kai's light | `they only read it / if they send you / one too.` |
+| 15000 | the two lights among everyone's in the dark; a split flap board turns through the week and finishes the sentence: `sat`, `9:00 pm`, `pacific.` | `every mutual is / revealed on` |
+| 18125 | the two lights touch, and out of their light the product's own reveal (`filmOf`) at the size of the room: they run in, are held, the glass turns rose, the mark, held | `it's mutual.` (on the phone) |
+| 22500 | both notes, side by side, read at last; they become one warm light | `you both / find out.` |
+| 25000 | the lights that never met go out, one by one | `if it isn't, / nobody ever / knows.` |
+| 27500 | the question under the warm light; the light becomes the mark's star and the lockup is lit out of it a cell at a time; the address | `do they still / think about / you?`, then `celestual.us` |
 
-How it is made: `node scripts/studio-reel.mjs celestual-reel --jobs 3`. The
-score is synthesised from the clock and mastered to -14 LUFS; three browsers
-each photograph a share of the 1320 frames (`studio-film.mjs --frames`);
-one pass of ffmpeg lays the score under them, blooms the lights, parts the
-red and blue by a pixel, and moves a grain over it. The thirty is each pair
-of the sixty laid over each other, a shutter open half the frame. GSAP moves
-everything: each scene builds one paused timeline and is put at the reel's
-moment every frame (DrawSVG, MorphSVG, SplitText, Physics2D, MotionPath,
-TextPlugin, CustomEase, CustomWiggle).
+The hall is drawn in WebGL (`parts/wall-gl.js`): some three and a half
+thousand letters from one sheet of real screens (`films/wall-atlas.jsx`,
+photographed into `app/src/studio/assets/wall-atlas.jpg`), each on the
+inside of a curve that rises out of sight, softened by its distance from the
+plane in focus, hazed with distance, with dust in the air. lin's own phone
+is laid over its cell by a projective transform, so it can type, come away
+from the wall and send.
+
+How it is made: `node scripts/studio-reel.mjs celestual-reel`. The
+score (a felt piano built from its strings' partials, pads, bells, the
+phones' keys, the board's cards) is synthesised from the clock and mastered
+to -14 LUFS; two browsers each photograph a share of the 2025 frames
+(`studio-film.mjs --frames`); one pass of ffmpeg lays the score under them,
+blooms the lights, parts the red and blue by a pixel, and moves a grain over
+it. The thirty is each pair of the sixty laid over each other, a shutter
+open half the frame. GSAP sets the words (SplitText, each word out of a
+little blur on its beat) and draws the curves (CustomEase); each scene
+builds one paused timeline and is put at the reel's moment every frame.

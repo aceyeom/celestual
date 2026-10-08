@@ -52,13 +52,13 @@ export const S = {
   // one shot from the letter on: back from the glass into the hall, the
   // light going out over it from lin's and up it, and lin's letter coming
   // away from the wall to the camera
-  wall: [3750, 10000], wake: 3700, lines: [5625, 6250, 6875], linesOut: 8750, lift: [8300, 10000],
+  wall: [3750, 10000], wake: 3700, lines: [5625, 6250, 6875], linesOut: 8750, lift: [7900, 10000],
   // send it privately, and it goes up as a light
   send: [10000, 12500], sendIt: 10000, press: 10625, privately: 11250, rise: 11500, sendOut: 12100,
   // somewhere else, kai writes one too, and it goes up too
-  kai: [12500, 15000], kWake: 12500, kRead: 12813, kIf: 13438, kSend: 14375, kRise: 14950, kOut: 14700,
+  kai: [12500, 15000], kWake: 12500, kRead: 12813, kIf: 13438, kSend: 14063, kRise: 14600, kOut: 14400,
   // every mutual is revealed on saturday at nine: the week turns on a board
-  wait: [15000, 18125], wLine: [15313, 15938], days: [15700, 15810, 15920, 16030, 16140, 16250], time: 16560, place: 16900, wOut: 17650,
+  wait: [15000, 18125], wLine: [15313, 15938], days: [15700, 15810, 15920, 16030, 16140, 16250], time: 16560, place: 16900, wOut: 17500,
   // nine o'clock: the two lights meet, and the product's own reveal
   reveal: [18125, 22500], meet: 18750, glass: 19050, run: 19250, drop: 20250, said: 21300,
   // and they both find out
@@ -90,7 +90,7 @@ export function typedA() {
   for (let i = i2; i < t.length; i++) t[i] += d2
   return t
 }
-export const typedB = () => rhythm(B.text, S.kai[0] + 260, 34)
+export const typedB = () => rhythm(B.text, S.kai[0] + 120, 30)
 
 // ── the mutual's own film against the reel's clock ──────────────────────────
 // Its moments as the product tells them (pixmark.js `filmStory`), with a

@@ -32,7 +32,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import gsap from 'gsap'
 import { SplitText } from 'gsap/SplitText'
 import { CustomEase } from 'gsap/CustomEase'
-import { Board, Phone, PixelStory, Grain, filmOf, readyFilm, useHold, turnStyle, skinVars, hexRgb, Lockup, LOCKUP, MARK } from '../kit.jsx'
+import { Board, Phone, PixelStory, filmOf, readyFilm, useHold, turnStyle, skinVars, hexRgb, Lockup, LOCKUP, MARK } from '../kit.jsx'
 import { glyphPath } from '../../wall/looks.js'
 import { cellsOf, wordCells } from '../../wall/brand.js'
 import { MS, A, B, S, typedA, typedB, storyAt, wakeOf } from './reel-time.js'
@@ -270,8 +270,8 @@ const LETTER_FROM = [-0.2, -0.3, 3.55]
 const LETTER_TO = [0, -0.02, 3.05]
 const hallOf = (T) => [
   [3300, v3.add(T, LETTER_TO), T, 34, true],
-  [6250, [0, 1.2, 22], [0, 2.6, 0], 52],
-  [8300, [-5.5, 7.5, 17], [2.5, 11, 0], 56],
+  [6000, [0, 1.0, 21], [0, 2.4, 0], 50],
+  [7700, [-7, 6.5, 14.5], [3.5, 10.5, 0], 56],
   [10000, [0.3, 1.6, 12.6], [0, 0.9, 0], 38, true],
   [11400, [0.3, 1.7, 12.5], [0, 0.95, 0], 38, true],
   [12500, [0.3, 2.5, 12.3], [0, 0.95, 0], 40],
@@ -288,18 +288,24 @@ function camAt(t, T, hall) {
 // wall first and then across to the camera, turning to it, to be held in
 // front of it at the size it was written at
 const HOME = { c: [0, 0, 0], r: [UNIT.w / 2, 0, 0], u: [0, UNIT.h / 2, 0] }
+// how far along its way it is when its size on the frame is `ease` of the
+// way from its size on the wall to its size held: far off it covers ground
+// quickly, near it slows, so it is seen to grow evenly and arrive softly
+const NEAR = [16, 3.05]
+const along = (ease) => clamp((NEAR[0] - 1 / lerp(1 / NEAR[0], 1 / NEAR[1], ease)) / (NEAR[0] - NEAR[1]))
 function linPose(t, T, hall) {
-  const k = easeOf('power2.inOut')(u(t, S.lift[0], S.lift[1]))
-  if (k <= 0) return HOME
+  const turn = easeOf('sine.inOut')(u(t, S.lift[0], S.lift[1]))
+  const k = along(turn)
+  if (turn <= 0) return HOME
   const end = camAt(S.lift[1], T, hall)
   const cam = cameraOf(end)
   const c1 = v3.add(end.eye, v3.scale(cam.fwd, 3.05))
   const c = bez([HOME.c, [0, 0.1, 2.6], v3.add(c1, v3.scale(cam.fwd, 2.4)), c1], k)
   // a little turn on the way, as a thing carried turns
-  const sway = Math.sin(k * Math.PI) * 0.22
-  const r = v3.norm(v3.lerp([Math.cos(sway), 0, -Math.sin(sway)], cam.side, k))
-  const up = v3.norm(v3.lerp([0, 1, 0], cam.up, k))
-  return { c, r: v3.scale(r, UNIT.w / 2), u: v3.scale(up, UNIT.h / 2), k }
+  const sway = Math.sin(turn * Math.PI) * 0.22
+  const r = v3.norm(v3.lerp([Math.cos(sway), 0, -Math.sin(sway)], cam.side, turn))
+  const up = v3.norm(v3.lerp([0, 1, 0], cam.up, turn))
+  return { c, r: v3.scale(r, UNIT.w / 2), u: v3.scale(up, UNIT.h / 2), k: turn }
 }
 
 function WallScene({ t, m, times, image }) {
@@ -326,8 +332,9 @@ function WallScene({ t, m, times, image }) {
     const [x, y] = [(px / m.box.w) * 2 - 1, 1 - (py / m.box.h) * 2]
     return v3.add(pose.c, v3.add(v3.scale(pose.r, x), v3.scale(pose.u, y)))
   }
-  // the letter, from the moment it comes away from the wall
-  const track = easeOf('sine.inOut')(u(t, S.lift[0], S.lift[0] + 900))
+  // the letter, from just before it comes away from the wall, the camera
+  // finding it slowly
+  const track = easeOf('sine.inOut')(u(t, S.lift[0] - 200, S.lift[0] + 1400))
   if (track > 0) target = v3.lerp(target, pose.c, track)
   const E0 = at(m.env.x, m.env.y)
   const rise = easeOf('sine.inOut')(u(t, S.rise, S.send[1] + 500))
@@ -440,10 +447,10 @@ function nightZoom(t) {
 const onFrame = (p, z) => [C.x + p[0] * z, C.y + p[1] * z]
 // where lin's light and kai's are, on the plane
 function linLight(t) {
-  // in from the top as the camera comes to kai, then still, then to the
-  // middle for nine
-  const k = easeOf('rl.glide')(u(t, S.kai[0], S.kai[0] + 1000))
-  let p = [LIN_AT[0] + (1 - k) * 40, LIN_AT[1] - (1 - k) * 560]
+  // from the middle of the frame, where the send left it, up to its place
+  // as kai's screen comes on, then still, then to the middle for nine
+  const k = easeOf('rl.glide')(u(t, S.kai[0], S.kai[0] + 1400))
+  let p = [LIN_AT[0] * k, LIN_AT[1] * k]
   p = [p[0] + Math.sin(t / 900) * 8, p[1] + Math.cos(t / 1100) * 10]
   const meet = easeOf('sine.inOut')(u(t, S.reveal[0], S.meet))
   return [lerp(p[0], -6, meet), lerp(p[1], 0, meet)]
@@ -540,7 +547,7 @@ function KaiScene({ t, times, env }) {
   const w = wake(t, S.kWake, 460)
   const { k, s, y, at: from } = kaiEnv(t, env)
   // the phone sleeps once its note has gone up
-  const sleep = easeOf('power2.inOut')(u(t, S.kRise + 100, S.kai[1] + 200))
+  const sleep = easeOf('power2.inOut')(u(t, S.kRise, S.kai[1]))
   const z = nightZoom(t)
   const lp = onFrame(linLight(t), z)
   const kp = onFrame(kaiLight(t, from), z)
@@ -551,7 +558,7 @@ function KaiScene({ t, times, env }) {
       <Place x={KAI_PLACE.x} y={y} s={s} rx={lerp(-6, 3, k)} ry={lerp(10, -4, k)} filter={`brightness(${(w * (1 - sleep * 0.92)).toFixed(3)})`} className={t >= S.kRise ? 'is-gone' : ''}>
         <NoteScreen who={B} t={t} times={times} sendAt={S.kSend} fs={13.4} quiet={false} />
       </Place>
-      <NoteLight x={lp[0]} y={lp[1]} s={0.95} tone={ICE} />
+      <NoteLight x={lp[0]} y={lp[1]} s={lerp(1.15, 0.95, easeOf('rl.glide')(u(t, S.kai[0], S.kai[0] + 1400)))} tone={ICE} />
       {t >= S.kRise ? <NoteLight x={kp[0]} y={kp[1]} s={lerp((env.w * s) / 46, 0.95, u(t, S.kRise, S.kRise + 700))} tone={AMBER} /> : null}
       <Shade o={shade} />
       <Type t={t} text="they only read it" from={S.kRead} to={S.kOut} />
@@ -713,9 +720,9 @@ function NotesScene({ t }) {
   const a = easeOf('rl.breath')(u(t, S.notes[0] + 100, S.notes[0] + 900))
   const b = easeOf('rl.breath')(u(t, S.notes[0] + 260, S.notes[0] + 1060))
   // and then they come together into one light
-  const join = easeOf('power2.inOut')(u(t, S.nOut, S.ifnot[0] + 350))
+  const join = easeOf('power2.inOut')(u(t, S.nOut - 200, S.ifnot[0] + 600))
   const s = 0.47 * (1 - 0.92 * join)
-  const o = 1 - u(t, S.ifnot[0] + 150, S.ifnot[0] + 400)
+  const o = 1 - u(t, S.ifnot[0] + 250, S.ifnot[0] + 650)
   const y = lerp(1300, 960, join)
   const shade = u(t, S.both - 100, S.both + 300) * (1 - u(t, S.nOut + 200, S.ifnot[0]))
   const [wx, wy] = warmAt(t)
@@ -732,7 +739,7 @@ function NotesScene({ t }) {
           </Place>
         </>
       ) : null}
-      <NoteLight x={wx} y={wy} s={lerp(1.1, 0.62, easeOf('power2.inOut')(u(t, S.qOut, S.lock[0] + 250)))} o={u(t, S.ifnot[0] - 100, S.ifnot[0] + 300) * (1 - u(t, S.lock[0] + 150, S.lock[0] + 650))} tone={WARM} z={14} />
+      <NoteLight x={wx} y={wy} s={lerp(1.1, 0.62, easeOf('power2.inOut')(u(t, S.qOut, S.lock[0] + 250)))} o={u(t, S.ifnot[0] + 100, S.ifnot[0] + 600) * (1 - u(t, S.lock[0] + 150, S.lock[0] + 650))} tone={WARM} z={14} />
       <Shade o={shade} />
       <Type t={t} text="you both" from={S.both} to={S.nOut} />
       <Type t={t} text="find out." from={S.both + 312} to={S.nOut + 80} y={lineAt(1)} size={XL} italic />
@@ -784,6 +791,9 @@ function lockCells() {
   return LIT
 }
 
+// the canvas the cells are lit on: the lockup and room round it for their glow
+const PAD = 40
+const LIT_BOX = { x: LOCK.x - PAD, y: LOCK.y - PAD, w: LOCKUP.w * CELL + PAD * 2, h: LOCKUP.h * CELL + PAD * 2 }
 function AskScene({ t }) {
   const canvas = useRef(null)
   const cells = useMemo(lockCells, [])
@@ -792,14 +802,14 @@ function AskScene({ t }) {
     const c = canvas.current
     if (!c) return
     const g = c.getContext('2d')
-    g.clearRect(0, 0, 1080, 1920)
+    g.clearRect(0, 0, LIT_BOX.w, LIT_BOX.h)
     if (!lighting) return
     g.fillStyle = '#F4F1EA'
     for (const p of cells) {
       const k = clamp((t - p.on) / 300)
       if (k <= 0) continue
       g.globalAlpha = easeOf('power2.out')(k)
-      g.fillRect(p.x, p.y, CELL, CELL)
+      g.fillRect(p.x - LIT_BOX.x, p.y - LIT_BOX.y, CELL, CELL)
     }
     g.globalAlpha = 1
   })
@@ -815,7 +825,7 @@ function AskScene({ t }) {
       {t < S.qOut + 1200 ? ASK.map((l, i) => (
         <Type key={l.text} t={t} text={l.text} from={l.at} to={S.qOut + i * 90} size={l.size} italic={!!l.italic} x={0} w={1080} y={l.y} align="center" />
       )) : null}
-      <canvas ref={canvas} className="rl-pix" width="1080" height="1920" style={{ visibility: lighting ? 'visible' : 'hidden' }} />
+      <canvas ref={canvas} className="rl-pix" width={LIT_BOX.w} height={LIT_BOX.h} style={{ left: LIT_BOX.x, top: LIT_BOX.y, visibility: lighting ? 'visible' : 'hidden' }} />
       {whole ? <Lockup cell={CELL} className="rl-lock" style={{ left: LOCK.x, top: LOCK.y }} /> : null}
       <Glow x={STAR.x} y={STAR.y} r={460} colour="rgba(255,236,226,0.6)" o={u(t, S.lock[0], S.lock[1]) * (0.55 + 0.08 * Math.sin(t / 500))} z={4} />
       <p className="rl-addr" style={{ top: LOCK.y + LOCKUP.h * CELL + 88 }}>celestual.us</p>
@@ -866,7 +876,7 @@ export function Reel({ t }) {
         {t >= S.ifnot[0] && t < S.ask[0] + 400 ? <IfNotScene t={t} /> : null}
         {ok && t >= S.ask[0] ? <AskScene t={t} /> : null}
       </div>
-      <Grain opacity={0.07} seed={Math.floor(t / 83) % 12} />
+      {/* the grain is laid over the frames in the finish (scripts/studio-reel.mjs) */}
       <span className="st-vignette" style={{ opacity: 0.62 }} aria-hidden="true" />
     </Board>
   )
