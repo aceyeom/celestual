@@ -2,9 +2,10 @@
 
 `celestual-reel.wav`, under `celestual-reel.mp4` and `celestual-reel-60.mp4`.
 35 seconds, fifty six beats at 96 a minute in B minor, with a bar of two
-beats where the reveal begins, written for the reel and made from the same
-clock as its picture (`app/src/studio/parts/reel-time.js`), so every word
-lands on a note.
+beats where the reveal begins and the harmony moving every two beats from
+the turn on, written for the reel and made from the same clock as its
+picture (`app/src/studio/parts/reel-time.js`), so every word lands on a
+note.
 
 ## How it is made
 
@@ -24,12 +25,17 @@ goes, onto a note that is not home.
   and voices swell as it comes at the lens and break on D as it goes through
 - the date: the piano ticks the clock round in eighths and stops at nine; a
   cello comes in with the note that comes in on the thursday
-- the reveal: a run up the piano as they run in, its last two notes the
-  melody's first, and the melody sung by everything when they are held
-- kai's note: the cello answers the melody, a harp falling as the letters
-  go to their places
+- the reveal: the air of lin's letter coming out of the light at us, from
+  the left as it swings out there; a run up the piano, leaning into its
+  last two notes, the melody's first, and a harp going up with it into the
+  turn; on the turn, as kai's side comes on to the same pip and bells kai's
+  note came in with on the thursday, the melody sung by everything
+- `you both find out.`: the cello answers the melody, down to the B the
+  next scene is on
 - the ones that go out: the piano alone, a note for each light
-- the question: the melody with its words, on the piano alone, left open
+- the question: the melody with its words, on the piano alone, `you?` on a
+  note that is not home, and left open over A, its fourth letting go to the
+  third, until the name
 - the name: B minor with its ninth, then G with its seventh, where it is
   left
 

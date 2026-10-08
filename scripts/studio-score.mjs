@@ -20,20 +20,24 @@
 // down under lin's typing (F sharp, E, D, C sharp, B); a harp carries the
 // letter's pixels into the envelope; a cello comes in with the note that
 // comes in on the thursday; a piano ticks the clock round to nine and stops;
-// the melody is sung by everything when they are held; the cello answers it
-// with kai's note; the piano is alone for the ones that go out and for the
-// question; and the name comes in on a chord that does not resolve.
+// a run and a harp go up into the letter turning over, and the melody is
+// sung by everything as kai's side comes on, to the same pip and bells as
+// kai's note came in with; the cello answers it; the piano is alone for the
+// ones that go out and for the question, which is left open over A; and the
+// name comes in on a chord that does not resolve.
 //
-// 96 beats a minute; the bar the reveal begins on is two beats long:
+// 96 beats a minute; the bar the reveal begins on is two beats long, and
+// from the turn the harmony moves every two beats:
 //   letter    0      Bm9 Gmaj7         piano, a falling line on the words
 //   hall      3.75   Em9 F#sus F#      arpeggios; strings; the climb
 //   send      10     Bm9 Gmaj7 D/F#    a breath; the harp; the swell to the lens
 //   night     12.5   D/F# Em9          the rule, the piano and the low strings
 //   date      15     Gmaj7 G Asus F#   the clock in eighths; the cello at kai's
-//   reveal    20     F#, then D A/C#   the run; held: the melody, everything
-//   open      23.75  Bm9 Gmaj7         the cello's answer, the harp falling
-//   if not    26.25  Bm9 Em9           the piano alone, a note for each light
-//   question  28.75  G Asus            the melody with its words, open
+//   reveal    20     F#, then D A/C#   the run and the harp up into the turn;
+//                                      on it the melody, everything
+//   both      23.75  Bm9               the cello's answer
+//   if not    25     Bm9 Em9           the piano alone, a note for each light
+//   question  27.5   G Asus A          the melody with its words, left open
 //   name      31.25  Bm9 Gmaj7         and left there
 //
 //   node scripts/studio-score.mjs [out.wav]      48 kHz, 16 bit, stereo
@@ -42,7 +46,7 @@ import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, mkdtempSync
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { MS, BEAT, A, S, SAY, typedA, STORY_TIMES, reelAt, wakeOf } from '../app/src/studio/parts/reel-time.js'
+import { MS, BEAT, A, S, typedA, typedUrl, wakeOf } from '../app/src/studio/parts/reel-time.js'
 import { wallOf } from '../app/src/studio/parts/wall-gl.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -96,14 +100,16 @@ const V = {
   Asus: { root: 33, rh: [62, 64, 69], st: [45, 52, 62, 64] },
   Dadd9: { root: 38, rh: [66, 69, 76], st: [50, 57, 66, 69, 76] },
   'A/C#': { root: 37, rh: [64, 69, 73], st: [49, 57, 64, 69] },
+  Aadd9: { root: 33, rh: [61, 64, 71], st: [45, 52, 61, 64, 71] },
 }
-// [beat, chord, beats]; the bar at 32 is two beats long, as they run in
+// [beat, chord, beats]; the bar at 32 is two beats long, as the letter
+// comes out of the light
 const HARMONY = [
   [0, 'Bm9', 4], [4, 'Gmaj7', 4], [8, 'Em9', 4], [12, 'F#sus', 2], [14, 'F#', 2],
   [16, 'Bm9', 2], [18, 'Gmaj7', 2], [20, 'D/F#', 2], [22, 'Em9', 2],
   [24, 'Gmaj7', 2], [26, 'Gadd9', 2], [28, 'Asus', 2], [30, 'F#sus', 1], [31, 'F#', 1], [32, 'F#', 2],
-  [34, 'Dadd9', 2], [36, 'A/C#', 2], [38, 'Bm9', 2], [40, 'Gmaj7', 2],
-  [42, 'Bm9', 2], [44, 'Em9', 2], [46, 'Gadd9', 2], [48, 'Asus', 2], [50, 'Bm9', 2], [52, 'Gmaj7', 4],
+  [34, 'Dadd9', 2], [36, 'A/C#', 2], [38, 'Bm9', 2],
+  [40, 'Bm9', 2], [42, 'Em9', 2], [44, 'Gadd9', 2], [46, 'Asus', 2], [48, 'Aadd9', 2], [50, 'Bm9', 2], [52, 'Gmaj7', 4],
 ]
 
 // the melody: do they still think a-bout you? up a sixth, a sigh down, and
@@ -238,19 +244,27 @@ ctl(cello, bt(34), 11, 100)
 swell(strings, S.lapse[1] + 100, bt(31.9), 96, 40)
 chord(choir, bt(31), bt(1) + 100, [54, 61, 66], 34)
 
-// ── 20 to 23.75: the reveal. As they run in, a run up the piano, the last
-// two notes of it the melody's first, `do they`; held on the bar: the melody
-// sung by everything, the piano, the cello under it, the voices, the
-// strings, on D, the key's own light; `it's mutual.` on its third beat
-;[59, 61, 62, 64].forEach((k, i) => play(piano, S.run + i * 150, 600, k, 52 + i * 5, { feel: 3 }))
+// ── 20 to 23.75: the reveal. As the letter comes out of the light, a run up
+// the piano, leaning a little into its last notes, the melody's first, `do
+// they`, and a harp up with it into the turn; on the turn, as kai's side
+// comes on: the melody sung by everything, the piano, the cello under it,
+// the voices, the strings, on D, the key's own light; `it's mutual.` on its
+// third beat
+;[[S.run - 20, 59], [S.run + 100, 61], [S.run + 210, 62], [S.run + 320, 64]].forEach(([ms, k], i) => play(piano, ms, 600, k, 52 + i * 5, { feel: 3 }))
 ;[[33.5, 66], [33.75, 69]].forEach(([b, k]) => play(piano, bt(b), bt(0.3), k, 74, { feel: 0 }))
+{
+  const up = [62, 64, 66, 69, 71, 73, 74, 76, 78, 81, 83, 85, 86]
+  const from = bt(33)
+  const span = bt(33.96) - from
+  up.forEach((k, i) => play(harp, from + span * (i / up.length) ** 0.85, 1100, k, 42 + i * 1.8, { feel: 3 }))
+}
 // under the run, the strings back on the dominant, and a timpani roll,
 // both rising into the bar they are held on, and the timpani's D on it
 chord(strings, S.meet, bt(2) + 60, V['F#'].st, 66)
 swell(strings, S.meet, bt(33.9), 34, 112)
 for (let k = 0; S.meet + k * bt(0.25) < bt(34) - 20; k++) play(timp, S.meet + k * bt(0.25), bt(0.3), 42, 18 + k * 9, { feel: 2, vfeel: 2 })
 play(timp, bt(34), bt(2), 38, 92, { feel: 0 })
-const peak = [[34, 71, 1], [35, 74, 1.5], [36.5, 73, 0.5], [37, 71, 1], [38, 73, 2.6]]
+const peak = [[34, 71, 1], [35, 74, 1.5], [36.5, 73, 0.5], [37, 71, 1], [38, 73, 1.9]]
 peak.forEach(([b, k, l]) => {
   play(piano, bt(b), bt(l) + 120, k, 88, { feel: 0 })
   play(piano, bt(b) + 4, bt(l) + 120, k - 12, 62, { feel: 0 })
@@ -267,43 +281,42 @@ ctl(strings, bt(34), 11, 118)
 swell(choir, bt(34), bt(37), 96, 80)
 chord(harp, bt(34), 1800, [62, 69, 74, 78, 81], 60, { roll: 55 })
 
-// ── 23.75 to 26.25: kai's note, opened: the strings quieter; the cello
-// answers the melody, down, as kai's words go to their places; the harp
-// falls with them out of the envelope
-;[[38.25, 74, 0.75], [39, 73, 0.5], [39.5, 71, 0.5], [40, 69, 1], [41, 66, 1.5]].forEach(([b, k, l]) => play(cello, bt(b), bt(l) + 100, k - 12, 70, { feel: 4 }))
+// ── 23.75 to 25: `you both find out.` The strings quieter, and the cello
+// answers the melody, down, to the B the next scene is on
+;[[38.5, 74, 0.5], [39, 73, 0.5], [39.5, 71, 0.75]].forEach(([b, k, l]) => play(cello, bt(b), bt(l) + 100, k - 12, 68, { feel: 4 }))
 for (const [b0, name, len] of HARMONY) {
-  if (b0 < 38 || b0 >= 42) continue
+  if (b0 < 38 || b0 >= 40) continue
   chord(strings, bt(b0), bt(len) + 150, V[name].st, 72)
   play(bass, bt(b0), bt(len) + 80, V[name].root + 12, 62)
   arp(b0, len, V[name], 42, { step: 0.5 })
 }
-swell(strings, bt(38), bt(42), 92, 58)
-{
-  const fall = [86, 83, 81, 78, 76, 74, 73, 71, 69, 66, 64, 62, 61, 59]
-  const span = S.unfold[1] - S.unfold[0]
-  fall.forEach((k, i) => play(harp, S.unfold[0] + span * (i / fall.length), 900, k, 56 - i, { feel: 4 }))
-}
+swell(strings, bt(38), bt(40), 92, 56)
 
-// ── 26.25 to 28.75: the ones that never meet. The piano alone over a low
-// B; a note for each light as it goes, down the chord, the last lowest
-chord(low, bt(42), bt(4) + 300, [35, 47], 50)
-chord(keys, bt(42), bt(4), [35, 47], 40, { roll: 40 })
-chord(keys, bt(42) + 90, bt(1.8), V.Bm9.rh, 32, { roll: 70 })
-chord(keys, bt(44), bt(2), [40, 52], 34, { roll: 40 })
+// ── 25 to 27.5: the ones that never meet. The piano alone over a low B; a
+// note for each light as it goes, down the chord, the last lowest
+chord(low, bt(40), bt(4) + 300, [35, 47], 50)
+chord(keys, bt(40), bt(2), [35, 47], 40, { roll: 40 })
+chord(keys, bt(40) + 90, bt(1.8), V.Bm9.rh, 32, { roll: 70 })
+chord(keys, bt(42), bt(2), [40, 52], 34, { roll: 40 })
 ;[[S.lone[0], 78], [S.lone[1], 74], [S.lone[2], 71]].forEach(([ms, k], i) => play(piano, ms + 10, bt(2.2), k, 52 - i * 4, { feel: 0 }))
 
-// ── 28.75 to 31.25: the question. The melody with its words, the piano
+// ── 27.5 to 31.25: the question. The melody with its words, the piano
 // alone, each note on the frame its word comes on; `you?` on the ninth,
-// over A with the fourth in it, and not home
+// over A with the fourth in it, not home; and left there, the fourth
+// letting go to the third under it, so the question is held open and not
+// answered, until the name
 const Q = S.qWords
 ;[Q[0], Q[1], Q[2], Q[3], Q[4], Q[4] + bt(0.5), Q[5]].map((t, i) => [t, HOOK[i]]).forEach(([t, k], i, all) => {
   const next = all[i + 1] ? all[i + 1][0] : bt(50)
-  play(piano, t, Math.max(bt(0.5), next - t + 140), k, 62, { feel: 0 })
+  play(piano, t, Math.max(bt(0.5), next - t + 140), k, i === all.length - 1 ? 58 : 62, { feel: 0 })
 })
-chord(keys, bt(46), bt(2), [31, 43], 36, { roll: 50 })
-chord(keys, bt(48), bt(2), [33, 45], 36, { roll: 50 })
-chord(pad, bt(46), bt(2) + 100, [55, 62, 69], 46)
-chord(pad, bt(48), bt(2) + 100, [57, 62, 64], 48)
+chord(keys, bt(44), bt(2), [31, 43], 36, { roll: 50 })
+chord(keys, bt(46), bt(2), [33, 45], 36, { roll: 50 })
+chord(keys, bt(48) + 60, bt(2), [45, 52, 61], 30, { roll: 80 })
+chord(pad, bt(44), bt(2) + 100, [55, 62, 69], 46)
+chord(pad, bt(46), bt(2) + 100, [57, 62, 64], 48)
+chord(pad, bt(48), bt(2) + 160, [57, 61, 64, 71], 44)
+swell(pad, bt(48), bt(50), 90, 60)
 
 // ── 31.25 to 35: the name. B minor with its ninth, everything quietly, and
 // then G with its seventh, where it is left
@@ -562,15 +575,34 @@ key(S.lapse[1] + 150, { pitch: 2400, body: 480, gain: 0.018 })
 air(S.lean[0], S.touch[2] - S.lean[0], { gain: 0.007, from: 300, to: 2400 })
 glint(S.touch[2] - 6, 90, { gain: 0.012, decay: 1.4, pan: -0.08, verb: 0.7 })
 glint(S.touch[2] + 4, 83, { gain: 0.012, decay: 1.4, pan: 0.08, verb: 0.7 })
-// `it's mutual.` typed in the glass's cells
-const ST = STORY_TIMES
-const TYPE_MS = (ST.said - ST.say) / [...SAY].length
-;[...SAY].forEach((c, k) => { if (c !== ' ') key(reelAt(ST.say + TYPE_MS * (k + 1)), { pitch: 3000, body: 520, gain: 0.024, pan: -0.1 + k * 0.02 }) })
-// kai's note: its envelope on, its flap up, its letters out to their places
-pip(S.env, { gain: 0.011, f: 1900, pan: 0.05 })
-key(S.flap[0], { pitch: 2800, body: 520, gain: 0.018 })
-key(S.flap[0] + 80, { pitch: 3100, body: 560, gain: 0.016 })
-shimmer(S.unfold[0], S.unfold[1], 26, { gain: 0.0038 })
+// lin's letter out of the light at us: the air it moves, coming quickly and
+// falling away, from the left as it swings out there and back to the middle
+// as it comes into the hand
+{
+  const lp = lowpass(1.2)
+  const L = sec(0.78)
+  const s0 = at(S.swoosh[0] + 10)
+  for (let i = 0; i < L; i++) {
+    const t = i / SR
+    const e = Math.min(1, t / 0.07) ** 1.5 * Math.exp(-Math.max(0, t - 0.07) / 0.2)
+    const x = lp(rnd(), 9000 * Math.exp(-t / 0.3) + 700) * e
+    const pan = -0.42 * Math.sin(Math.PI * Math.min(1, t / 0.6))
+    const a = ((pan + 1) * Math.PI) / 4
+    const k = s0 + i
+    if (k >= N) break
+    FX.L[k] += x * Math.cos(a) * 0.05; FX.R[k] += x * Math.sin(a) * 0.05
+    FXV.L[k] += x * Math.cos(a) * 0.05 * 0.4; FXV.R[k] += x * Math.sin(a) * 0.05 * 0.4
+  }
+}
+// it turns over: a breath of air as it goes, and on its edge kai's side
+// coming on, with the pip and the bells kai's note came in with
+{
+  const edge = (S.flip[0] + S.flip[1]) / 2
+  air(edge - 170, 320, { gain: 0.012, from: 1800, to: 6500, q: 1.4 })
+  pip(edge + 8, { gain: 0.011, f: 1760, pan: 0.05 })
+  glint(edge + 40, 81, { gain: 0.011, decay: 1.4, pan: 0.05 })
+  glint(edge + 70, 88, { gain: 0.007, decay: 1.6, pan: 0.05 })
+}
 // the lights that never met, going out, each as a screen goes, from its
 // place, with a bell
 ;[[S.lone[0], 88, -0.55], [S.lone[1], 83, 0.45], [S.lone[2], 78, -0.15]].forEach(([ms, m, pan]) => {
@@ -582,8 +614,8 @@ for (let i = 0; i < 40; i++) {
   const d = (i / 40) ** 0.8 * (S.lock[1] - S.lock[0]) + r01(i + 70) * 30
   glint(S.lock[0] + d, 86 + Math.floor(r01(i + 11) * 3) * 2, { gain: 0.0035 + 0.0035 * (1 - i / 40), decay: 0.35, pan: (r01(i + 90) - 0.5) * 1.2, verb: 0.6 })
 }
-// the address, typed
-for (let k = 0; k < 'celestual.us'.length; k++) key(S.url + 20 + k * 38, { pitch: 2600 + ((k * 211) % 700), body: 480, gain: 0.03, pan: 0.05 })
+// the address, typed, at the hand's own pace
+typedUrl().forEach((ms, k) => key(ms, { pitch: 2600 + ((k * 211) % 700), body: 480, gain: 0.03, pan: 0.05 }))
 
 // ── the mix ─────────────────────────────────────────────────────────────────
 // each stem: its level, where it sits, what is taken off it, how much of it
@@ -604,7 +636,7 @@ const MIX = {
 const duck = new Float32Array(N).fill(1)
 // `LEVELS=1` prints each stem's level in each part of the song, as it sits
 // in the mix, for balancing it without ears in the room
-const SECTIONS = [['letter', 0, 3750], ['hall', 3750, 10000], ['send', 10000, 12500], ['night', 12500, 15000], ['date', 15000, 20000], ['reveal', 20000, 23750], ['open', 23750, 26250], ['ifnot', 26250, 28750], ['ask', 28750, 31250], ['name', 31250, MS]]
+const SECTIONS = [['letter', 0, 3750], ['hall', 3750, 10000], ['send', 10000, 12500], ['night', 12500, 15000], ['date', 15000, 20000], ['reveal', 20000, 23750], ['both', 23750, 25000], ['ifnot', 25000, 27500], ['ask', 27500, 31250], ['name', 31250, MS]]
 const LEVELS = process.env.LEVELS ? (() => {
   const acc = {}
   return {

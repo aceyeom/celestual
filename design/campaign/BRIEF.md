@@ -188,10 +188,11 @@ headline, no orphaned word on its own line, consistent margins from a grid
 note. One story, told once, and one world for it: the phone's own screen.
 lin writes the thing never said and sends it privately; it waits; every
 mutual is revealed on saturday at nine; in the week somebody's note comes
-in; at nine the two find each other, and it is mutual; then the note that
-came opens, and it is kai's, read for the first time; the ones that never
-meet go out, and nobody knows. Only lin is ever seen writing; kai's note is
-first read when lin reads it. One clock (`app/src/studio/parts/reel-time.js`)
+in; at nine the two find each other and are one light, and out of it comes
+lin's letter, which turns over: on its other side is kai's, to lin, read
+for the first time, and it is mutual; the ones that never meet go out, and
+nobody knows. Only lin is ever seen writing; kai's note is first read when
+lin reads it. One clock (`app/src/studio/parts/reel-time.js`)
 times the picture (`parts/reel.jsx`) and the song
 (`scripts/studio-score.mjs`).
 
@@ -202,11 +203,11 @@ times the picture (`parts/reel.jsx`) and the song
 | 10000 | send: every lit pixel of the letter's words leaves its place, the first words first, and goes into the envelope, so the envelope is made of the letter; sealed, a light goes over it and it lights; the phone goes out behind it as an old screen goes, to a bright line and a point; the envelope comes at the lens, the frames it was in a moment ago after it | `or send it / privately.` |
 | 12500 | through the lens into the dark, and the frame is a screen's panel, its cells unlit; the envelope goes away from us to its place on it, to wait | `they only read it if / they send you one.` |
 | 15000 | the sentence ends on a clock that runs through the week; the week's notes come in round it, each as a screen comes on, and on the thursday one in amber; the clock stops at nine and `pacific` comes on after it; the others go down; the camera leans in and down on the two, and they find each other, wait a moment apart, and touch | `every mutual is / revealed on / sat 9:00 pm pacific` |
-| 20000 | cut, on the touch and in its place, to lin's phone and the product's own reveal (`filmOf`), ten pictures a second: they run in, are held, the glass turns rose | `it's mutual.` (on the phone) |
-| 23750 | the note that came: its envelope on lin's glass as a screen comes on, its flap up, its pixels out of it to their places, the glass turning the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on the phone), `you both find out.` |
-| 26250 | the panel again, three notes alone on it, each going out as a screen does, to a line and a point | `if it isn't, / nobody ever knows.` |
-| 28750 | the question, a word on each note of the melody | `do they still / think about you?` |
-| 31250 | the name, lit a cell at a time from its star, on the words' margin; the address typed under it | `celestual.us` |
+| 20000 | on the touch the two are one light, and out of it comes lin's letter, at us, white as a screen coming on: quickly out of the light, up and away on a curve and round, slowing, into the hand, banking into its curve and leaving its light behind it as an old screen's phosphor does. Before it has quite come to rest it turns over, leaning back a little first as a hand turns a thing and going a little past, its glass catching the light; on its edge, on the bar the song comes in on, it is a bright line, and from that line its other side comes on as a screen does, in the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on its other side), `it's mutual.` |
+| 23750 | kai's, held, and brought a little nearer to be read | `you both find out.` |
+| 25000 | the panel again, three notes alone on it, each going out as a screen does, to a line and a point, each in its own time | `if it isn't, / nobody ever knows.` |
+| 27500 | the question, a word on each note of the melody, and then left there, whole, for as long as it took to ask | `do they still / think about you?` |
+| 31250 | the name, lit a cell at a time from its star, on the words' margin, the camera come to rest for it; the address typed under it | `celestual.us` |
 
 The type is the phone's own face, Jersey 10, cut into its cells
 (`app/src/wall/pixtype.js`) as the glass's own words are: one size, a pixel
@@ -227,15 +228,25 @@ in fourteen is dead. lin's own phone is laid over its cell by a projective
 transform, so it can type, come away from the wall and send, and the send's
 pixels are mapped through the same transform. The camera is held as a hand
 holds one: a slow unsteadiness, more on a longer lens, and a move that
-lands a little past and settles; on lin's phone at the end, a drift of a
-pixel or two and a breath of roll, under words that keep still as a film's
-titles do.
+lands a little past and settles; on the dark panel and on the letter, a
+drift of a pixel or two and a breath of roll, under words that keep still
+as a film's titles do, coming to rest for the name, which is never drawn
+off its grid.
+
+Nothing moves as a machine would. Every word comes on a little early or
+late and at its own pace; the two notes come together on curves, kai's
+moving first and lin's hanging back a moment before it touches; each of
+the week's notes, and each of the ones that go out, comes on and goes out
+in its own time and at its own brightness; the letter leans into its own
+speed and comes level as it slows, and turns over as a hand turns a thing.
+The letter's glass keeps its light, its dust and its glare, and not its
+finest pixels, which would crawl as it turns and comes nearer.
 
 What the reel keeps to: one layout throughout, the words flush left on one
 margin in a band at the top and a phone one size in one place under them,
 all of it clear of Instagram's buttons on the right and its caption at the
-foot; one face; the scenes cut, they never dissolve; and the phone seen
-twice, lin's at the start and lin's at the end, never another.
+foot; one face; the scenes cut, they never dissolve; and one glass, lin's,
+seen at the start and, turned over, at the reveal, never another.
 
 How it is made: `node scripts/studio-reel.mjs celestual-reel`. The song
 first, in a minute (`MUSIC.md`); then two browsers each photograph a share

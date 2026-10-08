@@ -21,13 +21,12 @@
 //          clock that runs through the week; on the thursday a note comes in
 //          from somewhere; at nine the camera leans in, and the two find
 //          each other, wait, and touch
-//  20      cut, on the touch and in its place, to lin's phone: the product's
-//          own reveal. it's mutual
-//  23.75   the note that came opens on lin's glass, its pixels going to
-//          their places: kai's, read for the first time. `you both find out.`
-//  26.25   the ones that never meet go out, each as a screen does. `if it
+//  20      on the touch the two are one light, and out of it comes lin's
+//          letter, at us; it turns over, and on its other side is kai's, to
+//          lin, read for the first time. `it's mutual. / you both find out.`
+//  25      the ones that never meet go out, each as a screen does. `if it
 //          isn't, / nobody ever knows.`
-//  28.75   `do they still / think about you?`
+//  27.5    `do they still / think about you?`, and left there
 //  31.25   the name, lit a cell at a time from its star, and the address
 //
 // One layout throughout: the words flush left on one margin in one band at
@@ -35,17 +34,18 @@
 // the platform's own buttons and captions; and one grid, the words' cells,
 // that the panel, the notes on it and the name are all on. The wall is a
 // sheet of the product's own screens drawn in WebGL (wall-gl.js); the
-// mutual's film is the product's (pixmark.js); the name is drawn a cell at a
-// time (brand.js); the words are the phone's face (pixtype.js).
+// letter is the product's own composer (note-screen.jsx), both its sides;
+// the name is drawn a cell at a time (brand.js); the words are the phone's
+// face (pixtype.js).
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { CustomEase } from 'gsap/CustomEase'
-import { Board, Phone, PixelStory, filmOf, readyFilm, useHold, turnStyle, skinVars, hexRgb, mix, Lockup, LOCKUP, MARK } from '../kit.jsx'
+import { Board, useHold, skinVars, hexRgb, mix, Lockup, LOCKUP, MARK } from '../kit.jsx'
 import { glyphPath, skinOf } from '../../wall/looks.js'
 import { cellsOf, wordCells } from '../../wall/brand.js'
 import { typeCells } from '../../wall/pixtype.js'
-import { MS, A, B, S, typedA, storyAt, wakeOf } from './reel-time.js'
+import { MS, A, B, S, typedA, typedUrl, URL, wakeOf } from './reel-time.js'
 import { WallGL, wallOf, cameraOf, boxOnto, v3, UNIT } from './wall-gl.js'
 import { cellTint, cellOf } from './wall-letters.js'
 import { NoteScreen, PW } from './note-screen.jsx'
@@ -156,7 +156,9 @@ function lineOf(text, unit = 'word') {
 // A line, a word coming on at each of `times` (or one after another from
 // `from`): its cells lit as a screen's pixels are, swept from its first
 // column to its last in a few frames, a cell a little before or after its
-// neighbour; and at `to` the line goes the same way, its first column first
+// neighbour; and at `to` the line goes the same way, its first column first.
+// No two words alike: each has its own little lateness and its own pace, as
+// a hand's are, the same on every frame
 const PAD = 14
 function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x = X0, y = Y0, c = C, color = CHALK, unit = 'word' }) {
   const ref = useRef(null)
@@ -169,12 +171,15 @@ function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x
     const g = cv.getContext('2d')
     g.clearRect(0, 0, cv.width, cv.height)
     g.fillStyle = color
-    const when = (k) => (times ? times[Math.min(k, times.length - 1)] : from + k * step)
+    const seed = text.length * 13
+    const when = (k) => (times ? times[Math.min(k, times.length - 1)] : from + k * step) + (rnd(seed + k * 7) - 0.5) * 36
+    const pace = (k) => 50 + rnd(seed + k * 11 + 3) * 70
+    const out = 120 + rnd(seed + 5) * 70
     for (const p of L.cells) {
       const w = L.units[p.k]
-      const sweep = ((p.x - w.x0) / Math.max(1, w.x1 - w.x0)) * 70
-      let a = on(t, when(p.k) + sweep + (p.j - 0.5) * 24, 45)
-      if (to < Infinity) a *= 1 - on(t, to + (p.x / Math.max(1, L.w)) * 150 + (p.j - 0.5) * 30, 45)
+      const sweep = ((p.x - w.x0) / Math.max(1, w.x1 - w.x0)) * pace(p.k)
+      let a = on(t, when(p.k) + sweep + (p.j - 0.5) * 24, 34 + p.j * 26)
+      if (to < Infinity) a *= 1 - on(t, to + (p.x / Math.max(1, L.w)) * out + (p.j - 0.5) * 30, 45)
       if (a <= 0.004) continue
       g.globalAlpha = a
       g.fillRect(PAD + p.x * c, PAD + (p.y + 10) * c, c, c)
@@ -188,22 +193,6 @@ function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x
 // the shade under the band of words, where the hall behind them is busy
 const Shade = ({ o }) => (o > 0.003 ? <div className="rl-shade" style={{ opacity: o.toFixed(3) }} /> : null)
 
-// an object placed on the frame: its middle at `x`, `y`, `s` times its size
-function Place({ x, y, s, w = PW, h = 1160, z = 0, filter, opacity, children, className = '' }) {
-  return (
-    <div
-      className={`rl-obj ${className}`}
-      style={{
-        width: w, zIndex: z, opacity, filter,
-        transform: `translate(${(x - w / 2).toFixed(2)}px, ${(y - h / 2).toFixed(2)}px) scale(${s.toFixed(4)})`,
-        transformOrigin: `${w / 2}px ${h / 2}px`,
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
 // the light a lit screen throws on the room round it, in its colour
 const Glow = ({ x, y, r, colour, o = 1, z = 0 }) => (o > 0.005 && r > 1 ? (
   <span className="rl-glow" style={{ left: x - r, top: y - r, width: r * 2, height: r * 2, opacity: Math.min(1, o).toFixed(3), zIndex: z, '--c': colour }} aria-hidden="true" />
@@ -213,8 +202,7 @@ const halo = (tint) => skinVars(tint)['--s-halo']
 const PAPER = new Set(['teal', 'acid', 'violet-yellow', 'xerox'])
 
 // ── a note, as the phone draws it ───────────────────────────────────────────
-// The envelope, in cells: the phone's own glyph (looks.js), and the same
-// with its flap level and with its flap up, for a note that opens.
+// The envelope, in cells: the phone's own glyph (looks.js).
 const glyphOf = (rows, lift = 0) => ({ cells: rows.flatMap((r, y) => [...r].flatMap((ch, x) => (ch === 'X' ? [[x, y]] : []))), w: rows[0].length, h: rows.length, lift })
 const ENV = glyphPath('env')
 const ENV_ROWS = (() => {
@@ -222,9 +210,7 @@ const ENV_ROWS = (() => {
   for (const m of ENV.d.matchAll(/M(\d+) (\d+)h1v1h-1z/g)) rows[+m[2]][+m[1]] = 'X'
   return rows.map((r) => r.join(''))
 })()
-const MID_ROWS = ['XXXXXXXXXXX', 'X.........X', 'X.........X', 'X.........X', 'X.........X', 'X.........X', 'XXXXXXXXXXX']
-const OPEN_ROWS = ['.....X.....', '....X.X....', '...X...X...', '..X.....X..', '.X.......X.', ...MID_ROWS]
-const ENVS = { closed: glyphOf(ENV_ROWS), mid: glyphOf(MID_ROWS), open: glyphOf(OPEN_ROWS, 5) }
+const ENVS = { closed: glyphOf(ENV_ROWS) }
 
 // A note drawn at `x`, `y` (its body's middle), `cell` a cell. On a lit
 // glass it is in the glass's `ink`; in the dark it is lit, its outline
@@ -683,7 +669,9 @@ function drawGrid(g, v, alpha) {
   }
   g.save()
   g.globalAlpha = alpha
-  g.imageSmoothingEnabled = false
+  // smoothed, so the panel drifts by less than a pixel without its cells
+  // jumping a whole one
+  g.imageSmoothingEnabled = true
   const tx = v.f[0] - v.a[0] * v.z
   const ty = v.f[1] - v.a[1] * v.z
   g.setTransform(v.z, 0, 0, v.z, tx + GX * v.z, ty + GY * v.z)
@@ -696,6 +684,9 @@ function drawGrid(g, v, alpha) {
 // a view of the panel: its point `a` at the frame's point `f`, `z` times
 const frameOf = (v, p) => [v.f[0] + (p[0] - v.a[0]) * v.z, v.f[1] + (p[1] - v.a[1]) * v.z]
 const REST = { a: [540, 960], f: [540, 960], z: 1 }
+// the camera on the panel held, as the hall's is: a drift of a pixel or
+// so, slow, that `k` takes down to nothing
+const held = (v, t, k = 1) => ({ ...v, f: [v.f[0] + shake(t, 41) * 1.4 * k, v.f[1] + shake(t, 47) * 1.6 * k] })
 // lin's place, and kai's, their corners on the grid; where they meet; and
 // the reveal's screen on the frame, where the meeting comes to
 const envAt = (tl) => [tl[0] + 5.5 * C, tl[1] + 3.5 * C]
@@ -707,24 +698,27 @@ function leanView(t) {
   const k = easeOf('sine.inOut')(u(t, S.lean[0], S.lean[1]))
   return { a: MEET, f: [lerp(MEET[0], SCREEN_AT[0], k), lerp(MEET[1], SCREEN_AT[1], k)], z: 2.6 ** k }
 }
-// the two of them in the panel's own pixels: they find each other; a
-// little apart they wait, coming a breath closer; and touch. The space
-// between them is kept on the frame, whatever the zoom
+// the two of them in the panel's own pixels: they find each other, not in
+// straight lines, kai's moving first; a little apart they wait, lin's
+// drawing back a hair before it comes on; and touch. The space between them
+// is kept on the frame, whatever the zoom
 function pairAt(t, z) {
-  const near = easeOf('sine.inOut')(u(t, S.lean[0], S.touch[0]))
-  const wait = lerp(16, 11, easeOf('sine.inOut')(u(t, S.touch[0], S.touch[1])))
+  const nearK = easeOf('sine.inOut')(u(t, S.lean[0] - 160, S.touch[0] - 60))
+  const nearL = easeOf('power2.inOut')(u(t, S.lean[0] + 60, S.touch[0]))
+  const w = easeOf('sine.inOut')(u(t, S.touch[0], S.touch[1]))
+  const wait = lerp(15, 10, w) + 2.4 * Math.sin(Math.PI * w)
   const space = lerp(wait, -1, easeOf('power2.in')(u(t, S.touch[1], S.touch[2])))
   const d = (11 * C * z + space) / (2 * z)
   return {
-    lin: [lerp(L_AT[0], MEET[0] - d, near), lerp(L_AT[1], MEET[1], near)],
-    kai: [lerp(K_AT[0], MEET[0] + d, near), lerp(K_AT[1], MEET[1], near)],
+    lin: [lerp(L_AT[0], MEET[0] - d, nearL), lerp(L_AT[1], MEET[1], nearL) - Math.sin(Math.PI * nearL) * 22],
+    kai: [lerp(K_AT[0], MEET[0] + d, nearK) + Math.sin(Math.PI * nearK) * 16, lerp(K_AT[1], MEET[1], nearK)],
   }
 }
 // the week's other notes, as they come in, each a screen coming on
 const OTHERS = [
   [14, 108, 'teal'], [124, 100, 'lilac'], [30, 196, 'white'], [118, 214, 'green'],
   [54, 228, 'rose'], [12, 160, 'teal'], [126, 150, 'lilac'], [84, 206, 'white'],
-].map(([i, j, tint], k) => ({ at: envAt(onGrid(i, j)), tint, ms: S.others[k] }))
+].map(([i, j, tint], k) => ({ at: envAt(onGrid(i, j)), tint, ms: S.others[k], k: 0.6 + rnd(k * 5 + 1) * 0.5, a: 0.28 + rnd(k * 7 + 2) * 0.14 }))
 // the clock at the end of the sentence, through the week from monday
 // morning to saturday at nine at night, quickly in the middle of the week
 // and slowly into nine
@@ -739,7 +733,7 @@ function clockAt(t) {
 
 function PanelScene({ t }) {
   const ref = useRef(null)
-  const v = t >= S.lean[0] ? leanView(t) : REST
+  const v = held(t >= S.lean[0] ? leanView(t) : REST, t, 1 - u(t, S.lean[0], S.lean[1]) * 0.6)
   useLayoutEffect(() => {
     const g = ref.current.getContext('2d')
     g.setTransform(1, 0, 0, 1, 0, 0)
@@ -749,10 +743,10 @@ function PanelScene({ t }) {
     const down = 1 - u(t, S.lapse[1], S.lapse[1] + 350)
     for (const o of OTHERS) {
       if (t < o.ms) continue
-      const c = crtOn(t, o.ms, 0.8)
+      const c = crtOn(t, o.ms, o.k)
       const [x, y] = frameOf(v, o.at)
       if (!c.lit) { drawDot(g, x, y, 5, c.dot * 0.5 * down, o.tint); continue }
-      drawEnvelope(g, { x, y, cell: C * v.z, tint: o.tint, a: 0.36 * down, sx: c.sx, sy: c.sy, white: c.white, glow: 0.55 })
+      drawEnvelope(g, { x, y, cell: C * v.z, tint: o.tint, a: o.a * down, sx: c.sx, sy: c.sy, white: c.white, glow: 0.55 })
     }
     // the two, and their touch
     const p = t >= S.lean[0] ? pairAt(t, v.z) : { lin: L_AT, kai: K_AT }
@@ -794,95 +788,229 @@ function PanelScene({ t }) {
   )
 }
 
-// ── 20 to 26.25: lin's phone ────────────────────────────────────────────────
-// Cut, on the touch and where it was, to lin's phone and the product's own
-// reveal, as the phone plays it, a picture every tenth of a second: they
-// run in, are held on the bar the song comes in on, the glass turns rose,
-// and it says it. Then the note that came: its envelope on the glass, the
-// flap up, and its pixels out of it to their places, the glass turning the
-// colour it was written in, and it is kai's, to lin.
+// ── 20 to 25: the letter turned over ────────────────────────────────────────
+// On the touch the two are one light. Out of it comes lin's letter, the one
+// that was sent, at us, as a thing tossed comes: quickly out of the light,
+// white as a screen coming on, up and away on a curve and round, slowing,
+// into the hand; banking into its curve and leaning into its own speed, and
+// leaving its light behind it as an old screen's phosphor does. Before it
+// has quite come to rest it turns over, leaning back a little first, as a
+// hand turns a thing, and going a little past; on its edge on the bar the
+// song comes in on, its glass catching the light as it goes over; and on
+// its other side is kai's, to lin, read for the first time, and brought a
+// little nearer to be read. Its glass keeps its light, its dust and its
+// glare, and not its finest pixels (reel.css): they would crawl as it turns
+// and comes nearer.
 const READ_KEYS = { l: { label: 'options' }, r: [{ glyph: 'heartO', label: '0', cls: 'is-heart' }] }
-const KAI_TOP = { name: B.to, dear: true, icon: 'pen', stamp: '10/08/26', bat: 4 }
-const KAI_PROPS = { fs: 13.4, fx: true, cursor: false, seed: A.seed, top: KAI_TOP, keys: READ_KEYS }
 const LIN_PROPS = { fs: 12.6, fx: true }
-// kai's letters, out of the envelope's mouth to their places on the glass,
-// the first words first, each along an arc
-function unfoldOf(text, env) {
-  const N = text.cells.length
-  const E = ENV_CELL
-  return text.cells.map((c, i) => {
-    const sx = env.x + (rnd(i * 11 + 5) - 0.5) * 8 * E
-    const sy = env.y - 3.5 * E + rnd(i * 13 + 7) * E * 0.8
-    const lift = Math.hypot(c.x - sx, c.y - sy) * (0.25 + rnd(i * 17 + 1) * 0.2)
-    const t0 = S.unfold[0] + (i / N) * 380 + (rnd(i * 19 + 3) - 0.5) * 50
-    return { sx, sy, ex: c.x, ey: c.y, mx: (sx + c.x) / 2, my: Math.min(sy, c.y) - lift, t0: Math.max(S.unfold[0], t0), t1: Math.min(S.unfold[1], t0 + 240 + rnd(i * 23 + 9) * 120) }
+const FACE_A = { fs: 12.6, fx: true, cursor: false, keys: READ_KEYS, top: { name: A.to, dear: true, icon: 'pen', stamp: '10/06/26', bat: 4 } }
+const FACE_B = { fs: 13.4, fx: true, cursor: false, keys: READ_KEYS, top: { name: B.to, dear: true, icon: 'pen', stamp: '10/08/26', bat: 4 } }
+const ALL_A = new Array([...A.text].length).fill(0)
+const ALL_B = new Array([...B.text].length).fill(0)
+// where the two were when they touched, at the lean's end, on the panel
+const TOUCHED = (() => {
+  const v = leanView(S.meet)
+  return { v, ...pairAt(S.touch[2] + 30, v.z) }
+})()
+// the turn over: a little back first, over its edge at the middle, a
+// little past and back
+CustomEase.create('rl.flip', 'M0,0 C0.2,-0.12 0.4,0.2 0.5,0.5 0.6,0.8 0.8,1.12 1,1')
+// its way out of the light: its middle on the frame and the log of its
+// size, along one curve
+const SWOOSH = [[SCREEN_AT[0], SCREEN_AT[1], Math.log(0.12)], [290, 880, Math.log(0.4)], [360, 1230, Math.log(0.6)], [OBJ.x, OBJ.y, Math.log(OBJ_S)]]
+const wayAt = (t) => bez(SWOOSH, easeOf('power3.out')(u(t, S.swoosh[0], S.swoosh[1])))
+const CARD_H = 1160
+// the letter at `t`: its middle, its size, how it is turned, and how white
+function cardAt(t) {
+  const [x, y, ls] = wayAt(t)
+  // its speed a moment ago, in pixels a millisecond: it leans into it, and
+  // comes level as it slows
+  const [x0, y0] = wayAt(t - 50)
+  const [x1, y1] = wayAt(t - 20)
+  const vx = (x1 - x0) / 30
+  const vy = (y1 - y0) / 30
+  const p = u(t, S.flip[0], S.flip[1])
+  const flip = 180 * easeOf('rl.flip')(p)
+  const turning = Math.sin(Math.PI * p)
+  const near = 1 + 0.035 * easeOf('sine.inOut')(u(t, S.flip[1] - 150, S.ifnot[0] + 400))
+  return {
+    x, y,
+    s: Math.exp(ls) * (1 + 0.05 * turning) * near,
+    rz: clamp(vx * 6, -14, 14) - 2.5 * turning,
+    rx: clamp(-vy * 8, -20, 20) + 6 * turning,
+    ry: clamp(-vx * 11, -26, 26) + flip,
+    flip,
+    o: on(t, S.swoosh[0], 90),
+    white: at([[S.swoosh[0], 1], [S.swoosh[0] + 120, 0.75], [S.swoosh[0] + 420, 0, 'power2.out']], t),
+  }
+}
+// its four corners on the frame, as its transform (below) puts them
+function cardQuad(c) {
+  const d = 2600
+  const rad = (deg) => (deg * Math.PI) / 180
+  const [sz, cz] = [Math.sin(rad(c.rz)), Math.cos(rad(c.rz))]
+  const [sy, cy] = [Math.sin(rad(c.ry)), Math.cos(rad(c.ry))]
+  const [sx, cx] = [Math.sin(rad(c.rx)), Math.cos(rad(c.rx))]
+  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => {
+    let x = i * (PW / 2) * c.s
+    let y = j * (CARD_H / 2) * c.s
+    let z = 0
+    ;[x, y] = [x * cz - y * sz, x * sz + y * cz]
+    ;[x, z] = [x * cy + z * sy, -x * sy + z * cy]
+    ;[y, z] = [y * cx - z * sx, y * sx + z * cx]
+    const w = 1 - z / d
+    return [c.x + x / w, c.y + y / w]
   })
 }
-function OpenFX({ t, mK, env }) {
-  const ref = useRef(null)
-  const parts = useMemo(() => unfoldOf(mK.text, env), [mK, env])
+const quadPath = (g, q) => {
+  g.beginPath()
+  q.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)))
+  g.closePath()
+}
+// the light the glass catches as it turns: a band across it from the
+// side nearer us to the far one, brightest as it goes over its edge. The
+// band is cut to the card by its own corners, never by a clip: a clipped
+// canvas here kept a shard of an old band through its clears
+function drawGleam(g, c) {
+  const r = (c.flip * Math.PI) / 180
+  const a = Math.sin(r) ** 2 * 0.42
+  if (a < 0.01) return
+  const q = cardQuad(c)
+  // the quad's left and right on the frame, whichever side is showing
+  const [l0, l1, r0, r1] = c.flip > 90 ? [q[1], q[2], q[0], q[3]] : [q[0], q[3], q[1], q[2]]
+  const at = lerp(-0.35, 1.35, clamp(c.flip / 180))
+  const w = 0.24
+  const k0 = clamp(at - w)
+  const k1 = clamp(at + w)
+  if (k1 - k0 < 0.002) return
+  const along = (k, A, B) => [A[0] + (B[0] - A[0]) * k, A[1] + (B[1] - A[1]) * k]
+  const p0 = along(at - w, l0, r0)
+  const p1 = along(at + w, l0, r0)
+  const grad = g.createLinearGradient(p0[0], p0[1], p1[0], p1[1])
+  grad.addColorStop(0, 'rgba(255,250,244,0)')
+  grad.addColorStop(0.5, `rgba(255,250,244,${a.toFixed(3)})`)
+  grad.addColorStop(1, 'rgba(255,250,244,0)')
+  g.fillStyle = grad
+  g.beginPath()
+  ;[along(k0, l0, r0), along(k1, l0, r0), along(k1, l1, r1), along(k0, l1, r1)].forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)))
+  g.closePath()
+  g.fill()
+}
+// the moment it is on its edge, and kai's side coming on from that line,
+// white first, as a screen does
+const EDGE = (S.flip[0] + S.flip[1]) / 2
+function LetterScene({ t }) {
+  const under = useRef(null)
+  const over = useRef(null)
+  const c = cardAt(t)
   useLayoutEffect(() => {
-    const cv = ref.current
-    if (!cv) return
-    const g = cv.getContext('2d')
-    g.clearRect(0, 0, cv.width, cv.height)
-    if (t < S.env || t >= S.unfold[1]) return
-    const turn = easeOf('sine.inOut')(u(t, S.unfold[0], S.unfold[1] + 200))
-    const ink = mix(skinOf('rose').ink, skinOf(B.tint).ink, turn)
-    // the envelope: on as a screen comes on, its flap up, empty as its
-    // pixels leave it
-    const c = crtOn(t, S.env, 1.1)
-    const glyph = t < S.flap[0] ? ENVS.closed : t < S.flap[0] + 50 ? ENVS.mid : ENVS.open
-    const left = 1 - u(t, S.unfold[0] + 120, S.unfold[1] - 80)
-    if (!c.lit) drawDot(g, env.x, env.y, ENV_CELL * 0.8, c.dot, B.tint)
-    else drawEnvelope(g, { x: env.x, y: env.y, cell: ENV_CELL, ink, a: left, glyph, sx: c.sx, sy: c.sy })
-    // its letters, on their way
-    const s = mK.text.k * 1.04
-    g.fillStyle = ink
-    for (const p of parts) {
-      if (t < p.t0) continue
-      const k = easeOf('power3.out')(u(t, p.t0, p.t1))
-      const a = 1 - k
-      g.fillRect(a * a * p.sx + 2 * a * k * p.mx + k * k * p.ex - s / 2, a * a * p.sy + 2 * a * k * p.my + k * k * p.ey - s / 2, s, s)
+    const g = under.current.getContext('2d')
+    g.setTransform(1, 0, 0, 1, 0, 0)
+    g.clearRect(0, 0, 1080, 1920)
+    // the panel they touched on, held as it was, going down
+    const v = held(TOUCHED.v, t, 0.4)
+    drawGrid(g, v, 1 - u(t, S.meet, S.meet + 500))
+    // the two, white as they touch, and their light, and gone into it
+    const gone = 1 - u(t, S.meet + 40, S.meet + 180)
+    const white = 0.75 + 0.25 * u(t, S.meet, S.meet + 60)
+    const cell = C * v.z
+    const [lx, ly] = frameOf(v, TOUCHED.lin)
+    const [kx, ky] = frameOf(v, TOUCHED.kai)
+    drawEnvelope(g, { x: lx, y: ly, cell, tint: A.tint, a: gone, white })
+    drawEnvelope(g, { x: kx, y: ky, cell, tint: B.tint, a: gone, white })
+    const bloom = at([[S.meet, 0], [S.meet + 70, 1, 'power2.out'], [S.meet + 420, 0, 'power2.in']], t)
+    if (bloom > 0.003) {
+      const r = 420
+      const grad = g.createRadialGradient(SCREEN_AT[0], SCREEN_AT[1], 0, SCREEN_AT[0], SCREEN_AT[1], r)
+      grad.addColorStop(0, `rgba(255,248,240,${(0.95 * bloom).toFixed(3)})`)
+      grad.addColorStop(0.25, `rgba(240,214,226,${(0.45 * bloom).toFixed(3)})`)
+      grad.addColorStop(1, 'rgba(0,0,0,0)')
+      g.fillStyle = grad
+      g.fillRect(SCREEN_AT[0] - r, SCREEN_AT[1] - r, r * 2, r * 2)
+    }
+    // the light it throws on the dark round it, in its colour, least as it
+    // goes over its edge
+    const go = 0.5 * c.o * Math.abs(Math.cos((c.flip * Math.PI) / 180))
+    if (go > 0.005) {
+      const r = 760 * (c.s / OBJ_S)
+      const col = skinOf(c.flip > 90 ? B.tint : A.tint).glow
+      const grad = g.createRadialGradient(c.x, c.y - 40, 0, c.x, c.y - 40, r)
+      grad.addColorStop(0, tone(col, 0.3 * go))
+      grad.addColorStop(0.4, tone(col, 0.3 * 0.38 * go))
+      grad.addColorStop(1, tone(col, 0))
+      g.fillStyle = grad
+      g.fillRect(c.x - r, c.y - 40 - r, r * 2, r * 2)
+    }
+    // the light it leaves on its way, where it was a moment ago, fainter
+    // the longer ago, and gone as it slows
+    const trail = 1 - u(t, S.swoosh[0] + 300, S.swoosh[0] + 560)
+    if (trail > 0.003 && t > S.swoosh[0]) {
+      g.fillStyle = skinOf(A.tint).lit
+      for (let k = 6; k >= 1; k--) {
+        g.globalAlpha = 0.2 * (1 - k / 7) * trail
+        quadPath(g, cardQuad(cardAt(t - k * 20)))
+        g.fill()
+      }
+      g.globalAlpha = 1
+    }
+    // over it, the light on its glass as it turns, and as it goes over its
+    // edge, the edge catching the light: a line, as a screen going out is
+    const o = over.current.getContext('2d')
+    o.setTransform(1, 0, 0, 1, 0, 0)
+    o.globalAlpha = 1
+    o.globalCompositeOperation = 'source-over'
+    o.clearRect(0, 0, 1080, 1920)
+    drawGleam(o, c)
+    const edge = Math.abs(Math.cos((c.flip * Math.PI) / 180))
+    if (edge < 0.12) {
+      const q = cardQuad(c)
+      const top = [(q[0][0] + q[1][0]) / 2, (q[0][1] + q[1][1]) / 2]
+      const foot = [(q[2][0] + q[3][0]) / 2, (q[2][1] + q[3][1]) / 2]
+      const a = 1 - edge / 0.12
+      const grad = o.createLinearGradient(top[0], top[1], foot[0], foot[1])
+      grad.addColorStop(0, 'rgba(255,250,244,0)')
+      grad.addColorStop(0.5, `rgba(255,250,244,${a.toFixed(3)})`)
+      grad.addColorStop(1, 'rgba(255,250,244,0)')
+      o.strokeStyle = grad
+      o.lineWidth = 4
+      o.lineCap = 'round'
+      o.beginPath()
+      o.moveTo(...top)
+      o.lineTo(...foot)
+      o.stroke()
     }
   })
-  return <canvas ref={ref} className="rl-open" width={PW} height={Math.ceil(mK.box.h)} />
-}
-function RevealScene({ t, film, mA, mK }) {
-  const opening = t >= S.open[0]
-  const st = storyAt(Math.floor(t / 100) * 100)
-  const turn = clamp((st - film.times.glow) / 700)
-  const unf = easeOf('sine.inOut')(u(t, S.unfold[0], S.unfold[1] + 200))
-  const env = useMemo(() => envOn(mA), [mA])
+  const turned = c.flip > 90
+  const back = t >= EDGE ? at([[EDGE, 0.85], [EDGE + 320, 0, 'power2.out']], t) : 0
   return (
     <div className="rl-cam">
+      <canvas ref={under} className="rl-panel" width="1080" height="1920" />
       <Held t={t}>
-        <Glow x={OBJ.x} y={OBJ.y - 40} r={760} colour={opening ? halo(B.tint) : halo('rose')} o={(opening ? 0.45 : 0.55 * turn) * on(t, S.meet, 120)} />
-        <Place x={OBJ.x} y={OBJ.y} s={OBJ_S}>
-          {opening ? (
-            <>
-              <NoteScreen who={B} t={1e6} times={ALL_B} sendAt={1e9} quiet={false} {...KAI_PROPS} tint={B.tint} hide={t < S.unfold[1]} screenStyle={{ '--mu-turn': unf, ...turnStyle('rose', B.tint) }} />
-              <OpenFX t={t} mK={mK} env={env} />
-            </>
-          ) : (
-            <Phone w={PW} mode="bare" square seed={A.seed} tint="rose" quiet={false} top={{ bat: 4 }} keys={READ_KEYS} className="is-story" screenStyle={{ '--mu-turn': turn, ...turnStyle(A.tint, 'rose') }}>
-              <PixelStory story={film} at={st} />
-            </Phone>
-          )}
-        </Place>
+        {/* one side at a time, the side turned towards us: kai's drawn as a
+            card's other side is, turned by the angle less a half turn and
+            its roll the other way, so there is only ever one glass to draw */}
+        <div className="rl-card" style={{ opacity: c.o.toFixed(3), transform: `translate(${(c.x - PW / 2).toFixed(2)}px, ${(c.y - CARD_H / 2).toFixed(2)}px) perspective(2600px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${(turned ? c.ry - 180 : c.ry).toFixed(2)}deg) rotateZ(${(turned ? -c.rz : c.rz).toFixed(2)}deg) scale(${c.s.toFixed(4)})` }}>
+          {turned
+            ? <NoteScreen key="kai" who={B} t={1e6} times={ALL_B} sendAt={1e9} {...FACE_B} />
+            : <NoteScreen key="lin" who={A} t={1e6} times={ALL_A} sendAt={1e9} {...FACE_A} />}
+          {(turned ? back : c.white) > 0.003 ? <span className="rl-white" style={{ opacity: (turned ? back : c.white).toFixed(3) }} /> : null}
+        </div>
+        <canvas ref={over} className="rl-fx" width="1080" height="1920" />
       </Held>
-      <CellLine t={t} text="you both find out." from={S.both} to={S.oOut} />
+      <CellLine t={t} text="it’s mutual." from={S.said} to={S.rOut} />
+      <CellLine t={t} text="you both find out." from={S.both} to={S.rOut + 40} y={lineAt(1)} />
     </div>
   )
 }
-const ALL_B = new Array([...B.text].length).fill(0)
 
-// ── 26.25 to 35: the ones that never meet, the question, the name ───────────
+// ── 25 to 35: the ones that never meet, the question, the name ──────────────
 // The panel again, and three notes alone on it, each going out as a screen
-// does, to a line and a point; then the question, a word on each note of
-// the song's hook; then the name, lit a cell at a time from its star, on
-// the words' margin, and the address typed under it.
-const LONE = [[27, 111, 'teal'], [111, 137, 'lilac'], [57, 180, 'white']].map(([i, j, tint], k) => ({ at: envAt(onGrid(i, j)), tint, in: S.ifnot[0] + 60 + k * 80, out: S.lone[k] }))
+// does, to a line and a point, each in its own time; then the question, a
+// word on each note of the song's hook, and left there; then the name, lit
+// a cell at a time from its star, on the words' margin, and the address
+// typed under it. The camera is held, as it always is, and comes to rest
+// for the name, which is never drawn off its grid.
+const LONE = [[27, 111, 'teal', 1], [111, 137, 'lilac', 1.3], [57, 180, 'white', 0.85]].map(([i, j, tint, k], n) => ({ at: envAt(onGrid(i, j)), tint, in: S.ifnot[0] + 60 + n * 90 + rnd(n + 31) * 40, out: S.lone[n], k }))
 const LOCK = { x: X0, y: GY + 120 * C }
 // the middle of the mark's star, on the frame
 const STAR = { x: LOCK.x + Math.round((LOCKUP.mark.w * C) / 2), y: LOCK.y + Math.round((LOCKUP.mark.h * C) / 2) }
@@ -898,24 +1026,25 @@ function lockCells() {
   LIT = cells.map(([x, y], i) => ({ x, y, on: S.lock[0] + (Math.hypot(x + C / 2 - STAR.x, y + C / 2 - STAR.y) / span) * (S.lock[1] - S.lock[0] - 320) + rnd(i * 7 + 3) * 80 }))
   return LIT
 }
-const URL_TIMES = [...'celestual.us'].map((_, k) => S.url + 20 + k * 38)
+const URL_TIMES = typedUrl()
 
 function EndScene({ t }) {
   const ref = useRef(null)
   const cells = useMemo(lockCells, [])
+  const v = held(REST, t, 1 - easeOf('sine.inOut')(u(t, S.qOut - 1100, S.lock[0])))
   useLayoutEffect(() => {
     const g = ref.current.getContext('2d')
     g.setTransform(1, 0, 0, 1, 0, 0)
     g.clearRect(0, 0, 1080, 1920)
-    drawGrid(g, REST, 1)
+    drawGrid(g, v, 1)
     for (const l of LONE) {
-      const [x, y] = l.at
+      const [x, y] = frameOf(v, l.at)
       if (t < l.out) {
-        const c = crtOn(t, l.in, 0.7)
+        const c = crtOn(t, l.in, 0.7 * l.k)
         if (!c.lit) drawDot(g, x, y, 5, c.dot * 0.6, l.tint)
         else drawEnvelope(g, { x, y, cell: C, tint: l.tint, a: 0.8, sx: c.sx, sy: c.sy, white: c.white, glow: 0.8 })
       } else {
-        const o = crtOff(t, l.out, 1.1)
+        const o = crtOff(t, l.out, 1.1 * l.k)
         if (!o.gone) drawEnvelope(g, { x, y, cell: C, tint: l.tint, a: 0.8, sx: o.sx, sy: o.sy, white: o.white, glow: 0.8 * o.sy })
         else drawDot(g, x, y, 5, o.dot * 0.8, l.tint)
       }
@@ -941,7 +1070,7 @@ function EndScene({ t }) {
       <CellLine t={t} text="do they still" times={Q.slice(0, 3)} to={S.qOut} />
       <CellLine t={t} text="think about you?" times={[Q[3], Q[4], Q[5]]} to={S.qOut + 40} y={lineAt(1)} />
       {t >= S.lock[1] ? <Lockup cell={C} className="rl-lock" style={{ left: LOCK.x, top: LOCK.y }} /> : null}
-      <CellLine t={t} text="celestual.us" times={URL_TIMES} unit="char" c={4} y={LOCK.y + LOCKUP.h * C + 56} />
+      <CellLine t={t} text={URL} times={URL_TIMES} unit="char" c={4} y={LOCK.y + LOCKUP.h * C + 56} />
     </div>
   )
 }
@@ -953,8 +1082,8 @@ function Wash({ t }) {
 }
 
 // ── the reel ────────────────────────────────────────────────────────────────
-// the face every word is cut from, and the stories' own, loaded before the
-// first frame, so nothing is ever set in a stand in while a face is late
+// the face every word is cut from, loaded before the first frame, so
+// nothing is ever set in a stand in while a face is late
 const FACES = ['400 40px "Jersey 10"']
 let ATLAS_IMG = null
 function useAtlas() {
@@ -971,24 +1100,21 @@ function useAtlas() {
 export function Reel({ t }) {
   const [ok, setOk] = useState(false)
   const [mA, setMA] = useState(null)
-  const [mK, setMK] = useState(null)
   const atlas = useAtlas()
   useEffect(() => {
-    Promise.all([readyFilm(A.name, B.name), ...FACES.map((f) => document.fonts.load(f))]).then(() => setOk(true))
+    Promise.all(FACES.map((f) => document.fonts.load(f))).then(() => setOk(true))
   }, [])
-  useHold(ok && !!mA && !!mK && !!atlas)
-  const film = ok ? filmOf(A.name, B.name, 'rose') : null
+  useHold(ok && !!mA && !!atlas)
   const tA = useMemo(typedA, [])
-  const ready = ok && mA && mK
+  const ready = ok && mA
   return (
     <Board w={1080} h={1920} grain={0} className="rl-board">
       {ok ? <Measure who={A} props={LIN_PROPS} onMeasure={setMA} /> : null}
-      {ok ? <Measure who={B} props={KAI_PROPS} onMeasure={setMK} /> : null}
       <div className="rl-stage">
         {/* each scene owns exactly its own frames, and they cut */}
         {ready && atlas && t < S.night[0] ? <WallScene t={t} m={mA} times={tA} image={atlas} /> : null}
         {ready && t >= S.night[0] && t < S.meet ? <PanelScene t={t} /> : null}
-        {ready && film && t >= S.meet && t < S.ifnot[0] ? <RevealScene t={t} film={film} mA={mA} mK={mK} /> : null}
+        {ready && t >= S.meet && t < S.ifnot[0] ? <LetterScene t={t} /> : null}
         {ready && t >= S.ifnot[0] ? <EndScene t={t} /> : null}
         <Wash t={t} />
       </div>

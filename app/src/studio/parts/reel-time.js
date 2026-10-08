@@ -11,12 +11,10 @@
 // wall and is sent privately, its own pixels folded into an envelope that
 // goes out through the lens into the dark, to wait; every mutual is
 // revealed on saturday at nine, and in the week somebody's note comes in;
-// at nine the two find each other, and on lin's phone it is mutual; then
-// the note that came opens, and it is kai's, read for the first time; the
-// ones that never meet go out, and nobody knows; and the question, to
-// whoever is watching.
-
-import { filmStory } from '../../wall/pixmark.js'
+// at nine the two find each other and are one light, and out of it comes
+// lin's letter, which turns over: on its other side is kai's, read for the
+// first time, and it is mutual; the ones that never meet go out, and nobody
+// knows; and the question, to whoever is watching.
 
 export const MS = 35000
 export const BPM = 96
@@ -24,7 +22,6 @@ export const BEAT = 60000 / BPM
 export const BAR = BEAT * 4
 export const beat = (n) => n * BEAT
 
-export const SAY = 'it’s mutual.'
 export const A = { name: 'lin', to: 'kai', tint: 'ice', seed: 'lin', text: 'i never said this two years ago. i loved you. maybe i still do.' }
 // kai's own note, to lin, sent on the thursday: never seen being written,
 // and read for the first time when it is mutual
@@ -50,10 +47,10 @@ export function rhythm(text, from, step, stop = 2.5) {
 
 // ── the scenes, in ms ───────────────────────────────────────────────────────
 // On the song's bars (scripts/studio-score.mjs): a bar is 2.5s; the reveal
-// begins on a bar of two beats, the two of them running in, so the bar it is
-// held on and every bar after it sit a half bar later than a plain count
-// would put them. Every line is on a beat, and every line has gone before
-// its scene does.
+// begins on a bar of two beats, the letter coming at us, so the bar it turns
+// over on sits a half bar later than a plain count would put it, and from
+// there the song moves every two beats, so a scene may begin on any second
+// beat. Every line is on a beat, and goes as its scene ends.
 export const S = {
   // the glass: the first line already there, then the rest, the hardest
   // words slowest, a held breath before the last
@@ -77,22 +74,27 @@ export const S = {
   // the week's other notes, as they come in
   others: [16380, 16560, 16760, 16960, 17380, 17560, 17760, 17940],
   lean: [19000, 20000], touch: [19560, 19840, 19960],
-  // cut on the touch to lin's phone, and the product's own reveal: they run
-  // in, are held on the bar the song comes in on, and it is said on that
-  // bar's third beat
-  reveal: [20000, 23750], meet: 20000, run: 20500, drop: 21250, said: 22500,
-  // then the note that came: kai's, its envelope opening on lin's glass and
-  // its pixels going to their places, read for the first time
-  open: [23750, 26250], env: 23750, flap: [24063, 24250], unfold: [24250, 25050], both: 24375, oOut: 25900,
+  // on the touch the two are one light, and out of it lin's letter, the
+  // one that was sent, comes at us (`swoosh`); it turns over (`flip`, on
+  // its edge on the bar the song comes in on), and on its other side is
+  // kai's, read for the first time; it is said on that bar's third beat,
+  // and then the rest of it
+  reveal: [20000, 25000], meet: 20000, swoosh: [20060, 20900], flip: [20800, 21700], run: 20500, drop: 21250, said: 22500, both: 23750, rOut: 24650,
   // the ones that never meet go out, each as a screen does, to a line and a
   // point
-  ifnot: [26250, 28750], fLines: [26563, 27188], lone: [26875, 27500, 28125], fOut: 28250,
+  ifnot: [25000, 27500], fLines: [25313, 25938], lone: [25625, 26250, 26875], fOut: 27000,
   // the question, to whoever is watching, a word on each note of the hook
-  // (scripts/studio-score.mjs `HOOK`): do they still think a-bout you?
-  ask: [28750, 31250], qWords: [28750, 29063, 29375, 29688, 30000, 30625], qOut: 30950,
+  // (scripts/studio-score.mjs `HOOK`): do they still think a-bout you? and
+  // then left there, whole, for as long as it took to ask
+  ask: [27500, 31250], qWords: [27500, 27813, 28125, 28438, 28750, 29375], qOut: 31250,
   // and the name, lit a cell at a time from its star, and the address
   name: [31250, 35000], lock: [31250, 32250], url: 32250,
 }
+
+// the address under the name, typed as a hand types it, a breath after
+// its dot
+export const URL = 'celestual.us'
+export const typedUrl = () => rhythm(URL, S.url - 18, 40, 1.4)
 
 // the light going out over the hall from lin's: the moment a letter `dist`
 // from lin's, with its own `seed`, comes on
@@ -113,34 +115,4 @@ export function typedA() {
   from(iD, t[iD - 1] + 640 - t[iD])
   from(i2, t[i2 - 1] + 180 - t[i2])
   return t
-}
-
-// ── the mutual's own film against the reel's clock ──────────────────────────
-// Its moments as the product tells them (pixmark.js `filmStory`), with a
-// sentence of SAY's length, so `said` is the moment its last letter lands.
-export const STORY_TIMES = filmStory({ say: { cells: [], w: 0, ends: Array.from(SAY, (_, i) => i + 1) } }).times
-const ST = STORY_TIMES
-// the run from just after they come in to where they are held, then the
-// light over the glass on the drop, and on to the sentence said
-export const STORY = [[S.run, ST.enter + 360], [S.drop - 250, ST.catch], [S.drop, ST.glow], [S.said, ST.said], [S.said + 4000, ST.said + 4000]]
-export function storyAt(t) {
-  if (t <= STORY[0][0]) return STORY[0][1]
-  for (let i = 1; i < STORY.length; i++) {
-    const [t1, s1] = STORY[i]
-    if (t <= t1) {
-      const [t0, s0] = STORY[i - 1]
-      return s0 + ((t - t0) / (t1 - t0)) * (s1 - s0)
-    }
-  }
-  return STORY[STORY.length - 1][1]
-}
-export function reelAt(s) {
-  for (let i = 1; i < STORY.length; i++) {
-    const [t1, s1] = STORY[i]
-    if (s <= s1) {
-      const [t0, s0] = STORY[i - 1]
-      return t0 + ((s - s0) / (s1 - s0)) * (t1 - t0)
-    }
-  }
-  return STORY[STORY.length - 1][0]
 }

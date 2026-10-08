@@ -15,8 +15,7 @@
 
 /* the camera, and the things it carries, placed by their own transforms */
 .rl-cam { position: absolute; inset: 0; }
-.rl-held { transform-origin: 540px 960px; }
-.rl-obj { position: absolute; left: 0; top: 0; }
+.rl-held { transform-origin: 540px 960px; z-index: 2; }
 .rl-glow {
   position: absolute; pointer-events: none; border-radius: 50%; mix-blend-mode: screen;
   background: radial-gradient(closest-side, var(--c) 0%, color-mix(in srgb, var(--c) 38%, transparent) 40%, transparent 100%);
@@ -27,11 +26,9 @@
 .rl-lin { position: absolute; left: 0; top: 0; width: 1000px; transform-origin: 0 0; z-index: 3; backface-visibility: hidden; }
 
 /* the send's own pixels over the frame; the dark as a panel of cells; the
-   pixels of the note that opens, on its glass; the point a screen goes out
-   to; and the light of the envelope at the lens */
+   point a screen goes out to; and the light of the envelope at the lens */
 .rl-fx { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 30; pointer-events: none; }
 .rl-panel { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 1; }
-.rl-open { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; }
 .rl-dot {
   position: absolute; width: 14px; height: 14px; z-index: 31; pointer-events: none;
   background: #FFFFFF; box-shadow: 0 0 14px 5px rgba(205, 228, 255, 0.75), 0 0 40px 14px rgba(160, 200, 240, 0.3);
@@ -41,8 +38,7 @@
   background: radial-gradient(circle at 50% 52%, #F4F9FF 0%, #CFE3F2 42%, #8FB2CE 100%);
 }
 
-/* the end: the name lit a cell at a time, and then itself */
-.rl-pix { position: absolute; left: 0; top: 0; z-index: 20; image-rendering: pixelated; filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.35)) drop-shadow(0 0 10px rgba(255, 244, 228, 0.14)); }
+/* the end: the name, once its cells have all come on */
 .rl-lock { position: absolute; z-index: 21; }
 
 /* under the words, over the hall */
@@ -50,3 +46,14 @@
   position: absolute; inset: 0; z-index: 39; pointer-events: none;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.84) 26%, rgba(0, 0, 0, 0.5) 36%, rgba(0, 0, 0, 0) 50%);
 }
+
+/* the letter, the side of it towards us, in the room's own perspective,
+   and white as it comes on; the light on its glass is drawn over it, on
+   .rl-fx, in plain alpha: a blended layer on a card in 3D left a seam
+   down it */
+.rl-card { position: absolute; left: 0; top: 0; width: 1000px; z-index: 5; transform-origin: 500px 580px; }
+.rl-white { position: absolute; inset: 0; z-index: 50; pointer-events: none; background: #FFFFFF; }
+/* the glass's finest pixels, its moiré, its ghost column and its grain are
+   a camera's of a screen held still: on a card that turns and comes nearer
+   they crawl */
+.rl-card .wl-scr-fx:is(.is-grid, .is-moire, .is-streak, .is-shine, .is-rgb) { display: none; }
