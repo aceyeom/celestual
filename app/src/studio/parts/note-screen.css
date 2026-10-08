@@ -1,0 +1,7 @@
+/* a note on its phone (note-screen.jsx): what is not typed yet is laid out
+   and unseen, and the send key lit while it is pressed */
+.rl-typed .rl-lift { display: block; }
+.rl-typed .rl-rest { color: transparent; text-shadow: none; }
+.rl-typed .rl-cur { margin-left: 0.02em; margin-right: -0.127em; }
+.st-phone .wl-sk.is-open { background: var(--s-lit); color: var(--s-bot); border-radius: 1cqw; }
+.st-phone .wl-sk.is-open .wl-lit { color: var(--s-bot); text-shadow: none; }

@@ -2,29 +2,27 @@
 // studio-score.mjs: the reel's score, made from the reel's own clock.
 //
 // Nothing here is a recording. It is a small synthesiser written for this
-// piece: band-limited saws (polyBLEP), biquad filters swept as they play,
-// envelopes, a kick that the pads duck under, a stereo delay a dotted eighth
-// long, a room, tape's soft saturation on the whole, and a carillon's bells
-// with a tuned bell's partials. Every sound is placed at the moment
-// app/src/studio/parts/reel-time.js says its picture happens: a key for every
-// letter on the frame it lands, a blip for every phone of the wall as it
-// wakes, a chord under each line of the wall's, the tower's run climbing as
-// it is drawn and its bell on the frame the lantern lights, a tap for every
-// finger, a clack for every flap, the riser into the drop on the frame the
-// two of them are held, a heartbeat under the question, a note for every
-// half turn of the two lights heard where each light is, and a tick for
-// every pixel of the name coming home.
+// piece: a felt piano built from its strings' partials, pads of saws a few
+// cents apart through filters that open as they swell, low strings, bells,
+// the keys of an old phone, a board's cards, and air. Every sound is placed
+// at the moment app/src/studio/parts/reel-time.js says its picture happens:
+// a key for every letter on the frame it lands, the piano answering the
+// words, a glint for every letter of the hall near the lens as the light
+// reaches it, a run after each note going up as a light, a card for every
+// flap, a chord rolled across the keyboard where the two lights touch, and
+// a glint for every cell of the name as it is lit.
 //
-// 120 beats a minute, in B minor and its relative D. Mastered to -14 LUFS
-// with a true peak a decibel and a half under full scale by ffmpeg's
-// loudnorm in two passes.
+// 96 beats a minute, in D major and its B minor, quiet, and only as loud as
+// it needs to be. Mastered to -14 LUFS with a true peak a decibel and a half
+// under full scale by ffmpeg's loudnorm in two passes.
 //
 //   node scripts/studio-score.mjs [out.wav]      48 kHz, 16 bit, stereo
 import { spawnSync } from 'node:child_process'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { MS, BEAT, A, B, S, SAY, typedA, typedB, STORY_TIMES, reelAt, ORBIT, orbitOf } from '../app/src/studio/parts/reel-time.js'
+import { MS, BEAT, A, B, S, SAY, typedA, typedB, STORY_TIMES, reelAt, wakeOf } from '../app/src/studio/parts/reel-time.js'
+import { wallOf } from '../app/src/studio/parts/wall-gl.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.argv[2] || join(root, 'design/campaign/celestual-reel.wav')
@@ -114,66 +112,85 @@ const adsr = (i, len, a, d, s, r) => {
 }
 
 // ── the instruments ─────────────────────────────────────────────────────────
+// a felt piano: each string's partials where a real string's are (a little
+// sharp of whole multiples, more so up the keyboard), each dying at its own
+// rate, quick first and then slow as a struck string does, two strings a
+// hair apart beating slowly against each other, and the felt hammer's soft
+// knock. Struck harder (`vel`), the higher partials come up.
+function piano(ms, m, { vel = 0.5, gain = 0.1, pan = 0, decay = 3.4, verb = 0.4, delay = 0.06 } = {}) {
+  const f0 = hz(m)
+  const inh = 0.00028 * (1 + Math.max(0, m - 48) / 30)
+  const parts = []
+  for (let n = 1; n <= 12; n++) {
+    const fn = n * f0 * Math.sqrt(1 + inh * n * n)
+    if (fn > 9000) break
+    parts.push({
+      w: (TAU * fn) / SR, w2: (TAU * fn * (1 + 0.0007 * (0.5 + rnd() * 0.5))) / SR,
+      amp: n ** -(1.75 - 0.8 * vel) * (n === 2 ? 0.8 : 1),
+      tau: (decay * 1.5) / (1 + 0.55 * (n - 1)) * (262 / Math.max(131, f0)) ** 0.4,
+      ph: rnd() * TAU,
+    })
+  }
+  const lp = lowpass(0.6)
+  const L = sec(Math.min(7, decay * 2.4))
+  lay(MU, ms, L, (i) => {
+    const t = i / SR
+    let v = 0
+    for (const p of parts) {
+      const e = 0.5 * Math.exp(-t / (p.tau * 0.22)) + 0.5 * Math.exp(-t / p.tau)
+      v += p.amp * e * (Math.sin(p.w * i + p.ph) + Math.sin(p.w2 * i + p.ph)) * 0.5
+    }
+    const knock = i < sec(0.03) ? lp(rnd(), 900 + 1800 * vel) * Math.exp(-i / sec(0.006)) * 0.25 : 0
+    return (v * Math.min(1, i / sec(0.005)) + knock) * (0.35 + 0.65 * vel)
+  }, { gain, pan, verb, delay })
+}
+// a chord on the piano, its notes rolled up from the lowest a little apart
+const roll = (ms, notes, { gap = 45, vel = 0.42, gain = 0.085, decay = 3.6, verb = 0.45 } = {}) =>
+  notes.forEach((m, i) => piano(ms + i * gap, m, { vel: vel - i * 0.02, gain, decay, pan: (i / Math.max(1, notes.length - 1) - 0.5) * 0.5, verb }))
 // a pad: five saws a few cents apart through a lowpass that opens as it
-// swells, its notes `ms` long
-function pad(ms, len, notes, { gain = 0.05, cut = [400, 1600], q = 0.9, attack = 0.6, release = 0.8, verb = 0.5, b = MU, pan = 0.35 } = {}) {
-  gain *= 1.35
+// swells, slowly, its notes `len` long
+function pad(ms, len, notes, { gain = 0.03, cut = [350, 1200], q = 0.8, attack = 1.1, release = 1.2, verb = 0.6, pan = 0.35 } = {}) {
   notes.forEach((m, n) => {
     const f = hz(m)
-    const osc = [-11, -5, 0, 6, 12].map(() => saw())
-    const det = [-0.011, -0.005, 0, 0.0055, 0.012]
+    const osc = [0, 1, 2, 3, 4].map(() => saw())
+    const det = [-0.009, -0.004, 0, 0.0045, 0.01]
     const lp = lowpass(q)
     const L = sec(len / 1000)
-    lay(b, ms, L, (i) => {
-      const e = adsr(i, L, attack, 0.4, 0.85, release)
+    lay(MU, ms, L, (i) => {
+      const e = adsr(i, L, attack, 0.5, 0.88, release)
       const k = i / L
       let v = 0
       for (let j = 0; j < 5; j++) v += osc[j](f * (1 + det[j]))
-      return lp(v * 0.2, cut[0] + (cut[1] - cut[0]) * Math.sin(Math.min(1, k * 1.4) * Math.PI / 2)) * e
-    }, { gain, pan: ((n % 2) * 2 - 1) * pan, verb })
+      return lp(v * 0.2, cut[0] + (cut[1] - cut[0]) * Math.sin(Math.min(1, k * 1.3) * Math.PI / 2)) * e
+    }, { gain: gain * 1.35, pan: ((n % 2) * 2 - 1) * pan, verb })
   })
 }
-// a pluck: a saw through a filter that closes fast
-function pluck(ms, m, { gain = 0.07, decay = 0.22, cut = 3200, pan = 0, verb = 0.25, delay = 0.25 } = {}) {
-  gain *= 1.25
+// the low strings: a sine and its soft saw, coming in under the chord
+function low(ms, m, len, { gain = 0.07, attack = 0.35 } = {}) {
   const f = hz(m)
   const o = saw()
-  const o2 = saw()
-  const lp = lowpass(1.6)
-  const L = sec(decay * 4)
-  lay(MU, ms, L, (i) => {
-    const t = i / SR
-    const e = Math.exp(-t / decay) * Math.min(1, t / 0.002)
-    return lp((o(f) + o2(f * 1.004)) * 0.5, 220 + cut * Math.exp(-t / (decay * 0.5))) * e
-  }, { gain, pan, verb, delay })
-}
-// a bass: a sine and its saw, under the kick
-function bass(ms, m, len, { gain = 0.16 } = {}) {
-  const f = hz(m)
-  const o = saw()
-  const lp = lowpass(0.8)
+  const lp = lowpass(0.7)
   const L = sec(len / 1000)
   lay(MU, ms, L, (i) => {
     const t = i / SR
-    const e = adsr(i, L, 0.004, 0.12, 0.7, 0.06)
-    return (Math.sin(TAU * f * t) * 0.8 + lp(o(f), 1100) * 0.35) * e
-  }, { gain })
+    const e = adsr(i, L, attack, 0.3, 0.85, 0.6)
+    return (Math.sin(TAU * f * t) * 0.85 + lp(o(f), 420) * 0.3) * e
+  }, { gain, verb: 0.15 })
 }
 // a bell: a sine and its inharmonic partials, struck and let ring
-function bell(ms, m, { gain = 0.05, decay = 1.6, pan = 0, verb = 0.55, delay = 0.2, p2 = 0.3, b = FX } = {}) {
-  gain *= 1.25
+function bell(ms, m, { gain = 0.03, decay = 1.6, pan = 0, verb = 0.6, delay = 0.2, p2 = 0.25 } = {}) {
   const f = hz(m)
-  lay(b, ms, sec(decay * 3.2), (i) => {
+  lay(FX, ms, sec(decay * 3.2), (i) => {
     const t = i / SR
     const a = Math.min(1, i / sec(0.003))
     return a * (Math.sin(TAU * f * t) * Math.exp(-t / decay)
       + p2 * Math.sin(TAU * f * 2.76 * t) * Math.exp(-t / (decay * 0.4))
-      + 0.1 * Math.sin(TAU * f * 5.4 * t) * Math.exp(-t / (decay * 0.18)))
+      + 0.08 * Math.sin(TAU * f * 5.4 * t) * Math.exp(-t / (decay * 0.18)))
   }, { gain, pan, verb, delay })
 }
 // a key on an old phone: a tick of noise through a resonance, and the
-// plastic's body under it
-function key(ms, { pitch = 2200, body = 420, gain = 0.1, pan = 0 } = {}) {
+// plastic's body under it, close and quiet
+function key(ms, { pitch = 2200, body = 420, gain = 0.06, pan = 0 } = {}) {
   let y1 = 0; let y2 = 0
   const r = 0.985
   const w = (TAU * pitch) / SR
@@ -185,358 +202,230 @@ function key(ms, { pitch = 2200, body = 420, gain = 0.1, pan = 0 } = {}) {
     y2 = y1; y1 = y
     const thump = Math.sin((TAU * body * i) / SR) * Math.exp(-i / sec(0.008)) * 0.6
     return (y * 0.09 + thump) * Math.exp(-i / sec(0.012))
-  }, { gain, pan, verb: 0.08 })
+  }, { gain, pan, verb: 0.1 })
 }
-// the drums
+// a pulse under the waiting, felt more than heard: a low sine's knock, no
+// click, the music ducking under it a little
 const KICKS = []
-function kick(ms, { gain = 0.5, deep = 1 } = {}) {
+function thump(ms, { gain = 0.22 } = {}) {
   KICKS.push([ms, gain])
-  gain *= 0.72
-  const hp = highpass(3200, 0.9)
-  lay(DR, ms, sec(0.5), (i) => {
+  lay(DR, ms, sec(0.45), (i) => {
     const t = i / SR
-    const ph = TAU * (55 * t + 110 * deep * 0.035 * (1 - Math.exp(-t / 0.035)))
-    const body = Math.sin(ph) * Math.exp(-t / (0.16 + 0.06 * deep))
-    // the beater's click, where a phone's speaker hears a kick
-    const click = hp(i < sec(0.004) ? rnd() : 0) * 0.9
-    return Math.tanh((body + click) * 1.6)
+    const ph = TAU * (48 * t + 60 * 0.03 * (1 - Math.exp(-t / 0.03)))
+    return Math.tanh(Math.sin(ph) * Math.exp(-t / 0.15) * 1.3) * Math.min(1, i / 30)
   }, { gain })
 }
-function clap(ms, { gain = 0.16, pan = 0 } = {}) {
-  const hp = highpass(900)
-  lay(DR, ms, sec(0.35), (i) => {
-    const t = i / SR
-    const bursts = [0, 0.009, 0.019].reduce((v, o) => v + (t >= o ? Math.exp(-(t - o) / 0.007) : 0), 0)
-    return hp(rnd()) * (bursts * 0.6 + Math.exp(-t / 0.09) * 0.5)
-  }, { gain, pan, verb: 0.3 })
-}
-function hat(ms, { gain = 0.05, open = false, pan = 0.2 } = {}) {
-  const hp = highpass(7000)
-  lay(DR, ms, sec(open ? 0.35 : 0.06), (i) => hp(rnd()) * Math.exp(-i / sec(open ? 0.11 : 0.018)), { gain, pan })
-}
-function crash(ms, { gain = 0.08 } = {}) {
-  const hp = highpass(4200)
-  lay(DR, ms, sec(2.4), (i) => { const t = i / SR; return hp(rnd()) * Math.exp(-t / 0.8) * (0.7 + 0.3 * Math.sin(TAU * 5.3 * t)) }, { gain, verb: 0.5, pan: 0.15 })
-}
-// a boom under a hit: a sine falling through the floor
-function boom(ms, { gain = 0.45, from = 120, to = 34, len = 1.1 } = {}) {
-  gain *= 0.7
+// a bloom under a meeting: a sine falling slowly through the floor
+function boom(ms, { gain = 0.2, from = 90, to = 36, len = 2 } = {}) {
   let ph = 0
   lay(DR, ms, sec(len), (i) => {
     const t = i / SR
-    const f = to + (from - to) * Math.exp(-t / 0.09)
+    const f = to + (from - to) * Math.exp(-t / 0.25)
     ph += (TAU * f) / SR
-    // and three times its pitch, driven and short, which a phone can play
-    const mid = Math.tanh(Math.sin(ph * 3) * 3) * Math.exp(-t / 0.08) * 0.45
-    return (Math.sin(ph) * Math.exp(-t / (len * 0.45)) + mid) * Math.min(1, i / 40)
+    return Math.sin(ph) * Math.exp(-t / (len * 0.4)) * Math.min(1, i / sec(0.02))
   }, { gain })
 }
 // air: noise through a band that moves, swelling in or falling away
-function air(ms, len, { gain = 0.08, from = 400, to = 9000, rise = true, pan = 0, verb = 0.4, q = 2.2 } = {}) {
+function air(ms, len, { gain = 0.05, from = 400, to = 9000, rise = true, pan = 0, verb = 0.5, q = 2 } = {}) {
   const lp = lowpass(q)
   const L = sec(len / 1000)
   lay(FX, ms, L, (i) => {
     const k = i / L
-    const e = rise ? k ** 2.2 : (1 - k) ** 1.6
+    const e = rise ? Math.sin((k * Math.PI) / 2) ** 2.4 : (1 - k) ** 1.6
     return lp(rnd(), from * (to / from) ** k) * e
   }, { gain, pan, verb })
 }
-// the screen going out: a whine falling to nothing, and the click
-function off(ms, { gain = 0.1 } = {}) {
-  lay(FX, ms, sec(0.32), (i) => {
-    const t = i / SR
-    const hum = (Math.sin(TAU * 118 * t) * 0.6 + Math.sin(TAU * 236 * t) * 0.25) * Math.exp(-t / 0.07)
-    return hum * 0.7 + (i < sec(0.003) ? rnd() * 0.8 : 0)
-  }, { gain, verb: 0.3 })
-}
-// a flap: the card's slap, the board's body under it
-function flap(ms, { gain = 0.13, pan = 0 } = {}) {
+// a flap: the card's slap, the board's body under it, quietly
+function flap(ms, { gain = 0.07, pan = 0 } = {}) {
   const hp = highpass(1800, 1.2)
   lay(FX, ms, sec(0.07), (i) => {
     const t = i / SR
     return hp(rnd()) * Math.exp(-t / 0.006) * 0.8 + Math.sin(TAU * 190 * t) * Math.exp(-t / 0.014) * 0.7
-  }, { gain, pan, verb: 0.12 })
+  }, { gain, pan, verb: 0.2 })
 }
-// a phone waking: the inverter's buzz and a blip
-function wakeBuzz(ms, { gain = 0.08, pan = 0 } = {}) {
+// a phone waking: the inverter's buzz, faint
+function wakeBuzz(ms, { gain = 0.04, pan = 0 } = {}) {
   lay(FX, ms, sec(0.2), (i) => {
     const t = i / SR
-    return (Math.sin(TAU * 118 * t) * 0.6 + Math.sin(TAU * 236 * t) * 0.3 + rnd() * 0.12) * Math.exp(-t / 0.05)
+    return (Math.sin(TAU * 118 * t) * 0.6 + Math.sin(TAU * 236 * t) * 0.3 + rnd() * 0.1) * Math.exp(-t / 0.05)
   }, { gain, pan })
 }
-
-// a bell of the tower's carillon: struck bronze, its partials where a
-// tuned bell's are (the hum an octave under, the prime, the minor third
-// that makes a bell sound a bell, the fifth, the nominal an octave over),
-// each dying at its own rate, and the clapper's strike on top
-function carillon(ms, m, { gain = 0.06, decay = 2.6, pan = 0, verb = 0.7, delay = 0.12 } = {}) {
-  const f = hz(m)
-  const parts = [[0.5, 0.5, 1.4], [1, 0.9, 1], [1.2, 0.55, 0.62], [1.5, 0.3, 0.45], [2, 0.42, 0.55], [2.5, 0.16, 0.3], [3, 0.12, 0.22], [4.2, 0.06, 0.12]]
-  const hp = highpass(2600, 0.8)
-  lay(FX, ms, sec(decay * 3), (i) => {
-    const t = i / SR
-    const a = Math.min(1, i / sec(0.002))
-    let v = 0
-    for (const [r, g, d] of parts) v += g * Math.sin(TAU * f * r * t + r) * Math.exp(-t / (decay * d))
-    const strike = i < sec(0.012) ? hp(rnd()) * (1 - i / sec(0.012)) * 0.5 : 0
-    return (v * 0.3 + strike) * a
-  }, { gain, pan, verb, delay })
-}
-// a finger on glass: the soft knock of a pad on a screen and a click under it
-function tap(ms, { gain = 0.12, pan = 0, pitch = 1800 } = {}) {
-  const hp = highpass(900, 0.9)
-  lay(FX, ms, sec(0.08), (i) => {
-    const t = i / SR
-    const knock = Math.sin(TAU * 210 * t) * Math.exp(-t / 0.012) * 0.7
-    const click = hp(i < sec(0.003) ? rnd() : 0) * 0.6 + Math.sin(TAU * pitch * t) * Math.exp(-t / 0.006) * 0.3
-    return knock + click
-  }, { gain, pan, verb: 0.12 })
-}
-// the heart lit: a blip that rises, and the glint of it
-function pop(ms, { gain = 0.08, pan = 0 } = {}) {
-  let ph = 0
-  lay(FX, ms, sec(0.22), (i) => {
-    const t = i / SR
-    const f = 520 + 1400 * (1 - Math.exp(-t / 0.03))
-    ph += (TAU * f) / SR
-    return Math.sin(ph) * Math.exp(-t / 0.07) * Math.min(1, i / 60)
-  }, { gain, pan, verb: 0.35, delay: 0.25 })
-}
-// a heartbeat: the two of it, low and close
-function beatHeart(ms, { gain = 0.34 } = {}) {
-  kick(ms, { gain, deep: 0.35 })
-  kick(ms + 165, { gain: gain * 0.55, deep: 0.3 })
-}
-// a pixel landing: the smallest tick
-function tick(ms, { gain = 0.03, pan = 0, pitch = 4200 } = {}) {
-  lay(FX, ms, sec(0.02), (i) => Math.sin((TAU * pitch * i) / SR) * Math.exp(-i / sec(0.003)), { gain, pan, verb: 0.15 })
-}
-// a whoosh across: noise through a band that sweeps, panned with the move
-function whoosh(ms, len, { gain = 0.1, from = 300, to = 6000, panFrom = -0.8, panTo = 0.8 } = {}) {
-  const lp = lowpass(1.8)
-  const L = sec(len / 1000)
-  const s0 = at(ms)
-  for (let i = 0; i < L; i++) {
-    const k = s0 + i
-    if (k < 0) continue
-    if (k >= N) break
-    const q = i / L
-    const e = Math.sin(Math.PI * q) ** 1.4
-    const v = lp(rnd(), from * (to / from) ** Math.sin((Math.PI * q) / 2)) * e * gain
-    const p = panFrom + (panTo - panFrom) * q
-    const a = ((p + 1) * Math.PI) / 4
-    FX.L[k] += v * Math.cos(a); FX.R[k] += v * Math.sin(a)
-    RV.L[k] += v * Math.cos(a) * 0.3; RV.R[k] += v * Math.sin(a) * 0.3
-  }
-}
-// pixels coming apart: a crackle of short bursts, bright
-function crackle(ms, len, { gain = 0.06 } = {}) {
-  const hp = highpass(3000, 0.7)
-  const L = sec(len / 1000)
-  lay(FX, ms, L, (i) => {
-    const grain = Math.floor(i / sec(0.006))
-    const on = ((Math.sin(grain * 91.7) * 43758.5453) % 1 + 1) % 1 > 0.55
-    return on ? hp(rnd()) * (1 - i / L) : 0
-  }, { gain, verb: 0.25 })
+// a cell lit: the smallest glint
+function tick(ms, { gain = 0.012, pan = 0, pitch = 4200 } = {}) {
+  lay(FX, ms, sec(0.05), (i) => Math.sin((TAU * pitch * i) / SR) * Math.exp(-i / sec(0.012)), { gain, pan, verb: 0.5, delay: 0.3 })
 }
 
 // ── the score ───────────────────────────────────────────────────────────────
-const b = (n) => n * BEAT
-// B minor and D: the chords a bar each, the drop in D
-const Bm9 = [47, 54, 57, 61, 62]
-const Gmaj9 = [43, 50, 54, 57, 59, 62]
-const D9 = [38, 45, 50, 54, 57, 64]
-const A6 = [45, 52, 54, 57, 61]
-const Em9 = [40, 47, 50, 54, 57, 62]
+// D major and its B minor, the chords turning as the scenes do, the piano's
+// line answering the words, nothing louder than it needs to be
 const r = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
+const CH = {
+  Bm: [47, 54, 59, 61, 62], G: [43, 50, 54, 57, 59], D: [50, 57, 62, 64, 66], Asus: [45, 52, 57, 59, 62],
+  A: [45, 52, 57, 59, 61], DF: [42, 50, 57, 62, 66], Em: [40, 47, 54, 55, 59],
+}
+// [ms, chord, its root low, how long]
+const CHORDS = [
+  [0, 'Bm', 35, 2700], [2500, 'G', 31, 2700], [5000, 'D', 38, 2700], [7500, 'Asus', 33, 1350], [8750, 'A', 33, 1450],
+  [10000, 'Bm', 35, 1350], [11250, 'G', 31, 1450],
+  [12500, 'DF', 30, 1350], [13750, 'G', 31, 1450],
+  [15000, 'Em', 40, 1350], [16250, 'Asus', 33, 1350], [17500, 'A', 33, 1350],
+  [18750, 'G', 31, 650], [19250, 'A', 33, 1100], [20250, 'DF', 30, 1150],
+  [21300, 'D', 38, 1500], [22500, 'G', 31, 1350], [23750, 'D', 38, 1350],
+  [25000, 'Bm', 35, 1350], [26250, 'G', 31, 1350],
+  [27500, 'Em', 40, 1350], [28750, 'Asus', 33, 1850],
+  [30500, 'D', 38, 3250],
+]
+CHORDS.forEach(([ms, c, root, len], i) => {
+  const quiet = ms >= S.ifnot[0] && ms < S.lock[0]
+  pad(ms, len + 300, CH[c], { gain: quiet ? 0.018 : 0.026, cut: [320, quiet ? 800 : 1300], attack: i ? 0.5 : 1.4 })
+  // the root where a phone's speaker can play it, and the floor under it
+  low(ms, root + 12, len + 200, { gain: quiet ? 0.03 : 0.045 })
+  low(ms, root, len + 200, { gain: quiet ? 0.016 : 0.024 })
+})
 
-// 0 to 2: up close. The keys are the rhythm, a heartbeat under them, the
-// first chord breathing in
+// 0 to 3.75: the letter. The keys of lin's phone close and soft, and the
+// piano answering the words: the high note on `i loved you.`, falling, a
+// breath, and home as the last word lands
 typedA().forEach((ms, i) => {
   const sp = A.text[i] === ' '
-  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.12 : 0.16, pan: -0.15 })
+  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.05 : 0.065, pan: -0.1 })
 })
-pad(0, 2600, Bm9, { gain: 0.032, cut: [300, 900], attack: 0.35, release: 0.7 })
-;[0, b(2)].forEach((ms) => { kick(ms, { gain: 0.32, deep: 0.5 }); kick(ms + 180, { gain: 0.18, deep: 0.4 }) })
+const tA = typedA()
+const iLoved = A.text.indexOf('i loved')
+const iMaybe = A.text.indexOf('maybe')
+roll(0, [47, 54, 59], { vel: 0.3, gain: 0.07 })
+piano(60, 71, { vel: 0.35, gain: 0.09 })
+piano(tA[iLoved] - 20, 78, { vel: 0.55, gain: 0.11 })
+piano(tA[iLoved + 11], 76, { vel: 0.45, gain: 0.1 })
+piano(tA[iLoved + 11] + 310, 74, { vel: 0.4, gain: 0.09 })
+piano(tA[iMaybe] - 20, 73, { vel: 0.45, gain: 0.1 })
+roll(2500, [43, 50, 59], { vel: 0.3, gain: 0.065 })
+piano(tA[tA.length - 1], 74, { vel: 0.5, gain: 0.1, decay: 4 })
 
-// 1.75 to 4: back into the wall. Every phone of it waking is a note of
-// the pentatonic, scattered, the city coming on; the wall's line is three
-// chords on three eighths, and the colours going round are a run up the
-// pentatonic a 32nd at a time
-const PENTA = [71, 74, 76, 78, 81, 83, 86, 88]
-for (let i = 0; i < 16; i++) {
-  pluck(2320 + r(i + 3) * 620, PENTA[(i * 5) % PENTA.length], { gain: 0.03, decay: 0.12, cut: 2600, pan: ((i % 5) / 2 - 1) * 0.7, delay: 0.35, verb: 0.4 })
-}
-air(S.wall[0], S.lines[0] - S.wall[0], { gain: 0.07, from: 300, to: 8000 })
-whoosh(S.wall[0] - 40, 560, { gain: 0.11, from: 5000, to: 400, panFrom: 0.3, panTo: -0.3 })
-boom(S.wall[0], { gain: 0.3, from: 110, to: 36, len: 0.9 })
-;[[S.lines[0], Gmaj9], [S.lines[1], A6], [S.lines[2], D9]].forEach(([ms, ch], i) => {
-  boom(ms, { gain: 0.24 + i * 0.08, from: 150, to: 40, len: 0.7 })
-  pad(ms, i === 2 ? 1000 : 240, ch, { gain: 0.045, cut: [2600, 1100], attack: 0.005, release: i === 2 ? 0.6 : 0.15, verb: 0.6 })
+// 3.75 to 10: the hall. Every letter near the lens coming on is a glint of
+// the pentatonic, where it is, as the light goes out over the wall; the
+// hall's air swelling as it opens; the line's words on the piano
+const PENTA = [74, 76, 78, 81, 83, 86, 88, 90, 93]
+wallOf().forEach((l, n) => {
+  if (l.home || l.dist > 11 || r(n + 5) > 0.22) return
+  const ms = wakeOf(l.dist, l.seed) + 70
+  bell(ms, PENTA[Math.floor(r(n + 9) * PENTA.length)], { gain: 0.016 / (1 + l.dist / 4), decay: 0.7, pan: Math.max(-0.85, Math.min(0.85, l.i / 7)), verb: 0.7, delay: 0.25, p2: 0.12 })
 })
-crash(S.lines[2], { gain: 0.05 })
-for (let k = 0; k < 9; k++) pluck(S.wave + k * 62.5, [74, 76, 78, 81, 83, 86, 88, 90, 93][k], { gain: 0.035, decay: 0.1, cut: 5000, pan: (k / 4 - 1) * 0.6, delay: 0.3, verb: 0.35 })
-;[b(6), b(7)].forEach((ms) => kick(ms, { gain: 0.38 }))
-clap(b(7), { gain: 0.12 })
-// the whip, and the floor going out under it
-whoosh(S.whip[0] - 80, 380, { gain: 0.16, from: 400, to: 9000, panFrom: 0.7, panTo: -0.7 })
-boom(4000, { gain: 0.32, from: 90, to: 30, len: 1.2 })
+air(S.wake, 2800, { gain: 0.05, from: 300, to: 6000 })
+air(S.wake + 2800, 2400, { gain: 0.035, from: 6000, to: 1200, rise: false })
+roll(5000, [50, 57, 66], { vel: 0.35, gain: 0.07 })
+;[[S.lines[0], 81], [S.lines[1], 78], [S.lines[2], 76], [S.lines[2] + 312, 74]].forEach(([ms, m], i) => piano(ms, m, { vel: 0.45 - i * 0.03, gain: 0.1 }))
+roll(7500, [45, 52, 57], { vel: 0.3, gain: 0.065 })
+piano(8125, 76, { vel: 0.38, gain: 0.09 })
+piano(8750, 73, { vel: 0.4, gain: 0.09 })
+// lin's letter coming away from the wall to the lens
+air(S.lift[0], S.lift[1] - S.lift[0] + 100, { gain: 0.045, from: 250, to: 3800, q: 1.4 })
+piano(9375, 76, { vel: 0.38, gain: 0.085 })
 
-// 4 to 7.5: the berkeley wall. The construction set out in ticks; the tower
-// drawn from the ground up as a run climbing a sixteenth at a time; the
-// lantern lit with the carillon's first bell and a phrase of it while the
-// letters go round; a finger, a letter brought near, a heart, a pop
-for (let i = 0; i < 16; i++) tick(S.guides + i * 24, { gain: 0.025, pan: (i % 2 ? 1 : -1) * 0.4, pitch: 3200 + (i % 4) * 300 })
-pad(4000, 3600, Em9, { gain: 0.03, cut: [400, 1800], attack: 0.8, release: 1.2, verb: 0.7 })
-;[50, 54, 57, 59, 62, 66, 69, 71, 74, 78, 81, 83].forEach((m, i) => pluck(S.plot[0] + i * 62.5, m, { gain: 0.036 + i * 0.0025, decay: 0.1, cut: 4200, pan: ((i % 2) * 2 - 1) * 0.15, delay: 0.22, verb: 0.32 }))
-bass(4000, 40, 950, { gain: 0.1 })
-air(S.plot[0], S.lamp - S.plot[0], { gain: 0.05, from: 600, to: 9000 })
-// the lantern
-carillon(S.lamp, 74, { gain: 0.1, decay: 3 })
-carillon(S.lamp + 4, 62, { gain: 0.05, decay: 3.4, pan: -0.15 })
-crash(S.lamp, { gain: 0.04 })
-kick(S.lamp, { gain: 0.42 })
-;[[375, 69], [500, 71], [750, 66], [1000, 69]].forEach(([d, m], i) => carillon(S.lamp + d, m, { gain: 0.05, decay: 2.2, pan: (i % 2 ? 0.25 : -0.25) }))
-whoosh(S.ring - 50, 700, { gain: 0.08, from: 500, to: 5000, panFrom: -0.6, panTo: 0.6 })
-for (let k = 10; k <= 14; k++) kick(b(k), { gain: k === 12 ? 0.4 : 0.3 })
-for (let k = 20; k < 30; k++) hat(b(k / 2), { gain: k % 2 ? 0.025 : 0.038 })
-;[43, 40, 38].forEach((m, i) => bass(5000 + i * 500, m, 460, { gain: 0.12 }))
-// the finger, the letter brought to the lens, the heart
-tap(S.tap1, { gain: 0.16 })
-whoosh(S.open[0] + 20, 450, { gain: 0.07, from: 300, to: 3000, panFrom: 0.1, panTo: -0.1 })
-pad(S.open[0], 1400, Gmaj9, { gain: 0.035, cut: [900, 2600], attack: 0.15, release: 0.8, verb: 0.7 })
-tap(S.tap2, { gain: 0.15, pan: 0.2, pitch: 2400 })
-pop(S.tap2 + 10, { gain: 0.16, pan: 0.2 })
-boom(S.tap2, { gain: 0.16, from: 180, to: 60, len: 0.35 })
-for (let i = 0; i < 8; i++) bell(S.tap2 + 30 + i * 28, [86, 90, 93, 95, 98, 93, 100, 102][i], { gain: 0.012, decay: 0.25, pan: (r(i + 40) - 0.5) * 1.2, verb: 0.5, p2: 0.1 })
-off(7290, { gain: 0.06 })
+// 10 to 12.5: sent privately. The key, the words lifting off the glass, the
+// screen saying so, and the note going up as a light: a run up the
+// pentatonic, softly, after it
+roll(10000, [47, 54, 59], { vel: 0.3, gain: 0.065 })
+piano(10000, 74, { vel: 0.42, gain: 0.095 })
+key(S.press, { pitch: 1500, body: 300, gain: 0.08, pan: -0.05 })
+;[170, 250, 330].forEach((d, i) => tick(S.press + d, { gain: 0.01, pitch: 3000 + i * 400 }))
+bell(S.press + 410, 81, { gain: 0.03, decay: 1.2, pan: -0.1 })
+bell(S.press + 530, 86, { gain: 0.026, decay: 1.4, pan: 0.1 })
+roll(11250, [43, 50, 59], { vel: 0.3, gain: 0.065 })
+piano(S.privately, 71, { vel: 0.4, gain: 0.09 })
+;[74, 76, 78, 81, 83, 86, 88].forEach((m, i) => bell(S.rise + i * 150, m, { gain: 0.016 + i * 0.0015, decay: 0.9, pan: i * 0.05, verb: 0.65, delay: 0.3, p2: 0.12 }))
+air(S.rise, S.send[1] - S.rise + 300, { gain: 0.04, from: 600, to: 9000 })
 
-// 7.5 to 9.5: the send. The beat, cut on the beat; the words on it
-for (let k = 15; k <= 18; k++) kick(b(k), { gain: 0.42 })
-;[b(16), b(18)].forEach((ms) => clap(ms))
-for (let k = 30; k < 37; k++) hat(b(k / 2), { gain: k % 2 ? 0.035 : 0.05 })
-key(S.press, { pitch: 1500, body: 300, gain: 0.16, pan: -0.1 })
-tap(S.press, { gain: 0.1, pan: 0.1 })
-bell(S.press + 60, 88, { gain: 0.03, decay: 0.2, verb: 0.2, b: FX })
-bell(S.press + 150, 93, { gain: 0.026, decay: 0.3, verb: 0.2, b: FX })
-air(S.press + 190, 430, { gain: 0.14, from: 500, to: 12000, pan: 0 })
-boom(S.press + 620, { gain: 0.25, from: 200, to: 50, len: 0.5 })
-;[S.sendIt, S.privately].forEach((ms, i) => {
-  boom(ms, { gain: 0.28, from: 150, to: 40, len: 0.6 })
-  pad(ms, 420, i ? A6 : Gmaj9, { gain: 0.04, cut: [2600, 1200], attack: 0.005, release: 0.25, verb: 0.5 })
-})
-bass(b(15), 31, 480); bass(b(16), 43, 480); bass(b(17), 38, 480)
-off(S.off, { gain: 0.13 })
-
-// 9.5 to 11.5: the other. Out of the black, warmer: the bass walks, the keys
-// are kai's, the line in three on the beats, and the note away
-wakeBuzz(S.bWake, { gain: 0.06, pan: 0.15 })
+// 12.5 to 15: kai. A breath of the inverter, kai's keys a little further
+// off, the piano a phrase lower, as if from another room; kai's light going
+// up as lin's did, a third lower
+wakeBuzz(S.kWake, { pan: 0.15 })
 typedB().forEach((ms, i) => {
   const sp = B.text[i] === ' '
-  key(ms, { pitch: sp ? 1250 : 2100 + ((i * 271) % 800), body: sp ? 240 : 400 + ((i * 41) % 110), gain: sp ? 0.07 : 0.095, pan: 0.18 })
+  key(ms, { pitch: sp ? 1250 : 2100 + ((i * 271) % 800), body: sp ? 240 : 400 + ((i * 41) % 110), gain: sp ? 0.04 : 0.055, pan: 0.18 })
 })
-pad(S.bWake, 2000, [43, 50, 54, 57, 62], { gain: 0.035, cut: [500, 1500], attack: 0.5 })
-for (let k = 20; k <= 22; k++) kick(b(k), { gain: 0.36 })
-clap(b(21), { gain: 0.12 })
-for (let k = 39; k < 46; k++) hat(b(k / 2), { gain: k % 2 ? 0.03 : 0.045 })
-;[43, 43, 50, 47, 45, 45].forEach((m, i) => bass(S.bWake + 250 + i * 250, m - 12, 220, { gain: 0.13 }))
-;[S.read, S.ifThey].forEach((ms) => pluck(ms, 78, { gain: 0.05, decay: 0.3, delay: 0.4 }))
-key(S.bSend, { pitch: 1500, body: 300, gain: 0.15, pan: 0.15 })
-tap(S.bSend, { gain: 0.1, pan: 0.2 })
-bell(S.bSend + 60, 88, { gain: 0.028, decay: 0.2, verb: 0.2 })
-bell(S.bSend + 150, 93, { gain: 0.024, decay: 0.3, verb: 0.2 })
-whoosh(S.bSend + 170, 330, { gain: 0.07, from: 6000, to: 500, panFrom: 0, panTo: 0.5 })
+roll(12500, [42, 50, 57], { vel: 0.3, gain: 0.065 })
+piano(S.kRead, 78, { vel: 0.42, gain: 0.095 })
+piano(S.kIf, 76, { vel: 0.4, gain: 0.09 })
+roll(13750, [43, 50, 59], { vel: 0.3, gain: 0.06 })
+piano(S.kIf + 312, 74, { vel: 0.42, gain: 0.095 })
+piano(S.kIf + 312 + 470, 71, { vel: 0.36, gain: 0.085 })
+key(S.kSend, { pitch: 1500, body: 300, gain: 0.07, pan: 0.15 })
+bell(S.kSend + 410, 78, { gain: 0.028, decay: 1.2, pan: 0.15 })
+bell(S.kSend + 530, 83, { gain: 0.024, decay: 1.4, pan: 0.25 })
+;[71, 74, 76, 78, 81, 83].forEach((m, i) => bell(S.kRise + i * 150, m, { gain: 0.015 + i * 0.0015, decay: 0.9, pan: 0.2 - i * 0.06, verb: 0.65, delay: 0.3, p2: 0.12 }))
 
-// 11.5 to 13: the week. A clack for every flap, the riser under them, the
-// roll quickening; the finger on the time, and the glass opening out of it
-S.days.forEach((d) => [0, 28, 56].forEach((o, c) => flap(d + o, { gain: 0.12, pan: (c - 1) * 0.35 })))
-for (let i = 0; i < 7; i++) if (i !== 4) flap(S.time + i * 24, { gain: 0.09, pan: (i / 3 - 1) * 0.5 })
-air(S.wait[0], 2250, { gain: 0.07, from: 200, to: 11000, q: 3.5 })
-{
-  // the roll: eighths, then sixteenths, then thirty-seconds, into the drop
-  const hits = []
-  for (let ms = 12000; ms < 12750; ms += 250) hits.push(ms)
-  for (let ms = 12750; ms < 13500; ms += 125) hits.push(ms)
-  for (let ms = 13500; ms < S.drop - 250; ms += 62.5) hits.push(ms)
-  hits.forEach((ms, i) => clap(ms, { gain: 0.02 + 0.05 * (i / hits.length), pan: ((i % 2) * 2 - 1) * 0.15 }))
-}
-pad(S.wait[0], 2250, [47, 54, 59, 62, 66], { gain: 0.03, cut: [300, 5200], attack: 1.6, release: 0.1, q: 2.4 })
-tap(S.tap3, { gain: 0.2 })
-bell(S.tap3 + 20, 86, { gain: 0.03, decay: 0.5, verb: 0.4 })
-whoosh(S.tap3 + 30, 250, { gain: 0.09, from: 200, to: 7000, panFrom: 0, panTo: 0 })
-for (let k = 23; k <= 27; k++) kick(b(k), { gain: 0.34 })
-// the run: a climbing arpeggio under the two of them running, and from the
-// moment they are held a breath of nothing before the drop
-;[59, 62, 66, 69, 71, 74, 78, 81].forEach((m, i) => pluck(S.run[0] - 100 + i * 105, m, { gain: 0.04 + i * 0.004, decay: 0.16, cut: 4000, pan: ((i % 2) * 2 - 1) * 0.3, delay: 0.2 }))
-air(S.drop - 210, 210, { gain: 0.035, from: 2500, to: 9000 })
+// 15 to 18.1: every mutual is revealed on saturday at nine. The board's
+// cards, a pulse coming up under them like a held breath, the chord
+// climbing to the dominant and waiting there
+S.days.forEach((d) => [0, 24, 48].forEach((o, c) => flap(d + o, { gain: 0.06, pan: (c - 1) * 0.3 })))
+for (let i = 0; i < 7; i++) if (i !== 4) flap(S.time + i * 40, { gain: 0.05, pan: (i / 3 - 1) * 0.4 })
+bell(S.place, 81, { gain: 0.02, decay: 1.2 })
+roll(15000, [40, 47, 55], { vel: 0.3, gain: 0.06 })
+piano(S.wLine[0], 71, { vel: 0.38, gain: 0.085 })
+piano(S.wLine[1], 74, { vel: 0.42, gain: 0.09 })
+roll(16250, [45, 52, 57], { vel: 0.32, gain: 0.06 })
+piano(16250, 76, { vel: 0.42, gain: 0.09 })
+piano(17500, 78, { vel: 0.45, gain: 0.09 })
+for (let k = 0; k < 8; k++) thump(15625 + k * 312.5, { gain: 0.1 + k * 0.02 })
+air(S.wait[0] + 1200, S.meet - S.wait[0] - 1200, { gain: 0.045, from: 300, to: 7000, q: 2.4 })
 
-// 14: the drop. They are held: the chord, the kick, the crash, the motif
-const DROP = S.drop
-boom(DROP, { gain: 0.6, from: 140, to: 32, len: 1.6 })
-crash(DROP, { gain: 0.15 })
-pad(DROP, 2700, D9, { gain: 0.09, cut: [5200, 1800], attack: 0.01, release: 0.9, verb: 0.6, pan: 0.5 })
-pad(DROP, 2300, D9.slice(2).map((m) => m + 12), { gain: 0.03, cut: [7000, 2600], attack: 0.01, release: 0.8, verb: 0.7, pan: 0.6 })
-for (let k = 28; k <= 32; k++) kick(b(k), { gain: 0.45 })
-;[b(29), b(31)].forEach((ms) => clap(ms, { gain: 0.18 }))
-for (let k = 57; k < 66; k++) hat(b(k / 2), { gain: k % 2 ? 0.035 : 0.05, open: k % 4 === 3 })
-;[38, 38, 45, 43].forEach((m, i) => bass(DROP + i * 500, m, 470, { gain: 0.16 }))
-;[[0, 78], [250, 81], [500, 86], [1000, 85], [1500, 81]].forEach(([d, m]) => bell(DROP + d, m, { gain: 0.045, decay: 0.9, pan: (d / 1000) - 0.4, delay: 0.35 }))
-// `it's mutual.` typed in the glass's cells, a soft tick a letter, and the
-// bell when the last of it lands
+// 18.1 to 22.5: nine o'clock. The two lights touch: the bloom, a chord
+// rolled across the whole keyboard. The two of them run: an arpeggio up
+// under their feet. They are held: the chord opens. `it's mutual.`: a soft
+// tick a letter, and home, the whole of it, as the last lands.
+boom(S.meet, { gain: 0.24, from: 80, to: 36, len: 2.4 })
+roll(S.meet, [31, 43, 50, 59, 66, 69, 74, 78], { gap: 60, vel: 0.5, gain: 0.08, decay: 4 })
+bell(S.meet + 40, 86, { gain: 0.03, decay: 2.2 })
+air(S.meet - 400, 450, { gain: 0.05, from: 1500, to: 9000 })
+;[57, 61, 64, 69, 73, 76, 81].forEach((m, i) => piano(S.run + i * 142, m, { vel: 0.38 + i * 0.03, gain: 0.08, decay: 2.4, pan: (i / 6 - 0.5) * 0.4 }))
+roll(S.drop, [30, 42, 57, 62, 66, 74], { gap: 40, vel: 0.5, gain: 0.08, decay: 4 })
+boom(S.drop, { gain: 0.16, from: 70, to: 36, len: 1.6 })
+bell(S.drop + 30, 90, { gain: 0.024, decay: 1.8 })
 const ST = STORY_TIMES
 const TYPE_MS = (ST.said - ST.say) / [...SAY].length
-;[...SAY].forEach((c, k) => { if (c !== ' ') key(reelAt(ST.say + TYPE_MS * (k + 1)), { pitch: 3000, body: 520, gain: 0.05, pan: -0.1 + k * 0.02 }) })
+;[...SAY].forEach((c, k) => { if (c !== ' ') key(reelAt(ST.say + TYPE_MS * (k + 1)), { pitch: 3000, body: 520, gain: 0.03, pan: -0.1 + k * 0.02 }) })
 const SAID = reelAt(ST.said)
-;[[74, 0, -0.3], [78, 110, 0.15], [81, 220, 0.3], [86, 360, 0]].forEach(([m, d, p]) => bell(SAID + d, m, { gain: 0.045, decay: 1.4, pan: p, p2: 0.2 }))
+roll(SAID, [26, 38, 50, 57, 62, 66, 69, 74, 78], { gap: 55, vel: 0.55, gain: 0.085, decay: 4.5 })
+;[[86, 0, -0.3], [90, 120, 0.15], [93, 240, 0.3], [98, 380, 0]].forEach(([m, d, p]) => bell(SAID + d, m, { gain: 0.026, decay: 1.8, pan: p, p2: 0.18 }))
+boom(SAID, { gain: 0.2, from: 70, to: 37, len: 2.6 })
 
-// 16.5 to 18.5: the question. The drums go; a heartbeat under it, a low
-// bell for each line, and the chord held open
-air(S.ask[0] - 300, 900, { gain: 0.04, from: 9000, to: 600, rise: false })
-pad(S.ask[0], 2300, [43, 50, 54, 57, 62, 66], { gain: 0.034, cut: [700, 1500], attack: 0.25, release: 0.9, verb: 0.75 })
-;[S.q[0], S.q[1], S.q[2], S.q[2] + 500].forEach((ms) => beatHeart(ms, { gain: 0.3 }))
-;[[S.q[0], 62], [S.q[1], 66], [S.q[2], 69]].forEach(([ms, m], i) => carillon(ms, m, { gain: 0.045 + i * 0.01, decay: 2, pan: (i - 1) * 0.2, verb: 0.75 }))
-// 18.5: the letters to pixels
-crackle(S.burst, 240, { gain: 0.12 })
-boom(S.burst, { gain: 0.2, from: 200, to: 70, len: 0.4 })
-bell(S.burst, 98, { gain: 0.02, decay: 0.4 })
-// 18.65 to 20: the two lights going round each other, quicker each turn: a
-// note a light at each half turn, heard where each light is, rising, and the
-// air drawn in under them
-{
-  let last = [-1, -1]
-  const SCALE = [62, 66, 69, 71, 74, 78, 81, 83, 86, 90, 93, 95]
-  for (let ms = ORBIT.from; ms < S.meet - 20; ms += 5) {
-    for (const side of [0, 1]) {
-      const o = orbitOf(side, ms)
-      const half = Math.floor(o.turn / (Math.PI / 2))
-      if (half !== last[side]) {
-        last[side] = half
-        const pan = Math.max(-0.9, Math.min(0.9, (o.x - 540) / 380))
-        const m = SCALE[Math.min(SCALE.length - 1, Math.floor(o.k * SCALE.length))] + (side ? 0 : -5)
-        bell(ms, m, { gain: 0.022 + o.k * 0.02, decay: 0.35, pan, verb: 0.45, delay: 0.2, p2: 0.2 })
-      }
-    }
-  }
+// 22.5 to 25: you both find out. The line, warm, the two notes a note each
+roll(22500, [43, 50, 59], { vel: 0.35, gain: 0.065 })
+piano(S.both, 78, { vel: 0.48, gain: 0.1 })
+piano(S.both + 312, 76, { vel: 0.44, gain: 0.095 })
+piano(S.both + 624, 74, { vel: 0.4, gain: 0.09 })
+roll(23750, [38, 50, 57, 66], { vel: 0.36, gain: 0.065 })
+piano(23750, 81, { vel: 0.45, gain: 0.09 })
+piano(24375, 78, { vel: 0.4, gain: 0.085 })
+
+// 25 to 27.5: the ones that never meet. The music thins to almost nothing;
+// a light going out is a glint falling away; the line falls with them
+const FALL = [93, 90, 88, 86, 83, 81, 78, 76, 74, 71, 69, 66, 64, 62]
+FALL.map((m, i) => [S.ifnot[0] + 300 + (i / FALL.length) * 1900 + r(i + 200) * 90, m, (r(i + 300) - 0.5) * 1.4]).forEach(([ms, m, pan]) => bell(ms, m, { gain: 0.009, decay: 0.9, pan, verb: 0.75, delay: 0.3, p2: 0.1 }))
+piano(S.nLine[0], 73, { vel: 0.32, gain: 0.08 })
+piano(S.nLine[1], 71, { vel: 0.3, gain: 0.075 })
+piano(S.nLine[1] + 312, 69, { vel: 0.3, gain: 0.075 })
+piano(S.nLine[1] + 940, 66, { vel: 0.28, gain: 0.07, decay: 4 })
+
+// 27.5 to 33.75: the question, asked on three notes and not answered: the
+// chord left open. Then the name lit out of the last light, every cell a
+// glint, and home at last, held under the address to the end
+air(S.ask[0] - 300, 900, { gain: 0.025, from: 6000, to: 600, rise: false })
+roll(27500, [40, 47, 55], { vel: 0.28, gain: 0.06 })
+;[[S.q[0], 78], [S.q[1], 76], [S.q[2], 76]].forEach(([ms, m], i) => piano(ms, m, { vel: 0.42 - i * 0.02, gain: 0.095, decay: i === 2 ? 4.5 : 3.4 }))
+roll(28750, [45, 52, 57, 62], { vel: 0.28, gain: 0.055 })
+// and the leading note, left hanging until the name comes
+piano(29375, 73, { vel: 0.3, gain: 0.07, decay: 4 })
+for (let i = 0; i < 70; i++) {
+  const d = (i / 70) ** 0.8 * (S.lock[1] - S.lock[0]) + r(i + 70) * 40
+  tick(S.lock[0] + d, { gain: 0.007 + 0.006 * (1 - i / 70), pan: (r(i + 90) - 0.5) * 1.2, pitch: 3000 + r(i + 11) * 3200 })
 }
-air(ORBIT.from, S.meet - ORBIT.from, { gain: 0.09, from: 300, to: 12000, q: 2.8 })
-pad(ORBIT.from, S.meet - ORBIT.from + 50, [47, 54, 59, 62, 66, 69], { gain: 0.03, cut: [300, 6000], attack: 1.1, release: 0.05, q: 2 })
-kick(S.burst + 500, { gain: 0.26, deep: 0.4 })
-kick(S.burst + 1000, { gain: 0.3, deep: 0.4 })
-// 20: they meet. The flash, and the name: the whole chord, the tower's bell,
-// and a tick for every pixel coming home
-boom(S.meet, { gain: 0.62, from: 150, to: 30, len: 1.8 })
-crash(S.meet, { gain: 0.14 })
-kick(S.meet, { gain: 0.5 })
-pad(S.meet, 2000, [38, 50, 57, 62, 66, 69, 74], { gain: 0.07, cut: [6000, 1400], attack: 0.01, release: 1.4, verb: 0.75, pan: 0.5 })
-carillon(S.meet, 74, { gain: 0.08, decay: 3.2 })
-carillon(S.meet + 3, 81, { gain: 0.04, decay: 2.6, pan: 0.2 })
-for (let i = 0; i < 46; i++) {
-  const d = 30 + (i / 46) ** 1.3 * 620 + r(i + 70) * 20
-  tick(S.meet + d, { gain: 0.02, pan: (r(i + 90) - 0.5) * 1.4, pitch: 3600 + r(i + 11) * 2400 })
-}
-// the address, typed
-for (let k = 0; k < 'celestual.us'.length; k++) key(S.url + 20 + k * 38, { pitch: 2600 + ((k * 211) % 700), body: 480, gain: 0.05, pan: 0.05 })
-pad(S.lock[1], 1300, [50, 57, 62, 66, 69], { gain: 0.022, cut: [1200, 600], attack: 0.2, release: 1, verb: 0.85 })
+roll(S.lock[0], [26, 38, 50, 57, 62, 64, 66, 69, 74], { gap: 70, vel: 0.5, gain: 0.08, decay: 5 })
+boom(S.lock[0], { gain: 0.16, from: 70, to: 37, len: 3 })
+bell(S.lock[0] + 60, 86, { gain: 0.022, decay: 2.4 })
+piano(S.url, 81, { vel: 0.4, gain: 0.085, decay: 4 })
+piano(S.url + 625, 86, { vel: 0.36, gain: 0.075, decay: 4.5 })
 
 // ── the mix ─────────────────────────────────────────────────────────────────
 // the music ducks under every kick, as a pumping heart would
@@ -595,7 +484,7 @@ for (let i = 0; i < N; i++) {
 // tape: a soft saturation on the whole, and the last second let go
 let peak = 0
 for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]))
-const drive = 1.4 / Math.max(1e-6, peak)
+const drive = 1.15 / Math.max(1e-6, peak)
 const buf = Buffer.alloc(44 + N * 4)
 buf.write('RIFF', 0); buf.writeUInt32LE(36 + N * 4, 4); buf.write('WAVE', 8)
 buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(2, 22)

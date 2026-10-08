@@ -19,6 +19,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { MS } from '../app/src/studio/parts/reel-time.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -26,7 +27,7 @@ const id = args.find((a) => !a.startsWith('--')) || 'celestual-reel'
 const opt = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d }
 const jobs = Number(opt('jobs', 3))
 const fps = Number(opt('fps', 60))
-const ms = Number(opt('ms', 22000))
+const ms = Number(opt('ms', MS))
 const scratch = process.env.FRAMES || join(root, '.studio-frames', id)
 const outDir = process.env.OUT || join(root, 'design/campaign')
 const wav = join(outDir, `${id}.wav`)
@@ -73,7 +74,7 @@ const enc = ['-c:v', 'libx264', '-preset', 'slow', '-tune', 'grain', '-pix_fmt',
 const input = ['-framerate', String(fps), '-i', join(scratch, 'f%05d.jpg'), '-i', wav]
 console.log('finishing')
 // the thirty: each frame the sixty's 2k and 2k+1 laid over each other, so a
-// cut on a beat (always an even frame of the sixty) is never half one shot
+// cut on a bar (always an even frame of the sixty) is never half one shot
 // and half the next
 const half = spawnSync('ffmpeg', ['-v', 'error', '-y', ...input, '-filter_complex', fc('tmix=frames=2,select=mod(n\\,2),setpts=N/(30*TB)'), '-map', '[v]', '-map', '1:a', '-r', '30', '-crf', '19', ...enc, join(outDir, `${id}.mp4`)], { stdio: 'inherit' })
 if (half.status !== 0) throw new Error('ffmpeg, the thirty')

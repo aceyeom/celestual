@@ -1,30 +1,36 @@
 // ── the reel's clock ────────────────────────────────────────────────────────
 //
-// Twenty two seconds cut to a score at 120 beats a minute: a beat is 500ms,
-// a bar 2s, eleven bars, and every cut, every word and every hit of the
-// sound lands on one of them. The picture (reel.jsx) and the score
+// Thirty three and three quarter seconds at 96 beats a minute: a beat is
+// 625ms, a bar 2.5s, thirteen bars and a half, every scene a bar or a bar
+// and a bit, and every word and every hit of the sound on a beat. The picture (reel.jsx) and the score
 // (scripts/studio-score.mjs) both read this file, so a key is heard on the
-// frame its letter lands and the drop is the frame the two of them meet.
-// Plain script, so node reads it as the page does.
+// frame its letter lands. Plain script, so node reads it as the page does.
+//
+// The story, a bar or so a scene: lin writes the thing never said; the
+// camera falls back into a hall of everybody's; lin's comes away from the
+// wall and is sent privately, and goes up as a light; somewhere else kai
+// writes one too; every mutual is revealed on saturday at nine; at nine the
+// two lights meet and it is mutual; they both find out; the ones that never
+// meet go out, and nobody knows; and the question, to whoever is watching.
 
 import { filmStory } from '../../wall/pixmark.js'
 
-export const MS = 22000
-export const BPM = 120
+export const MS = 33750
+export const BPM = 96
 export const BEAT = 60000 / BPM
+export const BAR = BEAT * 4
 export const beat = (n) => n * BEAT
 
 export const SAY = 'it’s mutual.'
-export const A = { name: 'lin', to: 'kai', tint: 'ice', seed: 'lin', text: 'do you ever think about me when you pass by our cafe?' }
-// a note that stands on its own: kai has not read lin's, and cannot until
-// the reveal, so it never answers it
-export const B = { name: 'kai', to: 'lin', tint: 'amber', seed: 'kai', text: 'i still order two at our cafe.' }
+export const A = { name: 'lin', to: 'kai', tint: 'ice', seed: 'lin', text: 'i never said this two years ago. i loved you. maybe i still do.' }
+// kai's own note: kai has not read lin's, and cannot until the reveal
+export const B = { name: 'kai', to: 'lin', tint: 'amber', seed: 'kai', text: 'i was waiting for you to say it first.' }
 
 // A person's rhythm, the same on every frame: a beat a letter, a longer one
 // after a space, longer after a stop, and a small unevenness off the letter
 // itself. `step` is the beat, or the beat for each letter. Answers the
 // moment each character lands.
-export function rhythm(text, from, step) {
+export function rhythm(text, from, step, stop = 2.5) {
   const out = []
   let t = from
   for (let i = 0; i < text.length; i++) {
@@ -32,7 +38,7 @@ export function rhythm(text, from, step) {
     const prev = text[i - 1] || ''
     const st = typeof step === 'function' ? step(i) : step
     const wobble = ((Math.sin((i + 1) * 12.9898 + c.charCodeAt(0) * 78.233) * 43758.5453) % 1 + 1) % 1
-    t += st * (0.7 + wobble * 0.6) + (prev === ' ' ? st * 0.4 : 0) + (/[.?,]/.test(prev) ? st * 2.5 : 0)
+    t += st * (0.7 + wobble * 0.6) + (prev === ' ' ? st * 0.4 : 0) + (/[.?,]/.test(prev) ? st * stop : 0)
     out.push(t)
   }
   return out
@@ -40,73 +46,60 @@ export function rhythm(text, from, step) {
 
 // ── the scenes, in ms ───────────────────────────────────────────────────────
 export const S = {
-  // the glass up close, the letters a hand high, the camera after the cursor
-  macro: [0, 2000],
-  // the camera falls back through the phone into the wall of letters, the
-  // wall's own line over it a line an eighth, and a wave of the twelve
-  // colours over every letter on the beat after
-  wall: [1750, 4000], lines: [2500, 2750, 3000], wave: 3000,
-  // the whip into the dark on the bar
-  whip: [3850, 4150],
-  // the berkeley wall: the campanile drawn as its elevation is, from the
-  // ground up, its lantern lit on the beat, the campus's letters turning
-  // round it; a finger stops them, opens one and hearts it
-  berk: [4000, 7500], guides: 4000, plot: [4100, 4950], lamp: 5000, title: 4500, ring: 5000,
-  stop: [5250, 5900], tap1: 6000, open: [6000, 6450], tap2: 6750,
-  // send, the envelope through the lens, the words on the beats, the screen
-  // going out
-  send: [7500, 9500], press: 7500, sendIt: 8000, privately: 8500, off: 9000,
-  // out of the black, the other phone, and the line in three
-  other: [9500, 11500], bWake: 9500, read: 10000, ifThey: 10500, bSend: 11100,
-  // the week on the flaps, a sixteenth a day, the city under them, the time
-  // of the reveal whole on the beat, and a finger on it that opens the glass
-  wait: [11500, 13000], days: [11500, 11625, 11750, 11875, 12000, 12125], time: 12250, tap3: 12750,
-  // the run, on the glass at the size of the room, landing on the drop
-  run: [13000, 14000],
-  // the drop: they are held, the light goes over everything, the mark, and
-  // the sentence said on the bar
-  drop: 14000, mutual: [14000, 16500], said: 16000,
-  // the question, a line a beat, then its letters go to the phone's pixels,
-  // two of them circling, and they meet on the last bar: the name, drawn
-  ask: [16500, 22000], q: [16500, 17000, 17500], burst: 18500, meet: 20000, lock: [20000, 20650], url: 20650,
+  // the glass: the first line already there, then the rest, the hardest
+  // words slowest, a held breath before the last
+  letter: [0, 3750],
+  // one shot from the letter on: back from the glass into the hall, the
+  // light going out over it from lin's and up it, and lin's letter coming
+  // away from the wall to the camera
+  wall: [3750, 10000], wake: 3700, lines: [5625, 6250, 6875], linesOut: 8750, lift: [8300, 10000],
+  // send it privately, and it goes up as a light
+  send: [10000, 12500], sendIt: 10000, press: 10625, privately: 11250, rise: 11500, sendOut: 12100,
+  // somewhere else, kai writes one too, and it goes up too
+  kai: [12500, 15000], kWake: 12500, kRead: 12813, kIf: 13438, kSend: 14375, kRise: 14950, kOut: 14700,
+  // every mutual is revealed on saturday at nine: the week turns on a board
+  wait: [15000, 18125], wLine: [15313, 15938], days: [15700, 15810, 15920, 16030, 16140, 16250], time: 16560, place: 16900, wOut: 17650,
+  // nine o'clock: the two lights meet, and the product's own reveal
+  reveal: [18125, 22500], meet: 18750, glass: 19050, run: 19250, drop: 20250, said: 21300,
+  // and they both find out
+  notes: [22500, 25000], both: 22813, nOut: 24700,
+  // the ones that never meet go out
+  ifnot: [25000, 27500], nLine: [25313, 25938], fOut: 27250,
+  // the question, and the name lit out of the last light
+  ask: [27500, 33750], q: [27750, 28063, 28375], qOut: 29900, lock: [30500, 31500], url: 31500,
 }
 
-// the two lights at the end: each half of the question gathered into one
-// and set circling the other on the tilt of the mark's ring, a turn and
-// three quarters, quicker each turn and closer, until they meet. The score
-// reads it too, so each light's notes are heard where it is
-export const ORBIT = { cx: 540, cy: 900, a0: 330, ratio: 0.42, tilt: (-16 * Math.PI) / 180, turns: 1.75, from: S.burst + 150 }
-export function orbitOf(side, t) {
-  const k = Math.min(1, Math.max(0, (t - ORBIT.from) / (S.meet - ORBIT.from)))
-  const r = ORBIT.a0 * (1 - k * k * k)
-  const turn = 2 * Math.PI * ORBIT.turns * k ** 1.8
-  const phi = Math.PI * (side ? 0 : 1) + turn
-  const ex = Math.cos(phi) * r
-  const ey = Math.sin(phi) * r * ORBIT.ratio
-  return {
-    x: ORBIT.cx + ex * Math.cos(ORBIT.tilt) - ey * Math.sin(ORBIT.tilt),
-    y: ORBIT.cy + ex * Math.sin(ORBIT.tilt) + ey * Math.cos(ORBIT.tilt),
-    k, turn,
-  }
-}
+// the light going out over the hall from lin's: the moment a letter `dist`
+// from lin's, with its own `seed`, comes on
+export const RIPPLE = 5.5
+export const wakeOf = (dist, seed) => S.wake + (dist / RIPPLE) * 1000 + seed * 160
 
-// lin's note: the first line already there on the first frame, the rest
-// at a quick hand's pace as the camera pushes in on it, and the last word
-// slow, so the question mark is what the push in arrives at
-export const A_HOLD = 18
-export const A_LAND = 48
-export const typedA = () => rhythm(A.text, -1100, (i) => (i < A_HOLD || i >= A_LAND ? 60 : 30))
-export const typedB = () => rhythm(B.text, S.bWake + 140, 30)
+// lin's note: the first sentence already on the glass on the first frame,
+// then `i loved you.` at a hand's pace, a held breath, and the last
+// sentence slower
+export const A_HOLD = 32
+export function typedA() {
+  const t = rhythm(A.text, -2800, (i) => (i < A_HOLD ? 60 : i < 46 ? 84 : 66), 2.5)
+  // `i loved you.` from just after the first frame, and a breath held before
+  // `maybe i still do.`, which lands a beat and a half before the wall
+  const i1 = A.text.indexOf('i loved')
+  const i2 = A.text.indexOf('maybe')
+  const d1 = 320 - t[i1]
+  for (let i = i1; i < t.length; i++) t[i] += d1
+  const d2 = t[i2 - 1] + 430 - t[i2]
+  for (let i = i2; i < t.length; i++) t[i] += d2
+  return t
+}
+export const typedB = () => rhythm(B.text, S.kai[0] + 260, 34)
 
 // ── the mutual's own film against the reel's clock ──────────────────────────
 // Its moments as the product tells them (pixmark.js `filmStory`), with a
 // sentence of SAY's length, so `said` is the moment its last letter lands.
 export const STORY_TIMES = filmStory({ say: { cells: [], w: 0, ends: Array.from(SAY, (_, i) => i + 1) } }).times
-// the run from just after they come in to where they are held, a breath
-// before the drop; the drop is the light going over the glass (the story's
-// `glow`), so the rose is the drop; then on to the sentence said on the bar
 const ST = STORY_TIMES
-export const STORY = [[S.run[0], ST.enter + 360], [S.drop - 250, ST.catch], [S.drop, ST.glow], [S.said, ST.said], [S.said + 4000, ST.said + 4000]]
+// the run from just after they come in to where they are held, then the
+// light over the glass on the drop, and on to the sentence said
+export const STORY = [[S.run, ST.enter + 360], [S.drop - 250, ST.catch], [S.drop, ST.glow], [S.said, ST.said], [S.said + 4000, ST.said + 4000]]
 export function storyAt(t) {
   if (t <= STORY[0][0]) return STORY[0][1]
   for (let i = 1; i < STORY.length; i++) {
