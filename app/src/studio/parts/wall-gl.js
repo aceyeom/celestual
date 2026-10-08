@@ -67,26 +67,29 @@ export function cameraOf({ eye, target, roll = 0, fov = 46 }, w = 1080, h = 1920
 // face of a hall: a grid curved round a circle of `R` towards whoever stands
 // in it, far taller than it is wide, every letter a hair off its place and
 // its square, so it is a wall people put letters on and not a table of
-// them. No letter is within three of itself, and no two neighbours are lit
-// in one colour.
+// them. No letter is within five of itself, no two neighbours are lit in
+// one colour, a few screens are dead, and `pins` puts given letters in
+// given places (`"i,j": cell`).
 export const UNIT = { w: 1, h: ATLAS.h / ATLAS.w }
 export const GRID = { sx: 1.14, sy: UNIT.h + 0.17, cols: 30, below: 14, above: 34, R: 44 }
 const hash = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
-export function wallOf(haloOf = () => [1, 1, 1]) {
+export function wallOf(haloOf = () => [1, 1, 1], pins = {}) {
   const out = []
   const at = new Map()
   const key = (i, j) => (i + 500) * 1000 + j + 500
   at.set(key(0, 0), 0)
+  for (const [ij, c] of Object.entries(pins)) { const [i, j] = ij.split(',').map(Number); at.set(key(i, j), c) }
   for (let j = -GRID.below; j <= GRID.above; j++) {
     for (let i = -GRID.cols; i <= GRID.cols; i++) {
       const k = (i + 100) * 977 + (j + 100) * 131
       const home = i === 0 && j === 0
-      let cell = 0
-      if (!home) {
+      const pinned = pins[`${i},${j}`] != null
+      let cell = home ? 0 : pinned ? pins[`${i},${j}`] : 0
+      if (!home && !pinned) {
         const near = new Set()
         const tints = new Set()
-        for (let dj = -3; dj <= 3; dj++) {
-          for (let di = -3; di <= 3; di++) {
+        for (let dj = -5; dj <= 5; dj++) {
+          for (let di = -5; di <= 5; di++) {
             const c = at.get(key(i + di, j + dj))
             if (c == null) continue
             near.add(c)
@@ -110,7 +113,9 @@ export function wallOf(haloOf = () => [1, 1, 1]) {
       const right0 = [Math.cos(th), 0, Math.sin(th)]
       const right = v3.scale(v3.add(v3.scale(right0, Math.cos(tilt)), v3.scale([0, 1, 0], Math.sin(tilt))), UNIT.w / 2)
       const up = v3.scale(v3.add(v3.scale([0, 1, 0], Math.cos(tilt)), v3.scale(right0, -Math.sin(tilt))), UNIT.h / 2)
-      out.push({ i, j, pos, right, up, cell, home, seed: hash(k + 11), dist: Math.hypot(i * GRID.sx, j * GRID.sy), halo: haloOf(cell) })
+      // a few screens long dead, never near lin's
+      const dead = !home && !pinned && Math.hypot(i, j) > 2.5 && hash(k + 13) < 0.07
+      out.push({ i, j, pos, right, up, cell, home, dead, seed: hash(k + 11), dist: Math.hypot(i * GRID.sx, j * GRID.sy), halo: haloOf(cell) })
     }
   }
   return out
@@ -142,26 +147,36 @@ uniform float uFogStart;
 uniform float uFog;
 out vec2 vUv;
 out float vLit;
+out float vFog;
 out float vBias;
+out float vTop;
 void main() {
   vec3 p = iPos + iRight * aCorner.x + iUp * aCorner.y;
   gl_Position = uVP * vec4(p, 1.0);
   vec2 k = aCorner * 0.5 + 0.5;
   vUv = vec2(mix(iUv.x, iUv.z, k.x), mix(iUv.w, iUv.y, k.y));
+  vTop = k.y;
   float d = distance(iPos, uEye);
   vBias = clamp(abs(d - uFocus) / max(d, 0.5) * uAperture, 0.0, 5.0);
-  vLit = iLit * exp(-max(0.0, d - uFogStart) * uFog);
+  vLit = iLit;
+  vFog = exp(-max(0.0, d - uFogStart) * uFog);
 }`
+// A lit screen is its letter; an unlit one is not a hole but dark glass,
+// catching a little of the room at its top
 const FRAG = `#version 300 es
 precision highp float;
 uniform sampler2D uAtlas;
 in vec2 vUv;
 in float vLit;
+in float vFog;
 in float vBias;
+in float vTop;
 out vec4 o;
 void main() {
   vec3 c = texture(uAtlas, vUv, vBias).rgb;
-  o = vec4(c * vLit, 1.0);
+  vec3 glass = vec3(0.026, 0.029, 0.034) + vec3(0.022, 0.023, 0.026) * vTop * vTop;
+  float on = max(0.0, vLit);
+  o = vec4((c * on + glass * (1.0 - min(1.0, on * 3.0))) * vFog, 1.0);
 }`
 
 // ── the light each letter throws on the wall round it ──

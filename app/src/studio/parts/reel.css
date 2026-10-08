@@ -3,8 +3,8 @@
 .rl-board .st-phone { position: relative; }
 .rl-stage { position: absolute; inset: 0; }
 
-/* the display face, set large; a line's words come out of a little blur,
-   each its own box so it can rise on its own */
+/* the display face, set large; a line's words each in its own box, so each
+   can rise into place on its own note */
 .rl-type {
   position: absolute; margin: 0; white-space: pre; z-index: 40;
   font-family: var(--st-serif); font-weight: 500; letter-spacing: -0.04em; line-height: 0.9;
@@ -20,6 +20,7 @@
 
 /* the camera, and the things it carries, placed by their own transforms */
 .rl-cam { position: absolute; inset: 0; }
+.rl-held { transform-origin: 540px 960px; }
 .rl-obj { position: absolute; left: 0; top: 0; }
 .rl-glass { position: absolute; left: 0; top: 0; width: 1000px; transform-origin: 0 0; z-index: 4; }
 .rl-glow {
@@ -33,12 +34,16 @@
 /* once the note has gone up as a light, its envelope is not on the glass */
 .is-gone .wl-scr-note .wl-px { visibility: hidden; }
 
-/* a sealed note, as a light, and the field of them */
-.rl-note { position: absolute; overflow: visible; pointer-events: none; }
+/* a sealed note, as a light: a small lit screen with its envelope, and the
+   field of them */
+.rl-lcd { position: absolute; display: grid; place-items: center; border-radius: 3px; pointer-events: none; }
+.rl-lcd svg { display: block; }
+/* the composer's cursor, where the name will go */
+.rl-compose-cur { position: absolute; width: 14px; z-index: 20; }
 .rl-field { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 0; }
 
 /* the board: saturday, nine o'clock */
-.rl-flaps { position: absolute; left: 0; right: 0; display: flex; justify-content: center; z-index: 5; }
+.rl-flaps { position: absolute; display: flex; justify-content: flex-start; z-index: 5; }
 .rl-flap {
   position: relative; border-radius: 10px; background: #0B0B0B;
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(244, 241, 234, 0.1);
@@ -50,24 +55,23 @@
 .rl-flap-half.is-top { border-radius: 10px 10px 0 0; transform-origin: 50% 100%; background: linear-gradient(#161616, #0E0E0E); }
 .rl-flap-half.is-bot { border-radius: 0 0 10px 10px; transform-origin: 50% 0; background: linear-gradient(#0C0C0C, #141414); }
 .rl-flap-half.is-fold { z-index: 2; }
-/* a board's cards are not a phone: their figures are the mono's, as a date
-   and a time are everywhere else in the campaign */
+/* the board's figures in the phones' own pixel face, so the board is the
+   product's and its zero is a zero */
 .rl-flap-ch {
   display: block; text-align: center; color: var(--chalk);
-  font-family: var(--st-mono); font-weight: 500; letter-spacing: -0.02em;
-  text-shadow: 0 0 18px rgba(255, 244, 228, 0.3);
+  font-family: 'Jersey 10', 'Geist Mono', monospace; font-weight: 400; letter-spacing: 0;
 }
 .rl-flap-hinge { position: absolute; left: 0; right: 0; height: 2px; background: rgba(0, 0, 0, 0.9); z-index: 3; }
 .rl-label {
-  position: absolute; left: 0; right: 0; margin: 0; text-align: center; z-index: 5;
-  font-family: var(--st-mono); font-size: 40px; letter-spacing: 0.24em; color: rgba(244, 241, 234, 0.88);
+  position: absolute; margin: 0; z-index: 5;
+  font-family: 'Jersey 10', 'Geist Mono', monospace; font-size: 64px; line-height: 1; letter-spacing: 0.02em; color: rgba(244, 241, 234, 0.88);
 }
 
 /* the end: the question's pixels, the name and the address */
 .rl-pix { position: absolute; left: 0; top: 0; z-index: 20; image-rendering: pixelated; filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.35)) drop-shadow(0 0 10px rgba(255, 244, 228, 0.14)); }
 .rl-lock { position: absolute; z-index: 21; }
 .rl-addr {
-  position: absolute; left: 0; right: 0; margin: 0; z-index: 21; text-align: center; white-space: pre;
+  position: absolute; margin: 0; z-index: 21; white-space: pre;
   font-family: var(--st-mono); font-size: 44px; letter-spacing: 0.12em; color: rgba(244, 241, 234, 0.9);
 }
 

@@ -184,43 +184,57 @@ headline, no orphaned word on its own line, consistent margins from a grid
 ## 8. The reel
 
 `celestual-reel.mp4` (30 fps) and `celestual-reel-60.mp4` (60 fps), 1080 by
-1920, 33.75 seconds, cut to its own score at 96 beats a minute: thirteen
-bars and a half, every word and every sound on a beat. One story, told
-once, and one image for it: a feeling is a light. A letter is a lit screen;
-a note sent privately goes up as a light; two lights that meet are a
-mutual; the lights that never meet go out, and nobody knows. One clock
+1920, 35 seconds: fourteen bars at 96 beats a minute of a song written for
+it (`MUSIC.md`), every word on a note. One story, told once, and one image
+for it: a feeling is a light. A letter is a lit screen; a note sent
+privately goes up as a small lit screen of its own, sealed; two that meet
+are a mutual; the ones that never meet go out, and nobody knows; and the
+last thing on the frame is an empty letter, the viewer's own. One clock
 (`app/src/studio/parts/reel-time.js`) times the picture (`parts/reel.jsx`)
-and the score (`scripts/studio-score.mjs`), so a key is heard on the frame
-its letter lands and every letter of the hall near the lens is heard as the
-light reaches it.
+and the song (`scripts/studio-score.mjs`), so a key is heard on the frame
+its letter lands and a word on the note it is sung on.
 
 | ms | the shot | the words |
 | --- | --- | --- |
-| 0 | lin's note on the glass, the whole phone in the frame, the first sentence already there and the rest typed at a hand's pace, the hardest words slowest | `i never said this two years ago. i loved you. maybe i still do.` (on the phone) |
-| 3750 | one shot: the camera falls back from the glass into a hall of letters (the letters in 5, on the wall's own screens), the light going out over it from lin's, each letter waking as an old backlight does and throwing its colour on the wall; up the hall's height and round | `a wall of / the ones you / never told.` |
-| 8300 | lin's letter comes away from the wall to the camera; send; the screen says `sent privately.`, and its envelope goes up as a light | `or send it / privately.` |
-| 12500 | somewhere else, kai's phone, amber, a note of its own to lin, sent, going up as kai's light | `they only read it / if they send you / one too.` |
-| 15000 | the two lights among everyone's in the dark; a split flap board turns through the week and finishes the sentence: `sat`, `9:00 pm`, `pacific.` | `every mutual is / revealed on` |
-| 18125 | the two lights touch, and out of their light the product's own reveal (`filmOf`) at the size of the room: they run in, are held, the glass turns rose, the mark, held | `it's mutual.` (on the phone) |
-| 22500 | both notes, side by side, read at last; they become one warm light | `you both / find out.` |
-| 25000 | the lights that never met go out, one by one | `if it isn't, / nobody ever / knows.` |
-| 27500 | the question under the warm light; the light becomes the mark's star and the lockup is lit out of it a cell at a time; the address | `do they still / think about / you?`, then `celestual.us` |
+| 0 | lin's note on the glass, the first sentence already there and the rest typed at a hand's pace: `i love`, a breath, `d` | `i never said this two years ago. i loved you. maybe i still do.` (on the phone) |
+| 3750 | one shot: the camera comes back from the glass and rests on the letter under lin's long enough to read it, then makes one move up the hall's height and round, lands a little past and settles; the backlights come on outward from lin's, each in its own colour, a few screens dead | `a wall of / the ones you / never told.` |
+| 8300 | the camera comes down to lin's letter as it comes away from the wall, and holds it; send; the screen goes dark and its envelope goes up as a small lit screen | `or send it / privately.` |
+| 12500 | somewhere else, kai's phone, amber: kai has not read lin's and cannot, and writes one too, to lin; sent, it goes up as kai's light | `they only read it / if they send you / one too.` |
+| 16250 | the two among everyone's notes this week, hundreds of small lit screens in the dark, lit in towns as a night is from the air; a split flap board turns through the week to `sat`, `9:00 pm`, `pacific.`; the two find each other, wait a moment apart, and touch, two notes struck as two glasses touch, while the camera leans in and down on them to where the phone's screen will be | `every mutual is / revealed on` |
+| 20000 | cut, on the touch and in its place, to the product's own reveal (`filmOf`) on the phone, as the phone plays it, ten pictures a second: they run in, are held on the drop, the glass turns rose | `it's mutual.` (on the phone) |
+| 23750 | cut to both notes, side by side, read at last | `you both / find out.` |
+| 26250 | theirs goes away from us; three that were alone are left and go out one at a time, each with a last catch, each with a falling note | `if it isn't, / nobody ever / knows.` |
+| 28750 | an empty letter, the viewer's own, `dear` and a cursor blinking; the question a word on each note of the hook; the screen goes dark and the name is lit under the question a cell at a time from the mark's star, on the words' margin; the address. The question stays to the end: it is what the name answers | `do they still / think about / you?`, then `celestual.us` |
 
-The hall is drawn in WebGL (`parts/wall-gl.js`): some three and a half
-thousand letters from one sheet of real screens (`films/wall-atlas.jsx`,
-photographed into `app/src/studio/assets/wall-atlas.jpg`), each on the
-inside of a curve that rises out of sight, softened by its distance from the
-plane in focus, hazed with distance, with dust in the air. lin's own phone
-is laid over its cell by a projective transform, so it can type, come away
-from the wall and send.
+The hall is drawn in WebGL (`parts/wall-gl.js`): some three thousand
+screens from one sheet of 125 different letters (`parts/wall-letters.js`,
+photographed by `films/wall-atlas.jsx` into
+`app/src/studio/assets/wall-atlas.jpg`), no letter within five screens of
+itself and no colour beside itself, each on the inside of a curve that
+rises out of sight, softened by its distance from the plane in focus, hazed
+with distance, with dust in the air. An unlit screen is dark glass, and one
+in fourteen is dead. lin's own phone is laid over its cell by a projective
+transform, so it can type, come away from the wall and send. The camera is
+held as a hand holds one: a slow unsteadiness, more on a longer lens, and a
+move that lands a little past and settles; on the flat scenes after the
+hall, a drift of a pixel or two and a breath of roll, one drift through
+all of them, under words that keep still as a film's titles do.
 
-How it is made: `node scripts/studio-reel.mjs celestual-reel`. The
-score (a felt piano built from its strings' partials, pads, bells, the
-phones' keys, the board's cards) is synthesised from the clock and mastered
-to -14 LUFS; two browsers each photograph a share of the 2025 frames
-(`studio-film.mjs --frames`); one pass of ffmpeg lays the score under them,
-blooms the lights, parts the red and blue by a pixel, and moves a grain over
-it. The thirty is each pair of the sixty laid over each other, a shutter
-open half the frame. GSAP sets the words (SplitText, each word out of a
-little blur on its beat) and draws the curves (CustomEase); each scene
-builds one paused timeline and is put at the reel's moment every frame.
+What the reel keeps to: one layout throughout, the words flush left on one
+margin in a band at the top and the phones one size in one place under
+them, the name at the end on the words' margin, all of it clear of
+Instagram's buttons on the right and its caption at the foot; every word comes on its note in a few frames and is gone
+before its scene cuts, and nothing blurs; the italic for `never told.` and
+`you?` alone; the scenes cut, they never dissolve.
+
+How it is made: `node scripts/studio-reel.mjs celestual-reel`. The song
+first, in a few seconds (`MUSIC.md`); then two browsers each photograph a
+share of the 2100 frames (`studio-film.mjs --frames`); then one pass of
+ffmpeg lays the song under them and finishes them as a print would be
+(`scripts/studio-finish.mjs`): the lens's faint veil, a red rim of
+halation round the brightest light, a print's lifted black and rolled off
+white, and a grain new every frame, strongest in the mid tones. The thirty
+is each pair of the sixty laid over each other, a shutter open half the
+frame, mixed before its grain. GSAP sets the words (SplitText) and draws
+the curves (CustomEase); each scene builds one paused timeline and is put
+at the reel's moment every frame.

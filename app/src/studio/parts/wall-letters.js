@@ -8,7 +8,7 @@
 // and the reel's wall draws every letter of it from that sheet
 // (parts/wall-gl.js).
 
-export const ATLAS = { cols: 8, rows: 6, w: 400, h: 464 }
+export const ATLAS = { cols: 16, rows: 8, w: 320, h: 372 }
 
 export const TINTS = ['night', 'white', 'ice', 'teal', 'green', 'acid', 'violet-yellow', 'amber', 'rose', 'lilac', 'negative', 'xerox']
 
@@ -61,13 +61,96 @@ export const LETTERS = [
   ['ruby', 'i saved you a seat at graduation. nobody sat there.'],
   ['jonah', 'you were never just a friend. i should have said so.'],
   ['wren', 'i still have your voicemail. i don’t play it. i just keep it.'],
+  ['kenji', 'i still order the thing you always ordered. i still don’t like it.'],
+  ['lena', 'you taught me to drive. i still check the mirror the way you said.'],
+  ['malik', 'i passed your exit on the highway and almost took it.'],
+  ['hazel', 'i saw your name on a coffee cup today. it wasn’t you.'],
+  ['amir', 'we were nineteen and stupid and it was the best year.'],
+  ['joy', 'i wrote you a birthday card every year. this is the fourth.'],
+  ['pablo', 'i still sleep with the window open because you liked the cold.'],
+  ['sienna', 'my mom still asks about you. i say you’re doing well. i hope you are.'],
+  ['tomas', 'you lent me a book in may. i finished it. i didn’t give it back.'],
+  ['ingrid', 'i got the job. i told my plants about it instead.'],
+  ['caleb', 'we danced in a parking lot once. no music. i think about it a lot.'],
+  ['rhea', 'i’m better now. i wanted you to know you were part of it.'],
+  ['ollie', 'you were the only one who knew how i take my tea.'],
+  ['nadia', 'i learned the song you were always humming. it’s really sad.'],
+  ['jasper', 'i almost waved at you in the grocery store. i hid in the cereal aisle.'],
+  ['camila', 'we would have been good at this. i really think so.'],
+  ['wes', 'you said i was brave. i wasn’t. i just liked you.'],
+  ['ivy', 'i deleted your number and still know it by heart.'],
+  ['hugo', 'there’s a bench by the river with our initials. someone painted over it.'],
+  ['meera', 'i hear someone laugh like you and turn around every time.'],
+  ['dante', 'i was scared. that’s the whole reason. i’m sorry.'],
+  ['lucy', 'you wrote my number on your hand. i hope it washed off slowly.'],
+  ['kwame', 'i’m still in the group chat. i still read everything you send.'],
+  ['elsa', 'you were my favorite person and i never told you.'],
+  ['niko', 'i keep the porch light on. old habit.'],
+  ['farah', 'i read your horoscope too. every morning. just in case.'],
+  ['gus', 'the dog still waits by the door at six.'],
+  ['simone', 'we said goodbye at the airport like it was nothing. it wasn’t nothing.'],
+  ['adi', 'you were right to leave. i still wish you hadn’t.'],
+  ['delia', 'i kept the fortune from our cookie. it said soon.'],
+  ['beck', 'i still write your name in the fog on the mirror.'],
+  ['yara', 'i finally saw the ocean. you should have been there.'],
+  ['otis', 'i still split my fries in half without thinking.'],
+  ['paloma', 'you held the door and i fell a little. that’s all.'],
+  ['reid', 'i never told you about the letter i didn’t send. this is it.'],
+  ['poppy', 'the last thing you said was see you around. you weren’t.'],
+  ['santi', 'we were best friends and then we weren’t and nobody explained.'],
+  ['vera', 'i loved you in a way i didn’t have words for yet.'],
+  ['emil', 'i saw a shooting star and i used it on you. sorry.'],
+  ['margot', 'i still keep your note in my wallet. the paper is soft now.'],
+  ['dex', 'i was jealous of everyone who got to sit next to you.'],
+  ['lila', 'you smelled like oranges in december.'],
+  ['cole', 'i rehearsed this in the shower for three years.'],
+  ['anouk', 'i still count the stairs to your old apartment. there are forty one.'],
+  ['bo', 'i miss the way you said my name when you were tired.'],
+  ['xavi', 'i went back to the concert hall. it was smaller than i remembered.'],
+  ['greta', 'i hope someone makes you laugh the way you made me.'],
+  ['ilya', 'i was the one who left the flowers. every year. it was me.'],
+  ['mae', 'we fell asleep on the phone more nights than not.'],
+  ['rafa', 'i forgot what your voice sounds like and that scared me.'],
+  ['isla', 'you always took the window seat. i let you. i would again.'],
+  ['quinn', 'i saw you at the wedding and forgot how to stand.'],
+  ['tobias', 'i painted my room the blue you liked. it looks like you.'],
+  ['noor', 'i still sign my emails the way you taught me.'],
+  ['pip', 'you called me kid once. nobody else is allowed to.'],
+  ['wynn', 'i keep almost texting you happy new year.'],
+  ['cora', 'our song came on in the taxi and i had to look out the window.'],
+  ['sven', 'i went to your city once and didn’t tell you. i just walked.'],
+  ['grace', 'i wanted you to be happy. i just wanted it to be with me.'],
+  ['soren', 'you taught me the names of the stars. i only remember yours.'],
+  ['luz', 'i let you win at cards every time. i hope you knew.'],
+  ['ines', 'i keep your last message pinned. it just says ok.'],
+  ['esme', 'you were the calm in every room.'],
+  ['joon', 'i think of you whenever it snows. it snowed today.'],
+  ['oona', 'i still have the sketch you drew of me on the train.'],
+  ['benji', 'you saved me the last slice. i still think about that slice.'],
+  ['dalia', 'i never got to say goodnight properly.'],
+  ['eamon', 'i wish i’d said stay.'],
+  ['fern', 'i saw your sister. she has your hands.'],
+  ['hiro', 'we never had a song. i picked one anyway.'],
+  ['tamsin', 'i miss being someone you called first.'],
+  ['vik', 'i still hold my breath when my phone buzzes late.'],
+  ['zara', 'the summer we had was enough. almost.'],
+  ['alba', 'i kept your umbrella. it doesn’t rain enough here.'],
+  ['jin', 'you were the first person who made me feel funny.'],
+  ['rowan', 'i read the book you recommended. i understand now.'],
+  ['sage', 'i still wonder what you were going to say that night.'],
+  ['mateo', 'you looked at me like i was the only one there. i noticed.'],
 ]
 
-// the colour each wall letter is lit in, the twelve in turn and staggered so
-// two neighbours on the sheet are never the same
-export const tintOf = (i) => TINTS[(i * 5 + Math.floor(i / 12)) % TINTS.length]
+// the colour each wall letter is lit in: the quiet ones most (the dark
+// screens, the ice, the negative, the amber), the loud ones (the acid
+// square, the riso's yellow) seldom, as a wall people chose for themselves
+// would be lit, never two neighbours on the sheet alike
+const TONES = ['night', 'ice', 'negative', 'amber', 'white', 'night', 'teal', 'rose', 'ice', 'lilac', 'negative', 'green', 'night', 'xerox', 'amber', 'acid', 'ice', 'violet-yellow', 'white', 'night']
+export const tintOf = (i) => TONES[(i * 7 + Math.floor(i / 20)) % TONES.length]
 // the sheet's cells: lin's note in the first, every letter after it
 export const CELLS = LETTERS.length + 1
+// the cell a letter is in, by the name it is to
+export const cellOf = (name) => LETTERS.findIndex(([n]) => n === name) + 1
 export const cellTint = (c) => (c === 0 ? 'ice' : tintOf(c - 1))
 // hearts on a letter: a few, different on each
 export const heartsOf = (i) => [3, 7, 1, 12, 4, 9, 2, 5, 6, 0, 8, 11][i % 12]
