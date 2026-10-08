@@ -1,34 +1,40 @@
 #!/usr/bin/env node
 // studio-score.mjs: the reel's song, made from the reel's own clock.
 //
-// A song, played by real instruments: the parts are written here as notes
-// against app/src/studio/parts/reel-time.js, so every word on the frame
-// lands on the beat it is sung on, and played by FluidSynth from the
-// MuseScore General SoundFont (MIT; its grand piano public domain, its
+// A song for the film, played by real instruments: the parts are written
+// here as notes against app/src/studio/parts/reel-time.js, so every word on
+// the frame lands on the note it is sung on, and played by FluidSynth from
+// the MuseScore General SoundFont (MIT; its grand piano public domain, its
 // strings the VSCO 2 Community Edition's, CC0), one stem an instrument. The
-// stems are mixed here: humanised as players are (a few milliseconds early
-// or late, never two notes alike), the band ducking under the kick, a room
-// convolved from an impulse made here (by ffmpeg's afir), a dotted eighth
-// delay on the hook, tape's soft saturation, and ffmpeg's loudnorm in two
-// passes to -14 LUFS with a true peak a decibel and a half under full scale.
-// The phones' keys, the board's cards and the lights are synthesised, as
-// foley, on the frames they happen.
+// stems are mixed here: loosened as players are (a few milliseconds early
+// or late, never two notes alike), a hall convolved from an impulse made
+// here (by ffmpeg's afir), tape's soft saturation, and ffmpeg's loudnorm in
+// two passes to -14 LUFS with a true peak a decibel and a half under full
+// scale. The phone's keys, the send, the clock and the lights are
+// synthesised, as foley, on the frames they happen.
 //
-// The hook is the film's question, `do they still think a-bout you?`: a
-// climb to the high note and a fall that does not come home. It is heard
-// first on the celesta as the hall rises, sung by the band when the two of
-// them are held, half remembered on the piano when the lights go out, and
-// last with its words; the name comes in on the chord it never reached.
+// It is quiet and it aches: a piano, close, and strings, a cello, a harp and
+// voices, in B minor, and no drums. Its melody is the film's question, `do
+// they still think a-bout you?`: up a sixth, a sigh down, and up again at
+// the end, as a question goes, onto a note that is not home. The piano sighs
+// down under lin's typing (F sharp, E, D, C sharp, B); a harp carries the
+// letter's pixels into the envelope; a cello comes in with the note that
+// comes in on the thursday; a piano ticks the clock round to nine and stops;
+// the melody is sung by everything when they are held; the cello answers it
+// with kai's note; the piano is alone for the ones that go out and for the
+// question; and the name comes in on a chord that does not resolve.
 //
-// 96 beats a minute in D major and its B minor:
-//   intro      0      Bm  G           the letter: a Rhodes, the keys
-//   verse      5      D   A           the hall: brushes, bass, guitar; the hook on celesta
-//   verse      10     Bm  G  Asus     sent; kai, the band further off; a two beat turn
-//   build      16.25  Em G Asus A     the board; a pulse; at nine the band stops
-//   chorus     21.25  D   A           held: the drop, the hook sung, it's mutual
-//   breakdown  26.25  Bm              the lights go out; the hook on the piano, alone
-//   question   28.75  G   Asus        the hook with its words, left open
-//   home       31.25  D               the name
+// 96 beats a minute; the bar the reveal begins on is two beats long:
+//   letter    0      Bm9 Gmaj7         piano, a falling line on the words
+//   hall      3.75   Em9 F#sus F#      arpeggios; strings; the climb
+//   send      10     Bm9 Gmaj7 D/F#    a breath; the harp; the swell to the lens
+//   night     12.5   D/F# Em9          the rule, the piano and the low strings
+//   date      15     Gmaj7 G Asus F#   the clock in eighths; the cello at kai's
+//   reveal    20     F#, then D A/C#   the run; held: the melody, everything
+//   open      23.75  Bm9 Gmaj7         the cello's answer, the harp falling
+//   if not    26.25  Bm9 Em9           the piano alone, a note for each light
+//   question  28.75  G Asus            the melody with its words, open
+//   name      31.25  Bm9 Gmaj7         and left there
 //
 //   node scripts/studio-score.mjs [out.wav]      48 kHz, 16 bit, stereo
 import { spawnSync } from 'node:child_process'
@@ -36,7 +42,7 @@ import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, mkdtempSync
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { MS, BEAT, A, B, S, SAY, typedA, typedB, STORY_TIMES, reelAt, wakeOf } from '../app/src/studio/parts/reel-time.js'
+import { MS, BEAT, A, S, SAY, typedA, STORY_TIMES, reelAt, wakeOf } from '../app/src/studio/parts/reel-time.js'
 import { wallOf } from '../app/src/studio/parts/wall-gl.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -45,7 +51,7 @@ const SOUNDFONT = process.env.SOUNDFONT || '/usr/share/sounds/sf3/MuseScore_Gene
 if (!existsSync(SOUNDFONT)) throw new Error(`studio-score: no SoundFont at ${SOUNDFONT} (apt install musescore-general-soundfont fluidsynth)`)
 
 const SR = 48000
-const TAIL = 2.5
+const TAIL = 3
 const N = Math.round((MS / 1000 + TAIL) * SR)
 const TAU = Math.PI * 2
 const sec = (s) => Math.round(s * SR)
@@ -68,7 +74,7 @@ function part(name, program, { drums = false } = {}) {
   PARTS[name] = { program, drums, notes: [], cc: [] }
   return PARTS[name]
 }
-function play(p, ms, len, key, vel, { feel = 7, vfeel = 6 } = {}) {
+function play(p, ms, len, key, vel, { feel = 7, vfeel = 5 } = {}) {
   const t = ms + gauss() * feel
   p.notes.push({ t: Math.max(0, t), len: Math.max(30, len), key, vel: Math.max(1, Math.min(127, Math.round(vel + gauss() * vfeel))) })
 }
@@ -77,201 +83,243 @@ const chord = (p, ms, len, keys, vel, { roll = 0, ...o } = {}) => keys.forEach((
 const ctl = (p, ms, num, value) => p.cc.push({ t: ms, num, value: Math.round(value) })
 const swell = (p, from, to, v0, v1, num = 11) => { for (let k = 0; k <= 24; k++) ctl(p, from + ((to - from) * k) / 24, num, v0 + ((v1 - v0) * k) / 24) }
 
-// the harmony, a chord a bar or half bar, voiced for the Rhodes (the root
-// is the bass's) and for the strings above it
+// the harmony, voiced: the bass's root, the piano's right hand, the
+// strings', each a few notes close together, nothing doubled loud
 const V = {
-  Bm: { rh: [50, 54, 57, 61], st: [59, 62, 66, 71], root: 35 },
-  G: { rh: [50, 54, 57, 59], st: [59, 62, 66, 67], root: 31 },
-  D: { rh: [50, 54, 57, 64], st: [57, 62, 66, 69], root: 38 },
-  A: { rh: [49, 52, 57, 59], st: [57, 61, 64, 69], root: 33 },
-  Asus: { rh: [50, 52, 57, 59], st: [57, 62, 64, 69], root: 33 },
-  Em: { rh: [50, 54, 55, 59], st: [59, 62, 66, 67], root: 40 },
+  Bm9: { root: 35, rh: [62, 66, 73], st: [47, 54, 62, 66, 73] },
+  Gmaj7: { root: 31, rh: [59, 62, 66], st: [43, 50, 59, 66] },
+  Em9: { root: 28, rh: [55, 59, 62, 66], st: [40, 47, 55, 62, 66] },
+  'F#sus': { root: 30, rh: [59, 61, 66], st: [42, 49, 59, 61] },
+  'F#': { root: 30, rh: [58, 61, 66], st: [42, 49, 58, 66] },
+  'D/F#': { root: 30, rh: [62, 66, 69, 76], st: [42, 50, 57, 66, 69] },
+  Gadd9: { root: 31, rh: [59, 62, 69], st: [43, 50, 59, 69] },
+  Asus: { root: 33, rh: [62, 64, 69], st: [45, 52, 62, 64] },
+  Dadd9: { root: 38, rh: [66, 69, 76], st: [50, 57, 66, 69, 76] },
+  'A/C#': { root: 37, rh: [64, 69, 73], st: [49, 57, 64, 69] },
 }
-// [beat, chord, beats]; the bar at 24 is two beats long, a turn after
-// kai's send before the build
+// [beat, chord, beats]; the bar at 32 is two beats long, as they run in
 const HARMONY = [
-  [0, 'Bm', 4], [4, 'G', 4], [8, 'D', 4], [12, 'A', 4], [16, 'Bm', 4], [20, 'G', 4], [24, 'Asus', 2],
-  [26, 'Em', 2], [28, 'G', 2], [30, 'Asus', 2], [32, 'A', 2],
-  [34, 'D', 4], [38, 'A', 4], [42, 'Bm', 4], [46, 'G', 2], [48, 'Asus', 2], [50, 'D', 6],
+  [0, 'Bm9', 4], [4, 'Gmaj7', 4], [8, 'Em9', 4], [12, 'F#sus', 2], [14, 'F#', 2],
+  [16, 'Bm9', 2], [18, 'Gmaj7', 2], [20, 'D/F#', 2], [22, 'Em9', 2],
+  [24, 'Gmaj7', 2], [26, 'Gadd9', 2], [28, 'Asus', 2], [30, 'F#sus', 1], [31, 'F#', 1], [32, 'F#', 2],
+  [34, 'Dadd9', 2], [36, 'A/C#', 2], [38, 'Bm9', 2], [40, 'Gmaj7', 2],
+  [42, 'Bm9', 2], [44, 'Em9', 2], [46, 'Gadd9', 2], [48, 'Asus', 2], [50, 'Bm9', 2], [52, 'Gmaj7', 4],
 ]
 
-// the hook: do they still think a-bout you? [beats from `still`, key, beats]
-const HOOK = [[-1, 69, 0.5], [-0.5, 71, 0.5], [0, 74, 1], [1, 78, 1.5], [2.5, 76, 0.5], [3, 74, 1], [4, 76, 2]]
-const hookAt = (still, { last = 76, lastLen = 2 } = {}) => HOOK.map(([b, k, l], i) => [bt(still + b), i === HOOK.length - 1 ? last : k, bt(i === HOOK.length - 1 ? lastLen : l)])
+// the melody: do they still think a-bout you? up a sixth, a sigh down, and
+// up again onto the ninth, not home [key, beats long]
+const HOOK = [66, 69, 71, 74, 73, 71, 73]
 
-const rhodes = part('rhodes', 4)
 const piano = part('piano', 0)
 const keys = part('keys', 0)
-const celesta = part('celesta', 8)
-const box = part('box', 10)
-const oohs = part('oohs', 53)
-const guitar = part('guitar', 24)
 const strings = part('strings', 49)
-const bass = part('bass', 33)
-const pad = part('pad', 89)
-const brush = part('brush', 40, { drums: true })
-const kit = part('kit', 8, { drums: true })
+const low = part('low', 49)
+const cello = part('cello', 42)
+const bass = part('bass', 43)
+const harp = part('harp', 46)
+const choir = part('choir', 52)
+const pad = part('pad', 94)
+const timp = part('timp', 47)
 
-// ── 0 to 5: the letter. A Rhodes, close and quiet, and the piano answering
-// the words as they are typed: the high note on `i loved you.`, falling, a
-// breath, and home as the last word lands
-chord(rhodes, 0, bt(4.2), V.Bm.rh, 44, { roll: 28 })
-chord(rhodes, bt(4), bt(4.2), V.G.rh, 42, { roll: 28 })
-chord(pad, 0, bt(8), [47, 54, 59], 30)
-swell(pad, 0, bt(2), 30, 90)
+// the piano's flowing hand: the chord's notes up and back, in quarters
+// where the film is still and in eighths where it is moved, the bass under
+// it on the bar, soft, a little rubato in the touch
+function arp(b0, beats, v, vel, { up = 0, step = 1 } = {}) {
+  const rh = v.rh.map((k) => k + up)
+  const seq = [rh[0], rh[1], rh[2], rh[rh.length > 3 ? 3 : 1], rh[2], rh[1]]
+  play(keys, bt(b0), bt(beats) + 300, v.root + 12, vel + 4, { feel: 6 })
+  for (let e = 0; e < beats / step; e++) play(keys, bt(b0 + e * step), bt(step * 1.8), seq[e % seq.length], vel - (e % 2) * 6, { feel: 9, vfeel: 6 })
+}
+
+// ── 0 to 3.75: the letter. The piano alone, close, the chord under it, and
+// a falling line that answers the words as they are typed: the high note on
+// `i lo`, the sigh down on the `d` after the breath, down again on `you.`
+// and on `maybe`, and home as the last word lands
 const tA = typedA()
 const iLoved = A.text.indexOf('i loved')
 const iD = iLoved + 'i love'.length
+const iYou = A.text.indexOf('you.')
 const iMaybe = A.text.indexOf('maybe')
-play(piano, tA[iLoved] - 15, bt(1.6), 78, 62, { feel: 0 })
-play(piano, tA[iD] - 10, bt(1), 76, 56, { feel: 0 })
-play(piano, tA[iLoved + 11] + 10, bt(1.2), 74, 52, { feel: 0 })
-play(piano, tA[iMaybe] - 15, bt(1.5), 73, 54, { feel: 0 })
-play(piano, tA[tA.length - 1], bt(3), 74, 58, { feel: 0 })
-chord(keys, bt(4), bt(3), [43, 50], 40, { roll: 40 })
+chord(keys, 40, bt(4) + 400, [35, 47], 40, { roll: 60 })
+chord(keys, 260, bt(3.8), V.Bm9.rh, 34, { roll: 90 })
+chord(pad, 0, bt(8), [47, 54, 62, 66], 40)
+swell(pad, 0, bt(3), 20, 70)
+play(piano, tA[iLoved] - 20, tA[iD] - tA[iLoved] + 200, 78, 54, { feel: 0 })
+play(piano, tA[iD] - 10, bt(1.1), 76, 50, { feel: 0 })
+play(piano, tA[iYou] + 20, bt(1), 74, 46, { feel: 0 })
+play(piano, tA[iMaybe] - 15, bt(1.6), 73, 46, { feel: 0 })
+play(piano, tA[tA.length - 1] + 30, bt(4), 71, 50, { feel: 0 })
+chord(keys, bt(4), bt(4) + 200, [31, 43], 38, { roll: 50 })
+chord(keys, bt(4) + 120, bt(3.6), V.Gmaj7.rh, 32, { roll: 80 })
 
-// ── 5 to 16.25: the verse. Brushes and a bass under the hall; a guitar picking
-// the chords; the hook on the celesta and the music box as the camera
-// climbs, its first notes under `never told.`
+// ── 3.75 to 10: the hall. The piano's arpeggios as the backlights come on,
+// the strings coming in under them, rising with the camera to the top of the
+// hall and the dominant, and down to lin's letter
+arp(8, 4, V.Em9, 46)
+arp(12, 2, V['F#sus'], 50)
+arp(14, 2, V['F#'], 52)
 for (const [b0, name, len] of HARMONY) {
-  if (b0 < 8 || b0 >= 26) continue
-  const v = V[name]
-  const soft = b0 >= 20 ? 0.75 : 1
-  // the Rhodes: the chord on one, again on the and of three
-  chord(rhodes, bt(b0), bt(Math.min(2.4, len)), v.rh, 46 * soft, { roll: 18 })
-  if (len === 4) chord(rhodes, bt(b0 + 2.5), bt(1.4), v.rh, 38 * soft, { roll: 14 })
-  // the bass: one, the and of two, three, as a hand plays it
-  if (b0 < 20) {
-    play(bass, bt(b0), bt(1.4), v.root, 78)
-    play(bass, bt(b0 + 1.5), bt(0.45), v.root + 12, 58)
-    play(bass, bt(b0 + 2), bt(1.8), v.root, 70)
-  } else {
-    play(bass, bt(b0), bt(len - 0.2), v.root, 60)
-  }
-  // the guitar: the chord picked in eighths, up and back
-  const pick = [v.root + 12, v.rh[1] + 12, v.rh[2] + 12, v.rh[3] + 12, v.rh[2] + 12, v.rh[1] + 12, v.rh[2] + 12, v.rh[3] + 12]
-  pick.slice(0, len * 2).forEach((k, i) => play(guitar, bt(b0 + i * 0.5), bt(0.9), k, (i % 2 ? 46 : 56) * soft, { feel: 9 }))
+  if (b0 < 6 || b0 >= 16) continue
+  chord(strings, bt(b0), bt(len) + 200, V[name].st, 60)
+  play(bass, bt(b0), bt(len) + 100, V[name].root + 12, 54)
 }
-hookAt(11).forEach(([t, k, l], i) => {
-  play(celesta, t, l, k + 12, 92 - i * 2)
-  play(box, t + 8, l, k + 12, 80 - i * 2)
-})
+chord(strings, bt(6), bt(2) + 100, V.Gmaj7.st, 56)
+swell(strings, bt(6), bt(9), 25, 58)
+swell(strings, bt(11), bt(15), 58, 84)
+swell(strings, bt(15), bt(16.5), 84, 64)
+// a cello under the words: `a wall of the ones / you never told.`
+;[[9, 55, 1], [10, 54, 1.5], [11.5, 52, 0.5], [12, 54, 4]].forEach(([b, k, l]) => play(cello, bt(b), bt(l) + 80, k, 40))
+ctl(cello, 0, 11, 66)
+ctl(cello, bt(17), 11, 90)
 
-// ── 16.25 to 21.25: the build. The board turns over a pulse that tightens: the
-// piano on the dominant in eighths, the strings swelling, the snare closing
-// in; at nine the band stops dead, and the two of them run in over a run up
-// the piano that is the hook's first two notes
-chord(rhodes, bt(26), bt(2), V.Em.rh, 42, { roll: 18 })
-chord(rhodes, bt(28), bt(2), V.G.rh, 44, { roll: 18 })
-chord(rhodes, bt(30), bt(2), V.Asus.rh, 46, { roll: 18 })
+// ── 10 to 12.5: send. The piano holds its breath on the key; a harp takes
+// the letter's pixels up into the envelope; a bell as it is sealed; the
+// strings and the voices swell as it comes at the lens, and it breaks on the
+// bar into the dark, on D, the light of the key it is in
+arp(16, 1, V.Bm9, 44)
+chord(keys, bt(17), bt(1.6), [47, 54, 62, 66, 73], 42, { roll: 40 })
+chord(strings, bt(16), bt(2) + 100, V.Bm9.st, 70)
+chord(strings, bt(18), bt(2) + 100, V.Gmaj7.st, 72)
+swell(strings, bt(16.5), bt(19.9), 58, 104)
+play(bass, bt(16), bt(2), 47, 54)
+play(bass, bt(18), bt(2), 43, 60)
+// the harp: B minor up the strings, as the pixels go into the envelope
+{
+  const scale = [47, 49, 50, 52, 54, 55, 57, 59, 61, 62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 81, 83]
+  const span = S.gather[1] - S.gather[0]
+  scale.forEach((k, i) => play(harp, S.gather[0] + (span * (i / scale.length) ** 1.15), 900, k, 50 + i * 1.5, { feel: 4 }))
+}
+chord(harp, S.seal[0], 1600, [71, 78, 83], 62, { roll: 30 })
+chord(choir, bt(19), bt(1) + 60, [62, 66, 71], 40)
+swell(choir, bt(19), bt(19.95), 30, 110)
+for (let k = 0; k < 8; k++) play(timp, bt(19 + k * 0.125), bt(0.2), 42, 14 + k * 6, { feel: 2, vfeel: 2 })
+// the bar: D, the light of the key, in everything, and let go
+chord(strings, bt(20), bt(2) + 300, V['D/F#'].st, 92)
+chord(choir, bt(20), bt(2.4), [62, 66, 69], 70)
+swell(choir, bt(20), bt(22.5), 110, 40)
+swell(strings, bt(20), bt(22.5), 118, 62)
+chord(keys, bt(20), bt(2.5), [30, 42], 58, { roll: 30 })
+chord(piano, bt(20) + 40, bt(2.5), [66, 69, 74, 78], 60, { roll: 45 })
+play(bass, bt(20), bt(2) + 100, 42, 70)
+
+// ── 12.5 to 15: the dark. The rule, said quietly: the low strings, the
+// piano alone above them, the melody's first notes and no more
+chord(low, bt(20), bt(4) + 200, [30, 42, 49], 60)
+chord(low, bt(22), bt(2) + 200, [40, 47], 62)
+ctl(low, 0, 11, 80)
+chord(strings, bt(22), bt(2) + 200, V.Em9.st, 58)
+;[[20.5, 66, 0.5], [21, 69, 0.5], [21.5, 71, 2.2]].forEach(([b, k, l]) => play(piano, bt(b), bt(l), k, 48))
+;[[22.5, 74, 0.5], [23, 73, 1.6]].forEach(([b, k, l]) => play(piano, bt(b), bt(l), k, 44))
+arp(22, 2, V.Em9, 38)
+
+// ── 15 to 20: the date. The piano starts the clock, F sharp in eighths, as
+// the sentence ends on it; the strings rise under it; on the thursday a
+// cello comes in, the melody's first notes, for the note that came; the
+// clock stops at nine, and in the quiet the two find each other
+arp(24, 2, V.Gmaj7, 40)
+chord(strings, bt(24), bt(2) + 100, V.Gmaj7.st, 62)
 for (const [b0, name, len] of HARMONY) {
   if (b0 < 26 || b0 >= 32) continue
-  play(bass, bt(b0), bt(len - 0.1), V[name].root, 66)
-  chord(strings, bt(b0), bt(len), V[name].st, 82)
+  chord(strings, bt(b0), bt(len) + 120, V[name].st, b0 < 30 ? 76 : 52)
+  play(bass, bt(b0), bt(len) + 60, V[name].root + 12, 64)
+  chord(keys, bt(b0), bt(len), [V[name].root + 12, V[name].root + 24], 40, { roll: 30 })
 }
-swell(strings, bt(26), bt(31.8), 50, 120)
-for (let k = 0; k < 8; k++) play(keys, bt(28 + k * 0.5), bt(0.45), k < 4 ? 57 : 69, 44 + k * 5, { feel: 4 })
-// the run, as they run: A major up the keyboard, a sixteenth a note
-;[57, 61, 64, 69, 73, 76, 81].forEach((k, i) => play(keys, S.run + i * 95, bt(1), k, 56 + i * 6, { feel: 3 }))
-// the hook's pickup under the last steps: `do they`
-hookAt(34).slice(0, 2).forEach(([t, k, l]) => { play(piano, t, l, k, 88); play(oohs, t, l, k, 72) })
+swell(strings, bt(26), bt(29), 50, 96)
+// the clock, until nine
+for (let e = 0; bt(26) + e * bt(0.5) < S.lapse[1]; e++) play(piano, bt(26) + e * bt(0.5), bt(0.42), 78, 50 + e * 2.2, { feel: 3, vfeel: 3 })
+play(piano, S.lapse[1], bt(1.6), 78, 64, { feel: 0 })
+// the cello, for the note that came in
+;[[27.5, 54, 0.5], [28, 57, 0.5], [28.5, 59, 1.1]].forEach(([b, k, l]) => play(cello, bt(b), bt(l) + 60, k, 70))
+swell(cello, bt(27.5), bt(29), 76, 96)
+swell(cello, bt(29), bt(30), 96, 64)
+ctl(cello, bt(34), 11, 100)
+// at nine the strings hold, down to almost nothing, and the bell of the
+// touch is heard in it
+swell(strings, S.lapse[1] + 100, bt(31.9), 96, 40)
+chord(choir, bt(31), bt(1) + 100, [54, 61, 66], 34)
 
-// ── 21.25 to 26.25: the chorus. The drop on the bar they are held: the hook sung
-// (piano, voices, the celesta an octave over), the strings, the bass in
-// eighths, the full kit; `it's mutual.` on the third beat
-hookAt(34).slice(2).forEach(([t, k, l], i) => {
-  play(piano, t, l, k, 100 - i * 2)
-  play(keys, t, l, k - 12, 60)
-  play(oohs, t, l + 80, k, 84)
-  play(celesta, t, l, k + 12, 66)
+// ── 20 to 23.75: the reveal. As they run in, a run up the piano, the last
+// two notes of it the melody's first, `do they`; held on the bar: the melody
+// sung by everything, the piano, the cello under it, the voices, the
+// strings, on D, the key's own light; `it's mutual.` on its third beat
+;[59, 61, 62, 64].forEach((k, i) => play(piano, S.run + i * 150, 600, k, 52 + i * 5, { feel: 3 }))
+;[[33.5, 66], [33.75, 69]].forEach(([b, k]) => play(piano, bt(b), bt(0.3), k, 74, { feel: 0 }))
+// under the run, the strings back on the dominant, and a timpani roll,
+// both rising into the bar they are held on, and the timpani's D on it
+chord(strings, S.meet, bt(2) + 60, V['F#'].st, 66)
+swell(strings, S.meet, bt(33.9), 34, 112)
+for (let k = 0; S.meet + k * bt(0.25) < bt(34) - 20; k++) play(timp, S.meet + k * bt(0.25), bt(0.3), 42, 18 + k * 9, { feel: 2, vfeel: 2 })
+play(timp, bt(34), bt(2), 38, 92, { feel: 0 })
+const peak = [[34, 71, 1], [35, 74, 1.5], [36.5, 73, 0.5], [37, 71, 1], [38, 73, 2.6]]
+peak.forEach(([b, k, l]) => {
+  play(piano, bt(b), bt(l) + 120, k, 88, { feel: 0 })
+  play(piano, bt(b) + 4, bt(l) + 120, k - 12, 62, { feel: 0 })
+  play(cello, bt(b), bt(l) + 100, k - 24, 60, { feel: 2 })
 })
-// and its echo, the celesta alone: `think a-bout`
-;[[40, 78, 0.5], [40.5, 76, 0.5], [41, 74, 1]].forEach(([b, k, l]) => play(celesta, bt(b), bt(l), k + 12, 76))
-for (const [b0, name] of [[34, 'D'], [38, 'A']]) {
-  const v = V[name]
-  chord(rhodes, bt(b0), bt(4), v.rh, 50, { roll: 10 })
-  chord(strings, bt(b0), bt(4), v.st, 74)
-  chord(strings, bt(b0), bt(4), [v.st[0] - 12], 66)
-  // the bass: eighths on the root, the octave on the and of four
-  for (let e = 0; e < 8; e++) play(bass, bt(b0 + e * 0.5), bt(0.42), e === 7 ? v.root + 12 : v.root, e % 2 ? 62 : 82, { feel: 4 })
-  const pick = [v.root + 24, v.rh[2] + 12, v.rh[3] + 12, v.rh[1] + 24]
-  for (let e = 0; e < 8; e++) play(guitar, bt(b0 + e * 0.5), bt(0.8), pick[e % 4], e % 2 ? 48 : 58, { feel: 8 })
+for (const [b0, name, len] of HARMONY) {
+  if (b0 < 34 || b0 >= 38) continue
+  chord(strings, bt(b0), bt(len) + 150, V[name].st, 90)
+  chord(choir, bt(b0), bt(len) + 120, V[name].rh.map((k) => k - 12), 74)
+  play(bass, bt(b0), bt(len) + 80, V[name].root, 82)
+  arp(b0, len, V[name], 48, { up: 12, step: 0.5 })
 }
-ctl(strings, bt(34), 11, 110)
+ctl(strings, bt(34), 11, 118)
+swell(choir, bt(34), bt(37), 96, 80)
+chord(harp, bt(34), 1800, [62, 69, 74, 78, 81], 60, { roll: 55 })
 
-// ── 26.25 to 28.75: the lights that never meet go out. The band goes; the pad
-// and the piano are left, the answer's last notes on the minor
-chord(pad, bt(42), bt(4.2), [47, 54, 59, 62], 46)
-ctl(pad, bt(42), 11, 100)
-chord(strings, bt(42), bt(4), V.Bm.st, 50)
-ctl(strings, bt(42), 11, 70)
-play(bass, bt(42), bt(3.6), 35, 46)
-// the hook's fall, in the minor, slower: `think a-bout you`
-;[[42, 78, 1.5], [43.5, 76, 0.5], [44, 74, 1], [45, 71, 1]].forEach(([b, k, l]) => play(piano, bt(b), bt(l) + 100, k, 74))
+// ── 23.75 to 26.25: kai's note, opened: the strings quieter; the cello
+// answers the melody, down, as kai's words go to their places; the harp
+// falls with them out of the envelope
+;[[38.25, 74, 0.75], [39, 73, 0.5], [39.5, 71, 0.5], [40, 69, 1], [41, 66, 1.5]].forEach(([b, k, l]) => play(cello, bt(b), bt(l) + 100, k - 12, 70, { feel: 4 }))
+for (const [b0, name, len] of HARMONY) {
+  if (b0 < 38 || b0 >= 42) continue
+  chord(strings, bt(b0), bt(len) + 150, V[name].st, 72)
+  play(bass, bt(b0), bt(len) + 80, V[name].root + 12, 62)
+  arp(b0, len, V[name], 42, { step: 0.5 })
+}
+swell(strings, bt(38), bt(42), 92, 58)
+{
+  const fall = [86, 83, 81, 78, 76, 74, 73, 71, 69, 66, 64, 62, 61, 59]
+  const span = S.unfold[1] - S.unfold[0]
+  fall.forEach((k, i) => play(harp, S.unfold[0] + span * (i / fall.length), 900, k, 56 - i, { feel: 4 }))
+}
 
-// ── 28.75 to 31.25: the question. The hook with its words, on the piano alone,
-// each note on the frame its word comes; it stops a step short of home
-chord(pad, bt(46), bt(2.2), [43, 50, 55, 59], 56)
-chord(pad, bt(48), bt(2.4), [45, 52, 57, 62], 58)
-chord(rhodes, bt(46), bt(4), [43, 50, 59], 34, { roll: 40 })
+// ── 26.25 to 28.75: the ones that never meet. The piano alone over a low
+// B; a note for each light as it goes, down the chord, the last lowest
+chord(low, bt(42), bt(4) + 300, [35, 47], 50)
+chord(keys, bt(42), bt(4), [35, 47], 40, { roll: 40 })
+chord(keys, bt(42) + 90, bt(1.8), V.Bm9.rh, 32, { roll: 70 })
+chord(keys, bt(44), bt(2), [40, 52], 34, { roll: 40 })
+;[[S.lone[0], 78], [S.lone[1], 74], [S.lone[2], 71]].forEach(([ms, k], i) => play(piano, ms + 10, bt(2.2), k, 52 - i * 4, { feel: 0 }))
+
+// ── 28.75 to 31.25: the question. The melody with its words, the piano
+// alone, each note on the frame its word comes on; `you?` on the ninth,
+// over A with the fourth in it, and not home
 const Q = S.qWords
-;[[Q[0], 69], [Q[1], 71], [Q[2], 74], [Q[3], 78], [Q[4], 76], [Q[4] + bt(0.5), 74], [Q[5], 76]].forEach(([t, k], i, all) => {
+;[Q[0], Q[1], Q[2], Q[3], Q[4], Q[4] + bt(0.5), Q[5]].map((t, i) => [t, HOOK[i]]).forEach(([t, k], i, all) => {
   const next = all[i + 1] ? all[i + 1][0] : bt(50)
-  play(piano, t, Math.max(bt(0.5), next - t + 120), k, 84, { feel: 0 })
+  play(piano, t, Math.max(bt(0.5), next - t + 140), k, 62, { feel: 0 })
 })
+chord(keys, bt(46), bt(2), [31, 43], 36, { roll: 50 })
+chord(keys, bt(48), bt(2), [33, 45], 36, { roll: 50 })
+chord(pad, bt(46), bt(2) + 100, [55, 62, 69], 46)
+chord(pad, bt(48), bt(2) + 100, [57, 62, 64], 48)
 
-// ── 31.25 to 35: home. The chord it did not reach, the whole of it: the
-// name lit out of the last light, and the hook's last note at last on D
-chord(keys, bt(50), bt(6), [26, 38, 50, 57, 62, 64, 66, 69, 74], 76, { roll: 55 })
-chord(rhodes, bt(50), bt(6), V.D.rh, 44, { roll: 30 })
-chord(strings, bt(50), bt(6), V.D.st, 66)
-ctl(strings, bt(50), 11, 90)
-chord(pad, bt(50), bt(6), [50, 57, 62, 66], 54)
-play(bass, bt(50), bt(5.5), 38, 64)
-;[[50.5, 81], [51.5, 78], [52, 76], [52.5, 74], [54, 74]].forEach(([b, k]) => play(celesta, bt(b), bt(1.5), k + 12, 70))
-
-// ── the drums ──
-// brushes in the verse, softer for kai; a room kit for the build and the
-// chorus; nothing after the drop's two bars but a kick under home
-for (let bar = 2; bar < 6; bar++) {
-  const b0 = bar * 4
-  const soft = bar >= 5 ? 0.7 : 1
-  play(brush, bt(b0), bt(0.3), 36, 70 * soft)
-  play(brush, bt(b0 + 2.5), bt(0.3), 36, 52 * soft)
-  if (bar < 5) {
-    play(brush, bt(b0 + 1), bt(0.3), 38, 58)
-    play(brush, bt(b0 + 3), bt(0.3), 38, 62)
-  }
-  // the swirl and the shaker in sixteenths, the late ones a little late
-  for (let s = 0; s < 16; s++) {
-    const swing = s % 2 ? bt(0.04) : 0
-    play(brush, bt(b0 + s * 0.25) + swing, bt(0.2), 70, (s % 4 === 0 ? 46 : s % 2 ? 26 : 36) * soft, { feel: 5 })
-  }
-}
-// the turn after kai's send: the kick and the shaker, two beats
-play(brush, bt(24), bt(0.3), 36, 50)
-for (let s = 0; s < 8; s++) play(brush, bt(24 + s * 0.25) + (s % 2 ? bt(0.04) : 0), bt(0.2), 70, s % 2 ? 22 : 32, { feel: 5 })
-// the build: a side stick, then the snare closing in, and the stop
-for (let b = 26; b < 32; b++) {
-  const up = (b - 26) / 6
-  play(kit, bt(b), bt(0.3), 36, (b % 2 ? 66 : 80) + up * 14)
-  if (b % 2) play(kit, bt(b), bt(0.3), 37, 60 + up * 16)
-  for (let s = 0; s < 4; s++) play(kit, bt(b + s * 0.25) + (s % 2 ? bt(0.04) : 0), bt(0.2), 42, (s % 2 ? 36 : 50) + up * 18, { feel: 4 })
-}
-for (let k = 0; k < 8; k++) play(kit, bt(30 + k * 0.25), bt(0.2), 38, 50 + k * 6, { feel: 3 })
-for (let k = 0; k < 8; k++) play(kit, bt(33 + k * 0.125), bt(0.15), 38, 48 + k * 9, { feel: 2 })
-// the chorus: kick, snare and clap on two and four, the hats in sixteenths
-for (const b0 of [34, 38]) {
-  for (const k of [0, 1.75, 2.5]) play(kit, bt(b0 + k), bt(0.3), 36, k ? 78 : 96, { feel: 3 })
-  for (const k of [1, 3]) { play(kit, bt(b0 + k), bt(0.3), 38, 88, { feel: 3 }); play(kit, bt(b0 + k) + 6, bt(0.3), 39, 64, { feel: 3 }) }
-  for (let s = 0; s < 16; s++) play(kit, bt(b0 + s * 0.25) + (s % 2 ? bt(0.045) : 0), bt(0.2), s === 14 ? 46 : 42, s % 4 === 0 ? 62 : s % 2 ? 34 : 48, { feel: 4 })
-}
-play(kit, bt(34), bt(2), 49, 92)
-play(kit, bt(38), bt(2), 57, 60)
-// a fill into the breakdown, and the floor going out
-;[[41, 47], [41.25, 45], [41.5, 43], [41.75, 41]].forEach(([b, k], i) => play(kit, bt(b), bt(0.3), k, 70 + i * 6, { feel: 3 }))
-play(kit, bt(50), bt(0.3), 36, 70)
-play(kit, bt(50), bt(3), 49, 46)
+// ── 31.25 to 35: the name. B minor with its ninth, everything quietly, and
+// then G with its seventh, where it is left
+chord(keys, bt(50), bt(2) + 200, [23, 35, 47], 52, { roll: 50 })
+chord(piano, bt(50) + 60, bt(2) + 100, [62, 66, 73, 78], 50, { roll: 70 })
+chord(strings, bt(50), bt(2) + 200, V.Bm9.st, 64)
+chord(choir, bt(50), bt(2) + 200, [62, 66, 73], 46)
+chord(keys, bt(52), bt(4) + 900, [19, 31, 43], 50, { roll: 60 })
+chord(piano, bt(52) + 80, bt(4) + 800, [59, 62, 66, 69, 74], 46, { roll: 90 })
+chord(strings, bt(52), bt(4) + 900, [43, 50, 59, 66, 71], 62)
+chord(choir, bt(52), bt(4) + 700, [59, 62, 66], 40)
+swell(strings, bt(52), bt(56), 70, 40)
+swell(choir, bt(52), bt(56), 70, 30)
+play(bass, bt(50), bt(2), 35, 54)
+play(bass, bt(52), bt(4) + 600, 31, 52)
+play(harp, S.url + 200, 1600, 83, 40)
 
 // ── MIDI, and the SoundFont ─────────────────────────────────────────────────
 const PPQ = 960
@@ -417,14 +465,6 @@ function key(ms, { pitch = 2200, body = 420, gain = 0.06, pan = 0 } = {}) {
     return (y * 0.09 + thump) * Math.exp(-i / sec(0.012))
   }, { gain, pan, verb: 0.15 })
 }
-// a flap: the card's slap, the board's body under it
-function flap(ms, { gain = 0.07, pan = 0 } = {}) {
-  const hp = biquad('hp', 1800, 1.2)
-  lay(ms, sec(0.07), (i) => {
-    const t = i / SR
-    return hp(rnd()) * Math.exp(-t / 0.006) * 0.8 + Math.sin(TAU * 190 * t) * Math.exp(-t / 0.014) * 0.7
-  }, { gain, pan, verb: 0.2 })
-}
 // a glint: a little bell, its partials where a struck bar's are
 function glint(ms, m, { gain = 0.012, decay = 0.8, pan = 0, verb = 0.8 } = {}) {
   const f = hz(m)
@@ -445,97 +485,126 @@ function air(ms, len, { gain = 0.04, from = 400, to = 9000, shape = 'swell', pan
     return lp(rnd(), from * (to / from) ** k) * e
   }, { gain, pan, verb })
 }
-// a phone waking: the inverter's buzz, faint
-function wakeBuzz(ms, { gain = 0.03, pan = 0 } = {}) {
-  lay(ms, sec(0.2), (i) => {
+// a screen going out, as an old one does: the whine of its circuit falling
+// away, and a soft knock as its picture goes to a point
+function whine(ms, { gain = 0.02, from = 7000, to = 300, len = 0.34, pan = 0 } = {}) {
+  let ph = 0
+  const L = sec(len)
+  lay(ms, L, (i) => {
+    const k = i / L
+    ph += (TAU * from * (to / from) ** k) / SR
+    return Math.sin(ph) * (1 - k) ** 1.4 * Math.min(1, i / sec(0.004))
+  }, { gain, pan, verb: 0.3 })
+}
+function thump(ms, { gain = 0.05, f = 55, len = 0.5, pan = 0 } = {}) {
+  lay(ms, sec(len), (i) => {
     const t = i / SR
-    return (Math.sin(TAU * 118 * t) * 0.6 + Math.sin(TAU * 236 * t) * 0.3 + rnd() * 0.1) * Math.exp(-t / 0.05)
-  }, { gain, pan })
+    return (Math.sin(TAU * f * t) + 0.5 * Math.sin(TAU * f * 2 * t) * Math.exp(-t / 0.05)) * Math.exp(-t / (len / 3.5)) * Math.min(1, i / sec(0.003))
+  }, { gain, pan, verb: 0.4 })
+}
+// a screen coming on: a short pip
+function pip(ms, { gain = 0.012, f = 2400, pan = 0 } = {}) {
+  lay(ms, sec(0.09), (i) => {
+    const t = i / SR
+    return Math.sin(TAU * f * t) * Math.exp(-t / 0.018) * 0.8 + Math.sin(TAU * f * 1.5 * t) * Math.exp(-t / 0.01) * 0.25
+  }, { gain, pan, verb: 0.5 })
+}
+// pixels on the move: a scatter of the smallest bells, in the key
+function shimmer(from, to, count, { gain = 0.0032, pan = 0.8 } = {}) {
+  const notes = [83, 86, 88, 90, 93, 95, 98]
+  for (let k = 0; k < count; k++) {
+    const ms = from + (to - from) * ((k + 0.5 + rnd() * 0.4) / count)
+    const m = notes[Math.min(notes.length - 1, Math.floor(((rnd() + 1) / 2) * notes.length))]
+    glint(ms, m, { gain: gain * (0.6 + 0.2 * (rnd() + 1)), decay: 0.3, pan: rnd() * pan, verb: 0.45 })
+  }
 }
 
-// the keys of the two phones, the words as they are typed
+// lin's keys, the words as they are typed, and send
 typedA().forEach((ms, i) => {
   const sp = A.text[i] === ' '
-  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.05 : 0.065, pan: -0.1 })
+  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.045 : 0.058, pan: -0.1 })
 })
-typedB().forEach((ms, i) => {
-  const sp = B.text[i] === ' '
-  key(ms, { pitch: sp ? 1250 : 2100 + ((i * 271) % 800), body: sp ? 240 : 400 + ((i * 41) % 110), gain: sp ? 0.04 : 0.05, pan: 0.18 })
-})
-key(S.press, { pitch: 1500, body: 300, gain: 0.08, pan: -0.05 })
-key(S.kSend, { pitch: 1500, body: 300, gain: 0.07, pan: 0.15 })
-wakeBuzz(S.kWake, { pan: 0.15 })
+key(S.press, { pitch: 1500, body: 300, gain: 0.07, pan: -0.05 })
 // the hall's letters near the lens, each a glint as the light reaches it
 const r01 = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
 const PENTA = [74, 76, 78, 81, 83, 86, 88, 90, 93]
 wallOf().forEach((l, n) => {
-  if (l.home || l.dist > 10 || r01(n + 5) > 0.2) return
-  glint(wakeOf(l.dist, l.seed) + 70, PENTA[Math.floor(r01(n + 9) * PENTA.length)], { gain: 0.012 / (1 + l.dist / 4), decay: 0.6, pan: Math.max(-0.85, Math.min(0.85, l.i / 7)) })
+  if (l.home || l.dist > 8 || r01(n + 5) > 0.07) return
+  glint(wakeOf(l.dist, l.seed) + 70, PENTA[Math.floor(r01(n + 9) * PENTA.length)], { gain: 0.0035 / (1 + l.dist / 4), decay: 0.6, pan: Math.max(-0.85, Math.min(0.85, l.i / 7)), verb: 0.45 })
 })
-air(S.wake, 5200, { gain: 0.035, from: 300, to: 5000 })
-// sent: the screen's two notes, and the light going up, a glint at a time
-glint(S.press + 410, 81, { gain: 0.022, decay: 1.2, verb: 0.6 })
-glint(S.press + 530, 86, { gain: 0.02, decay: 1.4, verb: 0.6, pan: 0.1 })
-;[74, 78, 81, 86, 90].forEach((m, i) => glint(S.rise + i * 156, m, { gain: 0.012, decay: 0.9, pan: i * 0.05 }))
-glint(S.kSend + 410, 78, { gain: 0.02, decay: 1.2, pan: 0.15 })
-;[71, 74, 78, 83].forEach((m, i) => glint(S.kRise + i * 156, m, { gain: 0.011, decay: 0.9, pan: 0.2 - i * 0.06 }))
-// the board
-S.days.forEach((d) => [0, 24, 48].forEach((o, c) => flap(d + o, { gain: 0.06, pan: (c - 1) * 0.3 })))
-for (let i = 0; i < 7; i++) if (i !== 4) flap(S.time + i * 40, { gain: 0.05, pan: (i / 3 - 1) * 0.4 })
-// the two lights touching, in the quiet before nine: each one's highest
-// note from its going up, struck together, as two glasses touch
-glint(S.touch[2] - 6, 90, { gain: 0.011, decay: 1.2, pan: -0.08, verb: 0.7 })
-glint(S.touch[2] + 4, 83, { gain: 0.011, decay: 1.2, pan: 0.08, verb: 0.7 })
-// at nine: the breath the band takes, a swell drawn in backwards
-air(S.meet - 200, bt(2) + 200, { gain: 0.05, from: 600, to: 11000, shape: 'rise', q: 1.2 })
+air(S.wake, 5200, { gain: 0.006, from: 300, to: 3000 })
+// the send: the letter's pixels up into the envelope, a scatter of light
+// over the harp; sealed, a click and a bell; the phone going out; the
+// envelope at the lens and through it, and away into the dark
+shimmer(S.gather[0], S.gather[1], 34)
+air(S.gather[0], S.gather[1] - S.gather[0], { gain: 0.007, from: 1500, to: 8000 })
+key(S.seal[0], { pitch: 3200, body: 600, gain: 0.03 })
+glint(S.seal[0] + 60, 95, { gain: 0.011, decay: 1.2, verb: 0.7 })
+glint(S.seal[0] + 90, 90, { gain: 0.009, decay: 1.4, verb: 0.7, pan: 0.15 })
+whine(S.crt[0], { gain: 0.014, from: 7500, to: 500, len: 0.36 })
+thump(S.crt[0] + 175, { gain: 0.03, f: 62, len: 0.35 })
+air(S.lens[0], S.lens[1] - S.lens[0] + 40, { gain: 0.045, from: 400, to: 12000, shape: 'rise', q: 1.1 })
+thump(S.wash[0] + 90, { gain: 0.06, f: 46, len: 1.2 })
+air(S.away[0], S.away[1] - S.away[0], { gain: 0.009, from: 6000, to: 500, shape: 'fall' })
+// the week's notes coming in, each a pip where it is; the one on the
+// thursday warmer, and its bell
+;[-0.75, 0.7, -0.6, 0.55, -0.3, -0.8, 0.75, 0.2].forEach((pan, i) => pip(S.others[i], { gain: 0.005, f: 2100 + i * 130, pan }))
+pip(S.kaiIn, { gain: 0.011, f: 1760, pan: 0.45 })
+glint(S.kaiIn + 40, 81, { gain: 0.011, decay: 1.4, pan: 0.45 })
+glint(S.kaiIn + 70, 88, { gain: 0.007, decay: 1.6, pan: 0.45 })
+// the clock: a wooden tick on every eighth as it runs; the stop at nine;
+// `pacific`
+for (let e = 0; S.lapse[0] + e * bt(0.5) < S.lapse[1]; e++) key(S.lapse[0] + e * bt(0.5), { pitch: 1700, body: 300, gain: 0.016, pan: -0.15 })
+key(S.lapse[1], { pitch: 1100, body: 220, gain: 0.04, pan: -0.1 })
+key(S.lapse[1] + 150, { pitch: 2400, body: 480, gain: 0.018 })
+// the lean in, a breath; and the two touching, in the quiet before nine:
+// each one's own note, struck together, as two glasses touch
+air(S.lean[0], S.touch[2] - S.lean[0], { gain: 0.007, from: 300, to: 2400 })
+glint(S.touch[2] - 6, 90, { gain: 0.012, decay: 1.4, pan: -0.08, verb: 0.7 })
+glint(S.touch[2] + 4, 83, { gain: 0.012, decay: 1.4, pan: 0.08, verb: 0.7 })
 // `it's mutual.` typed in the glass's cells
 const ST = STORY_TIMES
 const TYPE_MS = (ST.said - ST.say) / [...SAY].length
-;[...SAY].forEach((c, k) => { if (c !== ' ') key(reelAt(ST.say + TYPE_MS * (k + 1)), { pitch: 3000, body: 520, gain: 0.028, pan: -0.1 + k * 0.02 }) })
-// the lights that never met, going out, each on its frame and from its
-// place: a glint as it dims, a fainter one as it catches, and gone
+;[...SAY].forEach((c, k) => { if (c !== ' ') key(reelAt(ST.say + TYPE_MS * (k + 1)), { pitch: 3000, body: 520, gain: 0.024, pan: -0.1 + k * 0.02 }) })
+// kai's note: its envelope on, its flap up, its letters out to their places
+pip(S.env, { gain: 0.011, f: 1900, pan: 0.05 })
+key(S.flap[0], { pitch: 2800, body: 520, gain: 0.018 })
+key(S.flap[0] + 80, { pitch: 3100, body: 560, gain: 0.016 })
+shimmer(S.unfold[0], S.unfold[1], 26, { gain: 0.0038 })
+// the lights that never met, going out, each as a screen goes, from its
+// place, with a bell
 ;[[S.lone[0], 88, -0.55], [S.lone[1], 83, 0.45], [S.lone[2], 78, -0.15]].forEach(([ms, m, pan]) => {
-  glint(ms, m, { gain: 0.011, decay: 1.1, pan })
-  glint(ms + 95, m - 12, { gain: 0.005, decay: 0.7, pan })
+  whine(ms, { gain: 0.006, from: 6000, to: 700, len: 0.24, pan })
+  glint(ms + 30, m, { gain: 0.008, decay: 1.1, pan })
 })
 // the name: a glint for every cell coming on, a few of them
 for (let i = 0; i < 40; i++) {
   const d = (i / 40) ** 0.8 * (S.lock[1] - S.lock[0]) + r01(i + 70) * 30
-  glint(S.lock[0] + d, 86 + Math.floor(r01(i + 11) * 3) * 2, { gain: 0.004 + 0.004 * (1 - i / 40), decay: 0.35, pan: (r01(i + 90) - 0.5) * 1.2, verb: 0.6 })
+  glint(S.lock[0] + d, 86 + Math.floor(r01(i + 11) * 3) * 2, { gain: 0.0035 + 0.0035 * (1 - i / 40), decay: 0.35, pan: (r01(i + 90) - 0.5) * 1.2, verb: 0.6 })
 }
 // the address, typed
-for (let k = 0; k < 'celestual.us'.length; k++) key(S.url + 20 + k * 38, { pitch: 2600 + ((k * 211) % 700), body: 480, gain: 0.035, pan: 0.05 })
+for (let k = 0; k < 'celestual.us'.length; k++) key(S.url + 20 + k * 38, { pitch: 2600 + ((k * 211) % 700), body: 480, gain: 0.03, pan: 0.05 })
 
 // ── the mix ─────────────────────────────────────────────────────────────────
 // each stem: its level, where it sits, what is taken off it, how much of it
 // goes to the room and to the delay, and whether it breathes with the kick
 const MIX = {
-  piano: { gain: 1.7, pan: 0.05, width: 0.6, hp: 70, presence: [2.5, 3200], verb: 0.3, delay: 0.1 },
-  keys: { gain: 1.0, pan: -0.05, width: 0.7, hp: 60, verb: 0.3, duck: 0.2 },
-  rhodes: { gain: 1.1, pan: -0.15, width: 0.7, hp: 90, lp: 7000, shelf: [-2, 6000], verb: 0.22, duck: 0.35 },
-  celesta: { gain: 2.0, pan: 0.2, width: 0.5, hp: 300, verb: 0.45, delay: 0.25 },
-  box: { gain: 1.5, pan: -0.25, width: 0.5, hp: 300, verb: 0.5, delay: 0.25 },
-  oohs: { gain: 1.4, pan: 0, width: 0.9, hp: 160, lp: 9000, presence: [2, 2500], verb: 0.4, delay: 0.12, duck: 0.15 },
-  guitar: { gain: 1.25, pan: 0.3, width: 0.5, hp: 120, presence: [2, 4000], verb: 0.25, duck: 0.3 },
-  strings: { gain: 0.5, pan: 0, width: 1, hp: 120, verb: 0.45, duck: 0.4 },
-  bass: { gain: 0.95, pan: 0, width: 0, hp: 35, lp: 2400, drive: 1.5, verb: 0, duck: 0.55 },
-  pad: { gain: 0.9, pan: 0, width: 1, hp: 140, lp: 6000, verb: 0.5, duck: 0.4 },
-  brush: { gain: 0.9, pan: 0, width: 0.6, hp: 40, drive: 1.3, verb: 0.12 },
-  kit: { gain: 0.9, pan: 0, width: 0.6, hp: 35, drive: 1.6, verb: 0.1 },
+  piano: { gain: 1.5, pan: 0.04, width: 0.7, hp: 60, lp: 7500, shelf: [-2.5, 5500], verb: 0.42 },
+  keys: { gain: 1.25, pan: -0.04, width: 0.8, hp: 40, lp: 6000, shelf: [-3, 5000], verb: 0.4 },
+  strings: { gain: 0.75, pan: 0, width: 1, hp: 90, lp: 9000, verb: 0.55 },
+  low: { gain: 0.8, pan: 0, width: 0.8, hp: 35, lp: 4000, verb: 0.45 },
+  cello: { gain: 1.2, pan: -0.12, width: 0.4, hp: 60, presence: [1.5, 2200], verb: 0.45 },
+  bass: { gain: 0.8, pan: 0.05, width: 0.2, hp: 30, lp: 1800, verb: 0.3 },
+  harp: { gain: 0.8, pan: 0.18, width: 0.6, hp: 120, verb: 0.55 },
+  choir: { gain: 0.8, pan: 0, width: 1, hp: 140, lp: 8000, verb: 0.6 },
+  pad: { gain: 0.7, pan: 0, width: 1, hp: 120, lp: 5000, verb: 0.5 },
+  timp: { gain: 0.9, pan: 0, width: 0.5, hp: 30, verb: 0.5 },
 }
-// the kick's breath: every kick in the chorus and the build, as an envelope
+// nothing ducks: there is no kick for anything to breathe with
 const duck = new Float32Array(N).fill(1)
-for (const n of [...PARTS.kit.notes, ...PARTS.brush.notes].filter((x) => x.key === 36)) {
-  const s0 = at(n.t)
-  const depth = Math.min(1, n.vel / 96)
-  for (let i = 0; i < sec(0.32) && s0 + i < N; i++) {
-    const k = i < sec(0.005) ? i / sec(0.005) : Math.exp(-(i - sec(0.005)) / sec(0.11))
-    duck[s0 + i] = Math.min(duck[s0 + i], 1 - depth * k)
-  }
-}
 // `LEVELS=1` prints each stem's level in each part of the song, as it sits
 // in the mix, for balancing it without ears in the room
-const SECTIONS = [['intro', 0, 5000], ['verse', 5000, 16250], ['build', 16250, 21250], ['chorus', 21250, 26250], ['down', 26250, 28750], ['ask', 28750, 31250], ['home', 31250, MS]]
+const SECTIONS = [['letter', 0, 3750], ['hall', 3750, 10000], ['send', 10000, 12500], ['night', 12500, 15000], ['date', 15000, 20000], ['reveal', 20000, 23750], ['open', 23750, 26250], ['ifnot', 26250, 28750], ['ask', 28750, 31250], ['name', 31250, MS]]
 const LEVELS = process.env.LEVELS ? (() => {
   const acc = {}
   return {
@@ -555,8 +624,10 @@ const LEVELS = process.env.LEVELS ? (() => {
 const bus = () => ({ L: new Float32Array(N), R: new Float32Array(N) })
 const MUS = bus()
 const VERB = bus()
-const ECHO = bus()
+// `MUTE=a,b` leaves those parts out of the mix, for hearing what the rest is
+const MUTE = (process.env.MUTE || '').split(',')
 for (const [name, st] of Object.entries(STEMS)) {
+  if (MUTE.includes(name)) continue
   const m = MIX[name]
   const chain = () => {
     const f = []
@@ -586,26 +657,15 @@ for (const [name, st] of Object.entries(STEMS)) {
     MUS.L[i] += l; MUS.R[i] += r
     if (LEVELS) LEVELS.add(name, i, l, r)
     if (m.verb) { VERB.L[i] += l * m.verb; VERB.R[i] += r * m.verb }
-    if (m.delay) { ECHO.L[i] += l * m.delay; ECHO.R[i] += r * m.delay }
   }
 }
 if (LEVELS) LEVELS.print()
-// the delay: a dotted eighth, crossing from side to side, darkening
-{
-  const d = sec((BEAT * 0.75) / 1000)
-  const lpL = biquad('lp', 3500)
-  const lpR = biquad('lp', 3500)
-  for (let i = d; i < N; i++) {
-    ECHO.L[i] += lpR(ECHO.R[i - d]) * 0.45
-    ECHO.R[i] += lpL(ECHO.L[i - d]) * 0.45
-  }
-  for (let i = 0; i < N; i++) { VERB.L[i] += ECHO.L[i] * 0.3; VERB.R[i] += ECHO.R[i] * 0.3 }
-}
 for (let i = 0; i < N; i++) { VERB.L[i] += FXV.L[i]; VERB.R[i] += FXV.R[i] }
 // the room: an impulse made here (a few early reflections, then a tail of
-// noise that darkens as it dies, each side its own), convolved by ffmpeg
+// noise that darkens as it dies, each side its own), convolved by ffmpeg; a
+// hall, long and dark, for a piano heard from a little way off
 {
-  const len = sec(2.6)
+  const len = sec(3.4)
   const IL = new Float32Array(len)
   const IR = new Float32Array(len)
   const pre = sec(0.018)
@@ -617,8 +677,8 @@ for (let i = 0; i < N; i++) { VERB.L[i] += FXV.L[i]; VERB.R[i] += FXV.R[i] }
   const dr = lowpass(0.5)
   for (let i = pre; i < len; i++) {
     const t = (i - pre) / SR
-    const env = Math.exp(-t / 0.62) * Math.min(1, t / 0.03)
-    const fc = 9000 * Math.exp(-t / 0.9) + 900
+    const env = Math.exp(-t / 0.85) * Math.min(1, t / 0.035)
+    const fc = 7000 * Math.exp(-t / 1.1) + 700
     IL[i] += dl(rnd(), fc) * env * 0.35
     IR[i] += dr(rnd(), fc) * env * 0.35
   }
@@ -639,11 +699,12 @@ for (let i = 0; i < N; i++) { VERB.L[i] += FXV.L[i]; VERB.R[i] += FXV.R[i] }
   for (let i = 0; i < N; i++) { MUS.L[i] += room.L[i]; MUS.R[i] += room.R[i] }
 }
 // the foley over the band, dry
-for (let i = 0; i < N; i++) { MUS.L[i] += FX.L[i] * 1.6; MUS.R[i] += FX.R[i] * 1.6 }
+const FXG = process.env.FXG != null ? Number(process.env.FXG) : 1.2
+for (let i = 0; i < N; i++) { MUS.L[i] += FX.L[i] * FXG; MUS.R[i] += FX.R[i] * FXG }
 
 // ── the master ──────────────────────────────────────────────────────────────
-// a gentle glue (an RMS compressor, slow), tape's soft saturation, the last
-// seconds let go of, and loudnorm in two passes
+// a gentle glue (an RMS compressor, slow), warmth and no added air, tape's
+// soft saturation, the last seconds let go of, and loudnorm in two passes
 {
   let env = 0
   const att = Math.exp(-1 / sec(0.03))
@@ -652,7 +713,7 @@ for (let i = 0; i < N; i++) { MUS.L[i] += FX.L[i] * 1.6; MUS.R[i] += FX.R[i] * 1
   for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(MUS.L[i]), Math.abs(MUS.R[i]))
   const norm = 0.5 / Math.max(1e-6, peak)
   const thr = 0.22
-  const tone = () => { const f = [biquad('peak', 300, 0.9, -1.5), biquad('peak', 3000, 0.8, 1.5), biquad('highshelf', 7500, 0.7, 4.5)]; return (x) => { for (const g of f) x = g(x); return x } }
+  const tone = () => { const f = [biquad('peak', 220, 0.8, 0.8), biquad('peak', 3200, 0.8, -0.6), biquad('highshelf', 8500, 0.7, -1.5)]; return (x) => { for (const g of f) x = g(x); return x } }
   const tl = tone()
   const tr = tone()
   for (let i = 0; i < N; i++) {
@@ -660,10 +721,10 @@ for (let i = 0; i < N; i++) { MUS.L[i] += FX.L[i] * 1.6; MUS.R[i] += FX.R[i] * 1
     const r = tr(MUS.R[i] * norm)
     const x = Math.sqrt((l * l + r * r) / 2)
     env = x > env ? att * env + (1 - att) * x : rel * env + (1 - rel) * x
-    const g = env > thr ? (thr / env) ** (1 - 1 / 1.6) : 1
+    const g = env > thr ? (thr / env) ** (1 - 1 / 1.35) : 1
     const fade = Math.min(1, (N - i) / sec(1.4)) * Math.min(1, i / sec(0.01))
-    MUS.L[i] = Math.tanh(l * g * 1.6) / 1.6 * fade
-    MUS.R[i] = Math.tanh(r * g * 1.6) / 1.6 * fade
+    MUS.L[i] = Math.tanh(l * g * 1.3) / 1.3 * fade
+    MUS.R[i] = Math.tanh(r * g * 1.3) / 1.3 * fade
   }
 }
 // the film's own length, the last chord let ring into it

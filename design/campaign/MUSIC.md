@@ -1,26 +1,45 @@
 # The reel's song
 
 `celestual-reel.wav`, under `celestual-reel.mp4` and `celestual-reel-60.mp4`.
-35 seconds at 96 beats a minute in D major and its B minor, fourteen bars,
-written for the reel and made from the same clock as its picture
-(`app/src/studio/parts/reel-time.js`), so every word lands on a note.
+35 seconds, fifty six beats at 96 a minute in B minor, with a bar of two
+beats where the reveal begins, written for the reel and made from the same
+clock as its picture (`app/src/studio/parts/reel-time.js`), so every word
+lands on a note.
 
 ## How it is made
 
-`node scripts/studio-score.mjs <out.wav>` writes the song note by note: a
-hook (`do they still think a-bout you`) first heard on a celesta and a music
-box as the hall rises, sung by the band when the two of them are held, half
-remembered on the piano when the lights go out and last with its words; a
-progression of Bm, G, D and A; a Rhodes, a nylon guitar picking, a bass,
-strings, voices, a pad, brushes and a kit. Each note is then loosened a
-little in its time and its weight, as a player would, the same way every
-time the song is made.
-Each part is played by FluidSynth from the MuseScore General soundfont
-into its own stem, and the stems are mixed in Node (the kit ducks the band,
-a delay answers the hook, a room is convolved round it) and mastered with
-ffmpeg to -14 LUFS, -1.5 dB true peak. The phones' keys, the board's cards
-and the lights are written into the same score, on the frames they belong
-to.
+`node scripts/studio-score.mjs <out.wav>` writes the song note by note. It
+is quiet and it aches: a grand piano played close and soft, strings, a
+cello, a contrabass, a harp, voices, a low pad and a timpani's roll, and no
+drums. Its melody is the film's question, `do they still think a-bout
+you?`: up a sixth, a sigh down, and up again at the end, as a question
+goes, onto a note that is not home.
+
+- the letter: the piano alone, a line falling under lin's typing (F sharp,
+  E, D, C sharp, B), the sigh on the `d` after the breath
+- the hall: the piano's arpeggios as the backlights come on, the strings
+  rising with the camera, a cello under the words
+- the send: the piano holds its breath on the key; a harp carries the
+  letter's pixels up into the envelope; a bell as it is sealed; the strings
+  and voices swell as it comes at the lens and break on D as it goes through
+- the date: the piano ticks the clock round in eighths and stops at nine; a
+  cello comes in with the note that comes in on the thursday
+- the reveal: a run up the piano as they run in, its last two notes the
+  melody's first, and the melody sung by everything when they are held
+- kai's note: the cello answers the melody, a harp falling as the letters
+  go to their places
+- the ones that go out: the piano alone, a note for each light
+- the question: the melody with its words, on the piano alone, left open
+- the name: B minor with its ninth, then G with its seventh, where it is
+  left
+
+Each note is then loosened a little in its time and its weight, as a player
+would, the same way every time the song is made. Each part is played by
+FluidSynth from the MuseScore General soundfont into its own stem, and the
+stems are mixed in Node (a long, dark hall convolved round them) and
+mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. The phone's keys, the
+send, the clock and the lights are written into the same score, on the
+frames they belong to.
 
 `LEVELS=1` prints each part's level in each section; `STEMS=<dir>` keeps
 the stems.
