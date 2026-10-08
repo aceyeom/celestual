@@ -69,10 +69,11 @@ film takes it out of the phone and makes it the whole world.
    | rose | `#DF93AF` | iris, her note, her petals. The rose screen's hue |
    | ice | `#8FB8DC` | jun, his note, his petals. The ice screen's hue |
    | black | `#0A0A0C` | the world: the bench, the trees, the press, every word, the lockup |
-   | rose over ice | about `#7D6A97` | only where the two of them touch, and at the end the two targets |
+   | rose over ice | about `#8371A9` | only where the two of them touch, and at the end the two targets |
 
-   Inks multiply, as inks do: each filters the paper, so rose over ice is
-   rose times ice, channel by channel. Nothing is ever lighter than paper,
+   Inks are filters, as inks are: alone on the paper each prints its own
+   colour, and rose over ice prints rose times ice over the paper, channel
+   by channel, a violet neither of them is. Nothing is ever lighter than paper,
    so a light is drawn as paper left bare in a field of ink (the moon, the
    scanner's bar).
 
@@ -97,11 +98,14 @@ film takes it out of the phone and makes it the whole world.
    (`app/src/wall/scenes/bench.js`): her (`HER_UP`, the ponytail and the
    ribbon) and him (`HIM`), posed by `rig.js` at the telling's own moment
    of 5800 ms, her head resting on his shoulder and his cheek on her hair,
-   each laid on its own `Pad` at ten cells to the intro's one (941 by 741),
-   so the rose holds only her and the ice holds only him. Laid together
-   they overlap in one band about a tenth of the picture wide, from her
-   temple on his shoulder down her side against his: that band is the only
-   rose over ice in the film. The boards, the moon, the treeline and the
+   framed from the waist up with the bench's top rail along the foot of the
+   picture and the moon high between them, each laid on its own `Pad` at
+   ten cells to the intro's one (941 by 741), so the rose holds only her
+   and the ice holds only him. Laid together they overlap in one band about
+   a sixth of the picture wide, from her temple on his shoulder down her side
+   against his: that band is the only rose over ice in the film. Whatever
+   is behind a body on the press is knocked out of the black under it, so
+   the inks print on bare paper and never over the trees. The boards, the moon, the treeline and the
    branch are the telling's own `bench` and `scenery`, in black. Their
    breath runs on (the telling's own `breath`), so a held print is alive.
    The style frame on the treatment page is drawn from exactly these
@@ -156,13 +160,13 @@ Every sheet is 1080 by 1920 in its own pixels.
 | --- | --- | --- |
 | the targets | (96, 112) and (984, 112), 56 px | a registration target in each ink the sheet carries, and crop marks at the four corners, black, 1 px |
 | the caption | from y 270, x 80 to 1000 | printed only on the sheet of the moment that has one |
-| the picture | x 40 to 1040, y 600 to 1388 | the bench at night: the sky a black halftone from 55 percent at the top to bare paper at the treeline, the moon bare paper with a halftone halo, the branch black with its blossom in the sheet's ink (or both), the treeline black at 22 percent, the boards solid black with a hair of bare paper round them where they cross a body (the telling's own `air`) |
-| the note | x 80, y 1450 | the writer's ink, Jersey 10, 64 px |
-| the slug | x 80, y 1556 | Geist Mono 22 px, black: `iris · rose`, `jun · ice` |
+| the picture | x 40 to 1040, y 560 to 1460 | the bench at night, from the waist up: the sky a black halftone from 30 percent at the top to bare paper at the heads, the moon bare paper with a halftone halo, stars as specks of bare paper, the branch black with its blossom in rose, the treeline black at 17 percent, the top rail solid black with a hair of bare paper round it where it crosses a body (the telling's own `air`) |
+| the note | x 80, y 1496 | the writer's ink, Jersey 10, 64 px |
+| the slug | x 80, y 1598 | Geist Mono 22 px, black: `iris · rose`, `jun · ice` |
 
 The mutual's sheet is laid out as the keepsake is: the picture in both inks;
-`it's mutual.` in Newsreader italic 112 px at y 1420; `iris & jun` in Jersey
-10, 40 px, at y 1548; and the two notes side by side from y 1620, iris's in
+`it's mutual.` in Newsreader italic 112 px at y 1474; `iris & jun` in Jersey
+10, 40 px, at y 1598; and the two notes side by side from y 1652, iris's in
 rose at x 80 and jun's in ice at x 580, each 44 px with `from iris` and
 `from jun` under it in Geist Mono 20 px. Its lower part is in the feed's
 caption zone, and the camera moves up the sheet to read it (shot 10).
@@ -183,7 +187,7 @@ the thing it is the sound of.
 | 5 | 8000 to 10000 (5) | **the drums.** Inside the press: two drums across the frame, the rose drum above and the ice drum below, each wrapped in its master: her picture, in negative, as rows of tiny holes on the rose drum with the ink wet behind them; his on the ice. They turn a quarter turn over the bar and print nothing. The paper path under them is empty. The press's steel in black halftone round them. | `they only read it` / `if they send you one too.` | the drums' hum, a low tick on each beat. The players: one note each, a beat apart, slow |
 | 6 | 10000 to 12000 (6) | **the week.** The press's panel: a small LCD drawn in black with its digits left bare (Jersey 10's cells). On the beats it reads `wed`, `thu`, `fri`, and on beat 4 `sat 8:59 pm`, and holds. | `every mutual is revealed` / `on saturday at 9pm pacific.` | four ticks. A riser over the last two beats as the drums spin up |
 | 7 | 12000 to 14000 (7) | **nine.** Beat 1: the panel reads `sat 9:00 pm`. Beat 2: cut to the out tray, top down: the press is running, and sheets come out one a beat and land on the stack: blank, blank, blank. Each a slightly different paper. The second has one line on it and nothing else. | on the second blank sheet: `if it isn't,` / `nobody ever knows.` | the press's ready beep at nine (two short square tones). Then the press at full run: the feed on every beat where a kick would be, the eject on every offbeat, the drums' whirr. No tune |
-| 8 | 14000 to 16000 (8) | **two inks.** One sheet goes through the other way. We ride the paper path, top down, the sheet coming up the frame under the two drums. Under the rose drum, iris prints onto it (beat 1). Under the ice drum, jun lands (beat 2), 14 px and 0.8 degrees out of register: the two dot screens beat against each other and a moiré storm rolls across their bodies and out over the whole sheet, slow rosettes and fast bars, for two beats. On beat 3 the ice snaps into register over four prints (14, 5, 1.5, 0.4 px) and the storm falls into the quiet rosette of a print in register. Where her head rests on his shoulder the two inks overprint, and that band is violet. | none | beat 1, iris's player; beat 2, jun's lands with it, and for the first time the two halves interlock and the hook is whole. A shimmer under the storm. Beat 3, the snap: a side stick, a low thump, and the choir on F |
+| 8 | 14000 to 16000 (8) | **two inks.** One sheet goes through the other way. We ride the paper path, top down, the sheet coming up the frame under the two drums. Under the rose drum, iris prints onto it (beat 1). Under the ice drum, jun lands (beat 2), 14 px and 0.8 degrees out of register, and the camera goes down into the band where the two of them overlap until it fills the frame: there the two dot screens beat against each other and a moiré storm rolls through it, slow rosettes and fast bars, for two beats. (A moiré is only ever where two screens cross, so the storm is shot where they cross.) On beat 3 the ice snaps into register over four prints (14, 5, 1.5, 0.4 px), the storm falls into the quiet rosette of a print in register, and the camera comes back up off the band: where her head rests on his shoulder the two inks overprint, and that band is violet. | none | beat 1, iris's player; beat 2, jun's lands with it, and for the first time the two halves interlock and the hook is whole. A shimmer under the storm. Beat 3, the snap: a side stick, a low thump, and the choir on F |
 | 9 | 16000 to 18000 (9) | **it's mutual.** The sheet slides out onto the stack and the camera is over it: the whole print. The bench, the moon, the branch; iris and jun together, her head on his shoulder, his cheek on her hair; petals in rose and in ice, and a few violet where two cross; the violet band where they touch. | on the print: `it's mutual.`, and under it `iris & jun` | the band: both players, the bass, strings, the press playing the kit (the feed on 1 and 3, the eject on the offbeats, the snap on 2 and 4) |
 | 10 | 18000 to 20000 (10) | **both notes.** The camera slides up the sheet to the notes, side by side for the first time: iris's in rose, jun's in ice, each signed in black mono under it. | `you both find out.` and, on the print, `next time i'd sit closer.` `from iris` / `next time i'd move over.` `from jun` | the hook goes on. A counter line on the strings |
 | 11 | 20000 to 22000 (11) | **every dot.** The camera goes straight down into the violet band: the dots grow, rose dots and ice dots and the violet where each pair overlaps, and it keeps going into one violet dot until the dot is the frame, and inside it, printed small and whole, is the same picture. It lands on that picture at the framing of shot 9 on the next downbeat. Every dot of it is the two of them. | none | a long rise in the strings and the choir. The hook, both players |
@@ -299,7 +303,7 @@ before a frame of the film is rendered.
 | Halftones and a feed's encoder. Dots finer than about 6 px smear, and a platform's rescale can make a moiré of its own | Upload the 6 s cut privately to Instagram and TikTok and watch it on two phones before the 30 s is rendered. If the dots go to mush, go to 8 px |
 | The boil tires the eye over 30 s | Render shot 1 at three strengths (0.5, 1 and 1.5 px of misregistration) and pick by eye |
 | The storm must not flash | Keep the frame's mean light changing under ten percent from one frame to the next through shot 8 (no more than three flashes a second, WCAG 2.3.1) |
-| The overprint is too small to see on a phone | The touch band is about a tenth of the picture wide (measured on the masks). If it does not read in shot 9, the camera starts shot 9 a little closer (1.15) and settles out |
+| The overprint is too small to see on a phone | The touch band is about a sixth of the picture wide (measured on the masks). If it does not read in shot 9, the camera starts shot 9 a little closer (1.15) and settles out |
 
 ## 12. What it claims, and what each claim stands on
 

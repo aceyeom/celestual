@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Celestual Next Film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Jersey+10&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  /* one room, and two worlds in it: a sheet of riso paper for two inks, the night under the day for pacific */
+  /* layout: a reading column; each film a band, its live frame beside its words and its script under both */
+  :root {
+    --room: #000; --sheet: #0E0E0E; --hair: rgba(244, 241, 234, 0.12);
+    --chalk: #F4F1EA; --ash: #9C978E;
+    --paper: #F4F0E4; --ink: #0A0A0C; --ink-2: #5E584E; --paper-hair: rgba(10, 10, 12, 0.16);
+    --rose: #DF93AF; --ice: #8FB8DC; --amber: #E0A95A; --violet: #8371A9;
+    --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+    --pixel: 'Jersey 10', 'Geist Mono', ui-monospace, monospace;
+    --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--room); }
+  body { background: var(--room); color: var(--chalk); font-family: var(--serif); margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 48px); }
+  a { color: inherit; }
+  :focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+  .mono { font-family: var(--mono); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash); }
+
+  /* ── the head ── */
+  .head { padding-block: clamp(40px, 7vw, 92px) clamp(36px, 6vw, 72px); display: grid; gap: 22px; }
+  h1 { font-weight: 500; font-size: clamp(54px, 10.5vw, 136px); line-height: 0.9; letter-spacing: -0.032em; margin: 0; text-wrap: balance; }
+  h1 i { font-weight: 400; color: var(--ash); }
+  .lede { font-size: clamp(19px, 2.1vw, 23px); line-height: 1.45; color: var(--ash); max-width: 60ch; margin: 0; text-wrap: pretty; }
+  .lede b { color: var(--chalk); font-weight: 500; }
+  .shifts { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0; border-top: 1px solid var(--hair); }
+  .shifts li { padding: 16px 18px 18px 0; border-bottom: 1px solid var(--hair); display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .shifts b { font-family: var(--mono); font-weight: 400; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chalk); }
+  .shifts span { font-size: 17px; line-height: 1.42; color: var(--ash); text-wrap: pretty; }
+
+  /* ── a film's band ── */
+  .band { padding-block: clamp(48px, 7vw, 96px); }
+  .band.paper { background: var(--paper); color: var(--ink); position: relative; isolation: isolate; }
+  .band.paper::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0.55; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.32 0 0 0 0 0.26 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"); }
+  .band.night { background: var(--room); }
+  .film-head { display: grid; gap: 10px; margin-bottom: clamp(28px, 4vw, 44px); }
+  .film-head .tag { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .paper .tag, .paper .spec { color: var(--ink-2); }
+  .night .tag, .night .spec { color: var(--ash); }
+  h2 { font-weight: 500; font-size: clamp(46px, 8vw, 104px); line-height: 0.92; letter-spacing: -0.03em; margin: 0; }
+  .spec { font-family: var(--mono); font-size: 12px; letter-spacing: 0.05em; }
+  .film-grid { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: clamp(28px, 5vw, 68px); align-items: start; }
+  @media (max-width: 860px) { .film-grid { grid-template-columns: 1fr; } .frame { max-width: 420px; } }
+
+  /* the live frame */
+  .frame { margin: 0; display: grid; gap: 12px; min-width: 0; }
+  .stage { position: relative; width: 100%; aspect-ratio: 9 / 16; max-width: 100%; overflow: hidden; isolation: isolate; }
+  .paper .stage { background: var(--paper); box-shadow: 0 0 0 1px var(--paper-hair); }
+  .night .stage { background: #050507; box-shadow: 0 0 0 1px var(--hair); }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage .sheet { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; pointer-events: none; }
+  .stage .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-family: var(--mono); font-size: 12px; }
+  .keys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .key { font-family: var(--pixel); font-size: 21px; line-height: 1; padding: 7px 12px 6px; border-radius: 3px; cursor: pointer; background: transparent; }
+  .paper .key { color: var(--ink); border: 1px solid rgba(10, 10, 12, 0.5); }
+  .paper .key[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .night .key { color: var(--chalk); border: 1px solid rgba(244, 241, 234, 0.38); }
+  .night .key[aria-pressed='true'] { background: var(--chalk); color: #000; border-color: var(--chalk); }
+  .key:active { transform: translateY(1px); }
+  .closer { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .closer input { width: 120px; accent-color: currentColor; }
+  .paper .closer { color: var(--ink-2); }
+  .frame figcaption { font-family: var(--mono); font-size: 11.5px; line-height: 1.55; letter-spacing: 0.02em; text-wrap: pretty; }
+  .paper figcaption { color: var(--ink-2); }
+  .night figcaption { color: var(--ash); }
+
+  /* the words beside it */
+  .words { display: grid; gap: 22px; min-width: 0; }
+  .line { font-weight: 500; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.04; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+  .line i { font-weight: 400; }
+  .words p { font-size: 18.5px; line-height: 1.5; margin: 0; max-width: 62ch; text-wrap: pretty; }
+  .paper .words p.soft { color: var(--ink-2); }
+  .night .words p.soft { color: var(--ash); }
+  .facts { margin: 0; display: grid; grid-template-columns: 9.5em minmax(0, 1fr); border-top: 1px solid; }
+  .paper .facts, .paper .facts > * { border-color: var(--paper-hair); }
+  .night .facts, .night .facts > * { border-color: var(--hair); }
+  .facts dt, .facts dd { margin: 0; padding: 11px 0; border-bottom: 1px solid; font-size: 16.5px; line-height: 1.45; }
+  .facts dt { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 14px; padding-right: 12px; }
+  .paper .facts dt { color: var(--ink-2); }
+  .night .facts dt { color: var(--ash); }
+  @media (max-width: 520px) { .facts { grid-template-columns: 1fr; } .facts dt { border-bottom: 0; padding-bottom: 0; } }
+  .shots-3 { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .shots-3 li { font-size: 17px; line-height: 1.4; display: grid; grid-template-columns: 1.6em 1fr; }
+  .shots-3 li span { font-family: var(--mono); font-size: 12px; padding-top: 4px; }
+
+  /* the script */
+  .section-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; border-top: 1px solid; padding-top: 16px; margin: clamp(48px, 6vw, 72px) 0 6px; }
+  .paper .section-title { border-color: var(--paper-hair); }
+  .night .section-title { border-color: var(--hair); }
+  h3 { font-weight: 500; font-size: clamp(26px, 3.2vw, 36px); letter-spacing: -0.02em; margin: 0; }
+  .shots { list-style: none; margin: 0; padding: 0; }
+  .shot { display: grid; grid-template-columns: 8.2em minmax(0, 1.25fr) minmax(0, 1fr); gap: 6px 26px; padding: 16px 0; border-bottom: 1px solid; }
+  .paper .shot { border-color: var(--paper-hair); }
+  .night .shot { border-color: var(--hair); }
+  .shot .when { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; line-height: 1.5; padding-top: 3px; }
+  .shot .when b { display: block; font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
+  .paper .shot .when { color: var(--ink-2); }
+  .paper .shot .when b { color: var(--ink); }
+  .night .shot .when { color: var(--ash); }
+  .night .shot .when b { color: var(--chalk); }
+  .shot .pic { font-size: 16.5px; line-height: 1.5; margin: 0; text-wrap: pretty; }
+  .shot .side { display: grid; gap: 10px; align-content: start; }
+  .say { font-size: 19px; line-height: 1.3; }
+  .say .px { font-family: var(--pixel); font-size: 22px; letter-spacing: 0.01em; }
+  .say .none { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; }
+  .snd { font-size: 14.5px; line-height: 1.45; text-wrap: pretty; }
+  .paper .snd, .paper .say .none { color: var(--ink-2); }
+  .night .snd, .night .say .none { color: var(--ash); }
+  .ink-rose { color: #B85E80; }
+  .ink-ice { color: #4F84B0; }
+  @media (max-width: 860px) { .shot { grid-template-columns: 1fr; } }
+
+  /* tables */
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.45; color: inherit; }
+  .paper table { color: var(--ink); }
+  .night table, .choice table { color: var(--chalk); }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px 10px 0; border-bottom: 1px solid; }
+  th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .paper th, .paper td { border-color: var(--paper-hair); }
+  .paper th { color: var(--ink-2); }
+  .night th, .night td, .choice th, .choice td { border-color: var(--hair); }
+  .night th, .choice th { color: var(--ash); }
+  td.notes { font-family: var(--mono); font-size: 13px; letter-spacing: 0.01em; white-space: nowrap; }
+  td:first-child code { white-space: nowrap; }
+  .sw { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.18); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px clamp(28px, 4vw, 56px); }
+  .cols > div { min-width: 0; }
+  .cols h4 { font-family: var(--mono); font-weight: 400; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; margin: 26px 0 10px; }
+  .paper .cols h4 { color: var(--ink-2); }
+  .night .cols h4 { color: var(--ash); }
+  .cols p, .cols li { font-size: 16.5px; line-height: 1.5; text-wrap: pretty; }
+  .cols ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  .cols p { margin: 0 0 10px; }
+  code { font-family: var(--mono); font-size: 0.82em; letter-spacing: 0; }
+
+  /* the choice */
+  .choice { padding-block: clamp(56px, 8vw, 104px); }
+  .choice h2 { margin-bottom: 18px; }
+  .choice .verdict { font-size: clamp(22px, 2.6vw, 30px); line-height: 1.3; color: var(--chalk); max-width: 40ch; margin: 0 0 16px; text-wrap: pretty; }
+  .verdict b { font-weight: 500; }
+  .choice p { font-size: 18px; line-height: 1.5; color: var(--ash); max-width: 64ch; margin: 0 0 14px; }
+  .decide { margin: 18px 0 0; padding: 0; list-style: none; counter-reset: d; border-top: 1px solid var(--hair); }
+  .decide li { counter-increment: d; display: grid; grid-template-columns: 2.2em 1fr; padding: 13px 0; border-bottom: 1px solid var(--hair); font-size: 17.5px; line-height: 1.45; }
+  .decide li::before { content: counter(d); font-family: var(--mono); font-size: 12px; color: var(--ash); padding-top: 4px; }
+  footer { border-top: 1px solid var(--hair); padding-block: 18px 40px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--ash); letter-spacing: 0.03em; }
+  .sign { display: flex; align-items: center; gap: 14px; margin-top: 30px; }
+  .sign svg { width: 224px; height: 66px; color: var(--chalk); image-rendering: pixelated; filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1)); }
+
+  /* the riso's own words, printed over the press */
+  .sheet .pr { position: absolute; left: 0; top: 0; white-space: nowrap; mix-blend-mode: multiply; will-change: transform; }
+  .sheet .pr.note { font-family: var(--pixel); font-size: 64px; line-height: 1; -webkit-text-stroke: 0.7px currentColor; }
+  .sheet .pr.note.small { font-size: 44px; line-height: 1.05; white-space: normal; width: 430px; -webkit-text-stroke: 0.5px currentColor; }
+  .sheet .pr.slug { font-family: var(--mono); font-size: 22px; letter-spacing: 0.04em; }
+  .sheet .pr.say { font-family: var(--serif); font-style: italic; font-size: 112px; letter-spacing: -0.02em; line-height: 1; }
+  .sheet .pr.names { font-family: var(--pixel); font-size: 40px; }
+  .sheet .pr.from { font-family: var(--mono); font-size: 20px; letter-spacing: 0.04em; }
+  .sheet .t-rose { color: rgb(233, 156, 196); }
+  .sheet .t-ice { color: rgb(149, 196, 246); }
+  .sheet .t-black { color: rgb(10, 11, 13); }
+  .sheet .grp[hidden] { display: none; }
+
+  /* pacific's words, on the seam and in the corners */
+  .sheet .clock { position: absolute; left: 64px; font-family: var(--pixel); font-size: 40px; line-height: 1; letter-spacing: 0.01em; }
+  .sheet .clock.c-seoul { top: 52px; color: #1B140B; }
+  .sheet .clock.c-berk { bottom: 52px; left: auto; right: 64px; color: #F4F1EA; }
+  .sheet .clock .sec { opacity: 0.75; }
+  .sheet .seam { position: absolute; left: 80px; right: 30px; font-family: var(--serif); font-weight: 500; font-size: 80px; line-height: 0.94; letter-spacing: -0.022em; white-space: nowrap; }
+  .sheet .seam.l1 { bottom: calc(1920px - 960px + 18px); color: #0A0A0C; }
+  .sheet .seam.l2 { top: calc(960px + 14px); color: #F4F1EA; }
+  .sheet .straddle { position: absolute; left: 80px; right: 40px; top: 0; height: 1920px; font-family: var(--serif); font-weight: 500; font-size: 92px; letter-spacing: -0.022em; line-height: 1; }
+  .sheet .straddle span { position: absolute; left: 0; top: calc(960px - 0.6em); height: 1.2em; white-space: nowrap; }
+  .sheet .straddle .a { color: #0A0A0C; clip-path: inset(0 0 0.6em 0); }
+  .sheet .straddle .b { color: #F4F1EA; clip-path: inset(0.6em 0 0 0); }
+  .sheet .fade { transition: opacity 260ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .sheet .door-cap { position: absolute; left: 80px; top: 560px; font-family: var(--serif); font-weight: 500; font-size: 96px; line-height: 0.94; letter-spacing: -0.022em; color: #1B140B; }
+
+  @media (prefers-reduced-motion: reduce) { .sheet .fade { transition: none; } }
+</style>
+</head>
+<body>
+<header class="wrap head">
+  <div class="eyebrow">celestual · the next film · two scripts · october 2026</div>
+  <h1>two inks, <i>or</i> pacific.</h1>
+  <p class="lede">Two complete scripts for the second film, to choose between and refine. The first film was one person's night, looking back. <b>Both of these are built on two people from the first frame</b>, and on the moment the first film passed over on a split flap board: Saturday at nine. Each world is drawn live below, from the product's own parts.</p>
+  <ul class="shifts">
+    <li><b>looking back, to waiting</b><span>The framework keeps one finding for content: anticipation spreads and melancholy does not. Both films count down to one moment.</span></li>
+    <li><b>one person, to two</b><span>The product only ever happens to two people. Neither film has a hero.</span></li>
+    <li><b>the black room, to a world each</b><span>Ink on paper in daylight. The whole sky, night and day in one frame.</span></li>
+    <li><b>a song, to the mechanism in sound</b><span>A tune split between two players. A figure on two sides of an ocean, locking into one at nine.</span></li>
+  </ul>
+</header>
+
+<!-- ───────────────────────────── A ───────────────────────────── -->
+<section class="band paper" id="two-inks" aria-labelledby="a-title">
+  <div class="wrap">
+    <div class="film-head">
+      <span class="tag">script A</span>
+      <h2 id="a-title">two inks</h2>
+      <span class="spec">30 s · 1080 × 1920 · 24 fps, the prints on twos · 120 bpm · F major · fifteen bars</span>
+    </div>
+    <div class="film-grid">
+      <figure class="frame">
+        <div class="stage" id="riso-stage">
+          <canvas id="riso" aria-label="a riso print of two people on a bench at night, from behind, printed in two inks"></canvas>
+          <div class="sheet" id="riso-sheet" aria-hidden="true">
+            <div class="grp" data-g="iris">
+              <span class="pr note t-rose" data-ink="r" data-x="80" data-y="1496">next time i'd sit closer.</span>
+              <span class="pr slug t-black" data-ink="k" data-x="80" data-y="1598">iris · rose</span>
+            </div>
+            <div class="grp" data-g="jun" hidden>
+              <span class="pr note t-ice" data-ink="i" data-x="80" data-y="1496">next time i'd move over.</span>
+              <span class="pr slug t-black" data-ink="k" data-x="80" data-y="1598">jun · ice</span>
+            </div>
+            <div class="grp" data-g="both" hidden>
+              <span class="pr say t-black" data-ink="k" data-x="76" data-y="1474">it's mutual.</span>
+              <span class="pr names t-black" data-ink="k" data-x="82" data-y="1598">iris &amp; jun</span>
+              <span class="pr note small t-rose" data-ink="r" data-x="80" data-y="1652">next time i'd sit closer.</span>
+              <span class="pr note small t-ice" data-ink="i" data-x="580" data-y="1652">next time i'd move over.</span>
+              <span class="pr from t-black" data-ink="k" data-x="80" data-y="1760">from iris</span>
+              <span class="pr from t-black" data-ink="k" data-x="580" data-y="1760">from jun</span>
+            </div>
+          </div>
+        </div>
+        <div class="keys" role="group" aria-label="the print">
+          <button class="key" id="k-play" aria-pressed="true">play</button>
+          <button class="key" id="k-iris" aria-pressed="false">iris</button>
+          <button class="key" id="k-jun" aria-pressed="false">jun</button>
+          <button class="key" id="k-both" aria-pressed="false">both</button>
+          <label class="closer" for="k-closer">closer <input id="k-closer" type="range" min="1" max="12" step="0.01" value="1"></label>
+        </div>
+        <figcaption>Live: a WebGL press, twelve prints a second. The two people are the bench telling's own bodies (<code>scenes/bench.js</code> at 5800 ms), each laid on its own pad, so the rose holds only her and the ice only him. Rose at 75°, ice at 15°, black at 45°, a 7 px screen, each print a hair out of register.</figcaption>
+      </figure>
+
+      <div class="words">
+        <p class="line">a private note is one ink. <i>a picture needs both.</i></p>
+        <p>Two people, each printed in their own ink: iris in rose, jun in ice. Alone, each print is half a picture: a woman on a bench at night, leaning her head on a shoulder that is not there; a man on the same bench resting his cheek on hair that is not there. Each sends theirs privately, and the press takes both inks and prints nothing. On Saturday at nine the press runs. The sheets that only ever had one ink come out blank, and nobody ever knows. The one that had both comes out whole, and where they touch, a colour neither ink had.</p>
+        <p class="soft">Somebody who sees it once can explain celestual to a friend: it only prints if you both send one.</p>
+        <dl class="facts">
+          <dt>perspective</dt><dd>The press's. It sees both halves, which neither of them can, and prints only pairs: the double blind, drawn as a machine.</dd>
+          <dt>the world</dt><dd>Every frame a riso print on warm paper, in rose, ice and black. Twelve prints a second, each a hair out of register. The words are printed too.</dd>
+          <dt>the sound</dt><dd>A hocket: one tune split between two players, each half full of holes until both play. From nine, the press is the rhythm section.</dd>
+          <dt>the end</dt><dd>The registration mark in the sheet's corner slides into register and becomes the mark.</dd>
+        </dl>
+        <div>
+          <p class="soft" style="margin-bottom:10px">The three frames somebody screenshots:</p>
+          <ol class="shots-3">
+            <li><span>1</span>A woman leaning her head on a shoulder that is not there.</li>
+            <li><span>8</span>The moiré storm where the second ink lands.</li>
+            <li><span>11</span>One violet dot that holds the whole picture.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title"><h3>the script</h3><span class="spec">a beat 500 ms · a bar 2000 · every cut on a beat · every caption printed on its sheet</span></div>
+    <ol class="shots">
+      <li class="shot"><div class="when">1 · 0 to 2000 ms<br>bar 1<b>iris</b></div><p class="pic">One sheet, edge to edge, in rose and black. The bench from behind at night; iris on its left half, her hair up and the ribbon in it, leaning to her right with her head tilted onto a shoulder that is not there. The right half of the bench is bare. Rose petals come down. The camera eases in from 1.00 to 1.04, and the print boils.</p><div class="side"><div class="say"><span class="px ink-rose">next time i&#x27;d sit closer.</span></div><div class="snd">A sheet laid down. The marimba alone: her half of the hook, a rest after every note where his should be. A pad on F.</div></div></li>
+      <li class="shot"><div class="when">2 · 2000 to 4000 ms<br>bar 2<b>jun</b></div><p class="pic">On the downbeat a second sheet slides in over the first, four prints across, and stops square. Ice and black: the same bench, the same night; jun on its right half, his head tilted left, his cheek on hair that is not there. Ice petals.</p><div class="side"><div class="say"><span class="px ink-ice">next time i&#x27;d move over.</span></div><div class="snd">The slide. The vibraphone alone: his half, every note on an offbeat answering nothing. The pad to D minor.</div></div></li>
+      <li class="shot"><div class="when">3 · 4000 to 6000 ms<br>bar 3<b>apart</b></div><p class="pic">The camera rises to 0.42: both sheets side by side on a table of black at 82 percent, a gap of table between them. She leans out of her sheet toward his; he leans out of his toward hers. They do not reach. The slugs read iris · rose and jun · ice.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">The two players take turns, half a bar each, never at once. The bass comes in.</div></div></li>
+      <li class="shot"><div class="when">4 · 6000 to 8000 ms<br>bar 4<b>send it privately</b></div><p class="pic">Both sheets go face down on the glass and the lid comes down. Under the glass, in the dark: the scanner&#x27;s bar, a band of bare paper, sweeps iris&#x27;s sheet and then jun&#x27;s, each picture showing through mirrored, only where the bar is.</p><div class="side"><div class="say"><span>send it privately.</span></div><div class="snd">The lid. Two sweeps, rising. Each player holds one long note.</div></div></li>
+      <li class="shot"><div class="when">5 · 8000 to 10000 ms<br>bar 5<b>the drums</b></div><p class="pic">Inside the press: the rose drum above and the ice drum below, each wrapped in its master, her picture and his in negative as rows of tiny holes with the wet ink behind them. They turn a quarter turn and print nothing. The paper path under them is empty.</p><div class="side"><div class="say"><span>they only read it<br>if they send you one too.</span></div><div class="snd">The drums&#x27; hum and a low tick on each beat. One note each, a beat apart.</div></div></li>
+      <li class="shot"><div class="when">6 · 10000 to 12000 ms<br>bar 6<b>the week</b></div><p class="pic">The press&#x27;s panel, an LCD drawn in black with its digits left bare: wed, thu and fri on the beats, then sat 8:59 pm, and it holds.</p><div class="side"><div class="say"><span>every mutual is revealed<br>on saturday at 9pm pacific.</span></div><div class="snd">Four ticks. A riser as the drums spin up.</div></div></li>
+      <li class="shot"><div class="when">7 · 12000 to 14000 ms<br>bar 7<b>nine</b></div><p class="pic">The panel reads sat 9:00 pm. Cut to the out tray: the press is running, a sheet a beat, and they land blank, blank, blank, each a slightly different paper. The second has one line printed on it and nothing else.</p><div class="side"><div class="say"><span>if it isn&#x27;t,<br>nobody ever knows.</span></div><div class="snd">The press&#x27;s ready beep. Then the press alone: the feed where a kick would be, the eject on the offbeats, the whirr. No tune.</div></div></li>
+      <li class="shot"><div class="when">8 · 14000 to 16000 ms<br>bar 8<b>two inks</b></div><p class="pic">One sheet goes through the other way. Riding the paper path: under the rose drum iris prints; under the ice drum jun lands 14 px and 0.8° out, and the camera goes down into the band where they overlap, where the two screens beat against each other in a moiré storm. On beat 3 the ice snaps into register over four prints, the storm falls quiet, and the camera comes back up: where her head rests on his shoulder the inks overprint, violet.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">Her half, then his lands with it: for the first time the hook is whole. A shimmer under the storm. The snap, a low thump, the choir on F.</div></div></li>
+      <li class="shot"><div class="when">9 · 16000 to 18000 ms<br>bar 9<b>it&#x27;s mutual</b></div><p class="pic">The sheet slides out onto the stack and the camera is over the whole print: the bench, the moon, the branch, iris and jun together, petals in rose and ice and a few violet where two cross, and the violet band where they touch.</p><div class="side"><div class="say"><i>it&#x27;s mutual.</i><br><span class="px">iris &amp; jun</span></div><div class="snd">The band: both players, the bass, strings, and the press as the kit.</div></div></li>
+      <li class="shot"><div class="when">10 · 18000 to 20000 ms<br>bar 10<b>both notes</b></div><p class="pic">The camera slides up the sheet to the notes, side by side for the first time, each in its writer&#x27;s ink and signed in black under it.</p><div class="side"><div class="say"><span>you both find out.</span><br><span class="px ink-rose">next time i&#x27;d sit closer.</span><br><span class="px ink-ice">next time i&#x27;d move over.</span></div><div class="snd">The hook goes on. A counter line on the strings.</div></div></li>
+      <li class="shot"><div class="when">11 · 20000 to 22000 ms<br>bar 11<b>every dot</b></div><p class="pic">Straight down into the violet band: the dots grow, rose and ice and the violet where each pair overlaps, and on into one violet dot until it is the frame, and inside it, printed small and whole, is the same picture. It lands at the framing of shot 9 on the next downbeat.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">A long rise in the strings and the choir.</div></div></li>
+      <li class="shot"><div class="when">12 · 22000 to 24000 ms<br>bar 12<b>the corner</b></div><p class="pic">On the whole sheet again, the camera travels to its top right corner: the registration target, printed once in each ink, a few px apart.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">The band drops to the two players and the pad.</div></div></li>
+      <li class="shot"><div class="when">13 · 24000 to 26000 ms<br>bar 13<b>in register</b></div><p class="pic">Into the target. The rose and ice rings and crosses boil apart; on beat 3 they slide into register, and over six prints become the mark: the circle tilts to -19° and opens into the ring&#x27;s band, the cross draws its arms in to the star&#x27;s curved sides, and the inks give way to black. The last print is the pixel mark, 33 cells at 8 px a cell.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">The snap. The hook&#x27;s last phrase.</div></div></li>
+      <li class="shot"><div class="when">14 · 26000 to 30000 ms<br>bars 14 and 15<b>the name</b></div><p class="pic">The mark settles to 6 px a cell and the word prints beside it: the lockup, 672 by 198 px, in black, on the words&#x27; margin. The press slows, and the boil with it, from twelve prints a second to six.</p><div class="side"><div class="say"><span>nothing happens<br>unless it&#x27;s mutual.</span><br><span class="mono" style="font-size:13px">celestual.us</span></div><div class="snd">B flat to C, then both players land on F5 together on the last downbeat. The press coasts down, its whirr falling a fifth.</div></div></li>
+    </ol>
+
+    <div class="cols">
+      <div>
+        <h4>the hook, a hocket</h4>
+        <p>Eighth notes, a bar each. iris plays the odd eighths on the marimba, jun the even ones on the vibraphone. Alone, each is a tune with holes in it. From bar 8 they play together and it is whole. First draft, tuned by ear in the first round.</p>
+        <div class="scroll"><table>
+          <thead><tr><th>bar</th><th>chord</th><th>iris</th><th>jun</th></tr></thead>
+          <tbody>
+            <tr><td>a</td><td>F</td><td class="notes">A4 · F5 · A5 · F5</td><td class="notes">C5 · C5 · G5 · C5</td></tr>
+            <tr><td>b</td><td>Dm</td><td class="notes">A4 · F5 · A5 · F5</td><td class="notes">D5 · D5 · G5 · D5</td></tr>
+            <tr><td>c</td><td>B♭</td><td class="notes">B♭4 · F5 · B♭5 · G5</td><td class="notes">D5 · D5 · A5 · D5</td></tr>
+            <tr><td>d</td><td>C7</td><td class="notes">C5 · G5 · C6 · G5</td><td class="notes">E5 · E5 · B♭5 · E5</td></tr>
+          </tbody>
+        </table></div>
+        <p style="margin-top:12px">Bars 1 and 2, each half alone. Bar 7, the press alone, the bass holding C. Bar 8, the hook whole and the snap with the choir. Bar 15, both on F5. Marimba, vibraphone, fingered bass, the slow strings, choir aahs and a warm pad from the MuseScore General SoundFont; the press as foley, synthesised on its frames. Mastered to -14 LUFS, -1.5 dB true peak.</p>
+      </div>
+      <div>
+        <h4>the print rules</h4>
+        <ul>
+          <li>Paper <code>#F4F0E4</code> and three inks: rose <code>#DF93AF</code> for her, ice <code>#8FB8DC</code> for him, black for the world and the words. Rose over ice, about <code>#8371A9</code>, only where they touch.</li>
+          <li>Inks are filters: nothing is lighter than paper, so a light is paper left bare in a field of ink (the moon, the scanner's bar).</li>
+          <li>Above 78 percent the dots join and print solid, with the drum's mottle. A dropout now and then.</li>
+          <li>The camera is a copy stand: straight down, sheets slid in and out on the beat. A cut is a new sheet; nothing dissolves.</li>
+          <li>Every sheet is cut to 9 by 16, the shape of a phone's glass.</li>
+          <li>Never a halftone filter over a render, a grunge pack, CMYK, or anything "vintage".</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <h4>the cutdowns</h4>
+        <div class="scroll"><table>
+          <thead><tr><th>cut</th><th>bars</th></tr></thead>
+          <tbody>
+            <tr><td>15 s</td><td>iris, jun, the drums (<i>send it privately. they only read it if they send you one too.</i>), nine and the blank sheets, the storm and the snap, the print (<i>it's mutual.</i>), the name</td></tr>
+            <tr><td>6 s</td><td>apart, the snap, the name (<i>nothing happens unless it's mutual.</i>)</td></tr>
+            <tr><td>4:5</td><td>all fifteen bars, the middle 1350 rows, captions set again at the crop's top</td></tr>
+          </tbody>
+        </table></div>
+        <h4>what it claims</h4>
+        <p>Only the brief's facts: a private note is read only if they send you one back; the reveal is Saturday at 9pm Pacific; if it is never mutual nobody is told. The blank sheets are a picture, never a count. First names, never a handle.</p>
+      </div>
+      <div>
+        <h4>how it is built</h4>
+        <div class="scroll"><table>
+          <tbody>
+            <tr><td><code>parts/inks-time.js</code></td><td>the clock, read by the picture and the score</td></tr>
+            <tr><td><code>parts/riso-gl.js</code></td><td>the press as one shader, in the sheet's own units (the style frame on this page is its first draft)</td></tr>
+            <tr><td><code>parts/bench-inks.js</code></td><td>the telling's two bodies, one pad each: a small export added to <code>scenes/bench.js</code></td></tr>
+            <tr><td><code>parts/press.jsx</code></td><td>the glass and the scanner, the drums and their masters, the panel, the out tray</td></tr>
+            <tr><td><code>parts/target.js</code></td><td>the registration target, six prints into <code>MARK</code></td></tr>
+            <tr><td><code>studio-score-inks.mjs</code></td><td>the hocket and the press</td></tr>
+          </tbody>
+        </table></div>
+        <h4>what could go wrong</h4>
+        <p>The metaphor has to carry the mechanism: five strangers, sound off, the 15 s cut, asked what it does. Dots under 6 px smear on a feed's encoder: upload the 6 s privately first. The storm must never flash (WCAG 2.3.1).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────── B ───────────────────────────── -->
+<section class="band night" id="pacific" aria-labelledby="b-title">
+  <div class="wrap">
+    <div class="film-head">
+      <span class="tag">script B</span>
+      <h2 id="b-title">pacific</h2>
+      <span class="spec">32 s · 1080 × 1920 · 30 fps from 60 · 90 bpm · E major · twelve bars</span>
+    </div>
+    <div class="film-grid">
+      <figure class="frame">
+        <div class="stage" id="pac-stage">
+          <canvas id="pac" aria-label="Seoul by day turned over above Berkeley at night, both drawn in dithered cells, with two phones that turn rose at nine"></canvas>
+          <canvas id="pac-door" aria-hidden="true"></canvas>
+          <div class="sheet" id="pac-sheet" aria-hidden="true">
+            <div class="clock c-seoul fade" id="c-top">seoul · <span id="c-top-t">sun 12:59 pm</span><span class="sec" id="c-top-s"> :57</span></div>
+            <div class="clock c-berk fade" id="c-bot">berkeley · <span id="c-bot-t">sat 8:59 pm</span><span class="sec" id="c-bot-s"> :57</span></div>
+            <div class="seam l1 fade" id="cap1">every mutual is revealed</div>
+            <div class="seam l2 fade" id="cap2">on saturday at 9pm pacific.</div>
+            <div class="straddle fade" id="cap3" style="opacity:0"><span class="a">at the same moment.</span><span class="b">at the same moment.</span></div>
+            <div class="door-cap fade" id="cap-door" style="opacity:0">it's already tomorrow<br>where they are.</div>
+          </div>
+        </div>
+        <div class="keys" role="group" aria-label="the film">
+          <button class="key" id="p-nine" aria-pressed="true">nine</button>
+          <button class="key" id="p-door" aria-pressed="false">the door</button>
+          <button class="key" id="p-turn" aria-pressed="true">seoul turned over</button>
+          <button class="key" id="p-pdt" aria-pressed="true">until 1 nov</button>
+        </div>
+        <figcaption>Live: each city lit, then brought down to four tones of its screen colour on 3 px cells (ice for Berkeley at night, amber for Seoul by day), the phones drawn as themselves. At nine the rose runs out of both phones on the same frame. The two people are the bench telling's own, at its first moment, apart.</figcaption>
+      </figure>
+
+      <div class="words">
+        <p class="line">it's already tomorrow <i>where they are.</i></p>
+        <p>Theo is in Berkeley. Mina went home to Seoul, sixteen hours ahead, so when it is night for him it is the next afternoon for her: they live on different days now. Each still keeps the other's city on their phone, so the weather is the one thing they still share: on his phone at night, Seoul's sun; on hers in the afternoon, Berkeley's fog. Each writes a note and sends it privately. On Saturday at 9pm Pacific, which is 1pm on Sunday in Seoul, both phones turn rose on the same frame, and the rose runs through both worlds until the line between their days is gone.</p>
+        <p class="soft">The notes say the same thing from either side of the ocean: <span style="font-family:var(--pixel);font-size:21px">i still check the weather in seoul.</span> and <span style="font-family:var(--pixel);font-size:21px">i still check the weather in berkeley.</span></p>
+        <dl class="facts">
+          <dt>perspective</dt><dd>The planet's. A camera that can be in two places at once, which is what the reveal is.</dd>
+          <dt>the world</dt><dd>Berkeley in ice, Seoul in amber, the world dithered the way the product draws a face. The phones crisp and lit, each glowing in the other's colour.</dd>
+          <dt>the sound</dt><dd>A phase piece: one figure, a beat apart on two sides of the ocean, creeping together until they land on each other at nine. A fog horn, a magpie.</dd>
+          <dt>the end</dt><dd>The two moons become one, and the line between their days bends into the mark's ring.</dd>
+        </dl>
+        <div>
+          <p class="soft" style="margin-bottom:10px">The three frames somebody screenshots:</p>
+          <ol class="shots-3">
+            <li><span>1</span>A pixel sun on a phone at night opening into an afternoon sky.</li>
+            <li><span>8</span>The two cities facing each other, their skies meeting in the middle.</li>
+            <li><span>9</span>The rose running through both worlds at once, and the seam going out.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title"><h3>the script</h3><span class="spec">a beat 667 ms · a bar 2667 · every cut on a beat · captions stand on the horizon</span></div>
+    <ol class="shots">
+      <li class="shot"><div class="when">1 · 0 to 2667 ms<br>bar 1<b>his phone</b></div><p class="pic">Close already: theo&#x27;s phone in the dark, lit amber. The weather: seoul on the status row, a sun of 15 by 15 cells with its rays blinking, 66°, wed 3:04 pm. The camera falls into the sun from the first frame; on beat 3, cut: the real sun, dithered, at that place and size, in an amber sky. Seoul opens out under it.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">The room. The fog horn far off on the bay. On the cut, daylight, and the marimba&#x27;s figure starts.</div></div></li>
+      <li class="shot"><div class="when">2 · 2667 to 5333 ms<br>bar 2<b>Seoul</b></div><p class="pic">A Wednesday afternoon in amber: the Han, wide, its glitter in lit cells; a long low bridge; the far bank&#x27;s flats; Namsan and its tower. The camera cranes down to the steps where mina sits from behind, her phone in her lap lit ice: the one cool thing in the warm world.</p><div class="side"><div class="say"><span>it&#x27;s already tomorrow<br>where they are.</span></div><div class="snd">The marimba. Wind. A magpie, three calls.</div></div></li>
+      <li class="shot"><div class="when">3 · 5333 to 8000 ms<br>bar 3<b>her phone</b></div><p class="pic">Over her shoulder: her phone in the sun, her other hand cupped over it. Lit ice: berkeley, the fog with a crescent behind it, 13°, tue 11:04 pm. On beat 3 the camera falls into the fog; on beat 4, cut: the fog itself, three bands rolling over the Berkeley hills at night, in ice, where the glyph&#x27;s bands were.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">The marimba thins. On the cut, the fog horn, nearer, and the vibraphone a beat behind.</div></div></li>
+      <li class="shot"><div class="when">4 · 8000 to 10667 ms<br>bar 4<b>Berkeley</b></div><p class="pic">Tuesday night in ice: the fog pouring over the ridge, the Campanile through it with its clock lit, the flats&#x27; lights, the bay, a bridge&#x27;s line of lights. Theo on a low stone wall above the campus, from behind, looking up at the moon, his phone lit amber: the one warm thing in the cold world.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">Both figures, a beat apart and drifting. The fog horn.</div></div></li>
+      <li class="shot"><div class="when">5 · 10667 to 13333 ms<br>bar 5<b>his note</b></div><p class="pic">Theo&#x27;s phone, square: a private note lit amber, dear mina across its top. The words typed at a hand&#x27;s pace; on beat 4, send, and the screen says sent privately.</p><div class="side"><div class="say"><span class="px">i still check the weather in seoul.</span><br><span>send it privately.</span></div><div class="snd">The keys on the sixteenths. The send, two notes on the music box.</div></div></li>
+      <li class="shot"><div class="when">6 · 13333 to 16000 ms<br>bar 6<b>her note</b></div><p class="pic">Mina&#x27;s phone in the sun, a private note lit ice, dear theo, already written. Her thumb on send on beat 2; sent privately.</p><div class="side"><div class="say"><span class="px">i still check the weather in berkeley.</span><br><span>they only read it<br>if they send you one too.</span></div><div class="snd">The send. A low pad comes in on E.</div></div></li>
+      <li class="shot"><div class="when">7 · 16000 to 18667 ms<br>bar 7<b>the week</b></div><p class="pic">The world turns over: Seoul swings up to hang upside down in the top half, Berkeley rises into the bottom, and the two skies meet in the middle. Time runs, a day every two beats, out of step with each other. Seoul&#x27;s day turns first every time, from wed over tue to sun over sat.</p><div class="side"><div class="say"><span>every mutual is revealed<br>on saturday at 9pm pacific.</span></div><div class="snd">A tick and a breath of air for each day turning, Seoul&#x27;s first. The figures closing on each other.</div></div></li>
+      <li class="shot"><div class="when">8 · 18667 to 21333 ms<br>bar 8<b>the minute</b></div><p class="pic">It stops. Above, Seoul at 12:59 on Sunday: mina on the steps, her phone asleep beside her. Below, Berkeley at 8:59 on Saturday: theo on the wall, his phone asleep beside him. The seconds on the beats: 57, 58, 59. Nothing moves but the fog, the river and her hair.</p><div class="side"><div class="say"><span class="mono" style="font-size:13px">sun 12:59 pm · sat 8:59 pm</span></div><div class="snd">The figures less than a sixteenth apart, every note a double strike. The magpie, the horn. The last beat all but empty.</div></div></li>
+      <li class="shot"><div class="when">9 · 21333 to 24000 ms<br>bar 9<b>nine</b></div><p class="pic">On the downbeat both phones wake rose on the same frame. From each the rose runs out through its world, a wave with a bright edge stepping through the four tones toward the seam; the two edges reach it together on beat 3, and the seam goes. One rose sky, top to bottom.</p><div class="side"><div class="say"><span class="px">it&#x27;s mutual.</span></div><div class="snd">The two figures land on each other: unison. Strings, choir, bass, a soft kick. The horn and the magpie on the same downbeat.</div></div></li>
+      <li class="shot"><div class="when">10 · 24000 to 26667 ms<br>bar 10<b>both notes</b></div><p class="pic">One phone held square in the rose: the keepsake. The mark with it&#x27;s mutual. in its cells, mina &amp; theo under it, and the two notes, each signed. It is the same on both phones.</p><div class="side"><div class="say"><span>you both find out</span><br><span class="px">i still check the weather in seoul.</span><br><span class="px">i still check the weather in berkeley.</span></div><div class="snd">A line of four notes on the strings over the figure.</div></div></li>
+      <li class="shot"><div class="when">11 · 26667 to 29333 ms<br>bar 11<b>the same moment</b></div><p class="pic">Both cities rose, still facing each other. Theo lifts his head; mina lifts hers. Low in Berkeley&#x27;s west a young crescent moon, and low in Seoul&#x27;s east the same crescent, pale: at that instant it hangs over the ocean between them. The two come together on the seam as one disc.</p><div class="side"><div class="say"><span>at the same moment.</span></div><div class="snd">The cadence coming.</div></div></li>
+      <li class="shot"><div class="when">12 · 29333 to 32000 ms<br>bar 12<b>the mark</b></div><p class="pic">The moon draws in to the star; the seam tilts to -19° and bends round it into the ring; the rose steps down to black in three steps of its palette. The pixel mark, chalk, with its bloom, and the word drawing on beside it.</p><div class="side"><div class="say"><span class="mono" style="font-size:13px">celestual.us</span></div><div class="snd">Marimba and vibraphone strike E5 together and ring. The horn once more, very far.</div></div></li>
+    </ol>
+
+    <div class="cols">
+      <div>
+        <h4>the clocks</h4>
+        <p>Seoul is nine hours ahead of UTC all year. Berkeley is seven behind until 1 November 2026 and eight behind from then to 14 March 2027. The film is rendered for the dates it runs; only the clock faces change.</p>
+        <div class="scroll"><table>
+          <thead><tr><th></th><th>Berkeley</th><th>Seoul, to 1 nov</th><th>Seoul, from 1 nov</th></tr></thead>
+          <tbody>
+            <tr><td>the week begins</td><td class="notes">tue 11:04 pm</td><td class="notes">wed 3:04 pm</td><td class="notes">wed 4:04 pm</td></tr>
+            <tr><td>the minute</td><td class="notes">sat 8:59 pm</td><td class="notes">sun 12:59 pm</td><td class="notes">sun 1:59 pm</td></tr>
+            <tr><td>the reveal</td><td class="notes">sat 9:00 pm</td><td class="notes">sun 1:00 pm</td><td class="notes">sun 2:00 pm</td></tr>
+          </tbody>
+        </table></div>
+        <h4>the phase</h4>
+        <p>The figure, sixteen sixteenths: <code>B4 E5 F♯5 · B4 G♯5 E5 · B4 C♯6 · B4 G♯5 F♯5 · B4 E5 D♯5 · B4 F♯5</code>. The marimba (Seoul) starts on the cut into Seoul at 90 and never moves. The vibraphone (Berkeley) comes in a beat behind on the cut into Berkeley, and from bar 4 plays at 94.5, which gains it exactly that beat by the downbeat of bar 9: the frame both phones turn rose. From there, unison, and the band.</p>
+      </div>
+      <div>
+        <h4>the four tones</h4>
+        <div class="scroll"><table>
+          <thead><tr><th></th><th>ink</th><th>low</th><th>mid</th><th>lit</th></tr></thead>
+          <tbody>
+            <tr><td>ice</td><td class="notes"><span class="sw" style="background:#11161A"></span>#11161A</td><td class="notes"><span class="sw" style="background:#64819A"></span>#64819A</td><td class="notes"><span class="sw" style="background:#8FB8DC"></span>#8FB8DC</td><td class="notes"><span class="sw" style="background:#EDF4F9"></span>#EDF4F9</td></tr>
+            <tr><td>amber</td><td class="notes"><span class="sw" style="background:#1B140B"></span>#1B140B</td><td class="notes"><span class="sw" style="background:#9D763F"></span>#9D763F</td><td class="notes"><span class="sw" style="background:#E0A95A"></span>#E0A95A</td><td class="notes"><span class="sw" style="background:#FAF1E5"></span>#FAF1E5</td></tr>
+            <tr><td>rose</td><td class="notes"><span class="sw" style="background:#1B1215"></span>#1B1215</td><td class="notes"><span class="sw" style="background:#9C677B"></span>#9C677B</td><td class="notes"><span class="sw" style="background:#DF93AF"></span>#DF93AF</td><td class="notes"><span class="sw" style="background:#FAEEF2"></span>#FAEEF2</td></tr>
+          </tbody>
+        </table></div>
+        <h4>how it is built</h4>
+        <div class="scroll"><table>
+          <tbody>
+            <tr><td><code>parts/pacific-time.js</code></td><td>the clock, <code>SEASON</code> and its clock faces, the vibraphone's phase</td></tr>
+            <tr><td><code>parts/world-gl.js</code></td><td>either city in light: sky, sun or moon, fog, skylines as shapes, water, the figure lit as a silhouette</td></tr>
+            <tr><td><code>parts/dither.js</code></td><td>four tones on 3 px cells by blue noise, the rose wave, the turn and the seam (this page's frame is its first draft)</td></tr>
+            <tr><td><code>parts/weather.jsx</code></td><td>the weather on <code>Phone mode="bare"</code>: the glyphs on the screen's grid</td></tr>
+            <tr><td><code>studio-score-pacific.mjs</code></td><td>the phase, the band, the horn and the magpie</td></tr>
+          </tbody>
+        </table></div>
+        <h4>what could go wrong</h4>
+        <p>The time difference is half the idea: five strangers, sound off, asked where each of them is and what time it is there. Seoul turned over could read as a mistake: test it against both the right way up (the toggle above). Long distance is a narrower story than a crush on campus.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────── the choice ───────────────────────────── -->
+<section class="wrap choice" aria-labelledby="c-title">
+  <span class="eyebrow">which one</span>
+  <h2 id="c-title" style="margin-top:12px">make two inks first.</h2>
+  <p class="verdict"><b>It explains the mechanism in a picture anybody gets in one viewing,</b> half a picture and then the whole, and says it again in sound.</p>
+  <p>Every element in it is something the product already owns: the riso, the bench telling, the rose and the ice, the mark's geometry. It reads as celestual and could not be anybody else's. It is the cheaper of the two to finish to the bar, and its 15 second cut is a whole film.</p>
+  <p>Pacific is the bigger swing, and the truest picture of the one thing the product does that nothing else does: it tells two people at the same moment, wherever each of them is. It is the film for the people far apart, and the second one to make. Both use the same two bodies and the same studio, so making one makes the other cheaper.</p>
+  <div class="section-title" style="border-color:var(--hair)"><h3>side by side</h3></div>
+  <div class="scroll"><table>
+    <thead><tr><th></th><th>two inks</th><th>pacific</th></tr></thead>
+    <tbody>
+      <tr><td>the line</td><td>a private note is one ink. a picture needs both.</td><td>it's already tomorrow where they are.</td></tr>
+      <tr><td>who it's for</td><td>everybody; a campus first</td><td>the people far apart, and anybody with a second city in their weather</td></tr>
+      <tr><td>the new build</td><td>one shader and the press's drawings</td><td>a world shader for two cities, the dither, the weather screen</td></tr>
+      <tr><td>the biggest risk</td><td>the metaphor carrying the mechanism</td><td>the time difference reading in one viewing</td></tr>
+      <tr><td>keeps from the first film</td><td>the voice, the facts, the studio, the lockup at whole pixels</td><td>the same, and the lit screens and the keepsake</td></tr>
+      <tr><td>stretches on purpose</td><td>the whole film on paper, kept for rare use</td><td>the whole world dithered, as the product dithers only faces</td></tr>
+    </tbody>
+  </table></div>
+  <div class="section-title" style="border-color:var(--hair)"><h3>to refine either, decide</h3></div>
+  <ol class="decide">
+    <li><span>Which one, or both and in which order.</span></li>
+    <li><span>The notes and the names: iris and jun, <span style="font-family:var(--pixel);font-size:20px">next time i'd sit closer. / next time i'd move over.</span> Theo and mina, the weather.</span></li>
+    <li><span>For pacific: Seoul, or another city already on Sunday at 9pm Pacific (Tokyo, Taipei, Singapore, Sydney), or New York at midnight; and whether mina's note is in Korean.</span></li>
+    <li><span>Wordless, as written, or one sung line as the first film had.</span></li>
+    <li><span>The 30 second film or the 15 second cut first.</span></li>
+  </ol>
+  <div class="sign"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 33" width="112" height="33" shape-rendering="crispEdges" role="img" aria-label="celestual."><title>celestual.</title><path fill="currentColor" d="M16 2h1v1h-1zM16 3h1v1h-1zM16 4h1v1h-1zM16 5h1v1h-1zM16 6h1v1h-1zM16 7h1v1h-1zM18 7h10v1h-10zM14 8h1v1h-1zM16 8h1v1h-1zM25 8h5v1h-5zM57 8h3v1h-3zM105 8h3v1h-3zM11 9h3v1h-3zM16 9h1v1h-1zM28 9h3v1h-3zM58 9h2v1h-2zM81 9h1v1h-1zM106 9h2v1h-2zM9 10h2v1h-2zM15 10h3v1h-3zM29 10h3v1h-3zM58 10h2v1h-2zM80 10h2v1h-2zM106 10h2v1h-2zM7 11h2v1h-2zM15 11h3v1h-3zM30 11h3v1h-3zM58 11h2v1h-2zM80 11h2v1h-2zM106 11h2v1h-2zM6 12h1v1h-1zM15 12h3v1h-3zM30 12h3v1h-3zM41 12h5v1h-5zM50 12h4v1h-4zM58 12h2v1h-2zM64 12h4v1h-4zM72 12h6v1h-6zM79 12h6v1h-6zM86 12h3v1h-3zM91 12h3v1h-3zM97 12h5v1h-5zM106 12h2v1h-2zM5 13h1v1h-1zM14 13h5v1h-5zM30 13h3v1h-3zM40 13h2v1h-2zM45 13h2v1h-2zM49 13h2v1h-2zM53 13h2v1h-2zM58 13h2v1h-2zM63 13h2v1h-2zM67 13h2v1h-2zM71 13h2v1h-2zM76 13h2v1h-2zM80 13h2v1h-2zM87 13h2v1h-2zM92 13h2v1h-2zM96 13h2v1h-2zM101 13h2v1h-2zM106 13h2v1h-2zM4 14h1v1h-1zM14 14h5v1h-5zM30 14h2v1h-2zM39 14h2v1h-2zM45 14h2v1h-2zM48 14h2v1h-2zM54 14h2v1h-2zM58 14h2v1h-2zM62 14h2v1h-2zM68 14h2v1h-2zM71 14h2v1h-2zM80 14h2v1h-2zM87 14h2v1h-2zM92 14h2v1h-2zM101 14h2v1h-2zM106 14h2v1h-2zM3 15h1v1h-1zM12 15h9v1h-9zM29 15h3v1h-3zM39 15h2v1h-2zM48 15h8v1h-8zM58 15h2v1h-2zM62 15h8v1h-8zM72 15h3v1h-3zM80 15h2v1h-2zM87 15h2v1h-2zM92 15h2v1h-2zM98 15h5v1h-5zM106 15h2v1h-2zM2 16h1v1h-1zM8 16h17v1h-17zM29 16h2v1h-2zM39 16h2v1h-2zM48 16h2v1h-2zM58 16h2v1h-2zM62 16h2v1h-2zM74 16h3v1h-3zM80 16h2v1h-2zM87 16h2v1h-2zM92 16h2v1h-2zM97 16h2v1h-2zM101 16h2v1h-2zM106 16h2v1h-2zM1 17h2v1h-2zM12 17h9v1h-9zM28 17h2v1h-2zM39 17h2v1h-2zM48 17h2v1h-2zM58 17h2v1h-2zM62 17h2v1h-2zM76 17h2v1h-2zM80 17h2v1h-2zM87 17h2v1h-2zM92 17h2v1h-2zM96 17h2v1h-2zM101 17h2v1h-2zM106 17h2v1h-2zM1 18h2v1h-2zM14 18h5v1h-5zM27 18h2v1h-2zM39 18h2v1h-2zM48 18h2v1h-2zM58 18h2v1h-2zM62 18h2v1h-2zM76 18h2v1h-2zM80 18h2v1h-2zM87 18h2v1h-2zM92 18h2v1h-2zM96 18h2v1h-2zM101 18h2v1h-2zM106 18h2v1h-2zM0 19h3v1h-3zM14 19h5v1h-5zM25 19h3v1h-3zM40 19h2v1h-2zM46 19h1v1h-1zM49 19h2v1h-2zM55 19h1v1h-1zM58 19h2v1h-2zM63 19h2v1h-2zM69 19h1v1h-1zM71 19h2v1h-2zM76 19h2v1h-2zM80 19h2v1h-2zM84 19h1v1h-1zM87 19h2v1h-2zM91 19h3v1h-3zM96 19h2v1h-2zM100 19h3v1h-3zM106 19h2v1h-2zM110 19h2v1h-2zM0 20h3v1h-3zM15 20h3v1h-3zM24 20h3v1h-3zM41 20h5v1h-5zM50 20h5v1h-5zM57 20h4v1h-4zM64 20h5v1h-5zM71 20h6v1h-6zM81 20h3v1h-3zM88 20h3v1h-3zM92 20h3v1h-3zM97 20h3v1h-3zM101 20h3v1h-3zM105 20h4v1h-4zM110 20h2v1h-2zM0 21h3v1h-3zM15 21h3v1h-3zM22 21h4v1h-4zM1 22h4v1h-4zM15 22h3v1h-3zM19 22h5v1h-5zM2 23h5v1h-5zM18 23h4v1h-4zM3 24h16v1h-16zM5 25h12v1h-12zM16 27h1v1h-1zM16 28h1v1h-1zM16 29h1v1h-1zM16 30h1v1h-1z"/></svg></div>
+</section>
+
+<footer class="wrap">
+  <span>design/campaign/next/ · README.md, TWO-INKS.md, PACIFIC.md</span>
+  <span>branch claude/new-ad-design-scripts-6u7r6r</span>
+</footer>
+
+<script>
+(() => {
+  'use strict'
+  const MASKS = {"a_her": "data:image/png;base64,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", "a_him": "data:image/png;base64,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", "a_ribbon": "data:image/png;base64,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", "a_boards": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA60AAALlCAAAAAAKsl+2AAAACXBIWXMAAAAAAAAAAQCEeRdzAAAC9klEQVR42u3TQQ0AIAwEsFOCf5dMwRK+F1oPTQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgcYEOtoKtgK1gK2ArYCvYCtgK2Aq2ArYCtoKtgK2ArWArYCtgK9gK2ArYCrYCtoKtgK2ArWArYCtgK9gK2ArYCrYCtgK2gq2ArYCtYCtgK2Ar2ArYCtgKtgK2wqdbD9AhAAAAAAAAAAAAAM8GhTmOmO/OKcYAAAAASUVORK5CYII=", "a_boardsair": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA60AAALlCAAAAAAKsl+2AAAACXBIWXMAAAAAAAAAAQCEeRdzAAADB0lEQVR42u3TMQ0AMAwDsCAZf5YtiPWJZHNwAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAhwE62Aq2AraCrYCtgK1gK2ArYCvYCtgK2Aq2ArYCtoKtgK2ArWArYCtgK9gK2Aq2ArYCtoKtgK2ArWArYCtgK9gK2ArYCrYCtgK2gq2ArYCtYCtgK2Ar2ArYCrYCtgK2gq2ArYCtYCtgK2Ar2ArYCtgKtgK2AraCrYCtgK1QtvUBHQIAnFrFynpM8fyuwgAAAABJRU5ErkJggg==", "a_moon": "data:image/png;base64,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", "a_trees": "data:image/png;base64,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", "a_branch": "data:image/png;base64,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", "a_bloom": "data:image/png;base64,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", "b_her": "data:image/png;base64,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", "b_him": "data:image/png;base64,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"}
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const DPR = () => Math.min(window.devicePixelRatio || 1, 2)
+
+  // ── the shared parts ─────────────────────────────────────────────────────
+  const VS = 'attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }'
+  function makeProgram(gl, fs) {
+    const sh = (type, src) => {
+      const s = gl.createShader(type)
+      gl.shaderSource(s, src)
+      gl.compileShader(s)
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader')
+      return s
+    }
+    const p = gl.createProgram()
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, VS))
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs))
+    gl.linkProgram(p)
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link')
+    const u = {}
+    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS)
+    for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(p, i); u[info.name.replace(/\[0\]$/, '')] = gl.getUniformLocation(p, info.name) }
+    return { p, u }
+  }
+  function quad(gl) {
+    const b = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, b)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW)
+    return b
+  }
+  function bindQuad(gl, buf, prog) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+    const loc = gl.getAttribLocation(prog.p, 'a')
+    gl.enableVertexAttribArray(loc)
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+  }
+  function texture(gl, filter = gl.LINEAR) {
+    const t = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, t)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    return t
+  }
+  const load = (src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src })
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v))
+  const span = (t, a, b) => clamp((t - a) / (b - a))
+  const ease = (k) => { const x = clamp(k); return 1 - Math.pow(1 - x, 3) }
+  const inOut = (k) => { const x = clamp(k); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2 }
+  const lerp = (a, b, k) => a + (b - a) * k
+  // a seeded number in [0, 1) for a print and a purpose, the same every time
+  const rnd = (seed, k) => { const x = Math.sin(seed * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x) }
+  // fit a 1080 by 1920 sheet of DOM words to the stage, through the camera
+  function placeSheet(sheet, stage, cam) {
+    const k = stage.clientWidth / 1080
+    sheet.style.transform = `scale(${k}) translate(540px, 960px) scale(${cam[2]}) translate(${-cam[0]}px, ${-cam[1]}px)`
+  }
+  // only draw while it can be seen
+  function watch(el, on) {
+    let seen = false
+    const io = new IntersectionObserver((es) => { seen = es[0].isIntersecting; on(seen && !document.hidden) }, { rootMargin: '120px' })
+    io.observe(el)
+    document.addEventListener('visibilitychange', () => on(seen && !document.hidden))
+  }
+  function press(buttons, id) { for (const b of buttons) b.setAttribute('aria-pressed', String(b.id === id)) }
+
+  // ── two inks: the press ──────────────────────────────────────────────────
+  const RISO_FS = `
+precision highp float;
+uniform vec2 uRes;
+uniform vec3 uCam;
+uniform sampler2D uT0;
+uniform sampler2D uT1;
+uniform float uSeed;
+uniform vec2 uOR;
+uniform vec2 uOI;
+uniform vec2 uOK;
+uniform float uRotI;
+uniform vec3 uOn;
+uniform vec3 uDens;
+uniform float uTime;
+
+const vec3 PAPER = vec3(0.9569, 0.9412, 0.8941);
+const vec3 TR = vec3(0.9139, 0.6125, 0.7675);
+const vec3 TI = vec3(0.5861, 0.7667, 0.9649);
+const vec3 TK = vec3(0.0410, 0.0417, 0.0526);
+const vec2 P0 = vec2(40.0, 560.0);
+const vec2 PS = vec2(1000.0, 900.0);
+const vec2 TOUCH = vec2(580.0, 1150.0);
+
+float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), u.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+vec4 t0(vec2 sp) { vec2 uv = (sp - P0) / PS; if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return vec4(0.0); return texture2D(uT0, vec2(0.1105 + uv.x * 0.8746, uv.y)); }
+vec4 t1(vec2 sp) { vec2 uv = (sp - P0) / PS; if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return vec4(0.0); return texture2D(uT1, vec2(0.1105 + uv.x * 0.8746, uv.y)); }
+
+float target(vec2 sp) {
+  vec2 d = sp - vec2(984.0, 112.0);
+  float ring = 1.0 - smoothstep(1.0, 2.1, abs(length(d) - 19.0));
+  float cx = (1.0 - smoothstep(0.7, 1.6, abs(d.x))) * step(abs(d.y), 31.0);
+  float cy = (1.0 - smoothstep(0.7, 1.6, abs(d.y))) * step(abs(d.x), 31.0);
+  return clamp(ring + cx + cy, 0.0, 1.0);
+}
+vec2 petals(vec2 sp) {
+  vec2 acc = vec2(0.0);
+  if (sp.y < P0.y - 40.0 || sp.y > P0.y + PS.y + 20.0) return acc;
+  for (int i = 0; i < 18; i++) {
+    float fi = float(i);
+    float a1 = h21(vec2(fi, 1.3)); float a2 = h21(vec2(fi, 7.1)); float a3 = h21(vec2(fi, 3.7));
+    float y = P0.y - 30.0 + mod(a1 * 820.0 + uTime * (30.0 + a2 * 28.0), 820.0);
+    float x = P0.x + 20.0 + a3 * 960.0 + sin(uTime * 0.8 + fi * 1.7) * 26.0;
+    vec2 d = sp - vec2(x, y);
+    float an = uTime * (0.5 + a2) + fi;
+    float c = cos(an); float s = sin(an);
+    d = vec2(c * d.x - s * d.y, s * d.x + c * d.y);
+    float e = length(d / vec2(8.5, 3.0 + 3.2 * abs(sin(an * 1.3))));
+    float cov = 1.0 - smoothstep(0.75, 1.0, e);
+    if (mod(fi, 2.0) < 1.0) acc.x = max(acc.x, cov); else acc.y = max(acc.y, cov);
+  }
+  return acc;
+}
+float figure(float m, float above, float y) {
+  float d = m * (0.74 + 0.22 * smoothstep(P0.y + 420.0, P0.y + 900.0, y));
+  return d - m * (1.0 - above) * 0.4;
+}
+float densR(vec2 sp) {
+  vec4 a = t0(sp);
+  float d = figure(a.r, t0(sp + vec2(0.0, -11.0)).r, sp.y);
+  d *= 1.0 - clamp(a.a - a.b, 0.0, 1.0);
+  d = max(d, t1(sp).a * 0.8);
+  d = max(d, petals(sp).x * 0.74);
+  return max(d, target(sp));
+}
+float densI(vec2 sp) {
+  vec4 a = t0(sp);
+  float d = figure(a.g, t0(sp + vec2(0.0, -11.0)).g, sp.y);
+  d *= 1.0 - clamp(a.a - a.b, 0.0, 1.0);
+  d = max(d, petals(sp).y * 0.74);
+  return max(d, target(sp));
+}
+float densK(vec2 sp) {
+  vec4 a = t0(sp); vec4 b = t1(sp);
+  vec2 uv = (sp - P0) / PS;
+  float inPic = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+  float sky = inPic * 0.3 * (1.0 - smoothstep(0.0, 0.56, uv.y));
+  vec2 mc = vec2(582.0, 700.0);
+  sky *= smoothstep(76.0, 190.0, length(sp - mc));
+  sky *= 1.0 - step(0.992, h21(floor(sp / 9.0))) * step(uv.y, 0.46);
+  float d = max(sky, b.g * 0.17);
+  d = max(d, b.b);
+  d *= 1.0 - clamp(max(a.r * uOn.x, a.g * uOn.y) * 1.4, 0.0, 1.0);
+  d = max(d, a.b);
+  vec2 c = min(sp, vec2(1080.0, 1920.0) - sp);
+  float mk = (1.0 - smoothstep(0.6, 1.4, abs(c.x - 38.0))) * step(c.y, 26.0) + (1.0 - smoothstep(0.6, 1.4, abs(c.y - 38.0))) * step(c.x, 26.0);
+  return max(d, clamp(mk, 0.0, 1.0));
+}
+float screen(vec2 sp, float ang, float g, float pitchPx, float seed) {
+  if (g <= 0.003) return 0.0;
+  float c = cos(ang); float s = sin(ang);
+  vec2 q = vec2(c * sp.x + s * sp.y, -s * sp.x + c * sp.y) / 7.0;
+  vec2 cell = floor(q);
+  vec2 f = (q - cell) * 2.0 - 1.0;
+  float ax = abs(f.x); float ay = abs(f.y);
+  float S = (ax + ay > 1.0) ? ((ax - 1.0) * (ax - 1.0) + (ay - 1.0) * (ay - 1.0) - 1.0) : (1.0 - (f.x * f.x + f.y * f.y));
+  float gg = clamp(g * 1.06 + 0.01, 0.0, 1.0);
+  float th = 1.0 - 2.0 * gg + (vn(sp * 0.45 + seed * 13.1) - 0.5) * 0.17;
+  float w = 2.4 / max(pitchPx, 1.0);
+  float cov = smoothstep(th - w, th + w, S);
+  cov *= 1.0 - 0.16 * smoothstep(0.8, 1.0, gg) * vn(sp * 0.035 + seed * 3.7);
+  if (h21(cell + fract(seed * 0.37)) < 0.0005) cov *= 0.12;
+  return cov;
+}
+void main() {
+  vec2 n = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes;
+  vec2 sp = uCam.xy + (n - 0.5) * vec2(1080.0, 1920.0) / uCam.z;
+  float pitchPx = 7.0 * uCam.z * uRes.x / 1080.0;
+  vec2 pr = sp - uOR;
+  vec2 pi = sp - uOI;
+  float cr = cos(uRotI); float sr = sin(uRotI);
+  vec2 dq = pi - TOUCH;
+  pi = TOUCH + vec2(cr * dq.x - sr * dq.y, sr * dq.x + cr * dq.y);
+  vec2 pk = sp - uOK;
+  float cR = uOn.x > 0.5 ? screen(pr, radians(75.0), densR(pr) * uDens.x, pitchPx, uSeed) : 0.0;
+  float cI = uOn.y > 0.5 ? screen(pi, radians(15.0), densI(pi) * uDens.y, pitchPx, uSeed + 1.7) : 0.0;
+  float cK = screen(pk, radians(45.0), densK(pk) * uDens.z, pitchPx, uSeed + 3.1);
+  float fib = vn(vec2(sp.x * 0.9, sp.y * 0.06) + uSeed * 7.0) * 0.6 + vn(sp * 0.35 + uSeed) * 0.4;
+  vec3 col = PAPER * (0.985 + fib * 0.03);
+  col *= mix(vec3(1.0), TR, cR);
+  col *= mix(vec3(1.0), TI, cI);
+  col *= mix(vec3(1.0), TK, cK);
+  gl_FragColor = vec4(col, 1.0);
+}`
+
+  async function twoInks() {
+    const stage = document.getElementById('riso-stage')
+    const cv = document.getElementById('riso')
+    const sheet = document.getElementById('riso-sheet')
+    const gl = cv.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: false })
+    if (!gl) { stage.insertAdjacentHTML('beforeend', '<div class="nogl">this browser has no WebGL, so the press cannot run here.</div>'); return }
+    let prog
+    try { prog = makeProgram(gl, RISO_FS) } catch (e) { stage.insertAdjacentHTML('beforeend', '<div class="nogl">the press did not start here.</div>'); return }
+    const buf = quad(gl)
+    const names = ['her', 'him', 'ribbon', 'boards', 'boardsair', 'moon', 'trees', 'branch', 'bloom']
+    const ims = await Promise.all(names.map((n) => load(MASKS['a_' + n])))
+    const W = ims[0].naturalWidth
+    const H = ims[0].naturalHeight
+    const c2 = document.createElement('canvas')
+    c2.width = W; c2.height = H
+    const x2 = c2.getContext('2d', { willReadFrequently: true })
+    const red = (im) => { x2.clearRect(0, 0, W, H); x2.drawImage(im, 0, 0); const d = x2.getImageData(0, 0, W, H).data; const o = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) o[i] = d[i * 4]; return o }
+    const m = {}
+    names.forEach((n, i) => { m[n] = red(ims[i]) })
+    const pack = (a, b, c, d) => { const o = new Uint8Array(W * H * 4); for (let i = 0; i < W * H; i++) { o[i * 4] = a[i]; o[i * 4 + 1] = b[i]; o[i * 4 + 2] = c[i]; o[i * 4 + 3] = d[i] } return o }
+    const her = m.her.map((v, i) => Math.max(v, m.ribbon[i]))
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
+    const T0 = texture(gl)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, pack(her, m.him, m.boards, m.boardsair))
+    const T1 = texture(gl)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, pack(m.moon, m.trees, m.branch, m.bloom))
+
+    const groups = Object.fromEntries([...sheet.querySelectorAll('.grp')].map((g) => [g.dataset.g, g]))
+    const words = [...sheet.querySelectorAll('.pr')]
+    const keys = ['k-play', 'k-iris', 'k-jun', 'k-both'].map((id) => document.getElementById(id))
+    const closer = document.getElementById('k-closer')
+    let mode = reduce ? 'both' : 'play'
+    let t0 = performance.now()
+    let held = reduce ? 20 : null
+    const LOOP = 14.5
+    const LAND = 7.6
+    const SNAP = 8.6
+
+    // what the press holds at a moment of the loop
+    function at(t) {
+      const s = { on: [1, 0], g: 'iris', cam: [540, 960, 1], drift: [0, 0], rot: 0 }
+      if (t < 3.5) return s
+      if (t < 7.0) return { ...s, on: [0, 1], g: 'jun' }
+      s.on = [1, t >= LAND ? 1 : 0]
+      s.g = t >= SNAP + 0.5 ? 'both' : 'iris'
+      if (t < SNAP + 0.5) s.g = 'none'
+      const zin = inOut(span(t, LAND - 0.3, LAND + 0.3))
+      const zout = inOut(span(t, SNAP + 0.35, SNAP + 1.45))
+      const zk = zin * (1 - zout)
+      s.cam = [lerp(540, 580, zk), lerp(960, 1150, zk), lerp(1, 2.8, zk)]
+      if (t >= LAND && t < SNAP + 4 / 12) {
+        const k = t < SNAP ? 1 : [1, 5 / 14, 1.5 / 14, 0.4 / 14][Math.min(3, Math.floor((t - SNAP) * 12))]
+        s.drift = [14 * k, -9 * k]
+        s.rot = (3 * k * Math.PI) / 180
+      }
+      return s
+    }
+
+    window.__inks = (which, at) => { mode = which; held = at; draw(performance.now()) }
+    function draw(now) {
+      const tt = held != null ? held : ((now - t0) / 1000) % LOOP
+      const t = mode === 'iris' ? 1.5 : mode === 'jun' ? 5 : tt
+      const s = at(t)
+      const print = reduce ? 3 : Math.floor((now - t0) / (1000 / 12))
+      const seed = print % 997
+      const jit = (k, r) => { const a = rnd(seed, k) * Math.PI * 2; const d = Math.sqrt(rnd(seed, k + 0.5)) * r; return [Math.cos(a) * d, Math.sin(a) * d] }
+      const oR = reduce ? [0.6, -0.4] : jit(1, 1.5)
+      const oI0 = reduce ? [-0.5, 0.7] : jit(2, 1.5)
+      const oK = reduce ? [0.3, 0.2] : jit(3, 1.0)
+      const oI = [oI0[0] + s.drift[0], oI0[1] + s.drift[1]]
+      const dens = [0, 1, 2].map((k) => (reduce ? 1 : 1 + (rnd(seed, 4 + k) - 0.5) * 0.12))
+      let cam = s.cam
+      const z = Number(closer.value)
+      if (z > 1.01) cam = [lerp(540, 580, span(z, 1, 2.2)), lerp(960, 1150, span(z, 1, 2.2)), z]
+      // the canvas, at the stage's size
+      const w = Math.round(stage.clientWidth * DPR())
+      const h = Math.round(w * 16 / 9)
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h }
+      gl.viewport(0, 0, w, h)
+      gl.useProgram(prog.p)
+      bindQuad(gl, buf, prog)
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T0); gl.uniform1i(prog.u.uT0, 0)
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T1); gl.uniform1i(prog.u.uT1, 1)
+      gl.uniform2f(prog.u.uRes, w, h)
+      gl.uniform3f(prog.u.uCam, cam[0], cam[1], cam[2])
+      gl.uniform1f(prog.u.uSeed, seed + 0.123)
+      gl.uniform2f(prog.u.uOR, oR[0], oR[1])
+      gl.uniform2f(prog.u.uOI, oI[0], oI[1])
+      gl.uniform2f(prog.u.uOK, oK[0], oK[1])
+      gl.uniform1f(prog.u.uRotI, s.rot)
+      gl.uniform3f(prog.u.uOn, s.on[0], s.on[1], 1)
+      gl.uniform3f(prog.u.uDens, dens[0], dens[1], dens[2])
+      gl.uniform1f(prog.u.uTime, reduce ? 4 : Math.floor((now - t0) / (1000 / 12)) / 12)
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
+      // the words, printed with their inks
+      for (const [g, el] of Object.entries(groups)) el.hidden = g !== s.g
+      for (const el of words) {
+        const o = el.dataset.ink === 'r' ? oR : el.dataset.ink === 'i' ? oI0 : oK
+        el.style.transform = `translate(${Number(el.dataset.x) + o[0]}px, ${Number(el.dataset.y) + o[1]}px)`
+      }
+      placeSheet(sheet, stage, cam)
+    }
+
+    let raf = 0
+    let live = false
+    let lastPrint = -1
+    let lastCam = ''
+    const loop = (now) => {
+      raf = 0
+      if (!live) return
+      const print = Math.floor((now - t0) / (1000 / 12))
+      const camKey = closer.value + (mode === 'play' || mode === 'both' ? String(Math.round(now / 16)) : '')
+      if (print !== lastPrint || camKey !== lastCam) { draw(now); lastPrint = print; lastCam = camKey }
+      if (!reduce) raf = requestAnimationFrame(loop)
+    }
+    const start = (on) => { live = on; if (on && !raf) raf = requestAnimationFrame(loop) }
+    watch(stage, start)
+    const go = (id) => {
+      press(keys, id)
+      mode = id.slice(2)
+      held = null
+      t0 = performance.now()
+      if (mode === 'both') { t0 = performance.now() - 7000; held = null }
+      if (reduce) { held = mode === 'both' || mode === 'play' ? 20 : null; draw(performance.now()) }
+    }
+    for (const b of keys) b.addEventListener('click', () => go(b.id))
+    closer.addEventListener('input', () => { if (reduce) draw(performance.now()) })
+    // "both" plays the print landing once, then holds the sheet
+    const hold = () => { if (mode === 'both' && held == null && (performance.now() - t0) / 1000 > 13.5) held = 13.5; requestAnimationFrame(hold) }
+    if (!reduce) requestAnimationFrame(hold)
+    new ResizeObserver(() => draw(performance.now())).observe(stage)
+    draw(performance.now())
+  }
+
+  // ── pacific: two cities, one moment ──────────────────────────────────────
+  const WORLD_FS = `
+precision highp float;
+uniform vec2 uRes;
+uniform float uT;
+uniform float uMode;
+uniform float uTurn;
+uniform vec3 uCam;
+uniform vec2 uWave;
+uniform sampler2D uHer;
+uniform sampler2D uHim;
+uniform sampler2D uBlue;
+
+float h1(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vn(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h1(i), h1(i + vec2(1.0, 0.0)), u.x), mix(h1(i + vec2(0.0, 1.0)), h1(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) { float a = 0.5; float s = 0.0; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }
+float blue(vec2 c) { return texture2D(uBlue, (c + 0.5) / 64.0).r; }
+
+float mask(sampler2D tex, vec2 p, vec2 o, vec2 sz) {
+  vec2 uv = (p - o) / sz;
+  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return 0.0;
+  return texture2D(tex, uv).r;
+}
+
+// Seoul, a Sunday afternoon: light, from the sky at y 0 to the steps at 960
+float seoul(vec2 p) {
+  float L = mix(0.70, 0.86, smoothstep(-500.0, 470.0, p.y));
+  float cb = smoothstep(60.0, 150.0, p.y) * (1.0 - smoothstep(320.0, 420.0, p.y));
+  float cn = fbm(vec2(p.x * 0.0052 + uT * 0.006, p.y * 0.012));
+  float cl = smoothstep(0.55, 0.68, cn) * cb;
+  float tp = smoothstep(0.52, 0.72, fbm(vec2(p.x * 0.0052 + uT * 0.006, (p.y - 16.0) * 0.012)));
+  L = mix(L, mix(0.78, 0.99, tp), cl);
+  vec2 sun = vec2(300.0, 150.0);
+  float ds = length(p - sun);
+  L += 0.30 * exp(-ds / 150.0);
+  L = mix(L, 1.0, 1.0 - smoothstep(38.0, 44.0, ds));
+  vec2 mo = vec2(812.0, 120.0);
+  float c1 = (1.0 - smoothstep(18.0, 20.0, length(p - mo))) * smoothstep(15.0, 17.0, length(p - mo - vec2(-7.0, -3.0)));
+  L += 0.09 * c1;
+  float ridge = 466.0 + 36.0 * fbm(vec2(p.x * 0.004, 3.1)) - 22.0 * exp(-pow((p.x - 180.0) / 160.0, 2.0));
+  if (p.y > ridge && p.y < 620.0) L = 0.645 - 0.05 * fbm(p * 0.02);
+  float col = floor(p.x / 36.0);
+  float top = 516.0 + 42.0 * h1(vec2(col, 2.0));
+  if (p.y > top && p.y < 606.0 && fract(p.x / 36.0) > 0.16) {
+    L = 0.54;
+    vec2 w = fract(vec2(p.x / 6.0, p.y / 7.0));
+    if (w.x < 0.5 && w.y < 0.45) L = 0.45;
+  }
+  float hill = 604.0 - 96.0 * exp(-pow((p.x - 862.0) / 128.0, 2.0));
+  if (p.y > hill && p.y < 612.0) L = 0.47 + 0.05 * fbm(p * 0.03);
+  float tw = step(abs(p.x - 862.0), 3.5) * step(hill - 128.0, p.y) * step(p.y, hill + 2.0);
+  float pod = step(length((p - vec2(862.0, hill - 108.0)) / vec2(17.0, 8.0)), 1.0);
+  float ant = step(abs(p.x - 862.0), 1.4) * step(hill - 172.0, p.y) * step(p.y, hill - 116.0);
+  if (tw + pod + ant > 0.5) L = 0.38;
+  float deck = 603.0 + (1080.0 - p.x) * 0.011;
+  if (abs(p.y - deck) < 3.5) L = 0.34;
+  if (p.y > deck && p.y < deck + 16.0 && fract(p.x / 66.0) < 0.07) L = 0.32;
+  if (p.y > 614.0 && p.y < 820.0) {
+    L = 0.60 + 0.07 * fbm(vec2(p.x * 0.01, p.y * 0.05 + uT * 0.15));
+    float colm = exp(-abs(p.x - 300.0) / 120.0);
+    float sp = vn(vec2(p.x * 0.23, p.y * 0.95) + vec2(uT * 0.7, uT * 2.6));
+    if (sp > 0.94 - 0.2 * colm) L = 1.0;
+  }
+  if (p.y >= 820.0) L = fract((p.y - 820.0) / 26.0) < 0.62 ? 0.84 : 0.58;
+  float m = mask(uHer, p, vec2(292.0, 560.0), vec2(190.0, 380.0));
+  if (m > 0.5 && p.y < 906.0) {
+    float up = mask(uHer, p - vec2(0.0, 8.0), vec2(292.0, 560.0), vec2(190.0, 380.0));
+    L = up < 0.5 ? 0.88 : 0.09;
+  }
+  return L;
+}
+// Berkeley, a Saturday night: dark, the sky at y 0, the wall at the foot
+float berkeley(vec2 p) {
+  float L = mix(0.05, 0.20, smoothstep(0.0, 540.0, p.y));
+  if (p.y < 380.0 && h1(floor(p / 6.0)) > 0.994) L = 0.68;
+  vec2 mo = vec2(250.0, 175.0);
+  float dm = length(p - mo);
+  L += 0.11 * exp(-dm / 70.0);
+  float cres = (1.0 - smoothstep(24.0, 26.0, dm)) * smoothstep(21.0, 23.5, length(p - mo - vec2(10.0, -5.0)));
+  L = mix(L, 0.97, cres);
+  float band = smoothstep(290.0, 420.0, p.y) * (1.0 - smoothstep(560.0, 660.0, p.y));
+  float wv = fbm(vec2(p.x * 0.002 + uT * 0.01, p.y * 0.004));
+  float fn = fbm(vec2(p.x * 0.0042 - uT * 0.035, p.y * 0.011 + 0.5 * wv));
+  float fog = smoothstep(0.42, 0.72, fn) * band;
+  L = mix(L, 0.40 + 0.14 * smoothstep(400.0, 620.0, p.y), fog * 0.9);
+  if (p.y > 540.0 && p.y < 600.0) {
+    L = 0.06 + 0.04 * fbm(vec2(p.x * 0.02, p.y * 0.2));
+    float by = 556.0 + (p.x - 540.0) * 0.035;
+    if (abs(p.y - by) < 2.2 && fract(p.x / 14.0) < 0.32) L = 0.92;
+    if (p.x > 720.0 && p.y < 553.0 && h1(floor(p / 4.0)) > 0.8) L = 0.86;
+  }
+  float ridge = 600.0 + 30.0 * fbm(vec2(p.x * 0.005, 7.7));
+  if (p.y > ridge && p.y < 880.0) {
+    L = 0.05;
+    if (p.y < 720.0 && h1(floor(p / 5.0)) > 0.9) L = 0.8;
+  }
+  float tower = step(abs(p.x - 300.0), 9.0) * step(470.0, p.y) * step(p.y, ridge + 4.0);
+  float roof = step(abs(p.x - 300.0), 9.0 - (470.0 - p.y) * 0.55) * step(452.0, p.y) * step(p.y, 470.0);
+  if (tower + roof > 0.5) L = 0.10;
+  if (abs(p.x - 300.0) < 4.5 && abs(p.y - 493.0) < 4.5) L = 0.96;
+  float m = mask(uHim, p, vec2(300.0, 470.0), vec2(166.0, 408.0));
+  if (m > 0.5) {
+    float up = mask(uHim, p - vec2(0.0, 8.0), vec2(300.0, 470.0), vec2(166.0, 408.0));
+    L = up < 0.5 ? 0.36 : 0.03;
+  }
+  if (p.y > 862.0) L = p.y < 872.0 ? 0.24 : 0.09;
+  return L;
+}
+vec3 tone(float lv, vec3 a, vec3 b, vec3 c, vec3 d) { return lv < 0.5 ? a : lv < 1.5 ? b : lv < 2.5 ? c : d; }
+vec3 paint(float lv, float which) {
+  if (which < 0.5) return tone(lv, vec3(0.067, 0.086, 0.102), vec3(0.392, 0.506, 0.604), vec3(0.561, 0.722, 0.863), vec3(0.929, 0.957, 0.976));
+  if (which < 1.5) return tone(lv, vec3(0.106, 0.078, 0.043), vec3(0.616, 0.463, 0.247), vec3(0.878, 0.663, 0.353), vec3(0.980, 0.945, 0.898));
+  return tone(lv, vec3(0.106, 0.071, 0.082), vec3(0.612, 0.404, 0.482), vec3(0.875, 0.576, 0.686), vec3(0.980, 0.933, 0.949));
+}
+void main() {
+  vec2 n = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes;
+  vec2 f = n * vec2(1080.0, 1920.0);
+  vec2 cell = floor(gl_FragCoord.xy);
+  float L; float which; vec2 p; vec2 ph; float r; float reach;
+  if (uMode > 0.5) {
+    p = uCam.xy + (f - vec2(540.0, 960.0)) / uCam.z;
+    L = seoul(p); which = 1.0; r = -1.0; ph = vec2(0.0); reach = 1.0;
+  } else if (f.y < 960.0) {
+    p = uTurn > 0.5 ? vec2(1080.0 - f.x, 960.0 - f.y) : f;
+    L = seoul(p); which = 1.0; ph = vec2(220.0, 892.0); r = uWave.x; reach = 892.0;
+  } else {
+    p = vec2(f.x, f.y - 960.0);
+    L = berkeley(p); which = 0.0; ph = vec2(540.0, 848.0); r = uWave.y; reach = 848.0;
+  }
+  float v = clamp(L, 0.0, 1.0) * 3.0;
+  float lv = floor(v);
+  lv += step(blue(cell), v - lv);
+  lv = min(lv, 3.0);
+  if (r > 0.0) {
+    float d = length(p - ph) * (900.0 / reach);
+    if (d < r) { which = 2.0; if (d > r - 22.0) lv = min(3.0, lv + 1.0); }
+  }
+  gl_FragColor = vec4(paint(lv, which), 1.0);
+}`
+  const SHOW_FS = `
+precision highp float;
+uniform vec2 uRes;
+uniform sampler2D uCells;
+uniform float uMode;
+uniform float uTurn;
+uniform float uLit;
+uniform float uSeam;
+uniform float uGlow;
+float box(vec2 f, vec2 c, vec2 hs) { vec2 d = abs(f - c) - hs; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0); }
+void main() {
+  vec2 n = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uRes;
+  vec3 col = texture2D(uCells, vec2(n.x, 1.0 - n.y)).rgb;
+  vec2 f = n * vec2(1080.0, 1920.0);
+  vec3 rose = vec3(0.953, 0.776, 0.839);
+  if (uMode < 0.5) {
+    vec2 ps = uTurn > 0.5 ? vec2(1080.0 - 220.0, 960.0 - 892.0) : vec2(220.0, 892.0);
+    vec2 pb = vec2(540.0, 960.0 + 848.0);
+    for (int i = 0; i < 2; i++) {
+      vec2 c = i == 0 ? ps : pb;
+      float g = exp(-length(f - c) / 120.0) * 0.32 * uLit;
+      col += vec3(0.87, 0.58, 0.69) * g;
+      float b = box(f, c, vec2(30.0, 13.0));
+      if (b < 0.0) col = mix(vec3(0.045, 0.045, 0.055), rose, uLit);
+      else if (b < 1.6) col = mix(col, vec3(0.16, 0.16, 0.18), 0.85);
+    }
+    float sl = 1.0 - smoothstep(2.0, 5.0, abs(f.y - 960.0));
+    col = mix(col, vec3(0.98, 0.93, 0.95), sl * uSeam);
+  } else {
+    float g = exp(-length(f - uGlow * vec2(387.0, 1240.0)) / 90.0) * 0.28 * step(0.5, uGlow);
+    col += vec3(0.56, 0.72, 0.86) * g;
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`
+
+  // the weather on his phone: Seoul's sun, drawn on the phone's grid
+  function drawPhone(ctx, k, z, t) {
+    const W = ctx.canvas.width
+    const H = ctx.canvas.height
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0, 0, W, H)
+    // falling into the sun: the glyph's middle stays where it is on the frame
+    const G = [540, 790]
+    ctx.setTransform(k * z, 0, 0, k * z, k * G[0] * (1 - z), k * G[1] * (1 - z))
+    ctx.imageSmoothingEnabled = false
+    // the light the screen throws on the black
+    const halo = ctx.createRadialGradient(540, 860, 60, 540, 860, 560)
+    halo.addColorStop(0, 'rgba(224, 169, 90, 0.34)')
+    halo.addColorStop(1, 'rgba(224, 169, 90, 0)')
+    ctx.fillStyle = halo
+    ctx.fillRect(-200, 200, 1480, 1400)
+    // the glass: its bands and its panel
+    ctx.fillStyle = '#1C150B'
+    ctx.fillRect(170, 548, 740, 640)
+    ctx.fillStyle = '#2C2113'
+    ctx.fillRect(170, 548, 740, 72)
+    ctx.fillRect(170, 1112, 740, 76)
+    const panel = ctx.createRadialGradient(470, 700, 30, 540, 860, 520)
+    panel.addColorStop(0, '#F3C982')
+    panel.addColorStop(1, '#D79A48')
+    ctx.fillStyle = panel
+    ctx.fillRect(170, 620, 740, 492)
+    // the panel's pixel grid, felt
+    ctx.fillStyle = 'rgba(80, 50, 10, 0.07)'
+    for (let x = 170; x < 910; x += 7) ctx.fillRect(x, 620, 1, 492)
+    for (let y = 620; y < 1112; y += 7) ctx.fillRect(170, y, 740, 1)
+    // the sun: a disc of cells and its rays, blinking on the screen's 1060 ms
+    const C = 14
+    const on = Math.floor(t / 0.53) % 2 === 0
+    ctx.fillStyle = '#1B140B'
+    for (let j = 0; j < 15; j++) for (let i = 0; i < 15; i++) {
+      const dx = i - 7
+      const dy = j - 7
+      const r = Math.hypot(dx, dy)
+      let lit = r <= 3.3
+      const a = Math.atan2(dy, dx) / (Math.PI / 4)
+      const onRay = Math.abs(a - Math.round(a)) < 0.12 && r >= 5 && r <= 7.1
+      const cardinal = Math.round(a) % 2 === 0
+      if (onRay && (cardinal ? on : !on)) lit = true
+      if (lit) ctx.fillRect(540 - 7.5 * C + i * C + 1, 790 - 7.5 * C + j * C + 1, C - 2, C - 2)
+    }
+    ctx.textBaseline = 'alphabetic'
+    ctx.font = '112px "Jersey 10", monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText('66°', 548, 1006)
+    ctx.font = '46px "Jersey 10", monospace'
+    ctx.fillText('wed 3:04 pm', 540, 1068)
+    ctx.fillStyle = '#F2CF92'
+    ctx.textAlign = 'left'
+    ctx.font = '46px "Jersey 10", monospace'
+    ctx.fillText('seoul', 236, 598)
+    ctx.fillText('options', 196, 1164)
+    ctx.textAlign = 'right'
+    ctx.fillText('back', 884, 1164)
+    // the aerial and the battery
+    ctx.fillRect(196, 566, 4, 32)
+    ctx.fillRect(188, 566, 20, 4)
+    ctx.fillRect(812, 574, 62, 26)
+    ctx.fillStyle = '#2C2113'
+    ctx.fillRect(816, 578, 54, 18)
+    ctx.fillStyle = '#F2CF92'
+    for (let b = 0; b < 4; b++) ctx.fillRect(819 + b * 13, 581, 10, 12)
+    ctx.fillRect(874, 581, 5, 12)
+  }
+
+  // Blue noise by void and cluster (Ulichney), 64 by 64, on a torus: the
+  // threshold each cell of the dither is held to, so the four tones break up
+  // as a screen's grain does and never into stripes. Made once, here.
+  function blueNoise(N = 64) {
+    const n = N * N
+    const R = 5
+    const sg = 1.5
+    const K = []
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) K.push(dx, dy, Math.exp(-(dx * dx + dy * dy) / (2 * sg * sg)))
+    const add = (E, i, s) => { const x = i % N; const y = (i / N) | 0; for (let k = 0; k < K.length; k += 3) E[((y + K[k + 1] + N) % N) * N + ((x + K[k] + N) % N)] += s * K[k + 2] }
+    const pick = (E, bin, want) => { let b = -1; let v = want ? -Infinity : Infinity; for (let i = 0; i < n; i++) { if (bin[i] !== want) continue; if (want ? E[i] > v : E[i] < v) { v = E[i]; b = i } } return b }
+    let seed = 20261008
+    const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+    const bin = new Uint8Array(n)
+    const E = new Float64Array(n)
+    const ones = Math.round(n * 0.1)
+    for (let c = 0; c < ones;) { const i = Math.floor(r() * n); if (!bin[i]) { bin[i] = 1; add(E, i, 1); c++ } }
+    for (let it = 0; it < n; it++) {
+      const c = pick(E, bin, 1); bin[c] = 0; add(E, c, -1)
+      const v = pick(E, bin, 0)
+      if (v === c) { bin[c] = 1; add(E, c, 1); break }
+      bin[v] = 1; add(E, v, 1)
+    }
+    const rank = new Float32Array(n)
+    const b1 = bin.slice()
+    const E1 = E.slice()
+    for (let k = ones - 1; k >= 0; k--) { const c = pick(E1, b1, 1); b1[c] = 0; add(E1, c, -1); rank[c] = k }
+    for (let k = ones; k < n; k++) { const v = pick(E, bin, 0); bin[v] = 1; add(E, v, 1); rank[v] = k }
+    const out = new Uint8Array(n)
+    for (let i = 0; i < n; i++) out[i] = Math.round(((rank[i] + 0.5) / n) * 255)
+    return out
+  }
+
+  async function pacific() {
+    const stage = document.getElementById('pac-stage')
+    const cv = document.getElementById('pac')
+    const door = document.getElementById('pac-door')
+    const sheet = document.getElementById('pac-sheet')
+    const gl = cv.getContext('webgl', { antialias: false, alpha: false })
+    if (!gl) { stage.insertAdjacentHTML('beforeend', '<div class="nogl">this browser has no WebGL, so the two cities cannot be drawn here.</div>'); return }
+    let world, show
+    try { world = makeProgram(gl, WORLD_FS); show = makeProgram(gl, SHOW_FS) } catch (e) { stage.insertAdjacentHTML('beforeend', '<div class="nogl">the two cities did not start here.</div>'); return }
+    const buf = quad(gl)
+    const [her, him] = await Promise.all([load(MASKS.b_her), load(MASKS.b_him)])
+    const tHer = texture(gl)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, her)
+    const tHim = texture(gl)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, him)
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
+    const tBlue = texture(gl, gl.NEAREST)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 64, 64, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, blueNoise())
+    // the cells: 360 by 640, each 3 px of the frame
+    const CW = 360
+    const CH = 640
+    const tCells = texture(gl, gl.NEAREST)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, CW, CH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    const fb = gl.createFramebuffer()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tCells, 0)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+
+    const $ = (id) => document.getElementById(id)
+    const keys = [$('p-nine'), $('p-door')]
+    const turnKey = $('p-turn')
+    const pdtKey = $('p-pdt')
+    let turn = true
+    let pdt = true
+    let seq = 'nine'
+    let t0 = performance.now()
+    const NINE = 2.0
+    const MEET = NINE + 4 / 3
+    const NINE_LOOP = 8.2
+    const DOOR_LOOP = 5.6
+    const CUT = 1.6
+    const doorX = door.getContext('2d')
+
+    let fixed = null
+    window.__pac = (which, at) => { seq = which; fixed = at; frame(performance.now()) }
+    function frame(now) {
+      const tt = fixed != null ? fixed : (now - t0) / 1000
+      const w = Math.round(stage.clientWidth * DPR())
+      const h = Math.round(w * 16 / 9)
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h }
+      let mode = 0
+      let cam = [540, 600, 1]
+      let wave = [-1, -1]
+      let lit = 0
+      let seam = 0
+      let glow = 0
+      let t = 0
+      if (seq === 'nine') {
+        t = reduce ? 6 : tt % NINE_LOOP
+        const u = span(t, NINE, MEET)
+        if (t >= NINE) { const r = 900 * Math.pow(u, 0.92) + (t > MEET ? (t - MEET) * 900 : 0); wave = [r, r]; lit = 1 }
+        seam = t >= MEET ? 1 - span(t, MEET + 0.08, MEET + 0.42) : 0
+        const sec = t < 2 / 3 ? 57 : t < 4 / 3 ? 58 : 59
+        const nine = t >= NINE
+        $('c-top-t').textContent = nine ? (pdt ? 'sun 1:00 pm' : 'sun 2:00 pm') : (pdt ? 'sun 12:59 pm' : 'sun 1:59 pm')
+        $('c-bot-t').textContent = nine ? 'sat 9:00 pm' : 'sat 8:59 pm'
+        $('c-top-s').textContent = nine ? ' :00' : ` :${sec}`
+        $('c-bot-s').textContent = nine ? ' :00' : ` :${sec}`
+        const after = t >= MEET
+        $('cap1').style.opacity = after ? 0 : 1
+        $('cap2').style.opacity = after ? 0 : 1
+        $('cap3').style.opacity = after ? 1 : 0
+        $('c-top').style.opacity = 1
+        $('c-bot').style.opacity = 1
+        $('cap-door').style.opacity = 0
+        door.style.opacity = 0
+      } else {
+        t = reduce ? 4 : tt % DOOR_LOOP
+        $('cap1').style.opacity = 0
+        $('cap2').style.opacity = 0
+        $('cap3').style.opacity = 0
+        $('c-top').style.opacity = 0
+        $('c-bot').style.opacity = 0
+        $('cap-door').style.opacity = 0
+        if (t < CUT) {
+          door.style.opacity = 1
+          const dw = w
+          const dh = h
+          if (door.width !== dw || door.height !== dh) { door.width = dw; door.height = dh }
+          const z = Math.exp(Math.log(6) * Math.pow(span(t, 0.25, CUT), 2))
+          drawPhone(doorX, dw / 1080, z, t)
+        } else {
+          door.style.opacity = 0
+          mode = 1
+          const k = ease(span(t, CUT, CUT + 1.1))
+          // the real sun where the glyph's was, the same size, then the city under it
+          const z0 = 6.7
+          const c0 = [300, 150 - (790 - 960) / z0]
+          cam = [lerp(c0[0], 540, k), lerp(c0[1], 600, k), lerp(z0, 1, k)]
+          glow = k > 0.995 ? 1 : 0
+          $('cap-door').style.opacity = k > 0.6 ? 1 : 0
+        }
+      }
+      // the cities, into their cells
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
+      gl.viewport(0, 0, CW, CH)
+      gl.useProgram(world.p)
+      bindQuad(gl, buf, world)
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tHer); gl.uniform1i(world.u.uHer, 0)
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tHim); gl.uniform1i(world.u.uHim, 1)
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, tBlue); gl.uniform1i(world.u.uBlue, 3)
+      gl.uniform2f(world.u.uRes, CW, CH)
+      gl.uniform1f(world.u.uT, reduce ? 3 : (now - t0) / 1000 + 40)
+      gl.uniform1f(world.u.uMode, mode)
+      gl.uniform1f(world.u.uTurn, turn ? 1 : 0)
+      gl.uniform3f(world.u.uCam, cam[0], cam[1], cam[2])
+      gl.uniform2f(world.u.uWave, wave[0], wave[1])
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
+      // the cells, drawn whole, and the phones as themselves
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.viewport(0, 0, w, h)
+      gl.useProgram(show.p)
+      bindQuad(gl, buf, show)
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, tCells); gl.uniform1i(show.u.uCells, 2)
+      gl.uniform2f(show.u.uRes, w, h)
+      gl.uniform1f(show.u.uMode, mode)
+      gl.uniform1f(show.u.uTurn, turn ? 1 : 0)
+      gl.uniform1f(show.u.uLit, lit)
+      gl.uniform1f(show.u.uSeam, seam)
+      gl.uniform1f(show.u.uGlow, glow)
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
+      placeSheet(sheet, stage, [540, 960, 1])
+    }
+
+    let raf = 0
+    let live = false
+    const loop = (now) => { raf = 0; if (!live) return; frame(now); if (!reduce) raf = requestAnimationFrame(loop) }
+    watch(stage, (on) => { live = on; if (on && !raf) raf = requestAnimationFrame(loop) })
+    for (const b of keys) b.addEventListener('click', () => { press(keys, b.id); seq = b.id === 'p-door' ? 'door' : 'nine'; t0 = performance.now(); if (reduce) frame(performance.now()) })
+    turnKey.addEventListener('click', () => { turn = !turn; turnKey.setAttribute('aria-pressed', String(turn)); turnKey.textContent = turn ? 'seoul turned over' : 'both upright'; if (reduce) frame(performance.now()) })
+    pdtKey.addEventListener('click', () => { pdt = !pdt; pdtKey.setAttribute('aria-pressed', String(pdt)); pdtKey.textContent = pdt ? 'until 1 nov' : 'from 1 nov'; if (reduce) frame(performance.now()) })
+    new ResizeObserver(() => frame(performance.now())).observe(stage)
+    frame(performance.now())
+  }
+
+  const begin = () => { twoInks().catch(() => {}); pacific().catch(() => {}) }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(begin, begin)
+  else begin()
+})()
+
+</script>
+
+</body>
+</html>

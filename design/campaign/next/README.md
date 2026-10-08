@@ -10,10 +10,7 @@ photographed and finished.
 | --- | --- |
 | [TWO-INKS.md](./TWO-INKS.md) | script A. A private note is one ink; a picture needs both |
 | [PACIFIC.md](./PACIFIC.md) | script B. It's already tomorrow where they are |
-
-The treatment page draws both worlds live (a riso print of the bench
-telling's own two bodies, and the two cities facing each other with the
-rose running through them) with both scripts beside them.
+| [treatment.html](./treatment.html) | both scripts, with each world drawn live beside them: the press printing the bench telling's own two bodies in rose and ice, and the two cities facing each other with the rose running through them at nine. Open it in a browser. Its two shaders are the first drafts of `riso-gl.js` and `dither.js` |
 
 ---
 
