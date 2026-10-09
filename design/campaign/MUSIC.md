@@ -77,7 +77,7 @@ it, a deeper knock held under a low one, and a shimmer as it lights. The
 long breath of air under the hall is left out, since alone it is only a
 hiss. Nothing is pressed: no glue and no saturation, and it is set by its
 loudest moment, the envelope at the lens, four and a half decibels under
-full scale, which leaves it near -27 LUFS, the sounds being few, so a song
+full scale, which leaves it near -26 LUFS, the sounds being few, so a song
 laid over it has the room it needs.
 
 ## What it is made from
