@@ -17,8 +17,8 @@ you?`: up a sixth, a sigh down, and up again at the end, as a question
 goes, onto a note that is not home.
 
 - the letter: the piano alone, a line falling under lin's typing (F sharp,
-  E, D, C sharp, B), the sigh on the `d` after the breath. the typing
-  itself is silent
+  E, D, C sharp, B), the sigh on the `d` after the breath; the phone's keys
+  click under it, quietly, a letter at a time
 - the hall: the piano's arpeggios as the backlights come on, the strings
   rising with the camera, a cello under the words
 - the send: the piano holds its breath on the key; a harp carries the
@@ -48,8 +48,10 @@ Each note is then loosened a little in its time and its weight, as a player
 would, the same way every time the song is made. Each part is played by
 FluidSynth from the MuseScore General soundfont into its own stem, and the
 stems are mixed in Node (a long, dark hall convolved round them) and
-mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. There are no
-keystrokes: the words and the address are typed in silence. The send and
+mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. The keys are a
+phone's, synthesised: a tick and a small bright body, the space bar's
+lower and softer, a click a letter as lin's letter and the address are
+typed, quiet under the song. The send and
 the envelope sealed are a real recording of a tap, laid on their frames;
 the air the letter moves and the screens going out are synthesised. There
 are no bells.
@@ -68,9 +70,12 @@ hall and lin's letter coming away from the wall, the air each moves; kai's
 note coming on, on the thursday; the two touching, low, under the air of
 it; the one who goes, a gust and the scratch of the pencil's lines blown to
 the left; and the name lit from its star, a shimmer of air as fine as its
-cells. The long breath of air under the hall is left out, since alone it
-is only a hiss, and the words are typed in silence, as they are under the
-song. Nothing is pressed: no glue and no saturation, and it is set by its
+cells; the phone's keys as the letters are typed, as they are heard in
+the hand; and the question, a word at a time, each word a soft knock and
+a breath, a little more each time, and on `you?` the air drawn in before
+it, a deeper knock held under a low one, and a shimmer as it lights. The
+long breath of air under the hall is left out, since alone it is only a
+hiss. Nothing is pressed: no glue and no saturation, and it is set by its
 loudest moment, the envelope at the lens, four and a half decibels under
 full scale, which leaves it near -27 LUFS, the sounds being few, so a song
 laid over it has the room it needs.

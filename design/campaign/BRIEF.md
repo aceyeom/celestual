@@ -200,14 +200,14 @@ times the picture (`parts/reel.jsx`) and the song
 | ms | the shot | the words |
 | --- | --- | --- |
 | 0 | lin's note on the glass, the first sentence already there and the rest typed at a hand's pace: `i love`, a breath, `d` | `i never said this two years ago. i loved you. maybe i still do.` (on the phone) |
-| 3750 | one shot: the camera comes back from the glass and rests on the letter under lin's long enough to read it, then makes one move up the hall's height and round, lands a little past and settles; the backlights come on outward from lin's, each in its own colour, a few screens dead; lin's letter comes away from the wall to the camera | `a wall of the ones / you never told.` |
+| 3750 | one shot: the moment the last letter is typed the camera pulls straight back from the glass, quickly and then slower, the lens widening, until the whole wall of letters is the frame and lin's one among them, the backlights coming on outward from lin's as it goes, each in its own colour, a few screens dead; then one move up the hall's height and round, that lands a little past and settles; lin's letter comes away from the wall to the camera | `a wall of the ones / you never told.` |
 | 10000 | send: every lit pixel of the letter's words leaves its place, the first words first, and goes into the envelope, so the envelope is made of the letter; sealed, a light goes over it and it lights; the phone goes out behind it as an old screen goes, to a bright line and a point; the envelope comes at the lens, the frames it was in a moment ago after it | `or send it / privately.` |
-| 12500 | through the lens into the dark, and the frame is a screen's panel; the envelope's light goes on out over the whole of it as ink goes out in water, in smoky streaks that wind as they go, and shows, as it spreads, two people sitting side by side on a wall by the sea, seen from behind, what the note is about; the envelope goes away from us to its place on the horizon in front of them, to wait, its light left round it, breathing as a phone's light does with something on it; they fade as the week begins | `they only read it if / they send you one.`, centred in the sky over it |
+| 12500 | through the lens into the dark, and the frame is a screen's panel; the envelope's light goes on out over the whole of it as ink goes out in water, in smoky streaks that wind as they go, and over it, as it spreads, a photograph: two people sitting side by side on a wall by the sea, seen from behind, in the blue of the night, what the note is about; the envelope goes away from us to its place on the horizon in front of them, to wait, its light left round it, breathing as a phone's light does with something on it; they fade as the week begins | `they only read it if / they send you one.`, centred in the sky over it |
 | 15000 | the sentence ends on a clock that runs through the week, the day over the time and the time large; the week's notes come in round it, each as a screen comes on, each spreading a little of its colour round it, and on the thursday one in amber; while the clock runs the colours rush, the week in a few seconds; the clock stops at nine and `pacific` comes on under it; the others' colours go in, and are gone; the camera leans in and down on the two, the dark between them lighting as they near, and they find each other, wait a moment apart, and touch | `every mutual is / revealed on`, and the clock set in from them: `sat / 9:00 pm / pacific` |
 | 20000 | on the touch the two lights go out together from where the envelopes touched, quickly at first and then slower and slower, never stopping, as a drop of ink spreads: lin's ice on one side and kai's amber on the other, winding into each other along spirals, a flash of the two at once at its heart, the envelopes' own pixels carried out on it. A third of a second on, out of the light comes lin's letter, at us, white as a screen coming on, its glass rippling and its words swimming as if under water, coming clear as it comes out: quickly out of the light, up and away on a curve and round, slowing, into the hand, banking into its curve and leaving its light behind it as an old screen's phosphor does. Before it has quite come to rest it turns over, leaning back a little first as a hand turns a thing and going a little past, its glass catching the light, the colours turning with it; on its edge, on the bar the song comes in on, it is a bright line and a ring of light goes out from it; and its other side comes on as a screen does, rippling once as the ring goes through it, in the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on its other side), `it's / mutual.`, large, centred over it |
-| 23750 | kai's, held, and brought a little nearer to be read, the light settling round it into the sea of the night, its colours on the letter's edges; then kai's melts back into the light: its words drawn out along the flow and its glass drawn outward, lifting into the light's own pale gold and thinning away into it, its edges first and its middle last, never a hole eaten in it and never a glowing edge, which would be paper burning; and where it was are the two from the night, side by side on the wall, dark against all of its light, the whole panel brightening to the cut | `you both find out.` |
-| 25000 | the panel again, the light most of the way gone at the cut and the rest going out after; a shore in the mist, and two people standing apart on it, facing each other; three notes alone in the sky over them, each with a little light round it, each going out as a screen does, to a line and a point, in its own time, its light going in as it goes; and one of the two comes apart, blurred towards the wind and then into scribbled lines that blow away, while the other stays | `if it isn't, / nobody / ever knows.`, flush right |
-| 27500 | the question, a word on each note of the melody, centred, its last word large, and left there, whole, for as long as it took to ask, over the one left standing on the shore; a low light rises from the foot of the frame behind it, ice on one side and amber on the other; a ring goes out from `you?`; and as it ends the shore goes and all of the light is drawn in to one point | `do they still / think about / you?` |
+| 23750 | kai's, held, and brought a little nearer to be read, the photograph of the two by the sea coming up behind it, warmer now, the light's colours on the letter's edges; then kai's melts back into the light: its words drawn out along the flow and its glass drawn outward, lifting into the light's own pale gold and thinning away into it, its edges first and its middle last, never a hole eaten in it and never a glowing edge, which would be paper burning; and where it was are the two from the night, side by side on the wall, dark against all of its light, the whole panel brightening to the cut | `you both find out.` |
+| 25000 | the panel again, the light most of the way gone at the cut and the rest going out after; a photograph of a shore in the mist, two people standing apart on it, one of them blurred and scribbled over as if the wind were taking it, the other still; three notes alone in the sky over them, each with a little light round it, each going out as a screen does, to a line and a point, in its own time, its light going in as it goes | `if it isn't, / nobody / ever knows.`, flush right |
+| 27500 | the question, a word on each note of the melody, centred, its last word large, and left there, whole, for as long as it took to ask, the camera going slowly in on the one left standing on the shore; a low light rises from the foot of the frame behind it, ice on one side and amber on the other; a ring goes out from `you?`; and as it ends the shore goes and all of the light is drawn in to one point | `do they still / think about / you?` |
 | 31250 | the name: the point is the name's star, and the name is lit a cell at a time from it, in the middle of the frame, the camera come to rest for it; the star keeps a little of the light, breathing, and as the address is typed under it a last ring goes out from it | `celestual.us` |
 
 The type is the phone's own face, Jersey 10, cut into its cells
@@ -278,19 +278,19 @@ in it reads as smoke or flame. The flow is stepped from the lens at a fixed
 rate, so every frame is the same however it is come to. It is drawn with
 three.js (MIT), the stars' glow postprocessing's mipmap bloom (Zlib).
 
-The people in it are drawn by hand, as paths, and no photograph is in
-them (`parts/reel-figures.js`): two sitting side by side on a wall by the
-sea, seen from behind, the one with long hair falling past the shoulders
-and the other's short to the nape; and two standing apart on a shore in
-long coats, side on, facing each other, heads a little bowed; after two
-reference photographs the brief was given, whose people they are not.
-They are drawn in the panel's own cells as everything after the send is:
-the sky, the sea and the mist light the cells, and the people and the
-wall they sit on block the light, the stars and their haze too, so they
-are silhouettes made of the screen. The one who goes comes apart as a
-pencil scribble does, in looping strokes and long hatching blown to the
-left, and its silhouette breaks up in soft patches, the side towards the
-wind first.
+The two of them are two photographs (`app/src/studio/assets/reel-photo-sea.jpg`
+and `reel-photo-shore.jpg`), the ones the brief was given, as they are:
+two sitting side by side on a wall by the sea, seen from behind; and two
+standing apart on a shore in the mist, one of them blurred and scribbled
+over. Unless they were taken for the campaign, the film needs their
+photographers' permission before it is posted. They lie over the panel
+smooth, as photographs do, in black and white, each graded to its scene
+(the blue of the night, warm for the reveal, the grey of the mist), faded
+in from the dark above them so the words over them are on the dark, and
+kept darker under the words as the panel is, the camera going slowly in
+on them; the panel's light passes through their light parts and their
+people stay dark against it, as silhouettes do (`parts/panel-fluid.js`
+`photo`).
 
 How it moves, and why. The two lights at nine go out from the frame the
 envelopes touch, from where they touch, as one thing is seen to cause
