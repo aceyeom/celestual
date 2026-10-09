@@ -1,0 +1,380 @@
+<!doctype html>
+<!--
+  SEO 체크리스트 (이 문서에 적용된 항목)
+  - html lang="ko", title(키워드 앞쪽 배치, 35자 안팎), meta description(70~110자)
+  - 단일 h1, h2 > h3 순서 유지, 소제목마다 핵심 키워드 포함
+  - 첫 문단에 핵심 키워드와 조사 기간 명시, 맨 위 핵심 요약, 목차 앵커
+  - 그래프는 role="img" + aria-label, 수치는 표(table + caption)로 텍스트 제공
+  - Article + FAQPage JSON-LD, time[datetime], 출처와 집계 기준 명시
+  - Open Graph / Twitter 카드, robots
+
+  게시 전에 채울 것 (값이 정해지면 아래 주석을 풀어서 head에 넣는다)
+  <link rel="canonical" href="https://(게시될 주소)">
+  <meta property="og:url" content="https://(게시될 주소)">
+  <meta property="og:image" content="https://(대표 이미지 주소)">
+  <meta name="naver-site-verification" content="(네이버 서치어드바이저 발급 값)">
+  대표 이미지(1200x630)와 본문 이미지에는 alt 속성을 붙인다.
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수입식품 통관 데이터로 본 다진마늘·커피생두·올리브유 | TAAMs</title>
+<meta name="description" content="TAAMs 통관 기록으로 확인한 다진마늘, 커피 생두, 유기농 올리브유 수입 현황입니다. 수출국과 월별 통관 건수를 그래프와 표로 정리했습니다.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#1f6f54">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="TAAMs">
+<meta property="og:title" content="수입식품 통관 데이터로 본 다진마늘·커피생두·올리브유">
+<meta property="og:description" content="TAAMs 통관 기록으로 확인한 다진마늘, 커피 생두, 유기농 올리브유 수입 현황입니다.">
+<meta property="article:published_time" content="2026-10-09">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="수입식품 통관 데이터로 본 다진마늘·커피생두·올리브유">
+<meta name="twitter:description" content="TAAMs 통관 기록으로 확인한 다진마늘, 커피 생두, 유기농 올리브유 수입 현황입니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "수입식품 통관 데이터로 본 다진마늘·커피생두·올리브유",
+      "description": "TAAMs 통관 기록으로 확인한 다진마늘, 커피 생두, 유기농 올리브유 수입 현황입니다. 수출국과 월별 통관 건수를 그래프와 표로 정리했습니다.",
+      "datePublished": "2026-10-09",
+      "dateModified": "2026-10-09",
+      "inLanguage": "ko-KR",
+      "author": { "@type": "Organization", "name": "TAAMs" },
+      "publisher": { "@type": "Organization", "name": "TAAMs" },
+      "about": ["다진마늘 수입", "커피 생두 수입", "유기농 올리브유 수입", "수입식품 통관"]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "수입 냉동 다진마늘은 어느 나라에서 오나요?",
+          "acceptedAnswer": { "@type": "Answer", "text": "TAAMs 통관 기록에서 냉동다진마늘 품목은 조회한 월별 내역이 모두 중국이었습니다. 스페인산 냉동 다진마늘 블록은 별도 품목으로 6건이 잡혔습니다." }
+        },
+        {
+          "@type": "Question",
+          "name": "커피 생두는 어느 나라에서 가장 많이 수입되나요?",
+          "acceptedAnswer": { "@type": "Answer", "text": "조사 기간 첫 달인 2025년 10월에는 콜롬비아와 브라질이 각각 39건으로 가장 많았고, 11월에는 브라질이 52건으로 가장 많았습니다. 월마다 순위가 조금씩 바뀝니다." }
+        },
+        {
+          "@type": "Question",
+          "name": "유기농 올리브유는 어느 나라 제품이 많이 들어오나요?",
+          "acceptedAnswer": { "@type": "Answer", "text": "유기농 엑스트라버진 올리브유의 월별 추이를 합산하면 스페인이 72건, 이탈리아가 8건이었습니다." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+  :root{
+    --bg:#f5f6f4; --surface:#ffffff; --fg:#17201b; --muted:#5f6b63;
+    --line:#e2e7e1; --accent:#1f6f54; --hot:#c2410c; --track:#eceeea;
+    --maxw:700px;
+    --serif:"Noto Serif KR",Georgia,"Times New Roman",serif;
+    --sans:"Noto Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f1411; --surface:#161c18; --fg:#e8ece8; --muted:#9aa69e;
+    --line:#26302a; --accent:#46b98f; --hot:#f97a3d; --track:#20281f; color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f1411; --surface:#161c18; --fg:#e8ece8; --muted:#9aa69e;
+    --line:#26302a; --accent:#46b98f; --hot:#f97a3d; --track:#20281f; color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.68;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding-inline:clamp(26px,8vw,104px);padding-block:0}
+  h1,h2,h3{font-family:var(--serif);text-wrap:balance;line-height:1.32}
+
+  header{padding-block:46px 22px;border-bottom:2px solid var(--fg)}
+  .kicker{font-size:12px;letter-spacing:.14em;color:var(--accent);font-weight:700;margin:0 0 12px}
+  header h1{font-size:28px;margin:0 0 14px;font-weight:700}
+  .sub{color:var(--muted);font-size:14px;margin:0}
+  .intro{margin:18px 0 0;font-size:15px}
+
+  .summary{margin-block:28px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+  .summary h2{font-size:16px;margin:0 0 10px}
+  .summary ul{margin:0;padding-left:18px;font-size:14px}
+  .summary li{margin-bottom:7px}
+
+  nav.toc{font-size:13px;color:var(--muted);margin-bottom:6px}
+  nav.toc ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px}
+  nav.toc a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line)}
+  nav.toc a:focus-visible,nav.toc a:hover{border-bottom-color:var(--accent)}
+
+  main section{padding-block:38px;border-bottom:1px solid var(--line);scroll-margin-top:12px}
+  .trend{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;
+    color:var(--hot);letter-spacing:.02em;margin:0 0 14px}
+  .trend::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hot)}
+  main h2{font-size:22px;margin:0 0 16px;font-weight:700}
+  .lead{font-size:16px;margin:0 0 20px}
+  main h3{font-size:16px;margin:28px 0 11px;font-weight:700;padding-left:11px;border-left:3px solid var(--accent)}
+  main p{margin:0 0 15px;font-size:14.5px}
+  .num{font-variant-numeric:tabular-nums;color:var(--hot);font-weight:700}
+
+  figure{margin:20px 0;padding:17px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+  figcaption{font-size:12px;color:var(--muted);margin-bottom:14px;font-weight:600;line-height:1.5}
+  figcaption .src{display:block;margin-top:3px;font-weight:400;font-size:11px}
+
+  .bars{display:flex;flex-direction:column;gap:9px}
+  .bar{display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:10px;font-size:13px}
+  .bar .lab{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar .track{height:14px;background:var(--track);border-radius:7px;overflow:hidden}
+  .bar .fill{height:100%;display:block;background:var(--accent);border-radius:7px}
+  .bar.hot .fill{background:var(--hot)}
+  .bar .val{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;min-width:34px;text-align:right}
+
+  .vbars{display:flex;align-items:flex-end;gap:5px;height:118px;padding-top:6px}
+  .vb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
+  .vb .col{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px}
+  .vb .m{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  details{margin-top:14px;font-size:13px}
+  summary{cursor:pointer;color:var(--accent);font-weight:600}
+  summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  .tblwrap{overflow-x:auto;margin:16px 0}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:240px}
+  caption{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding-bottom:8px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12px}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  td.n{font-weight:600}
+
+  .take{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;padding:14px 16px;margin:20px 0 4px}
+  .take .t{font-size:12px;letter-spacing:.08em;color:var(--accent);font-weight:700;margin:0 0 8px}
+  .take p{margin:0;font-size:14px}
+
+  dl.faq{margin:0}
+  dl.faq dt{font-weight:700;font-size:14.5px;margin-top:18px}
+  dl.faq dd{margin:6px 0 0;font-size:14.5px}
+
+  .note{font-size:12.5px;color:var(--muted);line-height:1.6}
+  .note b{color:var(--fg)}
+  ul.tags{list-style:none;display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 8px;padding:0}
+  ul.tags li{font-size:12px;color:var(--muted);background:var(--track);padding:4px 10px;border-radius:999px}
+  footer{padding-block:28px 48px;color:var(--muted);font-size:12.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">수입식품 데이터 노트</p>
+    <h1>수입식품 통관 데이터로 본 다진마늘·커피생두·올리브유</h1>
+    <p class="sub"><time datetime="2026-10-09">2026년 10월 9일</time> · 요즘 많이 찾는 식품 세 가지의 수입 현황</p>
+    <p class="intro">김장철 양념, 커피값, 올리브유값 이야기가 자주 들려서 다진마늘, 커피 생두, 올리브유가
+      실제로 어느 나라에서 얼마나 들어오는지 TAAMs 통관 기록으로 확인해봤습니다. 조사 기간은
+      2025년 10월 8일부터 2026년 10월 9일까지입니다.</p>
+  </header>
+
+  <main>
+    <section class="summary" aria-labelledby="summary-h">
+      <h2 id="summary-h">핵심 요약</h2>
+      <ul>
+        <li><b>다진마늘</b>: 냉동다진마늘은 조회한 월별 내역이 모두 중국산이었습니다. 월 통관은 27~42건 사이에서 움직였고 김장철에 따로 몰리지는 않았습니다.</li>
+        <li><b>커피 생두</b>: 조사 기간 통관은 4,245건입니다. 2025년 10월에는 콜롬비아와 브라질이 각각 39건으로 가장 많았습니다.</li>
+        <li><b>유기농 올리브유</b>: 월별 추이를 합산하면 스페인 72건, 이탈리아 8건으로 스페인이 90%였습니다.</li>
+      </ul>
+    </section>
+
+    <nav class="toc" aria-label="목차">
+      목차
+      <ul>
+        <li><a href="#garlic">다진마늘 수입</a></li>
+        <li><a href="#coffee">커피 생두 수입</a></li>
+        <li><a href="#olive">유기농 올리브유 수입</a></li>
+        <li><a href="#faq">자주 묻는 질문</a></li>
+        <li><a href="#data">데이터 출처와 기준</a></li>
+      </ul>
+    </nav>
+
+    <section id="garlic" aria-labelledby="garlic-h">
+      <p class="trend">김장철이 다가온다</p>
+      <h2 id="garlic-h">다진마늘 수입, 원산지는 중국 한 곳이었습니다</h2>
+      <p class="lead">마트에서 다진마늘 원산지를 보면 중국이 찍혀 있는 경우가 많습니다. 통관 기록에서도
+        같은 모습이 확인됩니다. 냉동다진마늘은 조회한 월별 내역에서 수출국이 중국 하나였습니다.</p>
+
+      <h3>수입 다진마늘의 수출국</h3>
+      <p>조사 기간 냉동다진마늘 품목의 통관은 <span class="num">738건</span>이었습니다. 월별 추이를
+        조회하면 열두 달 내내 수출국은 중국뿐입니다. 스페인에서 오는 냉동 다진마늘 블록(IQF)도
+        있는데, 품목명이 달라서 따로 잡히고 건수는 <span class="num">6건</span> 정도입니다.</p>
+
+      <figure>
+        <figcaption>냉동다진마늘 월별 통관 건수 (전량 중국산, 조회 기준)
+          <span class="src">출처: TAAMs. 2025년 10월부터 2026년 9월까지. 2025년 10월은 8일부터 집계된 값입니다.</span></figcaption>
+        <div class="vbars" role="img" aria-label="냉동다진마늘 월별 통관 건수. 2025년 10월 24건, 11월 39건, 12월 38건, 2026년 1월 36건, 2월 38건, 3월 27건, 4월 42건, 5월 28건, 6월 42건, 7월 31건, 8월 41건, 9월 35건.">
+          <div class="vb"><div class="col" style="height:57%"></div><div class="m">10</div></div>
+          <div class="vb"><div class="col" style="height:93%"></div><div class="m">11</div></div>
+          <div class="vb"><div class="col" style="height:90%"></div><div class="m">12</div></div>
+          <div class="vb"><div class="col" style="height:86%"></div><div class="m">1</div></div>
+          <div class="vb"><div class="col" style="height:90%"></div><div class="m">2</div></div>
+          <div class="vb"><div class="col" style="height:64%"></div><div class="m">3</div></div>
+          <div class="vb"><div class="col" style="height:100%"></div><div class="m">4</div></div>
+          <div class="vb"><div class="col" style="height:67%"></div><div class="m">5</div></div>
+          <div class="vb"><div class="col" style="height:100%"></div><div class="m">6</div></div>
+          <div class="vb"><div class="col" style="height:74%"></div><div class="m">7</div></div>
+          <div class="vb"><div class="col" style="height:98%"></div><div class="m">8</div></div>
+          <div class="vb"><div class="col" style="height:83%"></div><div class="m">9</div></div>
+        </div>
+        <details>
+          <summary>월별 수치 표 보기</summary>
+          <div class="tblwrap">
+            <table>
+              <caption>냉동다진마늘 월별 통관 건수</caption>
+              <thead><tr><th scope="col">월</th><th scope="col" class="n">건수</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">2025년 10월 (8일부터)</th><td class="n">24</td></tr>
+                <tr><th scope="row">2025년 11월</th><td class="n">39</td></tr>
+                <tr><th scope="row">2025년 12월</th><td class="n">38</td></tr>
+                <tr><th scope="row">2026년 1월</th><td class="n">36</td></tr>
+                <tr><th scope="row">2026년 2월</th><td class="n">38</td></tr>
+                <tr><th scope="row">2026년 3월</th><td class="n">27</td></tr>
+                <tr><th scope="row">2026년 4월</th><td class="n">42</td></tr>
+                <tr><th scope="row">2026년 5월</th><td class="n">28</td></tr>
+                <tr><th scope="row">2026년 6월</th><td class="n">42</td></tr>
+                <tr><th scope="row">2026년 7월</th><td class="n">31</td></tr>
+                <tr><th scope="row">2026년 8월</th><td class="n">41</td></tr>
+                <tr><th scope="row">2026년 9월</th><td class="n">35</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </figure>
+
+      <h3>김장철에 몰릴 줄 알았는데</h3>
+      <p>김장 직전인 11월에 <span class="num">39건</span>으로 오르긴 하지만, 4월과 6월은 42건, 8월은
+        41건으로 그보다 높거나 비슷합니다. 2025년 10월의 24건은 집계가 10월 8일부터라 낮게 나온
+        값입니다. 이 데이터로는 김장철 급증이 보이지 않고 연중 꾸준히 들어오는 모습입니다.</p>
+
+      <div class="take">
+        <p class="t">참고할 점</p>
+        <p>수입 시기를 계절에 맞출 필요는 크지 않아 보입니다. 대신 공급이 중국 한 곳에 몰려 있어서
+          현지 작황과 물류 소식을 같이 챙겨야 합니다.</p>
+      </div>
+    </section>
+
+    <section id="coffee" aria-labelledby="coffee-h">
+      <p class="trend">커피값 이야기가 끊이지 않는다</p>
+      <h2 id="coffee-h">커피 생두 수입, 콜롬비아와 브라질이 앞섭니다</h2>
+      <p class="lead">커피값 이야기가 끊이지 않죠. 그 원두가 어느 나라에서 들어오는지 통관 기록을
+        봤습니다. 조사 기간 커피 생두 통관은 <span class="num">4,245건</span>이었습니다.</p>
+
+      <h3>산지별 통관 건수</h3>
+      <p>조사 기간 첫 달인 2025년 10월에는 콜롬비아와 브라질이 각각 39건, 에티오피아가 23건이었고
+        과테말라 12건, 지부티 10건, 베트남 5건이 뒤를 이었습니다. 베트남은 로부스타 품종이 잡혔습니다.
+        다음 달인 11월에는 브라질이 52건으로 가장 많았고 콜롬비아 29건, 에티오피아 18건 순이었습니다.
+        달마다 1위가 바뀌는 셈입니다.</p>
+
+      <figure>
+        <figcaption>커피 생두 산지별 통관 건수 (2025년 10월)
+          <span class="src">출처: TAAMs. 상위 6개 산지.</span></figcaption>
+        <div class="bars" role="img" aria-label="2025년 10월 커피 생두 산지별 통관 건수. 콜롬비아 39건, 브라질 39건, 에티오피아 23건, 과테말라 12건, 지부티 10건, 베트남 5건.">
+          <div class="bar"><span class="lab">콜롬비아</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">39</span></div>
+          <div class="bar"><span class="lab">브라질</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">39</span></div>
+          <div class="bar"><span class="lab">에티오피아</span><span class="track"><span class="fill" style="width:59%"></span></span><span class="val">23</span></div>
+          <div class="bar"><span class="lab">과테말라</span><span class="track"><span class="fill" style="width:31%"></span></span><span class="val">12</span></div>
+          <div class="bar"><span class="lab">지부티</span><span class="track"><span class="fill" style="width:26%"></span></span><span class="val">10</span></div>
+          <div class="bar"><span class="lab">베트남</span><span class="track"><span class="fill" style="width:13%"></span></span><span class="val">5</span></div>
+        </div>
+      </figure>
+
+      <h3>디카페인 생두</h3>
+      <p>디카페인 커피 생두 품목이 <span class="num">171건</span> 있고, 독일과 콜롬비아에서 들어온
+        기록이 보입니다. 카페인을 줄이려는 수요가 수입 품목에도 자리를 잡고 있습니다.</p>
+
+      <div class="take">
+        <p class="t">참고할 점</p>
+        <p>원두값이 올랐다는 소식이 들릴 때, 어느 산지에 얼마나 기대고 있는지 한번 확인해볼 만합니다.
+          1위 산지가 달마다 바뀌니 산지를 여러 곳 열어두면 가격 변동에 덜 흔들립니다.</p>
+      </div>
+    </section>
+
+    <section id="olive" aria-labelledby="olive-h">
+      <p class="trend">올리브유 가격표가 낯설다</p>
+      <h2 id="olive-h">유기농 올리브유 수입, 산지는 스페인이 90%입니다</h2>
+      <p class="lead">올리브유 가격표를 보고 놀란 적이 있을 겁니다. 수입 기록을 보니 유기농 엑스트라버진
+        올리브유는 스페인에서 오는 물량이 대부분이었습니다.</p>
+
+      <h3>스페인 72건, 이탈리아 8건</h3>
+      <p>유기농 엑스트라버진 올리브유의 월별 추이를 합산하면 스페인이 <span class="num">72건</span>,
+        이탈리아가 <span class="num">8건</span>으로 스페인이 90%를 차지합니다. 이탈리아는 일곱 달에만
+        기록이 잡히고 매번 1~2건입니다.</p>
+
+      <figure>
+        <figcaption>유기농 엑스트라버진 올리브유 산지별 통관 (월별 추이 합계)
+          <span class="src">출처: TAAMs. 2025년 10월부터 2026년 10월까지.</span></figcaption>
+        <div class="bars" role="img" aria-label="유기농 엑스트라버진 올리브유 산지별 통관 건수. 스페인 72건, 이탈리아 8건.">
+          <div class="bar hot"><span class="lab">스페인</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val">72</span></div>
+          <div class="bar"><span class="lab">이탈리아</span><span class="track"><span class="fill" style="width:11%"></span></span><span class="val">8</span></div>
+        </div>
+      </figure>
+
+      <h3>통관 상위 품목</h3>
+      <p>품목명 기준으로는 유기농 엑스트라버진 올리브유가 157건, 압착올리브유가 72건, 올리브유가 47건
+        순입니다. 커클랜드 시그니춰 스페니쉬 계열이 35건, 올리브유 라인이 32건이고 올리타리아, 디벨라,
+        폰타나 같은 브랜드도 올라옵니다. 월별 추이 합계(80건)와 품목명 건수(157건)는 집계 기준이 달라
+        차이가 납니다.</p>
+
+      <div class="tblwrap">
+        <table>
+          <caption>올리브유 통관 상위 품목 (조사 기간)</caption>
+          <thead><tr><th scope="col">품목명</th><th scope="col" class="n">건수</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">유기농 엑스트라버진 올리브유</th><td class="n">157</td></tr>
+            <tr><th scope="row">압착올리브유</th><td class="n">72</td></tr>
+            <tr><th scope="row">올리브유</th><td class="n">47</td></tr>
+            <tr><th scope="row">커클랜드 시그니춰 스페니쉬 엑스트라 버진 올리브유</th><td class="n">35</td></tr>
+            <tr><th scope="row">커클랜드 시그니춰 올리브유</th><td class="n">32</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="take">
+        <p class="t">참고할 점</p>
+        <p>유기농 올리브유는 스페인 한 나라에 기대는 비중이 큽니다. 스페인 작황 소식이 가격에 영향을
+          줄 수 있으니 이탈리아 같은 다른 산지 제품도 함께 살펴두면 좋겠습니다.</p>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-h">
+      <h2 id="faq-h">자주 묻는 질문</h2>
+      <dl class="faq">
+        <dt>수입 냉동 다진마늘은 어느 나라에서 오나요?</dt>
+        <dd>TAAMs 통관 기록에서 냉동다진마늘 품목은 조회한 월별 내역이 모두 중국이었습니다. 스페인산 냉동 다진마늘 블록은 별도 품목으로 6건이 잡혔습니다.</dd>
+        <dt>커피 생두는 어느 나라에서 가장 많이 수입되나요?</dt>
+        <dd>조사 기간 첫 달인 2025년 10월에는 콜롬비아와 브라질이 각각 39건으로 가장 많았고, 11월에는 브라질이 52건으로 가장 많았습니다. 월마다 순위가 조금씩 바뀝니다.</dd>
+        <dt>유기농 올리브유는 어느 나라 제품이 많이 들어오나요?</dt>
+        <dd>유기농 엑스트라버진 올리브유의 월별 추이를 합산하면 스페인이 72건, 이탈리아가 8건이었습니다.</dd>
+      </dl>
+    </section>
+
+    <section id="data" aria-labelledby="data-h">
+      <h2 id="data-h">데이터 출처와 기준</h2>
+      <p class="note"><b>출처: TAAMs</b> (식품의약품안전처 수입식품 통관실적 기반). 조사 기간은
+        2025-10-08부터 2026-10-09까지입니다. 월별 건수는 TAAMs 월별 추이 조회 값이며, 품목명 표기가
+        다른 건은 따로 집계될 수 있습니다. 식약처 통관 데이터는 약 3일 늦게 공개되어 가장 최근 며칠은
+        반영되지 않았을 수 있습니다.</p>
+      <ul class="tags" aria-label="관련 키워드">
+        <li>#다진마늘수입</li><li>#커피생두</li><li>#올리브유</li><li>#유기농올리브유</li>
+        <li>#수입식품</li><li>#통관데이터</li><li>#원산지</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>이 페이지는 테스트 샘플입니다. 요즘 화제인 식품을 고르고 TAAMs 데이터로 확인해서 본문을 쓰는
+      과정을 보여주는 예시이며, 모든 수치는 TAAMs 실데이터입니다.</p>
+  </footer>
+</div>
+</body>
+</html>
