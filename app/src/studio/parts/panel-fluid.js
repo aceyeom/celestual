@@ -167,7 +167,8 @@ const FRAG = {
       gl_FragColor = vec4(v, 0.0, 1.0);
     }`,
   // the light the story places on the panel this frame, at each cell's
-  // middle: colour spreading out over the dark from where its sources are
+  // middle: a picture of the cells' own, if there is one (reel-figures.js),
+  // and colour spreading out over the dark from where its sources are
   // (see `SOURCE` above for what each holds), as ink spreads in water. Each
   // has a soft edge that wavers slowly along its length, a brighter band
   // where it is still spreading into the dark, and inside it, light drawn
@@ -183,6 +184,10 @@ const FRAG = {
     uniform vec2 uSpan;
     uniform vec4 uHeart[4];
     uniform vec3 uHeartCol[4];
+    uniform sampler2D uPicL;
+    uniform sampler2D uPicO;
+    uniform float uPicK;
+    uniform vec3 uPicTint;
     float h31 (vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
     float n3 (vec3 p) {
       vec3 i = floor(p);
@@ -240,6 +245,11 @@ const FRAG = {
         vec2 dd = (p - uHeart[k].xy) / max(uHeart[k].z, 1e-3);
         acc += exp(-dot(dd, dd)) * uHeart[k].w * uHeartCol[k];
       }
+      // and the picture the story draws in the cells: its own light, and
+      // what stands in the light, cut out of all of it
+      if (uPicK > 0.0) {
+        acc = (acc + texture2D(uPicL, vUv).r * uPicTint * uPicK) * (1.0 - texture2D(uPicO, vUv).r * uPicK);
+      }
       gl_FragColor = vec4(acc, 1.0);
     }`,
   // the panel as the camera sees it, a night of the screen's own pixels:
@@ -271,16 +281,20 @@ const FRAG = {
     uniform sampler2D uLight;
     uniform float uLightGain;
     uniform float uLightHaze;
+    uniform sampler2D uPicO;
+    uniform float uPicK;
     uniform vec4 uShadeA;
     uniform vec4 uShadeB;
     uniform vec2 uShadeK;
     float hash (vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     // a run of the cell's own pixels, [a, b), softened by a frame pixel
     float run (float v, float a, float b, float w) { return smoothstep(a - w, a + w, v) * (1.0 - smoothstep(b - w, b + w, v)); }
-    // a box on the frame, its edges softened by s
+    // how far into a box on the frame: all of it inside, falling away round
+    // it over about s, its corners round, so it is never seen as a box
     float box (vec2 p, vec4 b, float s) {
-      vec2 k = smoothstep(b.xy - s, b.xy, p) * (1.0 - smoothstep(b.zw, b.zw + s, p));
-      return k.x * k.y;
+      vec2 q = abs(p - 0.5 * (b.xy + b.zw)) - 0.5 * (b.zw - b.xy) + 12.0;
+      float d = length(max(q, 0.0));
+      return exp(-d * d / (s * s));
     }
     void main () {
       vec2 frag = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
@@ -316,7 +330,7 @@ const FRAG = {
       // under the words the panel is kept darker: at the top of the frame,
       // and wherever this frame's words are (its shade)
       float band = mix(uTop, 1.0, smoothstep(330.0, 640.0, frag.y));
-      band *= (1.0 - uShadeK.x * box(frag, uShadeA, 110.0)) * (1.0 - uShadeK.y * box(frag, uShadeB, 110.0));
+      band *= (1.0 - uShadeK.x * box(frag, uShadeA, 130.0)) * (1.0 - uShadeK.y * box(frag, uShadeB, 130.0));
       // and under the stars a haze of the light, smooth across the cells as
       // a nebula is, and held down where the light is strong, so it stays a
       // haze
@@ -325,7 +339,10 @@ const FRAG = {
       float nI = dot(neb, vec3(0.2126, 0.7152, 0.0722));
       // its colour kept quiet, half way to the grey of starlight
       neb = mix(neb, vec3(nI), 0.45);
-      vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze + tint * star * bright * uStar) * band;
+      // nothing of them shows through what stands in the light
+      float occ = uPicK > 0.0 ? texture2D(uPicO, vec2(tex.x, 1.0 - tex.y)).r * uPicK : 0.0;
+      float occS = uPicK > 0.0 ? texture2D(uPicO, vec2(smooth2.x, 1.0 - smooth2.y)).r * uPicK : 0.0;
+      vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze * (1.0 - occS) + tint * star * bright * uStar * (1.0 - occ)) * band;
       // the light placed this frame: the cell's own round point of it, each
       // with its own slow shimmer, as light on water has. Dim light goes cool
       // and grey, as the eye sees at night (the Purkinje shift), and bright
@@ -457,7 +474,11 @@ export class PanelFluid {
     this.m.light = mat(FRAG.light, {
       uSrc: this.srcTex, uSrcN: 0, uLo: lo, uSpan: size,
       uHeart: [0, 1, 2, 3].map(() => new THREE.Vector4()), uHeartCol: [0, 1, 2, 3].map(() => new THREE.Vector3()),
+      uPicL: null, uPicO: null, uPicK: 0, uPicTint: new THREE.Vector3(1, 1, 1),
     })
+    // the picture's two textures, made from the story's canvases the first
+    // time it hands them over
+    this.pic = null
     const pts = new THREE.BufferGeometry()
     pts.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXPTS * 3), 3))
     pts.setAttribute('tint', new THREE.BufferAttribute(new Float32Array(MAXPTS * 3), 3))
@@ -471,6 +492,8 @@ export class PanelFluid {
     this.display.uniforms.uLight = { value: this.light.texture }
     this.display.uniforms.uLightGain = { value: 1 }
     this.display.uniforms.uLightHaze = { value: 0 }
+    this.display.uniforms.uPicO = { value: null }
+    this.display.uniforms.uPicK = { value: 0 }
     this.display.uniforms.uShadeA = { value: new THREE.Vector4() }
     this.display.uniforms.uShadeB = { value: new THREE.Vector4() }
     this.display.uniforms.uShadeK = { value: new THREE.Vector2() }
@@ -607,10 +630,34 @@ export class PanelFluid {
   // the light placed this frame (`light`: `sources`, SOURCE numbers a
   // source, and `n` of them; `hearts`, up to four of [x, y, radius,
   // strength, r, g, b]; `points`, five numbers a point, x, y and its
-  // colour, and `m` of them), drawn into its layer of cells
+  // colour, and `m` of them; `picture`, two canvases the size of the
+  // cells, its light and what blocks the light, how much of it shows, `k`,
+  // and its colour, `tint`), drawn into its layer of cells
   place(light) {
     const r = this.renderer
     const m = this.m.light
+    const pic = light && light.picture
+    if (pic) {
+      if (!this.pic) {
+        const tex = (c) => {
+          const x = new THREE.CanvasTexture(c)
+          x.colorSpace = THREE.NoColorSpace
+          x.generateMipmaps = false
+          x.minFilter = THREE.LinearFilter
+          x.magFilter = THREE.LinearFilter
+          return x
+        }
+        this.pic = { L: tex(pic.L), O: tex(pic.O) }
+        m.uniforms.uPicL.value = this.pic.L
+        m.uniforms.uPicO.value = this.pic.O
+        this.display.uniforms.uPicO.value = this.pic.O
+      }
+      this.pic.L.needsUpdate = true
+      this.pic.O.needsUpdate = true
+      m.uniforms.uPicTint.value.set(pic.tint[0], pic.tint[1], pic.tint[2])
+    }
+    m.uniforms.uPicK.value = pic ? pic.k : 0
+    this.display.uniforms.uPicK.value = pic ? pic.k : 0
     const n = light ? Math.min(MAXS, light.n || 0) : 0
     if (n) {
       this.srcData.set(light.sources.subarray(0, n * SOURCE))

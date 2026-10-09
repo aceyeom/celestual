@@ -63,6 +63,7 @@ import { NoteScreen, PW } from './note-screen.jsx'
 import { PanelFluid, linear } from './panel-fluid.js'
 import { makeAura } from './reel-aura.js'
 import { LetterGL, W as CARD_W } from './reel-card.js'
+import { makeFigures } from './reel-figures.js'
 import atlasUrl from '../assets/wall-atlas.jpg'
 import faceLinUrl from '../assets/reel-face-lin.jpg'
 import faceKaiUrl from '../assets/reel-face-kai.jpg'
@@ -218,7 +219,8 @@ function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x
 // ── where the words go ──────────────────────────────────────────────────────
 // Each scene its own: the hall's two lines staggered, the first flush left
 // and the second flush right under it; `privately.` twice the size of the
-// line before it; the night's centred under the envelope as it waits; the
+// line before it; the night's centred in the sky over the envelope as it
+// waits on the horizon, the two by the sea under it; the
 // date's clock large, set in from the sentence it ends; `it's mutual.`
 // large over the letter, centred; the ones that never meet flush right; the
 // question centred in the middle of the frame, its last word large; and
@@ -236,8 +238,8 @@ const WORDS = {
     { text: 'privately.', from: S.privately, to: S.sendOut + 40, y: Y1, c: 2 * C },
   ],
   night: [
-    { text: 'they only read it if', from: S.nLines[0], to: S.nOut, x: 540, y: GY + 179 * C, align: 'center' },
-    { text: 'they send you one.', from: S.nLines[1], to: S.nOut + 40, x: 540, y: GY + 195 * C, align: 'center' },
+    { text: 'they only read it if', from: S.nLines[0], to: S.nOut, x: 540, y: GY + 79 * C, align: 'center' },
+    { text: 'they send you one.', from: S.nLines[1], to: S.nOut + 40, x: 540, y: GY + 95 * C, align: 'center' },
   ],
   date: [
     { text: 'every mutual is', from: S.dLines[0], to: S.dOut },
@@ -1165,7 +1167,7 @@ function LetterScene({ t, faces }) {
 // a cell at a time from its star, on the words' margin, and the address
 // typed under it. The camera is held, as it always is, and comes to rest
 // for the name, which is never drawn off its grid.
-const LONE = [[27, 111, 'teal', 1], [111, 137, 'lilac', 1.3], [57, 180, 'white', 0.85]].map(([i, j, tint, k], n) => ({ at: envAt(onGrid(i, j)), tint, in: S.ifnot[0] + 60 + n * 90 + rnd(n + 31) * 40, out: S.lone[n], k }))
+const LONE = [[27, 101, 'teal', 1], [111, 93, 'lilac', 1.3], [71, 115, 'white', 0.85]].map(([i, j, tint, k], n) => ({ at: envAt(onGrid(i, j)), tint, in: S.ifnot[0] + 60 + n * 90 + rnd(n + 31) * 40, out: S.lone[n], k }))
 const LOCK = { x: GX + Math.round((540 - (LOCKUP.w * C) / 2 - GX) / C) * C, y: GY + 120 * C }
 // the middle of the mark's star, on the frame
 const STAR = { x: LOCK.x + Math.round((LOCKUP.mark.w * C) / 2), y: LOCK.y + Math.round((LOCKUP.mark.h * C) / 2) }
@@ -1364,6 +1366,19 @@ const looksAt = (t) => ({
 })
 // the panel itself, under every scene from the lens on: one flow for the
 // whole of it, stepped to the frame and drawn through the frame's camera
+// the two of them, drawn in the panel's cells (reel-figures.js): the
+// frame's picture, its light and what blocks the light, into two canvases
+// a cell a pixel, in the colour of the scene: lin's ice at night, warm when
+// it is mutual, the grey of a shore in the mist for the others
+const FIGURES = makeFigures(PANEL)
+const PIC_TINT = { night: [0.34, 0.42, 0.52], mutual: [0.52, 0.47, 0.41], shore: [0.42, 0.44, 0.48] }
+let PIC = null
+const picOf = () => {
+  if (PIC) return PIC
+  const mk = () => { const c = document.createElement('canvas'); c.width = PANEL.cw; c.height = PANEL.ch; return c }
+  PIC = { L: mk(), O: mk() }
+  return PIC
+}
 function PanelGL({ t }) {
   const ref = useRef(null)
   const fluid = useRef(null)
@@ -1373,7 +1388,10 @@ function PanelGL({ t }) {
     if (!fluid.current) fluid.current = new PanelFluid(ref.current, { cells: PANEL, script: flow, steps: FLOW_STEPS })
     if (!live) return
     fluid.current.stepTo(t)
-    fluid.current.render(panelView(t), looksAt(t), AURA.lightAt(t))
+    const light = AURA.lightAt(t)
+    const pic = picOf()
+    const f = FIGURES.drawAt(t, pic.L, pic.O)
+    fluid.current.render(panelView(t), looksAt(t), f ? { ...light, picture: { L: pic.L, O: pic.O, k: f.k, tint: PIC_TINT[f.tint] } } : light)
   })
   useEffect(() => () => { if (fluid.current) fluid.current.dispose() }, [])
   return <canvas ref={ref} className="rl-gl" width="1080" height="1920" style={live ? undefined : { visibility: 'hidden' }} />
