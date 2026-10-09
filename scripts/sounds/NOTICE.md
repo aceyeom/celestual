@@ -1,8 +1,7 @@
 # The reel's recorded sounds
 
-`keyboard_desk.ogg` (a keyboard typed on, its twelve keystrokes taken one at
-a time for lin's letter and the address) and `tap.ogg` (the send) are from
-Ion.Sound 3.0.7 by Denis Ineshin (`npm install ion-sound`,
+`tap.ogg` (the send, and the envelope sealed) is from Ion.Sound 3.0.7 by
+Denis Ineshin (`npm install ion-sound`,
 github.com/IonDen/ion.sound), whose plugin and the sounds included with it
 are distributed under the MIT licence:
 

@@ -17,7 +17,8 @@ you?`: up a sixth, a sigh down, and up again at the end, as a question
 goes, onto a note that is not home.
 
 - the letter: the piano alone, a line falling under lin's typing (F sharp,
-  E, D, C sharp, B), the sigh on the `d` after the breath
+  E, D, C sharp, B), the sigh on the `d` after the breath. the typing
+  itself is silent
 - the hall: the piano's arpeggios as the backlights come on, the strings
   rising with the camera, a cello under the words
 - the send: the piano holds its breath on the key; a harp carries the
@@ -45,21 +46,19 @@ Each note is then loosened a little in its time and its weight, as a player
 would, the same way every time the song is made. Each part is played by
 FluidSynth from the MuseScore General soundfont into its own stem, and the
 stems are mixed in Node (a long, dark hall convolved round them) and
-mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. lin's keys and the
-send are real recordings, laid on the frames they belong to: a keystroke a
-letter, each one of twelve taken from one recording of a keyboard, never the
-same one twice running, a little higher or lower and harder or softer each
-time, the space bar heavier; the air the letter moves and the screens going
-out are synthesised. There are no bells.
+mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. There are no
+keystrokes: the words and the address are typed in silence. The send and
+the envelope sealed are a real recording of a tap, laid on their frames;
+the air the letter moves and the screens going out are synthesised. There
+are no bells.
 
 `LEVELS=1` prints each part's level in each section; `STEMS=<dir>` keeps
 the stems.
 
 ## What it is made from
 
-The keys and the send (`scripts/sounds/`) are recordings from Ion.Sound
-3.0.7 by Denis Ineshin, under the MIT licence; its notice is
-`scripts/sounds/NOTICE.md`.
+The tap (`scripts/sounds/`) is a recording from Ion.Sound 3.0.7 by Denis
+Ineshin, under the MIT licence; its notice is `scripts/sounds/NOTICE.md`.
 
 Every instrument comes from the MuseScore General soundfont (Debian's
 `musescore-general-soundfont`, `/usr/share/sounds/sf3/MuseScore_General_Full.sf3`),

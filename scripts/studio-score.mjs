@@ -48,7 +48,7 @@ import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, mkdtempSync
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { MS, BEAT, A, S, typedA, typedUrl } from '../app/src/studio/parts/reel-time.js'
+import { MS, BEAT, A, S, typedA } from '../app/src/studio/parts/reel-time.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.argv[2] || join(root, 'design/campaign/celestual-reel.wav')
@@ -476,10 +476,10 @@ function recording(name) {
   for (let i = 0; i < len; i++) x[i] = b.readFloatLE(off + 8 + i * 4)
   return x
 }
-// the strokes in a recording of keys: found by their attacks (the level, a
+// the strokes in a recording of taps: found by their attacks (the level, a
 // five-hundredth of a second at a time, coming up twelve decibels in three
 // of them), each from just before its attack to the next or a tenth of a
-// second, faded out, softened a little above and below as a key close to
+// second, faded out, softened a little above and below as a tap close to
 // the ear is, and brought to one height
 function strokesOf(x) {
   const hop = SR / 500
@@ -517,17 +517,7 @@ function sample(ms, s, { gain = 0.05, rate = 1, pan = 0, verb = 0.12 } = {}) {
     return (s[j] || 0) * (1 - f) + (s[j + 1] || 0) * f
   }, { gain, pan, verb })
 }
-const STROKES = strokesOf(recording('keyboard_desk'))
 const TAP = strokesOf(recording('tap'))[0]
-const r01 = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
-// a key pressed: one of the recorded strokes, a different one each time, a
-// little higher or lower and harder or softer, as a hand is; the space bar
-// lower and heavier
-function stroke(ms, n, ch, { gain = 0.034, pan = -0.08 } = {}) {
-  const space = ch === ' '
-  const i = (n * 5 + 3 + Math.floor(r01(n + 17) * 3)) % STROKES.length
-  sample(ms, STROKES[i], { gain: gain * (space ? 1.1 : 0.82 + 0.3 * r01(n + 7)), rate: space ? 0.86 : 0.96 + 0.08 * r01(n + 3), pan })
-}
 // air: noise through a band that moves, swelling and going
 function air(ms, len, { gain = 0.04, from = 400, to = 9000, shape = 'swell', pan = 0, verb = 0.5, q = 2 } = {}) {
   const lp = lowpass(q)
@@ -555,8 +545,7 @@ function thump(ms, { gain = 0.05, f = 55, len = 0.5, pan = 0 } = {}) {
     return (Math.sin(TAU * f * t) + 0.5 * Math.sin(TAU * f * 2 * t) * Math.exp(-t / 0.05)) * Math.exp(-t / (len / 3.5)) * Math.min(1, i / sec(0.003))
   }, { gain, pan, verb: 0.4 })
 }
-// lin's keys, the words as they are typed, and send
-typedA().forEach((ms, i) => stroke(ms, i, A.text[i]))
+// the words are typed in silence, the piano answering them; and send
 sample(S.press, TAP, { gain: 0.07, rate: 0.94, pan: -0.05 })
 air(S.wake, 5200, { gain: 0.006, from: 300, to: 3000 })
 // the send: the letter's pixels up into the envelope, a breath of air over
@@ -603,8 +592,6 @@ air(S.rOut - 100, 400, { gain: 0.015, from: 700, to: 7000, shape: 'rise', q: 1.2
 // the lights that never met, going out, each as a screen goes, from its
 // place
 ;[[S.lone[0], -0.55], [S.lone[1], 0.45], [S.lone[2], -0.15]].forEach(([ms, pan]) => whine(ms, { gain: 0.006, from: 6000, to: 700, len: 0.24, pan }))
-// the address, typed, at the hand's own pace
-typedUrl().forEach((ms, k) => stroke(ms, k + 40, 'celestual.us'[k], { gain: 0.028, pan: 0.05 }))
 
 // ── the mix ─────────────────────────────────────────────────────────────────
 // each stem: its level, where it sits, what is taken off it, how much of it
