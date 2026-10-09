@@ -63,7 +63,6 @@
   .stage canvas, .stage video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .stage video { background: #050507; object-fit: contain; }
   .film-grid + .film-grid { margin-top: clamp(40px, 6vw, 72px); }
-  .frame figcaption a { color: inherit; }
   .stage .sheet { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; pointer-events: none; }
   .stage .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-family: var(--mono); font-size: 12px; }
   .keys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -216,7 +215,7 @@
         <div class="stage">
           <video id="round-film" src="film/round.mp4" poster="film/round-poster.png" controls loop playsinline preload="metadata" aria-label="round, the finished film: thirty seconds, with its sound"></video>
         </div>
-        <figcaption>The finished film, with its sound. It starts on the wall and loops: <a href="film/round.mp4" download>round.mp4</a>, 6.9 MB.</figcaption>
+        <figcaption>The finished film, with its sound. It starts on the wall and loops. The file: <code>design/campaign/next/film/round.mp4</code>, 6.9 MB.</figcaption>
       </figure>
       <div class="words">
         <p class="line">the finished cut: <i>four letters, thirty seconds.</i></p>
