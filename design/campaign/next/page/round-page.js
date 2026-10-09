@@ -31,7 +31,9 @@ export function layoutFor(n) {
   return { slots: Array.from({ length: n }, (_, k) => [138 + (k % 2) * 420, 318 + Math.floor(k / 2) * 372, 384, 342]), lineY: 252, lockY: 1440 }
 }
 
-export function createRound(canvas, overlay) {
+// `scale` is the overlay's pixels to the film's (2 draws the clock for a
+// canvas twice the film's size, as the posters do)
+export function createRound(canvas, overlay, { scale = 1 } = {}) {
   const layout = layoutFor(T.N)
   const R = createRenderer(canvas, { blue: blueBytes(), palettes: PALETTES, layout })
   const og = overlay.getContext('2d')
@@ -216,6 +218,7 @@ export function createRound(canvas, overlay) {
     og.clearRect(0, 0, overlay.width, overlay.height)
     if (!c.show) return
     og.save()
+    og.setTransform(scale, 0, 0, scale, 0, 0)
     let x = 72
     plate(x, 84, String(c.hour), c.prev ? String(c.prev.hour) : null, c.fold)
     x += 84 + 6
