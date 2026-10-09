@@ -57,6 +57,24 @@ are no bells.
 `LEVELS=1` prints each part's level in each section; `STEMS=<dir>` keeps
 the stems.
 
+## The sounds alone
+
+`celestual-reel-sfx.mp4` is the thirty with the film's sounds and no song
+(`celestual-reel-sfx.wav`, made by `FOLEY=1 node scripts/studio-score.mjs
+<out.wav>`), for a song of someone's own to be laid over it. The same
+sounds on the same frames, and a few more of the picture's moments given a
+sound of their own, since no music carries them: the camera's move up the
+hall and lin's letter coming away from the wall, the air each moves; kai's
+note coming on, on the thursday; the two touching, low, under the air of
+it; the one who goes, a gust and the scratch of the pencil's lines blown to
+the left; and the name lit from its star, a shimmer of air as fine as its
+cells. The long breath of air under the hall is left out, since alone it
+is only a hiss, and the words are typed in silence, as they are under the
+song. Nothing is pressed: no glue and no saturation, and it is set by its
+loudest moment, the envelope at the lens, four and a half decibels under
+full scale, which leaves it near -27 LUFS, the sounds being few, so a song
+laid over it has the room it needs.
+
 ## What it is made from
 
 The tap (`scripts/sounds/`) is a recording from Ion.Sound 3.0.7 by Denis

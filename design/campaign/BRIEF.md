@@ -333,4 +333,6 @@ lays the song under them and finishes them as a print would be
 halation round the brightest light, a print's lifted black and rolled off
 white, and a grain new every frame, strongest in the mid tones. The thirty
 is each pair of the sixty laid over each other, a shutter open half the
-frame, mixed before its grain.
+frame, mixed before its grain. A third cut, `celestual-reel-sfx.mp4`, is
+the thirty with the film's sounds alone and no song (`MUSIC.md`), for a
+song of someone's own to be laid over it.
