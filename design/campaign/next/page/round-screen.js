@@ -24,6 +24,7 @@ function glyph(g, name, x, y, h, color) {
   rows.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === 'X') g.fillRect(x + i * s, y + j * s, s + 0.4, s + 0.4) }))
   return rows[0].length * s
 }
+const glyphW = (name, h) => (GLYPHS[name] ? (GLYPHS[name][0].length * h) / GLYPHS[name].length : 0)
 export function roundRect(g, x, y, w, h, r) {
   g.beginPath()
   g.moveTo(x + r, y)
@@ -90,8 +91,26 @@ export function drawScreen(g, x, y, sw, sh, o) {
   pg.addColorStop(1, s.lo)
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
+  // the greeting: one the row would set much smaller than the words takes a
+  // second row at its own size, broken where its two halves are most even,
+  // from the whole greeting so it holds still while it is edited
+  const ex = flat ? 3.2 * u : 2.2 * u
+  const said = o.greet || ''
+  const whole = o.greetFull || said
+  const pw = glyphW('pen', 8.6 * u) + 1.4 * u
+  const room = sw - 2 * ex - pw
+  g.font = `400 ${11 * u}px ${FACE}`
+  let tail = ''
+  if (g.measureText(whole).width > room) {
+    let best = Infinity
+    for (let i = whole.indexOf(' '); i > 0; i = whole.indexOf(' ', i + 1)) {
+      const w = Math.max(g.measureText(whole.slice(0, i)).width, g.measureText(whole.slice(i + 1)).width)
+      if (w < best) { best = w; tail = whole.slice(i + 1) }
+    }
+  }
+  const row3 = tail ? 9.6 * u : 0
   // the two bands of glass
-  const topH = (Q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
+  const topH = (Q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u + row3
   const botH = 14 * u
   const tg = g.createLinearGradient(0, 0, 0, topH)
   tg.addColorStop(0, s.top)
@@ -107,7 +126,6 @@ export function drawScreen(g, x, y, sw, sh, o) {
     fn()
     g.restore()
   }
-  const ex = flat ? 3.2 * u : 2.2 * u
   // row one: the aerial, the count or the day, the battery
   const r1 = (Q.topPad + (flat ? 1 : 0)) * u
   const rowH = 10.4 * u
@@ -123,17 +141,18 @@ export function drawScreen(g, x, y, sw, sh, o) {
     if (o.counter) { g.textAlign = 'right'; g.fillText(o.counter, sw - ex - bw - 2.6 * u, mid1 + 0.4 * u) }
     if (o.stamp) { g.textAlign = 'center'; g.fillText(o.stamp, (ex + aw + sw - ex - bw) / 2, mid1 + 0.4 * u) }
     // row two: the pen and the greeting, set smaller before it is cut
-    const pw = glyph(g, 'pen', ex, mid2 - 4.3 * u, 8.6 * u, lit) + 1.4 * u
-    const room = sw - 2 * ex - pw
+    glyph(g, 'pen', ex, mid2 - 4.3 * u, 8.6 * u, lit)
+    const rows = tail && said.endsWith(tail) ? [said.slice(0, said.length - tail.length).trimEnd(), tail] : [said]
     g.font = `400 ${11 * u}px ${FACE}`
-    const said = o.greet || ''
-    const nw = g.measureText(said).width
+    const nw = Math.max(...rows.map((r) => g.measureText(r).width))
     const nsz = nw > room ? Math.max(5.6, (11 * room * 0.97) / nw) : 11
     g.font = `400 ${nsz * u}px ${FACE}`
     g.textAlign = 'left'
-    g.fillText(fit(g, said, room), ex + pw, mid2 + 0.4 * u)
+    rows.forEach((r, k) => g.fillText(fit(g, r, room), ex + pw, mid2 + 0.4 * u + k * row3))
     if (o.greetCaret) {
-      const gx = ex + pw + g.measureText(said).width + 0.6 * u
+      // where the greeting is being edited, or its end
+      const cut = Math.min(o.greetCut ?? said.length, rows[0].length)
+      const gx = ex + pw + g.measureText(rows[0].slice(0, cut)).width + 0.6 * u
       g.fillRect(gx, mid2 - 0.36 * nsz * u, 0.214 * nsz * u, 0.86 * nsz * u)
     }
   })
@@ -266,7 +285,7 @@ export function drawPhone(g, W, H, p, f) {
   drawScreen(g, cx, cy, cw, ch, {
     colour: p.colour, bat: p.bat,
     counter: up ? '' : p.count, stamp: up ? p.stamp : '',
-    greet: p.greet, greetCaret: p.editing && caretOn,
+    greet: p.greet, greetFull: p.greetFull, greetCut: p.greetCut, greetCaret: p.editing && caretOn,
     text: p.mode === 'read' ? '' : p.text, full: p.full,
     fresh: [p.freshChars || 0, Math.min(1, (age + 1) / 3)],
     caret: !p.editing && caretOn,

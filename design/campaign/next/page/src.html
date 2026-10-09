@@ -54,7 +54,10 @@
   .stage { position: relative; width: 100%; aspect-ratio: 9 / 16; max-width: 100%; overflow: hidden; isolation: isolate; }
   .paper .stage { background: var(--paper); box-shadow: 0 0 0 1px var(--paper-hair); }
   .night .stage { background: #050507; box-shadow: 0 0 0 1px var(--hair); }
-  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage canvas, .stage video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage video { background: #050507; object-fit: contain; }
+  .film-grid + .film-grid { margin-top: clamp(40px, 6vw, 72px); }
+  .frame figcaption a { color: inherit; }
   .stage .sheet { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; pointer-events: none; }
   .stage .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-family: var(--mono); font-size: 12px; }
   .keys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -184,12 +187,12 @@
 <header class="wrap head">
   <div class="eyebrow">celestual · the next film · october 2026</div>
   <h1>round.</h1>
-  <p class="lede">The script for the second film, drawn live below from the product's own parts. One night in Berkeley, six people, six letters on the wall, <b>each to the next of them, and the last to the first.</b> Nobody in it knows they are in a round. Two inks, the earlier script, stays on file under it.</p>
+  <p class="lede">The script for the second film, drawn live below from the product's own parts. One night in Berkeley, four people, four letters on the wall, <b>each to the next of them, and the last to the first.</b> Nobody in it knows they are in a round. Two inks, the earlier script, stays on file under it.</p>
   <ul class="shifts">
     <li><b>the private note, to the wall</b><span>The first film and both earlier scripts were about the private note and its reveal. Round is about the other half: letters anybody can read, each to somebody.</span></li>
-    <li><b>two people, to six</b><span>Six strangers in one night, every letter written to the next of them. Each flatters the one it is to and asks for nothing.</span></li>
-    <li><b>a moment, to a night</b><span>5:14 pm to 7:14 am, every scene at fourteen minutes past, so only the hour turns. Bars 1 and 32 are the same frame.</span></li>
-    <li><b>a song, to a round</b><span>Six voices in E flat over a four bar ground, one for each person, each entering as they start to write.</span></li>
+    <li><b>two people, to four</b><span>Four strangers in one night, every letter written to the next of them. Each flatters the one it is to and asks for nothing.</span></li>
+    <li><b>a moment, to a night</b><span>5:14 pm to 7:14 am, every scene at fourteen minutes past, so only the hour turns. The last frame falls back into the first.</span></li>
+    <li><b>a song, to a round</b><span>Four voices in E flat over a four bar ground, one for each person, each entering as they start to write.</span></li>
   </ul>
 </header>
 
@@ -199,7 +202,25 @@
     <div class="film-head">
       <span class="tag">script B · the lead</span>
       <h2 id="r-title">round</h2>
-      <span class="spec">38.4 s, looping · 1080 × 1920 · 30 fps · 150 bpm in three · E♭ · thirty two bars</span>
+      <span class="spec">30 s, looping · 1080 × 1920 · 30 fps · 150 bpm in three · E♭ · twenty five bars</span>
+    </div>
+    <div class="film-grid">
+      <figure class="frame">
+        <div class="stage">
+          <video id="round-film" src="film/round.mp4" poster="film/round-poster.png" controls loop playsinline preload="metadata" aria-label="round, the finished film: thirty seconds, with its sound"></video>
+        </div>
+        <figcaption>The finished film, with its sound. It starts on the wall and loops: <a href="film/round.mp4" download>round.mp4</a>, 6.9 MB.</figcaption>
+      </figure>
+      <div class="words">
+        <p class="line">the finished cut: <i>four letters, thirty seconds.</i></p>
+        <p>Sol on the 51B to wren in the café, wren to pia on the hospital roof, pia to yuna at the bakery, and yuna to the one who always stands. Every frame drawn by the same clock as the live film below; every sound laid on its frame.</p>
+        <dl class="facts">
+          <dt>the picture</dt><dd>900 frames at 1080 × 1920. Every pixel of a world one of its palette's four tones, the falling panes included: no motion blur, the flaps stepping as a board's modules do.</dd>
+          <dt>the sound</dt><dd>A round for four voices from real recordings, VSCO 2 Community Edition and VCSL (both CC0): sol a clarinet, wren a harp, pia a cello, yuna a horn, over a plucked double bass. The machine only on its moments. -14 LUFS, true peak under -1.5 dBTP.</dd>
+          <dt>the loop</dt><dd>The file starts on the wall, so its first second and its thumbnail are the line and the lockup; the flap falls onto the bus and the last frame leads back into the first.</dd>
+          <dt>to upload</dt><dd>H.264 High and AAC in MP4, BT.709, closed GOP, the index first and no edit lists. Turn on Instagram's upload at highest quality, and TikTok's high quality uploads.</dd>
+        </dl>
+      </div>
     </div>
     <div class="film-grid">
       <figure class="frame">
@@ -208,39 +229,37 @@
           <canvas id="round-over" width="1080" height="1920" aria-hidden="true"></canvas>
         </div>
         <div class="scrub">
-          <input id="round-t" type="range" min="0" max="1151" step="1" value="0" aria-label="the film, a frame at a time">
+          <input id="round-t" type="range" min="0" max="899" step="1" value="0" aria-label="the film, a frame at a time">
           <output id="round-at" for="round-t">bar 1 · 5:14 pm</output>
         </div>
         <div class="keys" role="group" aria-label="the film">
           <button class="key" id="r-play" aria-pressed="true">play</button>
           <button class="key" data-f="0">the seat</button>
-          <button class="key" data-f="96">sol</button>
-          <button class="key" data-f="246">wren</button>
-          <button class="key" data-f="390">hugo</button>
-          <button class="key" data-f="522">pia</button>
-          <button class="key" data-f="690">omar</button>
-          <button class="key" data-f="798">yuna</button>
-          <button class="key" data-f="1008">the wall</button>
+          <button class="key" data-f="100">sol</button>
+          <button class="key" data-f="250">wren</button>
+          <button class="key" data-f="410">pia</button>
+          <button class="key" data-f="545">yuna</button>
+          <button class="key" data-f="780">the wall</button>
         </div>
-        <figcaption>Live: every frame drawn from the film's own clock (<code>page/round-time.js</code>), in any order. Six worlds lit, then brought down to four tones in 6 px cells; the people the product's rig; the phone its composer and the letters its screen; the clock its split flap digits. Scrub it, or go to a writer.</figcaption>
+        <figcaption>Live: every frame drawn from the film's own clock (<code>page/round-time.js</code>), in any order. Four worlds lit, then brought down to four tones in 6 px cells; the people the product's rig; the phone its composer and the letters its screen; the clock its split flap digits. Scrub it, or go to a writer.</figcaption>
       </figure>
 
       <div class="words">
         <p class="line">every letter on the wall is <i>to somebody.</i></p>
-        <p>One night in Berkeley, from the evening rush to sunrise, six people each write a letter on the wall. Each is to the next of them, and the last is to the first. None of them knows; only we see the round. It opens on a stranger giving up a seat on a bus, and it closes on the letter about it. Then, for the first time, all six worlds at once, each turning into its letter on the wall, and the last frame falls back into the first.</p>
+        <p>One night in Berkeley, from the evening rush to sunrise, four people each write a letter on the wall. Each is to the next of them, and the last is to the first. None of them knows; only we see the round. It opens on a stranger giving up a seat on a bus, and it closes on the letter about it. Then, for the first time, all four worlds at once, each turning into its letter on the wall, and the last frame falls back into the first.</p>
         <p class="soft">The frame is a split flap. Below the seam, the one writing. Above it, mirrored, the one they are writing to, in their own world and their own hour. When the letter goes up, its colour runs out of the phone through the writer's world, and when it reaches the seam the flap falls and brings the one above down, right way up, to write the next.</p>
         <dl class="facts">
           <dt>perspective</dt><dd>The wall's. Only we see the round; nobody in it is ever told they were written to.</dd>
-          <dt>the world</dt><dd>Six places in one city, each lit and brought down to four tones of a screen's colour. Grey until a letter goes up, and then its colour, cell by cell. The phone is the one crisp lit thing.</dd>
-          <dt>the sound</dt><dd>A round for six voices over a ground, one for each person, entering as each starts to write. The machine on the grid: every landing a click, every flood a run of ticks.</dd>
-          <dt>the end</dt><dd>The six at once on a contact sheet, each flipping into its letter on the wall, the line, the lockup, and a flap back into frame 0.</dd>
+          <dt>the world</dt><dd>Four places in one city, each lit and brought down to four tones of a screen's colour. Grey until a letter goes up, and then its colour, cell by cell. The phone is the one crisp lit thing.</dd>
+          <dt>the sound</dt><dd>A round for four voices over a ground, one for each person, entering as each starts to write. The machine on its frames: every landing a click, the hinge catching, each module of the cascade, the clock's plates, a soft key for each word.</dd>
+          <dt>the end</dt><dd>The four at once on a contact sheet, each writer's phone still lit, each flipping into its letter on the wall, the line, the lockup, and a flap back into frame 0.</dd>
         </dl>
         <div>
           <p class="soft" style="margin-bottom:10px">The three frames somebody screenshots:</p>
           <ol class="shots-3">
             <li><span>1</span>A woman asleep on her feet, and a stranger standing up.</li>
-            <li><span>4</span>The reading room as the green comes back to its lamps.</li>
-            <li><span>9</span>Six letters on the wall, each to the next.</li>
+            <li><span>5</span>A baker who never learnt his name, writing to the one who always stands.</li>
+            <li><span>8</span>Four letters on the wall, each to the next.</li>
           </ol>
         </div>
       </div>
@@ -248,8 +267,8 @@
 
     <div class="held" aria-label="three frames from the film, drawn by it">
       <figure><img id="round-still-0" alt="The 51B at 5:14 pm: sol at the pole writing to wren, the street lit behind the steamed glass, the café hanging mirrored above"><figcaption>bar 4 · the 51B, sol writing</figcaption></figure>
-      <figure><img id="round-still-1" alt="The hospital roof at 1:14 am as the ice runs out across the city, the corner in the rain mirrored above"><figcaption>bar 18 · the ice reaching the city</figcaption></figure>
-      <figure><img id="round-still-2" alt="The pane falling from the roof onto the corner, mid fall, the clock on the hinge turning from 1 am to 3"><figcaption>bar 18 · a flap mid fall, the clock turning</figcaption></figure>
+      <figure><img id="round-still-1" alt="The café's pane falling onto the bus, mid fall, the bus amber under it and the clock on the hinge turning toward 9 pm"><figcaption>bar 6 · a flap mid fall, the clock turning</figcaption></figure>
+      <figure><img id="round-still-2" alt="The contact sheet: the bus, the café, the roof and the bakery at once, each in its letter's colour, each writer's phone still lit"><figcaption>bar 20 · four worlds at once</figcaption></figure>
     </div>
 
     <div class="section-title"><h3>the script</h3><span class="spec">a beat 400 ms · a bar 1200 · a link four bars · every flap lands on a downbeat</span></div>
@@ -259,29 +278,25 @@
 
     <div class="cols">
       <div>
-        <h4>the six letters</h4>
+        <h4>the four letters</h4>
         <div class="scroll"><table>
           <thead><tr><th>writer</th><th>where, when</th><th>the letter</th><th>colour</th></tr></thead>
           <tbody>
             <tr><td>sol</td><td>the 51B, 5:14 pm</td><td><span class="px">dear wren<br>you hum when you think. i hope nobody ever tells you.</span></td><td class="notes"><span class="sw" style="background:#E0A95A"></span>amber</td></tr>
-            <tr><td>wren</td><td>the café, 9:14 pm</td><td><span class="px">dear hugo<br>i laughed at your band. i'm in one now. sorry.</span></td><td class="notes"><span class="sw" style="background:#8ACE00"></span>acid</td></tr>
-            <tr><td>hugo</td><td>the reading room, 11:14 pm</td><td><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></td><td class="notes"><span class="sw" style="background:#A3BB6B"></span>green</td></tr>
-            <tr><td>pia</td><td>the hospital roof, 1:14 am</td><td><span class="px">dear omar<br>i don't remember the fight. i remember everything else.</span></td><td class="notes"><span class="sw" style="background:#8FB8DC"></span>ice</td></tr>
-            <tr><td>omar</td><td>a corner in the rain, 3:14 am</td><td><span class="px">dear yuna<br>i don't even like bread.</span></td><td class="notes"><span class="sw" style="background:#F7C200"></span>violet / yellow</td></tr>
+            <tr><td>wren</td><td>the café, 9:14 pm</td><td><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></td><td class="notes"><span class="sw" style="background:#8ACE00"></span>acid</td></tr>
+            <tr><td>pia</td><td>the hospital roof, 1:14 am</td><td><span class="px">dear yuna<br>i don't even like bread.</span></td><td class="notes"><span class="sw" style="background:#8FB8DC"></span>ice</td></tr>
             <tr><td>yuna</td><td>the bakery, 7:14 am</td><td><span class="px">to the one who always stands<br>you give your seat to whoever looks most tired. last night it was me.</span></td><td class="notes"><span class="sw" style="background:#DF93AF"></span>rose</td></tr>
           </tbody>
         </table></div>
         <h4>the round</h4>
-        <p>A strict canon in E flat over a four bar ground, <code>Eb | Bb/D | Cm | Ab</code>, the bass never stopping, even across the loop. Each person is a voice entering at their own flap: sol a clarinet, wren a nylon guitar and a hum, hugo a bass guitar, pia a cello, omar a marimba against the rain, yuna a horn at sunrise. In bars 23 to 26 all six sound at once. Bar 27 holds the dominant under the trembling hinge; in bar 29 each flip of the cascade sounds its writer's note, so the last chord is built a note at a time.</p>
+        <p>A round in E flat over a four bar ground, <code>Eb | Bb/D | Cm | Ab</code>, played from real recordings. Each person is a voice entering at their own flap: sol a clarinet, wren a harp, pia a cello, yuna a horn at sunrise; under them a plucked double bass, and a strummed waltz until the walk takes over. Each voice enters with the tune and goes on through the answer, the walk and the long notes, so in bars 15 to 18 all four sound at once. Bar 19 holds the dominant under the trembling hinge, bar 20 comes home as the sheet lands, and in bar 21 each flip of the cascade sounds its writer's note, so the last chord is built a note at a time. <code>node page/score.mjs --check</code> holds it to chord tones on every downbeat and no parallel fifths or octaves.</p>
         <div class="scroll"><table>
           <thead><tr><th>phrase</th><th>a bar each</th></tr></thead>
           <tbody>
-            <tr><td>the tune</td><td class="notes">B♭4 · F4 A♭4 G4 · E♭4 D4 · C4</td></tr>
-            <tr><td>the answer</td><td class="notes">G4 F4 · D4 · E♭4 G4 A♭4 · C5</td></tr>
-            <tr><td>the walk</td><td class="notes">E♭5 D5 C5 · B♭4 D5 F5 · C5 E♭5 G5 · A♭5 E♭5 C5</td></tr>
-            <tr><td>the long notes</td><td class="notes">B♭3 · B♭3 · C4 · C4</td></tr>
-            <tr><td>the figure</td><td class="notes">(B♭5 G5)×3 · (B♭5 F5)×3 · (C6 G5)×3 · (C6 A♭5)×3</td></tr>
-            <tr><td>the high hold</td><td class="notes">E♭6 · F6 · E♭6 · C6</td></tr>
+            <tr><td>the tune</td><td class="notes">B♭4 G4 C5 · D5 B♭4 · E♭5 C5 G4 · A♭4</td></tr>
+            <tr><td>the answer</td><td class="notes">G4 A♭4 · B♭4 F4 D4 · G4 E♭4 · C4 E♭4 F4</td></tr>
+            <tr><td>the walk</td><td class="notes">E♭4 G4 B♭4 E♭5 B♭4 G4 · B♭3 D4 F4 B♭4 F4 D4 · C4 E♭4 G4 C5 G4 E♭4 · E♭4 A♭4 C5 E♭5 A♭4 E♭4</td></tr>
+            <tr><td>the long notes</td><td class="notes">G4 · F4 · G4 · C4</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -298,15 +313,18 @@
         <div class="scroll"><table>
           <tbody>
             <tr><td><code>round-time.js</code></td><td>the clock: links, flaps, the clock's riffles, the phone's states, the looks, every sound on the grid, the cutdowns</td></tr>
-            <tr><td><code>round-worlds.js</code></td><td>the six worlds as light, the plateau and the blue noise, the composite: the mirror, the pane by ray and plane, the end card</td></tr>
+            <tr><td><code>round-worlds.js</code></td><td>the worlds as light (six programs, four in the final cut), the plateau and the blue noise, the composite: the mirror, the pane by ray and plane, the end card</td></tr>
             <tr><td><code>round-flood.js</code></td><td>the colour's arrival, the product's own wash measured along each world's paths</td></tr>
             <tr><td><code>round-cast.js</code></td><td>the people, the product's rig, posed on twos from each world's clock</td></tr>
             <tr><td><code>round-screen.js</code></td><td>the composer and the letter as the product draws them</td></tr>
             <tr><td><code>palettes.mjs</code></td><td>the palettes, screens, glyphs and lockup, read from the app</td></tr>
+            <tr><td><code>render.mjs</code></td><td>the film's frames, drawn in the delivered file's order, two at a time</td></tr>
+            <tr><td><code>score.mjs</code></td><td>the sound: the round, the machine, the places, the room, the master</td></tr>
+            <tr><td><code>encode.sh</code></td><td>the delivery file from the frames and the score</td></tr>
           </tbody>
         </table></div>
         <h4>what could go wrong</h4>
-        <p>The chain has to read in one viewing: the greeting names the one above, the flap brings them down, the spine holds each frame together, the clock turns. Six worlds is a lot of drawing, which is why this animatic exists before any detail does. The dither has to survive the platforms: 6 px cells, lossless frames, and a private test upload of the 6 second cut first.</p>
+        <p>The chain has to read in one viewing: the greeting names the one above, the flap brings them down, the spine holds each frame together, the clock turns. Four letters in thirty seconds leaves each about four seconds on the phone and again on the wall. The dither has to survive the platforms: 6 px cells, lossless frames, and a private test upload before the film goes out.</p>
       </div>
     </div>
   </div>
@@ -453,20 +471,20 @@
     <tbody>
       <tr><td>the line</td><td>every letter on the wall is to somebody.</td><td>a private note is one ink. a picture needs both.</td></tr>
       <tr><td>about</td><td>the wall</td><td>the private note and the reveal</td></tr>
-      <tr><td>the world</td><td>six worlds of one city, lit and dithered, grey until each letter's colour runs out of its phone</td><td>riso prints on warm paper in rose, ice and black</td></tr>
+      <tr><td>the world</td><td>four worlds of one city, lit and dithered, grey until each letter's colour runs out of its phone</td><td>riso prints on warm paper in rose, ice and black</td></tr>
       <tr><td>the new build</td><td>six world programs on one kit, the flap, the flood, the cast, the composer</td><td>one shader and the press's drawings</td></tr>
-      <tr><td>the biggest risk</td><td>six worlds of drawing, and the chain read in one viewing</td><td>the metaphor carrying the mechanism</td></tr>
+      <tr><td>the biggest risk</td><td>the chain read in one viewing, four letters in thirty seconds</td><td>the metaphor carrying the mechanism</td></tr>
       <tr><td>stretches on purpose</td><td>whole worlds dithered, as the product dithers only pictures</td><td>the whole film on paper</td></tr>
     </tbody>
   </table></div>
   <div class="section-title" style="border-color:var(--hair)"><h3>to refine it, decide</h3></div>
   <ol class="decide">
-    <li><span>The letters, as written or any of ROUND.md's alternatives; and the names: sol, wren, hugo, pia, omar, yuna.</span></li>
+    <li><span>The letters, as written or any of ROUND.md's alternatives; and the names: sol, wren, pia, yuna.</span></li>
     <li><span>The 51B on the bus's sign, or a bus with no number.</span></li>
     <li><span>Fourteen minutes past every time, or times that feel found.</span></li>
     <li><span>Cells of 6 px, bolder and safer through the platforms, or 4 px, finer.</span></li>
     <li><span>The round in three at 150, a lullaby, or in four at 100; instrumental, or wren's hum given words.</span></li>
-    <li><span>The 38.4 second film or the 15 second cut first.</span></li>
+    <li><span>The 30 second film first, or a 15 second cut of it.</span></li>
   </ol>
   <div class="sign">%%LOCKUP%%</div>
 </section>

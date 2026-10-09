@@ -60,7 +60,10 @@
   .stage { position: relative; width: 100%; aspect-ratio: 9 / 16; max-width: 100%; overflow: hidden; isolation: isolate; }
   .paper .stage { background: var(--paper); box-shadow: 0 0 0 1px var(--paper-hair); }
   .night .stage { background: #050507; box-shadow: 0 0 0 1px var(--hair); }
-  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage canvas, .stage video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage video { background: #050507; object-fit: contain; }
+  .film-grid + .film-grid { margin-top: clamp(40px, 6vw, 72px); }
+  .frame figcaption a { color: inherit; }
   .stage .sheet { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; pointer-events: none; }
   .stage .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-family: var(--mono); font-size: 12px; }
   .keys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -191,12 +194,12 @@
 <header class="wrap head">
   <div class="eyebrow">celestual · the next film · october 2026</div>
   <h1>round.</h1>
-  <p class="lede">The script for the second film, drawn live below from the product's own parts. One night in Berkeley, six people, six letters on the wall, <b>each to the next of them, and the last to the first.</b> Nobody in it knows they are in a round. Two inks, the earlier script, stays on file under it.</p>
+  <p class="lede">The script for the second film, drawn live below from the product's own parts. One night in Berkeley, four people, four letters on the wall, <b>each to the next of them, and the last to the first.</b> Nobody in it knows they are in a round. Two inks, the earlier script, stays on file under it.</p>
   <ul class="shifts">
     <li><b>the private note, to the wall</b><span>The first film and both earlier scripts were about the private note and its reveal. Round is about the other half: letters anybody can read, each to somebody.</span></li>
-    <li><b>two people, to six</b><span>Six strangers in one night, every letter written to the next of them. Each flatters the one it is to and asks for nothing.</span></li>
-    <li><b>a moment, to a night</b><span>5:14 pm to 7:14 am, every scene at fourteen minutes past, so only the hour turns. Bars 1 and 32 are the same frame.</span></li>
-    <li><b>a song, to a round</b><span>Six voices in E flat over a four bar ground, one for each person, each entering as they start to write.</span></li>
+    <li><b>two people, to four</b><span>Four strangers in one night, every letter written to the next of them. Each flatters the one it is to and asks for nothing.</span></li>
+    <li><b>a moment, to a night</b><span>5:14 pm to 7:14 am, every scene at fourteen minutes past, so only the hour turns. The last frame falls back into the first.</span></li>
+    <li><b>a song, to a round</b><span>Four voices in E flat over a four bar ground, one for each person, each entering as they start to write.</span></li>
   </ul>
 </header>
 
@@ -206,7 +209,25 @@
     <div class="film-head">
       <span class="tag">script B · the lead</span>
       <h2 id="r-title">round</h2>
-      <span class="spec">38.4 s, looping · 1080 × 1920 · 30 fps · 150 bpm in three · E♭ · thirty two bars</span>
+      <span class="spec">30 s, looping · 1080 × 1920 · 30 fps · 150 bpm in three · E♭ · twenty five bars</span>
+    </div>
+    <div class="film-grid">
+      <figure class="frame">
+        <div class="stage">
+          <video id="round-film" src="film/round.mp4" poster="film/round-poster.png" controls loop playsinline preload="metadata" aria-label="round, the finished film: thirty seconds, with its sound"></video>
+        </div>
+        <figcaption>The finished film, with its sound. It starts on the wall and loops: <a href="film/round.mp4" download>round.mp4</a>, 6.9 MB.</figcaption>
+      </figure>
+      <div class="words">
+        <p class="line">the finished cut: <i>four letters, thirty seconds.</i></p>
+        <p>Sol on the 51B to wren in the café, wren to pia on the hospital roof, pia to yuna at the bakery, and yuna to the one who always stands. Every frame drawn by the same clock as the live film below; every sound laid on its frame.</p>
+        <dl class="facts">
+          <dt>the picture</dt><dd>900 frames at 1080 × 1920. Every pixel of a world one of its palette's four tones, the falling panes included: no motion blur, the flaps stepping as a board's modules do.</dd>
+          <dt>the sound</dt><dd>A round for four voices from real recordings, VSCO 2 Community Edition and VCSL (both CC0): sol a clarinet, wren a harp, pia a cello, yuna a horn, over a plucked double bass. The machine only on its moments. -14 LUFS, true peak under -1.5 dBTP.</dd>
+          <dt>the loop</dt><dd>The file starts on the wall, so its first second and its thumbnail are the line and the lockup; the flap falls onto the bus and the last frame leads back into the first.</dd>
+          <dt>to upload</dt><dd>H.264 High and AAC in MP4, BT.709, closed GOP, the index first and no edit lists. Turn on Instagram's upload at highest quality, and TikTok's high quality uploads.</dd>
+        </dl>
+      </div>
     </div>
     <div class="film-grid">
       <figure class="frame">
@@ -215,39 +236,37 @@
           <canvas id="round-over" width="1080" height="1920" aria-hidden="true"></canvas>
         </div>
         <div class="scrub">
-          <input id="round-t" type="range" min="0" max="1151" step="1" value="0" aria-label="the film, a frame at a time">
+          <input id="round-t" type="range" min="0" max="899" step="1" value="0" aria-label="the film, a frame at a time">
           <output id="round-at" for="round-t">bar 1 · 5:14 pm</output>
         </div>
         <div class="keys" role="group" aria-label="the film">
           <button class="key" id="r-play" aria-pressed="true">play</button>
           <button class="key" data-f="0">the seat</button>
-          <button class="key" data-f="96">sol</button>
-          <button class="key" data-f="246">wren</button>
-          <button class="key" data-f="390">hugo</button>
-          <button class="key" data-f="522">pia</button>
-          <button class="key" data-f="690">omar</button>
-          <button class="key" data-f="798">yuna</button>
-          <button class="key" data-f="1008">the wall</button>
+          <button class="key" data-f="100">sol</button>
+          <button class="key" data-f="250">wren</button>
+          <button class="key" data-f="410">pia</button>
+          <button class="key" data-f="545">yuna</button>
+          <button class="key" data-f="780">the wall</button>
         </div>
-        <figcaption>Live: every frame drawn from the film's own clock (<code>page/round-time.js</code>), in any order. Six worlds lit, then brought down to four tones in 6 px cells; the people the product's rig; the phone its composer and the letters its screen; the clock its split flap digits. Scrub it, or go to a writer.</figcaption>
+        <figcaption>Live: every frame drawn from the film's own clock (<code>page/round-time.js</code>), in any order. Four worlds lit, then brought down to four tones in 6 px cells; the people the product's rig; the phone its composer and the letters its screen; the clock its split flap digits. Scrub it, or go to a writer.</figcaption>
       </figure>
 
       <div class="words">
         <p class="line">every letter on the wall is <i>to somebody.</i></p>
-        <p>One night in Berkeley, from the evening rush to sunrise, six people each write a letter on the wall. Each is to the next of them, and the last is to the first. None of them knows; only we see the round. It opens on a stranger giving up a seat on a bus, and it closes on the letter about it. Then, for the first time, all six worlds at once, each turning into its letter on the wall, and the last frame falls back into the first.</p>
+        <p>One night in Berkeley, from the evening rush to sunrise, four people each write a letter on the wall. Each is to the next of them, and the last is to the first. None of them knows; only we see the round. It opens on a stranger giving up a seat on a bus, and it closes on the letter about it. Then, for the first time, all four worlds at once, each turning into its letter on the wall, and the last frame falls back into the first.</p>
         <p class="soft">The frame is a split flap. Below the seam, the one writing. Above it, mirrored, the one they are writing to, in their own world and their own hour. When the letter goes up, its colour runs out of the phone through the writer's world, and when it reaches the seam the flap falls and brings the one above down, right way up, to write the next.</p>
         <dl class="facts">
           <dt>perspective</dt><dd>The wall's. Only we see the round; nobody in it is ever told they were written to.</dd>
-          <dt>the world</dt><dd>Six places in one city, each lit and brought down to four tones of a screen's colour. Grey until a letter goes up, and then its colour, cell by cell. The phone is the one crisp lit thing.</dd>
-          <dt>the sound</dt><dd>A round for six voices over a ground, one for each person, entering as each starts to write. The machine on the grid: every landing a click, every flood a run of ticks.</dd>
-          <dt>the end</dt><dd>The six at once on a contact sheet, each flipping into its letter on the wall, the line, the lockup, and a flap back into frame 0.</dd>
+          <dt>the world</dt><dd>Four places in one city, each lit and brought down to four tones of a screen's colour. Grey until a letter goes up, and then its colour, cell by cell. The phone is the one crisp lit thing.</dd>
+          <dt>the sound</dt><dd>A round for four voices over a ground, one for each person, entering as each starts to write. The machine on its frames: every landing a click, the hinge catching, each module of the cascade, the clock's plates, a soft key for each word.</dd>
+          <dt>the end</dt><dd>The four at once on a contact sheet, each writer's phone still lit, each flipping into its letter on the wall, the line, the lockup, and a flap back into frame 0.</dd>
         </dl>
         <div>
           <p class="soft" style="margin-bottom:10px">The three frames somebody screenshots:</p>
           <ol class="shots-3">
             <li><span>1</span>A woman asleep on her feet, and a stranger standing up.</li>
-            <li><span>4</span>The reading room as the green comes back to its lamps.</li>
-            <li><span>9</span>Six letters on the wall, each to the next.</li>
+            <li><span>5</span>A baker who never learnt his name, writing to the one who always stands.</li>
+            <li><span>8</span>Four letters on the wall, each to the next.</li>
           </ol>
         </div>
       </div>
@@ -255,49 +274,43 @@
 
     <div class="held" aria-label="three frames from the film, drawn by it">
       <figure><img id="round-still-0" alt="The 51B at 5:14 pm: sol at the pole writing to wren, the street lit behind the steamed glass, the café hanging mirrored above"><figcaption>bar 4 · the 51B, sol writing</figcaption></figure>
-      <figure><img id="round-still-1" alt="The hospital roof at 1:14 am as the ice runs out across the city, the corner in the rain mirrored above"><figcaption>bar 18 · the ice reaching the city</figcaption></figure>
-      <figure><img id="round-still-2" alt="The pane falling from the roof onto the corner, mid fall, the clock on the hinge turning from 1 am to 3"><figcaption>bar 18 · a flap mid fall, the clock turning</figcaption></figure>
+      <figure><img id="round-still-1" alt="The café's pane falling onto the bus, mid fall, the bus amber under it and the clock on the hinge turning toward 9 pm"><figcaption>bar 6 · a flap mid fall, the clock turning</figcaption></figure>
+      <figure><img id="round-still-2" alt="The contact sheet: the bus, the café, the roof and the bakery at once, each in its letter's colour, each writer's phone still lit"><figcaption>bar 20 · four worlds at once</figcaption></figure>
     </div>
 
     <div class="section-title"><h3>the script</h3><span class="spec">a beat 400 ms · a bar 1200 · a link four bars · every flap lands on a downbeat</span></div>
     <ol class="shots">
-      <li class="shot"><div class="when">1 · 0 to 2400 ms<br>bars 1 and 2<b>the seat</b></div><p class="pic">The 51B at 5:14 pm, everything in night&#x27;s four greys: the street streaming past the steamed glass, the shops lit behind it. A woman stands in the aisle with a hand on the pole, her back to us, swaying, asleep on her feet. Sol is in the window seat beyond the pole. At 24 the stop chime. On the twos, sol stands; she steps aside to let him out, and he gives her the seat. She sits and her head goes to the glass. Sol takes the pole she held. From 54 his phone comes up into the left of the frame. Above, mirrored: the café after the open mic, wren on the riser packing her guitar.</p><div class="side"><div class="say"><span class="mono" style="font-size:13px">5:14 pm, on the hinge</span></div><div class="snd">The ground&#x27;s second half, Cm then A♭, alone: the film opens inside the round. The hybrid&#x27;s whine, a pole past the glass on each downbeat.</div></div></li>
-      <li class="shot"><div class="when">2 · 2400 to 7200 ms<br>bars 3 to 6<b>sol to wren</b></div><p class="pic">Over sol&#x27;s shoulder, the phone up at the left: the composer, lit amber, dear wren. The words land a word at a time from 78. At 144 send anonymously; the screen says being read for two beats, then the letter is up and the count has become the day. The amber runs out of the phone, down the aisle and out of the windows into the street. At 180 sol looks up, and above, wren looks up from her case. The clock riffles 6, 7, 8, 9. At 204 the amber reaches the hinge; the café falls, right way up, and lands at 216.</p><div class="side"><div class="say"><span class="px">dear wren<br>you hum when you think. i hope nobody ever tells you.</span><br><span>being read<br>it goes up once it passes.</span></div><div class="snd">Sol&#x27;s voice enters, a clarinet, the tune. A soft key for each word. The flood a run of dry ticks. The landing, one click.</div></div></li>
-      <li class="shot"><div class="when">3 · 7200 to 12000 ms<br>bars 7 to 10<b>wren to hugo</b></div><p class="pic">Wren on the riser&#x27;s edge, the spot&#x27;s wedge falling beside her onto the stage, the front window behind her. Above, mirrored: the reading room at closing, hugo at the end of a row as the building&#x27;s timer puts the lamps out on the beat. Her phone rises lit acid. An eighth of nothing before sorry. Sent at 312; acid up the beam and across the room, the café gone dark and lime. Both look up at 324, as the ninth lamp goes out over hugo.</p><div class="side"><div class="say"><span class="px">dear hugo<br>i laughed at your band. i&#x27;m in one now. sorry.</span></div><div class="snd">Wren&#x27;s voice, a nylon guitar and a hum. The case&#x27;s two latches; the lamp switches on the beat, the round&#x27;s percussion.</div></div></li>
-      <li class="shot"><div class="when">4 · 12000 to 16800 ms<br>bars 11 to 14<b>hugo to pia</b></div><p class="pic">The reading room right way up; the last three lamps go out at 360, 372 and 384, and his phone is the last light. Above: the hospital roof, pia at the parapet with her tea. Sent at 456; the green runs along the rows, and every lamp it reaches comes back on, pool and all. Both look up at 468. The clock passes twelve.</p><div class="side"><div class="say"><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></div><div class="snd">Hugo&#x27;s voice, a bass guitar, the long notes. The building&#x27;s air.</div></div></li>
-      <li class="shot"><div class="when">5 · 16800 to 21600 ms<br>bars 15 to 18<b>pia to omar</b></div><p class="pic">The roof, at eye height over the parapet: the cloud lit from beneath in bands, the bay, the city as windows. Above: a corner in the rain, omar at the crossing. She types i miss, waits a beat, takes it back a character a press, and writes on. Sent at 600: the ice crosses the parapet and the whole city takes it, the biggest flood in the film. Both look up at 612.</p><div class="side"><div class="say"><span class="px">dear omar<br>i don&#x27;t remember the fight. i remember everything else.</span></div><div class="snd">Pia&#x27;s voice, a cello, the walk. Wind; a siren far off, once.</div></div></li>
-      <li class="shot"><div class="when">6 · 21600 to 26400 ms<br>bars 19 to 22<b>omar to yuna</b></div><p class="pic">The corner right way up: one street light, rain only in its cone, a puddle trembling with rings. Above: the bakery, yuna at the oven with the peel. Three eighths of nothing, then five words. Sent at 744 as the walk signal comes on. The riso&#x27;s two drums: the rain turns yellow, the dark goes violet and brown. Both look up at 756. The clock riffles 4, 5, 6, 7.</p><div class="side"><div class="say"><span class="px">dear yuna<br>i don&#x27;t even like bread.</span></div><div class="snd">Omar&#x27;s voice, a marimba against the rain. The crossing&#x27;s tick once a second; the walk signal&#x27;s quick ticks.</div></div></li>
-      <li class="shot"><div class="when">7 · 26400 to 32400 ms<br>bars 23 to 27<b>yuna to the one who always stands</b></div><p class="pic">The bakery, the phone propped on the flour bin. Above, mirrored: the 51B in the seconds before bar 1, the woman swaying in the aisle, sol in the window seat. Yuna takes back dear a character a press and types to. Sent at 900, and the first sun comes through the window with the rose. At 912 she looks up into the beam, and above, a night earlier, sol looks up at the woman: their one meeting. At 936 the rose reaches the hinge and it catches, trembling on its pin for the whole of bar 27. At 962 it lets go.</p><div class="side"><div class="say"><span class="px">to the one who always stands<br>you give your seat to whoever looks most tired. last night it was me.</span></div><div class="snd">Yuna&#x27;s voice, a horn, the tune: all six at once. Bar 27 holds the dominant over a tiny metal rattle.</div></div></li>
-      <li class="shot"><div class="when">8 · 32400 to 33600 ms<br>bar 28<b>the contact sheet</b></div><p class="pic">It lands on the contact sheet: for the first time the six worlds at once, two across and three down, each in its own colour, each still alive. Nobody in them knows the others are there.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">E flat, with the clack.</div></div></li>
-      <li class="shot"><div class="when">9 · 33600 to 34800 ms<br>bar 29<b>the cascade</b></div><p class="pic">On each eighth, in the order the letters went up, one panel flips like a module of a station board, and where its world was stands its letter on the wall: the product&#x27;s screen in that colour, the day, the greeting, the words, options and the heart, no cursor.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">Each flip sounds its writer&#x27;s note: the last chord built a note at a time.</div></div></li>
-      <li class="shot"><div class="when">10 · 34800 to 38400 ms<br>bars 30 to 32<b>the wall, and round again</b></div><p class="pic">Every letter on the wall is to somebody, set whole above the six at 1044. At 1080 the lockup and the address under them. At 1140 the end card&#x27;s top half lets go; on its back is the 51B, grey, the moment before bar 1. It lands on frame 0, and the clock reads 5:14 pm.</p><div class="side"><div class="say"><span class="px">every letter on the wall is to somebody.</span><br><span class="mono" style="font-size:13px">celestual.us</span></div><div class="snd">The chord rings, then the ground&#x27;s first half, bass alone, into bar 1.</div></div></li>
+      <li class="shot"><div class="when">1 · 0 to 2400 ms<br>bars 1 and 2<b>the seat</b></div><p class="pic">The 51B at 5:14 pm, everything in night&#x27;s four greys: the street streaming past the steamed glass, the shops lit behind it. A woman stands in the aisle with a hand on the pole, her back to us, swaying, asleep on her feet. Sol is in the window seat beyond the pole. At 24 the stop chime. On the twos, sol stands; she steps aside to let him out, and he gives her the seat. She sits and her head goes to the glass. Sol takes the pole she held. From 54 his phone comes up into the left of the frame. Above, mirrored: the café after the open mic, wren on the riser packing her guitar.</p><div class="side"><div class="say"><span class="mono" style="font-size:13px">5:14 pm, on the hinge</span></div><div class="snd">The ground&#x27;s second half, Cm then A♭, a plucked bass and a strummed waltz: the film opens inside the round. The motor, a streetlight past the glass, the stop chime.</div></div></li>
+      <li class="shot"><div class="when">2 · 2400 to 7200 ms<br>bars 3 to 6<b>sol to wren</b></div><p class="pic">Over sol&#x27;s shoulder, the phone up at the left: the composer, lit amber, dear wren. The words land a word at a time from 78. At 144 send anonymously; the screen says being read for two beats, then the letter is up and the count has become the day. The amber runs out of the phone, down the aisle and out of the windows into the street. At 180 sol looks up, and above, wren looks up from her case. The clock riffles 6, 7, 8, 9. At 204 the amber reaches the hinge; the café falls, right way up, and lands at 216.</p><div class="side"><div class="say"><span class="px">dear wren<br>you hum when you think. i hope nobody ever tells you.</span><br><span>being read<br>it goes up once it passes.</span></div><div class="snd">Sol&#x27;s voice enters, a clarinet: the tune, sol mi la. A soft key for each word; the café case&#x27;s two latches above; the flood a run of dry ticks; the landing, one click.</div></div></li>
+      <li class="shot"><div class="when">3 · 7200 to 12000 ms<br>bars 7 to 10<b>wren to pia</b></div><p class="pic">Wren on the riser&#x27;s edge, the spot&#x27;s wedge falling beside her onto the stage, the front window behind her. Above, mirrored: the hospital roof, pia at the parapet with her tea. Her phone rises lit acid. An eighth of nothing before i was awake. Sent at 312; acid up the beam and across the room, the café gone dark and lime. Both look up at 324. The clock riffles 10, 11, 12, 1.</p><div class="side"><div class="say"><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></div><div class="snd">Wren&#x27;s voice, a harp: the tune an octave up, over sol&#x27;s answer. The roof&#x27;s wind above.</div></div></li>
+      <li class="shot"><div class="when">4 · 12000 to 16800 ms<br>bars 11 to 14<b>pia to yuna</b></div><p class="pic">The roof, at eye height over the parapet: the cloud lit from beneath in bands, the bay, the city as windows. Above: the bakery, yuna at the oven with the peel. Three eighths of nothing, then five words. Sent at 456: the ice crosses the parapet and the whole city takes it, the biggest flood in the film. Both look up at 468. The clock riffles 2, 3, 4, 5, 6, 7.</p><div class="side"><div class="say"><span class="px">dear yuna<br>i don&#x27;t even like bread.</span></div><div class="snd">Pia&#x27;s voice, a cello: the tune low, the harp&#x27;s answer high, sol&#x27;s walk between them. Wind; the oven&#x27;s fan above.</div></div></li>
+      <li class="shot"><div class="when">5 · 16800 to 22800 ms<br>bars 15 to 19<b>yuna to the one who always stands</b></div><p class="pic">The bakery, the phone propped on the flour bin. Above, mirrored: the 51B in the seconds before bar 1, the woman swaying in the aisle, sol in the window seat. Yuna takes back dear a character a press and types to; the greeting takes a second row. Sent at 612, and the first sun comes through the window with the rose. At 624 she looks up into the beam, and above, a night earlier, sol looks up at the woman: their one meeting. At 648 the rose reaches the hinge and it catches, trembling on its pin. At 674 it lets go.</p><div class="side"><div class="say"><span class="px">to the one who always stands<br>you give your seat to whoever looks most tired. last night it was me.</span></div><div class="snd">Yuna&#x27;s voice, a horn, the tune: all four at once, the clarinet&#x27;s long notes high over them. Bar 19 holds the dominant over a small ratchet, the harp trembling with the pane. The first birds.</div></div></li>
+      <li class="shot"><div class="when">6 · 22800 to 24000 ms<br>bar 20<b>the contact sheet</b></div><p class="pic">It lands on the contact sheet: for the first time the four worlds at once, two by two, each in its own colour, each writer&#x27;s phone still lit with their letter. Nobody in them knows the others are there.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">Home to E flat, all four together, with the clack.</div></div></li>
+      <li class="shot"><div class="when">7 · 24000 to 25200 ms<br>bar 21<b>the cascade</b></div><p class="pic">On each eighth, a frame or so early or late as a board&#x27;s modules are, in the order the letters went up, one module flips, and where its world was stands its letter on the wall: the product&#x27;s screen in that colour, the day, the greeting, the words, options and the heart, no cursor.</p><div class="side"><div class="say"><span class="none">no words</span></div><div class="snd">Each flip sounds its writer&#x27;s note, B♭, G, C, F, the tune&#x27;s own: the last chord built a note at a time.</div></div></li>
+      <li class="shot"><div class="when">8 · 25200 to 30000 ms<br>bars 22 to 25<b>the wall, and round again</b></div><p class="pic">Every letter on the wall is to somebody, set whole above the four at 756. At 774 the lockup and the address under them. At 888 the end card&#x27;s top half lets go; on its back is the 51B, grey, the moment before bar 1. It lands on frame 0 and the clock&#x27;s plates turn over to 5:14 pm. The file starts at 888, so its first frame is the wall.</p><div class="side"><div class="say"><span class="px">every letter on the wall is to somebody.</span><br><span class="mono" style="font-size:13px">celestual.us</span></div><div class="snd">The ground under the wall, the clarinet remembering the tune&#x27;s head; a glockenspiel on the lockup; the last bar a breath before the landing.</div></div></li>
     </ol>
 
     <div class="cols">
       <div>
-        <h4>the six letters</h4>
+        <h4>the four letters</h4>
         <div class="scroll"><table>
           <thead><tr><th>writer</th><th>where, when</th><th>the letter</th><th>colour</th></tr></thead>
           <tbody>
             <tr><td>sol</td><td>the 51B, 5:14 pm</td><td><span class="px">dear wren<br>you hum when you think. i hope nobody ever tells you.</span></td><td class="notes"><span class="sw" style="background:#E0A95A"></span>amber</td></tr>
-            <tr><td>wren</td><td>the café, 9:14 pm</td><td><span class="px">dear hugo<br>i laughed at your band. i'm in one now. sorry.</span></td><td class="notes"><span class="sw" style="background:#8ACE00"></span>acid</td></tr>
-            <tr><td>hugo</td><td>the reading room, 11:14 pm</td><td><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></td><td class="notes"><span class="sw" style="background:#A3BB6B"></span>green</td></tr>
-            <tr><td>pia</td><td>the hospital roof, 1:14 am</td><td><span class="px">dear omar<br>i don't remember the fight. i remember everything else.</span></td><td class="notes"><span class="sw" style="background:#8FB8DC"></span>ice</td></tr>
-            <tr><td>omar</td><td>a corner in the rain, 3:14 am</td><td><span class="px">dear yuna<br>i don't even like bread.</span></td><td class="notes"><span class="sw" style="background:#F7C200"></span>violet / yellow</td></tr>
+            <tr><td>wren</td><td>the café, 9:14 pm</td><td><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></td><td class="notes"><span class="sw" style="background:#8ACE00"></span>acid</td></tr>
+            <tr><td>pia</td><td>the hospital roof, 1:14 am</td><td><span class="px">dear yuna<br>i don't even like bread.</span></td><td class="notes"><span class="sw" style="background:#8FB8DC"></span>ice</td></tr>
             <tr><td>yuna</td><td>the bakery, 7:14 am</td><td><span class="px">to the one who always stands<br>you give your seat to whoever looks most tired. last night it was me.</span></td><td class="notes"><span class="sw" style="background:#DF93AF"></span>rose</td></tr>
           </tbody>
         </table></div>
         <h4>the round</h4>
-        <p>A strict canon in E flat over a four bar ground, <code>Eb | Bb/D | Cm | Ab</code>, the bass never stopping, even across the loop. Each person is a voice entering at their own flap: sol a clarinet, wren a nylon guitar and a hum, hugo a bass guitar, pia a cello, omar a marimba against the rain, yuna a horn at sunrise. In bars 23 to 26 all six sound at once. Bar 27 holds the dominant under the trembling hinge; in bar 29 each flip of the cascade sounds its writer's note, so the last chord is built a note at a time.</p>
+        <p>A round in E flat over a four bar ground, <code>Eb | Bb/D | Cm | Ab</code>, played from real recordings. Each person is a voice entering at their own flap: sol a clarinet, wren a harp, pia a cello, yuna a horn at sunrise; under them a plucked double bass, and a strummed waltz until the walk takes over. Each voice enters with the tune and goes on through the answer, the walk and the long notes, so in bars 15 to 18 all four sound at once. Bar 19 holds the dominant under the trembling hinge, bar 20 comes home as the sheet lands, and in bar 21 each flip of the cascade sounds its writer's note, so the last chord is built a note at a time. <code>node page/score.mjs --check</code> holds it to chord tones on every downbeat and no parallel fifths or octaves.</p>
         <div class="scroll"><table>
           <thead><tr><th>phrase</th><th>a bar each</th></tr></thead>
           <tbody>
-            <tr><td>the tune</td><td class="notes">B♭4 · F4 A♭4 G4 · E♭4 D4 · C4</td></tr>
-            <tr><td>the answer</td><td class="notes">G4 F4 · D4 · E♭4 G4 A♭4 · C5</td></tr>
-            <tr><td>the walk</td><td class="notes">E♭5 D5 C5 · B♭4 D5 F5 · C5 E♭5 G5 · A♭5 E♭5 C5</td></tr>
-            <tr><td>the long notes</td><td class="notes">B♭3 · B♭3 · C4 · C4</td></tr>
-            <tr><td>the figure</td><td class="notes">(B♭5 G5)×3 · (B♭5 F5)×3 · (C6 G5)×3 · (C6 A♭5)×3</td></tr>
-            <tr><td>the high hold</td><td class="notes">E♭6 · F6 · E♭6 · C6</td></tr>
+            <tr><td>the tune</td><td class="notes">B♭4 G4 C5 · D5 B♭4 · E♭5 C5 G4 · A♭4</td></tr>
+            <tr><td>the answer</td><td class="notes">G4 A♭4 · B♭4 F4 D4 · G4 E♭4 · C4 E♭4 F4</td></tr>
+            <tr><td>the walk</td><td class="notes">E♭4 G4 B♭4 E♭5 B♭4 G4 · B♭3 D4 F4 B♭4 F4 D4 · C4 E♭4 G4 C5 G4 E♭4 · E♭4 A♭4 C5 E♭5 A♭4 E♭4</td></tr>
+            <tr><td>the long notes</td><td class="notes">G4 · F4 · G4 · C4</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -320,15 +333,18 @@
         <div class="scroll"><table>
           <tbody>
             <tr><td><code>round-time.js</code></td><td>the clock: links, flaps, the clock's riffles, the phone's states, the looks, every sound on the grid, the cutdowns</td></tr>
-            <tr><td><code>round-worlds.js</code></td><td>the six worlds as light, the plateau and the blue noise, the composite: the mirror, the pane by ray and plane, the end card</td></tr>
+            <tr><td><code>round-worlds.js</code></td><td>the worlds as light (six programs, four in the final cut), the plateau and the blue noise, the composite: the mirror, the pane by ray and plane, the end card</td></tr>
             <tr><td><code>round-flood.js</code></td><td>the colour's arrival, the product's own wash measured along each world's paths</td></tr>
             <tr><td><code>round-cast.js</code></td><td>the people, the product's rig, posed on twos from each world's clock</td></tr>
             <tr><td><code>round-screen.js</code></td><td>the composer and the letter as the product draws them</td></tr>
             <tr><td><code>palettes.mjs</code></td><td>the palettes, screens, glyphs and lockup, read from the app</td></tr>
+            <tr><td><code>render.mjs</code></td><td>the film's frames, drawn in the delivered file's order, two at a time</td></tr>
+            <tr><td><code>score.mjs</code></td><td>the sound: the round, the machine, the places, the room, the master</td></tr>
+            <tr><td><code>encode.sh</code></td><td>the delivery file from the frames and the score</td></tr>
           </tbody>
         </table></div>
         <h4>what could go wrong</h4>
-        <p>The chain has to read in one viewing: the greeting names the one above, the flap brings them down, the spine holds each frame together, the clock turns. Six worlds is a lot of drawing, which is why this animatic exists before any detail does. The dither has to survive the platforms: 6 px cells, lossless frames, and a private test upload of the 6 second cut first.</p>
+        <p>The chain has to read in one viewing: the greeting names the one above, the flap brings them down, the spine holds each frame together, the clock turns. Four letters in thirty seconds leaves each about four seconds on the phone and again on the wall. The dither has to survive the platforms: 6 px cells, lossless frames, and a private test upload before the film goes out.</p>
       </div>
     </div>
   </div>
@@ -488,20 +504,20 @@
     <tbody>
       <tr><td>the line</td><td>every letter on the wall is to somebody.</td><td>a private note is one ink. a picture needs both.</td></tr>
       <tr><td>about</td><td>the wall</td><td>the private note and the reveal</td></tr>
-      <tr><td>the world</td><td>six worlds of one city, lit and dithered, grey until each letter's colour runs out of its phone</td><td>riso prints on warm paper in rose, ice and black</td></tr>
+      <tr><td>the world</td><td>four worlds of one city, lit and dithered, grey until each letter's colour runs out of its phone</td><td>riso prints on warm paper in rose, ice and black</td></tr>
       <tr><td>the new build</td><td>six world programs on one kit, the flap, the flood, the cast, the composer</td><td>one shader and the press's drawings</td></tr>
-      <tr><td>the biggest risk</td><td>six worlds of drawing, and the chain read in one viewing</td><td>the metaphor carrying the mechanism</td></tr>
+      <tr><td>the biggest risk</td><td>the chain read in one viewing, four letters in thirty seconds</td><td>the metaphor carrying the mechanism</td></tr>
       <tr><td>stretches on purpose</td><td>whole worlds dithered, as the product dithers only pictures</td><td>the whole film on paper</td></tr>
     </tbody>
   </table></div>
   <div class="section-title" style="border-color:var(--hair)"><h3>to refine it, decide</h3></div>
   <ol class="decide">
-    <li><span>The letters, as written or any of ROUND.md's alternatives; and the names: sol, wren, hugo, pia, omar, yuna.</span></li>
+    <li><span>The letters, as written or any of ROUND.md's alternatives; and the names: sol, wren, pia, yuna.</span></li>
     <li><span>The 51B on the bus's sign, or a bus with no number.</span></li>
     <li><span>Fourteen minutes past every time, or times that feel found.</span></li>
     <li><span>Cells of 6 px, bolder and safer through the platforms, or 4 px, finer.</span></li>
     <li><span>The round in three at 150, a lullaby, or in four at 100; instrumental, or wren's hum given words.</span></li>
-    <li><span>The 38.4 second film or the 15 second cut first.</span></li>
+    <li><span>The 30 second film first, or a 15 second cut of it.</span></li>
   </ol>
   <div class="sign"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 33" width="112" height="33" shape-rendering="crispEdges" role="img" aria-label="celestual."><title>celestual.</title><path fill="currentColor" d="M16 2h1v1h-1zM16 3h1v1h-1zM16 4h1v1h-1zM16 5h1v1h-1zM16 6h1v1h-1zM16 7h1v1h-1zM18 7h10v1h-10zM14 8h1v1h-1zM16 8h1v1h-1zM25 8h5v1h-5zM57 8h3v1h-3zM105 8h3v1h-3zM11 9h3v1h-3zM16 9h1v1h-1zM28 9h3v1h-3zM58 9h2v1h-2zM81 9h1v1h-1zM106 9h2v1h-2zM9 10h2v1h-2zM15 10h3v1h-3zM29 10h3v1h-3zM58 10h2v1h-2zM80 10h2v1h-2zM106 10h2v1h-2zM7 11h2v1h-2zM15 11h3v1h-3zM30 11h3v1h-3zM58 11h2v1h-2zM80 11h2v1h-2zM106 11h2v1h-2zM6 12h1v1h-1zM15 12h3v1h-3zM30 12h3v1h-3zM41 12h5v1h-5zM50 12h4v1h-4zM58 12h2v1h-2zM64 12h4v1h-4zM72 12h6v1h-6zM79 12h6v1h-6zM86 12h3v1h-3zM91 12h3v1h-3zM97 12h5v1h-5zM106 12h2v1h-2zM5 13h1v1h-1zM14 13h5v1h-5zM30 13h3v1h-3zM40 13h2v1h-2zM45 13h2v1h-2zM49 13h2v1h-2zM53 13h2v1h-2zM58 13h2v1h-2zM63 13h2v1h-2zM67 13h2v1h-2zM71 13h2v1h-2zM76 13h2v1h-2zM80 13h2v1h-2zM87 13h2v1h-2zM92 13h2v1h-2zM96 13h2v1h-2zM101 13h2v1h-2zM106 13h2v1h-2zM4 14h1v1h-1zM14 14h5v1h-5zM30 14h2v1h-2zM39 14h2v1h-2zM45 14h2v1h-2zM48 14h2v1h-2zM54 14h2v1h-2zM58 14h2v1h-2zM62 14h2v1h-2zM68 14h2v1h-2zM71 14h2v1h-2zM80 14h2v1h-2zM87 14h2v1h-2zM92 14h2v1h-2zM101 14h2v1h-2zM106 14h2v1h-2zM3 15h1v1h-1zM12 15h9v1h-9zM29 15h3v1h-3zM39 15h2v1h-2zM48 15h8v1h-8zM58 15h2v1h-2zM62 15h8v1h-8zM72 15h3v1h-3zM80 15h2v1h-2zM87 15h2v1h-2zM92 15h2v1h-2zM98 15h5v1h-5zM106 15h2v1h-2zM2 16h1v1h-1zM8 16h17v1h-17zM29 16h2v1h-2zM39 16h2v1h-2zM48 16h2v1h-2zM58 16h2v1h-2zM62 16h2v1h-2zM74 16h3v1h-3zM80 16h2v1h-2zM87 16h2v1h-2zM92 16h2v1h-2zM97 16h2v1h-2zM101 16h2v1h-2zM106 16h2v1h-2zM1 17h2v1h-2zM12 17h9v1h-9zM28 17h2v1h-2zM39 17h2v1h-2zM48 17h2v1h-2zM58 17h2v1h-2zM62 17h2v1h-2zM76 17h2v1h-2zM80 17h2v1h-2zM87 17h2v1h-2zM92 17h2v1h-2zM96 17h2v1h-2zM101 17h2v1h-2zM106 17h2v1h-2zM1 18h2v1h-2zM14 18h5v1h-5zM27 18h2v1h-2zM39 18h2v1h-2zM48 18h2v1h-2zM58 18h2v1h-2zM62 18h2v1h-2zM76 18h2v1h-2zM80 18h2v1h-2zM87 18h2v1h-2zM92 18h2v1h-2zM96 18h2v1h-2zM101 18h2v1h-2zM106 18h2v1h-2zM0 19h3v1h-3zM14 19h5v1h-5zM25 19h3v1h-3zM40 19h2v1h-2zM46 19h1v1h-1zM49 19h2v1h-2zM55 19h1v1h-1zM58 19h2v1h-2zM63 19h2v1h-2zM69 19h1v1h-1zM71 19h2v1h-2zM76 19h2v1h-2zM80 19h2v1h-2zM84 19h1v1h-1zM87 19h2v1h-2zM91 19h3v1h-3zM96 19h2v1h-2zM100 19h3v1h-3zM106 19h2v1h-2zM110 19h2v1h-2zM0 20h3v1h-3zM15 20h3v1h-3zM24 20h3v1h-3zM41 20h5v1h-5zM50 20h5v1h-5zM57 20h4v1h-4zM64 20h5v1h-5zM71 20h6v1h-6zM81 20h3v1h-3zM88 20h3v1h-3zM92 20h3v1h-3zM97 20h3v1h-3zM101 20h3v1h-3zM105 20h4v1h-4zM110 20h2v1h-2zM0 21h3v1h-3zM15 21h3v1h-3zM22 21h4v1h-4zM1 22h4v1h-4zM15 22h3v1h-3zM19 22h5v1h-5zM2 23h5v1h-5zM18 23h4v1h-4zM3 24h16v1h-16zM5 25h12v1h-12zM16 27h1v1h-1zM16 28h1v1h-1zM16 29h1v1h-1zM16 30h1v1h-1z"/></svg></div>
 </section>
@@ -522,30 +538,39 @@ const __m0 = (() => {
 // ║  ROUND: the clock every part of the film reads                           ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// One night in Berkeley, six people, six letters, each to the next and the
-// last to the first. The frame is a split-flap display hinged at y 960: the
-// one writing below, right way up; the one they write to above, mirrored in
-// the seam. This file is the film's time: which world is where, what each
-// phone shows, when each flap lets go and lands, what the clock reads and
-// every sound the score has to hit. It is pure and node safe, so the page,
-// the studio, the score and the checks all read the same frame.
+// One night in Berkeley, letters on the wall, each to the next of the people
+// in it and the last to the first. The frame is a split-flap display hinged
+// at y 960: the one writing below, right way up; the one they write to
+// above, mirrored in the seam. This file is the film's time: which world is
+// where, what each phone shows, when each flap lets go and lands, what the
+// clock reads and every sound the score has to hit. It is pure and node
+// safe, so the page, the render, the score and the checks all read the same
+// frame.
 //
 // The grid is the score's. 150 beats a minute in three, 30 frames a second:
 // a beat is 12 frames, an eighth 6, a sixteenth 3, a bar 36, and every
 // musical event lands on a whole frame. A link is four bars, 144 frames.
-// Thirty two bars are 1152 frames, 38.4 seconds, and frame 1152 is frame 0.
 //
-//   bars  1 to  2   the 51B, 5:14 pm: a seat given
-//   bars  3 to  6   link 1, sol to wren
-//   bars  7 to 10   link 2, wren to hugo
-//   bars 11 to 14   link 3, hugo to pia
-//   bars 15 to 18   link 4, pia to omar
-//   bars 19 to 22   link 5, omar to yuna
-//   bars 23 to 27   link 6, yuna to the one who always stands; the hinge
-//                   catches for bar 27, the one broken rule
-//   bar  28         the contact sheet: all six worlds at once
-//   bar  29         the cascade: each world flips into its letter
-//   bars 30 to 32   the line, the lockup, and the loop flap onto bar 1
+// Two versions are written here, each a cast and a shape, and `CUT` picks
+// the one this module serves:
+//
+//   final   four people, 25 bars, 900 frames, 30 s: the film that is made
+//     bars  1 to  2   the 51B, 5:14 pm: a seat given
+//     bars  3 to  6   sol to wren
+//     bars  7 to 10   wren to pia
+//     bars 11 to 14   pia to yuna
+//     bars 15 to 19   yuna to the one who always stands; the hinge catches
+//                     for bar 19, the one broken rule
+//     bar  20         the contact sheet; bar 21 the cascade
+//     bars 22 to 25   the line, the lockup, and the loop flap onto bar 1
+//   long    six people, 32 bars, 1152 frames, 38.4 s: the script as first
+//           written (ROUND.md), with the reading room and the corner
+//
+// Frame FRAMES is frame 0. The delivered file starts at the loop flap's
+// release (`FILE_START`), so its first frame is the wall and its loop is the
+// film's own.
+
+const CUT = 'final'
 
 const FPS = 30
 const BPM = 150
@@ -553,20 +578,20 @@ const BEAT = 12
 const EIGHTH = 6
 const SIXTEENTH = 3
 const BAR = 36
-const BARS = 32
-const FRAMES = BARS * BAR // 1152
-const MS = (FRAMES * 1000) / FPS // 38400
 const W = 1080
 const H = 1920
 const SEAM = 960
 const CELL = 6
-const SPINE = 702
+const SPINE = 744
+// every world is drawn this far right of where it was laid out (its scene's
+// own spine is at 702), so the larger phone keeps clear of the writer; the
+// world programs carry the same number (round-worlds.js, SHIFT)
+const SHIFT = 42
 
 // the frame a bar, beat and eighth fall on (bars and beats count from 1)
 const at = (bar, beat = 1, eighth = 0) => (bar - 1) * BAR + (beat - 1) * BEAT + eighth * EIGHTH
 const msOf = (f) => (f * 1000) / FPS
 const frameOf = (ms) => Math.floor((ms * FPS) / 1000 + 1e-6)
-const wrap = (f) => ((f % FRAMES) + FRAMES) % FRAMES
 
 const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v)
 const span = (x, a, b) => clamp((x - a) / (b - a))
@@ -579,75 +604,93 @@ function hash(a, b = 0) {
   return ((h ^ (h >>> 13)) >>> 0) / 4294967296
 }
 
-// ── the six worlds ─────────────────────────────────────────────────────────
-// Each is drawn once and used twice: above, mirrored, as somebody who does not
-// know; then fallen and right way up, writing. `origin` is the frame its own
-// clock reads 0 (the moment it lands as the writer's world; the bus's is bar
-// 1), so a world's clock runs on unbroken from one appearance to the next.
-const WORLDS = [
-  { id: 'bus', name: 'the 51B', time: '5:14 pm', origin: 0, light: 'the passing street lights and the ceiling strip', spine: 'the grab pole sol holds' },
-  { id: 'cafe', name: 'the café', time: '9:14 pm', origin: at(7), light: 'one spot left on', spine: "the spot's hanging pipe" },
-  { id: 'library', name: 'the reading room', time: '11:14 pm', origin: at(11), light: 'two rows of green shaded lamps', spine: 'a column' },
-  { id: 'roof', name: 'the roof', time: '1:14 am', origin: at(15), light: 'the city below', spine: 'the beacon mast' },
-  { id: 'corner', name: 'the corner', time: '3:14 am', origin: at(19), light: 'one street light', spine: "the street light's pole" },
-  { id: 'bakery', name: 'the bakery', time: '7:14 am', origin: at(23), light: 'first light through the window', spine: 'the window mullion' },
-]
-
-// ── the six letters ────────────────────────────────────────────────────────
+// ── the people and their letters ───────────────────────────────────────────
 // `greet` is the line the product prints over a letter: `dear` and the name,
 // or the writer's own. `words` is what is typed, with the hand's moments
 // written into it: `|` a pause of an eighth, `<n` the composer's clear key
-// pressed n times, a character at a time.
-const LINKS = [
-  {
-    n: 1, writer: 'sol', pronoun: 'they', build: 'HIM', world: 0, to: 'wren', start: at(3), bars: 4,
-    greet: 'dear wren', words: 'you hum when you think. i hope nobody ever tells you.',
-    colour: 'amber', kind: 'lit', bat: 4, clock: '5:14 pm', stamp: '11/05/26', read: true,
-  },
-  {
-    n: 2, writer: 'wren', pronoun: 'she', build: 'HER', world: 1, to: 'hugo', start: at(7), bars: 4,
-    greet: 'dear hugo', words: "i laughed at your band. i'm in one now. || sorry.",
-    colour: 'acid', kind: 'brat', bat: 3, clock: '9:14 pm', stamp: '11/05/26',
-  },
-  {
-    n: 3, writer: 'hugo', pronoun: 'he', build: 'HIM', world: 2, to: 'pia', start: at(11), bars: 4,
-    greet: 'dear pia', words: 'you sang my grandad to sleep. i was awake.',
-    colour: 'green', kind: 'lit', bat: 2, clock: '11:14 pm', stamp: '11/05/26',
-  },
-  {
-    n: 4, writer: 'pia', pronoun: 'she', build: 'HER', world: 3, to: 'omar', start: at(15), bars: 4,
-    greet: 'dear omar', words: "i don't remember the fight. i miss || <6 | i remember everything else.",
-    colour: 'ice', kind: 'lit', bat: 1, clock: '1:14 am', stamp: '11/06/26',
-  },
-  {
-    n: 5, writer: 'omar', pronoun: 'he', build: 'HIM', world: 4, to: 'yuna', start: at(19), bars: 4,
-    greet: 'dear yuna', words: "||| i don't even like bread.",
-    colour: 'violet-yellow', kind: 'riso', bat: 0, clock: '3:14 am', stamp: '11/06/26',
-  },
-  {
-    n: 6, writer: 'yuna', pronoun: 'she', build: 'HER', world: 5, to: 'sol', start: at(23), bars: 5,
-    greet: 'to the one who always stands', greetFrom: 'dear ',
-    words: 'you give your seat to whoever looks most tired. last night it was me.',
-    colour: 'rose', kind: 'lit', bat: 4, clock: '7:14 am', stamp: '11/06/26', hesitates: true,
-  },
-]
+// pressed n times, a character at a time. `flip` is the note each sounds as
+// its world turns into its letter at the end.
+const SOL = { writer: 'sol', pronoun: 'they', build: 'HIM', world: 0, greet: 'dear wren', to: 'wren', words: 'you hum when you think. i hope nobody ever tells you.', colour: 'amber', kind: 'lit', bat: 4, clock: '5:14 pm', stamp: '11/05/26', read: true, flip: 'Bb4' }
+const YUNA = { writer: 'yuna', pronoun: 'she', build: 'HER', world: 5, to: 'sol', greet: 'to the one who always stands', greetFrom: 'dear ', words: 'you give your seat to whoever looks most tired. last night it was me.', colour: 'rose', kind: 'lit', bat: 4, clock: '7:14 am', stamp: '11/06/26', hesitates: true, flip: 'F4' }
+const CASTS = {
+  // a closed loop in one city: sol hears wren hum at the café; wren sat up
+  // with her grandad on pia's ward; pia buys bread at yuna's after every
+  // night shift; yuna is the one sol gives the seat to
+  final: [
+    SOL,
+    { writer: 'wren', pronoun: 'she', build: 'HER', world: 1, to: 'pia', greet: 'dear pia', words: 'you sang my grandad to sleep. | i was awake.', colour: 'acid', kind: 'brat', bat: 3, clock: '9:14 pm', stamp: '11/05/26', flip: 'G4' },
+    { writer: 'pia', pronoun: 'she', build: 'HER', world: 3, to: 'yuna', greet: 'dear yuna', words: "||| i don't even like bread.", colour: 'ice', kind: 'lit', bat: 1, clock: '1:14 am', stamp: '11/06/26', flip: 'C5' },
+    { ...YUNA, flip: 'F4' },
+  ],
+  long: [
+    SOL,
+    { writer: 'wren', pronoun: 'she', build: 'HER', world: 1, to: 'hugo', greet: 'dear hugo', words: "i laughed at your band. i'm in one now. || sorry.", colour: 'acid', kind: 'brat', bat: 3, clock: '9:14 pm', stamp: '11/05/26', flip: 'G4' },
+    { writer: 'hugo', pronoun: 'he', build: 'HIM', world: 2, to: 'pia', greet: 'dear pia', words: 'you sang my grandad to sleep. i was awake.', colour: 'green', kind: 'lit', bat: 2, clock: '11:14 pm', stamp: '11/05/26', flip: 'Eb2' },
+    { writer: 'pia', pronoun: 'she', build: 'HER', world: 3, to: 'omar', greet: 'dear omar', words: "i don't remember the fight. i miss || <6 | i remember everything else.", colour: 'ice', kind: 'lit', bat: 1, clock: '1:14 am', stamp: '11/06/26', flip: 'C3', plan: { rise: [2, 16], greet: 16, type: [18, 93] } },
+    { writer: 'omar', pronoun: 'he', build: 'HIM', world: 4, to: 'yuna', greet: 'dear yuna', words: "||| i don't even like bread.", colour: 'violet-yellow', kind: 'riso', bat: 0, clock: '3:14 am', stamp: '11/06/26', flip: 'D5' },
+    YUNA,
+  ],
+}
+// the shape: bars before the first link, a link's bars, the last link's
+// (with its catch), the whole film's, and where the end's words fall
+const SHAPES = {
+  final: { bars: 25, open: 2, link: 4, last: 5, line: [22], lockup: [22, 2, 1] },
+  long: { bars: 32, open: 2, link: 4, last: 5, line: [30], lockup: [31] },
+}
+const SHAPE = SHAPES[CUT]
+const BARS = SHAPE.bars
+const FRAMES = BARS * BAR
+const MS = (FRAMES * 1000) / FPS
+const wrap = (f) => ((f % FRAMES) + FRAMES) % FRAMES
+
+const LINKS = CASTS[CUT].map((c, i, all) => ({
+  n: i + 1, ...c, start: at(1 + SHAPE.open + i * SHAPE.link), bars: i === all.length - 1 ? SHAPE.last : SHAPE.link,
+}))
+const N = LINKS.length
+// the end: the contact sheet lands as the last link's pane does, the cascade
+// a bar later, then the line and the lockup
+const SHEET = LINKS[N - 1].start + LINKS[N - 1].bars * BAR
+const CASCADE = SHEET + BAR
+const LINE = at(...SHAPE.line)
+const LOCKUP = at(...SHAPE.lockup)
+// the delivered file's first frame: the loop flap's release
+const FILE_START = FRAMES - BEAT
 const MAX_BODY = 280
+
+// ── the worlds ─────────────────────────────────────────────────────────────
+// Each is drawn once and used twice: above, mirrored, as somebody who does
+// not know; then fallen and right way up, writing. `origin` is the frame its
+// own clock reads 0 (the moment it lands as the writer's world; the bus's is
+// bar 1), so a world's clock runs on unbroken from one appearance to the
+// next. A world nobody in this cut lives in keeps an origin of 0.
+const PLACES = [
+  { id: 'bus', name: 'the 51B', time: '5:14 pm', light: 'the passing street lights and the ceiling strip', spine: 'the grab pole sol holds' },
+  { id: 'cafe', name: 'the café', time: '9:14 pm', light: 'one spot left on', spine: "the spot's hanging pipe" },
+  { id: 'library', name: 'the reading room', time: '11:14 pm', light: 'two rows of green shaded lamps', spine: 'a column' },
+  { id: 'roof', name: 'the roof', time: '1:14 am', light: 'the city below', spine: 'the beacon mast' },
+  { id: 'corner', name: 'the corner', time: '3:14 am', light: 'one street light', spine: "the street light's pole" },
+  { id: 'bakery', name: 'the bakery', time: '7:14 am', light: 'first light through the window', spine: 'the window mullion' },
+]
+// which link a world's person writes in, or -1
+const linkOfWorld = (k) => LINKS.findIndex((L) => L.world === k)
+const WORLDS = PLACES.map((p, k) => {
+  const i = linkOfWorld(k)
+  return { ...p, origin: i > 0 ? LINKS[i].start : 0 }
+})
 
 // ── the plan of a link, in frames from its start ──
 // 0 the flap has landed; the phone rises and lights; the composer with its
 // greeting; the words; the tap on `send anonymously`; the colour runs out of
 // the phone; the one writing and the one above both look up; the colour
 // reaches the hinge and it lets go; the next link lands.
-// Link 1 follows the seat, so sol's phone is already rising in bar 2, and it
-// is the one that shows `being read` before the letter is up. Link 6 is five
-// bars: yuna's phone is propped on the flour bin and already on, she turns
-// `dear` into `to`, writes, and the hinge catches for the whole of bar 27.
+// The first link follows the seat, so sol's phone is already rising in bar
+// 2, and it is the one that shows `being read` before the letter is up. The
+// last is five bars: yuna's phone is propped on the flour bin and already
+// on, she turns `dear` into `to`, writes, and the hinge catches for a bar.
 const STD = { rise: [6, 24], greet: 24, type: [30, 90], send: 96, read: null, flood: 96, look: 108, release: 132, land: 144 }
-const PLAN = [
-  { rise: [-18, 0], greet: 0, type: [6, 66], send: 72, read: [72, 96], flood: 96, look: 108, release: 132, land: 144 },
-  STD, STD, { ...STD, rise: [2, 16], greet: 16, type: [18, 93] }, STD,
-  { rise: null, greet: 0, edit: [6, 24], type: [30, 102], send: 108, read: null, flood: 108, look: 120, catch: 144, release: 170, land: 180 },
-]
+const FIRST = { rise: [-18, 0], greet: 0, type: [6, 66], send: 72, read: [72, 96], flood: 96, look: 108, release: 132, land: 144 }
+const LAST = { rise: null, greet: 0, edit: [6, 24], type: [30, 102], send: 108, read: null, flood: 108, look: 120, catch: 144, release: 170, land: 180 }
+const PLAN = LINKS.map((L, i) => (i === 0 ? FIRST : i === N - 1 ? LAST : { ...STD, ...(L.plan || {}) }))
 const FLOOD = 36
 
 // ── typing ─────────────────────────────────────────────────────────────────
@@ -773,8 +816,8 @@ function angleOf(fl, t) {
   if (fl.caught != null && t < fl.r) return t < fl.c ? 0 : trembling(Math.floor(t), fl.c, fl.r)
   return flapAngle(t, fl.r, fl.l)
 }
-// the one broken rule: link 6's hinge catches when the colour reaches it and
-// trembles for the bar before it lets go
+// the one broken rule: the last link's hinge catches when the colour reaches
+// it and trembles for the bar before it lets go
 function trembling(f, a, b) {
   const k = span(f, a, b)
   const n = hash(f, 27) - 0.5
@@ -788,8 +831,8 @@ function trembling(f, a, b) {
 // between, and the meridiem drum turns as it passes twelve. A step is the
 // product's fold of 130 ms, fold of 130 ms and 40 ms still: 9 frames, a
 // dotted eighth, the last landing on the downbeat.
-const HOURS = [5, 9, 11, 1, 3, 7]
-const MERID = ['pm', 'pm', 'pm', 'am', 'am', 'am']
+const HOURS = LINKS.map((L) => +L.clock.split(':')[0])
+const MERID = LINKS.map((L) => L.clock.split(' ')[1])
 const STEP = 9
 const RIFFLES = LINKS.slice(1).map((L, i) => {
   const steps = []
@@ -803,10 +846,10 @@ const RIFFLES = LINKS.slice(1).map((L, i) => {
   return { land: L.start, steps, start: L.start - steps.length * STEP, from: { hour: HOURS[i], merid: MERID[i] } }
 })
 function clockAt(f) {
-  // hidden from the contact sheet until the loop flap brings the bus back
-  const back = FRAMES - BEAT
-  if (f >= at(28) && f < back) return { show: false }
-  if (f >= back) return { show: true, hour: 5, merid: 'pm', prev: null, fold: 0, rise: span(f, back, FRAMES) }
+  // hidden from the contact sheet on; when the loop flap lands the bus, its
+  // plates turn over from blank to the bus's time, all four at once
+  if (f >= SHEET) return { show: false }
+  if (f < STEP) return { show: true, hour: HOURS[0], merid: MERID[0], prev: { hour: '', merid: '' }, fresh: true, fold: f / STEP, minutes: '14' }
   let now = { hour: HOURS[0], merid: MERID[0] }
   let prev = null
   let fold = 0
@@ -820,7 +863,7 @@ function clockAt(f) {
     }
     break
   }
-  return { show: true, hour: now.hour, merid: now.merid, prev, fold, rise: 1, minutes: '14' }
+  return { show: true, hour: now.hour, merid: now.merid, prev, fold, minutes: '14' }
 }
 
 // ── the colour ─────────────────────────────────────────────────────────────
@@ -857,7 +900,7 @@ function phoneAt(i, f) {
   const last = body.text.slice(-1)
   const keyHit = last === ' ' ? 99 : 'qwertyuiopasdfghjklzxcvbnm'.indexOf(last)
   return {
-    mode, rise, lit, greet, greetSince, greetCut,
+    mode, rise, lit, greet, greetSince, greetCut, greetFull: L.greet,
     editing: !!(P.edit && x >= P.edit[0] && x < P.edit[1] + SIXTEENTH),
     text: mode === 'read' ? '' : body.text, since: body.since, freshChars: body.fresh, keyAt: body.since, keyHit,
     count: `${MAX_BODY - body.text.length}/1`, stamp: L.stamp, bat: L.bat,
@@ -879,8 +922,9 @@ function lookAt(f, f0) {
 // takes part in, as the one writing (its own link) and as the one above (the
 // link before), so it carries on unbroken through the flap that brings it down
 function lookOf(k, f) {
-  const own = k
-  const above = (k + 5) % 6
+  const own = linkOfWorld(k)
+  if (own < 0) return 0
+  const above = (own + N - 1) % N
   return Math.min(1, lookAt(f, LINKS[own].start + PLAN[own].look) + lookAt(f, LINKS[above].start + PLAN[above].look))
 }
 
@@ -895,16 +939,27 @@ function clockOf(k, f, before = false) {
 // place (row by row, nearest first, the left row then the right): from the
 // far end, the rows in turn, the last three nearest as hugo's link opens.
 const LAMPS_OFF = (() => {
+  const j = linkOfWorld(2)
+  if (j < 1) return new Array(12).fill(1e6)
   const order = [5, 11, 4, 10, 3, 9, 2, 8, 1, 7, 0, 6]
   const off = new Array(12)
-  order.forEach((idx, k) => { off[idx] = (k < 9 ? at(7, 2) + k * BEAT : at(11) + (k - 9) * BEAT) - WORLDS[2].origin })
+  order.forEach((idx, k) => { off[idx] = (k < 9 ? LINKS[j - 1].start + BEAT + k * BEAT : LINKS[j].start + (k - 9) * BEAT) - WORLDS[2].origin })
   return off
 })()
 
-// the six worlds of the contact sheet at frame f, each in its letter's colour
+// the worlds of the contact sheet at frame f, each in its letter's colour and
+// as it stood when its letter went up: running on from its link's last frame
 function sheetAt(f) {
-  return LINKS.map((L) => ({ world: L.world, id: WORLDS[L.world].id, clock: clockOf(L.world, f), palette: L.colour, flood: 1, look: lookOf(L.world, f) }))
+  return LINKS.map((L) => {
+    const g = L.start + L.bars * BAR - 1 + (f - SHEET)
+    return { world: L.world, id: WORLDS[L.world].id, clock: clockOf(L.world, g), palette: L.colour, flood: 1, look: lookOf(L.world, g) }
+  })
 }
+
+// the cascade: a flip on each eighth of its bar, in the order the letters
+// went up, each a frame or so early or late, as a board's modules are
+const JITTER = [0, 1, -1, 2, 0, 1]
+const flipAt = (i) => CASCADE + i * EIGHTH + JITTER[i % JITTER.length]
 
 // ── one frame of the film ──────────────────────────────────────────────────
 function frameAt(input) {
@@ -912,39 +967,41 @@ function frameAt(input) {
   const fr = { f, ms: msOf(f), bar: Math.floor(f / BAR) + 1, beat: Math.floor((f % BAR) / BEAT) + 1, clock: clockAt(f) }
   const world = (k, clock, extra = {}) => ({ world: k, id: WORLDS[k].id, clock, ...extra })
 
-  // bars 1 and 2: the bus, the café above; sol's phone already on its way up
+  // the open: the bus, the café above; sol's phone already on its way up
   if (f < LINKS[0].start) {
+    const a = LINKS[0].world
+    const b = LINKS[1].world
     fr.phase = 'open'
-    fr.bottom = world(0, clockOf(0, f), { palette: 'night', flood: 0, look: lookOf(0, f) })
-    fr.top = world(1, clockOf(1, f), { palette: 'night', look: lookOf(1, f) })
+    fr.bottom = world(a, clockOf(a, f), { palette: 'night', flood: 0, look: lookOf(a, f) })
+    fr.top = world(b, clockOf(b, f), { palette: 'night', look: lookOf(b, f) })
     if (f >= LINKS[0].start + PLAN[0].rise[0]) fr.phone = phoneAt(0, f)
     return fr
   }
   // the links
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < N; i++) {
     const L = LINKS[i]
     const P = PLAN[i]
     const len = L.bars * BAR
     if (f < L.start || f >= L.start + len) continue
     const x = f - L.start
-    const next = (L.world + 1) % 6
+    const next = LINKS[(i + 1) % N].world
     const flood = floodAt(i, f)
     fr.phase = 'link'
     fr.link = L.n
     fr.bottom = world(L.world, clockOf(L.world, f), { palette: L.colour, flood, look: lookOf(L.world, f) })
     fr.phone = phoneAt(i, f)
-    fr.top = world(next, clockOf(next, f, next === 0), { palette: 'night', look: lookOf(next, f) })
-    if (i < 5) {
+    fr.top = world(next, clockOf(next, f, i === N - 1), { palette: 'night', look: lookOf(next, f) })
+    if (i < N - 1) {
       // the pane: released when the colour reaches the hinge, landing on the
       // next link's downbeat, carrying the next world upright on its back
       const r = L.start + P.release
       const l = L.start + P.land
       if (f >= r) {
-        const after = (next + 1) % 6
+        const after = LINKS[(i + 2) % N].world
         fr.flap = {
           kind: 'pane', theta: flapAngle(f, r, l), lands: l, r, l,
           front: fr.top, back: fr.top,
-          revealed: world(after, clockOf(after, f, after === 0), { palette: 'night', look: 0 }),
+          revealed: world(after, clockOf(after, f, (i + 2) % N === 0), { palette: 'night', look: lookOf(after, f) }),
           under: fr.bottom,
         }
       }
@@ -972,23 +1029,25 @@ function frameAt(input) {
   fr.phase = 'end'
   fr.sheet = sheetAt(f)
   fr.cascade = LINKS.map((L, i) => {
-    const l = at(29) + i * EIGHTH
+    const l = flipAt(i)
     const r = l - 5
     return { writer: L.writer, r, l, theta: f < r ? 0 : f < l ? gravity((f - r) / (l - r)) : rebound(f - l), done: f >= l }
   })
-  fr.line = f >= at(30)
-  fr.lockup = f >= at(31)
-  const s0 = LINKS[5].start + PLAN[5].land
-  if (f < s0 + 9) fr.settle = { theta: rebound(f - s0), under: world(5, clockOf(5, f), { palette: 'rose', flood: 1 }) }
+  fr.line = f >= LINE
+  fr.lockup = f >= LOCKUP
+  const last = LINKS[N - 1]
+  if (f < SHEET + 9) fr.settle = { theta: rebound(f - SHEET), under: world(last.world, clockOf(last.world, f), { palette: last.colour, flood: 1 }) }
   // the loop: the end card's top half falls onto the bus at the moment
   // before bar 1, with the café revealed above it
   const r = FRAMES - BEAT
   if (f >= r) {
+    const a = LINKS[0].world
+    const b = LINKS[1].world
     fr.flap = {
       kind: 'card', theta: flapAngle(f, r, FRAMES), lands: FRAMES, r, l: FRAMES,
       front: { card: 'end', half: 'top' },
-      back: world(0, clockOf(0, f, true), { palette: 'night', flood: 0, look: 0 }),
-      revealed: world(1, clockOf(1, f, true), { palette: 'night', look: 0 }),
+      back: world(a, clockOf(a, f, true), { palette: 'night', flood: 0, look: lookOf(a, f) }),
+      revealed: world(b, clockOf(b, f, true), { palette: 'night', look: lookOf(b, f) }),
       under: { card: 'end', half: 'bottom' },
     }
   }
@@ -1002,23 +1061,24 @@ function events() {
   const out = []
   const ev = (f, kind, extra = {}) => out.push({ f: wrap(f), ms: msOf(wrap(f)), kind, ...extra })
   // the landings, each one dry click; the hinge catching; the loop
-  for (let i = 0; i < 5; i++) ev(LINKS[i].start + PLAN[i].land, 'clack', { link: i + 2 })
-  ev(LINKS[5].start + PLAN[5].catch, 'catch')
-  ev(LINKS[5].start + PLAN[5].land, 'clack', { to: 'sheet' })
+  for (let i = 0; i < N - 1; i++) ev(LINKS[i].start + PLAN[i].land, 'clack', { link: i + 2 })
+  ev(LINKS[N - 1].start + PLAN[N - 1].catch, 'catch')
+  ev(LINKS[N - 1].start + PLAN[N - 1].release, 'release')
+  ev(SHEET, 'clack', { to: 'sheet' })
   ev(FRAMES, 'clack', { to: 'loop' })
   // the cascade, each flip sounding its writer's note of the last chord
-  const notes = ['Bb4', 'G4', 'Eb2', 'C3', 'D5', 'F4']
-  LINKS.forEach((L, i) => ev(at(29) + i * EIGHTH, 'flip', { writer: L.writer, note: notes[i] }))
-  ev(at(30), 'line')
-  ev(at(31), 'lockup')
+  LINKS.forEach((L, i) => ev(flipAt(i), 'flip', { writer: L.writer, note: L.flip }))
+  ev(LINE, 'line')
+  ev(LOCKUP, 'lockup')
   // the clock's folds
   for (const r of RIFFLES) r.steps.forEach((st, k) => ev(r.start + (k + 1) * STEP, 'fold', { hour: st.hour }))
+  ev(STEP, 'fold', { hour: HOURS[0], from: 'blank' })
   // the sends, the reading and the floods
   LINKS.forEach((L, i) => {
     const P = PLAN[i]
     ev(L.start + P.send, 'send', { writer: L.writer })
     if (P.read) ev(L.start + P.read[0], 'read')
-    ev(L.start + P.flood, 'flood', { writer: L.writer, colour: L.colour, frames: FLOOD })
+    ev(L.start + P.flood, 'flood', { writer: L.writer, world: L.world, colour: L.colour, frames: FLOOD })
     ev(L.start + P.look, 'look', { writer: L.writer })
   })
   // the words, each a soft key
@@ -1026,34 +1086,34 @@ function events() {
     for (const [g] of t.body) ev(g, 'key', { writer: LINKS[i].writer })
     if (t.greet) for (const [g] of t.greet.slice(1)) ev(g, 'key', { writer: LINKS[i].writer })
   })
-  // the reading room: nine lamps go out on the beat while hugo is above, the
-  // last three as his own link opens, so the phone is the last light
-  for (let k = 0; k < 9; k++) ev(at(7, 2) + k * BEAT, 'lamp', { lamp: k })
-  for (let k = 0; k < 3; k++) ev(at(11) + k * BEAT, 'lamp', { lamp: 9 + k })
+  // the reading room, where it is in the cut: its lamps going out
+  const lib = linkOfWorld(2)
+  if (lib > 0) LAMPS_OFF.forEach((w, k) => ev(WORLDS[2].origin + w, 'lamp', { lamp: k }))
   // the café: the case's two latches while wren is above
-  ev(at(5, 2), 'latch')
-  ev(at(5, 2, 1), 'latch')
-  // the corner: the crossing's locator once a second while it is on screen,
-  // the walk signal as omar's letter goes up
-  for (let g = at(15); g < at(23); g += 30) ev(g, 'tick')
-  ev(LINKS[4].start + PLAN[4].send, 'walk')
+  const cafe = linkOfWorld(1)
+  if (cafe > 0) { ev(LINKS[cafe].start - 60, 'latch'); ev(LINKS[cafe].start - 54, 'latch') }
+  // the corner, where it is in the cut: the crossing's locator once a second
+  // while it is on screen, the walk signal as its letter goes up
+  const cor = linkOfWorld(4)
+  if (cor > 0) {
+    for (let g = LINKS[cor - 1].start; g < LINKS[cor].start + LINKS[cor].bars * BAR; g += 30) ev(g, 'tick')
+    ev(LINKS[cor].start + PLAN[cor].send, 'walk')
+  }
   // the bus: a pole past the window on every downbeat, a street light on
   // every other, while the bus is on screen (Star Guitar's rule)
   for (let b = 1; b <= BARS; b++) {
     const g = at(b)
-    if (g < at(7) || (g >= at(23) && g < at(28))) ev(g, b % 2 ? 'streetlight' : 'pole')
+    if (g < LINKS[1].start || (g >= LINKS[N - 1].start && g < SHEET)) ev(g, b % 2 ? 'streetlight' : 'pole')
   }
   ev(at(1, 3), 'chime')
   return out.sort((a, b) => a.f - b.f || (a.kind < b.kind ? -1 : 1))
 }
 
-// ── the cutdowns, as sequences of the film's own frames ────────────────────
-// 15 s: the seat (with the bakery above instead of the café), a flap straight
-// to link 6, then the end. 6 s: link 5 and the lockup's bar.
+// ── the cuts, as sequences of the film's own frames ────────────────────────
 const CUTS = {
   full: [[0, FRAMES]],
-  15: [[0, at(3)], [at(23), FRAMES]],
-  6: [[at(19), at(23)], [at(31), at(32)]],
+  // the delivered file: from the loop flap's release round to the frame before it
+  file: [[FILE_START, FRAMES], [0, FILE_START]],
 }
 function cutFrame(cut, i) {
   let k = i
@@ -1065,7 +1125,7 @@ const cutLength = (cut) => CUTS[cut].reduce((s, [a, b]) => s + b - a, 0)
 // the schedules, for the table and the page
 const typed = TYPED
 
-return { FPS, BPM, BEAT, EIGHTH, SIXTEENTH, BAR, BARS, FRAMES, MS, W, H, SEAM, CELL, SPINE, at, msOf, frameOf, wrap, hash, WORLDS, LINKS, MAX_BODY, PLAN, FLOOD, typing, flapAngle, angleOf, STEP, RIFFLES, clockAt, floodAt, phoneAt, lookAt, lookOf, LAMPS_OFF, sheetAt, frameAt, events, CUTS, cutFrame, cutLength, typed }
+return { CUT, FPS, BPM, BEAT, EIGHTH, SIXTEENTH, BAR, W, H, SEAM, CELL, SPINE, SHIFT, at, msOf, frameOf, hash, BARS, FRAMES, MS, wrap, LINKS, N, SHEET, CASCADE, LINE, LOCKUP, FILE_START, MAX_BODY, linkOfWorld, WORLDS, PLAN, FLOOD, typing, flapAngle, angleOf, STEP, RIFFLES, clockAt, floodAt, phoneAt, lookAt, lookOf, LAMPS_OFF, sheetAt, flipAt, frameAt, events, CUTS, cutFrame, cutLength, typed }
 })()
 // design/campaign/next/page/round-worlds.js
 const __m1 = (() => {
@@ -1085,6 +1145,7 @@ precision highp sampler2D;
 
 uniform vec2 uRes;        // the panel's cells
 uniform vec2 uView;       // the half it shows, in px
+uniform vec4 uCrop;       // the part of it this panel shows (x, y, w, h), px
 uniform float uW;         // the world's clock, frames
 uniform float uFlood;     // where the colour stands, 0 to 1
 uniform float uLetter;    // the letter's palette
@@ -1101,6 +1162,9 @@ out vec4 oCol;
 
 const vec4 LV = vec4(0.007, 0.155, 0.337, 0.863);
 const float PI = 3.14159265;
+// every world is drawn 42 px to the right of where it was laid out, so the
+// spine stands at x 744 and the larger phone keeps clear of the writer
+const float SHIFT = 42.0;
 
 uint pcg(uint v) { uint s = v * 747796405u + 2891336453u; uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u; return (w >> 22u) ^ w; }
 float hh(int a, int b) { return float(pcg(pcg(uint(a) + 0x9e3779b9u) ^ uint(b) * 2654435761u)) / 4294967295.0; }
@@ -1161,11 +1225,14 @@ float figRim(vec2 p, vec2 toLight, float w) {
   vec2 n = -g / max(length(g), 1e-4);
   return m * out_ * smoothstep(0.3, 0.95, dot(n, d));
 }
+// the phone's screen in the world's own coordinates
+vec4 phoneRect() { return uPhone - vec4(SHIFT, 0.0, SHIFT, 0.0); }
 // the phone as a light: a tight glow round its screen, 0 to 1
 float phoneLight(vec2 p) {
   if (uPhoneLit <= 0.0) return 0.0;
-  vec2 c = (uPhone.xy + uPhone.zw) * 0.5;
-  vec2 h = (uPhone.zw - uPhone.xy) * 0.5;
+  vec4 ph = phoneRect();
+  vec2 c = (ph.xy + ph.zw) * 0.5;
+  vec2 h = (ph.zw - ph.xy) * 0.5;
   float d = max(sbox(p, c, h), 0.0);
   return uPhoneLit / (1.0 + (d * d) / (46.0 * 46.0));
 }
@@ -1177,7 +1244,8 @@ float person(vec2 p, float L, vec2 key, float keyI, float reach, float dark) {
   vec2 toKey = reach > 0.0 ? key - p : key;
   float fall = reach > 0.0 ? 1.0 / (1.0 + dot(toKey, toKey) / (reach * reach)) : 1.0;
   float rim = figRim(p, toKey, 8.0) * keyI * fall;
-  vec2 pc = (uPhone.xy + uPhone.zw) * 0.5;
+  vec4 ph = phoneRect();
+  vec2 pc = (ph.xy + ph.zw) * 0.5;
   rim += figRim(p, pc - p, 7.0) * phoneLight(p) * 0.2;
   return mix(L, dark + rim, m);
 }
@@ -1193,9 +1261,9 @@ int toneIn(float L, float a, float b, int k, float th) {
 }
 void main() {
   ivec2 cell = ivec2(gl_FragCoord.xy);
-  vec2 cpx = uView / uRes;
+  vec2 cpx = uCrop.zw / uRes;
   float L = 0.0;
-  for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) L += scene((vec2(cell) + (vec2(i, j) + 0.5) * 0.5) * cpx);
+  for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) L += scene(uCrop.xy + (vec2(cell) + (vec2(i, j) + 0.5) * 0.5) * cpx - vec2(SHIFT, 0.0));
   L *= 0.25;
   float th = texelFetch(uBlue, (cell + ivec2(uNoiseOff)) & 127, 0).r;
   int tone = 3;
@@ -1383,7 +1451,7 @@ float lampOn(int k, vec2 at) {
   float s = 1.0;
   if (uW >= uOff[k]) s = 0.25 * exp(-(uW - uOff[k]) / 5.0);
   // the colour reaching it lights it again
-  if (uFlood > 0.0 && texelFetch(uArr, ivec2(at / 12.0), 0).r <= uFlood) s = 1.0;
+  if (uFlood > 0.0 && texelFetch(uArr, ivec2((at + vec2(SHIFT, 0.0)) / 12.0), 0).r <= uFlood) s = 1.0;
   return s;
 }
 float scene(vec2 p) {
@@ -1661,43 +1729,45 @@ const PLATEAU = [0.28, 0.32, 0.3, 0.26, 0.3, 0.28]
 
 // ── the composite ──────────────────────────────────────────────────────────
 // Full resolution. The top half mirrored, the bottom right way up; the pane
-// solved by ray and plane, shaded, blurred only while it moves, its shadow on
-// what is beneath; the riso's two drums a hair apart; the end card with its
-// cascade; the seam's ripple; exact palette bytes wherever nothing moves.
+// solved by ray and plane, crisp at each frame's angle (no blur: a blur
+// makes colours no palette has, and the eye reads a stepped fall as a fall);
+// a face turned from the light, and the shadow it throws on what is beneath,
+// go one tone down their own palette; the riso's two drums a hair apart; the
+// end card's modules with their cascade; the seam's ripple. Every pixel of a
+// world, still or falling, is one of its palette's four.
 const COMPOSITE = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 precision highp sampler2D;
 uniform vec2 uCanvas;         // device px
 uniform sampler2D uTex[4];    // world panels: 0 writer, 1 above, 2 revealed, 3 under
-uniform sampler2D uSheet[6];  // the contact sheet's six small worlds
-uniform sampler2D uCards;     // the six letters, the line and the lockup, one atlas
+uniform sampler2D uSheet[6];  // the contact sheet's small worlds
+uniform sampler2D uCards;     // the letters, the line and the lockup, one atlas
 uniform vec3 uPal[28];        // seven palettes of four, sRGB
 uniform int uTop;             // source above the seam (0..3 a world, 4 the end card)
 uniform int uBot;             // source below
 uniform int uFront;           // the pane's front
 uniform int uBack;            // the pane's back
-uniform float uTh0;           // the pane's angle at the shutter's open
-uniform float uTh1;           // and at its close
+uniform float uTh;            // the pane's angle
 uniform float uPane;          // 1 when there is a pane
 uniform float uRipple;        // the seam's ripple, 0 to 1
 uniform float uT;             // the film's frame
 uniform float uEnd;           // 1 in the end phase
+uniform int uSlots;           // how many modules the end card has
+uniform vec4 uSlot[6];        // each module's place on the frame (x, y, w, h)
 uniform float uFlip[6];       // each module's angle in the cascade
 uniform float uLine;          // the line shown
 uniform float uLock;          // the lockup shown
-uniform vec4 uCardRect[8];    // where each card sits in the atlas (x, y, w, h), 0..5 letters, 6 line, 7 lockup
+uniform float uLineY;         // where the line stands
+uniform float uLockY;         // and the lockup
+uniform vec4 uCardRect[12];   // where each card sits in the atlas (x, y, w, h), 0..5 letters, 6 line, 7 lockup, 8.. the sheet's phones
+uniform vec4 uSheetPhone[6];  // each small world's phone, in its module's px (x, y, w, h)
 uniform sampler2D uPhoneTex;  // the writer's phone, drawn at twice its size
 uniform vec4 uPhoneRect;      // where its display is on the frame (x0, y0, x1, y1)
 uniform float uPhoneOn;
 out vec4 oCol;
 
 const float P = 4200.0;
-const vec2 SLOT0 = vec2(138.0, 318.0);
-const vec2 SLOT = vec2(384.0, 342.0);
-
-vec3 toLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
-vec3 toSrgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
 
 // a world panel's cell at (x, r): r is the distance from the seam
 vec4 cellOf(int s, vec2 xr) {
@@ -1708,29 +1778,37 @@ vec4 cellOf(int s, vec2 xr) {
   return texelFetch(uTex[3], c, 0);
 }
 vec3 palette(float pal, float tone) { return uPal[int(pal + 0.5) * 4 + int(tone + 0.5)]; }
-// a world's colour at (x, r), the riso's second drum laid 2 px out of register
-vec3 worldAt(int s, vec2 xr) {
-  vec4 c = cellOf(s, xr);
-  float pal = floor(c.g * 8.0 + 0.5);
-  float tone = floor(c.r * 3.0 + 0.5);
+// a cell's palette and tone as colour, dim tones down; the riso's tones
+// are its two drums, the second laid 2 px out of register
+vec3 inks(float pal, float tone, float t2, float p2) {
   if (pal == 5.0) {
-    vec4 c2 = cellOf(s, xr - vec2(2.0, 2.0));
-    float t2 = floor(c2.r * 3.0 + 0.5);
-    float p2 = floor(c2.g * 8.0 + 0.5);
     bool v = tone <= 1.0;
     // (where the colour has not reached the second drum's cell yet, this cell's own)
     bool y = p2 == 5.0 ? (t2 == 0.0 || t2 == 2.0) : (tone == 0.0 || tone == 2.0);
-    vec3 paper = uPal[23];
     if (v && y) return uPal[20];
     if (v) return uPal[21];
     if (y) return uPal[22];
-    return paper;
+    return uPal[23];
   }
   return palette(pal, tone);
 }
-// the six small worlds of the contact sheet (each 64 by 57 cells of 6 px)
-vec3 sheetAt(int k, vec2 q) {
-  ivec2 c = ivec2(clamp(floor(q / 6.0), vec2(0.0), vec2(63.0, 56.0)));
+vec3 worldAt(int s, vec2 xr, float dim) {
+  vec4 c = cellOf(s, xr);
+  float pal = floor(c.g * 8.0 + 0.5);
+  float tone = max(0.0, floor(c.r * 3.0 + 0.5) - dim);
+  float t2 = tone;
+  float p2 = pal;
+  if (pal == 5.0) {
+    vec4 c2 = cellOf(s, xr - vec2(2.0, 2.0));
+    t2 = max(0.0, floor(c2.r * 3.0 + 0.5) - dim);
+    p2 = floor(c2.g * 8.0 + 0.5);
+  }
+  return inks(pal, tone, t2, p2);
+}
+// the contact sheet's small worlds (each its module's size in 6 px cells)
+vec3 sheetWorld(int k, vec2 q) {
+  ivec2 sz = textureSize(uSheet[0], 0);
+  ivec2 c = clamp(ivec2(floor(q / 6.0)), ivec2(0), sz - 1);
   vec4 v;
   if (k == 0) v = texelFetch(uSheet[0], c, 0);
   else if (k == 1) v = texelFetch(uSheet[1], c, 0);
@@ -1740,52 +1818,58 @@ vec3 sheetAt(int k, vec2 q) {
   else v = texelFetch(uSheet[5], c, 0);
   float pal = floor(v.g * 8.0 + 0.5);
   float tone = floor(v.r * 3.0 + 0.5);
-  if (pal == 5.0) {
-    bool vi = tone <= 1.0; bool ye = tone == 0.0 || tone == 2.0;
-    return vi && ye ? uPal[20] : vi ? uPal[21] : ye ? uPal[22] : uPal[23];
-  }
-  return palette(pal, tone);
+  return inks(pal, tone, tone, pal);
+}
+// a small world with its writer's phone held up in it, its letter on it as it
+// stood when it went up, drawn at the module's own scale
+vec3 sheetAt(int k, vec2 q) {
+  vec3 w = sheetWorld(k, q);
+  vec4 pr = uSheetPhone[k];
+  vec2 d = q - pr.xy;
+  if (pr.z <= 0.0 || d.x < 0.0 || d.y < 0.0 || d.x >= pr.z || d.y >= pr.w) return w;
+  vec4 r = uCardRect[8 + k];
+  vec4 c = texture(uCards, (r.xy + d) / vec2(textureSize(uCards, 0)));
+  return mix(w, c.rgb, c.a);
 }
 vec3 cardAt(int k, vec2 q, vec2 size) {
   vec4 r = uCardRect[k];
   vec2 uv = (r.xy + q / size * r.zw) / vec2(textureSize(uCards, 0));
   return texture(uCards, uv).rgb;
 }
-// the end card: the room's black, the six modules, the line, the lockup
+// the end card: the room's black, the modules, the line, the lockup
 vec3 endCard(vec2 px) {
   vec3 col = vec3(0.039);
   for (int k = 0; k < 6; k++) {
-    vec2 o = SLOT0 + vec2(float(k % 2) * 420.0, float(k / 2) * 372.0);
-    vec2 q = px - o;
-    if (q.x < 0.0 || q.y < 0.0 || q.x >= SLOT.x || q.y >= SLOT.y) continue;
+    if (k >= uSlots) break;
+    vec4 sl = uSlot[k];
+    vec2 q = px - sl.xy;
+    if (q.x < 0.0 || q.y < 0.0 || q.x >= sl.z || q.y >= sl.w) continue;
     float th = uFlip[k];
-    float mid = SLOT.y * 0.5;
+    float mid = sl.w * 0.5;
     // the module's halves: the world before, the letter after
     bool top = q.y < mid;
     float c = cos(th);
-    vec3 world = sheetAt(k, q);
-    vec3 letter = cardAt(k, q, SLOT);
-    if (th <= 0.0) return world;
-    if (th >= 3.1415) return letter;
+    if (th <= 0.0) return sheetAt(k, q);
+    if (th >= 3.1415) return cardAt(k, q, sl.zw);
     if (top) {
       // the falling flap's front over the top half while it stands, the letter's top behind
       float reach = mid - mid * max(c, 0.0);
       if (c > 0.0 && q.y >= reach) return sheetAt(k, vec2(q.x, mid - (mid - q.y) / max(c, 1e-3)));
-      return letter;
+      return cardAt(k, q, sl.zw);
     }
     // the back of the flap, the letter's lower half, once it is past level
     float reach = mid - mid * min(c, 0.0);
-    if (c < 0.0 && q.y <= reach) return cardAt(k, vec2(q.x, mid + (q.y - mid) / max(-c, 1e-3)), SLOT);
-    return world;
+    if (c < 0.0 && q.y <= reach) return cardAt(k, vec2(q.x, mid + (q.y - mid) / max(-c, 1e-3)), sl.zw);
+    return sheetAt(k, q);
   }
-  if (uLine > 0.5) { vec4 r = uCardRect[6]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, 252.0); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(6, q, r.zw); }
-  if (uLock > 0.5) { vec4 r = uCardRect[7]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, 1440.0); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(7, q, r.zw); }
+  if (uLine > 0.5) { vec4 r = uCardRect[6]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, uLineY); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(6, q, r.zw); }
+  if (uLock > 0.5) { vec4 r = uCardRect[7]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, uLockY); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(7, q, r.zw); }
   return col;
 }
 // a source at a point: worlds are read by (x, distance from the seam), the end card by the frame
-vec3 source(int s, vec2 px, float r) {
-  if (s == 4) return endCard(px);
-  return worldAt(s, vec2(px.x, r));
+vec3 source(int s, vec2 px, float r, float dim) {
+  if (s == 4) return endCard(px) * (dim > 0.0 ? 0.78 : 1.0);
+  return worldAt(s, vec2(px.x, r), dim);
 }
 // the pane at angle th, seen through frame point px: the hit's x and distance
 // from the hinge, which face, and whether it hits
@@ -1820,45 +1904,36 @@ float shadowOn(vec2 px, float th) {
   if (r < 0.0 || r > 960.0 || H.x < 0.0 || H.x > 1080.0) return 1.0;
   return mix(0.55, 0.9, clamp(t / 900.0, 0.0, 1.0));
 }
-vec3 frameAt(vec2 px, float th, bool exact) {
+vec3 frameAt(vec2 px, float th) {
+  bool moving = uPane > 0.5 && th > 0.01 && th < 3.13;
   if (uPane > 0.5) {
     vec4 h = paneHit(px, th);
     if (h.w > 0.5) {
       int s = h.z > 0.5 ? uFront : uBack;
-      vec3 c;
-      if (s == 4) c = endCard(vec2(h.x, h.z > 0.5 ? 960.0 - h.y : 960.0 + h.y));
-      else c = worldAt(s, vec2(h.x, h.y));
-      if (exact) return c;
-      return toSrgb(toLin(c) * shade(th, h.z));
+      // a face turned from the light goes a tone down its own palette
+      float dim = moving && shade(th, h.z) < 0.8 ? 1.0 : 0.0;
+      if (s == 4) return endCard(vec2(h.x, h.z > 0.5 ? 960.0 - h.y : 960.0 + h.y)) * (dim > 0.0 ? 0.78 : 1.0);
+      return worldAt(s, vec2(h.x, h.y), dim);
     }
   }
-  float r = abs(px.y - 960.0) ;
+  float r = abs(px.y - 960.0);
   // the rows by the seam ripple, in whole cells
   vec2 q = px;
   if (uRipple > 0.0 && r < 18.0) q.x += 6.0 * floor(0.5 + 1.6 * uRipple * sin(px.y * 0.21 + uT * 0.9) * (1.0 - r / 18.0));
-  vec3 c = px.y < 960.0 ? source(uTop, q, 960.0 - px.y) : source(uBot, q, px.y - 960.0);
+  // and where the pane's shadow falls, a tone down too
+  float dim = moving && shadowOn(px, th) < 0.8 ? 1.0 : 0.0;
+  vec3 c = px.y < 960.0 ? source(uTop, q, 960.0 - px.y, dim) : source(uBot, q, px.y - 960.0, dim);
   // the writer's phone: the one crisp lit thing, over its world, under the pane
   if (uPhoneOn > 0.5 && px.y >= 960.0 && px.x >= uPhoneRect.x && px.x < uPhoneRect.z && px.y >= uPhoneRect.y && px.y < uPhoneRect.w) {
     vec4 ph = texture(uPhoneTex, (px - uPhoneRect.xy) / (uPhoneRect.zw - uPhoneRect.xy));
-    c = mix(c, ph.rgb, ph.a);
+    c = mix(c, ph.rgb * (dim > 0.0 ? 0.78 : 1.0), ph.a);
   }
-  if (uPane > 0.5 && !exact && th > 0.01 && th < 3.13) c = toSrgb(toLin(c) * shadowOn(px, th));
   return c;
 }
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uCanvas.y - gl_FragCoord.y) * (1080.0 / uCanvas.x);
   if (uEnd > 0.5 && uPane < 0.5) { oCol = vec4(endCard(px), 1.0); return; }
-  float dth = abs(uTh1 - uTh0);
-  bool still = uPane < 0.5 || (dth < 0.002 && (uTh0 < 0.001 || uTh0 > 3.141));
-  if (still) { oCol = vec4(frameAt(px, uTh0, true), 1.0); return; }
-  int K = int(clamp(ceil(dth * 960.0 / 12.0), 1.0, 16.0));
-  vec3 acc = vec3(0.0);
-  for (int i = 0; i < 16; i++) {
-    if (i >= K) break;
-    float th = mix(uTh0, uTh1, (float(i) + 0.5) / float(K));
-    acc += toLin(frameAt(px, th, false));
-  }
-  oCol = vec4(toSrgb(acc / float(K)), 1.0);
+  oCol = vec4(frameAt(px, uTh), 1.0);
 }
 `
 
@@ -1916,17 +1991,17 @@ const K = COLS / 94
 // with a speed (1 is the room's own pace).
 const PATHS = [
   // the 51B: the aisle, the window band, the street beyond
-  { from: [50, 70], fast: [[0, 10, 180, 70, 2.6], [70, 70, 130, 160, 1.8]] },
+  { from: [57, 70], fast: [[0, 10, 180, 70, 2.6], [77, 70, 137, 160, 1.8]] },
   // the café: the beam first, then the stage
-  { from: [50, 70], fast: [[104, 4, 132, 40, 3.2], [96, 40, 170, 96, 2.8], [0, 96, 180, 120, 1.6]] },
+  { from: [57, 70], fast: [[111, 4, 139, 40, 3.2], [103, 40, 177, 96, 2.8], [0, 96, 180, 120, 1.6]] },
   // the reading room: along the two rows of lamps
-  { from: [50, 74], fast: [[0, 58, 180, 70, 3.0], [0, 84, 180, 98, 3.0], [20, 20, 160, 58, 1.4]] },
+  { from: [57, 74], fast: [[0, 58, 180, 70, 3.0], [0, 84, 180, 98, 3.0], [27, 20, 167, 58, 1.4]] },
   // the roof: over the parapet and out across the city
-  { from: [50, 70], fast: [[0, 60, 180, 112, 3.4], [0, 30, 180, 60, 2.0]] },
+  { from: [57, 70], fast: [[0, 60, 180, 112, 3.4], [0, 30, 180, 60, 2.0]] },
   // the corner: through the cone and the puddle
-  { from: [50, 74], fast: [[112, 8, 160, 120, 3.0], [70, 120, 180, 160, 2.2]] },
+  { from: [57, 74], fast: [[119, 8, 167, 120, 3.0], [77, 120, 180, 160, 2.2]] },
   // the bakery: across the bench, out of the window
-  { from: [50, 72], fast: [[0, 92, 180, 112, 2.4], [96, 6, 176, 80, 3.2]] },
+  { from: [57, 72], fast: [[0, 92, 180, 112, 2.4], [103, 6, 180, 80, 3.2]] },
 ]
 
 function speedAt(world, bx, by) {
@@ -2079,7 +2154,15 @@ function compile(gl, fs) {
 
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
 
-function createRenderer(canvas, { blue, palettes }) {
+// the part of a half a contact sheet module shows: as much as the module's
+// shape holds, at square cells, about the middle but never past the phone's
+// near edge, so the phone held up in it is whole (x, y, w, h in px)
+function sheetCrop(sw, sh) {
+  const ar = sw / sh
+  return ar < 1080 / 960 ? [Math.min((1080 - 960 * ar) / 2, 48), 0, 960 * ar, 960] : [0, (960 - 1080 / ar) / 2, 1080, 1080 / ar]
+}
+
+function createRenderer(canvas, { blue, palettes, layout = { slots: [[0, 0, 444, 474]], lineY: 0, lockY: 0 } }) {
   const gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true, premultipliedAlpha: false, alpha: false })
   if (!gl) throw new Error('webgl2')
   const quad = gl.createBuffer()
@@ -2113,7 +2196,8 @@ function createRenderer(canvas, { blue, palettes }) {
   // a mask per panel slot (four halves, six small worlds), filled from canvases
   const tFig = []
   for (let k = 0; k < 10; k++) tFig[k] = tex(4, 4, { filter: gl.LINEAR_MIPMAP_LINEAR })
-  // the panels: four halves of 180 by 160 cells, six small worlds of 64 by 57
+  // the panels: four halves of 180 by 160 cells, and the contact sheet's
+  // small worlds, each its module's size in cells
   const panel = (w, h) => {
     const t = tex(w, h)
     const fb = gl.createFramebuffer()
@@ -2122,9 +2206,15 @@ function createRenderer(canvas, { blue, palettes }) {
     return { t, fb, w, h }
   }
   const halves = [0, 1, 2, 3].map(() => panel(180, 160))
-  const sheets = [0, 1, 2, 3, 4, 5].map(() => panel(64, 57))
+  const [, , sw, sh] = layout.slots[0]
+  const sheets = [0, 1, 2, 3, 4, 5].map(() => panel(sw / 6, sh / 6))
+  const crop = sheetCrop(sw, sh)
+  sheets.forEach((s) => { s.crop = crop })
+  const slots = new Float32Array(24)
+  layout.slots.forEach((r, i) => slots.set(r, i * 4))
   let tCards = tex(4, 4, { filter: gl.LINEAR })
-  let cardRects = new Float32Array(32)
+  let cardRects = new Float32Array(48)
+  let sheetPhones = new Float32Array(24)
   const tPhone = tex(4, 4, { filter: gl.LINEAR })
   // the palettes, seven of four
   const pal = new Float32Array(28 * 3)
@@ -2142,12 +2232,14 @@ function createRenderer(canvas, { blue, palettes }) {
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, cv)
   }
-  function setCards(cv, rects) {
+  function setCards(cv, rects, phones) {
     gl.deleteTexture(tCards)
     tCards = tex(cv.width, cv.height, { filter: gl.LINEAR })
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, cv)
-    cardRects = new Float32Array(32)
+    cardRects = new Float32Array(48)
     rects.forEach((r, i) => cardRects.set(r, i * 4))
+    sheetPhones = new Float32Array(24)
+    if (phones) sheetPhones.set(phones.slice(0, 24))
   }
 
   // one world into one panel
@@ -2162,6 +2254,8 @@ function createRenderer(canvas, { blue, palettes }) {
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, tArr[w.world]); gl.uniform1i(u.uArr, 2)
     gl.uniform2f(u.uRes, target.w, target.h)
     gl.uniform2f(u.uView, 1080, 960)
+    const cr = target.crop || [0, 0, 1080, 960]
+    gl.uniform4f(u.uCrop, cr[0], cr[1], cr[2], cr[3])
     gl.uniform1f(u.uW, w.clock)
     gl.uniform1f(u.uFlood, w.flood || 0)
     gl.uniform1f(u.uLetter, palIndex(w.palette))
@@ -2192,16 +2286,22 @@ function createRenderer(canvas, { blue, palettes }) {
     gl.uniform1i(u.uBot, c.bot)
     gl.uniform1i(u.uFront, c.front ?? 1)
     gl.uniform1i(u.uBack, c.back ?? 1)
-    gl.uniform1f(u.uTh0, c.th0 || 0)
-    gl.uniform1f(u.uTh1, c.th1 ?? c.th0 ?? 0)
+    gl.uniform1f(u.uTh, c.th || 0)
     gl.uniform1f(u.uPane, c.pane ? 1 : 0)
     gl.uniform1f(u.uRipple, c.ripple || 0)
     gl.uniform1f(u.uT, c.f || 0)
     gl.uniform1f(u.uEnd, c.end ? 1 : 0)
-    gl.uniform1fv(u.uFlip, c.flips || [0, 0, 0, 0, 0, 0])
+    const flips = new Float32Array(6)
+    flips.set((c.flips || []).slice(0, 6))
+    gl.uniform1fv(u.uFlip, flips)
+    gl.uniform1i(u.uSlots, layout.slots.length)
+    gl.uniform4fv(u.uSlot, slots)
+    gl.uniform1f(u.uLineY, layout.lineY)
+    gl.uniform1f(u.uLockY, layout.lockY)
     gl.uniform1f(u.uLine, c.line ? 1 : 0)
     gl.uniform1f(u.uLock, c.lockup ? 1 : 0)
     gl.uniform4fv(u.uCardRect, cardRects)
+    gl.uniform4fv(u.uSheetPhone, sheetPhones)
     gl.activeTexture(gl.TEXTURE11); gl.bindTexture(gl.TEXTURE_2D, tPhone); gl.uniform1i(u.uPhoneTex, 11)
     const pr = c.phone || [0, 0, 0, 0]
     gl.uniform4f(u.uPhoneRect, pr[0], pr[1], pr[2], pr[3])
@@ -2220,7 +2320,7 @@ function createRenderer(canvas, { blue, palettes }) {
   return { gl, halves, sheets, drawWorld, composite, setMask, setCards, setPhone, readPanel, worldProg }
 }
 
-return { PALS, palIndex, createRenderer }
+return { PALS, palIndex, sheetCrop, createRenderer }
 })()
 // design/campaign/next/page/round-product.js
 const __m4 = (() => {
@@ -3544,7 +3644,7 @@ const __m8 = (() => {
 // person is somebody above, doing what they do; from zero they are writing.
 
 const { HIM, HER, withHair, solve, solid, camera, hull, at, V, breath } = __m7
-const { WORLDS, LINKS, PLAN } = __m0
+const { WORLDS, LINKS, PLAN, linkOfWorld, SHIFT } = __m0
 const D = Math.PI / 180
 const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v)
 const span = (x, a, b) => clamp((x - a) / (b - a))
@@ -3668,15 +3768,16 @@ function figure(B, F, extra, cam) {
 }
 
 // ── the phone's place in each writer's frame, in px of the half ────────────
-// (the screen's rectangle, x0 y0 x1 y1; the page lays the product's letter
-// screen on it). Held up at the left; yuna's is propped on the flour bin.
+// (the screen's rectangle on the frame, x0 y0 x1 y1; the page lays the
+// product's letter screen on it). Held up at the left, 400 px wide so its
+// words set at up to about 58 px; yuna's is propped on the flour bin.
 const PHONE = [
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [84, 170, 424, 860],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [76, 150, 476, 926],
 ]
 
 // ── each world's camera ────────────────────────────────────────────────────
@@ -3713,21 +3814,25 @@ const R = (p, pole = [0.6, -0.3, 0.7], curl = 0) => ({ ik: p, pole, curl })
 const GRIP = [1, 0.05, 0.25]
 // the phone in the hand: how far it has come up, from the writer's own link
 function raised(k, w) {
-  const x = w + WORLDS[k].origin - LINKS[k].start
-  const P = PLAN[k]
+  const i = linkOfWorld(k)
+  if (i < 0) return 0
+  const x = w + WORLDS[k].origin - LINKS[i].start
+  const P = PLAN[i]
   if (x > P.land + 24) return 0
   return P.rise ? sm(span(x, P.rise[0], P.rise[1])) : x >= -6 ? 1 : 0
 }
 // the wrist under the phone's foot that holds it, and the one that types
+// (the phone is placed on the frame; the people in their world's own
+// coordinates, which are drawn SHIFT px to the right)
 function holdWrist(k, cam, dz = -40) {
   const p = PHONE[k]
-  return scr(cam, p[2] / 2 - 46, p[3] / 2 - 40, dz)
+  return scr(cam, (p[2] - SHIFT) / 2 - 46, p[3] / 2 - 40, dz)
 }
 function typeWrist(k, cam, w, dz = -38) {
   const p = PHONE[k]
   // a small press for each word, on the sixteenth grid
   const tap = 0.5 + 0.5 * Math.cos((w % 6) * (Math.PI / 3))
-  return scr(cam, p[2] / 2 - 18, p[3] / 2 - 34 - 3 * tap, dz)
+  return scr(cam, (p[2] - SHIFT) / 2 - 18, p[3] / 2 - 34 - 3 * tap, dz)
 }
 const g2 = (w) => w - (((w % 2) + 2) % 2)
 
@@ -3900,7 +4005,8 @@ function bakery(w0, look) {
   const push = (1 - atBench) * (0.5 + 0.5 * Math.sin(t / 520))
   const neck = V.lerp(scr(cam, 176, 330, -40), cam.at, atBench)
   const root = rootUnder(YUNA, neck)
-  const writing = sm(span(w, -4, 6)) * (1 - sm(span(w, PLAN[5].send + 6, PLAN[5].send + 14)))
+  const send = PLAN[Math.max(0, linkOfWorld(5))].send
+  const writing = sm(span(w, -4, 6)) * (1 - sm(span(w, send + 6, send + 14)))
   const F = solve(YUNA, {
     root, yaw: lerp(150, 184, atBench), pitch: 0,
     s1: [6 + 6 * push + lerp(0, 10, atBench) + b, 0, 0], s2: [lerp(4, 10, atBench), 0, 0],
@@ -3964,6 +4070,7 @@ function glyph(g, name, x, y, h, color) {
   rows.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === 'X') g.fillRect(x + i * s, y + j * s, s + 0.4, s + 0.4) }))
   return rows[0].length * s
 }
+const glyphW = (name, h) => (GLYPHS[name] ? (GLYPHS[name][0].length * h) / GLYPHS[name].length : 0)
 function roundRect(g, x, y, w, h, r) {
   g.beginPath()
   g.moveTo(x + r, y)
@@ -4030,8 +4137,26 @@ function drawScreen(g, x, y, sw, sh, o) {
   pg.addColorStop(1, s.lo)
   g.fillStyle = pg
   g.fillRect(0, 0, sw, sh)
+  // the greeting: one the row would set much smaller than the words takes a
+  // second row at its own size, broken where its two halves are most even,
+  // from the whole greeting so it holds still while it is edited
+  const ex = flat ? 3.2 * u : 2.2 * u
+  const said = o.greet || ''
+  const whole = o.greetFull || said
+  const pw = glyphW('pen', 8.6 * u) + 1.4 * u
+  const room = sw - 2 * ex - pw
+  g.font = `400 ${11 * u}px ${FACE}`
+  let tail = ''
+  if (g.measureText(whole).width > room) {
+    let best = Infinity
+    for (let i = whole.indexOf(' '); i > 0; i = whole.indexOf(' ', i + 1)) {
+      const w = Math.max(g.measureText(whole.slice(0, i)).width, g.measureText(whole.slice(i + 1)).width)
+      if (w < best) { best = w; tail = whole.slice(i + 1) }
+    }
+  }
+  const row3 = tail ? 9.6 * u : 0
   // the two bands of glass
-  const topH = (Q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u
+  const topH = (Q.topPad + 10.4 * 2 + 0.6 + 1.8 + (flat ? 1 : 0)) * u + row3
   const botH = 14 * u
   const tg = g.createLinearGradient(0, 0, 0, topH)
   tg.addColorStop(0, s.top)
@@ -4047,7 +4172,6 @@ function drawScreen(g, x, y, sw, sh, o) {
     fn()
     g.restore()
   }
-  const ex = flat ? 3.2 * u : 2.2 * u
   // row one: the aerial, the count or the day, the battery
   const r1 = (Q.topPad + (flat ? 1 : 0)) * u
   const rowH = 10.4 * u
@@ -4063,17 +4187,18 @@ function drawScreen(g, x, y, sw, sh, o) {
     if (o.counter) { g.textAlign = 'right'; g.fillText(o.counter, sw - ex - bw - 2.6 * u, mid1 + 0.4 * u) }
     if (o.stamp) { g.textAlign = 'center'; g.fillText(o.stamp, (ex + aw + sw - ex - bw) / 2, mid1 + 0.4 * u) }
     // row two: the pen and the greeting, set smaller before it is cut
-    const pw = glyph(g, 'pen', ex, mid2 - 4.3 * u, 8.6 * u, lit) + 1.4 * u
-    const room = sw - 2 * ex - pw
+    glyph(g, 'pen', ex, mid2 - 4.3 * u, 8.6 * u, lit)
+    const rows = tail && said.endsWith(tail) ? [said.slice(0, said.length - tail.length).trimEnd(), tail] : [said]
     g.font = `400 ${11 * u}px ${FACE}`
-    const said = o.greet || ''
-    const nw = g.measureText(said).width
+    const nw = Math.max(...rows.map((r) => g.measureText(r).width))
     const nsz = nw > room ? Math.max(5.6, (11 * room * 0.97) / nw) : 11
     g.font = `400 ${nsz * u}px ${FACE}`
     g.textAlign = 'left'
-    g.fillText(fit(g, said, room), ex + pw, mid2 + 0.4 * u)
+    rows.forEach((r, k) => g.fillText(fit(g, r, room), ex + pw, mid2 + 0.4 * u + k * row3))
     if (o.greetCaret) {
-      const gx = ex + pw + g.measureText(said).width + 0.6 * u
+      // where the greeting is being edited, or its end
+      const cut = Math.min(o.greetCut ?? said.length, rows[0].length)
+      const gx = ex + pw + g.measureText(rows[0].slice(0, cut)).width + 0.6 * u
       g.fillRect(gx, mid2 - 0.36 * nsz * u, 0.214 * nsz * u, 0.86 * nsz * u)
     }
   })
@@ -4206,7 +4331,7 @@ function drawPhone(g, W, H, p, f) {
   drawScreen(g, cx, cy, cw, ch, {
     colour: p.colour, bat: p.bat,
     counter: up ? '' : p.count, stamp: up ? p.stamp : '',
-    greet: p.greet, greetCaret: p.editing && caretOn,
+    greet: p.greet, greetFull: p.greetFull, greetCut: p.greetCut, greetCaret: p.editing && caretOn,
     text: p.mode === 'read' ? '' : p.text, full: p.full,
     fresh: [p.freshChars || 0, Math.min(1, (age + 1) / 3)],
     caret: !p.editing && caretOn,
@@ -4299,7 +4424,7 @@ const __m10 = (() => {
 // on the hinge is drawn over it. `frame(f)` draws any frame, in any order.
 
 const T = __m0
-const { createRenderer } = __m3
+const { createRenderer, sheetCrop } = __m3
 const { PALETTES } = __m4
 const { blueBytes } = __m5
 const { drawCast, MASK_W, MASK_H, PHONE } = __m8
@@ -4310,8 +4435,20 @@ const sm = (k) => { const x = clamp(k); return x * x * (3 - 2 * x) }
 // the phone, drawn at twice its size on the frame
 const PS = 2
 
+// The end card's modules, two across in whole cells, inside the platforms'
+// safe zones (the top 269 px, 65 px a side, the bottom 340 of an organic
+// post): four for the final, six for the long version
+function layoutFor(n) {
+  if (n <= 4) {
+    const slots = [[78, 336, 444, 474], [558, 336, 444, 474], [78, 846, 444, 474], [558, 846, 444, 474]]
+    return { slots: slots.slice(0, n), lineY: 264, lockY: 1356 }
+  }
+  return { slots: Array.from({ length: n }, (_, k) => [138 + (k % 2) * 420, 318 + Math.floor(k / 2) * 372, 384, 342]), lineY: 252, lockY: 1440 }
+}
+
 function createRound(canvas, overlay) {
-  const R = createRenderer(canvas, { blue: blueBytes(), palettes: PALETTES })
+  const layout = layoutFor(T.N)
+  const R = createRenderer(canvas, { blue: blueBytes(), palettes: PALETTES, layout })
   const og = overlay.getContext('2d')
 
   // ── the people, a mask a panel, made again only when they have moved ──
@@ -4332,11 +4469,15 @@ function createRound(canvas, overlay) {
   // ── a world's own facts at a moment: the walk signal, the sun, the lamps ──
   function factsOf(w) {
     const k = w.world
-    const L = T.LINKS[k]
-    const P = T.PLAN[k]
-    const x = w.clock + T.WORLDS[k].origin - L.start
-    const o = { sent: x >= P.send ? x - P.send : -1 }
-    if (k === 5) o.sun = sm(span(x, P.flood - 4, P.flood + 44))
+    const i = T.linkOfWorld(k)
+    const o = { sent: -1 }
+    if (i >= 0) {
+      const L = T.LINKS[i]
+      const P = T.PLAN[i]
+      const x = w.clock + T.WORLDS[k].origin - L.start
+      o.sent = x >= P.send ? x - P.send : -1
+      if (k === 5) o.sun = sm(span(x, P.flood - 4, P.flood + 44))
+    }
     if (k === 2) o.lampsOff = T.LAMPS_OFF
     return o
   }
@@ -4345,7 +4486,8 @@ function createRound(canvas, overlay) {
     R.drawWorld(panel, slot, { world: w.world, clock: w.clock, flood: w.flood || 0, palette: w.palette || 'night', look: w.look || 0, ...factsOf(w), ...extra })
   }
   function sheets(f) {
-    T.sheetAt(f).forEach((w, k) => world(R.sheets[k], 4 + k, w))
+    // each lit by its writer's phone, held up as it was when the letter went up
+    T.sheetAt(f).forEach((w, k) => world(R.sheets[k], 4 + k, w, { phoneRect: PHONE[w.world], phoneLit: 1 }))
   }
 
   // ── the phone ──
@@ -4377,40 +4519,68 @@ function createRound(canvas, overlay) {
     return { half: [r[0], r[1] + off, r[2], r[3] + off], frame: [r[0], 960 + r[1] + off, r[2], 960 + r[3] + off] }
   }
 
-  // ── the wall's six letters, the line and the lockup, one atlas ──
+  // ── the wall's letters, the line and the lockup, one atlas ──
   function cards() {
+    const [, , sw, sh] = layout.slots[0]
+    // the contact sheet's scale: module px a frame px
+    const crop = sheetCrop(sw, sh)
+    const s = sw / crop[2]
+    const phW = Math.round(400 * s)
+    const phH = Math.round(776 * s)
     const cv = document.createElement('canvas')
-    cv.width = 1152
-    cv.height = 684 + 72 + 150
+    cv.width = sw * 3
+    cv.height = sh * 2 + 80 + 200 + 8 + phH
     const g = cv.getContext('2d')
     const rects = []
     T.LINKS.forEach((L, i) => {
-      const x = (i % 3) * 384
-      const y = Math.floor(i / 3) * 342
-      drawLetterCard(g, x, y, 384, 342, { colour: L.colour, bat: L.bat, stamp: L.stamp, greet: L.greet, text: T.typed[i].full })
-      rects.push([x, y, 384, 342])
+      const x = (i % 3) * sw
+      const y = Math.floor(i / 3) * sh
+      drawLetterCard(g, x, y, sw, sh, { colour: L.colour, bat: L.bat, stamp: L.stamp, greet: L.greet, text: T.typed[i].full })
+      rects.push([x, y, sw, sh])
     })
+    // (the line and the lockup are always the atlas's seventh and eighth)
+    while (rects.length < 6) rects.push([0, 0, 0, 0])
+    const y0 = sh * 2
+    // the line, at the size the platforms' captions are read at
     const line = 'every letter on the wall is to somebody.'
-    g.font = `400 48px ${FACE}`
+    g.font = `400 60px ${FACE}`
     const lw = Math.ceil(g.measureText(line).width) + 8
     g.fillStyle = '#0A0A0A'
-    g.fillRect(0, 684, lw, 64)
+    g.fillRect(0, y0, lw, 72)
     g.fillStyle = '#F4F1EA'
     g.textBaseline = 'middle'
     g.textAlign = 'left'
-    g.fillText(line, 4, 684 + 34)
-    rects.push([0, 684, lw, 64])
+    g.fillText(line, 4, y0 + 38)
+    rects.push([0, y0, lw, 72])
+    // the lockup at three pixels a cell, the address under it
     const [lkw, lkh] = LOCKUP_SIZE
-    const cw = 360
+    const cw = 400
+    const ly = y0 + 80
     g.fillStyle = '#0A0A0A'
-    g.fillRect(0, 756, cw, 150)
-    drawLockup(g, (cw - lkw * 2) / 2, 756, 2)
+    g.fillRect(0, ly, cw, 200)
+    drawLockup(g, (cw - lkw * 3) / 2, ly, 3)
     g.fillStyle = '#F4F1EA'
     g.font = `400 44px ${FACE}`
     g.textAlign = 'center'
-    g.fillText('celestual.us', cw / 2, 756 + 90 + 22)
-    rects.push([0, 756, cw, 150])
-    R.setCards(cv, rects)
+    g.fillText('celestual.us', cw / 2, ly + lkh * 3 + 54)
+    rects.push([0, ly, cw, 200])
+    // the writers' phones for the contact sheet, each as it was held up on
+    // its link's last frame, and where each sits in its module
+    const py = ly + 208
+    const phones = []
+    T.LINKS.forEach((L, i) => {
+      const r = PHONE[L.world]
+      const pc = document.createElement('canvas')
+      pc.width = phW
+      pc.height = phH
+      const end = L.start + L.bars * T.BAR - 1
+      drawPhone(pc.getContext('2d'), phW, phH, T.phoneAt(i, end), end)
+      g.drawImage(pc, i * (phW + 4), py)
+      rects[8 + i] = [i * (phW + 4), py, phW, phH]
+      phones.push(Math.round((r[0] - crop[0]) * s), Math.round((r[1] - crop[1]) * s), phW, phH)
+    })
+    for (let k = 0; k < 12; k++) if (!rects[k]) rects[k] = [0, 0, 0, 0]
+    R.setCards(cv, rects, phones)
   }
   cards()
 
@@ -4461,7 +4631,6 @@ function createRound(canvas, overlay) {
     og.clearRect(0, 0, overlay.width, overlay.height)
     if (!c.show) return
     og.save()
-    og.globalAlpha = c.rise
     let x = 72
     plate(x, 84, String(c.hour), c.prev ? String(c.prev.hour) : null, c.fold)
     x += 84 + 6
@@ -4469,9 +4638,11 @@ function createRound(canvas, overlay) {
     og.fillRect(x + 4, 944, 8, 8)
     og.fillRect(x + 4, 968, 8, 8)
     x += 20
-    plate(x, 58, '1', null, 0)
+    // the minutes turn only when the plates arrive from blank
+    const was = c.fresh ? '' : null
+    plate(x, 58, '1', was, c.fold)
     x += 64
-    plate(x, 58, '4', null, 0)
+    plate(x, 58, '4', was, c.fold)
     x += 58 + 10
     plate(x, 84, c.merid, c.prev && c.prev.merid !== c.merid ? c.prev.merid : null, c.fold)
     og.restore()
@@ -4482,7 +4653,8 @@ function createRound(canvas, overlay) {
     const f = T.wrap(Math.round(input))
     const fr = T.frameAt(f)
     const c = { f, flips: [0, 0, 0, 0, 0, 0], top: 1, bot: 0 }
-    const shutter = (fl) => { c.th0 = T.angleOf(fl, f - 0.25); c.th1 = T.angleOf(fl, f + 0.25) }
+    // the pane at this frame's angle, crisp: no shutter, no blur
+    const shutter = (fl) => { c.th = T.angleOf(fl, f) }
     if (fr.phase === 'end') {
       sheets(f)
       c.end = true
@@ -4491,7 +4663,7 @@ function createRound(canvas, overlay) {
       c.lockup = fr.lockup
       if (fr.settle) {
         world(R.halves[3], 3, fr.settle.under)
-        Object.assign(c, { pane: true, top: 4, bot: 3, front: 4, back: 4, th0: fr.settle.theta, th1: fr.settle.theta })
+        Object.assign(c, { pane: true, top: 4, bot: 3, front: 4, back: 4, th: fr.settle.theta })
       } else if (fr.flap) {
         world(R.halves[0], 0, fr.flap.back)
         world(R.halves[1], 1, fr.flap.revealed)
@@ -4517,7 +4689,7 @@ function createRound(canvas, overlay) {
         shutter(fr.flap)
       } else if (fr.settle) {
         world(R.halves[3], 3, fr.settle.under)
-        Object.assign(c, { pane: true, top: 1, bot: 3, front: 0, back: 0, th0: fr.settle.theta, th1: fr.settle.theta })
+        Object.assign(c, { pane: true, top: 1, bot: 3, front: 0, back: 0, th: fr.settle.theta })
         c.phone = null
       }
       // the seam's pulse, as a flap lands and as a greeting comes up
@@ -4536,7 +4708,7 @@ function createRound(canvas, overlay) {
   return { frame, renderer: R }
 }
 
-return { createRound }
+return { layoutFor, createRound }
 })()
 return { createRound: __m10.createRound, T: __m0 }
 })()
@@ -4888,6 +5060,7 @@ void main() {
     }
     const T = ROUND.T
     const N = T.FRAMES
+    scrub.max = String(N - 1)
     const label = (fr) => {
       const c = T.clockAt(fr.f)
       const when = c.show ? `${c.hour}:14 ${c.merid}` : 'the wall'
@@ -4907,7 +5080,7 @@ void main() {
     still.width = 540
     still.height = 960
     const sg = still.getContext('2d')
-    ;[130, 616, 645].forEach((n, i) => {
+    ;[130, 210, 700].forEach((n, i) => {
       show(n)
       sg.drawImage(cv, 0, 0, 540, 960)
       sg.drawImage(ov, 0, 0, 540, 960)

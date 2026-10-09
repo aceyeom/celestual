@@ -95,6 +95,27 @@ try {
     }
     console.log('film', fs.length, 'frames in', Math.round(performance.now() - t0), 'ms')
   }
+  if (q.has('serve')) {
+    // the render's page (render.mjs): `window.__render(f)` draws the film's
+    // frame f whole, at 1080 by 1920, and hands it back as a PNG
+    await document.fonts.load(`40px "Jersey 10"`)
+    const { createRound } = await import('./round-page.js')
+    const cv = document.createElement('canvas')
+    cv.width = 1080; cv.height = 1920
+    const ov = document.createElement('canvas')
+    ov.width = 1080; ov.height = 1920
+    const round = createRound(cv, ov)
+    const out = document.createElement('canvas')
+    out.width = 1080; out.height = 1920
+    const og = out.getContext('2d')
+    window.__render = (f) => {
+      round.frame(f)
+      round.renderer.gl.finish()
+      og.drawImage(cv, 0, 0)
+      og.drawImage(ov, 0, 0)
+      return out.toDataURL('image/png')
+    }
+  }
   if (q.has('check')) {
     // the animatic's own checks: a world's tones never change with its
     // colour; a landing is the world under it, exactly; every still pixel of
@@ -116,7 +137,8 @@ try {
       const base = { world: k, clock: w, look: 0 }
       R.drawWorld(R.halves[0], 0, { ...base, flood: 0, palette: 'night', lampsOff: T.LAMPS_OFF })
       const a = R.readPanel(R.halves[0])
-      R.drawWorld(R.halves[0], 0, { ...base, flood: 1, palette: T.LINKS[k].colour, lampsOff: k === 2 ? new Array(12).fill(1e6) : T.LAMPS_OFF })
+      const own = T.LINKS[T.linkOfWorld(k)]
+      R.drawWorld(R.halves[0], 0, { ...base, flood: 1, palette: own ? own.colour : 'amber', lampsOff: k === 2 ? new Array(12).fill(1e6) : T.LAMPS_OFF })
       const b = R.readPanel(R.halves[0])
       // (the reading room's lamps are relit by the colour, so it is compared with them lit)
       if (k === 2) { R.drawWorld(R.halves[0], 0, { ...base, flood: 0, palette: 'night', lampsOff: new Array(12).fill(1e6) }); a.set(R.readPanel(R.halves[0])) }
@@ -126,7 +148,7 @@ try {
     // 2. a landing is exactly the world under it: the composite at each landing
     //    against the same panels laid with no pane
     let landDiff = 0
-    for (const f of [216, 360, 504, 648, 792]) {
+    for (const f of T.LINKS.slice(1).map((L) => L.start)) {
       round.frame(f)
       const a = read()
       R.composite({ f, top: 1, bot: 0, flips: [0, 0, 0, 0, 0, 0] })
@@ -139,8 +161,9 @@ try {
       }
     }
     report.pixelsOffAtLandings = landDiff
-    // 3. still frames: every pixel of the worlds one of its palette's four
-    //    (the phone and the clock aside)
+    // 3. frames, still and with a pane falling: every pixel of the worlds one
+    //    of its palette's four (the phone and the clock aside)
+    const { PHONE } = await import('./round-cast.js')
     const allowed = new Set()
     for (const p of Object.values(PALETTES)) for (const h of p) allowed.add(h.toUpperCase())
     // and the room's black round the end card's six
@@ -148,14 +171,18 @@ try {
     const hex = (r, g, b) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()
     let off = 0
     let total = 0
-    for (const f of [20, 130, 300, 420, 470, 560, 700, 770, 850, 1000]) {
+    // (a link's still middle, its pane mid fall, in each link of the cut)
+    const fs = [20]
+    T.LINKS.forEach((L, i) => fs.push(L.start + 60, L.start + T.PLAN[i].release + 6))
+    for (const f of fs) {
       const fr = round.frame(f)
-      if (fr.flap || fr.settle) continue
+      if (fr.settle || (fr.flap && fr.flap.kind !== 'pane')) continue
       const px = read()
+      const ph = fr.phone ? PHONE[fr.bottom.world] : null
       for (let y = 0; y < 1920; y += 3) for (let x = 0; x < 1080; x += 3) {
         const fy = 1919 - y
         // the phone's place and the clock's
-        if (fy > 1010 && fy < 1710 && x > 66 && x < 418) continue
+        if (ph && fy > 960 + ph[1] - 4 && fy < 960 + ph[3] + 4 && x > ph[0] - 4 && x < ph[2] + 4) continue
         if (fy > 900 && fy < 1020 && x < 420) continue
         const i = (y * 1080 + x) * 4
         total++

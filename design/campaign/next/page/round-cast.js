@@ -10,7 +10,7 @@
 // person is somebody above, doing what they do; from zero they are writing.
 
 import { HIM, HER, withHair, solve, solid, camera, hull, at, V, breath } from '../../../../app/src/wall/scenes/rig.js'
-import { WORLDS, LINKS, PLAN } from './round-time.js'
+import { WORLDS, LINKS, PLAN, linkOfWorld, SHIFT } from './round-time.js'
 
 const D = Math.PI / 180
 const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v)
@@ -135,15 +135,16 @@ function figure(B, F, extra, cam) {
 }
 
 // ── the phone's place in each writer's frame, in px of the half ────────────
-// (the screen's rectangle, x0 y0 x1 y1; the page lays the product's letter
-// screen on it). Held up at the left; yuna's is propped on the flour bin.
+// (the screen's rectangle on the frame, x0 y0 x1 y1; the page lays the
+// product's letter screen on it). Held up at the left, 400 px wide so its
+// words set at up to about 58 px; yuna's is propped on the flour bin.
 export const PHONE = [
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [72, 56, 412, 740],
-  [84, 170, 424, 860],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [64, 30, 464, 806],
+  [76, 150, 476, 926],
 ]
 
 // ── each world's camera ────────────────────────────────────────────────────
@@ -180,21 +181,25 @@ const R = (p, pole = [0.6, -0.3, 0.7], curl = 0) => ({ ik: p, pole, curl })
 const GRIP = [1, 0.05, 0.25]
 // the phone in the hand: how far it has come up, from the writer's own link
 function raised(k, w) {
-  const x = w + WORLDS[k].origin - LINKS[k].start
-  const P = PLAN[k]
+  const i = linkOfWorld(k)
+  if (i < 0) return 0
+  const x = w + WORLDS[k].origin - LINKS[i].start
+  const P = PLAN[i]
   if (x > P.land + 24) return 0
   return P.rise ? sm(span(x, P.rise[0], P.rise[1])) : x >= -6 ? 1 : 0
 }
 // the wrist under the phone's foot that holds it, and the one that types
+// (the phone is placed on the frame; the people in their world's own
+// coordinates, which are drawn SHIFT px to the right)
 function holdWrist(k, cam, dz = -40) {
   const p = PHONE[k]
-  return scr(cam, p[2] / 2 - 46, p[3] / 2 - 40, dz)
+  return scr(cam, (p[2] - SHIFT) / 2 - 46, p[3] / 2 - 40, dz)
 }
 function typeWrist(k, cam, w, dz = -38) {
   const p = PHONE[k]
   // a small press for each word, on the sixteenth grid
   const tap = 0.5 + 0.5 * Math.cos((w % 6) * (Math.PI / 3))
-  return scr(cam, p[2] / 2 - 18, p[3] / 2 - 34 - 3 * tap, dz)
+  return scr(cam, (p[2] - SHIFT) / 2 - 18, p[3] / 2 - 34 - 3 * tap, dz)
 }
 const g2 = (w) => w - (((w % 2) + 2) % 2)
 
@@ -367,7 +372,8 @@ function bakery(w0, look) {
   const push = (1 - atBench) * (0.5 + 0.5 * Math.sin(t / 520))
   const neck = V.lerp(scr(cam, 176, 330, -40), cam.at, atBench)
   const root = rootUnder(YUNA, neck)
-  const writing = sm(span(w, -4, 6)) * (1 - sm(span(w, PLAN[5].send + 6, PLAN[5].send + 14)))
+  const send = PLAN[Math.max(0, linkOfWorld(5))].send
+  const writing = sm(span(w, -4, 6)) * (1 - sm(span(w, send + 6, send + 14)))
   const F = solve(YUNA, {
     root, yaw: lerp(150, 184, atBench), pitch: 0,
     s1: [6 + 6 * push + lerp(0, 10, atBench) + b, 0, 0], s2: [lerp(4, 10, atBench), 0, 0],

@@ -49,17 +49,17 @@ const K = COLS / 94
 // with a speed (1 is the room's own pace).
 export const PATHS = [
   // the 51B: the aisle, the window band, the street beyond
-  { from: [50, 70], fast: [[0, 10, 180, 70, 2.6], [70, 70, 130, 160, 1.8]] },
+  { from: [57, 70], fast: [[0, 10, 180, 70, 2.6], [77, 70, 137, 160, 1.8]] },
   // the café: the beam first, then the stage
-  { from: [50, 70], fast: [[104, 4, 132, 40, 3.2], [96, 40, 170, 96, 2.8], [0, 96, 180, 120, 1.6]] },
+  { from: [57, 70], fast: [[111, 4, 139, 40, 3.2], [103, 40, 177, 96, 2.8], [0, 96, 180, 120, 1.6]] },
   // the reading room: along the two rows of lamps
-  { from: [50, 74], fast: [[0, 58, 180, 70, 3.0], [0, 84, 180, 98, 3.0], [20, 20, 160, 58, 1.4]] },
+  { from: [57, 74], fast: [[0, 58, 180, 70, 3.0], [0, 84, 180, 98, 3.0], [27, 20, 167, 58, 1.4]] },
   // the roof: over the parapet and out across the city
-  { from: [50, 70], fast: [[0, 60, 180, 112, 3.4], [0, 30, 180, 60, 2.0]] },
+  { from: [57, 70], fast: [[0, 60, 180, 112, 3.4], [0, 30, 180, 60, 2.0]] },
   // the corner: through the cone and the puddle
-  { from: [50, 74], fast: [[112, 8, 160, 120, 3.0], [70, 120, 180, 160, 2.2]] },
+  { from: [57, 74], fast: [[119, 8, 167, 120, 3.0], [77, 120, 180, 160, 2.2]] },
   // the bakery: across the bench, out of the window
-  { from: [50, 72], fast: [[0, 92, 180, 112, 2.4], [96, 6, 176, 80, 3.2]] },
+  { from: [57, 72], fast: [[0, 92, 180, 112, 2.4], [103, 6, 180, 80, 3.2]] },
 ]
 
 function speedAt(world, bx, by) {

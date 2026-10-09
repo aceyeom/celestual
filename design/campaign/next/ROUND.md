@@ -15,11 +15,122 @@ Read with it:
 | [LOOK.md](./LOOK.md) | the look: twelve rules, every reference and what is taken from it, a board for each world, what the film refuses |
 | [MAKING.md](./MAKING.md) | how it is made: the tools and techniques weighed, the dither, the flap, the flood, capture, encode, sound, the studio build |
 | [page/round-time.js](./page/round-time.js) | the film's clock: every frame in this file comes from it, and `node page/round-table.mjs` prints and checks it |
-| [treatment.html](./treatment.html) | the film drawn live: the whole 38.4 seconds, scrubbable, and three held frames |
+| [film/round.mp4](./film/round.mp4) | **the final cut**: thirty seconds, four people, with its sound ([film/README.md](./film/README.md) says how to upload it) |
+| [treatment.html](./treatment.html) | the final cut with its sound, the same film drawn live and scrubbable, and three held frames |
 
 `design/DESIGN.md` and `design/VOICE.md` are the law, and
 `design/campaign/BRIEF.md` (on `claude/campaign-studio`) is how the campaign
 reads them.
+
+---
+
+## The final cut
+
+The film as made: **thirty seconds, four people**, in
+[film/round.mp4](./film/round.mp4). The script from section 1 on is the long
+telling, six people in 38.4 seconds; the final cut keeps its first and last
+links and two of the others, closes the loop in one city, and makes every
+frame the same way. `CUT` in `page/round-time.js` chooses between them.
+
+| writer | where, when | the letter | colour, battery |
+| --- | --- | --- | --- |
+| sol | the 51B, 5:14 pm | `dear wren` / `you hum when you think. i hope nobody ever tells you.` | amber, 4 |
+| wren | the café, 9:14 pm | `dear pia` / `you sang my grandad to sleep. i was awake.` | acid, 3 |
+| pia | the hospital roof, 1:14 am | `dear yuna` / `i don't even like bread.` | ice, 1 |
+| yuna | the bakery, 7:14 am | `to the one who always stands` / `you give your seat to whoever looks most tired. last night it was me.` | rose, 4 |
+
+A closed loop in one city: sol hears wren hum at the café; wren sat up with
+her grandad on pia's ward; pia buys bread at yuna's bakery after every night
+shift; yuna is the woman sol gives the seat to.
+
+**The bars.** 150 a minute in three, 25 bars, 900 frames.
+
+| bars | frames | what |
+| --- | --- | --- |
+| 1 and 2 | 0 to 71 | the seat on the 51B |
+| 3 to 6 | 72 to 215 | sol to wren, amber, with `being read` |
+| 7 to 10 | 216 to 359 | wren to pia, acid |
+| 11 to 14 | 360 to 503 | pia to yuna, ice |
+| 15 to 19 | 504 to 683 | yuna to the one who always stands, rose; the hinge catches at 648 and lets go at 674 |
+| 20 | 684 to 719 | the contact sheet: four worlds, two by two, each writer's phone still lit |
+| 21 | 720 to 755 | the cascade: flips at 720, 727, 731 and 740, a frame or so off the eighths |
+| 22 to 25 | 756 to 899 | the line (756), the lockup (774), held; the loop flap from 888 |
+
+**The file starts at frame 888**, the loop flap's release. Its first frame
+is the wall (the line, the four letters, the lockup), so the brand and the
+message are in its first second and its thumbnail; the flap falls onto the
+bus in twelve frames; the file ends on frame 887, so a platform's loop is
+seamless.
+
+**What the picture gained for it.**
+
+- Every pixel of a world is one of its palette's four, falling panes
+  included: the pane is drawn crisp at its frame's angle, and its tilt and
+  its shadow are a tone step down the palette, not a blur or a multiply.
+  `page/round-dev.html?check` counts it.
+- The phone is 400 px wide, so its words set at up to about 57 px; every
+  world and its spine moved 42 px right (`SHIFT`) to keep the writer clear
+  of it.
+- A greeting too long for its row at full size takes a second row (yuna's),
+  on the phone and on the wall.
+- The wall: four modules of 444 by 474 at x 78 and 558, y 336 and 846, each
+  letter's screen 398 by 462 with its words at up to about 61 px; the line at
+  60 px from y 264; the lockup at 3 px a cell from y 1356. All of it inside
+  the platforms' safe areas.
+- The contact sheet shows each world as it stood when its letter went up,
+  with its writer's phone held up in it and the letter on the phone.
+- The clock folds away as the sheet lands and comes back when the loop flap
+  lands the bus, its plates turning over from blank to 5:14 pm.
+
+**The sound.** A four voice round in E flat over the ground, played from
+real recordings: VSCO 2 Community Edition and the Versilian Community Sample
+Library, both CC0. Sol a clarinet, wren a harp, pia a cello, yuna a horn; a
+plucked double bass on every downbeat; a strumstick's waltz on beats two and
+three until the walk takes over at bar 11. Each voice enters at its own flap
+with the tune and goes on through the answer, the walk and the long notes
+(`page/score.mjs` writes them out), so in bars 15 to 18 all four sound at
+once. Bar 19 holds the dominant under the catch, the harp trembling with the
+pane; bar 20 is home as the sheet lands; in bar 21 each flip sounds its
+writer's note, B flat, G, C, F, the tune's own head, so the last chord is
+built a note at a time; bars 22 to 25 are the ground under the wall, the
+clarinet remembering the tune, a glockenspiel on the lockup, and a last bar
+that keeps only its first beat, a breath before the landing.
+`node page/score.mjs --check` holds the round to chord tones on every
+downbeat and no parallel fifths or octaves.
+
+The machine sounds only on its moments, each from `events()`: a dry click at
+each landing, the hinge's ratchet and three small ticks as it trembles, a
+lighter click for each module of the cascade, a tick for each plate of the
+clock, a soft key for each word, a tock for each send, the colour turning as
+a run of tiny ticks, the stop chime. The places are a breath under it: the
+bus's motor and the streetlights going by, the café's room, the roof's wind,
+the bakery's oven and its first birds, each while its world is in the
+picture. A room made in code under the music (early reflections and a tail
+of 1.9 s), a smaller one under the machine. The held instruments start into
+their swell and a little early, by each recording's measured attack, so a
+cello section speaks on the beat.
+
+Mastered to -14 LUFS (-13.8 as delivered), true peak under -1.5 dBTP (-1.7):
+the peaks are held to 11.5 dB over the loudness first, so the two pass
+normalisation stays linear. The sound is one loop: every tail and echo past
+the last frame sounds again under the first.
+
+**Made and checked.**
+
+```
+node page/round-table.mjs                                    # the clock: 900 frames, every check
+node page/render.mjs <frames>                                # the frames, in the file's order
+node page/score.mjs --check                                  # the round's counterpoint
+node page/score.mjs <samples> <score.wav>                    # the sound
+sh page/encode.sh <frames> <score.wav> film/round.mp4        # the file
+```
+
+A world's tones never change with its colour; every landing is exact; still
+and falling frames are all palette outside the phone and the clock. The file
+is 900 frames, 30.000 s at a constant 30, 4:2:0, BT.709, closed GOPs, the
+moov atom first and no edit lists; against the frames it measures 60.5 dB in
+YUV and 44.7 dB back in RGB after 4:2:0 (40.4 at worst); every click is on its
+frame to within 10 ms, and the loop's seam is continuous.
 
 ---
 
@@ -563,8 +674,8 @@ twelve.
 | 1 am to 3 am | 2, 3 | 630 to 648 |
 | 3 am to 7 am | 4, 5, 6, 7 | 756 to 792 |
 
-It folds away as the contact sheet lands and comes back with the loop flap,
-reading 5:14 pm at frame 0.
+It folds away as the contact sheet lands and comes back when the loop flap
+lands the bus at frame 0, its plates turning over from blank to 5:14 pm.
 
 ### The phone
 

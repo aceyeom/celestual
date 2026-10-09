@@ -350,6 +350,7 @@ void main() {
     }
     const T = ROUND.T
     const N = T.FRAMES
+    scrub.max = String(N - 1)
     const label = (fr) => {
       const c = T.clockAt(fr.f)
       const when = c.show ? `${c.hour}:14 ${c.merid}` : 'the wall'
@@ -369,7 +370,7 @@ void main() {
     still.width = 540
     still.height = 960
     const sg = still.getContext('2d')
-    ;[130, 616, 645].forEach((n, i) => {
+    ;[130, 210, 700].forEach((n, i) => {
       show(n)
       sg.drawImage(cv, 0, 0, 540, 960)
       sg.drawImage(ov, 0, 0, 540, 960)

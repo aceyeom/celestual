@@ -340,6 +340,7 @@ Chromium and calls `window.__seek(ms)` for each frame. For round:
 | archive | PNG frames; FFV1 with `-pix_fmt bgr0` |
 | master | `-vf "zscale=m=709:r=limited:chromal=left:filter=point,format=yuv420p" -c:v libx264 -preset veryslow -crf 12 -tune grain -x264-params deblock=-3,-3:aq-mode=3:no-fast-pskip=1 -profile:v high -colorspace bt709 -color_primaries bt709 -color_trc bt709 -color_range tv -movflags +faststart` |
 | social | the same at `-crf 16 -maxrate 25M -bufsize 50M -g 15 -bf 2 -flags +cgop -level:v 4.2` |
+| the final cut, as delivered | `page/encode.sh`: the same chroma, `-c:v libx264 -profile:v high -level:v 4.2 -preset slow -crf 14 -maxrate 20M -bufsize 40M -x264-params deblock=-2,-2:aq-mode=3 -g 60 -bf 2 -flags +cgop`, AAC 256k at 48 kHz, `-use_editlist 0 -movflags +faststart+negative_cts_offsets`, and the score's first 1024 samples given to the AAC encoder's priming |
 
 - **Why point chroma**: with left sited chroma (H.264's own), point sampling
   takes each 2 by 2 block's colour from inside one uniform cell, so the
@@ -349,10 +350,14 @@ Chromium and calls `window.__seek(ms)` for each frame. For round:
 - **Never**: `tmix` (averaging dithered frames makes colours that are in no
   palette), `-tune animation` (it raises deblocking and smears cells),
   `lanczos` scaling, the finish's grade or grain on these frames.
-- **Instagram** asks for 9:16, at least 30 fps and 720 px, High profile, two
-  consecutive B frames, a closed GOP of half the frame rate, 4:2:0, up to 25
-  Mbps and 300 MB through its API; it re-encodes everything into several
-  versions (AV1 among them), and videos with few views get worse encodes.
+- **Instagram**'s reference for reels
+  ([IG User Media](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media))
+  asks for H.264 or HEVC, progressive, a closed GOP, 4:2:0, up to 25 Mbps,
+  AAC at up to 48 kHz, the moov atom at the front and no edit lists, and 300
+  MB at most through its API. (High profile, two consecutive B frames and a
+  GOP of half the frame rate, often quoted for it, are YouTube's
+  recommendations.) It re-encodes everything into several versions (AV1 among
+  them), and videos with few views get worse encodes.
   **TikTok** takes H.264 at 23 to 60 fps; turn on its high quality upload.
 - **The check**: two seconds of the corner through the social settings and
   through a 720p rescale, decoded, and the share of cells off their four

@@ -2,7 +2,7 @@
 // from round-time.js, and checks what can be checked: every event on a whole
 // frame, every letter readable in the time it stands, the stamps right for
 // Pacific time. `node round-table.mjs` (add `md` for the script's tables).
-import { LINKS, PLAN, WORLDS, RIFFLES, FRAMES, BAR, BEAT, FPS, at, msOf, typed, events, frameAt, FLOOD, cutLength } from './round-time.js'
+import { CUT, LINKS, PLAN, WORLDS, RIFFLES, FRAMES, BAR, BEAT, FPS, msOf, typed, events, frameAt, FLOOD, cutLength, cutFrame, FILE_START, SHEET, LINE, LOCKUP } from './round-time.js'
 
 const md = process.argv.includes('md')
 const sec = (f) => (f / FPS).toFixed(2)
@@ -10,7 +10,7 @@ const bb = (f) => `${Math.floor(f / BAR) + 1}.${Math.floor((f % BAR) / BEAT) + 1
 let bad = 0
 const fail = (m) => { bad++; console.log('FAIL', m) }
 
-console.log(`\n${FRAMES} frames, ${msOf(FRAMES)} ms, ${FRAMES / BAR} bars\n`)
+console.log(`\nround, the ${CUT} cut: ${FRAMES} frames, ${msOf(FRAMES)} ms, ${FRAMES / BAR} bars; the sheet at ${SHEET}, the line at ${LINE}, the lockup at ${LOCKUP}\n`)
 
 // the links
 const rows = []
@@ -43,9 +43,18 @@ for (const r of RIFFLES) console.log(`  ${r.from.hour} ${r.from.merid} to ${r.st
 
 // the stamps: the day each letter went up, in Pacific time
 const day = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', month: '2-digit', day: '2-digit', year: '2-digit' })
-const when = ['2026-11-05T17:14', '2026-11-05T21:14', '2026-11-05T23:14', '2026-11-06T01:14', '2026-11-06T03:14', '2026-11-06T07:14']
-LINKS.forEach((L, i) => {
-  const d = new Date(when[i] + ':00-08:00')
+// each letter's moment, from its clock: the night of 5 November, past
+// midnight into the 6th
+const when = (L) => {
+  const [hm, mer] = L.clock.split(' ')
+  let [h, m] = hm.split(':').map(Number)
+  if (mer === 'pm' && h !== 12) h += 12
+  if (mer === 'am' && h === 12) h = 0
+  const date = mer === 'am' ? '2026-11-06' : '2026-11-05'
+  return `${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+LINKS.forEach((L) => {
+  const d = new Date(when(L) + ':00-08:00')
   const s = day.format(d)
   if (s !== L.stamp) fail(`${L.writer}'s stamp ${L.stamp} should be ${s}`)
 })
@@ -61,8 +70,12 @@ console.log('\nevents ' + Object.entries(kinds).map(([k, n]) => `${k} ${n}`).joi
 // the loop: frame 1152 is frame 0
 const a = JSON.stringify(frameAt(0))
 const b = JSON.stringify(frameAt(FRAMES))
-if (a !== b) fail('frame 1152 is not frame 0')
-console.log(`\ncuts: full ${cutLength('full')} frames, 15 s ${cutLength('15')} (${sec(cutLength('15'))} s), 6 s ${cutLength('6')} (${sec(cutLength('6'))} s)`)
+if (a !== b) fail(`frame ${FRAMES} is not frame 0`)
+// the delivered file: every frame once, starting at the loop flap's release
+const seen = new Set()
+for (let k = 0; k < cutLength('file'); k++) seen.add(cutFrame('file', k))
+if (seen.size !== FRAMES || cutFrame('file', 0) !== FILE_START) fail('the file does not hold every frame once from the loop flap')
+console.log(`\nthe file: ${cutLength('file')} frames (${sec(cutLength('file'))} s), from frame ${FILE_START}`)
 
 if (md) {
   console.log('\n| link | writer | starts | words | sent | colour runs | look up | hinge lets go | lands | stands |')

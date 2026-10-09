@@ -8,7 +8,7 @@
 // on the hinge is drawn over it. `frame(f)` draws any frame, in any order.
 
 import * as T from './round-time.js'
-import { createRenderer } from './round-gl.js'
+import { createRenderer, sheetCrop } from './round-gl.js'
 import { PALETTES } from './round-product.js'
 import { blueBytes } from './round-blue.js'
 import { drawCast, MASK_W, MASK_H, PHONE } from './round-cast.js'
@@ -20,8 +20,20 @@ const sm = (k) => { const x = clamp(k); return x * x * (3 - 2 * x) }
 // the phone, drawn at twice its size on the frame
 const PS = 2
 
+// The end card's modules, two across in whole cells, inside the platforms'
+// safe zones (the top 269 px, 65 px a side, the bottom 340 of an organic
+// post): four for the final, six for the long version
+export function layoutFor(n) {
+  if (n <= 4) {
+    const slots = [[78, 336, 444, 474], [558, 336, 444, 474], [78, 846, 444, 474], [558, 846, 444, 474]]
+    return { slots: slots.slice(0, n), lineY: 264, lockY: 1356 }
+  }
+  return { slots: Array.from({ length: n }, (_, k) => [138 + (k % 2) * 420, 318 + Math.floor(k / 2) * 372, 384, 342]), lineY: 252, lockY: 1440 }
+}
+
 export function createRound(canvas, overlay) {
-  const R = createRenderer(canvas, { blue: blueBytes(), palettes: PALETTES })
+  const layout = layoutFor(T.N)
+  const R = createRenderer(canvas, { blue: blueBytes(), palettes: PALETTES, layout })
   const og = overlay.getContext('2d')
 
   // ── the people, a mask a panel, made again only when they have moved ──
@@ -42,11 +54,15 @@ export function createRound(canvas, overlay) {
   // ── a world's own facts at a moment: the walk signal, the sun, the lamps ──
   function factsOf(w) {
     const k = w.world
-    const L = T.LINKS[k]
-    const P = T.PLAN[k]
-    const x = w.clock + T.WORLDS[k].origin - L.start
-    const o = { sent: x >= P.send ? x - P.send : -1 }
-    if (k === 5) o.sun = sm(span(x, P.flood - 4, P.flood + 44))
+    const i = T.linkOfWorld(k)
+    const o = { sent: -1 }
+    if (i >= 0) {
+      const L = T.LINKS[i]
+      const P = T.PLAN[i]
+      const x = w.clock + T.WORLDS[k].origin - L.start
+      o.sent = x >= P.send ? x - P.send : -1
+      if (k === 5) o.sun = sm(span(x, P.flood - 4, P.flood + 44))
+    }
     if (k === 2) o.lampsOff = T.LAMPS_OFF
     return o
   }
@@ -55,7 +71,8 @@ export function createRound(canvas, overlay) {
     R.drawWorld(panel, slot, { world: w.world, clock: w.clock, flood: w.flood || 0, palette: w.palette || 'night', look: w.look || 0, ...factsOf(w), ...extra })
   }
   function sheets(f) {
-    T.sheetAt(f).forEach((w, k) => world(R.sheets[k], 4 + k, w))
+    // each lit by its writer's phone, held up as it was when the letter went up
+    T.sheetAt(f).forEach((w, k) => world(R.sheets[k], 4 + k, w, { phoneRect: PHONE[w.world], phoneLit: 1 }))
   }
 
   // ── the phone ──
@@ -87,40 +104,68 @@ export function createRound(canvas, overlay) {
     return { half: [r[0], r[1] + off, r[2], r[3] + off], frame: [r[0], 960 + r[1] + off, r[2], 960 + r[3] + off] }
   }
 
-  // ── the wall's six letters, the line and the lockup, one atlas ──
+  // ── the wall's letters, the line and the lockup, one atlas ──
   function cards() {
+    const [, , sw, sh] = layout.slots[0]
+    // the contact sheet's scale: module px a frame px
+    const crop = sheetCrop(sw, sh)
+    const s = sw / crop[2]
+    const phW = Math.round(400 * s)
+    const phH = Math.round(776 * s)
     const cv = document.createElement('canvas')
-    cv.width = 1152
-    cv.height = 684 + 72 + 150
+    cv.width = sw * 3
+    cv.height = sh * 2 + 80 + 200 + 8 + phH
     const g = cv.getContext('2d')
     const rects = []
     T.LINKS.forEach((L, i) => {
-      const x = (i % 3) * 384
-      const y = Math.floor(i / 3) * 342
-      drawLetterCard(g, x, y, 384, 342, { colour: L.colour, bat: L.bat, stamp: L.stamp, greet: L.greet, text: T.typed[i].full })
-      rects.push([x, y, 384, 342])
+      const x = (i % 3) * sw
+      const y = Math.floor(i / 3) * sh
+      drawLetterCard(g, x, y, sw, sh, { colour: L.colour, bat: L.bat, stamp: L.stamp, greet: L.greet, text: T.typed[i].full })
+      rects.push([x, y, sw, sh])
     })
+    // (the line and the lockup are always the atlas's seventh and eighth)
+    while (rects.length < 6) rects.push([0, 0, 0, 0])
+    const y0 = sh * 2
+    // the line, at the size the platforms' captions are read at
     const line = 'every letter on the wall is to somebody.'
-    g.font = `400 48px ${FACE}`
+    g.font = `400 60px ${FACE}`
     const lw = Math.ceil(g.measureText(line).width) + 8
     g.fillStyle = '#0A0A0A'
-    g.fillRect(0, 684, lw, 64)
+    g.fillRect(0, y0, lw, 72)
     g.fillStyle = '#F4F1EA'
     g.textBaseline = 'middle'
     g.textAlign = 'left'
-    g.fillText(line, 4, 684 + 34)
-    rects.push([0, 684, lw, 64])
+    g.fillText(line, 4, y0 + 38)
+    rects.push([0, y0, lw, 72])
+    // the lockup at three pixels a cell, the address under it
     const [lkw, lkh] = LOCKUP_SIZE
-    const cw = 360
+    const cw = 400
+    const ly = y0 + 80
     g.fillStyle = '#0A0A0A'
-    g.fillRect(0, 756, cw, 150)
-    drawLockup(g, (cw - lkw * 2) / 2, 756, 2)
+    g.fillRect(0, ly, cw, 200)
+    drawLockup(g, (cw - lkw * 3) / 2, ly, 3)
     g.fillStyle = '#F4F1EA'
     g.font = `400 44px ${FACE}`
     g.textAlign = 'center'
-    g.fillText('celestual.us', cw / 2, 756 + 90 + 22)
-    rects.push([0, 756, cw, 150])
-    R.setCards(cv, rects)
+    g.fillText('celestual.us', cw / 2, ly + lkh * 3 + 54)
+    rects.push([0, ly, cw, 200])
+    // the writers' phones for the contact sheet, each as it was held up on
+    // its link's last frame, and where each sits in its module
+    const py = ly + 208
+    const phones = []
+    T.LINKS.forEach((L, i) => {
+      const r = PHONE[L.world]
+      const pc = document.createElement('canvas')
+      pc.width = phW
+      pc.height = phH
+      const end = L.start + L.bars * T.BAR - 1
+      drawPhone(pc.getContext('2d'), phW, phH, T.phoneAt(i, end), end)
+      g.drawImage(pc, i * (phW + 4), py)
+      rects[8 + i] = [i * (phW + 4), py, phW, phH]
+      phones.push(Math.round((r[0] - crop[0]) * s), Math.round((r[1] - crop[1]) * s), phW, phH)
+    })
+    for (let k = 0; k < 12; k++) if (!rects[k]) rects[k] = [0, 0, 0, 0]
+    R.setCards(cv, rects, phones)
   }
   cards()
 
@@ -171,7 +216,6 @@ export function createRound(canvas, overlay) {
     og.clearRect(0, 0, overlay.width, overlay.height)
     if (!c.show) return
     og.save()
-    og.globalAlpha = c.rise
     let x = 72
     plate(x, 84, String(c.hour), c.prev ? String(c.prev.hour) : null, c.fold)
     x += 84 + 6
@@ -179,9 +223,11 @@ export function createRound(canvas, overlay) {
     og.fillRect(x + 4, 944, 8, 8)
     og.fillRect(x + 4, 968, 8, 8)
     x += 20
-    plate(x, 58, '1', null, 0)
+    // the minutes turn only when the plates arrive from blank
+    const was = c.fresh ? '' : null
+    plate(x, 58, '1', was, c.fold)
     x += 64
-    plate(x, 58, '4', null, 0)
+    plate(x, 58, '4', was, c.fold)
     x += 58 + 10
     plate(x, 84, c.merid, c.prev && c.prev.merid !== c.merid ? c.prev.merid : null, c.fold)
     og.restore()
@@ -192,7 +238,8 @@ export function createRound(canvas, overlay) {
     const f = T.wrap(Math.round(input))
     const fr = T.frameAt(f)
     const c = { f, flips: [0, 0, 0, 0, 0, 0], top: 1, bot: 0 }
-    const shutter = (fl) => { c.th0 = T.angleOf(fl, f - 0.25); c.th1 = T.angleOf(fl, f + 0.25) }
+    // the pane at this frame's angle, crisp: no shutter, no blur
+    const shutter = (fl) => { c.th = T.angleOf(fl, f) }
     if (fr.phase === 'end') {
       sheets(f)
       c.end = true
@@ -201,7 +248,7 @@ export function createRound(canvas, overlay) {
       c.lockup = fr.lockup
       if (fr.settle) {
         world(R.halves[3], 3, fr.settle.under)
-        Object.assign(c, { pane: true, top: 4, bot: 3, front: 4, back: 4, th0: fr.settle.theta, th1: fr.settle.theta })
+        Object.assign(c, { pane: true, top: 4, bot: 3, front: 4, back: 4, th: fr.settle.theta })
       } else if (fr.flap) {
         world(R.halves[0], 0, fr.flap.back)
         world(R.halves[1], 1, fr.flap.revealed)
@@ -227,7 +274,7 @@ export function createRound(canvas, overlay) {
         shutter(fr.flap)
       } else if (fr.settle) {
         world(R.halves[3], 3, fr.settle.under)
-        Object.assign(c, { pane: true, top: 1, bot: 3, front: 0, back: 0, th0: fr.settle.theta, th1: fr.settle.theta })
+        Object.assign(c, { pane: true, top: 1, bot: 3, front: 0, back: 0, th: fr.settle.theta })
         c.phone = null
       }
       // the seam's pulse, as a flap lands and as a greeting comes up

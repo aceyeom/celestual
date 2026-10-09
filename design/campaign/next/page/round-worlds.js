@@ -14,6 +14,7 @@ precision highp sampler2D;
 
 uniform vec2 uRes;        // the panel's cells
 uniform vec2 uView;       // the half it shows, in px
+uniform vec4 uCrop;       // the part of it this panel shows (x, y, w, h), px
 uniform float uW;         // the world's clock, frames
 uniform float uFlood;     // where the colour stands, 0 to 1
 uniform float uLetter;    // the letter's palette
@@ -30,6 +31,9 @@ out vec4 oCol;
 
 const vec4 LV = vec4(0.007, 0.155, 0.337, 0.863);
 const float PI = 3.14159265;
+// every world is drawn 42 px to the right of where it was laid out, so the
+// spine stands at x 744 and the larger phone keeps clear of the writer
+const float SHIFT = 42.0;
 
 uint pcg(uint v) { uint s = v * 747796405u + 2891336453u; uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u; return (w >> 22u) ^ w; }
 float hh(int a, int b) { return float(pcg(pcg(uint(a) + 0x9e3779b9u) ^ uint(b) * 2654435761u)) / 4294967295.0; }
@@ -90,11 +94,14 @@ float figRim(vec2 p, vec2 toLight, float w) {
   vec2 n = -g / max(length(g), 1e-4);
   return m * out_ * smoothstep(0.3, 0.95, dot(n, d));
 }
+// the phone's screen in the world's own coordinates
+vec4 phoneRect() { return uPhone - vec4(SHIFT, 0.0, SHIFT, 0.0); }
 // the phone as a light: a tight glow round its screen, 0 to 1
 float phoneLight(vec2 p) {
   if (uPhoneLit <= 0.0) return 0.0;
-  vec2 c = (uPhone.xy + uPhone.zw) * 0.5;
-  vec2 h = (uPhone.zw - uPhone.xy) * 0.5;
+  vec4 ph = phoneRect();
+  vec2 c = (ph.xy + ph.zw) * 0.5;
+  vec2 h = (ph.zw - ph.xy) * 0.5;
   float d = max(sbox(p, c, h), 0.0);
   return uPhoneLit / (1.0 + (d * d) / (46.0 * 46.0));
 }
@@ -106,7 +113,8 @@ float person(vec2 p, float L, vec2 key, float keyI, float reach, float dark) {
   vec2 toKey = reach > 0.0 ? key - p : key;
   float fall = reach > 0.0 ? 1.0 / (1.0 + dot(toKey, toKey) / (reach * reach)) : 1.0;
   float rim = figRim(p, toKey, 8.0) * keyI * fall;
-  vec2 pc = (uPhone.xy + uPhone.zw) * 0.5;
+  vec4 ph = phoneRect();
+  vec2 pc = (ph.xy + ph.zw) * 0.5;
   rim += figRim(p, pc - p, 7.0) * phoneLight(p) * 0.2;
   return mix(L, dark + rim, m);
 }
@@ -122,9 +130,9 @@ int toneIn(float L, float a, float b, int k, float th) {
 }
 void main() {
   ivec2 cell = ivec2(gl_FragCoord.xy);
-  vec2 cpx = uView / uRes;
+  vec2 cpx = uCrop.zw / uRes;
   float L = 0.0;
-  for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) L += scene((vec2(cell) + (vec2(i, j) + 0.5) * 0.5) * cpx);
+  for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) L += scene(uCrop.xy + (vec2(cell) + (vec2(i, j) + 0.5) * 0.5) * cpx - vec2(SHIFT, 0.0));
   L *= 0.25;
   float th = texelFetch(uBlue, (cell + ivec2(uNoiseOff)) & 127, 0).r;
   int tone = 3;
@@ -312,7 +320,7 @@ float lampOn(int k, vec2 at) {
   float s = 1.0;
   if (uW >= uOff[k]) s = 0.25 * exp(-(uW - uOff[k]) / 5.0);
   // the colour reaching it lights it again
-  if (uFlood > 0.0 && texelFetch(uArr, ivec2(at / 12.0), 0).r <= uFlood) s = 1.0;
+  if (uFlood > 0.0 && texelFetch(uArr, ivec2((at + vec2(SHIFT, 0.0)) / 12.0), 0).r <= uFlood) s = 1.0;
   return s;
 }
 float scene(vec2 p) {
@@ -590,43 +598,45 @@ export const PLATEAU = [0.28, 0.32, 0.3, 0.26, 0.3, 0.28]
 
 // ── the composite ──────────────────────────────────────────────────────────
 // Full resolution. The top half mirrored, the bottom right way up; the pane
-// solved by ray and plane, shaded, blurred only while it moves, its shadow on
-// what is beneath; the riso's two drums a hair apart; the end card with its
-// cascade; the seam's ripple; exact palette bytes wherever nothing moves.
+// solved by ray and plane, crisp at each frame's angle (no blur: a blur
+// makes colours no palette has, and the eye reads a stepped fall as a fall);
+// a face turned from the light, and the shadow it throws on what is beneath,
+// go one tone down their own palette; the riso's two drums a hair apart; the
+// end card's modules with their cascade; the seam's ripple. Every pixel of a
+// world, still or falling, is one of its palette's four.
 export const COMPOSITE = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 precision highp sampler2D;
 uniform vec2 uCanvas;         // device px
 uniform sampler2D uTex[4];    // world panels: 0 writer, 1 above, 2 revealed, 3 under
-uniform sampler2D uSheet[6];  // the contact sheet's six small worlds
-uniform sampler2D uCards;     // the six letters, the line and the lockup, one atlas
+uniform sampler2D uSheet[6];  // the contact sheet's small worlds
+uniform sampler2D uCards;     // the letters, the line and the lockup, one atlas
 uniform vec3 uPal[28];        // seven palettes of four, sRGB
 uniform int uTop;             // source above the seam (0..3 a world, 4 the end card)
 uniform int uBot;             // source below
 uniform int uFront;           // the pane's front
 uniform int uBack;            // the pane's back
-uniform float uTh0;           // the pane's angle at the shutter's open
-uniform float uTh1;           // and at its close
+uniform float uTh;            // the pane's angle
 uniform float uPane;          // 1 when there is a pane
 uniform float uRipple;        // the seam's ripple, 0 to 1
 uniform float uT;             // the film's frame
 uniform float uEnd;           // 1 in the end phase
+uniform int uSlots;           // how many modules the end card has
+uniform vec4 uSlot[6];        // each module's place on the frame (x, y, w, h)
 uniform float uFlip[6];       // each module's angle in the cascade
 uniform float uLine;          // the line shown
 uniform float uLock;          // the lockup shown
-uniform vec4 uCardRect[8];    // where each card sits in the atlas (x, y, w, h), 0..5 letters, 6 line, 7 lockup
+uniform float uLineY;         // where the line stands
+uniform float uLockY;         // and the lockup
+uniform vec4 uCardRect[12];   // where each card sits in the atlas (x, y, w, h), 0..5 letters, 6 line, 7 lockup, 8.. the sheet's phones
+uniform vec4 uSheetPhone[6];  // each small world's phone, in its module's px (x, y, w, h)
 uniform sampler2D uPhoneTex;  // the writer's phone, drawn at twice its size
 uniform vec4 uPhoneRect;      // where its display is on the frame (x0, y0, x1, y1)
 uniform float uPhoneOn;
 out vec4 oCol;
 
 const float P = 4200.0;
-const vec2 SLOT0 = vec2(138.0, 318.0);
-const vec2 SLOT = vec2(384.0, 342.0);
-
-vec3 toLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
-vec3 toSrgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
 
 // a world panel's cell at (x, r): r is the distance from the seam
 vec4 cellOf(int s, vec2 xr) {
@@ -637,29 +647,37 @@ vec4 cellOf(int s, vec2 xr) {
   return texelFetch(uTex[3], c, 0);
 }
 vec3 palette(float pal, float tone) { return uPal[int(pal + 0.5) * 4 + int(tone + 0.5)]; }
-// a world's colour at (x, r), the riso's second drum laid 2 px out of register
-vec3 worldAt(int s, vec2 xr) {
-  vec4 c = cellOf(s, xr);
-  float pal = floor(c.g * 8.0 + 0.5);
-  float tone = floor(c.r * 3.0 + 0.5);
+// a cell's palette and tone as colour, dim tones down; the riso's tones
+// are its two drums, the second laid 2 px out of register
+vec3 inks(float pal, float tone, float t2, float p2) {
   if (pal == 5.0) {
-    vec4 c2 = cellOf(s, xr - vec2(2.0, 2.0));
-    float t2 = floor(c2.r * 3.0 + 0.5);
-    float p2 = floor(c2.g * 8.0 + 0.5);
     bool v = tone <= 1.0;
     // (where the colour has not reached the second drum's cell yet, this cell's own)
     bool y = p2 == 5.0 ? (t2 == 0.0 || t2 == 2.0) : (tone == 0.0 || tone == 2.0);
-    vec3 paper = uPal[23];
     if (v && y) return uPal[20];
     if (v) return uPal[21];
     if (y) return uPal[22];
-    return paper;
+    return uPal[23];
   }
   return palette(pal, tone);
 }
-// the six small worlds of the contact sheet (each 64 by 57 cells of 6 px)
-vec3 sheetAt(int k, vec2 q) {
-  ivec2 c = ivec2(clamp(floor(q / 6.0), vec2(0.0), vec2(63.0, 56.0)));
+vec3 worldAt(int s, vec2 xr, float dim) {
+  vec4 c = cellOf(s, xr);
+  float pal = floor(c.g * 8.0 + 0.5);
+  float tone = max(0.0, floor(c.r * 3.0 + 0.5) - dim);
+  float t2 = tone;
+  float p2 = pal;
+  if (pal == 5.0) {
+    vec4 c2 = cellOf(s, xr - vec2(2.0, 2.0));
+    t2 = max(0.0, floor(c2.r * 3.0 + 0.5) - dim);
+    p2 = floor(c2.g * 8.0 + 0.5);
+  }
+  return inks(pal, tone, t2, p2);
+}
+// the contact sheet's small worlds (each its module's size in 6 px cells)
+vec3 sheetWorld(int k, vec2 q) {
+  ivec2 sz = textureSize(uSheet[0], 0);
+  ivec2 c = clamp(ivec2(floor(q / 6.0)), ivec2(0), sz - 1);
   vec4 v;
   if (k == 0) v = texelFetch(uSheet[0], c, 0);
   else if (k == 1) v = texelFetch(uSheet[1], c, 0);
@@ -669,52 +687,58 @@ vec3 sheetAt(int k, vec2 q) {
   else v = texelFetch(uSheet[5], c, 0);
   float pal = floor(v.g * 8.0 + 0.5);
   float tone = floor(v.r * 3.0 + 0.5);
-  if (pal == 5.0) {
-    bool vi = tone <= 1.0; bool ye = tone == 0.0 || tone == 2.0;
-    return vi && ye ? uPal[20] : vi ? uPal[21] : ye ? uPal[22] : uPal[23];
-  }
-  return palette(pal, tone);
+  return inks(pal, tone, tone, pal);
+}
+// a small world with its writer's phone held up in it, its letter on it as it
+// stood when it went up, drawn at the module's own scale
+vec3 sheetAt(int k, vec2 q) {
+  vec3 w = sheetWorld(k, q);
+  vec4 pr = uSheetPhone[k];
+  vec2 d = q - pr.xy;
+  if (pr.z <= 0.0 || d.x < 0.0 || d.y < 0.0 || d.x >= pr.z || d.y >= pr.w) return w;
+  vec4 r = uCardRect[8 + k];
+  vec4 c = texture(uCards, (r.xy + d) / vec2(textureSize(uCards, 0)));
+  return mix(w, c.rgb, c.a);
 }
 vec3 cardAt(int k, vec2 q, vec2 size) {
   vec4 r = uCardRect[k];
   vec2 uv = (r.xy + q / size * r.zw) / vec2(textureSize(uCards, 0));
   return texture(uCards, uv).rgb;
 }
-// the end card: the room's black, the six modules, the line, the lockup
+// the end card: the room's black, the modules, the line, the lockup
 vec3 endCard(vec2 px) {
   vec3 col = vec3(0.039);
   for (int k = 0; k < 6; k++) {
-    vec2 o = SLOT0 + vec2(float(k % 2) * 420.0, float(k / 2) * 372.0);
-    vec2 q = px - o;
-    if (q.x < 0.0 || q.y < 0.0 || q.x >= SLOT.x || q.y >= SLOT.y) continue;
+    if (k >= uSlots) break;
+    vec4 sl = uSlot[k];
+    vec2 q = px - sl.xy;
+    if (q.x < 0.0 || q.y < 0.0 || q.x >= sl.z || q.y >= sl.w) continue;
     float th = uFlip[k];
-    float mid = SLOT.y * 0.5;
+    float mid = sl.w * 0.5;
     // the module's halves: the world before, the letter after
     bool top = q.y < mid;
     float c = cos(th);
-    vec3 world = sheetAt(k, q);
-    vec3 letter = cardAt(k, q, SLOT);
-    if (th <= 0.0) return world;
-    if (th >= 3.1415) return letter;
+    if (th <= 0.0) return sheetAt(k, q);
+    if (th >= 3.1415) return cardAt(k, q, sl.zw);
     if (top) {
       // the falling flap's front over the top half while it stands, the letter's top behind
       float reach = mid - mid * max(c, 0.0);
       if (c > 0.0 && q.y >= reach) return sheetAt(k, vec2(q.x, mid - (mid - q.y) / max(c, 1e-3)));
-      return letter;
+      return cardAt(k, q, sl.zw);
     }
     // the back of the flap, the letter's lower half, once it is past level
     float reach = mid - mid * min(c, 0.0);
-    if (c < 0.0 && q.y <= reach) return cardAt(k, vec2(q.x, mid + (q.y - mid) / max(-c, 1e-3)), SLOT);
-    return world;
+    if (c < 0.0 && q.y <= reach) return cardAt(k, vec2(q.x, mid + (q.y - mid) / max(-c, 1e-3)), sl.zw);
+    return sheetAt(k, q);
   }
-  if (uLine > 0.5) { vec4 r = uCardRect[6]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, 252.0); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(6, q, r.zw); }
-  if (uLock > 0.5) { vec4 r = uCardRect[7]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, 1440.0); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(7, q, r.zw); }
+  if (uLine > 0.5) { vec4 r = uCardRect[6]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, uLineY); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(6, q, r.zw); }
+  if (uLock > 0.5) { vec4 r = uCardRect[7]; vec2 q = px - vec2((1080.0 - r.z) * 0.5, uLockY); if (q.x >= 0.0 && q.y >= 0.0 && q.x < r.z && q.y < r.w) return cardAt(7, q, r.zw); }
   return col;
 }
 // a source at a point: worlds are read by (x, distance from the seam), the end card by the frame
-vec3 source(int s, vec2 px, float r) {
-  if (s == 4) return endCard(px);
-  return worldAt(s, vec2(px.x, r));
+vec3 source(int s, vec2 px, float r, float dim) {
+  if (s == 4) return endCard(px) * (dim > 0.0 ? 0.78 : 1.0);
+  return worldAt(s, vec2(px.x, r), dim);
 }
 // the pane at angle th, seen through frame point px: the hit's x and distance
 // from the hinge, which face, and whether it hits
@@ -749,44 +773,35 @@ float shadowOn(vec2 px, float th) {
   if (r < 0.0 || r > 960.0 || H.x < 0.0 || H.x > 1080.0) return 1.0;
   return mix(0.55, 0.9, clamp(t / 900.0, 0.0, 1.0));
 }
-vec3 frameAt(vec2 px, float th, bool exact) {
+vec3 frameAt(vec2 px, float th) {
+  bool moving = uPane > 0.5 && th > 0.01 && th < 3.13;
   if (uPane > 0.5) {
     vec4 h = paneHit(px, th);
     if (h.w > 0.5) {
       int s = h.z > 0.5 ? uFront : uBack;
-      vec3 c;
-      if (s == 4) c = endCard(vec2(h.x, h.z > 0.5 ? 960.0 - h.y : 960.0 + h.y));
-      else c = worldAt(s, vec2(h.x, h.y));
-      if (exact) return c;
-      return toSrgb(toLin(c) * shade(th, h.z));
+      // a face turned from the light goes a tone down its own palette
+      float dim = moving && shade(th, h.z) < 0.8 ? 1.0 : 0.0;
+      if (s == 4) return endCard(vec2(h.x, h.z > 0.5 ? 960.0 - h.y : 960.0 + h.y)) * (dim > 0.0 ? 0.78 : 1.0);
+      return worldAt(s, vec2(h.x, h.y), dim);
     }
   }
-  float r = abs(px.y - 960.0) ;
+  float r = abs(px.y - 960.0);
   // the rows by the seam ripple, in whole cells
   vec2 q = px;
   if (uRipple > 0.0 && r < 18.0) q.x += 6.0 * floor(0.5 + 1.6 * uRipple * sin(px.y * 0.21 + uT * 0.9) * (1.0 - r / 18.0));
-  vec3 c = px.y < 960.0 ? source(uTop, q, 960.0 - px.y) : source(uBot, q, px.y - 960.0);
+  // and where the pane's shadow falls, a tone down too
+  float dim = moving && shadowOn(px, th) < 0.8 ? 1.0 : 0.0;
+  vec3 c = px.y < 960.0 ? source(uTop, q, 960.0 - px.y, dim) : source(uBot, q, px.y - 960.0, dim);
   // the writer's phone: the one crisp lit thing, over its world, under the pane
   if (uPhoneOn > 0.5 && px.y >= 960.0 && px.x >= uPhoneRect.x && px.x < uPhoneRect.z && px.y >= uPhoneRect.y && px.y < uPhoneRect.w) {
     vec4 ph = texture(uPhoneTex, (px - uPhoneRect.xy) / (uPhoneRect.zw - uPhoneRect.xy));
-    c = mix(c, ph.rgb, ph.a);
+    c = mix(c, ph.rgb * (dim > 0.0 ? 0.78 : 1.0), ph.a);
   }
-  if (uPane > 0.5 && !exact && th > 0.01 && th < 3.13) c = toSrgb(toLin(c) * shadowOn(px, th));
   return c;
 }
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uCanvas.y - gl_FragCoord.y) * (1080.0 / uCanvas.x);
   if (uEnd > 0.5 && uPane < 0.5) { oCol = vec4(endCard(px), 1.0); return; }
-  float dth = abs(uTh1 - uTh0);
-  bool still = uPane < 0.5 || (dth < 0.002 && (uTh0 < 0.001 || uTh0 > 3.141));
-  if (still) { oCol = vec4(frameAt(px, uTh0, true), 1.0); return; }
-  int K = int(clamp(ceil(dth * 960.0 / 12.0), 1.0, 16.0));
-  vec3 acc = vec3(0.0);
-  for (int i = 0; i < 16; i++) {
-    if (i >= K) break;
-    float th = mix(uTh0, uTh1, (float(i) + 0.5) / float(K));
-    acc += toLin(frameAt(px, th, false));
-  }
-  oCol = vec4(toSrgb(acc / float(K)), 1.0);
+  oCol = vec4(frameAt(px, uTh), 1.0);
 }
 `

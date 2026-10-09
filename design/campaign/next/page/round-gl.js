@@ -48,7 +48,15 @@ function compile(gl, fs) {
 
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
 
-export function createRenderer(canvas, { blue, palettes }) {
+// the part of a half a contact sheet module shows: as much as the module's
+// shape holds, at square cells, about the middle but never past the phone's
+// near edge, so the phone held up in it is whole (x, y, w, h in px)
+export function sheetCrop(sw, sh) {
+  const ar = sw / sh
+  return ar < 1080 / 960 ? [Math.min((1080 - 960 * ar) / 2, 48), 0, 960 * ar, 960] : [0, (960 - 1080 / ar) / 2, 1080, 1080 / ar]
+}
+
+export function createRenderer(canvas, { blue, palettes, layout = { slots: [[0, 0, 444, 474]], lineY: 0, lockY: 0 } }) {
   const gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true, premultipliedAlpha: false, alpha: false })
   if (!gl) throw new Error('webgl2')
   const quad = gl.createBuffer()
@@ -82,7 +90,8 @@ export function createRenderer(canvas, { blue, palettes }) {
   // a mask per panel slot (four halves, six small worlds), filled from canvases
   const tFig = []
   for (let k = 0; k < 10; k++) tFig[k] = tex(4, 4, { filter: gl.LINEAR_MIPMAP_LINEAR })
-  // the panels: four halves of 180 by 160 cells, six small worlds of 64 by 57
+  // the panels: four halves of 180 by 160 cells, and the contact sheet's
+  // small worlds, each its module's size in cells
   const panel = (w, h) => {
     const t = tex(w, h)
     const fb = gl.createFramebuffer()
@@ -91,9 +100,15 @@ export function createRenderer(canvas, { blue, palettes }) {
     return { t, fb, w, h }
   }
   const halves = [0, 1, 2, 3].map(() => panel(180, 160))
-  const sheets = [0, 1, 2, 3, 4, 5].map(() => panel(64, 57))
+  const [, , sw, sh] = layout.slots[0]
+  const sheets = [0, 1, 2, 3, 4, 5].map(() => panel(sw / 6, sh / 6))
+  const crop = sheetCrop(sw, sh)
+  sheets.forEach((s) => { s.crop = crop })
+  const slots = new Float32Array(24)
+  layout.slots.forEach((r, i) => slots.set(r, i * 4))
   let tCards = tex(4, 4, { filter: gl.LINEAR })
-  let cardRects = new Float32Array(32)
+  let cardRects = new Float32Array(48)
+  let sheetPhones = new Float32Array(24)
   const tPhone = tex(4, 4, { filter: gl.LINEAR })
   // the palettes, seven of four
   const pal = new Float32Array(28 * 3)
@@ -111,12 +126,14 @@ export function createRenderer(canvas, { blue, palettes }) {
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, cv)
   }
-  function setCards(cv, rects) {
+  function setCards(cv, rects, phones) {
     gl.deleteTexture(tCards)
     tCards = tex(cv.width, cv.height, { filter: gl.LINEAR })
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, cv)
-    cardRects = new Float32Array(32)
+    cardRects = new Float32Array(48)
     rects.forEach((r, i) => cardRects.set(r, i * 4))
+    sheetPhones = new Float32Array(24)
+    if (phones) sheetPhones.set(phones.slice(0, 24))
   }
 
   // one world into one panel
@@ -131,6 +148,8 @@ export function createRenderer(canvas, { blue, palettes }) {
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, tArr[w.world]); gl.uniform1i(u.uArr, 2)
     gl.uniform2f(u.uRes, target.w, target.h)
     gl.uniform2f(u.uView, 1080, 960)
+    const cr = target.crop || [0, 0, 1080, 960]
+    gl.uniform4f(u.uCrop, cr[0], cr[1], cr[2], cr[3])
     gl.uniform1f(u.uW, w.clock)
     gl.uniform1f(u.uFlood, w.flood || 0)
     gl.uniform1f(u.uLetter, palIndex(w.palette))
@@ -161,16 +180,22 @@ export function createRenderer(canvas, { blue, palettes }) {
     gl.uniform1i(u.uBot, c.bot)
     gl.uniform1i(u.uFront, c.front ?? 1)
     gl.uniform1i(u.uBack, c.back ?? 1)
-    gl.uniform1f(u.uTh0, c.th0 || 0)
-    gl.uniform1f(u.uTh1, c.th1 ?? c.th0 ?? 0)
+    gl.uniform1f(u.uTh, c.th || 0)
     gl.uniform1f(u.uPane, c.pane ? 1 : 0)
     gl.uniform1f(u.uRipple, c.ripple || 0)
     gl.uniform1f(u.uT, c.f || 0)
     gl.uniform1f(u.uEnd, c.end ? 1 : 0)
-    gl.uniform1fv(u.uFlip, c.flips || [0, 0, 0, 0, 0, 0])
+    const flips = new Float32Array(6)
+    flips.set((c.flips || []).slice(0, 6))
+    gl.uniform1fv(u.uFlip, flips)
+    gl.uniform1i(u.uSlots, layout.slots.length)
+    gl.uniform4fv(u.uSlot, slots)
+    gl.uniform1f(u.uLineY, layout.lineY)
+    gl.uniform1f(u.uLockY, layout.lockY)
     gl.uniform1f(u.uLine, c.line ? 1 : 0)
     gl.uniform1f(u.uLock, c.lockup ? 1 : 0)
     gl.uniform4fv(u.uCardRect, cardRects)
+    gl.uniform4fv(u.uSheetPhone, sheetPhones)
     gl.activeTexture(gl.TEXTURE11); gl.bindTexture(gl.TEXTURE_2D, tPhone); gl.uniform1i(u.uPhoneTex, 11)
     const pr = c.phone || [0, 0, 0, 0]
     gl.uniform4f(u.uPhoneRect, pr[0], pr[1], pr[2], pr[3])
