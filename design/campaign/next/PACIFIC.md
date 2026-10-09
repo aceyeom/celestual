@@ -1,5 +1,13 @@
 # pacific
 
+> **Its story is set aside; its world carries on.** The owner chose this
+> film's look and not its story, which was the first film's again (two
+> private notes, a reveal at nine). The world below (the cities lit and
+> dithered into four tones of a screen's colour, the phones the only crisp
+> lit things, two worlds facing across a seam, the colour running out of a
+> phone) is the world of [ROUND.md](./ROUND.md), the script that replaces
+> this one. Kept here as written.
+
 The second film, script B. Thirty two seconds, 1080 by 1920, 30 frames a
 second (each the two of sixty laid over each other, as the first film's
 thirty is), twelve bars at 90 beats a minute in E major, mastered to -14

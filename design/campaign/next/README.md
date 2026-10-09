@@ -1,16 +1,20 @@
-# The next film: two scripts
+# The next film
 
-Two complete scripts for celestual's second film, to choose between and
-refine. Each is written to be built in the studio the first film was built
-in (`app/src/studio/` and `scripts/studio-*.mjs` on `claude/campaign-studio`):
+Scripts for celestual's second film, to choose between and refine. Each is
+written to be built in the studio the first film was built in
+(`app/src/studio/` and `scripts/studio-*.mjs` on `claude/campaign-studio`):
 a clock, a picture drawn from `t`, a score written from the same clock,
 photographed and finished.
 
 | file | |
 | --- | --- |
-| [TWO-INKS.md](./TWO-INKS.md) | script A. A private note is one ink; a picture needs both |
-| [PACIFIC.md](./PACIFIC.md) | script B. It's already tomorrow where they are |
-| [treatment.html](./treatment.html) | both scripts, with each world drawn live beside them: the press printing the bench telling's own two bodies in rose and ice, and the two cities facing each other with the rose running through them at nine. Open it in a browser. Its two shaders are the first drafts of `riso-gl.js` and `dither.js` |
+| [ROUND.md](./ROUND.md) | **script B, round, the lead.** One night, six people, six letters on the wall, each to the next and the last to the first |
+| [LOOK.md](./LOOK.md) | round's look: twelve rules, every reference and what is taken from it, a board for each world, what it refuses |
+| [MAKING.md](./MAKING.md) | how round is made: the tools and techniques weighed, the dither, the flap, the flood, capture, encode, sound, the studio build |
+| [TWO-INKS.md](./TWO-INKS.md) | script A, on file. A private note is one ink; a picture needs both |
+| [PACIFIC.md](./PACIFIC.md) | the world round is made in, first written for a story now set aside |
+| [treatment.html](./treatment.html) | the scripts drawn live: the press printing two inks, and round's whole 38.4 seconds as a scrubbable animatic. Open it in a browser |
+| [page/](./page/) | the treatment's sources; `page/round-time.js` is round's clock, and `node page/round-table.mjs` prints and checks it |
 
 ---
 
@@ -23,92 +27,77 @@ lights that never met going out, and an empty letter under the question
 `do they still think about you?`. A song written for it, its hook sung.
 One sender, one feeling, looking back.
 
-## 2. What the next one changes, and why
+## 2. How we got here
 
-1. **From looking back to waiting for something.** The growth framework
-   keeps one finding for content above the rest: anticipation spreads and
-   melancholy does not (Berger and Milkman, `docs/ULTIMATE-PRODUCT-FRAMEWORK.md`).
-   The first film asks a question about the past. Both scripts here are
-   built toward one moment that is coming, Saturday at nine.
-2. **From one person to two.** The first film followed lin and cut to kai for
-   a bar. The product is a thing that only ever happens to two people, so
-   both scripts are built on two from the first frame, and neither has a
-   hero.
-3. **From the black room to a new world each.** Script A is ink on paper in
-   daylight. Script B is the whole sky, night and day in one frame, drawn
-   the way the product draws a face. Each takes one of the product's own
-   materials (the riso screen; the dithered picture) and makes it the
-   world.
-4. **From a song to sound that is the mechanism.** Script A is a hocket, one
-   tune split between two players so each half is full of holes until both
-   play. Script B is a phase piece, one figure on two sides of the ocean
-   drifting apart and locking into one on the stroke of nine. Nobody needs
-   the words for either to hear it.
+Two scripts were written first: two inks (the press) and pacific (two
+cities, two phones turning rose at nine). The owner loved pacific's look,
+the whole world lit and dithered into four tones of a screen's colour with
+the phones the only crisp lit things, and did not want its story, which was
+the first film's again: two private notes, "is it mutual", a reveal at nine.
+Two inks told the same story.
+
+Round is pacific's world with a new story and a new subject: not the private
+note and its reveal, but the wall. Before it was written the field was
+surveyed for the most beautiful motion work there is, in pixels and dither,
+in film and photography, in kinetic art and in the web's own libraries, and
+the best of it went into LOOK.md and MAKING.md, with a list of everything
+that makes a film look generated, refused.
 
 ## 3. The two, side by side
 
-| | A. two inks | B. pacific |
+| | A. two inks | B. round |
 | --- | --- | --- |
-| the line | a private note is one ink. a picture needs both | it's already tomorrow where they are |
-| the perspective | the press: the double blind drawn as a machine that sees both halves and prints only pairs | the planet: two places at one instant |
-| the story | iris and jun on a bench, each printed in their own ink, each leaning on someone who is not there. Saturday at nine the press runs: blank sheets for the lone notes, and one print in both inks where they touch | theo in Berkeley at night, mina in Seoul the next afternoon. Each keeps the other's weather on their phone. At 9pm Pacific, 1pm Sunday in Seoul, both phones turn rose on one frame |
-| the world | riso prints on warm paper: rose, ice and black, twelve prints a second | Berkeley in ice and Seoul in amber, the world dithered in a screen's four tones, the phones crisp and lit |
-| the crazy part | every frame a different print; a moiré storm as the second ink lands; a zoom into one violet dot that holds the whole picture | a pixel sun on a phone at night opening into an afternoon sky; the two cities facing each other with their skies meeting in the middle; the rose running through both worlds at once |
-| the end | the registration mark slides into register and becomes the mark | the line between their days bends into the mark's ring |
-| the sound | a hocket at 120 bpm in F, the press as the rhythm section | a phase piece at 90 bpm in E, a fog horn and a magpie |
-| length | 30 s, fifteen bars, 24 fps | 32 s, twelve bars, 30 fps |
+| the line | a private note is one ink. a picture needs both | every letter on the wall is to somebody. |
+| what it is about | the private note and the reveal | the wall |
+| the story | iris and jun on a bench, each printed in their own ink; Saturday at nine the press prints the one picture in both | six people in one night, each writing a letter to the next; the last to the first, about a seat given on a bus at dusk |
+| the perspective | the press: a machine that sees both halves | the wall's: only we see the round; nobody in it knows |
+| the world | riso prints on warm paper: rose, ice and black | six worlds of one city, lit and dithered into four tones, grey until each letter's colour runs out of its phone |
+| the crazy part | every frame a different print; a moiré storm; a zoom into one violet dot | the frame is a split-flap: the one written to hangs mirrored above and falls, right way up, into the next writer's place; a line runs through all six worlds; the end shows all six at once and flips each into its letter |
+| the end | the registration mark slides into register | the contact sheet, the wall, and a flap back into the first frame: it loops |
+| the sound | a hocket at 120 bpm in F | a six voice round at 150 in three, in E flat, a voice for each person |
+| length | 30 s | 38.4 s, looping |
 | cutdowns | 15 s, 6 s, 4:5 | 15 s, 6 s, 4:5 |
-| the product's own parts | the bench telling's bodies, the riso's paper, the rose and ice screens, the mark's geometry, the lockup | the same two bodies, the lit screens, the private note's screen, the keepsake, the rose wave, the mark, the lockup |
-| the new build | one shader (the press) and the press's drawings | a world shader for two cities, the dither, the weather screen |
-| the biggest risk | the metaphor has to carry the mechanism | the time difference has to read in one viewing |
-| who it is for | everybody, a campus first | the people far apart, and anybody who has added a city to their weather |
+| the product's parts | the bench telling's bodies, the riso, rose and ice, the mark | the rig's bodies, the composer and its states, six of the twelve colours, the battery, the product's split-flap digits, its wash, the lockup |
+| the biggest risk | the metaphor has to carry the mechanism | six worlds of drawing, and the chain read in one viewing |
 
 ## 4. Which one
 
-**If one gets made, make two inks.** It explains the mechanism in a
-picture anybody gets in one viewing, half a picture and then the whole, and
-says it again in sound. Every element in it is something the product
-already owns (the riso, the bench telling, the rose and ice, the mark), so
-it reads as celestual and could not be anybody else's. It is the cheaper of
-the two to finish to the bar, and its 15 second cut is a whole film.
+**Make round.** It is the story the owner asked for in the world the owner
+chose. It shows the product as it is (the composer, the greeting, the
+colour, the battery, `being read`, the wall) and claims nothing it does not
+do. It has a shape people remember (a kindness at the start, the letter
+about it at the end) and a form that pays for repeat viewing (it loops, and
+the second time the first scene means something). Its 15 second cut is a
+whole story and its 6 second cut is a joke that stands on its own.
 
-**Pacific is the bigger swing**, and the truer picture of the one thing the
-product does that nothing else does: it tells two people at the same
-moment, wherever each of them is. It is the film for the people who are far
-apart, and the second film to make.
+Two inks stays on file. It is the cheaper film and a good one, but it is
+about the private note and its reveal, which is the first film's subject.
 
-Both share the same two bodies and the same studio, so making one makes the
-other cheaper.
+## 5. What round keeps
 
-## 5. What both keep
-
-- The voice (VOICE.md): lowercase, says less, no exclamation marks, no emoji,
-  no dashes, none of the banned words, no courage framing.
-- Only the facts (BRIEF.md 5): a private note is read only if they send you
-  one back; the reveal is Saturday at 9pm Pacific; if it is never mutual
-  nobody is told anything. No numbers of anybody or anything. No handles.
-  No claim that the server keeps only a hash.
-- The screens' twelve colours are the only hues: A uses rose and ice, B
-  ice, amber and rose.
-- The lockup drawn from `brand.js` at whole pixels a cell, chalk or ink,
-  never recoloured.
+- The voice (VOICE.md): lowercase, says less, no exclamation marks, no
+  emoji, no dashes, none of the banned words, no courage framing; letters
+  that flatter the one they are to and ask for nothing.
+- Only the facts (BRIEF.md 5, and the wall's README where BRIEF is behind
+  it): letters to a name or to anything the writer calls somebody, the @
+  never printed; every letter read before it goes up; twelve colours. No
+  numbers of anybody or anything. No handles. No signal bars. Nobody in the
+  film is told they were written to.
+- The screens' twelve colours are the only hues.
+- The lockup drawn from `brand.js` at whole pixels a cell, in chalk, never
+  recoloured.
 - Everything drawn by code; the figures are the product's own.
 - Instagram's safe area: the top 250 and the bottom 340 px of a story clear
   of type, the right side clear of the buttons.
-- The first film's pipeline and its bar: every style frame rendered, looked
-  at as a picture, changed and rendered again, three rounds at least.
+- The first film's bar: every style frame rendered, looked at as a picture,
+  changed and rendered again, three rounds at least.
 
-And each stretches one rule on purpose, in its own section 4: A puts the
-whole film on paper, which DESIGN.md keeps for rare and deliberate use;
-B dithers the whole world, which the product does only to faces.
+It stretches one rule on purpose, as pacific did: it dithers whole worlds,
+which the product does only to pictures.
 
-## 6. What to decide, to refine either
+## 6. What to decide
 
-1. Which one, or both and in which order.
-2. The notes and the names. A: `next time i'd sit closer.` and `next time
-   i'd move over.`, iris and jun. B: `i still check the weather in seoul.`
-   and `i still check the weather in berkeley.`, theo and mina.
-3. For B: Seoul, or another city (each script's section 13 lists the ones
-   that work), and whether mina's note is in Korean.
-4. Wordless, as written, or one sung line as the first film had.
-5. The 30 s or the 15 s first.
+ROUND.md, section 15: the letters (with alternatives for each), the names,
+the 51B on the bus's sign, fourteen minutes past every time, 6 px cells or
+4, the round in three or four, instrumental or a hum with words, and which
+length goes first.
