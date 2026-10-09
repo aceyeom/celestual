@@ -58,19 +58,19 @@ export const S = {
   // one shot from the letter on: back from the glass along the wall, a few
   // of its letters read in passing, up the hall's height to a stop, and
   // lin's letter coming away from the wall to the camera
-  wall: [3750, 10000], wake: 3700, lines: [5625, 6250], linesOut: 7900, lift: [8300, 10000],
+  wall: [3750, 10000], wake: 3700, lines: [5625, 6250], linesOut: 8350, lift: [8300, 10000],
   // send it privately: the key; the letter's own pixels gathered into the
   // envelope; sealed; the phone going out behind it to a line and a point;
   // the envelope coming at the lens; its light over everything
-  send: [10000, 12500], sendIt: 10000, privately: 10313, sendOut: 10950, press: 10625,
+  send: [10000, 12500], sendIt: 10000, privately: 10313, sendOut: 11450, press: 10625,
   gather: [10700, 11450], seal: [11450, 11650], crt: [11600, 11950], lens: [11950, 12480], wash: [12400, 12650],
   // and through the lens into the dark, where it goes away from us to wait
-  night: [12500, 15000], away: [12500, 13300], nLines: [12813, 13438], nOut: 14650,
+  night: [12500, 15000], away: [12500, 13300], nLines: [12813, 13438], nOut: 14900,
   // every mutual is revealed on saturday at nine: the sentence ends on a
   // clock that runs through the week; somebody's note comes in on the
   // thursday; at nine the camera leans in, and the two find each other
   // (`touch`: there, a little apart; the wait over; touching)
-  date: [15000, 20000], dLines: [15313, 15625, 16250], lapse: [16250, 18125], kaiIn: 17188, dOut: 19100,
+  date: [15000, 20000], dLines: [15313, 15625, 16250], lapse: [16250, 18125], kaiIn: 17188, dOut: 19350,
   // the week's other notes, as they come in
   others: [16380, 16560, 16760, 16960, 17380, 17560, 17760, 17940],
   lean: [19000, 20000], touch: [19560, 19840, 19960],
@@ -79,13 +79,13 @@ export const S = {
   // at us (`swoosh`); it turns over (`flip`, on its edge on the bar the
   // song comes in on), and on its other side is kai's, read for the first
   // time; it is said on that bar's third beat, and then the rest of it
-  reveal: [20000, 25000], meet: 20000, swoosh: [20300, 21050], flip: [20800, 21700], run: 20500, drop: 21250, said: 22500, both: 23750, rOut: 24650,
+  reveal: [20000, 25000], meet: 20000, swoosh: [20300, 21050], flip: [20800, 21700], run: 20500, drop: 21250, said: 22500, both: 23750, rOut: 24760,
   // kai's letter melting back into the light, and its light going out
   // with the rest by the cut
   give: [24100, 25000],
   // the ones that never meet go out, each as a screen does, to a line and a
   // point
-  ifnot: [25000, 27500], fLines: [25313, 25938], lone: [25625, 26250, 26875], fOut: 27000,
+  ifnot: [25000, 27500], fLines: [25313, 25938], lone: [25625, 26250, 26875], fOut: 27300,
   // the question, to whoever is watching, a word on each note of the hook
   // (scripts/studio-score.mjs `HOOK`): do they still think a-bout you? and
   // then left there, whole, for as long as it took to ask

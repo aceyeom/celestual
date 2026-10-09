@@ -54,7 +54,7 @@ import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, mkdtempSync
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { MS, BEAT, A, S, typedA } from '../app/src/studio/parts/reel-time.js'
+import { MS, BEAT, A, S, typedA, typedUrl } from '../app/src/studio/parts/reel-time.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.argv[2] || join(root, 'design/campaign/celestual-reel.wav')
@@ -564,13 +564,51 @@ function whine(ms, { gain = 0.02, from = 7000, to = 300, len = 0.34, pan = 0 } =
     return Math.sin(ph) * (1 - k) ** 1.4 * Math.min(1, i / sec(0.004))
   }, { gain, pan, verb: 0.3 })
 }
+// a phone's key, as its keyboard clicks under the finger: a tick and a
+// small bright body, over in a few hundredths of a second; the space bar's a
+// little lower and softer. Each a hair different in pitch and weight, as a
+// finger never presses twice alike
+function key(ms, { gain = 0.02, space = false, n = 0, pan = 0 } = {}) {
+  const f = (space ? 1150 : 1700) * (1 + 0.015 * (r01(n * 3.7 + 1) - 0.5) * 2)
+  const g = gain * (space ? 0.8 : 1) * (0.85 + 0.3 * r01(n * 5.3 + 2))
+  const hp = biquad('hp', 700, 0.7)
+  const pk = biquad('peak', space ? 2300 : 3300, 1.2, 6)
+  lay(ms, sec(0.03), (i) => {
+    const t = i / SR
+    const tick = rnd() * Math.exp(-t / 0.0009)
+    const body = Math.sin(TAU * f * t) * Math.exp(-t / 0.0045) * 0.55 + Math.sin(TAU * f * 2.37 * t) * Math.exp(-t / 0.002) * 0.3
+    return pk(hp(tick * 0.9 + body)) * Math.min(1, i / sec(0.0004))
+  }, { gain: g, pan, verb: 0.04 })
+}
+// a knock, soft, as on a door or a chest: a low body whose pitch drops a
+// little as it goes, and the touch of it; low enough to be felt and high
+// enough to be heard on a phone's own speaker
+function knock(ms, { gain = 0.03, f = 190, len = 0.25, pan = 0, verb = 0.35 } = {}) {
+  const lp = lowpass(0.8)
+  let ph = 0
+  lay(ms, sec(len), (i) => {
+    const t = i / SR
+    ph += (TAU * f * (1 - 0.15 * Math.min(1, t / 0.08))) / SR
+    const body = Math.sin(ph) * Math.exp(-t / (len / 4))
+    const hit = lp(rnd(), 2500) * Math.exp(-t / 0.004) * 0.6
+    return (body + hit) * Math.min(1, i / sec(0.002))
+  }, { gain, pan, verb })
+}
 function thump(ms, { gain = 0.05, f = 55, len = 0.5, pan = 0 } = {}) {
   lay(ms, sec(len), (i) => {
     const t = i / SR
     return (Math.sin(TAU * f * t) + 0.5 * Math.sin(TAU * f * 2 * t) * Math.exp(-t / 0.05)) * Math.exp(-t / (len / 3.5)) * Math.min(1, i / sec(0.003))
   }, { gain, pan, verb: 0.4 })
 }
-// the words are typed in silence, the piano answering them; and send
+// lin's letter typed on the glass, the phone's keys under it, a click a
+// letter as it lands (the first sentence is there already), under the
+// piano quietly, and with the sounds alone as they are heard in the hand;
+// and send
+const KEYS = FOLEY ? 0.022 : 0.009
+{
+  const at0 = typedA()
+  ;[...A.text].forEach((ch, n) => { if (at0[n] >= 0) key(at0[n], { gain: KEYS, space: ch === ' ', n }) })
+}
 sample(S.press, TAP, { gain: 0.07, rate: 0.94, pan: -0.05 })
 // a breath of air under the hall as its backlights come on, under the song
 // (alone it is only a hiss)
@@ -635,7 +673,22 @@ if (FOLEY) {
   air(S.lone[0] - 100, 1700, { gain: 0.017, from: 2200, to: 350, pan: -0.45, q: 0.9, verb: 0.5 })
   grains(S.lone[0] - 60, 1300, { gain: 0.011, from: 4200, to: 2400, n: 260, pan: -0.35, verb: 0.2 })
   grains(S.lock[0], 1000, { gain: 0.01, from: 9000, to: 5000, n: 70, verb: 0.6 })
+  // the question, a word at a time: each word a soft knock and a breath,
+  // a little more each time; and on `you?` the air drawn in before it, a
+  // deeper knock held under a low one, and a shimmer as it lights
+  S.qWords.slice(0, 5).forEach((ms, i) => {
+    knock(ms, { gain: 0.02 + 0.004 * i, f: 196 - 6 * i, len: 0.26 })
+    thump(ms, { gain: 0.012 + 0.002 * i, f: 62, len: 0.45 })
+    air(ms - 20, 260, { gain: 0.007 + 0.0012 * i, from: 2400, to: 700, shape: 'fall', verb: 0.5 })
+  })
+  const you = S.qWords[5]
+  air(you - 480, 480, { gain: 0.018, from: 300, to: 5000, shape: 'rise', q: 1 })
+  knock(you, { gain: 0.05, f: 146, len: 0.7, verb: 0.6 })
+  thump(you, { gain: 0.045, f: 44, len: 1.8 })
+  grains(you, 1400, { gain: 0.009, from: 8000, to: 4000, n: 90, verb: 0.7 })
 }
+// and the address under the name, typed, a click a letter
+typedUrl().forEach((ms, n) => key(ms, { gain: KEYS * 0.75, n: n + 100 }))
 
 // ── the mix ─────────────────────────────────────────────────────────────────
 // each stem: its level, where it sits, what is taken off it, how much of it

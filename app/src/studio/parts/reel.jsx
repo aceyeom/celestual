@@ -63,10 +63,11 @@ import { NoteScreen, PW } from './note-screen.jsx'
 import { PanelFluid, linear } from './panel-fluid.js'
 import { makeAura } from './reel-aura.js'
 import { LetterGL, W as CARD_W } from './reel-card.js'
-import { makeFigures } from './reel-figures.js'
 import atlasUrl from '../assets/wall-atlas.jpg'
 import faceLinUrl from '../assets/reel-face-lin.jpg'
 import faceKaiUrl from '../assets/reel-face-kai.jpg'
+import seaUrl from '../assets/reel-photo-sea.jpg'
+import shoreUrl from '../assets/reel-photo-shore.jpg'
 import './reel.css'
 
 export { MS }
@@ -485,26 +486,43 @@ const bez = (P, k) => {
 // ── 0 to 12.5: the letter, the hall, the send. one shot ─────────────────────
 // The camera, as an operator would hold it: [ms, eye, target, lens in
 // degrees, still]. The letter, the whole glass in the frame and its words
-// in the middle (`T`), a slow push as the last of them comes; back from it,
-// and held on it and the letter under it, long enough to read that one
-// too; then one move, up the hall's height and round, that lands and stops;
-// then down to lin's letter as it comes away from the wall, and held.
+// in the middle (`T`), a slow push as the last of them comes; and the
+// moment the last is typed, straight back from it, quickly and then slower,
+// the lens widening, until the wall of letters is the whole frame and lin's
+// one among them, the backlights coming on outward from it as it goes; then
+// one move, up the hall's height and round, that lands and stops; then down
+// to lin's letter as it comes away from the wall, and held.
 const LETTER_FROM = [-0.2, -0.3, 3.55]
 const LETTER_TO = [0, -0.02, 3.05]
+// the pull back: from the last letter typed to the move up the hall, and
+// where it ends, from the words' middle
+const ZOOM = [3290, 5650]
+const ZOOM_TO = { eye: [0.3, 0.6, 16], target: [0, 0.9, 0], fov: 44 }
+CustomEase.create('rl.back', 'M0,0 C0.06,0.02 0.16,1 1,1')
 // the letters the camera rests on: under lin's, and over it
 const PINS = { '0,-1': cellOf('maya'), '0,1': cellOf('mei') }
 const hallOf = (T) => [
-  [3300, v3.add(T, LETTER_TO), T, 34, true],
-  [4800, [0.02, -0.5, 4.45], [0, -0.58, 0], 36, true],
-  [5650, [0.06, -0.62, 4.3], [0.01, -0.78, 0], 36, true],
+  [ZOOM[1], v3.add(T, ZOOM_TO.eye), v3.add(T, ZOOM_TO.target), ZOOM_TO.fov, true],
   [8000, [-7, 6.5, 14.5], [3.5, 10.5, 0], 54, true],
   [10000, [0.3, 1.6, 12.6], [0, 0.9, 0], 38, true],
   [12500, [0.3, 1.62, 12.55], [0, 0.92, 0], 38, true],
 ]
 function camAt(t, T, hall) {
-  if (t < hall[0][0]) {
-    const k = easeOf('sine.inOut')(u(t, 0, hall[0][0]))
+  if (t < ZOOM[0]) {
+    const k = easeOf('sine.inOut')(u(t, 0, ZOOM[0]))
     return { eye: v3.add(T, v3.lerp(LETTER_FROM, LETTER_TO, k)), target: T, fov: 34 }
+  }
+  if (t < ZOOM[1]) {
+    // its distance from the glass goes up evenly as a ratio, as a zoom is
+    // seen to, and the rest of the move with it
+    const k = easeOf('rl.back')(u(t, ZOOM[0], ZOOM[1]))
+    const d = LETTER_TO[2] * (ZOOM_TO.eye[2] / LETTER_TO[2]) ** k
+    const f = (d - LETTER_TO[2]) / (ZOOM_TO.eye[2] - LETTER_TO[2])
+    return {
+      eye: v3.add(T, [lerp(LETTER_TO[0], ZOOM_TO.eye[0], f), lerp(LETTER_TO[1], ZOOM_TO.eye[1], f), d]),
+      target: v3.add(T, v3.scale(ZOOM_TO.target, f)),
+      fov: lerp(34, ZOOM_TO.fov, k),
+    }
   }
   return { eye: hermite(hall, t, 1), target: hermite(hall, t, 2), fov: hermite(hall, t, 3)[0] }
 }
@@ -611,7 +629,7 @@ function WallScene({ t, m, times, image }) {
   // the move up the hall lands as a hand lands it: a little past, and back
   if (t > 8000 && t < 9200) {
     const k = (t - 8000) / 1000
-    const dir = v3.norm(v3.sub(hall[3][2], hall[2][2]))
+    const dir = v3.norm(v3.sub(hall[1][2], hall[0][2]))
     target = v3.add(target, v3.scale(dir, 0.22 * Math.exp(-k * 3.2) * Math.sin(k * 8.5)))
   }
   // and from just before lin's letter comes away, the camera finds it, and
@@ -1337,6 +1355,54 @@ function flow(fl, t) {
   // and under the question, where the star will be
   if (t >= S.ask[0] + 600 && t < S.lock[0]) fl.ink(STAR.x, STAR.y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.0008), 14)
 }
+// ── the two of them ─────────────────────────────────────────────────────────
+// Two photographs over the panel (assets/reel-photo-sea.jpg and
+// reel-photo-shore.jpg): two sitting side by side on a wall by the sea,
+// seen from behind, as lin's note waits on the horizon in front of them and
+// again where kai's letter melts; and two standing apart on a shore in the
+// mist, one blurred and scribbled over, for the ones that never meet, the
+// camera going in on the one left for the question. Each smooth, as a
+// photograph is, graded to its scene, and faded in from the dark above it
+// so the words over it are on the dark (panel-fluid.js `photo`).
+let PHOTO_IMGS = null
+const SEA_PHOTO = { w: 1206, h: 1236, horizon: 0.498 }
+const SHORE_PHOTO = { w: 1206, h: 1205 }
+// a photograph `s` times its size, its point (px, py), as fractions of it,
+// at the frame's (fx, fy)
+const rectOf = (P, s, px, py, fx, fy) => {
+  const w = P.w * s
+  const h = P.h * s
+  return [fx - px * w, fy - py * h, fx - px * w + w, fy - py * h + h]
+}
+function photoAt(t) {
+  if (!PHOTO_IMGS) return null
+  // the night: in as the envelope goes away to its place on the horizon in
+  // front of them, out as the week begins; a slow push in as it waits
+  if (t >= S.wash[1] && t < S.dLines[1] + 300) {
+    const k = smooth01(u(t, S.wash[1], S.away[1] + 300)) * (1 - smooth01(u(t, S.dLines[0] - 200, S.dLines[1] + 300)))
+    const z = 1.62 * (1 + 0.04 * u(t, S.wash[1], S.dLines[1] + 300))
+    return { img: PHOTO_IMGS.sea, k, rect: rectOf(SEA_PHOTO, z, 0.49, SEA_PHOTO.horizon, 540, L_AT[1]), feather: [150, 560], grade: [0.2, 1.15, 0.85], tint: [0.8, 0.92, 1.1] }
+  }
+  // the reveal: settling in behind kai's letter as it is read, and there
+  // where it was as it melts, to the cut
+  if (t >= S.flip[1] && t < S.ifnot[0]) {
+    const z = 1.62 * (1.04 + 0.04 * u(t, S.flip[1], S.ifnot[0]))
+    return { img: PHOTO_IMGS.sea, k: smooth01(u(t, S.flip[1], S.said)), rect: rectOf(SEA_PHOTO, z, 0.49, SEA_PHOTO.horizon, 540, L_AT[1]), feather: [100, 480], grade: [0.42, 1, 1], tint: [1.05, 0.97, 0.86] }
+  }
+  // the others, both in the frame; and for the question the camera going in
+  // on the one left, its head kept under the words, until the light is drawn
+  // in to the star
+  if (t >= S.ifnot[0] && t < S.lock[0] + 50) {
+    const k = smooth01(u(t, S.ifnot[0], S.ifnot[0] + 260)) * (1 - smooth01(u(t, S.qOut - 650, S.lock[0])))
+    const go = easeOf('sine.inOut')(u(t, S.fLines[1], S.qWords[5] + 600))
+    const z = lerp(1.3, 1.55, go)
+    return {
+      img: PHOTO_IMGS.shore, k, rect: rectOf(SHORE_PHOTO, z, lerp(0.555, 0.73, go), 0.26, lerp(540, 760, go), 890),
+      feather: [lerp(500, 430, go), lerp(880, 860, go)], grade: [0.26, 1.1, 0.9], tint: [0.9, 0.95, 1.05],
+    }
+  }
+  return null
+}
 // the panel kept darker under each scene's words, as they are up
 const CLOCK_BOX = [CLOCK.x, CLOCK.day, CLOCK.x + 56 * 2 * C, CLOCK.where + 12 * C]
 function shadeAt(t) {
@@ -1359,6 +1425,7 @@ const looksAt = (t) => ({
   gain: t < S.name[0] ? 1 : lerp(1, 0.82, u(t, S.name[0], S.lock[1])),
   top: 1,
   shade: shadeAt(t),
+  photo: photoAt(t),
   star: 0.85,
   lightGain: 1.25,
   lightHaze: 0.1,
@@ -1366,19 +1433,6 @@ const looksAt = (t) => ({
 })
 // the panel itself, under every scene from the lens on: one flow for the
 // whole of it, stepped to the frame and drawn through the frame's camera
-// the two of them, drawn in the panel's cells (reel-figures.js): the
-// frame's picture, its light and what blocks the light, into two canvases
-// a cell a pixel, in the colour of the scene: lin's ice at night, warm when
-// it is mutual, the grey of a shore in the mist for the others
-const FIGURES = makeFigures(PANEL)
-const PIC_TINT = { night: [0.34, 0.42, 0.52], mutual: [0.52, 0.47, 0.41], shore: [0.42, 0.44, 0.48] }
-let PIC = null
-const picOf = () => {
-  if (PIC) return PIC
-  const mk = () => { const c = document.createElement('canvas'); c.width = PANEL.cw; c.height = PANEL.ch; return c }
-  PIC = { L: mk(), O: mk() }
-  return PIC
-}
 function PanelGL({ t }) {
   const ref = useRef(null)
   const fluid = useRef(null)
@@ -1388,10 +1442,7 @@ function PanelGL({ t }) {
     if (!fluid.current) fluid.current = new PanelFluid(ref.current, { cells: PANEL, script: flow, steps: FLOW_STEPS })
     if (!live) return
     fluid.current.stepTo(t)
-    const light = AURA.lightAt(t)
-    const pic = picOf()
-    const f = FIGURES.drawAt(t, pic.L, pic.O)
-    fluid.current.render(panelView(t), looksAt(t), f ? { ...light, picture: { L: pic.L, O: pic.O, k: f.k, tint: PIC_TINT[f.tint] } } : light)
+    fluid.current.render(panelView(t), looksAt(t), AURA.lightAt(t))
   })
   useEffect(() => () => { if (fluid.current) fluid.current.dispose() }, [])
   return <canvas ref={ref} className="rl-gl" width="1080" height="1920" style={live ? undefined : { visibility: 'hidden' }} />
@@ -1432,15 +1483,27 @@ function useFaces() {
   return faces
 }
 
+// the two photographs, loaded before the first frame
+function usePhotos() {
+  const [ok, setOk] = useState(!!PHOTO_IMGS)
+  useEffect(() => {
+    if (PHOTO_IMGS) return
+    const load = (src) => { const i = new Image(); i.src = src; return i.decode().then(() => i) }
+    Promise.all([load(seaUrl), load(shoreUrl)]).then(([sea, shore]) => { PHOTO_IMGS = { sea, shore }; setOk(true) })
+  }, [])
+  return ok
+}
+
 export function Reel({ t }) {
   const [ok, setOk] = useState(false)
   const [mA, setMA] = useState(null)
   const atlas = useAtlas()
   const faces = useFaces()
+  const photos = usePhotos()
   useEffect(() => {
     Promise.all(FACES.map((f) => document.fonts.load(f))).then(() => setOk(true))
   }, [])
-  useHold(ok && !!mA && !!atlas && !!faces)
+  useHold(ok && !!mA && !!atlas && !!faces && photos)
   const tA = useMemo(typedA, [])
   const ready = ok && mA
   return (

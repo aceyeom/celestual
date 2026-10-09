@@ -167,8 +167,7 @@ const FRAG = {
       gl_FragColor = vec4(v, 0.0, 1.0);
     }`,
   // the light the story places on the panel this frame, at each cell's
-  // middle: a picture of the cells' own, if there is one (reel-figures.js),
-  // and colour spreading out over the dark from where its sources are
+  // middle: colour spreading out over the dark from where its sources are
   // (see `SOURCE` above for what each holds), as ink spreads in water. Each
   // has a soft edge that wavers slowly along its length, a brighter band
   // where it is still spreading into the dark, and inside it, light drawn
@@ -184,10 +183,6 @@ const FRAG = {
     uniform vec2 uSpan;
     uniform vec4 uHeart[4];
     uniform vec3 uHeartCol[4];
-    uniform sampler2D uPicL;
-    uniform sampler2D uPicO;
-    uniform float uPicK;
-    uniform vec3 uPicTint;
     float h31 (vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
     float n3 (vec3 p) {
       vec3 i = floor(p);
@@ -245,11 +240,6 @@ const FRAG = {
         vec2 dd = (p - uHeart[k].xy) / max(uHeart[k].z, 1e-3);
         acc += exp(-dot(dd, dd)) * uHeart[k].w * uHeartCol[k];
       }
-      // and the picture the story draws in the cells: its own light, and
-      // what stands in the light, cut out of all of it
-      if (uPicK > 0.0) {
-        acc = (acc + texture2D(uPicL, vUv).r * uPicTint * uPicK) * (1.0 - texture2D(uPicO, vUv).r * uPicK);
-      }
       gl_FragColor = vec4(acc, 1.0);
     }`,
   // the panel as the camera sees it, a night of the screen's own pixels:
@@ -281,8 +271,12 @@ const FRAG = {
     uniform sampler2D uLight;
     uniform float uLightGain;
     uniform float uLightHaze;
-    uniform sampler2D uPicO;
-    uniform float uPicK;
+    uniform sampler2D uPhoto;
+    uniform float uPhotoK;
+    uniform vec4 uPhotoRect;
+    uniform vec2 uPhotoFeather;
+    uniform vec3 uPhotoGrade;
+    uniform vec3 uPhotoTint;
     uniform vec4 uShadeA;
     uniform vec4 uShadeB;
     uniform vec2 uShadeK;
@@ -339,10 +333,7 @@ const FRAG = {
       float nI = dot(neb, vec3(0.2126, 0.7152, 0.0722));
       // its colour kept quiet, half way to the grey of starlight
       neb = mix(neb, vec3(nI), 0.45);
-      // nothing of them shows through what stands in the light
-      float occ = uPicK > 0.0 ? texture2D(uPicO, vec2(tex.x, 1.0 - tex.y)).r * uPicK : 0.0;
-      float occS = uPicK > 0.0 ? texture2D(uPicO, vec2(smooth2.x, 1.0 - smooth2.y)).r * uPicK : 0.0;
-      vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze * (1.0 - occS) + tint * star * bright * uStar * (1.0 - occ)) * band;
+      vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze + tint * star * bright * uStar) * band;
       // the light placed this frame: the cell's own round point of it, each
       // with its own slow shimmer, as light on water has. Dim light goes cool
       // and grey, as the eye sees at night (the Purkinje shift), and bright
@@ -368,6 +359,26 @@ const FRAG = {
       float Lhy = dot(Lh, vec3(0.2126, 0.7152, 0.0722));
       Lh = mix(Lh, Lhy * vec3(0.86, 0.94, 1.1), 0.45);
       col += (L * pt * 1.3 + mix(L, vec3(Ly), 0.5) * arm + Lh * uLightHaze) * band;
+      // and a photograph over it, if the story shows one: smooth, as a
+      // photograph is, not in the cells; black and white, its tones set by
+      // its grade (exposure, contrast, how much of the panel's light passes
+      // through its light parts) and its colour by its tint; faded in from
+      // the dark above it, so the words over it are on the dark, and kept
+      // darker under them as the panel is. Its people
+      // and its dark parts let nothing of the panel through, so they stay
+      // dark against whatever light is behind them, as a silhouette does
+      if (uPhotoK > 0.0) {
+        vec2 puv = (frag - uPhotoRect.xy) / (uPhotoRect.zw - uPhotoRect.xy);
+        float inside = step(0.0, puv.x) * step(puv.x, 1.0) * step(0.0, puv.y) * step(puv.y, 1.0);
+        float pa = uPhotoK * inside * smoothstep(uPhotoFeather.x, uPhotoFeather.y, frag.y);
+        if (pa > 0.0) {
+          vec3 s = texture2D(uPhoto, vec2(puv.x, 1.0 - puv.y)).rgb;
+          float y = pow(dot(s, vec3(0.2126, 0.7152, 0.0722)), 2.2);
+          vec3 photo = pow(y, uPhotoGrade.y) * uPhotoGrade.x * uPhotoTint;
+          vec3 behind = col - cell * uInk * uGrid;
+          col = mix(col, behind * uPhotoGrade.z * smoothstep(0.02, 0.45, y) + photo * band, pa);
+        }
+      }
       gl_FragColor = vec4(col, 1.0);
     }`,
 }
@@ -474,11 +485,10 @@ export class PanelFluid {
     this.m.light = mat(FRAG.light, {
       uSrc: this.srcTex, uSrcN: 0, uLo: lo, uSpan: size,
       uHeart: [0, 1, 2, 3].map(() => new THREE.Vector4()), uHeartCol: [0, 1, 2, 3].map(() => new THREE.Vector3()),
-      uPicL: null, uPicO: null, uPicK: 0, uPicTint: new THREE.Vector3(1, 1, 1),
     })
-    // the picture's two textures, made from the story's canvases the first
-    // time it hands them over
-    this.pic = null
+    // the photographs' textures, made from the story's images the first
+    // time each is shown
+    this.photos = new Map()
     const pts = new THREE.BufferGeometry()
     pts.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXPTS * 3), 3))
     pts.setAttribute('tint', new THREE.BufferAttribute(new Float32Array(MAXPTS * 3), 3))
@@ -492,8 +502,12 @@ export class PanelFluid {
     this.display.uniforms.uLight = { value: this.light.texture }
     this.display.uniforms.uLightGain = { value: 1 }
     this.display.uniforms.uLightHaze = { value: 0 }
-    this.display.uniforms.uPicO = { value: null }
-    this.display.uniforms.uPicK = { value: 0 }
+    this.display.uniforms.uPhoto = { value: null }
+    this.display.uniforms.uPhotoK = { value: 0 }
+    this.display.uniforms.uPhotoRect = { value: new THREE.Vector4(0, 0, 1, 1) }
+    this.display.uniforms.uPhotoFeather = { value: new THREE.Vector2(0, 1) }
+    this.display.uniforms.uPhotoGrade = { value: new THREE.Vector3(1, 1, 1) }
+    this.display.uniforms.uPhotoTint = { value: new THREE.Vector3(1, 1, 1) }
     this.display.uniforms.uShadeA = { value: new THREE.Vector4() }
     this.display.uniforms.uShadeB = { value: new THREE.Vector4() }
     this.display.uniforms.uShadeK = { value: new THREE.Vector2() }
@@ -630,34 +644,10 @@ export class PanelFluid {
   // the light placed this frame (`light`: `sources`, SOURCE numbers a
   // source, and `n` of them; `hearts`, up to four of [x, y, radius,
   // strength, r, g, b]; `points`, five numbers a point, x, y and its
-  // colour, and `m` of them; `picture`, two canvases the size of the
-  // cells, its light and what blocks the light, how much of it shows, `k`,
-  // and its colour, `tint`), drawn into its layer of cells
+  // colour, and `m` of them), drawn into its layer of cells
   place(light) {
     const r = this.renderer
     const m = this.m.light
-    const pic = light && light.picture
-    if (pic) {
-      if (!this.pic) {
-        const tex = (c) => {
-          const x = new THREE.CanvasTexture(c)
-          x.colorSpace = THREE.NoColorSpace
-          x.generateMipmaps = false
-          x.minFilter = THREE.LinearFilter
-          x.magFilter = THREE.LinearFilter
-          return x
-        }
-        this.pic = { L: tex(pic.L), O: tex(pic.O) }
-        m.uniforms.uPicL.value = this.pic.L
-        m.uniforms.uPicO.value = this.pic.O
-        this.display.uniforms.uPicO.value = this.pic.O
-      }
-      this.pic.L.needsUpdate = true
-      this.pic.O.needsUpdate = true
-      m.uniforms.uPicTint.value.set(pic.tint[0], pic.tint[1], pic.tint[2])
-    }
-    m.uniforms.uPicK.value = pic ? pic.k : 0
-    this.display.uniforms.uPicK.value = pic ? pic.k : 0
     const n = light ? Math.min(MAXS, light.n || 0) : 0
     if (n) {
       this.srcData.set(light.sources.subarray(0, n * SOURCE))
@@ -695,10 +685,31 @@ export class PanelFluid {
   // flow's light's strength, `star` its stars', `lightGain` the placed
   // light's and `lightHaze` the light between its points, `shade` up to two
   // boxes on the frame kept darker for the words over them ([x0, y0, x1,
-  // y1, how much]); and the light placed this frame
-  render(v, { grid = 1, gain = 1, time = 0, top = 0.35, star = 1.3, lightGain = 1, lightHaze = 0, shade = [] } = {}, light = null) {
+  // y1, how much]), `photo` a photograph over it all (its image, `k` how
+  // much of it shows, `rect` where it is on the frame [x0, y0, x1, y1],
+  // `feather` the band [y0, y1] it fades in over from the dark above it, its
+  // `grade` [exposure, contrast, how much light it lets through] and its
+  // `tint`); and the light placed this frame
+  render(v, { grid = 1, gain = 1, time = 0, top = 0.35, star = 1.3, lightGain = 1, lightHaze = 0, shade = [], photo = null } = {}, light = null) {
     this.place(light)
     const u = this.display.uniforms
+    u.uPhotoK.value = photo ? photo.k : 0
+    if (photo) {
+      if (!this.photos.has(photo.img)) {
+        const x = new THREE.Texture(photo.img)
+        x.colorSpace = THREE.NoColorSpace
+        x.generateMipmaps = false
+        x.minFilter = THREE.LinearFilter
+        x.magFilter = THREE.LinearFilter
+        x.needsUpdate = true
+        this.photos.set(photo.img, x)
+      }
+      u.uPhoto.value = this.photos.get(photo.img)
+      u.uPhotoRect.value.set(...photo.rect)
+      u.uPhotoFeather.value.set(...photo.feather)
+      u.uPhotoGrade.value.set(...photo.grade)
+      u.uPhotoTint.value.set(...photo.tint)
+    }
     u.uStar.value = star
     u.uLightGain.value = lightGain
     u.uLightHaze.value = lightHaze
@@ -719,6 +730,7 @@ export class PanelFluid {
   }
 
   dispose() {
+    for (const x of this.photos.values()) x.dispose()
     this.composer.dispose()
     this.renderer.dispose()
   }
