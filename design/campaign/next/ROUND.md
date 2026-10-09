@@ -192,7 +192,9 @@ line that was already there.
 
 **The frame.** Inside the bus, standing in the aisle behind sol. The long
 window band across the upper half, its glass steamed at the edges; beyond
-it University Avenue in the afterglow, streaming right to left. The ceiling
+it University Avenue in the afterglow, streaming left to right (the bus is
+heading left), its shops lit at street level so the heads aboard are dark
+against them. The ceiling
 strip light along the seam. **The spine**: the grab pole sol holds, floor
 to ceiling. The woman in the window seat beyond it, asleep against the
 glass. The bus's own interior sign at the front, `51B`, the only words in
@@ -271,8 +273,9 @@ a fast fall, an ember of 150 to 300 ms, the pool on the desk dropping a tone
 above, on the beats from frame 228 to 324; the last three as his own link
 opens, at 360, 372 and 384, so the phone is the last light in the room.
 
-**Above** (bars 7 to 10, over the café): hugo walking the row, a hand out to
-each lamp. He looks up at frame 324, at the dark row.
+**Above** (bars 7 to 10, over the café): hugo at the end of a row in his
+coat, as the building's timer puts the lamps out, one on each beat, from the
+far end. He looks up at frame 324, at the dark row.
 
 **Below** (bars 11 to 14): he writes in the dark with his phone the only
 light.
@@ -319,9 +322,10 @@ No cars. No neon anywhere. **The spine**: the street light's pole.
 brighter where it is backlit; outside the cone the rain is only heard.
 
 **The signature.** The puddle is a true mirror trembling with ripple rings
-where drops land; omar is upside down in it (the product's own umbrella
-telling has the two of them "upside down in the pavement",
-`app/src/wall/scenes/umbrella.js`), so the film's mirror is here for real.
+where drops land; the street light and the rain in its cone are upside down
+in it (the product's own umbrella telling puts its two "upside down in the
+pavement", `app/src/wall/scenes/umbrella.js`), so the film's mirror is here
+for real.
 Drips, rings and the lamp's buzz run on loops of different lengths, all
 dividing the film's 1152 frames (Kirokaze's small loops out of phase).
 
@@ -419,11 +423,12 @@ longest middle letter needs 2.8 s and gets 4.1; the last needs 3.5 and gets
 
 **Bars 1 and 2, frames 0 to 71.** The loop flap has just landed with its
 click. The 51B, 5:14 pm, amber nowhere yet: everything in night's four
-greys, the street streaming past the steamed glass. Sol, seated by the
-window, seen from behind. A woman stands in the aisle, a canvas bag on her
-shoulder, swaying with the bus, her eyes closing. At 24 the stop chime. On
-the twos, sol looks up at her, stands, and touches the seat; she sits, her
-head going to the glass. Sol takes the pole. At 54 the phone comes up into
+greys, the street streaming past the steamed glass, the shops lit behind
+it. A woman stands in the aisle nearest us, her back to us, a hand on the
+pole, swaying with the bus, asleep on her feet. Sol is in the window seat
+beyond the pole. At 24 the stop chime. On the twos, sol stands; she steps
+aside to let him out, and he gives her the seat. She sits, her head going
+to the glass. Sol takes the pole she held. At 54 the phone comes up into
 the left of the frame, lighting amber. Above, mirrored: the café, wren on
 the riser packing her guitar. The clock on the hinge reads 5:14 pm.
 
@@ -438,15 +443,15 @@ From 180 the clock riffles 6, 7, 8, 9. At 204 the amber reaches the hinge.
 The café falls, right way up, and lands at 216 with its click.
 
 **Link 2, frames 216 to 359.** Wren on the riser, the spot's wedge beside
-her; behind the fallen pane the reading room, mirrored above: hugo starting
-down the row, the lamps going out on the beat from 228. Her phone rises lit
+her; behind the fallen pane the reading room, mirrored above: hugo at the
+end of a row, the lamps going out on the beat from 228. Her phone rises lit
 acid. `dear hugo`. `i laughed at your band. i'm in one now.`, an eighth of
 nothing, `sorry.` by 297. Sent at 312. Acid up the beam and across the
-room. Both look up at 324; above, hugo has just put out the ninth lamp. The
+room. Both look up at 324; above, the ninth lamp has just gone out. The
 clock to 11 pm. Lands at 360.
 
 **Link 3, frames 360 to 503.** The reading room right way up, three lamps
-left; he puts them out at 360, 372 and 384 and his phone is the last light.
+left; they go out at 360, 372 and 384 and his phone is the last light.
 Above, the roof: pia at the parapet, the city below her. `dear pia`. `you
 sang my grandad to sleep. i was awake.` by 438. Sent at 456. Green runs
 along the rows, and every lamp it reaches comes back on. Both look up at

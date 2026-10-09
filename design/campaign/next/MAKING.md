@@ -222,6 +222,13 @@ same intersection gives the screen row the falling pane has reached, and
 the phone's wrapper is clipped there (`clip-path: inset(...)`), so the pane
 covers the phone exactly as it covers the world.
 
+The treatment page's animatic takes a shorter way to the same picture: it
+draws its copy of the screen into a canvas at twice its size on the frame
+and lays it into the composite as a texture over the writer's half, so the
+falling pane covers it, and its shadow crosses it, with no clipping at all
+(`page/round-screen.js`, `page/round-page.js`). The clock is a canvas over
+the frame.
+
 ## 6. The flood
 
 **The shape.** `hash3`, `noise` and `spreadMap` copied verbatim from

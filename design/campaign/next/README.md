@@ -14,7 +14,7 @@ photographed and finished.
 | [TWO-INKS.md](./TWO-INKS.md) | script A, on file. A private note is one ink; a picture needs both |
 | [PACIFIC.md](./PACIFIC.md) | the world round is made in, first written for a story now set aside |
 | [treatment.html](./treatment.html) | the scripts drawn live: the press printing two inks, and round's whole 38.4 seconds as a scrubbable animatic. Open it in a browser |
-| [page/](./page/) | the treatment's sources; `page/round-time.js` is round's clock, and `node page/round-table.mjs` prints and checks it |
+| [page/](./page/) | the treatment's sources: `page/round-time.js` is round's clock (`node page/round-table.mjs` prints and checks it), the `round-*.js` modules are the animatic, `page/round-dev.html` is the bench it was made on, and `python3 page/build.py treatment.html` builds the page |
 
 ---
 

@@ -1,0 +1,481 @@
+<title>Celestual Next Film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Jersey+10&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  /* one room, and two worlds in it: the night of round, and a sheet of riso paper for two inks */
+  /* layout: a reading column; each film a band, its live frame beside its words and its script under both */
+  :root {
+    --room: #000; --sheet: #0E0E0E; --hair: rgba(244, 241, 234, 0.12);
+    --chalk: #F4F1EA; --ash: #9C978E;
+    --paper: #F4F0E4; --ink: #0A0A0C; --ink-2: #5E584E; --paper-hair: rgba(10, 10, 12, 0.16);
+    --rose: #DF93AF; --ice: #8FB8DC; --amber: #E0A95A; --violet: #8371A9;
+    --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+    --pixel: 'Jersey 10', 'Geist Mono', ui-monospace, monospace;
+    --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--room); }
+  body { background: var(--room); color: var(--chalk); font-family: var(--serif); margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 48px); }
+  a { color: inherit; }
+  :focus-visible { outline: 1px solid currentColor; outline-offset: 3px; }
+  .mono { font-family: var(--mono); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash); }
+
+  /* ── the head ── */
+  .head { padding-block: clamp(40px, 7vw, 92px) clamp(36px, 6vw, 72px); display: grid; gap: 22px; }
+  h1 { font-weight: 500; font-size: clamp(54px, 10.5vw, 136px); line-height: 0.9; letter-spacing: -0.032em; margin: 0; text-wrap: balance; }
+  h1 i { font-weight: 400; color: var(--ash); }
+  .lede { font-size: clamp(19px, 2.1vw, 23px); line-height: 1.45; color: var(--ash); max-width: 60ch; margin: 0; text-wrap: pretty; }
+  .lede b { color: var(--chalk); font-weight: 500; }
+  .shifts { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0; border-top: 1px solid var(--hair); }
+  .shifts li { padding: 16px 18px 18px 0; border-bottom: 1px solid var(--hair); display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .shifts b { font-family: var(--mono); font-weight: 400; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chalk); }
+  .shifts span { font-size: 17px; line-height: 1.42; color: var(--ash); text-wrap: pretty; }
+
+  /* ── a film's band ── */
+  .band { padding-block: clamp(48px, 7vw, 96px); }
+  .band.paper { background: var(--paper); color: var(--ink); position: relative; isolation: isolate; }
+  .band.paper::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0.55; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.32 0 0 0 0 0.26 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"); }
+  .band.night { background: var(--room); }
+  .film-head { display: grid; gap: 10px; margin-bottom: clamp(28px, 4vw, 44px); }
+  .film-head .tag { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .paper .tag, .paper .spec { color: var(--ink-2); }
+  .night .tag, .night .spec { color: var(--ash); }
+  h2 { font-weight: 500; font-size: clamp(46px, 8vw, 104px); line-height: 0.92; letter-spacing: -0.03em; margin: 0; }
+  .spec { font-family: var(--mono); font-size: 12px; letter-spacing: 0.05em; }
+  .film-grid { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: clamp(28px, 5vw, 68px); align-items: start; }
+  @media (max-width: 860px) { .film-grid { grid-template-columns: 1fr; } .frame { max-width: 420px; } }
+
+  /* the live frame */
+  .frame { margin: 0; display: grid; gap: 12px; min-width: 0; }
+  .stage { position: relative; width: 100%; aspect-ratio: 9 / 16; max-width: 100%; overflow: hidden; isolation: isolate; }
+  .paper .stage { background: var(--paper); box-shadow: 0 0 0 1px var(--paper-hair); }
+  .night .stage { background: #050507; box-shadow: 0 0 0 1px var(--hair); }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage .sheet { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; pointer-events: none; }
+  .stage .nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-family: var(--mono); font-size: 12px; }
+  .keys { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .key { font-family: var(--pixel); font-size: 21px; line-height: 1; padding: 7px 12px 6px; border-radius: 3px; cursor: pointer; background: transparent; }
+  .paper .key { color: var(--ink); border: 1px solid rgba(10, 10, 12, 0.5); }
+  .paper .key[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .night .key { color: var(--chalk); border: 1px solid rgba(244, 241, 234, 0.38); }
+  .night .key[aria-pressed='true'] { background: var(--chalk); color: #000; border-color: var(--chalk); }
+  .key:active { transform: translateY(1px); }
+  .closer { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .closer input { width: 120px; accent-color: currentColor; }
+  .paper .closer { color: var(--ink-2); }
+  .frame figcaption { font-family: var(--mono); font-size: 11.5px; line-height: 1.55; letter-spacing: 0.02em; text-wrap: pretty; }
+  .paper figcaption { color: var(--ink-2); }
+  .night figcaption { color: var(--ash); }
+
+  /* the words beside it */
+  .words { display: grid; gap: 22px; min-width: 0; }
+  .line, .words p.line { font-weight: 500; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.04; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+  .line i { font-weight: 400; }
+  .words p { font-size: 18.5px; line-height: 1.5; margin: 0; max-width: 62ch; text-wrap: pretty; }
+  .paper .words p.soft { color: var(--ink-2); }
+  .night .words p.soft { color: var(--ash); }
+  .facts { margin: 0; display: grid; grid-template-columns: 9.5em minmax(0, 1fr); border-top: 1px solid; }
+  .paper .facts, .paper .facts > * { border-color: var(--paper-hair); }
+  .night .facts, .night .facts > * { border-color: var(--hair); }
+  .facts dt, .facts dd { margin: 0; padding: 11px 0; border-bottom: 1px solid; font-size: 16.5px; line-height: 1.45; }
+  .facts dt { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 14px; padding-right: 12px; }
+  .paper .facts dt { color: var(--ink-2); }
+  .night .facts dt { color: var(--ash); }
+  @media (max-width: 520px) { .facts { grid-template-columns: 1fr; } .facts dt { border-bottom: 0; padding-bottom: 0; } }
+  .shots-3 { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .shots-3 li { font-size: 17px; line-height: 1.4; display: grid; grid-template-columns: 1.6em 1fr; }
+  .shots-3 li span { font-family: var(--mono); font-size: 12px; padding-top: 4px; }
+
+  /* the script */
+  .section-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; border-top: 1px solid; padding-top: 16px; margin: clamp(48px, 6vw, 72px) 0 6px; }
+  .paper .section-title { border-color: var(--paper-hair); }
+  .night .section-title { border-color: var(--hair); }
+  h3 { font-weight: 500; font-size: clamp(26px, 3.2vw, 36px); letter-spacing: -0.02em; margin: 0; }
+  .shots { list-style: none; margin: 0; padding: 0; }
+  .shot { display: grid; grid-template-columns: 8.2em minmax(0, 1.25fr) minmax(0, 1fr); gap: 6px 26px; padding: 16px 0; border-bottom: 1px solid; }
+  .paper .shot { border-color: var(--paper-hair); }
+  .night .shot { border-color: var(--hair); }
+  .shot .when { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; line-height: 1.5; padding-top: 3px; }
+  .shot .when b { display: block; font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.01em; margin-top: 4px; }
+  .paper .shot .when { color: var(--ink-2); }
+  .paper .shot .when b { color: var(--ink); }
+  .night .shot .when { color: var(--ash); }
+  .night .shot .when b { color: var(--chalk); }
+  .shot .pic { font-size: 16.5px; line-height: 1.5; margin: 0; text-wrap: pretty; }
+  .shot .side { display: grid; gap: 10px; align-content: start; }
+  .say { font-size: 19px; line-height: 1.3; }
+  .say .px { font-family: var(--pixel); font-size: 22px; letter-spacing: 0.01em; }
+  .say .none { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; }
+  .snd { font-size: 14.5px; line-height: 1.45; text-wrap: pretty; }
+  .paper .snd, .paper .say .none { color: var(--ink-2); }
+  .night .snd, .night .say .none { color: var(--ash); }
+  .ink-rose { color: #B85E80; }
+  .ink-ice { color: #4F84B0; }
+  @media (max-width: 860px) { .shot { grid-template-columns: 1fr; } }
+
+  /* tables */
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.45; color: inherit; }
+  .paper table { color: var(--ink); }
+  .night table, .choice table { color: var(--chalk); }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px 10px 0; border-bottom: 1px solid; }
+  th { font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .paper th, .paper td { border-color: var(--paper-hair); }
+  .paper th { color: var(--ink-2); }
+  .night th, .night td, .choice th, .choice td { border-color: var(--hair); }
+  .night th, .choice th { color: var(--ash); }
+  td.notes { font-family: var(--mono); font-size: 13px; letter-spacing: 0.01em; white-space: nowrap; }
+  td:first-child code { white-space: nowrap; }
+  .sw { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.18); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px clamp(28px, 4vw, 56px); }
+  .cols > div { min-width: 0; }
+  .cols h4 { font-family: var(--mono); font-weight: 400; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; margin: 26px 0 10px; }
+  .paper .cols h4 { color: var(--ink-2); }
+  .night .cols h4 { color: var(--ash); }
+  .cols p, .cols li { font-size: 16.5px; line-height: 1.5; text-wrap: pretty; }
+  .cols ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  .cols p { margin: 0 0 10px; }
+  code { font-family: var(--mono); font-size: 0.82em; letter-spacing: 0; }
+
+  /* the choice */
+  .choice { padding-block: clamp(56px, 8vw, 104px); }
+  .choice h2 { margin-bottom: 18px; }
+  .choice .verdict { font-size: clamp(22px, 2.6vw, 30px); line-height: 1.3; color: var(--chalk); max-width: 40ch; margin: 0 0 16px; text-wrap: pretty; }
+  .verdict b { font-weight: 500; }
+  .choice p { font-size: 18px; line-height: 1.5; color: var(--ash); max-width: 64ch; margin: 0 0 14px; }
+  .decide { margin: 18px 0 0; padding: 0; list-style: none; counter-reset: d; border-top: 1px solid var(--hair); }
+  .decide li { counter-increment: d; display: grid; grid-template-columns: 2.2em 1fr; padding: 13px 0; border-bottom: 1px solid var(--hair); font-size: 17.5px; line-height: 1.45; }
+  .decide li::before { content: counter(d); font-family: var(--mono); font-size: 12px; color: var(--ash); padding-top: 4px; }
+  footer { border-top: 1px solid var(--hair); padding-block: 18px 40px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 12px; color: var(--ash); letter-spacing: 0.03em; }
+  .sign { display: flex; align-items: center; gap: 14px; margin-top: 30px; }
+  .sign svg { width: 224px; height: 66px; color: var(--chalk); image-rendering: pixelated; filter: drop-shadow(0 0 3px rgba(255, 244, 228, 0.3)) drop-shadow(0 0 9px rgba(255, 244, 228, 0.1)); }
+
+  /* the riso's own words, printed over the press */
+  .sheet .pr { position: absolute; left: 0; top: 0; white-space: nowrap; mix-blend-mode: multiply; will-change: transform; }
+  .sheet .pr.note { font-family: var(--pixel); font-size: 64px; line-height: 1; -webkit-text-stroke: 0.7px currentColor; }
+  .sheet .pr.note.small { font-size: 44px; line-height: 1.05; white-space: normal; width: 430px; -webkit-text-stroke: 0.5px currentColor; }
+  .sheet .pr.slug { font-family: var(--mono); font-size: 22px; letter-spacing: 0.04em; }
+  .sheet .pr.say { font-family: var(--serif); font-style: italic; font-size: 112px; letter-spacing: -0.02em; line-height: 1; }
+  .sheet .pr.names { font-family: var(--pixel); font-size: 40px; }
+  .sheet .pr.from { font-family: var(--mono); font-size: 20px; letter-spacing: 0.04em; }
+  .sheet .t-rose { color: rgb(233, 156, 196); }
+  .sheet .t-ice { color: rgb(149, 196, 246); }
+  .sheet .t-black { color: rgb(10, 11, 13); }
+  .sheet .grp[hidden] { display: none; }
+
+  /* round: the scrubber, and three frames it drew */
+  .scrub { display: flex; align-items: center; gap: 12px; }
+  .scrub input { flex: 1 1 auto; min-width: 0; accent-color: var(--chalk); }
+  .scrub output { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; color: var(--ash); white-space: nowrap; min-width: 13.5em; text-align: right; }
+  #round-over { pointer-events: none; }
+  .held { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; margin-top: clamp(36px, 5vw, 56px); }
+  .held figure { margin: 0; display: grid; gap: 8px; }
+  .held img { width: 100%; aspect-ratio: 9 / 16; display: block; background: #050507; box-shadow: 0 0 0 1px var(--hair); }
+  .held figcaption { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; color: var(--ash); }
+  td .px { font-family: var(--pixel); font-size: 19px; line-height: 1.15; }
+
+  @media (prefers-reduced-motion: reduce) { .sheet .fade { transition: none; } }
+</style>
+
+<header class="wrap head">
+  <div class="eyebrow">celestual · the next film · october 2026</div>
+  <h1>round.</h1>
+  <p class="lede">The script for the second film, drawn live below from the product's own parts. One night in Berkeley, six people, six letters on the wall, <b>each to the next of them, and the last to the first.</b> Nobody in it knows they are in a round. Two inks, the earlier script, stays on file under it.</p>
+  <ul class="shifts">
+    <li><b>the private note, to the wall</b><span>The first film and both earlier scripts were about the private note and its reveal. Round is about the other half: letters anybody can read, each to somebody.</span></li>
+    <li><b>two people, to six</b><span>Six strangers in one night, every letter written to the next of them. Each flatters the one it is to and asks for nothing.</span></li>
+    <li><b>a moment, to a night</b><span>5:14 pm to 7:14 am, every scene at fourteen minutes past, so only the hour turns. Bars 1 and 32 are the same frame.</span></li>
+    <li><b>a song, to a round</b><span>Six voices in E flat over a four bar ground, one for each person, each entering as they start to write.</span></li>
+  </ul>
+</header>
+
+<!-- ───────────────────────────── round ───────────────────────────── -->
+<section class="band night" id="round" aria-labelledby="r-title">
+  <div class="wrap">
+    <div class="film-head">
+      <span class="tag">script B · the lead</span>
+      <h2 id="r-title">round</h2>
+      <span class="spec">38.4 s, looping · 1080 × 1920 · 30 fps · 150 bpm in three · E♭ · thirty two bars</span>
+    </div>
+    <div class="film-grid">
+      <figure class="frame">
+        <div class="stage" id="round-stage">
+          <canvas id="round-gl" width="1080" height="1920" aria-label="The film, live: below the seam the one writing, seen from behind with their phone; above it, mirrored, the one they are writing to"></canvas>
+          <canvas id="round-over" width="1080" height="1920" aria-hidden="true"></canvas>
+        </div>
+        <div class="scrub">
+          <input id="round-t" type="range" min="0" max="1151" step="1" value="0" aria-label="the film, a frame at a time">
+          <output id="round-at" for="round-t">bar 1 · 5:14 pm</output>
+        </div>
+        <div class="keys" role="group" aria-label="the film">
+          <button class="key" id="r-play" aria-pressed="true">play</button>
+          <button class="key" data-f="0">the seat</button>
+          <button class="key" data-f="96">sol</button>
+          <button class="key" data-f="246">wren</button>
+          <button class="key" data-f="390">hugo</button>
+          <button class="key" data-f="522">pia</button>
+          <button class="key" data-f="690">omar</button>
+          <button class="key" data-f="798">yuna</button>
+          <button class="key" data-f="1008">the wall</button>
+        </div>
+        <figcaption>Live: every frame drawn from the film's own clock (<code>page/round-time.js</code>), in any order. Six worlds lit, then brought down to four tones in 6 px cells; the people the product's rig; the phone its composer and the letters its screen; the clock its split flap digits. Scrub it, or go to a writer.</figcaption>
+      </figure>
+
+      <div class="words">
+        <p class="line">every letter on the wall is <i>to somebody.</i></p>
+        <p>One night in Berkeley, from the evening rush to sunrise, six people each write a letter on the wall. Each is to the next of them, and the last is to the first. None of them knows; only we see the round. It opens on a stranger giving up a seat on a bus, and it closes on the letter about it. Then, for the first time, all six worlds at once, each turning into its letter on the wall, and the last frame falls back into the first.</p>
+        <p class="soft">The frame is a split flap. Below the seam, the one writing. Above it, mirrored, the one they are writing to, in their own world and their own hour. When the letter goes up, its colour runs out of the phone through the writer's world, and when it reaches the seam the flap falls and brings the one above down, right way up, to write the next.</p>
+        <dl class="facts">
+          <dt>perspective</dt><dd>The wall's. Only we see the round; nobody in it is ever told they were written to.</dd>
+          <dt>the world</dt><dd>Six places in one city, each lit and brought down to four tones of a screen's colour. Grey until a letter goes up, and then its colour, cell by cell. The phone is the one crisp lit thing.</dd>
+          <dt>the sound</dt><dd>A round for six voices over a ground, one for each person, entering as each starts to write. The machine on the grid: every landing a click, every flood a run of ticks.</dd>
+          <dt>the end</dt><dd>The six at once on a contact sheet, each flipping into its letter on the wall, the line, the lockup, and a flap back into frame 0.</dd>
+        </dl>
+        <div>
+          <p class="soft" style="margin-bottom:10px">The three frames somebody screenshots:</p>
+          <ol class="shots-3">
+            <li><span>1</span>A woman asleep on her feet, and a stranger standing up.</li>
+            <li><span>4</span>The reading room as the green comes back to its lamps.</li>
+            <li><span>9</span>Six letters on the wall, each to the next.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="held" aria-label="three frames from the film, drawn by it">
+      <figure><img id="round-still-0" alt="The 51B at 5:14 pm: sol at the pole writing to wren, the street lit behind the steamed glass, the café hanging mirrored above"><figcaption>bar 4 · the 51B, sol writing</figcaption></figure>
+      <figure><img id="round-still-1" alt="The hospital roof at 1:14 am as the ice runs out across the city, the corner in the rain mirrored above"><figcaption>bar 18 · the ice reaching the city</figcaption></figure>
+      <figure><img id="round-still-2" alt="The pane falling from the roof onto the corner, mid fall, the clock on the hinge turning from 1 am to 3"><figcaption>bar 18 · a flap mid fall, the clock turning</figcaption></figure>
+    </div>
+
+    <div class="section-title"><h3>the script</h3><span class="spec">a beat 400 ms · a bar 1200 · a link four bars · every flap lands on a downbeat</span></div>
+    <ol class="shots">
+      %%SHOTS_ROUND%%
+    </ol>
+
+    <div class="cols">
+      <div>
+        <h4>the six letters</h4>
+        <div class="scroll"><table>
+          <thead><tr><th>writer</th><th>where, when</th><th>the letter</th><th>colour</th></tr></thead>
+          <tbody>
+            <tr><td>sol</td><td>the 51B, 5:14 pm</td><td><span class="px">dear wren<br>you hum when you think. i hope nobody ever tells you.</span></td><td class="notes"><span class="sw" style="background:#E0A95A"></span>amber</td></tr>
+            <tr><td>wren</td><td>the café, 9:14 pm</td><td><span class="px">dear hugo<br>i laughed at your band. i'm in one now. sorry.</span></td><td class="notes"><span class="sw" style="background:#8ACE00"></span>acid</td></tr>
+            <tr><td>hugo</td><td>the reading room, 11:14 pm</td><td><span class="px">dear pia<br>you sang my grandad to sleep. i was awake.</span></td><td class="notes"><span class="sw" style="background:#A3BB6B"></span>green</td></tr>
+            <tr><td>pia</td><td>the hospital roof, 1:14 am</td><td><span class="px">dear omar<br>i don't remember the fight. i remember everything else.</span></td><td class="notes"><span class="sw" style="background:#8FB8DC"></span>ice</td></tr>
+            <tr><td>omar</td><td>a corner in the rain, 3:14 am</td><td><span class="px">dear yuna<br>i don't even like bread.</span></td><td class="notes"><span class="sw" style="background:#F7C200"></span>violet / yellow</td></tr>
+            <tr><td>yuna</td><td>the bakery, 7:14 am</td><td><span class="px">to the one who always stands<br>you give your seat to whoever looks most tired. last night it was me.</span></td><td class="notes"><span class="sw" style="background:#DF93AF"></span>rose</td></tr>
+          </tbody>
+        </table></div>
+        <h4>the round</h4>
+        <p>A strict canon in E flat over a four bar ground, <code>Eb | Bb/D | Cm | Ab</code>, the bass never stopping, even across the loop. Each person is a voice entering at their own flap: sol a clarinet, wren a nylon guitar and a hum, hugo a bass guitar, pia a cello, omar a marimba against the rain, yuna a horn at sunrise. In bars 23 to 26 all six sound at once. Bar 27 holds the dominant under the trembling hinge; in bar 29 each flip of the cascade sounds its writer's note, so the last chord is built a note at a time.</p>
+        <div class="scroll"><table>
+          <thead><tr><th>phrase</th><th>a bar each</th></tr></thead>
+          <tbody>
+            <tr><td>the tune</td><td class="notes">B♭4 · F4 A♭4 G4 · E♭4 D4 · C4</td></tr>
+            <tr><td>the answer</td><td class="notes">G4 F4 · D4 · E♭4 G4 A♭4 · C5</td></tr>
+            <tr><td>the walk</td><td class="notes">E♭5 D5 C5 · B♭4 D5 F5 · C5 E♭5 G5 · A♭5 E♭5 C5</td></tr>
+            <tr><td>the long notes</td><td class="notes">B♭3 · B♭3 · C4 · C4</td></tr>
+            <tr><td>the figure</td><td class="notes">(B♭5 G5)×3 · (B♭5 F5)×3 · (C6 G5)×3 · (C6 A♭5)×3</td></tr>
+            <tr><td>the high hold</td><td class="notes">E♭6 · F6 · E♭6 · C6</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div>
+        <h4>the four tones</h4>
+        <p>Each world's tones are worked out once against night's and kept; a letter's colour changes only the palette under them, cell by cell, behind a crest one tone brighter. Every one is the product's own (<code>looks.js</code>, <code>skinOf</code>).</p>
+        <div class="scroll"><table>
+          <thead><tr><th></th><th>ink</th><th>low</th><th>mid</th><th>lit</th></tr></thead>
+          <tbody>
+%%TONES%%
+          </tbody>
+        </table></div>
+        <h4>how it is built</h4>
+        <div class="scroll"><table>
+          <tbody>
+            <tr><td><code>round-time.js</code></td><td>the clock: links, flaps, the clock's riffles, the phone's states, the looks, every sound on the grid, the cutdowns</td></tr>
+            <tr><td><code>round-worlds.js</code></td><td>the six worlds as light, the plateau and the blue noise, the composite: the mirror, the pane by ray and plane, the end card</td></tr>
+            <tr><td><code>round-flood.js</code></td><td>the colour's arrival, the product's own wash measured along each world's paths</td></tr>
+            <tr><td><code>round-cast.js</code></td><td>the people, the product's rig, posed on twos from each world's clock</td></tr>
+            <tr><td><code>round-screen.js</code></td><td>the composer and the letter as the product draws them</td></tr>
+            <tr><td><code>palettes.mjs</code></td><td>the palettes, screens, glyphs and lockup, read from the app</td></tr>
+          </tbody>
+        </table></div>
+        <h4>what could go wrong</h4>
+        <p>The chain has to read in one viewing: the greeting names the one above, the flap brings them down, the spine holds each frame together, the clock turns. Six worlds is a lot of drawing, which is why this animatic exists before any detail does. The dither has to survive the platforms: 6 px cells, lossless frames, and a private test upload of the 6 second cut first.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────── A ───────────────────────────── -->
+<section class="band paper" id="two-inks" aria-labelledby="a-title">
+  <div class="wrap">
+    <div class="film-head">
+      <span class="tag">script A · on file</span>
+      <h2 id="a-title">two inks</h2>
+      <span class="spec">30 s · 1080 × 1920 · 24 fps, the prints on twos · 120 bpm · F major · fifteen bars</span>
+    </div>
+    <div class="film-grid">
+      <figure class="frame">
+        <div class="stage" id="riso-stage">
+          <canvas id="riso" aria-label="a riso print of two people on a bench at night, from behind, printed in two inks"></canvas>
+          <div class="sheet" id="riso-sheet" aria-hidden="true">
+            <div class="grp" data-g="iris">
+              <span class="pr note t-rose" data-ink="r" data-x="80" data-y="1496">next time i'd sit closer.</span>
+              <span class="pr slug t-black" data-ink="k" data-x="80" data-y="1598">iris · rose</span>
+            </div>
+            <div class="grp" data-g="jun" hidden>
+              <span class="pr note t-ice" data-ink="i" data-x="80" data-y="1496">next time i'd move over.</span>
+              <span class="pr slug t-black" data-ink="k" data-x="80" data-y="1598">jun · ice</span>
+            </div>
+            <div class="grp" data-g="both" hidden>
+              <span class="pr say t-black" data-ink="k" data-x="76" data-y="1474">it's mutual.</span>
+              <span class="pr names t-black" data-ink="k" data-x="82" data-y="1598">iris &amp; jun</span>
+              <span class="pr note small t-rose" data-ink="r" data-x="80" data-y="1652">next time i'd sit closer.</span>
+              <span class="pr note small t-ice" data-ink="i" data-x="580" data-y="1652">next time i'd move over.</span>
+              <span class="pr from t-black" data-ink="k" data-x="80" data-y="1760">from iris</span>
+              <span class="pr from t-black" data-ink="k" data-x="580" data-y="1760">from jun</span>
+            </div>
+          </div>
+        </div>
+        <div class="keys" role="group" aria-label="the print">
+          <button class="key" id="k-play" aria-pressed="true">play</button>
+          <button class="key" id="k-iris" aria-pressed="false">iris</button>
+          <button class="key" id="k-jun" aria-pressed="false">jun</button>
+          <button class="key" id="k-both" aria-pressed="false">both</button>
+          <label class="closer" for="k-closer">closer <input id="k-closer" type="range" min="1" max="12" step="0.01" value="1"></label>
+        </div>
+        <figcaption>Live: a WebGL press, twelve prints a second. The two people are the bench telling's own bodies (<code>scenes/bench.js</code> at 5800 ms), each laid on its own pad, so the rose holds only her and the ice only him. Rose at 75°, ice at 15°, black at 45°, a 7 px screen, each print a hair out of register.</figcaption>
+      </figure>
+
+      <div class="words">
+        <p class="line">a private note is one ink. <i>a picture needs both.</i></p>
+        <p>Two people, each printed in their own ink: iris in rose, jun in ice. Alone, each print is half a picture: a woman on a bench at night, leaning her head on a shoulder that is not there; a man on the same bench resting his cheek on hair that is not there. Each sends theirs privately, and the press takes both inks and prints nothing. On Saturday at nine the press runs. The sheets that only ever had one ink come out blank, and nobody ever knows. The one that had both comes out whole, and where they touch, a colour neither ink had.</p>
+        <p class="soft">Somebody who sees it once can explain celestual to a friend: it only prints if you both send one.</p>
+        <dl class="facts">
+          <dt>perspective</dt><dd>The press's. It sees both halves, which neither of them can, and prints only pairs: the double blind, drawn as a machine.</dd>
+          <dt>the world</dt><dd>Every frame a riso print on warm paper, in rose, ice and black. Twelve prints a second, each a hair out of register. The words are printed too.</dd>
+          <dt>the sound</dt><dd>A hocket: one tune split between two players, each half full of holes until both play. From nine, the press is the rhythm section.</dd>
+          <dt>the end</dt><dd>The registration mark in the sheet's corner slides into register and becomes the mark.</dd>
+        </dl>
+        <div>
+          <p class="soft" style="margin-bottom:10px">The three frames somebody screenshots:</p>
+          <ol class="shots-3">
+            <li><span>1</span>A woman leaning her head on a shoulder that is not there.</li>
+            <li><span>8</span>The moiré storm where the second ink lands.</li>
+            <li><span>11</span>One violet dot that holds the whole picture.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title"><h3>the script</h3><span class="spec">a beat 500 ms · a bar 2000 · every cut on a beat · every caption printed on its sheet</span></div>
+    <ol class="shots">
+      %%SHOTS_A%%
+    </ol>
+
+    <div class="cols">
+      <div>
+        <h4>the hook, a hocket</h4>
+        <p>Eighth notes, a bar each. iris plays the odd eighths on the marimba, jun the even ones on the vibraphone. Alone, each is a tune with holes in it. From bar 8 they play together and it is whole. First draft, tuned by ear in the first round.</p>
+        <div class="scroll"><table>
+          <thead><tr><th>bar</th><th>chord</th><th>iris</th><th>jun</th></tr></thead>
+          <tbody>
+            <tr><td>a</td><td>F</td><td class="notes">A4 · F5 · A5 · F5</td><td class="notes">C5 · C5 · G5 · C5</td></tr>
+            <tr><td>b</td><td>Dm</td><td class="notes">A4 · F5 · A5 · F5</td><td class="notes">D5 · D5 · G5 · D5</td></tr>
+            <tr><td>c</td><td>B♭</td><td class="notes">B♭4 · F5 · B♭5 · G5</td><td class="notes">D5 · D5 · A5 · D5</td></tr>
+            <tr><td>d</td><td>C7</td><td class="notes">C5 · G5 · C6 · G5</td><td class="notes">E5 · E5 · B♭5 · E5</td></tr>
+          </tbody>
+        </table></div>
+        <p style="margin-top:12px">Bars 1 and 2, each half alone. Bar 7, the press alone, the bass holding C. Bar 8, the hook whole and the snap with the choir. Bar 15, both on F5. Marimba, vibraphone, fingered bass, the slow strings, choir aahs and a warm pad from the MuseScore General SoundFont; the press as foley, synthesised on its frames. Mastered to -14 LUFS, -1.5 dB true peak.</p>
+      </div>
+      <div>
+        <h4>the print rules</h4>
+        <ul>
+          <li>Paper <code>#F4F0E4</code> and three inks: rose <code>#DF93AF</code> for her, ice <code>#8FB8DC</code> for him, black for the world and the words. Rose over ice, about <code>#8371A9</code>, only where they touch.</li>
+          <li>Inks are filters: nothing is lighter than paper, so a light is paper left bare in a field of ink (the moon, the scanner's bar).</li>
+          <li>Above 78 percent the dots join and print solid, with the drum's mottle. A dropout now and then.</li>
+          <li>The camera is a copy stand: straight down, sheets slid in and out on the beat. A cut is a new sheet; nothing dissolves.</li>
+          <li>Every sheet is cut to 9 by 16, the shape of a phone's glass.</li>
+          <li>Never a halftone filter over a render, a grunge pack, CMYK, or anything "vintage".</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <h4>the cutdowns</h4>
+        <div class="scroll"><table>
+          <thead><tr><th>cut</th><th>bars</th></tr></thead>
+          <tbody>
+            <tr><td>15 s</td><td>iris, jun, the drums (<i>send it privately. they only read it if they send you one too.</i>), nine and the blank sheets, the storm and the snap, the print (<i>it's mutual.</i>), the name</td></tr>
+            <tr><td>6 s</td><td>apart, the snap, the name (<i>nothing happens unless it's mutual.</i>)</td></tr>
+            <tr><td>4:5</td><td>all fifteen bars, the middle 1350 rows, captions set again at the crop's top</td></tr>
+          </tbody>
+        </table></div>
+        <h4>what it claims</h4>
+        <p>Only the brief's facts: a private note is read only if they send you one back; the reveal is Saturday at 9pm Pacific; if it is never mutual nobody is told. The blank sheets are a picture, never a count. First names, never a handle.</p>
+      </div>
+      <div>
+        <h4>how it is built</h4>
+        <div class="scroll"><table>
+          <tbody>
+            <tr><td><code>parts/inks-time.js</code></td><td>the clock, read by the picture and the score</td></tr>
+            <tr><td><code>parts/riso-gl.js</code></td><td>the press as one shader, in the sheet's own units (the style frame on this page is its first draft)</td></tr>
+            <tr><td><code>parts/bench-inks.js</code></td><td>the telling's two bodies, one pad each: a small export added to <code>scenes/bench.js</code></td></tr>
+            <tr><td><code>parts/press.jsx</code></td><td>the glass and the scanner, the drums and their masters, the panel, the out tray</td></tr>
+            <tr><td><code>parts/target.js</code></td><td>the registration target, six prints into <code>MARK</code></td></tr>
+            <tr><td><code>studio-score-inks.mjs</code></td><td>the hocket and the press</td></tr>
+          </tbody>
+        </table></div>
+        <h4>what could go wrong</h4>
+        <p>The metaphor has to carry the mechanism: five strangers, sound off, the 15 s cut, asked what it does. Dots under 6 px smear on a feed's encoder: upload the 6 s privately first. The storm must never flash (WCAG 2.3.1).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────────── the choice ───────────────────────────── -->
+<section class="wrap choice" aria-labelledby="c-title">
+  <span class="eyebrow">which one</span>
+  <h2 id="c-title" style="margin-top:12px">make round.</h2>
+  <p class="verdict"><b>It is the story the owner asked for, in the world the owner chose,</b> and it shows the product as it is.</p>
+  <p>The composer, the greeting, the colour, the battery, <code>being read</code> and the wall itself, and nothing it does not do. It has a shape people keep (a kindness at the start, the letter about it at the end) and a form that pays for watching twice: it loops, and the second time the first scene means something. Its 15 second cut is a whole story and its 6 second cut is a joke that stands on its own.</p>
+  <p>Two inks stays on file. It is the cheaper film and a good one, but it is about the private note and its reveal, which was the first film's subject.</p>
+  <div class="section-title" style="border-color:var(--hair)"><h3>side by side</h3></div>
+  <div class="scroll"><table>
+    <thead><tr><th></th><th>round</th><th>two inks</th></tr></thead>
+    <tbody>
+      <tr><td>the line</td><td>every letter on the wall is to somebody.</td><td>a private note is one ink. a picture needs both.</td></tr>
+      <tr><td>about</td><td>the wall</td><td>the private note and the reveal</td></tr>
+      <tr><td>the world</td><td>six worlds of one city, lit and dithered, grey until each letter's colour runs out of its phone</td><td>riso prints on warm paper in rose, ice and black</td></tr>
+      <tr><td>the new build</td><td>six world programs on one kit, the flap, the flood, the cast, the composer</td><td>one shader and the press's drawings</td></tr>
+      <tr><td>the biggest risk</td><td>six worlds of drawing, and the chain read in one viewing</td><td>the metaphor carrying the mechanism</td></tr>
+      <tr><td>stretches on purpose</td><td>whole worlds dithered, as the product dithers only pictures</td><td>the whole film on paper</td></tr>
+    </tbody>
+  </table></div>
+  <div class="section-title" style="border-color:var(--hair)"><h3>to refine it, decide</h3></div>
+  <ol class="decide">
+    <li><span>The letters, as written or any of ROUND.md's alternatives; and the names: sol, wren, hugo, pia, omar, yuna.</span></li>
+    <li><span>The 51B on the bus's sign, or a bus with no number.</span></li>
+    <li><span>Fourteen minutes past every time, or times that feel found.</span></li>
+    <li><span>Cells of 6 px, bolder and safer through the platforms, or 4 px, finer.</span></li>
+    <li><span>The round in three at 150, a lullaby, or in four at 100; instrumental, or wren's hum given words.</span></li>
+    <li><span>The 38.4 second film or the 15 second cut first.</span></li>
+  </ol>
+  <div class="sign">%%LOCKUP%%</div>
+</section>
+
+<footer class="wrap">
+  <span>design/campaign/next/ · README.md, ROUND.md, LOOK.md, MAKING.md, TWO-INKS.md</span>
+  <span>branch claude/new-ad-design-scripts-6u7r6r</span>
+</footer>
+
+<script>
+%%SCRIPT%%
+</script>

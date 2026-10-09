@@ -179,9 +179,14 @@ export function typing(script, f0, f1) {
 
 function textAt(events, f) {
   let s = ''
+  let prev = ''
   let last = -Infinity
-  for (const [g, text] of events) if (g <= f) { s = text; last = g }
-  return { text: s, since: last }
+  for (const [g, text] of events) if (g <= f) { prev = s; s = text; last = g }
+  // how many characters at its end came with the last change (none when it
+  // took some back)
+  let k = 0
+  while (k < prev.length && k < s.length && prev[k] === s[k]) k++
+  return { text: s, since: last, fresh: s.length > prev.length ? s.length - k : 0 }
 }
 
 // the schedules, worked out once
@@ -197,7 +202,7 @@ const TYPED = LINKS.map((L, i) => {
     const steps = ['dear', 'dea', 'de', 'd', '', 't', 'to']
     greet = steps.map((head, k) => [L.start + (k === 0 ? P.greet : P.edit[0] + (k - 1) * SIXTEENTH), head + rest])
   }
-  return { greet, body, full: body.length ? body[body.length - 1][1] : '' }
+  return { greet, rest: P.edit ? L.greet.replace(/^to/, '') : '', body, full: body.length ? body[body.length - 1][1] : '' }
 })
 
 // ── the flap ───────────────────────────────────────────────────────────────
@@ -241,6 +246,12 @@ export function flapAngle(f, r, l) {
   if (f < r) return 0
   if (f < l) return gravity((f - r) / (l - r))
   return rebound(f - l)
+}
+// a flap's angle at any moment of the film, a fraction of a frame included,
+// for the shutter's blur
+export function angleOf(fl, t) {
+  if (fl.caught != null && t < fl.r) return t < fl.c ? 0 : trembling(Math.floor(t), fl.c, fl.r)
+  return flapAngle(t, fl.r, fl.l)
 }
 // the one broken rule: link 6's hinge catches when the colour reaches it and
 // trembles for the bar before it lets go
@@ -312,18 +323,23 @@ export function phoneAt(i, f) {
   const x = f - L.start
   const typed = TYPED[i]
   const rise = P.rise ? sm(span(x, P.rise[0], P.rise[1])) : 1
-  const lit = P.rise ? span(x, P.rise[0] + 6, P.rise[1] + 2) : 1
+  // (a phone that was already there wakes as the flap lands on it)
+  const lit = P.rise ? span(x, P.rise[0] + 6, P.rise[1] + 2) : span(x, 0, 6)
   let mode = x < P.greet ? 'waking' : 'draft'
   if (x >= P.send) mode = 'up'
   if (P.read && x >= P.read[0] && x < P.read[1]) mode = 'read'
   const body = textAt(typed.body, f)
   let greet = L.greet
   let greetSince = -Infinity
-  if (typed.greet) { const g = textAt(typed.greet, f); greet = g.text; greetSince = g.since }
+  let greetCut = null
+  if (typed.greet) { const g = textAt(typed.greet, f); greet = g.text; greetSince = g.since; greetCut = g.text.length - typed.rest.length }
+  // the key under the thumb as each word lands: the last letter of it
+  const last = body.text.slice(-1)
+  const keyHit = last === ' ' ? 99 : 'qwertyuiopasdfghjklzxcvbnm'.indexOf(last)
   return {
-    mode, rise, lit, greet, greetSince,
+    mode, rise, lit, greet, greetSince, greetCut,
     editing: !!(P.edit && x >= P.edit[0] && x < P.edit[1] + SIXTEENTH),
-    text: mode === 'read' ? '' : body.text, since: body.since,
+    text: mode === 'read' ? '' : body.text, since: body.since, freshChars: body.fresh, keyAt: body.since, keyHit,
     count: `${MAX_BODY - body.text.length}/1`, stamp: L.stamp, bat: L.bat,
     caret: mode === 'draft', pressed: x >= P.send && x < P.send + SIXTEENTH,
     full: typed.full, colour: L.colour, kind: L.kind,
@@ -339,10 +355,35 @@ export function lookAt(f, f0) {
   return sm(span(g, f0, f0 + 10)) * (1 - sm(span(g, f0 + 34, f0 + 52)))
 }
 
+// how far a world's person is looking up at frame f: the sum of the looks it
+// takes part in, as the one writing (its own link) and as the one above (the
+// link before), so it carries on unbroken through the flap that brings it down
+export function lookOf(k, f) {
+  const own = k
+  const above = (k + 5) % 6
+  return Math.min(1, lookAt(f, LINKS[own].start + PLAN[own].look) + lookAt(f, LINKS[above].start + PLAN[above].look))
+}
+
 // a world's own clock when it is seen at frame f; the bus above yuna, and
 // both worlds under the loop flap, are in the seconds before bar 1
 function clockOf(k, f, before = false) {
   return before ? f - FRAMES - WORLDS[k].origin : f - WORLDS[k].origin
+}
+
+// ── the reading room's lamps ───────────────────────────────────────────────
+// The moment each lamp goes out, on the room's own clock, by the lamp's
+// place (row by row, nearest first, the left row then the right): from the
+// far end, the rows in turn, the last three nearest as hugo's link opens.
+export const LAMPS_OFF = (() => {
+  const order = [5, 11, 4, 10, 3, 9, 2, 8, 1, 7, 0, 6]
+  const off = new Array(12)
+  order.forEach((idx, k) => { off[idx] = (k < 9 ? at(7, 2) + k * BEAT : at(11) + (k - 9) * BEAT) - WORLDS[2].origin })
+  return off
+})()
+
+// the six worlds of the contact sheet at frame f, each in its letter's colour
+export function sheetAt(f) {
+  return LINKS.map((L) => ({ world: L.world, id: WORLDS[L.world].id, clock: clockOf(L.world, f), palette: L.colour, flood: 1, look: lookOf(L.world, f) }))
 }
 
 // ── one frame of the film ──────────────────────────────────────────────────
@@ -354,8 +395,8 @@ export function frameAt(input) {
   // bars 1 and 2: the bus, the café above; sol's phone already on its way up
   if (f < LINKS[0].start) {
     fr.phase = 'open'
-    fr.bottom = world(0, clockOf(0, f), { palette: 'night', flood: 0, look: 0 })
-    fr.top = world(1, clockOf(1, f), { palette: 'night', look: 0 })
+    fr.bottom = world(0, clockOf(0, f), { palette: 'night', flood: 0, look: lookOf(0, f) })
+    fr.top = world(1, clockOf(1, f), { palette: 'night', look: lookOf(1, f) })
     if (f >= LINKS[0].start + PLAN[0].rise[0]) fr.phone = phoneAt(0, f)
     return fr
   }
@@ -368,12 +409,11 @@ export function frameAt(input) {
     const x = f - L.start
     const next = (L.world + 1) % 6
     const flood = floodAt(i, f)
-    const look = lookAt(f, L.start + P.look)
     fr.phase = 'link'
     fr.link = L.n
-    fr.bottom = world(L.world, clockOf(L.world, f), { palette: L.colour, flood, look })
+    fr.bottom = world(L.world, clockOf(L.world, f), { palette: L.colour, flood, look: lookOf(L.world, f) })
     fr.phone = phoneAt(i, f)
-    fr.top = world(next, clockOf(next, f, next === 0), { palette: 'night', look })
+    fr.top = world(next, clockOf(next, f, next === 0), { palette: 'night', look: lookOf(next, f) })
     if (i < 5) {
       // the pane: released when the colour reaches the hinge, landing on the
       // next link's downbeat, carrying the next world upright on its back
@@ -382,7 +422,7 @@ export function frameAt(input) {
       if (f >= r) {
         const after = (next + 1) % 6
         fr.flap = {
-          kind: 'pane', theta: flapAngle(f, r, l), lands: l,
+          kind: 'pane', theta: flapAngle(f, r, l), lands: l, r, l,
           front: fr.top, back: fr.top,
           revealed: world(after, clockOf(after, f, after === 0), { palette: 'night', look: 0 }),
           under: fr.bottom,
@@ -395,7 +435,7 @@ export function frameAt(input) {
       const l = L.start + P.land
       if (f >= c) {
         fr.flap = {
-          kind: 'card', theta: f < r ? trembling(f, c, r) : flapAngle(f, r, l), lands: l, caught: f < r,
+          kind: 'card', theta: f < r ? trembling(f, c, r) : flapAngle(f, r, l), lands: l, caught: f < r, c, r, l,
           front: fr.top, back: { card: 'sheet', half: 'bottom' }, revealed: { card: 'sheet', half: 'top' }, under: fr.bottom,
         }
       }
@@ -410,7 +450,7 @@ export function frameAt(input) {
   }
   // the end: the contact sheet, the cascade, the wall, the line, the lockup
   fr.phase = 'end'
-  fr.sheet = LINKS.map((L) => world(L.world, clockOf(L.world, f), { palette: L.colour, flood: 1 }))
+  fr.sheet = sheetAt(f)
   fr.cascade = LINKS.map((L, i) => {
     const l = at(29) + i * EIGHTH
     const r = l - 5
@@ -425,7 +465,7 @@ export function frameAt(input) {
   const r = FRAMES - BEAT
   if (f >= r) {
     fr.flap = {
-      kind: 'card', theta: flapAngle(f, r, FRAMES), lands: FRAMES,
+      kind: 'card', theta: flapAngle(f, r, FRAMES), lands: FRAMES, r, l: FRAMES,
       front: { card: 'end', half: 'top' },
       back: world(0, clockOf(0, f, true), { palette: 'night', flood: 0, look: 0 }),
       revealed: world(1, clockOf(1, f, true), { palette: 'night', look: 0 }),

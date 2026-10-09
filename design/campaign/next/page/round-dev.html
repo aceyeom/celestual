@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>round, in development</title>
+<script type="importmap">{ "imports": { "/repo/app/src/wall/scenes/kit.js": "/repo/design/campaign/next/page/kit-shim.js" } }</script>
+<style>
+  @font-face { font-family: 'Jersey 10'; src: url('/repo/app/public/fonts/jersey-10-normal-400-latin.woff2') format('woff2'); }
+  body { margin: 0; background: #111; color: #ddd; font: 12px/1.4 monospace }
+</style>
+<body>
+<script type="module">
+// A bench for the animatic's parts, driven by the query: `?masks` draws the
+// six worlds' people at a few moments, side by side, for the harness.
+const q = new URLSearchParams(location.search)
+window.__out = {}
+try {
+  if (q.has('masks')) {
+    const { drawCast, MASK_W, MASK_H, PHONE } = await import('./round-cast.js')
+    const at = (q.get('at') || '-60,0,60,108').split(',').map(Number)
+    const worlds = (q.get('worlds') || '0,1,2,3,4,5').split(',').map(Number)
+    const cv = document.createElement('canvas')
+    cv.width = MASK_W * at.length
+    cv.height = MASK_H * worlds.length
+    const g = cv.getContext('2d')
+    const one = document.createElement('canvas')
+    one.width = MASK_W; one.height = MASK_H
+    const c1 = one.getContext('2d')
+    worlds.forEach((k, j) => at.forEach((w, i) => {
+      drawCast(c1, k, w, q.has('look') ? 1 : 0)
+      g.drawImage(one, i * MASK_W, j * MASK_H)
+      // the phone's place, the spine and the frame's edge, for reference
+      g.strokeStyle = '#3a6'; g.lineWidth = 1
+      const p = PHONE[k]
+      g.strokeRect(i * MASK_W + p[0] / 2, j * MASK_H + p[1] / 2, (p[2] - p[0]) / 2, (p[3] - p[1]) / 2)
+      g.strokeStyle = '#a63'
+      g.beginPath(); g.moveTo(i * MASK_W + 351, j * MASK_H); g.lineTo(i * MASK_W + 351, j * MASK_H + MASK_H); g.stroke()
+      g.strokeStyle = '#555'; g.strokeRect(i * MASK_W + 0.5, j * MASK_H + 0.5, MASK_W - 1, MASK_H - 1)
+      g.fillStyle = '#6af'; g.fillText(`world ${k} at ${w}`, i * MASK_W + 6, j * MASK_H + 14)
+      g.fillStyle = '#fff'
+    }))
+    window.__out['masks.png'] = cv.toDataURL('image/png')
+  }
+  if (q.has('worlds')) {
+    // each world's half as the writer sees it, and above it the same world
+    // as somebody sees it, mirrored: `&k=0,1&at=60&flood=0.5&pal=amber&look`
+    const { createRenderer } = await import('./round-gl.js')
+    const { PALETTES } = await import('./round-product.js')
+    const { blueBytes } = await import('./round-blue.js')
+    const { drawCast, MASK_W, MASK_H, PHONE } = await import('./round-cast.js')
+    const ks = (q.get('k') || '0,1,2,3,4,5').split(',').map(Number)
+    const ats = (q.get('at') || '60').split(',').map(Number)
+    const flood = +(q.get('flood') || 0)
+    const pals = (q.get('pal') || 'night').split(',')
+    const look = q.has('look') ? 1 : 0
+    const cv = document.createElement('canvas')
+    cv.width = 1080; cv.height = 1920
+    const R = createRenderer(cv, { blue: blueBytes(), palettes: PALETTES })
+    const mask = document.createElement('canvas')
+    mask.width = MASK_W; mask.height = MASK_H
+    const mctx = mask.getContext('2d')
+    const t0 = performance.now()
+    for (const k of ks) for (const w of ats) for (const pal of pals) {
+      drawCast(mctx, k, w, look)
+      R.setMask(0, mask)
+      R.drawWorld(R.halves[0], 0, { world: k, clock: w, flood, palette: pal, look, phoneRect: PHONE[k], phoneLit: q.has('dark') ? 0 : 1, sent: flood > 0 ? 10 : -1, sun: +(q.get('sun') || 0), lampsOff: new Array(12).fill(+(q.get('off') || 1e6)) })
+      R.composite({ top: 0, bot: 0 })
+      R.gl.finish()
+      window.__out[`world${k}-${w}-${pal}${flood ? '-f' + flood : ''}.png`] = cv.toDataURL('image/png')
+    }
+    console.log('worlds', ks.length * ats.length * pals.length, 'in', Math.round(performance.now() - t0), 'ms')
+  }
+  if (q.has('film')) {
+    // whole frames of the film: `&f=0,180,900` (frames) and `&w=540` for the width out
+    await document.fonts.load(`40px "Jersey 10"`)
+    const { createRound } = await import('./round-page.js')
+    const cv = document.createElement('canvas')
+    cv.width = 1080; cv.height = 1920
+    const ov = document.createElement('canvas')
+    ov.width = 1080; ov.height = 1920
+    const round = createRound(cv, ov)
+    const fs = (q.get('f') || '120').split(',').map(Number)
+    const outW = +(q.get('w') || 1080)
+    const out = document.createElement('canvas')
+    out.width = outW; out.height = Math.round(outW * 16 / 9)
+    const og = out.getContext('2d')
+    const t0 = performance.now()
+    for (const f of fs) {
+      const fr = round.frame(f)
+      round.renderer.gl.finish()
+      og.imageSmoothingEnabled = true
+      og.drawImage(cv, 0, 0, out.width, out.height)
+      og.drawImage(ov, 0, 0, out.width, out.height)
+      window.__out[`f${String(f).padStart(4, '0')}.png`] = out.toDataURL('image/png')
+      console.log('frame', f, fr.phase, fr.link || '', fr.flap ? 'flap ' + fr.flap.theta.toFixed(2) : '')
+    }
+    console.log('film', fs.length, 'frames in', Math.round(performance.now() - t0), 'ms')
+  }
+  if (q.has('check')) {
+    // the animatic's own checks: a world's tones never change with its
+    // colour; a landing is the world under it, exactly; every still pixel of
+    // a world is one of its palette's four
+    await document.fonts.load(`40px "Jersey 10"`)
+    const { createRound } = await import('./round-page.js')
+    const T = await import('./round-time.js')
+    const { PALETTES } = await import('./round-product.js')
+    const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920
+    const ov = document.createElement('canvas'); ov.width = 1080; ov.height = 1920
+    const round = createRound(cv, ov)
+    const R = round.renderer
+    const gl = R.gl
+    const read = () => { const b = new Uint8Array(1080 * 1920 * 4); gl.readPixels(0, 0, 1080, 1920, gl.RGBA, gl.UNSIGNED_BYTE, b); return b }
+    const report = {}
+    // 1. the tones under the colour: each world at three moments, night and its letter's colour
+    let toneDiff = 0
+    for (let k = 0; k < 6; k++) for (const w of [-60, 40, 120]) {
+      const base = { world: k, clock: w, look: 0 }
+      R.drawWorld(R.halves[0], 0, { ...base, flood: 0, palette: 'night', lampsOff: T.LAMPS_OFF })
+      const a = R.readPanel(R.halves[0])
+      R.drawWorld(R.halves[0], 0, { ...base, flood: 1, palette: T.LINKS[k].colour, lampsOff: k === 2 ? new Array(12).fill(1e6) : T.LAMPS_OFF })
+      const b = R.readPanel(R.halves[0])
+      // (the reading room's lamps are relit by the colour, so it is compared with them lit)
+      if (k === 2) { R.drawWorld(R.halves[0], 0, { ...base, flood: 0, palette: 'night', lampsOff: new Array(12).fill(1e6) }); a.set(R.readPanel(R.halves[0])) }
+      for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i]) toneDiff++
+    }
+    report.toneCellsChangedByColour = toneDiff
+    // 2. a landing is exactly the world under it: the composite at each landing
+    //    against the same panels laid with no pane
+    let landDiff = 0
+    for (const f of [216, 360, 504, 648, 792]) {
+      round.frame(f)
+      const a = read()
+      R.composite({ f, top: 1, bot: 0, flips: [0, 0, 0, 0, 0, 0] })
+      const b = read()
+      // (the seam's own pulse as a flap lands moves the rows beside it; they are left out)
+      for (let i = 0; i < a.length; i += 4) {
+        const y = 1919 - Math.floor(i / 4 / 1080)
+        if (Math.abs(y - 960) < 20) continue
+        if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) landDiff++
+      }
+    }
+    report.pixelsOffAtLandings = landDiff
+    // 3. still frames: every pixel of the worlds one of its palette's four
+    //    (the phone and the clock aside)
+    const allowed = new Set()
+    for (const p of Object.values(PALETTES)) for (const h of p) allowed.add(h.toUpperCase())
+    // and the room's black round the end card's six
+    allowed.add('#0A0A0A')
+    const hex = (r, g, b) => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()
+    let off = 0
+    let total = 0
+    for (const f of [20, 130, 300, 420, 470, 560, 700, 770, 850, 1000]) {
+      const fr = round.frame(f)
+      if (fr.flap || fr.settle) continue
+      const px = read()
+      for (let y = 0; y < 1920; y += 3) for (let x = 0; x < 1080; x += 3) {
+        const fy = 1919 - y
+        // the phone's place and the clock's
+        if (fy > 1010 && fy < 1710 && x > 66 && x < 418) continue
+        if (fy > 900 && fy < 1020 && x < 420) continue
+        const i = (y * 1080 + x) * 4
+        total++
+        if (!allowed.has(hex(px[i], px[i + 1], px[i + 2]))) off++
+      }
+    }
+    report.offPaletteShare = off / total
+    console.log('checks ' + JSON.stringify(report))
+  }
+} catch (e) { console.error(e.stack || String(e)) }
+window.__done = true
+</script>
+</body>
+</html>
