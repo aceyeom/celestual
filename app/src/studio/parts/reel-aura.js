@@ -201,14 +201,14 @@ export function makeAura(d) {
     // the dark's own light, from the lens on, faint and never still
     if (t >= S.night[0]) {
       const on = smooth(S.wash[1] - 100, S.away[1] + 400, t) * lerp(1, 0.55, u(t, S.lock[0], S.lock[1]))
-      add({ x: 150, y: 1700, R: 1500, a: 0.1 * on, col: SKY_A, seed: 3.1, flow: 0.05 * night, turn: 0.012 * night, time: night, grain: 0.55 })
-      add({ x: 980, y: 180, R: 1350, a: 0.08 * on, col: SKY_B, seed: 7.7, flow: 0.04 * night, turn: -0.01 * night, time: night, grain: 0.6 })
+      add({ x: 150, y: 1700, R: 1500, a: 0.13 * on, col: SKY_A, seed: 3.1, flow: 0.05 * night, turn: 0.012 * night, time: night, grain: 0.55 })
+      add({ x: 980, y: 180, R: 1350, a: 0.1 * on, col: SKY_B, seed: 7.7, flow: 0.04 * night, turn: -0.01 * night, time: night, grain: 0.6 })
     }
 
     // the envelope's light, through the lens, out over the whole panel
-    if (t >= S.wash[0] && t < S.dLines[0] + 500) {
+    if (t >= S.wash[0] && t < S.lapse[0] + 200) {
       const dt = t - S.wash[0]
-      const k = u(t, S.wash[0], S.wash[0] + 2600)
+      const k = u(t, S.wash[0], S.lapse[0] + 100)
       add({
         x: d.L_AT[0], y: d.L_AT[1], R: 90 + 1050 * drop(dt / 1000, 0.7), a: 0.55 * (1 - k) ** 1.4 * smooth(S.wash[0], S.wash[0] + 60, t),
         col: ICE_P, seed: 1.7, flow: gone((v) => lerp(0.9, 0.15, u(v, S.wash[0], S.wash[0] + 1500)), S.wash[0], t), turn: 0.04 * dt / 1000,
@@ -221,7 +221,7 @@ export function makeAura(d) {
     if (t >= S.away[0] + 200 && t < T0 + 450) {
       const [x, y] = d.linAt(t)
       const lean = sineIO(u(t, S.lean[0] + 200, T0))
-      const R = lerp(60, 230, 1 - (1 - u(t, S.away[0] + 200, S.away[0] + 1500)) ** 3) * (1 + 0.07 * (d.breath(t) - 0.5)) * (1 + 0.2 * lean)
+      const R = lerp(60, 290, 1 - (1 - u(t, S.away[0] + 200, S.away[0] + 1500)) ** 3) * (1 + 0.07 * (d.breath(t) - 0.5)) * (1 + 0.2 * lean)
       const [kx, ky] = d.kaiAt(t)
       add({
         x: lerp(x, kx, 0.18 * lean), y: lerp(y, ky, 0.18 * lean), R: R / lerp(1, zAt(t), 0.5 * lean),
