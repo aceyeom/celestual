@@ -188,10 +188,11 @@ headline, no orphaned word on its own line, consistent margins from a grid
 note. One story, told once, and one world for it: the phone's own screen.
 lin writes the thing never said and sends it privately; it waits; every
 mutual is revealed on saturday at nine; in the week somebody's note comes
-in; at nine the two find each other and are one light, and out of it comes
-lin's letter, which turns over: on its other side is kai's, to lin, read
-for the first time, and it is mutual; the ones that never meet go out, and
-nobody knows. Only lin is ever seen writing; kai's note is first read when
+in; at nine the two find each other and come apart into one flower, and
+out of its heart comes lin's letter, which turns over: on its other side is
+kai's, to lin, read for the first time, and it is mutual; kai's is given
+back to the flower and it closes; the ones that never meet go out, their
+buds never opened, and nobody knows. Only lin is ever seen writing; kai's note is first read when
 lin reads it. One clock (`app/src/studio/parts/reel-time.js`)
 times the picture (`parts/reel.jsx`) and the song
 (`scripts/studio-score.mjs`).
@@ -201,13 +202,13 @@ times the picture (`parts/reel.jsx`) and the song
 | 0 | lin's note on the glass, the first sentence already there and the rest typed at a hand's pace: `i love`, a breath, `d` | `i never said this two years ago. i loved you. maybe i still do.` (on the phone) |
 | 3750 | one shot: the camera comes back from the glass and rests on the letter under lin's long enough to read it, then makes one move up the hall's height and round, lands a little past and settles; the backlights come on outward from lin's, each in its own colour, a few screens dead; lin's letter comes away from the wall to the camera | `a wall of the ones / you never told.` |
 | 10000 | send: every lit pixel of the letter's words leaves its place, the first words first, and goes into the envelope, so the envelope is made of the letter; sealed, a light goes over it and it lights; the phone goes out behind it as an old screen goes, to a bright line and a point; the envelope comes at the lens, the frames it was in a moment ago after it | `or send it / privately.` |
-| 12500 | through the lens into the dark, and the frame is a screen's panel; the envelope's light opens out in it as eleven arms that curl back on themselves, and the envelope goes away from us to its place, to wait, its light rising off it in a thread as breath does | `they only read it if / they send you one.` |
-| 15000 | the sentence ends on a clock that runs through the week; the week's notes come in round it, each as a screen comes on and drops its colour into the panel, and on the thursday one in amber, its light curling up in a wave; while the clock runs the light rushes, the week in a few seconds; the clock stops at nine and `pacific` comes on after it; the others go down and their light with them; the camera leans in and down on the two, and they find each other, their light streaming after them, wait a moment apart, and touch | `every mutual is / revealed on / sat 9:00 pm pacific` |
-| 20000 | on the touch the two are one light, filling the frame and opening out as a flower of the two colours, lin's ice on one side and kai's amber on the other, and out of it comes lin's letter, at us, white as a screen coming on: quickly out of the light, up and away on a curve and round, slowing, into the hand, banking into its curve and leaving its light behind it as an old screen's phosphor does. Before it has quite come to rest it turns over, leaning back a little first as a hand turns a thing and going a little past, its glass catching the light; on its edge, on the bar the song comes in on, it is a bright line, and from that line its other side comes on as a screen does, in the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on its other side), `it's mutual.` |
-| 23750 | kai's, held, and brought a little nearer to be read, the two colours round it, lin's coming in under it and kai's over it, turning into each other; then it goes back into the panel, away from us, and the light goes down | `you both find out.` |
-| 25000 | the panel again, dark, three notes alone on it, each a candle's small light, each going out as a screen does, to a line and a point, in its own time, its last light rising off it as smoke | `if it isn't, / nobody ever knows.` |
-| 27500 | the question, a word on each note of the melody, and then left there, whole, for as long as it took to ask, over everyone's light, faint, turning slowly low in the frame as a galaxy turns, a breath of it rising at `you?` | `do they still / think about you?` |
-| 31250 | the name, the light drawn round its star and into it as water into a drain, and the name lit a cell at a time from the star, on the words' margin, the camera come to rest for it; the address typed under it | `celestual.us` |
+| 12500 | through the lens into the dark, and the frame is a screen's panel; the envelope goes away from us to its place, to wait, and its light trails after it and, as it stops, wraps round it a little late into a closed bud, which breathes as a phone's light does with something on it | `they only read it if / they send you one.` |
+| 15000 | the sentence ends on a clock that runs through the week; the week's notes come in round it, each as a screen comes on, each with a small bud of its colour that stays shut, and on the thursday one in amber, its bud wrapping round it as lin's did; while the clock runs the light rushes, the week in a few seconds; the clock stops at nine and `pacific` comes on after it; the others go down and their buds with them; the camera leans in and down on the two, and they find each other, the petals of each bud reaching into the gap, wait a moment apart, and touch | `every mutual is / revealed on / sat 9:00 pm pacific` |
+| 20000 | on the touch the two come apart into one flower: their pixels leave from where they touch, in streams, a stream to a petal, and run out along the petals' rims as the petals untwist and open, slow in and slow out, lin's ice on the left and kai's amber on the right, pale warm white where they cross, a spiral of small star points at its heart. A third of a second on, out of its heart comes lin's letter, at us, white as a screen coming on, parting the petals as it goes: quickly out of the light, up and away on a curve and round, slowing, into the hand, banking into its curve and leaving its light behind it as an old screen's phosphor does. Before it has quite come to rest it turns over, leaning back a little first as a hand turns a thing and going a little past, its glass catching the light; on its edge, on the bar the song comes in on, it is a bright line, and the whole flower shows for a moment; the turn turns the flower with it, and from that line its other side comes on as a screen does, in the amber it was written in: kai's, to lin | `i was waiting for you to say it first.` (on its other side), `it's mutual.` |
+| 23750 | kai's, held, and brought a little nearer to be read, in the flower, which is quieter now and breathes, its colours on the letter's edges; then kai's is given back to it a pixel at a time, in a sweep round the way the flower closes, each pixel to the nearest petal and in along its rim to the heart; no holes eaten in it and no glowing edge, which would be paper burning; the heart brightens and the flower folds shut into a bud by the cut | `you both find out.` |
+| 25000 | the panel again, dark, three notes alone on it, each with a small bud that never opens, each going out as a screen does, to a line and a point, in its own time, its bud folding into it as it goes, its light going in and not up | `if it isn't, / nobody ever knows.` |
+| 27500 | the question, a word on each note of the melody, and then left there, whole, for as long as it took to ask, over the dark and one closed bud, where the name's star will be, breathing slowly, a little looser at `you?` | `do they still / think about you?` |
+| 31250 | the name: the bud opens a last time, its four longest petals the star's four points, and the name lit a cell at a time from the star, on the words' margin, the camera come to rest for it; the address typed under it | `celestual.us` |
 
 The type is the phone's own face, Jersey 10, cut into its cells
 (`app/src/wall/pixtype.js`) as the glass's own words are: one size, a pixel
@@ -234,7 +235,12 @@ as a film's titles do, coming to rest for the name, which is never drawn
 off its grid.
 
 The dark is never only dark: from the lens on, the panel is a screen and
-light moves in it as ink moves in water (`parts/panel-fluid.js`). It is a
+light moves in it (`parts/panel-fluid.js`). What the story places in it is
+a flower that opens only at night (`parts/reel-bloom.js`): petals drawn
+each frame into a layer of the panel's own cells, each cell a round point
+of light, dim light going cool and grey as the eye sees it at night and
+bright light keeping its colour, so nothing in it fades through brown.
+Under it the light moves as ink moves in water, quietly. It is a
 fluid, solved on the graphics card every sixtieth of a second (stable
 fluids, after Pavel Dobryakov's WebGL Fluid Simulation, MIT): its flow
 kept from piling up, its eddies kept alive, and its dye, the light, carried
@@ -244,11 +250,35 @@ pixels, a point where a little light has come, then a cross, a longer
 cross and a sparkle where more has, each twinkling in its own time, mostly
 the white of starlight with a little of the light's own colour, over a
 faint haze of it. Not every cell is a star, so the sky is never the
-screen's grid; it is a night, quiet, made of the screen. Every note on the panel is a
-light in it: its own colour comes off it, and what happens to the note
-happens to its light. The flow is stepped from the lens at a fixed rate, so
+screen's grid; it is a night, quiet, made of the screen. Its light is what
+the notes and the flower give off, a little at a time, carried by three
+slow currents; it curls only a little and never rises, so nothing in it
+reads as smoke or flame. The flow is stepped from the lens at a fixed rate, so
 every frame is the same however it is come to. It is drawn with three.js
 (MIT), the stars' glow postprocessing's mipmap bloom (Zlib).
+
+How the flower moves, and why. Its petals start a golden angle apart, as a
+flower head's florets do (Vogel's model of phyllotaxis, in Prusinkiewicz
+and Lindenmayer's The Algorithmic Beauty of Plants), and open as a spiral
+bud untwists, as the moonflower's does at dusk; its rims lead and ruffle a
+little as they open, as a lily's edges, growing more than its midribs, open
+it (Liang and Mahadevan, PNAS 2011). It opens slowly and settles, a little
+past and back, its petals one after another (the twelve principles: slow in
+and slow out, follow-through and overlapping action), never thrown out from
+a point, which is how an explosion moves; nothing rises and nothing
+flickers, which is how flame moves (buoyant flames flicker as they shed
+rings of vortex). It begins on the frame the envelopes touch, from where
+they touch, as one thing is seen to cause another (Michotte's launching
+effect), and their pixels go in streams, a stream to a petal, so they read
+as one thing becoming another (common fate). The light is the one thing
+that persists through it, envelope, flower, letter, flower, bud, as a
+container transform keeps one element and changes its shape. Where the two
+colours cross they make a third, pale warm white, as overlapping colours
+read as transparent (Albers). The flower's colours lie on the letter's
+edges (a light wrap), and each petal hangs on a spring, so the letter going
+past and turning over moves it, and it settles back. Away from it the dark
+stays dark (Kenya Hara's emptiness), and a bud never turns: a turning
+spiral is a thing loading.
 
 Nothing moves as a machine would. Every word comes on a little early or
 late and at its own pace; the two notes come together on curves, kai's

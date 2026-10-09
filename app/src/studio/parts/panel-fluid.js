@@ -12,12 +12,27 @@
 // and a sparkle where a lot has, over a faint haze of the light's colour
 // (three.js; the stars' glow is postprocessing's mipmap bloom).
 //
+// Over the flow, each frame, the light the story places itself: petals, a
+// flower's heart, pixels in flight, drawn into a layer of the same cells
+// and shown as each cell's round point of light, dim light cool and grey as
+// the eye sees it at night (`render`'s `light`).
+//
 // It is drawn from `t` and nothing else. The flow is stepped from its start
 // at a fixed rate, the story's own `script` adding light and moving it at
 // each step, so any frame is the same frame however it is come to: forward
 // a step at a time, or from the start again when the film goes back.
 import * as THREE from 'three'
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing'
+
+// how many petals and points a frame may hold
+export const MAXP = 96
+export const MAXPTS = 8192
+// a petal, as `light.petals` holds it, sixteen numbers: its heart's x, y;
+// its line's angle at the heart; its reach; its widest half width; how far
+// its line turns along it; how much fuller one side is; how much its rim
+// ruffles; the ruffle's phase; its strength; how far out its rim has been
+// drawn (0 to 1); its veil; and its colour (linear) and a spare
+export const PETAL = 16
 
 const VERT = /* glsl */ `
   uniform vec2 texelSize;
@@ -146,6 +161,56 @@ const FRAG = {
       vec2 v = texture2D(uVelocity, vUv).xy - vec2(R - L, T - B);
       gl_FragColor = vec4(v, 0.0, 1.0);
     }`,
+  // the light the story places on the panel this frame, at each cell's
+  // middle: its petals (see `PETAL` below for what each holds) and its
+  // flowers' hearts. A petal is narrow at its heart, widest two thirds out
+  // and round at its end, its rim bright and its veil faint, its line
+  // turning a little along it (`bend`), as a petal unfurling does
+  light: `
+    uniform sampler2D uPet;
+    uniform int uPetN;
+    uniform vec2 uLo;
+    uniform vec2 uSpan;
+    uniform vec4 uHeart[4];
+    uniform vec3 uHeartCol[4];
+    float shape (float s) { s = clamp(s, 0.0, 1.0); return pow(s, 0.8) * sqrt(max(0.0, 1.0 - pow(s, 4.0))) / 0.66; }
+    void main () {
+      vec2 p = uLo + vec2(vUv.x, 1.0 - vUv.y) * uSpan;
+      vec3 acc = vec3(0.0);
+      for (int i = 0; i < ${MAXP}; i++) {
+        if (i >= uPetN) break;
+        vec4 A = texelFetch(uPet, ivec2(i * 4, 0), 0);
+        vec4 B = texelFetch(uPet, ivec2(i * 4 + 1, 0), 0);
+        vec4 C = texelFetch(uPet, ivec2(i * 4 + 2, 0), 0);
+        vec4 D = texelFetch(uPet, ivec2(i * 4 + 3, 0), 0);
+        vec2 d = p - A.xy;
+        float r = length(d) + 1e-4;
+        float L = max(A.w, 1e-3);
+        if (r > L * 1.02 || C.y <= 0.0) continue;
+        float s = r / L;
+        float dd = atan(d.y, d.x) - (A.z + B.y * s);
+        dd -= 6.2831853 * floor((dd + 3.1415927) / 6.2831853);
+        float sn = sin(dd);
+        float along = r * cos(dd);
+        if (along <= 0.0) continue;
+        float lat = abs(r * sn * (1.0 + B.z * sign(sn)));
+        float sc = clamp(s, 0.0, 1.0);
+        float hw = B.x * shape(sc) * (1.0 + B.w * sin(6.2831853 * 2.5 * sc + C.x)) + 0.5;
+        float fill = 1.0 - smoothstep(0.7 * hw, hw, lat);
+        float e = (lat - 0.9 * hw) / (0.06 * hw + 1.2);
+        float rim = exp(-e * e) * step(lat, 1.12 * hw);
+        float tip = 1.0 - smoothstep(0.93, 1.0, s);
+        float foot = smoothstep(0.08, 0.3, s);
+        float drawn = 1.0 - smoothstep(C.z - 0.02, C.z + 0.07, s);
+        float a = (0.13 * fill * C.w * (0.5 + 0.5 * drawn) + rim * (0.38 + 0.62 * drawn) * (0.45 + 0.55 * sc)) * tip * foot;
+        acc += a * C.y * D.rgb;
+      }
+      for (int k = 0; k < 4; k++) {
+        vec2 d = (p - uHeart[k].xy) / max(uHeart[k].z, 1e-3);
+        acc += exp(-dot(d, d)) * uHeart[k].w * uHeartCol[k];
+      }
+      gl_FragColor = vec4(acc, 1.0);
+    }`,
   // the panel as the camera sees it, a night of the screen's own pixels:
   // every pixel of the frame back to its place on the panel, its cell, and
   // where in its cell. A cell is a star waiting for light, each with its own
@@ -172,6 +237,8 @@ const FRAG = {
     uniform float uTint;
     uniform float uTop;
     uniform float uTime;
+    uniform sampler2D uLight;
+    uniform float uLightGain;
     float hash (vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     // a run of the cell's own pixels, [a, b), softened by a frame pixel
     float run (float v, float a, float b, float w) { return smoothstep(a - w, a + w, v) * (1.0 - smoothstep(b - w, b + w, v)); }
@@ -217,10 +284,46 @@ const FRAG = {
       // its colour kept quiet, half way to the grey of starlight
       neb = mix(neb, vec3(nI), 0.45);
       vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze + tint * star * bright * uStar) * band;
+      // the light placed this frame: the cell's own round point of it. Dim
+      // light goes cool and grey, as the eye sees at night (the Purkinje
+      // shift), and bright light keeps its colour, so nothing fades through
+      // brown; the brightest cells catch a cross, as a star does
+      vec3 L = max(texture2D(uLight, vec2(tex.x, 1.0 - tex.y)).rgb, 0.0) * uLightGain;
+      float Ly = dot(L, vec3(0.2126, 0.7152, 0.0722));
+      float sat = smoothstep(0.002, 0.04, Ly) * 1.25;
+      vec3 cool = Ly * vec3(0.82, 0.92, 1.18);
+      L = cool + (L - Ly) * sat + (Ly - cool) * min(1.0, sat);
+      float rr = length(f - 0.5);
+      float edge = max(0.06, px);
+      float pt = 1.0 - smoothstep(0.42 - edge, 0.42 + edge * 0.5, rr);
+      float arm = smoothstep(0.55, 1.1, Ly) * 0.5 * max(run(q.x, 1.0, 6.0, w) * run(q.y, 3.0, 4.0, w), run(q.x, 3.0, 4.0, w) * run(q.y, 1.0, 6.0, w));
+      col += (L * pt * 1.3 + mix(L, vec3(Ly), 0.5) * arm) * band;
       gl_FragColor = vec4(col, 1.0);
     }`,
 }
 
+// the pixels in flight: each a point of light in the panel's px, shared
+// between the four cells it falls among, as much to each as it is near
+const POINT_VERT = /* glsl */ `
+  attribute vec3 tint;
+  uniform vec2 uLo;
+  uniform vec2 uSpan;
+  varying vec3 vTint;
+  void main () {
+    vec2 uv = (position.xy - uLo) / uSpan;
+    gl_Position = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 0.0, 1.0);
+    gl_PointSize = 2.0;
+    vTint = tint;
+  }
+`
+const POINT_FRAG = /* glsl */ `
+  precision highp float;
+  varying vec3 vTint;
+  void main () {
+    vec2 d = abs(gl_PointCoord - 0.5) * 2.0;
+    gl_FragColor = vec4(vTint * max(0.0, 1.0 - d.x) * max(0.0, 1.0 - d.y), 1.0);
+  }
+`
 const lin = (c) => { const x = c / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4 }
 export const linear = (rgb) => rgb.map(lin)
 
@@ -288,6 +391,31 @@ export class PanelFluid {
       uA: new THREE.Vector2(), uF: new THREE.Vector2(), uZ: 1, uInk: new THREE.Vector3(...linear([0x15, 0x17, 0x1b])),
       uGrid: 1, uGain: 1, uStar: 1.3, uHaze: 0.06, uTint: 0.36, uTop: 0.35, uTime: 0,
     })
+    // the light placed each frame, a cell a texel: the petals and hearts
+    // drawn over the whole of it, and the pixels in flight added to it
+    this.light = target(this.dyeSize, THREE.NearestFilter)
+    this.petData = new Float32Array(MAXP * PETAL)
+    this.petTex = new THREE.DataTexture(this.petData, MAXP * 4, 1, THREE.RGBAFormat, THREE.FloatType)
+    this.petTex.minFilter = THREE.NearestFilter
+    this.petTex.magFilter = THREE.NearestFilter
+    this.petTex.needsUpdate = true
+    const lo = new THREE.Vector2(cells.x - cells.margin * cells.c, cells.y - cells.margin * cells.c)
+    this.m.light = mat(FRAG.light, {
+      uPet: this.petTex, uPetN: 0, uLo: lo, uSpan: size,
+      uHeart: [0, 1, 2, 3].map(() => new THREE.Vector4()), uHeartCol: [0, 1, 2, 3].map(() => new THREE.Vector3()),
+    })
+    const pts = new THREE.BufferGeometry()
+    pts.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXPTS * 3), 3))
+    pts.setAttribute('tint', new THREE.BufferAttribute(new Float32Array(MAXPTS * 3), 3))
+    this.points = new THREE.Points(pts, new THREE.ShaderMaterial({
+      vertexShader: POINT_VERT, fragmentShader: POINT_FRAG, uniforms: { uLo: { value: lo }, uSpan: { value: size } },
+      blending: THREE.AdditiveBlending, transparent: true, depthTest: false, depthWrite: false,
+    }))
+    this.points.frustumCulled = false
+    this.pointScene = new THREE.Scene()
+    this.pointScene.add(this.points)
+    this.display.uniforms.uLight = { value: this.light.texture }
+    this.display.uniforms.uLightGain = { value: 1 }
     this.displayScene = new THREE.Scene()
     const shown = new THREE.Mesh(geo, this.display)
     shown.frustumCulled = false
@@ -418,11 +546,54 @@ export class PanelFluid {
     }
   }
 
+  // the light placed this frame (`light`: `petals`, PETAL numbers a petal,
+  // and `n` of them; `hearts`, up to four of [x, y, radius, strength, r, g,
+  // b]; `points`, five numbers a point, x, y and its colour, and `m` of
+  // them), drawn into its layer of cells
+  place(light) {
+    const r = this.renderer
+    const m = this.m.light
+    const n = light ? Math.min(MAXP, light.n || 0) : 0
+    if (n) {
+      this.petData.set(light.petals.subarray(0, n * PETAL))
+      this.petTex.needsUpdate = true
+    }
+    m.uniforms.uPetN.value = n
+    for (let k = 0; k < 4; k++) {
+      const h = (light && light.hearts && light.hearts[k]) || [0, 0, 1, 0, 0, 0, 0]
+      m.uniforms.uHeart.value[k].set(h[0], h[1], h[2], h[3])
+      m.uniforms.uHeartCol.value[k].set(h[4], h[5], h[6])
+    }
+    this.pass(m, this.light)
+    const count = light ? Math.min(MAXPTS, light.m || 0) : 0
+    if (count) {
+      const pos = this.points.geometry.attributes.position
+      const tint = this.points.geometry.attributes.tint
+      for (let i = 0; i < count; i++) {
+        pos.array[i * 3] = light.points[i * 5]
+        pos.array[i * 3 + 1] = light.points[i * 5 + 1]
+        pos.array[i * 3 + 2] = 0
+        tint.array[i * 3] = light.points[i * 5 + 2]
+        tint.array[i * 3 + 1] = light.points[i * 5 + 3]
+        tint.array[i * 3 + 2] = light.points[i * 5 + 4]
+      }
+      pos.needsUpdate = true
+      tint.needsUpdate = true
+      this.points.geometry.setDrawRange(0, count)
+      r.setRenderTarget(this.light)
+      r.render(this.pointScene, this.camera)
+    }
+  }
+
   // the frame: the panel through the view `v` (its point `a` at the frame's
   // `f`, `z` times), `grid` how much of its unlit cells show, `gain` the
-  // light's strength
-  render(v, { grid = 1, gain = 1, time = 0, top = 0.35 } = {}) {
+  // flow's light's strength, `star` its stars', `lightGain` the placed
+  // light's; and the light placed this frame
+  render(v, { grid = 1, gain = 1, time = 0, top = 0.35, star = 1.3, lightGain = 1 } = {}, light = null) {
+    this.place(light)
     const u = this.display.uniforms
+    u.uStar.value = star
+    u.uLightGain.value = lightGain
     u.uDye.value = this.dye.read.texture
     u.uA.value.set(v.a[0], v.a[1])
     u.uF.value.set(v.f[0], v.f[1])

@@ -74,12 +74,15 @@ export const S = {
   // the week's other notes, as they come in
   others: [16380, 16560, 16760, 16960, 17380, 17560, 17760, 17940],
   lean: [19000, 20000], touch: [19560, 19840, 19960],
-  // on the touch the two are one light, and out of it lin's letter, the
-  // one that was sent, comes at us (`swoosh`); it turns over (`flip`, on
-  // its edge on the bar the song comes in on), and on its other side is
-  // kai's, read for the first time; it is said on that bar's third beat,
-  // and then the rest of it
-  reveal: [20000, 25000], meet: 20000, swoosh: [20060, 20900], flip: [20800, 21700], run: 20500, drop: 21250, said: 22500, both: 23750, rOut: 24650,
+  // on the touch the two come apart into one flower, and out of its heart,
+  // once it has begun to open, lin's letter, the one that was sent, comes
+  // at us (`swoosh`); it turns over (`flip`, on its edge on the bar the
+  // song comes in on), and on its other side is kai's, read for the first
+  // time; it is said on that bar's third beat, and then the rest of it
+  reveal: [20000, 25000], meet: 20000, swoosh: [20300, 21050], flip: [20800, 21700], run: 20500, drop: 21250, said: 22500, both: 23750, rOut: 24650,
+  // kai's letter given back to the flower, a pixel at a time, and the
+  // flower closing on it by the cut
+  give: [24100, 25000],
   // the ones that never meet go out, each as a screen does, to a line and a
   // point
   ifnot: [25000, 27500], fLines: [25313, 25938], lone: [25625, 26250, 26875], fOut: 27000,

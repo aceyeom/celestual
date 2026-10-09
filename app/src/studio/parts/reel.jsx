@@ -22,13 +22,16 @@
 //          clock that runs through the week; on the thursday a note comes in
 //          from somewhere; at nine the camera leans in, and the two find
 //          each other, wait, and touch
-//  20      on the touch the two are one light, and out of it comes lin's
-//          letter, at us; it turns over, and on its other side is kai's, to
-//          lin, read for the first time. `it's mutual. / you both find out.`
-//  25      the ones that never meet go out, each as a screen does. `if it
-//          isn't, / nobody ever knows.`
-//  27.5    `do they still / think about you?`, and left there
-//  31.25   the name, lit a cell at a time from its star, and the address
+//  20      on the touch the two come apart into one flower, and out of its
+//          heart comes lin's letter, at us; it turns over, and on its other
+//          side is kai's, to lin, read for the first time. `it's mutual. /
+//          you both find out.` kai's is given back to the flower a pixel at
+//          a time, and it closes
+//  25      the ones that never meet go out, each as a screen does, their
+//          buds never opened. `if it isn't, / nobody ever knows.`
+//  27.5    `do they still / think about you?`, and left there, over one bud
+//  31.25   the bud opens into the name's star, the name lit a cell at a time
+//          from it, and the address
 //
 // One layout throughout: the words flush left on one margin in one band at
 // the top, a phone one size in one place under them, everything clear of
@@ -54,7 +57,9 @@ import { WallGL, wallOf, cameraOf, boxOnto, v3, UNIT } from './wall-gl.js'
 import { cellTint, cellOf } from './wall-letters.js'
 import { NoteScreen, PW } from './note-screen.jsx'
 import { PanelFluid, linear } from './panel-fluid.js'
+import { makeBloom } from './reel-bloom.js'
 import atlasUrl from '../assets/wall-atlas.jpg'
+import blocksUrl from '../assets/kai-face-blocks.png'
 import './reel.css'
 
 export { MS }
@@ -84,6 +89,7 @@ export function at(track, t) {
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v))
 const u = (t, a, b) => clamp((t - a) / (b - a))
 const lerp = (a, b, k) => a + (b - a) * k
+const smooth01 = (k) => k * k * (3 - 2 * k)
 const rnd = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
 // a hand's unsteadiness: a few slow waves that never quite repeat
 const shake = (t, seed) => Math.sin(t / 1310 + seed) * 0.55 + Math.sin(t / 731 + seed * 2.3) * 0.3 + Math.sin(t / 377 + seed * 4.1) * 0.15
@@ -711,6 +717,31 @@ function clockAt(t) {
   return `${DAYS[Math.min(5, Math.floor(m / 1440))]} ${((h + 11) % 12) + 1}:${String(hm % 60).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
 }
 
+// the two envelopes coming apart at the touch (reel-bloom.js): the cells
+// still on them, white, as the phone draws them, and the ones in flight as
+// pixels, smaller and fainter as they go, their light passing into the
+// panel's cells and out along the petals they draw
+function drawLeaving(g, t, v) {
+  const { remaining, flying } = BLOOM.leavingAt(t)
+  const half = (C * v.z) / 2
+  for (const p of remaining || []) {
+    const [x, y] = frameOf(v, [p.x, p.y])
+    g.globalAlpha = p.lit ? 0.97 : 0.22
+    g.fillStyle = p.lit ? '#FFFFFF' : skinOf(p.who ? B.tint : A.tint).mid
+    g.fillRect(x - half / 2, y - half / 2, half + 0.35, half + 0.35)
+  }
+  for (const q of flying) {
+    const [x, y] = frameOf(v, [q.x, q.y])
+    const a = (1 - q.e) ** 1.5
+    if (a <= 0.01) continue
+    const w = Math.max(1, half * (1 - 0.8 * q.e))
+    g.globalAlpha = a
+    g.fillStyle = q.p.lit ? '#FFFFFF' : skinOf(q.p.who ? B.tint : A.tint).glow
+    g.fillRect(x - w / 2, y - w / 2, w, w)
+  }
+  g.globalAlpha = 1
+}
+
 function PanelScene({ t }) {
   const ref = useRef(null)
   const v = panelView(t)
@@ -730,6 +761,8 @@ function PanelScene({ t }) {
     // the two, and their touch
     const p = t >= S.lean[0] ? pairAt(t, v.z) : { lin: L_AT, kai: K_AT }
     const touch = t >= S.touch[2] - 12 ? 0.75 * (1 - u(t, S.touch[2] - 12, S.meet)) : 0
+    // from the touch, coming apart into the flower
+    if (t >= S.touch[2] + 6) { drawLeaving(g, t, v); return }
     if (t >= S.kaiIn) {
       const c = crtOn(t, S.kaiIn, 1.3)
       const [x, y] = frameOf(v, p.kai)
@@ -812,17 +845,14 @@ function cardAt(t) {
   const flip = 180 * easeOf('rl.flip')(p)
   const turning = Math.sin(Math.PI * p)
   const near = 1 + 0.035 * easeOf('sine.inOut')(u(t, S.flip[1] - 150, S.ifnot[0] + 400))
-  // and as its words go, it goes back into the panel, away from us, slowly
-  // and then all at once
-  const back = easeOf('expo.in')(u(t, S.rOut - 100, S.rOut + 300))
   return {
-    x, y: y - 30 * back,
-    s: Math.exp(ls) * (1 + 0.05 * turning) * near * (1 - 0.96 * back),
+    x, y,
+    s: Math.exp(ls) * (1 + 0.05 * turning) * near,
     rz: clamp(vx * 6, -14, 14) - 2.5 * turning,
     rx: clamp(-vy * 8, -20, 20) + 6 * turning,
     ry: clamp(-vx * 11, -26, 26) + flip,
     flip,
-    o: on(t, S.swoosh[0], 90) * (1 - u(t, S.rOut + 230, S.rOut + 300)),
+    o: on(t, S.swoosh[0], 90),
     white: at([[S.swoosh[0], 1], [S.swoosh[0] + 120, 0.75], [S.swoosh[0] + 420, 0, 'power2.out']], t),
   }
 }
@@ -881,36 +911,87 @@ function drawGleam(g, c) {
 // the moment it is on its edge, and kai's side coming on from that line,
 // white first, as a screen does
 const EDGE = (S.flip[0] + S.flip[1]) / 2
+// the flower's light on the letter's edges, as a thing set in light takes
+// it on its edges (a light wrap): along each edge, the flower's colour
+// just outside it, laid a little way in and fading
+const srgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055)
+function drawWrap(o, t, c, k) {
+  if (k <= 0.003) return
+  const q = cardQuad(c)
+  const v = panelView(t)
+  const mx = (q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4
+  const my = (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4
+  const along = (P, Q, f) => [P[0] + (Q[0] - P[0]) * f, P[1] + (Q[1] - P[1]) * f]
+  o.globalCompositeOperation = 'lighter'
+  for (let e = 0; e < 4; e++) {
+    const P = q[e]
+    const Q = q[(e + 1) % 4]
+    let nx = Q[1] - P[1]
+    let ny = -(Q[0] - P[0])
+    const nl = Math.hypot(nx, ny)
+    if (nl < 1) continue
+    nx /= nl
+    ny /= nl
+    if (((P[0] + Q[0]) / 2 - mx) * nx + ((P[1] + Q[1]) / 2 - my) * ny < 0) { nx = -nx; ny = -ny }
+    const N = 18
+    for (let i = 0; i < N; i++) {
+      const P0 = along(P, Q, i / N)
+      const P1 = along(P, Q, (i + 1) / N)
+      const M = along(P, Q, (i + 0.5) / N)
+      const L = BLOOM.lightNear(t, ...toPanel(v, [M[0] + nx * 12, M[1] + ny * 12]))
+      const rgb = L.map((x) => Math.round(255 * srgb(Math.min(1, x * 1.6 * k))))
+      if (rgb[0] + rgb[1] + rgb[2] < 4) continue
+      const grad = o.createLinearGradient(M[0], M[1], M[0] - nx * 16, M[1] - ny * 16)
+      grad.addColorStop(0, `rgba(${rgb.join(',')},1)`)
+      grad.addColorStop(1, `rgba(${rgb.join(',')},0)`)
+      o.fillStyle = grad
+      o.beginPath()
+      o.moveTo(P0[0], P0[1])
+      o.lineTo(P1[0], P1[1])
+      o.lineTo(P1[0] - nx * 16, P1[1] - ny * 16)
+      o.lineTo(P0[0] - nx * 16, P0[1] - ny * 16)
+      o.closePath()
+      o.fill()
+    }
+  }
+  o.globalCompositeOperation = 'source-over'
+}
+// kai's letter as it is given back: what of it is left, in its own pixels,
+// a block at a time, never a hole eaten in it
+let MASK = null
+function maskOf(gv) {
+  if (!MASK) { MASK = document.createElement('canvas'); MASK.width = PW; MASK.height = CARD_H }
+  const g = MASK.getContext('2d')
+  g.globalCompositeOperation = 'source-over'
+  g.fillStyle = '#FFFFFF'
+  g.fillRect(0, 0, PW, CARD_H)
+  const bw = PW / gv.NU
+  const bh = CARD_H / gv.NV
+  for (let j = 0; j < gv.NV; j++) {
+    for (let i = 0; i < gv.NU; i++) {
+      if (!gv.gone(i, j)) continue
+      const x0 = Math.floor(i * bw)
+      const y0 = Math.floor(j * bh)
+      g.clearRect(x0, y0, Math.floor((i + 1) * bw) - x0, Math.floor((j + 1) * bh) - y0)
+    }
+  }
+  return MASK.toDataURL('image/png')
+}
 function LetterScene({ t }) {
   const under = useRef(null)
   const over = useRef(null)
   const c = cardAt(t)
+  const gv = BLOOM.givingAt(t)
   useLayoutEffect(() => {
     const g = under.current.getContext('2d')
     g.setTransform(1, 0, 0, 1, 0, 0)
     g.clearRect(0, 0, 1080, 1920)
-    // the two, white as they touch, and their light, and gone into it
+    // the two, coming apart into the flower
     const v = panelView(t)
-    const gone = 1 - u(t, S.meet + 40, S.meet + 180)
-    const white = 0.75 + 0.25 * u(t, S.meet, S.meet + 60)
-    const cell = C * v.z
-    const [lx, ly] = frameOf(v, TOUCHED.lin)
-    const [kx, ky] = frameOf(v, TOUCHED.kai)
-    drawEnvelope(g, { x: lx, y: ly, cell, tint: A.tint, a: gone, white })
-    drawEnvelope(g, { x: kx, y: ky, cell, tint: B.tint, a: gone, white })
-    const bloom = at([[S.meet, 0], [S.meet + 70, 1, 'power2.out'], [S.meet + 380, 0, 'power2.in']], t)
-    if (bloom > 0.003) {
-      const r = 320
-      const grad = g.createRadialGradient(SCREEN_AT[0], SCREEN_AT[1], 0, SCREEN_AT[0], SCREEN_AT[1], r)
-      grad.addColorStop(0, `rgba(255,248,240,${(0.8 * bloom).toFixed(3)})`)
-      grad.addColorStop(0.25, `rgba(240,214,226,${(0.35 * bloom).toFixed(3)})`)
-      grad.addColorStop(1, 'rgba(0,0,0,0)')
-      g.fillStyle = grad
-      g.fillRect(SCREEN_AT[0] - r, SCREEN_AT[1] - r, r * 2, r * 2)
-    }
+    drawLeaving(g, t, v)
     // the light it throws on the dark round it, in its colour, least as it
-    // goes over its edge
-    const go = 0.5 * c.o * Math.abs(Math.cos((c.flip * Math.PI) / 180))
+    // goes over its edge, and less as it is given back
+    const go = 0.5 * c.o * Math.abs(Math.cos((c.flip * Math.PI) / 180)) * (1 - (gv ? gv.arrived : 0))
     if (go > 0.005) {
       const r = 760 * (c.s / OBJ_S)
       const col = skinOf(c.flip > 90 ? B.tint : A.tint).glow
@@ -922,8 +1003,8 @@ function LetterScene({ t }) {
       g.fillRect(c.x - r, c.y - 40 - r, r * 2, r * 2)
     }
     // the light it leaves on its way, where it was a moment ago, fainter
-    // the longer ago, and gone as it slows; and again as it goes back
-    const trail = t > S.swoosh[0] ? Math.max(1 - u(t, S.swoosh[0] + 300, S.swoosh[0] + 560), u(t, S.rOut - 60, S.rOut + 120)) : 0
+    // the longer ago, and gone as it slows
+    const trail = t > S.swoosh[0] ? 1 - u(t, S.swoosh[0] + 300, S.swoosh[0] + 560) : 0
     if (trail > 0.003) {
       g.fillStyle = skinOf(c.flip > 90 ? B.tint : A.tint).lit
       for (let k = 6; k >= 1; k--) {
@@ -959,9 +1040,28 @@ function LetterScene({ t }) {
       o.lineTo(...foot)
       o.stroke()
     }
+    // the flower's light on its edges, once it is near enough to be held,
+    // least on its edge, and gone as it is given back
+    drawWrap(o, t, c, smooth01(u(t, S.swoosh[0] + 300, S.swoosh[0] + 700)) * Math.min(1, edge * 3) * (1 - u(t, S.give[0], S.give[0] + 200)))
+    // and its pixels as they lift off it, each its own colour, smaller and
+    // fainter as it goes into the flower
+    if (gv) {
+      for (const q of gv.flying) {
+        const a = (1 - q.e) ** 1.4
+        if (a <= 0.01) continue
+        const [x, y] = frameOf(v, [q.x, q.y])
+        const w = Math.max(0.8, 9 * (1 - 0.8 * q.e))
+        o.globalAlpha = a
+        o.fillStyle = `rgb(${q.col.map((x) => Math.round(255 * srgb(Math.min(1, x)))).join(',')})`
+        o.fillRect(x - w / 2, y - w / 2, w, w)
+      }
+      o.globalAlpha = 1
+    }
   })
   const turned = c.flip > 90
   const back = t >= EDGE ? at([[EDGE, 0.85], [EDGE + 320, 0, 'power2.out']], t) : 0
+  const mask = gv ? maskOf(gv) : null
+  const masked = mask ? { WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat' } : null
   return (
     <div className="rl-cam">
       <canvas ref={under} className="rl-panel" width="1080" height="1920" />
@@ -969,7 +1069,7 @@ function LetterScene({ t }) {
         {/* one side at a time, the side turned towards us: kai's drawn as a
             card's other side is, turned by the angle less a half turn and
             its roll the other way, so there is only ever one glass to draw */}
-        <div className="rl-card" style={{ opacity: c.o.toFixed(3), transform: `translate(${(c.x - PW / 2).toFixed(2)}px, ${(c.y - CARD_H / 2).toFixed(2)}px) perspective(2600px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${(turned ? c.ry - 180 : c.ry).toFixed(2)}deg) rotateZ(${(turned ? -c.rz : c.rz).toFixed(2)}deg) scale(${c.s.toFixed(4)})` }}>
+        <div className="rl-card" style={{ opacity: c.o.toFixed(3), transform: `translate(${(c.x - PW / 2).toFixed(2)}px, ${(c.y - CARD_H / 2).toFixed(2)}px) perspective(2600px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${(turned ? c.ry - 180 : c.ry).toFixed(2)}deg) rotateZ(${(turned ? -c.rz : c.rz).toFixed(2)}deg) scale(${c.s.toFixed(4)})`, ...masked }}>
           {turned
             ? <NoteScreen key="kai" who={B} t={1e6} times={ALL_B} sendAt={1e9} {...FACE_B} />
             : <NoteScreen key="lin" who={A} t={1e6} times={ALL_A} sendAt={1e9} {...FACE_A} />}
@@ -1055,19 +1155,14 @@ function EndScene({ t }) {
 }
 
 // ── the light in the panel ──────────────────────────────────────────────────
-// The panel is a screen, and light moves in it (panel-fluid.js): every note
-// on it is a light in that flow, its own colour coming off it and carried,
-// and what happens to a note happens to its light. Through the lens the
-// envelope's light opens out into the dark; waiting, lin's rises off it as
-// a breath does; the week's notes are drops of their colours, and while the
-// clock runs through the week the flow rushes; at nine the others' light
-// goes down, the two come to each other in two streams turning round the
-// place they meet, touch, and the light opens out; the letter coming at us
-// stirs it, and its turning over turns it; behind kai's note the two
-// colours turn into each other; the letter goes back into it; each of the
-// ones that never meet goes out as a candle does, its last light rising off
-// it as smoke; under the question everyone's light is faint and slow; and
-// for the name it turns round the star and into it, and the name is lit.
+// The panel is a screen, and light moves in it (panel-fluid.js). What the
+// story places in it is a flower that opens only at night (reel-bloom.js):
+// every note that waits keeps a closed bud of its own light, the two at
+// nine come apart into one flower, and the letter is held in it and given
+// back to it. The flow under it is quiet: the notes give off a little of
+// their light, three slow currents carry it, and it is the panel's stars,
+// drifting from where they came. Nothing in it rises, and it curls only a
+// little, so nothing in it reads as smoke or flame.
 const TAU = Math.PI * 2
 // a note's light in the flow: its tint's glow, in linear light, as full
 // as `sat` makes it, `k` times
@@ -1077,9 +1172,8 @@ const lightOf = (tint, k = 1, sat = 1.5) => {
   return c.map((x) => Math.max(0, y + (x - y) * sat) * k)
 }
 const times = (rgb, k) => rgb.map((x) => x * k)
-const ICE = lightOf(A.tint)
-const AMBER = lightOf(B.tint)
-const WARM = [1, 0.86, 0.72]
+const ICE = lightOf(A.tint, 1, 1.2)
+const AMBER = lightOf(B.tint, 1, 1.2)
 // the flow's steps, each a sixtieth of a second of its own time, and the
 // film's moment each is taken at: a step a frame, and up to RUSH a frame
 // while the clock runs through the week, so the week is seen to rush
@@ -1116,12 +1210,20 @@ const toPanel = (v, [x, y]) => [v.a[0] + (x - v.f[0]) / v.z, v.a[1] + (y - v.f[1
 const linAt = (t) => (t < S.lean[0] ? L_AT : t < S.meet ? pairAt(t, leanView(t).z).lin : TOUCHED.lin)
 const kaiAt = (t) => (t < S.lean[0] ? K_AT : t < S.meet ? pairAt(t, leanView(t).z).kai : TOUCHED.kai)
 const breath = (t) => Math.sin(((t - S.away[1]) / 1700) * TAU - Math.PI / 2) * 0.5 + 0.5
+// the buds, the flower and the letter's pixels
+const BLOOM = makeBloom({
+  C, PW, CARD_H, ENV_ROWS, MEET, L_AT, K_AT, LENS, OTHERS, LONE, STAR, TOUCHED,
+  REST_AT: [OBJ.x, OBJ.y], cardAt, cardQuad, quadMap, panelView, toPanel, pairAt, linAt, kaiAt, breath,
+  flipEase: easeOf('rl.flip'),
+  light: (tint) => ({ glow: linear(hexRgb(skinOf(tint).glow)), lit: linear(hexRgb(skinOf(tint).lit)) }),
+})
 // what the story does to the flow at the film's moment `t`
 function flow(fl, t) {
-  // how long light lasts in it, how long a push does, and how it curls
-  fl.dyeFade = t < S.date[0] ? 0.45 : t < S.meet ? 0.42 : t < S.rOut ? 0.24 : t < S.ifnot[0] + 200 ? 3.4 : t < S.ask[0] ? 0.6 : t < S.name[0] ? 0.95 : t < S.lock[1] ? 1.1 : 0.5
-  fl.velFade = t < S.meet ? 0.3 : t < S.ifnot[0] ? 0.25 : 0.4
-  fl.curl = t < S.meet ? 30 : t < S.ifnot[0] ? 32 : t < S.name[0] ? 18 : 24
+  // how long light lasts in it, how long a push does, and how little it
+  // curls: its edges stay smooth
+  fl.dyeFade = t < S.ifnot[0] ? 0.42 : 0.55
+  fl.velFade = 0.3
+  fl.curl = 5
   // the panel is never quite still: three slow currents wander in it, each
   // drawing the flow along after it
   for (let i = 0; i < 3; i++) {
@@ -1134,192 +1236,30 @@ function flow(fl, t) {
     const vy = (Math.cos(t / py + ph * 1.7) * 700 * 1000) / py
     fl.push(x, y, vx * 0.06, vy * 0.06, 110)
   }
-  // through the lens: the envelope's light opening out into the dark as a
-  // ring, its eddies turning each the other way so it breaks into curls
-  if (t < S.away[0] + 360) {
-    const k = u(t, S.away[0], S.away[0] + 360)
-    const R = 40 + 470 * easeOf('power2.out')(k)
-    if (t < S.away[0] + 40) fl.ink(LENS.x, LENS.y, times(ICE, 0.9), 70)
-    // eleven arms, none like another: each its own angle, reach, strength
-    // and way of turning
-    for (let i = 0; i < 11; i++) {
-      const a = (i / 11) * TAU + (rnd(i + 3) - 0.5) * 0.5
-      const r = R * (0.62 + 0.62 * rnd(i + 23))
-      const x = LENS.x + Math.cos(a) * r
-      const y = LENS.y + Math.sin(a) * r * 0.92
-      fl.ink(x, y, times(ICE, (0.12 + 0.18 * rnd(i + 31)) * (1 - k) + 0.015), 16 + 12 * rnd(i + 37))
-      const turn = (i % 2 ? 1 : -1) * (0.5 + rnd(i + 43))
-      fl.push(x, y, -Math.sin(a) * 520 * turn * (1 - k), Math.cos(a) * 520 * turn * (1 - k), 26)
-    }
-  }
-  // lin's, waiting: its light rising off it as breath does, in a thread
-  // that sways, and following it at nine
-  if (t >= S.away[1] - 300 && t < S.lean[0]) {
-    const [x, y] = linAt(t)
-    const b = breath(t)
-    fl.ink(x + Math.sin(t / 700) * 4, y - 12, times(ICE, 0.08 + 0.1 * b), 9)
-    fl.push(x + Math.sin(t / 900) * 6, y - 22, Math.sin(t / 1300) * 90, -240 - 120 * b, 12)
-  }
-  // the week's notes: a drop of each one's colour as it comes on, a little
-  // of it after, and at nine, taken down
-  for (const o of OTHERS) {
-    if (t < o.ms || t > S.lapse[1] + 400) continue
-    const [x, y] = o.at
-    const age = t - o.ms
-    if (age < 60) fl.ink(x, y, lightOf(o.tint, 0.6), 20)
-    else if (t < S.lapse[1]) fl.ink(x, y - 10, lightOf(o.tint, 0.05), 9)
-    if (age < 80) fl.push(x, y, (rnd(o.ms) - 0.5) * 900, -500 - rnd(o.ms + 1) * 400, 18)
-    else if (t < S.lapse[1]) fl.push(x, y - 18, Math.sin(t / 800 + o.k * 5) * 60, -160, 10)
-    if (t >= S.lapse[1]) fl.fade(x, y, 70, 0.05)
-  }
-  // kai's, on the thursday: a drop of amber, and its light rising after
-  if (t >= S.kaiIn && t < S.lean[0]) {
-    const [x, y] = kaiAt(t)
-    if (t - S.kaiIn < 80) {
-      fl.ink(x, y, times(AMBER, 1), 24)
-      fl.push(x, y, -700, -800, 24)
-    }
-    fl.ink(x + Math.cos(t / 800) * 4, y - 12, times(AMBER, 0.12), 9)
-    fl.push(x + Math.cos(t / 1100) * 6, y - 22, Math.cos(t / 1500) * 90, -260, 12)
-  }
-  // at nine the two come to each other, their light streaming after them
-  // and turning round the place they meet
-  if (t >= S.lean[0] && t < S.touch[2]) {
-    for (const [where, col] of [[linAt, ICE], [kaiAt, AMBER]]) {
-      const [x, y] = where(t)
-      const [x0, y0] = where(t - 16)
-      fl.ink(x, y, times(col, 0.09), 14)
-      fl.push(x, y, ((x - x0) / 16) * 800, ((y - y0) / 16) * 800, 20)
-    }
-    const k = u(t, S.lean[0] + 300, S.touch[2])
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * TAU + t / 400
-      fl.push(MEET[0] + Math.cos(a) * 60, MEET[1] + Math.sin(a) * 60, -Math.sin(a) * 160 * k, Math.cos(a) * 160 * k, 30)
-    }
-  }
-  // the touch: one light, filling the frame, and opening out as a flower
-  // of the two colours, lin's on its one side and kai's on the other, every
-  // petal its own
-  if (t >= S.touch[2] && t < S.touch[2] + 50) fl.ink(MEET[0], MEET[1], times(WARM, 2.4), 70)
-  if (t >= S.touch[2] && t < S.touch[2] + 520) {
-    const k = u(t, S.touch[2], S.touch[2] + 520)
-    const R = 30 + 360 * easeOf('power2.out')(k)
-    for (let i = 0; i < 13; i++) {
-      const a = (i / 13) * TAU + (rnd(i + 61) - 0.5) * 0.45
-      const r = R * (0.6 + 0.65 * rnd(i + 67))
-      const x = MEET[0] + Math.cos(a) * r
-      const y = MEET[1] + Math.sin(a) * r * 0.9
-      const col = Math.cos(a) < 0 ? ICE : AMBER
-      fl.ink(x, y, times(col, (0.32 + 0.3 * rnd(i + 71)) * (1 - k) + 0.03), 18 + 14 * rnd(i + 73))
-      const turn = (i % 2 ? 1 : -1) * (0.5 + rnd(i + 79))
-      fl.push(x, y, -Math.sin(a) * 560 * turn * (1 - k), Math.cos(a) * 560 * turn * (1 - k), 30)
-    }
-  }
-  // the letter coming at us stirs the light after it
+  // the light the notes give off, a little at a time, for the currents to
+  // carry: lin's from when it is in its place, kai's from the thursday, the
+  // week's others while they are on
+  if (t >= S.away[1] && t < S.touch[2]) fl.ink(...linAt(t), times(ICE, 0.0016), 14)
+  if (t >= S.kaiIn + 300 && t < S.touch[2]) fl.ink(...kaiAt(t), times(AMBER, 0.0016), 14)
+  for (const o of OTHERS) if (t >= o.ms + 200 && t < S.lapse[1]) fl.ink(...o.at, lightOf(o.tint, 0.0007, 1.2), 12)
+  // the flower's, from the ends of its petals
+  for (const p of BLOOM.tipsAt(t)) if (p.a > 0.01) fl.ink(p.x, p.y, times(p.col, 0.0012 * p.a / 0.55), 18)
+  // the letter going past stirs the light after it, gently
   if (t >= S.swoosh[0] && t < S.swoosh[0] + 700) {
     const v = panelView(t)
     const c = cardAt(t)
     const c0 = cardAt(t - 16)
     const [x, y] = toPanel(v, [c.x, c.y])
     const [x0, y0] = toPanel(panelView(t - 16), [c0.x, c0.y])
-    const r = (c.s * 500) / v.z
-    fl.push(x, y, ((x - x0) / 16) * 600, ((y - y0) / 16) * 600, r * 0.6)
+    fl.push(x, y, ((x - x0) / 16) * 300, ((y - y0) / 16) * 300, (c.s * 300) / v.z)
   }
-  // and its turning over turns it: up on one side of it, down on the other
-  if (t >= EDGE - 120 && t < EDGE + 120) {
-    const [x, y] = toPanel(panelView(t), [OBJ.x, OBJ.y])
-    const k = 1 - Math.abs(t - EDGE) / 120
-    fl.push(x - 200, y, 0, -420 * k, 70)
-    fl.push(x + 200, y, 0, 420 * k, 70)
-  }
-  // behind kai's note, the two colours, lin's coming in under it from the
-  // left and kai's over it from the right, each round the note, into the
-  // other's way, so they turn into each other
-  if (t >= S.flip[1] - 300 && t < S.rOut) {
-    const k = Math.min(1, (t - S.flip[1] + 300) / 700)
-    const yL = 1560 + Math.sin(t / 1400) * 90
-    const yR = 600 + Math.cos(t / 1600) * 70
-    fl.ink(30, yL, times(ICE, 0.16 * k), 30)
-    fl.push(40, yL, 520 * k, -140 * k, 36)
-    fl.ink(1050, yR, times(AMBER, 0.16 * k), 30)
-    fl.push(1040, yR, -520 * k, 140 * k, 36)
-    // and the two meeting at either side of it, rising and falling
-    fl.push(1000, 1200, 0, -260 * k, 60)
-    fl.push(80, 900, 0, 260 * k, 60)
-  }
-  // the letter going back into the light: a ripple where it goes, and then
-  // the light goes down, for the ones that never meet
-  if (t >= S.rOut + 260 && t < S.rOut + 310) {
-    const [x, y] = toPanel(panelView(t), [OBJ.x, OBJ.y - 30])
-    fl.ink(x, y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.5), 22)
-    for (let k = 0; k < 6; k++) {
-      const a = (k / 6) * TAU + 0.5
-      fl.push(x + Math.cos(a) * 20, y + Math.sin(a) * 20, -Math.sin(a) * 300 * (k % 2 ? 1 : -1), Math.cos(a) * 300 * (k % 2 ? 1 : -1), 24)
-    }
-  }
-  // the cut to them: the panel's light most of the way down at once
+  // the cut to the ones that never meet: the panel's light most of the way
+  // down at once
   if (t >= S.ifnot[0] && t < S.ifnot[0] + 17) fl.fade(0, 0, 0, 0.6)
-  // the ones that never meet: each a candle's small light while it is on,
-  // and as it goes out, its last light rising off it as smoke
-  for (const l of LONE) {
-    const [x, y] = l.at
-    if (t >= l.in + 60 && t < l.out) {
-      fl.ink(x, y - 8, lightOf(l.tint, 0.12), 12)
-      fl.push(x, y - 20, Math.sin(t / 700 + l.k) * 14, -60, 16)
-    }
-    if (t >= l.out && t < l.out + 140) {
-      fl.ink(x, y - 6, lightOf(l.tint, 0.45), 14)
-      fl.push(x, y - 14, (rnd(l.k * 9) - 0.5) * 120, -320, 18)
-    }
-  }
-  // under the question, everyone's light, faint and slow, on two arms
-  // turning about one middle, low in the frame, as a galaxy turns: the
-  // colours of starlight, the white, the cold and the warm
-  const G = [540, 1430]
-  if (t >= S.ask[0] - 600 && t < S.name[0] + 400) {
-    const k = Math.min(1, (t - S.ask[0] + 600) / 1400) * (1 - u(t, S.name[0] - 350, S.name[0] + 50))
-    const tints = ['white', 'ice', 'amber']
-    // its two arms, laid along their length, winding out from the middle
-    for (let arm = 0; arm < 2; arm++) {
-      for (let j = 0; j < 5; j++) {
-        const r = 36 + j * 50
-        const a = t / 2200 + arm * Math.PI + r / 140
-        fl.ink(G[0] + Math.cos(a) * r, G[1] + Math.sin(a) * r * 0.62, lightOf(tints[(arm + j) % 3], 0.075 * k * (1.25 - j * 0.15), 0.8), 13)
-      }
-    }
-    // and its middle, brighter
-    fl.ink(G[0], G[1], lightOf('white', 0.05 * k, 0.6), 30)
-    for (let j = 0; j < 6; j++) {
-      const a = (j / 6) * TAU
-      fl.push(G[0] + Math.cos(a) * 230, G[1] + Math.sin(a) * 230 * 0.62, -Math.sin(a) * 60 * k, Math.cos(a) * 38 * k, 70)
-    }
-  }
-  // `you?`: a breath of light rising out of it
-  if (t >= S.qWords[5] && t < S.qWords[5] + 260) {
-    const k = 1 - u(t, S.qWords[5], S.qWords[5] + 260)
-    fl.ink(G[0], G[1] - 40, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.05 * k), 40)
-    fl.push(G[0], G[1] - 60, 0, -220 * k, 44)
-  }
-  // the name: the light drawn round the star and into it, as water into a
-  // drain, and the name lit from it
-  if (t >= S.lock[0] - 400 && t < S.lock[1] + 700) {
-    const k = Math.sin(Math.PI * u(t, S.lock[0] - 400, S.lock[1] + 700))
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * TAU + t / 300
-      fl.push(STAR.x + Math.cos(a) * 120, STAR.y + Math.sin(a) * 120, (-Math.sin(a) * 420 - Math.cos(a) * 120) * k, (Math.cos(a) * 420 - Math.sin(a) * 120) * k, 50)
-    }
-    // two arms of everyone's light, winding in to it as they turn
-    const reach = 1 - 0.55 * u(t, S.lock[0] - 400, S.lock[1])
-    for (let arm = 0; arm < 2; arm++) {
-      for (let j = 0; j < 4; j++) {
-        const r = (70 + j * 60) * reach
-        const a = t / 380 + arm * Math.PI + r / 110
-        fl.ink(STAR.x + Math.cos(a) * r, STAR.y + Math.sin(a) * r, lightOf(['ice', 'white', 'amber', 'white'][(arm + j) % 4], 0.085 * k, 0.8), 15)
-      }
-    }
-    fl.fade(STAR.x, STAR.y, 34, 0.08 * k)
-  }
-  if (t >= S.lock[1]) fl.ink(STAR.x, STAR.y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.045), 22)
+  // their light, a little, while they are on
+  for (const l of LONE) if (t >= l.in + 200 && t < l.out) fl.ink(...l.at, lightOf(l.tint, 0.0007, 1.2), 12)
+  // and the bud under the question, where the star will be
+  if (t >= S.ask[0] + 600 && t < S.lock[0]) fl.ink(STAR.x, STAR.y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.0008), 14)
 }
 // how the panel is shown: its unlit cells coming up after the lens, the
 // light's strength, and the band under the words kept darker
@@ -1327,6 +1267,8 @@ const looksAt = (t) => ({
   grid: at([[S.away[0] + 200, 0], [S.away[1] + 100, 1, 'sine.inOut']], t),
   gain: t < S.name[0] ? 1 : lerp(1, 0.82, u(t, S.name[0], S.lock[1])),
   top: t >= S.meet && t < S.ifnot[0] ? 0.25 : 0.35,
+  star: 0.85,
+  lightGain: 1,
   time: t / 1000,
 })
 // the panel itself, under every scene from the lens on: one flow for the
@@ -1340,7 +1282,7 @@ function PanelGL({ t }) {
     if (!fluid.current) fluid.current = new PanelFluid(ref.current, { cells: PANEL, script: flow, steps: FLOW_STEPS })
     if (!live) return
     fluid.current.stepTo(t)
-    fluid.current.render(panelView(t), looksAt(t))
+    fluid.current.render(panelView(t), looksAt(t), BLOOM.lightAt(t))
   })
   useEffect(() => () => { if (fluid.current) fluid.current.dispose() }, [])
   return <canvas ref={ref} className="rl-gl" width="1080" height="1920" style={live ? undefined : { visibility: 'hidden' }} />
@@ -1368,14 +1310,39 @@ function useAtlas() {
   return img
 }
 
+// kai's face, a block at a time, from the reel's own picture of it (its
+// pixels' colours as it is given back to the flower), loaded before the
+// first frame like the atlas
+let FACE_BLOCKS = null
+function useFaceBlocks() {
+  const [ok, setOk] = useState(!!FACE_BLOCKS)
+  useEffect(() => {
+    if (FACE_BLOCKS) return
+    const i = new Image()
+    i.src = blocksUrl
+    i.decode().then(() => {
+      const c = document.createElement('canvas')
+      c.width = i.width
+      c.height = i.height
+      const g = c.getContext('2d')
+      g.drawImage(i, 0, 0)
+      FACE_BLOCKS = g.getImageData(0, 0, i.width, i.height).data
+      BLOOM.setFace(FACE_BLOCKS)
+      setOk(true)
+    })
+  }, [])
+  return ok
+}
+
 export function Reel({ t }) {
   const [ok, setOk] = useState(false)
   const [mA, setMA] = useState(null)
   const atlas = useAtlas()
+  const face = useFaceBlocks()
   useEffect(() => {
     Promise.all(FACES.map((f) => document.fonts.load(f))).then(() => setOk(true))
   }, [])
-  useHold(ok && !!mA && !!atlas)
+  useHold(ok && !!mA && !!atlas && face)
   const tA = useMemo(typedA, [])
   const ready = ok && mA
   return (

@@ -27,14 +27,15 @@ goes, onto a note that is not home.
   through
 - the date: the piano ticks the clock round in eighths and stops at nine; a
   cello comes in with the note that comes in on the thursday
-- the reveal: a wide breath of air as the touch's light fills the frame;
-  the air of lin's letter coming out of the light at us, from the left as
-  it swings out there; a run up the piano, leaning into its
+- the reveal: a slow breath of air under the flower as it opens, as long as
+  it takes to open; the air of lin's letter coming out of its heart at us,
+  from the left as it swings out there; a run up the piano, leaning into its
   last two notes, the melody's first, and a harp going up with it into the
   turn; on the turn, as kai's side comes on, the melody sung by everything
 - `you both find out.`: the cello answers the melody, down to the B the
-  next scene is on; the air drawn in after the letter as it goes back into
-  the panel, gone on the cut
+  next scene is on; grains of air, a few thousandths of a second each, as
+  kai's letter is given back to the flower a pixel at a time, their band
+  falling as they go in, gone on the cut
 - the ones that go out: the piano alone, a note for each light
 - the question: the melody with its words, on the piano alone, `you?` on a
   note that is not home, and left open over A, its fourth letting go to the

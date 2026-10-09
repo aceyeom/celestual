@@ -528,6 +528,22 @@ function air(ms, len, { gain = 0.04, from = 400, to = 9000, shape = 'swell', pan
     return lp(rnd(), from * (to / from) ** k) * e
   }, { gain, pan, verb })
 }
+// grains of air over `len` ms from `ms`, thickest a little after the
+// middle, each its own length and loudness, the band they are in going
+// from `from` to `to`
+const r01 = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
+function grains(ms, len, { gain = 0.02, from = 6000, to = 1500, n = 120, pan = 0, verb = 0.4 } = {}) {
+  for (let i = 0; i < n; i++) {
+    const a = r01(i * 3.1 + 7)
+    const b = r01(i * 5.7 + 11)
+    const k = Math.min(0.97, 0.04 + 0.92 * (a + b) / 2)
+    const L = sec(0.006 + 0.016 * r01(i * 2.3 + 1))
+    const lp = lowpass(1.6)
+    const fc = from * (to / from) ** k
+    const g = 0.45 + 0.55 * r01(i * 9.1 + 4)
+    lay(ms + len * k, L, (j) => lp(rnd(), fc) * Math.sin((Math.PI * j) / L) ** 2 * g, { gain, pan: pan + (r01(i * 4.3 + 2) - 0.5) * 0.5, verb })
+  }
+}
 // a screen going out, as an old one does: the whine of its circuit falling
 // away, and a soft knock as its picture goes to a point
 function whine(ms, { gain = 0.02, from = 7000, to = 300, len = 0.34, pan = 0 } = {}) {
@@ -562,12 +578,12 @@ air(S.away[0], S.away[1] - S.away[0], { gain: 0.009, from: 6000, to: 500, shape:
 // and stops at nine
 // the lean in, a breath
 air(S.lean[0], S.touch[2] - S.lean[0], { gain: 0.007, from: 300, to: 2400 })
-// and their light filling the frame and opening out: a wide breath of air,
-// up and away
-air(S.touch[2] + 10, 900, { gain: 0.016, from: 500, to: 6500, q: 0.9, verb: 0.7 })
-// lin's letter out of the light at us: the air it moves, coming quickly and
-// falling away, from the left as it swings out there and back to the middle
-// as it comes into the hand
+// and the two coming apart into one flower: a slow breath of air under
+// its opening, as long as it takes to open, soft at both ends
+air(S.touch[2], 1300, { gain: 0.012, from: 300, to: 3000, q: 0.8, verb: 0.75 })
+// lin's letter out of the flower's heart at us: the air it moves, coming
+// quickly and falling away, from the left as it swings out there and back
+// to the middle as it comes into the hand
 {
   const lp = lowpass(1.2)
   const L = sec(0.78)
@@ -586,9 +602,10 @@ air(S.touch[2] + 10, 900, { gain: 0.016, from: 500, to: 6500, q: 0.9, verb: 0.7 
 }
 // it turns over: a breath of air as it goes
 air((S.flip[0] + S.flip[1]) / 2 - 170, 320, { gain: 0.012, from: 1800, to: 6500, q: 1.4 })
-// the letter going back into the panel: the air drawn in after it, gone on
-// the cut
-air(S.rOut - 100, 400, { gain: 0.015, from: 700, to: 7000, shape: 'rise', q: 1.2, verb: 0.3 })
+// kai's letter given back to the flower, a pixel at a time: grains of air,
+// each a few thousandths of a second, more of them as more of it goes,
+// their band falling as they go in to the heart, gone on the cut
+grains(S.give[0], S.give[1] - S.give[0], { gain: 0.016, from: 7000, to: 1800, n: 150, verb: 0.45 })
 // the lights that never met, going out, each as a screen goes, from its
 // place
 ;[[S.lone[0], -0.55], [S.lone[1], 0.45], [S.lone[2], -0.15]].forEach(([ms, pan]) => whine(ms, { gain: 0.006, from: 6000, to: 700, len: 0.24, pan }))
