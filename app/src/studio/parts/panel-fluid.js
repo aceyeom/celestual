@@ -290,7 +290,7 @@ const FRAG = {
       // brown; the brightest cells catch a cross, as a star does
       vec3 L = max(texture2D(uLight, vec2(tex.x, 1.0 - tex.y)).rgb, 0.0) * uLightGain;
       float Ly = dot(L, vec3(0.2126, 0.7152, 0.0722));
-      float sat = smoothstep(0.002, 0.04, Ly) * 1.25;
+      float sat = smoothstep(0.01, 0.12, Ly) * 1.2;
       vec3 cool = Ly * vec3(0.82, 0.92, 1.18);
       L = cool + (L - Ly) * sat + (Ly - cool) * min(1.0, sat);
       float rr = length(f - 0.5);

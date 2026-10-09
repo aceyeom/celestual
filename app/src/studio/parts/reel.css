@@ -61,3 +61,16 @@
 /* the panel, alive: the flow's light in the screen's cells, under all the
    rest (panel-fluid.js) */
 .rl-gl { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 0; }
+/* kai's letter given back a block at a time (reel.jsx `maskOf`): the mask
+   on its glass and a margin round it, so the light on the glass's edge is
+   kept and fades with it, and the light it throws on the dark round it
+   fades as it goes; at once, never by a transition, which would run on the
+   clock and not the film's */
+.rl-card .wl-scene-halo, .rl-card .wl-scene-halo-2 { transition: none; }
+.rl-card.is-giving .wl-scr-press {
+  padding: 30px; margin: -30px;
+  -webkit-mask-image: var(--give-mask); mask-image: var(--give-mask);
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+}
+.rl-card.is-giving :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: var(--give-halo, 1); }

@@ -957,25 +957,36 @@ function drawWrap(o, t, c, k) {
   o.globalCompositeOperation = 'source-over'
 }
 // kai's letter as it is given back: what of it is left, in its own pixels,
-// a block at a time, never a hole eaten in it
+// a block at a time, never a hole eaten in it. The mask is on its glass and
+// a margin round it (reel.css), so the light on the glass's edge is kept,
+// fading as the letter goes, as the light it throws round it does; and how
+// much of it has gone
+const GIVE_M = 30
 let MASK = null
 function maskOf(gv) {
-  if (!MASK) { MASK = document.createElement('canvas'); MASK.width = PW; MASK.height = CARD_H }
+  if (!MASK) { MASK = document.createElement('canvas'); MASK.width = PW + 2 * GIVE_M; MASK.height = CARD_H + 2 * GIVE_M }
   const g = MASK.getContext('2d')
   g.globalCompositeOperation = 'source-over'
-  g.fillStyle = '#FFFFFF'
-  g.fillRect(0, 0, PW, CARD_H)
+  g.clearRect(0, 0, MASK.width, MASK.height)
   const bw = PW / gv.NU
   const bh = CARD_H / gv.NV
+  let gone = 0
+  for (let j = 0; j < gv.NV; j++) for (let i = 0; i < gv.NU; i++) if (gv.gone(i, j)) gone++
+  const left = 1 - gone / (gv.NU * gv.NV)
+  g.fillStyle = `rgba(255,255,255,${left.toFixed(4)})`
+  g.fillRect(0, 0, MASK.width, MASK.height)
+  g.clearRect(GIVE_M, GIVE_M, PW, CARD_H)
+  g.fillStyle = '#FFFFFF'
+  g.fillRect(GIVE_M, GIVE_M, PW, CARD_H)
   for (let j = 0; j < gv.NV; j++) {
     for (let i = 0; i < gv.NU; i++) {
       if (!gv.gone(i, j)) continue
       const x0 = Math.floor(i * bw)
       const y0 = Math.floor(j * bh)
-      g.clearRect(x0, y0, Math.floor((i + 1) * bw) - x0, Math.floor((j + 1) * bh) - y0)
+      g.clearRect(GIVE_M + x0, GIVE_M + y0, Math.floor((i + 1) * bw) - x0, Math.floor((j + 1) * bh) - y0)
     }
   }
-  return MASK.toDataURL('image/png')
+  return { url: MASK.toDataURL('image/png'), left }
 }
 function LetterScene({ t }) {
   const under = useRef(null)
@@ -1061,7 +1072,7 @@ function LetterScene({ t }) {
   const turned = c.flip > 90
   const back = t >= EDGE ? at([[EDGE, 0.85], [EDGE + 320, 0, 'power2.out']], t) : 0
   const mask = gv ? maskOf(gv) : null
-  const masked = mask ? { WebkitMaskImage: `url(${mask})`, maskImage: `url(${mask})`, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat' } : null
+  const masked = mask ? { '--give-mask': `url(${mask.url})`, '--give-halo': mask.left.toFixed(4) } : null
   return (
     <div className="rl-cam">
       <canvas ref={under} className="rl-panel" width="1080" height="1920" />
@@ -1069,7 +1080,7 @@ function LetterScene({ t }) {
         {/* one side at a time, the side turned towards us: kai's drawn as a
             card's other side is, turned by the angle less a half turn and
             its roll the other way, so there is only ever one glass to draw */}
-        <div className="rl-card" style={{ opacity: c.o.toFixed(3), transform: `translate(${(c.x - PW / 2).toFixed(2)}px, ${(c.y - CARD_H / 2).toFixed(2)}px) perspective(2600px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${(turned ? c.ry - 180 : c.ry).toFixed(2)}deg) rotateZ(${(turned ? -c.rz : c.rz).toFixed(2)}deg) scale(${c.s.toFixed(4)})`, ...masked }}>
+        <div className={`rl-card${mask ? ' is-giving' : ''}`} style={{ opacity: c.o.toFixed(3), transform: `translate(${(c.x - PW / 2).toFixed(2)}px, ${(c.y - CARD_H / 2).toFixed(2)}px) perspective(2600px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${(turned ? c.ry - 180 : c.ry).toFixed(2)}deg) rotateZ(${(turned ? -c.rz : c.rz).toFixed(2)}deg) scale(${c.s.toFixed(4)})`, ...masked }}>
           {turned
             ? <NoteScreen key="kai" who={B} t={1e6} times={ALL_B} sendAt={1e9} {...FACE_B} />
             : <NoteScreen key="lin" who={A} t={1e6} times={ALL_A} sendAt={1e9} {...FACE_A} />}

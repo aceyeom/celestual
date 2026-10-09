@@ -102,9 +102,11 @@ export function makeBloom(d) {
   const { C } = d
   const ICE = d.light('ice')
   const AMBER = d.light('amber')
-  const petalCol = (L) => mixed(L.glow, L.lit, 0.25)
+  // a petal's colour: its note's glow, lifted towards its lit colour; kai's
+  // amber lifted further, to a pale gold, as a strong orange dimmed is brown
+  const petalCol = (L, k = 0.25) => mixed(L.glow, L.lit, k)
   const ICE_P = petalCol(ICE)
-  const AMBER_P = petalCol(AMBER)
+  const AMBER_P = petalCol(AMBER, 0.5)
   const MUTUAL = mixed(ICE.lit, AMBER.lit, 0.5).map((x) => x * 0.95)
   const WARM = [1, 0.93, 0.86]
 
