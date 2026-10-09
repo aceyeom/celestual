@@ -1069,12 +1069,12 @@ function EndScene({ t }) {
 // it as smoke; under the question everyone's light is faint and slow; and
 // for the name it turns round the star and into it, and the name is lit.
 const TAU = Math.PI * 2
-// a note's light in the flow: its tint's glow, in linear light, a little
-// fuller, `k` times
-const lightOf = (tint, k = 1) => {
+// a note's light in the flow: its tint's glow, in linear light, as full
+// as `sat` makes it, `k` times
+const lightOf = (tint, k = 1, sat = 1.5) => {
   const c = linear(hexRgb(skinOf(tint).glow))
   const y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
-  return c.map((x) => Math.max(0, y + (x - y) * 1.5) * k)
+  return c.map((x) => Math.max(0, y + (x - y) * sat) * k)
 }
 const times = (rgb, k) => rgb.map((x) => x * k)
 const ICE = lightOf(A.tint)
@@ -1119,7 +1119,7 @@ const breath = (t) => Math.sin(((t - S.away[1]) / 1700) * TAU - Math.PI / 2) * 0
 // what the story does to the flow at the film's moment `t`
 function flow(fl, t) {
   // how long light lasts in it, how long a push does, and how it curls
-  fl.dyeFade = t < S.date[0] ? 0.45 : t < S.meet ? 0.42 : t < S.rOut ? 0.24 : t < S.ifnot[0] + 200 ? 3.4 : t < S.ask[0] ? 0.6 : t < S.name[0] ? 0.3 : t < S.lock[1] ? 1.1 : 0.5
+  fl.dyeFade = t < S.date[0] ? 0.45 : t < S.meet ? 0.42 : t < S.rOut ? 0.24 : t < S.ifnot[0] + 200 ? 3.4 : t < S.ask[0] ? 0.6 : t < S.name[0] ? 0.95 : t < S.lock[1] ? 1.1 : 0.5
   fl.velFade = t < S.meet ? 0.3 : t < S.ifnot[0] ? 0.25 : 0.4
   fl.curl = t < S.meet ? 30 : t < S.ifnot[0] ? 32 : t < S.name[0] ? 18 : 24
   // the panel is never quite still: three slow currents wander in it, each
@@ -1157,7 +1157,7 @@ function flow(fl, t) {
   if (t >= S.away[1] - 300 && t < S.lean[0]) {
     const [x, y] = linAt(t)
     const b = breath(t)
-    fl.ink(x + Math.sin(t / 700) * 4, y - 12, times(ICE, 0.05 + 0.07 * b), 9)
+    fl.ink(x + Math.sin(t / 700) * 4, y - 12, times(ICE, 0.08 + 0.1 * b), 9)
     fl.push(x + Math.sin(t / 900) * 6, y - 22, Math.sin(t / 1300) * 90, -240 - 120 * b, 12)
   }
   // the week's notes: a drop of each one's colour as it comes on, a little
@@ -1166,8 +1166,8 @@ function flow(fl, t) {
     if (t < o.ms || t > S.lapse[1] + 400) continue
     const [x, y] = o.at
     const age = t - o.ms
-    if (age < 60) fl.ink(x, y, lightOf(o.tint, 0.35), 18)
-    else if (t < S.lapse[1]) fl.ink(x, y - 10, lightOf(o.tint, 0.03), 8)
+    if (age < 60) fl.ink(x, y, lightOf(o.tint, 0.6), 20)
+    else if (t < S.lapse[1]) fl.ink(x, y - 10, lightOf(o.tint, 0.05), 9)
     if (age < 80) fl.push(x, y, (rnd(o.ms) - 0.5) * 900, -500 - rnd(o.ms + 1) * 400, 18)
     else if (t < S.lapse[1]) fl.push(x, y - 18, Math.sin(t / 800 + o.k * 5) * 60, -160, 10)
     if (t >= S.lapse[1]) fl.fade(x, y, 70, 0.05)
@@ -1176,10 +1176,10 @@ function flow(fl, t) {
   if (t >= S.kaiIn && t < S.lean[0]) {
     const [x, y] = kaiAt(t)
     if (t - S.kaiIn < 80) {
-      fl.ink(x, y, times(AMBER, 0.7), 22)
+      fl.ink(x, y, times(AMBER, 1), 24)
       fl.push(x, y, -700, -800, 24)
     }
-    fl.ink(x + Math.cos(t / 800) * 4, y - 12, times(AMBER, 0.08), 9)
+    fl.ink(x + Math.cos(t / 800) * 4, y - 12, times(AMBER, 0.12), 9)
     fl.push(x + Math.cos(t / 1100) * 6, y - 22, Math.cos(t / 1500) * 90, -260, 12)
   }
   // at nine the two come to each other, their light streaming after them
@@ -1264,30 +1264,34 @@ function flow(fl, t) {
   for (const l of LONE) {
     const [x, y] = l.at
     if (t >= l.in + 60 && t < l.out) {
-      fl.ink(x, y - 8, lightOf(l.tint, 0.05), 12)
+      fl.ink(x, y - 8, lightOf(l.tint, 0.12), 12)
       fl.push(x, y - 20, Math.sin(t / 700 + l.k) * 14, -60, 16)
     }
     if (t >= l.out && t < l.out + 140) {
-      fl.ink(x, y - 6, lightOf(l.tint, 0.3), 14)
+      fl.ink(x, y - 6, lightOf(l.tint, 0.45), 14)
       fl.push(x, y - 14, (rnd(l.k * 9) - 0.5) * 120, -320, 18)
     }
   }
-  // under the question, everyone's light, faint and slow: the colours of
-  // all the notes on two arms turning about one middle, low in the frame,
-  // as a galaxy turns
+  // under the question, everyone's light, faint and slow, on two arms
+  // turning about one middle, low in the frame, as a galaxy turns: the
+  // colours of starlight, the white, the cold and the warm
   const G = [540, 1430]
   if (t >= S.ask[0] - 600 && t < S.name[0] + 400) {
     const k = Math.min(1, (t - S.ask[0] + 600) / 1400) * (1 - u(t, S.name[0] - 350, S.name[0] + 50))
-    const tints = ['teal', 'lilac', 'rose', 'ice', 'amber', 'green']
+    const tints = ['white', 'ice', 'amber']
+    // its two arms, laid along their length, winding out from the middle
     for (let arm = 0; arm < 2; arm++) {
-      const i = (Math.floor(t / 260) + arm * 3) % tints.length
-      const a = t / 1500 + arm * Math.PI
-      const r = 150 + 60 * Math.sin(t / 900 + arm)
-      fl.ink(G[0] + Math.cos(a) * r, G[1] + Math.sin(a) * r * 0.62, lightOf(tints[i], 0.075 * k), 20)
+      for (let j = 0; j < 5; j++) {
+        const r = 36 + j * 50
+        const a = t / 2200 + arm * Math.PI + r / 140
+        fl.ink(G[0] + Math.cos(a) * r, G[1] + Math.sin(a) * r * 0.62, lightOf(tints[(arm + j) % 3], 0.075 * k * (1.25 - j * 0.15), 0.8), 13)
+      }
     }
+    // and its middle, brighter
+    fl.ink(G[0], G[1], lightOf('white', 0.05 * k, 0.6), 30)
     for (let j = 0; j < 6; j++) {
       const a = (j / 6) * TAU
-      fl.push(G[0] + Math.cos(a) * 230, G[1] + Math.sin(a) * 230 * 0.62, -Math.sin(a) * 110 * k, Math.cos(a) * 70 * k, 70)
+      fl.push(G[0] + Math.cos(a) * 230, G[1] + Math.sin(a) * 230 * 0.62, -Math.sin(a) * 60 * k, Math.cos(a) * 38 * k, 70)
     }
   }
   // `you?`: a breath of light rising out of it
@@ -1304,16 +1308,18 @@ function flow(fl, t) {
       const a = (i / 6) * TAU + t / 300
       fl.push(STAR.x + Math.cos(a) * 120, STAR.y + Math.sin(a) * 120, (-Math.sin(a) * 420 - Math.cos(a) * 120) * k, (Math.cos(a) * 420 - Math.sin(a) * 120) * k, 50)
     }
-    // two arms of everyone's light, coming in to it as they turn
-    const r = 300 - 170 * u(t, S.lock[0] - 400, S.lock[1])
+    // two arms of everyone's light, winding in to it as they turn
+    const reach = 1 - 0.55 * u(t, S.lock[0] - 400, S.lock[1])
     for (let arm = 0; arm < 2; arm++) {
-      const a = t / 240 + arm * Math.PI
-      const tint = ['ice', 'amber', 'lilac', 'rose'][(Math.floor(t / 300) + arm * 2) % 4]
-      fl.ink(STAR.x + Math.cos(a) * r, STAR.y + Math.sin(a) * r, lightOf(tint, 0.09 * k), 18)
+      for (let j = 0; j < 4; j++) {
+        const r = (70 + j * 60) * reach
+        const a = t / 380 + arm * Math.PI + r / 110
+        fl.ink(STAR.x + Math.cos(a) * r, STAR.y + Math.sin(a) * r, lightOf(['ice', 'white', 'amber', 'white'][(arm + j) % 4], 0.085 * k, 0.8), 15)
+      }
     }
     fl.fade(STAR.x, STAR.y, 34, 0.08 * k)
   }
-  if (t >= S.lock[1]) fl.ink(STAR.x, STAR.y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.014), 18)
+  if (t >= S.lock[1]) fl.ink(STAR.x, STAR.y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.045), 22)
 }
 // how the panel is shown: its unlit cells coming up after the lens, the
 // light's strength, and the band under the words kept darker

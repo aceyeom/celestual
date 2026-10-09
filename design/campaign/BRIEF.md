@@ -239,13 +239,16 @@ fluid, solved on the graphics card every sixtieth of a second (stable
 fluids, after Pavel Dobryakov's WebGL Fluid Simulation, MIT): its flow
 kept from piling up, its eddies kept alive, and its dye, the light, carried
 on a grid of exactly the panel's cells, so each cell of the screen shows
-the light that has drifted into it. A lit cell is lit as an LCD's is, in
-three stripes of red, green and blue, a little uneven in its backlight,
-and glowing into the dark between the cells. Every note on the panel is a
+the light that has drifted into it, as a star: drawn in the panel's own
+pixels, a point where a little light has come, then a cross, a longer
+cross and a sparkle where more has, each twinkling in its own time, mostly
+the white of starlight with a little of the light's own colour, over a
+faint haze of it. Not every cell is a star, so the sky is never the
+screen's grid; it is a night, quiet, made of the screen. Every note on the panel is a
 light in it: its own colour comes off it, and what happens to the note
 happens to its light. The flow is stepped from the lens at a fixed rate, so
 every frame is the same however it is come to. It is drawn with three.js
-(MIT), its glow postprocessing's mipmap bloom (Zlib).
+(MIT), the stars' glow postprocessing's mipmap bloom (Zlib).
 
 Nothing moves as a machine would. Every word comes on a little early or
 late and at its own pace; the two notes come together on curves, kai's

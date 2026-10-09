@@ -10,8 +10,10 @@
 // or late, never two notes alike), a hall convolved from an impulse made
 // here (by ffmpeg's afir), tape's soft saturation, and ffmpeg's loudnorm in
 // two passes to -14 LUFS with a true peak a decibel and a half under full
-// scale. The phone's keys, the send, the clock and the lights are
-// synthesised, as foley, on the frames they happen.
+// scale. lin's keys and the send are real recordings (scripts/sounds,
+// Ion.Sound's, MIT), a keystroke a letter, never the same one twice
+// running; the air the letter moves and the screens going out are
+// synthesised, on the frames they happen. There are no bells.
 //
 // It is quiet and it aches: a piano, close, and strings, a cello, a harp and
 // voices, in B minor, and no drums. Its melody is the film's question, `do
@@ -21,8 +23,8 @@
 // letter's pixels into the envelope; a cello comes in with the note that
 // comes in on the thursday; a piano ticks the clock round to nine and stops;
 // a run and a harp go up into the letter turning over, and the melody is
-// sung by everything as kai's side comes on, to the same pip and bells as
-// kai's note came in with; the cello answers it; the piano is alone for the
+// sung by everything as kai's side comes on; the cello answers it; the
+// piano is alone for the
 // ones that go out and for the question, which is left open over A; and the
 // name comes in on a chord that does not resolve.
 //
@@ -46,8 +48,7 @@ import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, mkdtempSync
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { MS, BEAT, A, S, typedA, typedUrl, wakeOf } from '../app/src/studio/parts/reel-time.js'
-import { wallOf } from '../app/src/studio/parts/wall-gl.js'
+import { MS, BEAT, A, S, typedA, typedUrl } from '../app/src/studio/parts/reel-time.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = process.argv[2] || join(root, 'design/campaign/celestual-reel.wav')
@@ -60,7 +61,6 @@ const N = Math.round((MS / 1000 + TAIL) * SR)
 const TAU = Math.PI * 2
 const sec = (s) => Math.round(s * SR)
 const at = (ms) => Math.round((ms / 1000) * SR)
-const hz = (m) => 440 * 2 ** ((m - 69) / 12)
 const bt = (beats) => beats * BEAT
 const work = mkdtempSync(join(tmpdir(), 'celestual-score-'))
 
@@ -179,7 +179,7 @@ ctl(cello, 0, 11, 66)
 ctl(cello, bt(17), 11, 90)
 
 // ── 10 to 12.5: send. The piano holds its breath on the key; a harp takes
-// the letter's pixels up into the envelope; a bell as it is sealed; the
+// the letter's pixels up into the envelope; its chord as it is sealed; the
 // strings and the voices swell as it comes at the lens, and it breaks on the
 // bar into the dark, on D, the light of the key it is in
 arp(16, 1, V.Bm9, 44)
@@ -239,8 +239,8 @@ play(piano, S.lapse[1], bt(1.6), 78, 64, { feel: 0 })
 swell(cello, bt(27.5), bt(29), 76, 96)
 swell(cello, bt(29), bt(30), 96, 64)
 ctl(cello, bt(34), 11, 100)
-// at nine the strings hold, down to almost nothing, and the bell of the
-// touch is heard in it
+// at nine the strings hold, down to almost nothing, and the touch is
+// heard in it
 swell(strings, S.lapse[1] + 100, bt(31.9), 96, 40)
 chord(choir, bt(31), bt(1) + 100, [54, 61, 66], 34)
 
@@ -462,31 +462,71 @@ function biquad(type, fc, q = 0.707, gainDb = 0) {
   let x1 = 0; let x2 = 0; let y1 = 0; let y2 = 0
   return (x) => { const y = k[0] * x + k[1] * x1 + k[2] * x2 - k[3] * y1 - k[4] * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y }
 }
-// a key on an old phone: a tick of noise through a resonance, and the
-// plastic's body under it, close and quiet
-function key(ms, { pitch = 2200, body = 420, gain = 0.06, pan = 0 } = {}) {
-  let y1 = 0; let y2 = 0
-  const r = 0.985
-  const w = (TAU * pitch) / SR
-  const c1 = 2 * r * Math.cos(w)
-  const c2 = -r * r
-  lay(ms, sec(0.05), (i) => {
-    const x = i < sec(0.004) ? rnd() * (1 - i / sec(0.004)) : 0
-    const y = x + c1 * y1 + c2 * y2
-    y2 = y1; y1 = y
-    const thump = Math.sin((TAU * body * i) / SR) * Math.exp(-i / sec(0.008)) * 0.6
-    return (y * 0.09 + thump) * Math.exp(-i / sec(0.012))
-  }, { gain, pan, verb: 0.15 })
+// ── the recordings ──
+// a recording, one channel at the song's rate, as it is
+function recording(name) {
+  const wav = join(work, `rec-${name}.wav`)
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', join(root, 'scripts/sounds', `${name}.ogg`), '-ac', '1', '-ar', String(SR), '-c:a', 'pcm_f32le', wav])
+  if (r.status !== 0) throw new Error(`studio-score: the recording ${name}`)
+  const b = readFileSync(wav)
+  let off = 12
+  while (off < b.length && b.toString('ascii', off, off + 4) !== 'data') off += 8 + b.readUInt32LE(off + 4)
+  const len = b.readUInt32LE(off + 4) / 4
+  const x = new Float32Array(len)
+  for (let i = 0; i < len; i++) x[i] = b.readFloatLE(off + 8 + i * 4)
+  return x
 }
-// a glint: a little bell, its partials where a struck bar's are
-function glint(ms, m, { gain = 0.012, decay = 0.8, pan = 0, verb = 0.8 } = {}) {
-  const f = hz(m)
-  const L = sec(decay * 3)
-  lay(ms, L, (i) => {
-    const t = i / SR
-    const a = Math.min(1, i / sec(0.002), (L - i) / sec(0.15))
-    return a * (Math.sin(TAU * f * t) * Math.exp(-t / decay) + 0.22 * Math.sin(TAU * f * 2.76 * t) * Math.exp(-t / (decay * 0.35)))
+// the strokes in a recording of keys: found by their attacks (the level, a
+// five-hundredth of a second at a time, coming up twelve decibels in three
+// of them), each from just before its attack to the next or a tenth of a
+// second, faded out, softened a little above and below as a key close to
+// the ear is, and brought to one height
+function strokesOf(x) {
+  const hop = SR / 500
+  const db = []
+  for (let i = 0; i + hop <= x.length; i += hop) {
+    let e = 0
+    for (let j = 0; j < hop; j++) e += x[i + j] * x[i + j]
+    db.push(10 * Math.log10(e / hop + 1e-18))
+  }
+  const top = Math.max(...db)
+  const on = []
+  for (let i = 3; i < db.length; i++) if (db[i] - db[i - 3] > 12 && db[i] > top - 30 && (!on.length || i - on[on.length - 1] > 25)) on.push(i)
+  return on.map((o, n) => {
+    const a = Math.max(0, (o - 2) * hop)
+    const z = Math.min(n + 1 < on.length ? (on[n + 1] - 1) * hop : x.length, a + sec(0.1))
+    const hp = biquad('hp', 160, 0.7)
+    const lp = biquad('lp', 7200, 0.7)
+    const s = new Float32Array(z - a)
+    let peak = 0
+    for (let i = 0; i < s.length; i++) {
+      const fade = Math.min(1, i / sec(0.002), (s.length - i) / sec(0.03))
+      s[i] = lp(hp(x[a + i])) * fade
+      peak = Math.max(peak, Math.abs(s[i]))
+    }
+    for (let i = 0; i < s.length; i++) s[i] /= peak || 1
+    return s
+  })
+}
+// a recorded sound laid on its frame, `rate` times its own speed
+function sample(ms, s, { gain = 0.05, rate = 1, pan = 0, verb = 0.12 } = {}) {
+  lay(ms, Math.floor(s.length / rate), (i) => {
+    const p = i * rate
+    const j = Math.floor(p)
+    const f = p - j
+    return (s[j] || 0) * (1 - f) + (s[j + 1] || 0) * f
   }, { gain, pan, verb })
+}
+const STROKES = strokesOf(recording('keyboard_desk'))
+const TAP = strokesOf(recording('tap'))[0]
+const r01 = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
+// a key pressed: one of the recorded strokes, a different one each time, a
+// little higher or lower and harder or softer, as a hand is; the space bar
+// lower and heavier
+function stroke(ms, n, ch, { gain = 0.034, pan = -0.08 } = {}) {
+  const space = ch === ' '
+  const i = (n * 5 + 3 + Math.floor(r01(n + 17) * 3)) % STROKES.length
+  sample(ms, STROKES[i], { gain: gain * (space ? 1.1 : 0.82 + 0.3 * r01(n + 7)), rate: space ? 0.86 : 0.96 + 0.08 * r01(n + 3), pan })
 }
 // air: noise through a band that moves, swelling and going
 function air(ms, len, { gain = 0.04, from = 400, to = 9000, shape = 'swell', pan = 0, verb = 0.5, q = 2 } = {}) {
@@ -515,66 +555,24 @@ function thump(ms, { gain = 0.05, f = 55, len = 0.5, pan = 0 } = {}) {
     return (Math.sin(TAU * f * t) + 0.5 * Math.sin(TAU * f * 2 * t) * Math.exp(-t / 0.05)) * Math.exp(-t / (len / 3.5)) * Math.min(1, i / sec(0.003))
   }, { gain, pan, verb: 0.4 })
 }
-// a screen coming on: a short pip
-function pip(ms, { gain = 0.012, f = 2400, pan = 0 } = {}) {
-  lay(ms, sec(0.09), (i) => {
-    const t = i / SR
-    return Math.sin(TAU * f * t) * Math.exp(-t / 0.018) * 0.8 + Math.sin(TAU * f * 1.5 * t) * Math.exp(-t / 0.01) * 0.25
-  }, { gain, pan, verb: 0.5 })
-}
-// pixels on the move: a scatter of the smallest bells, in the key
-function shimmer(from, to, count, { gain = 0.0032, pan = 0.8 } = {}) {
-  const notes = [83, 86, 88, 90, 93, 95, 98]
-  for (let k = 0; k < count; k++) {
-    const ms = from + (to - from) * ((k + 0.5 + rnd() * 0.4) / count)
-    const m = notes[Math.min(notes.length - 1, Math.floor(((rnd() + 1) / 2) * notes.length))]
-    glint(ms, m, { gain: gain * (0.6 + 0.2 * (rnd() + 1)), decay: 0.3, pan: rnd() * pan, verb: 0.45 })
-  }
-}
-
 // lin's keys, the words as they are typed, and send
-typedA().forEach((ms, i) => {
-  const sp = A.text[i] === ' '
-  key(ms, { pitch: sp ? 1280 : 1900 + ((i * 397) % 900), body: sp ? 250 : 380 + ((i * 53) % 120), gain: sp ? 0.045 : 0.058, pan: -0.1 })
-})
-key(S.press, { pitch: 1500, body: 300, gain: 0.07, pan: -0.05 })
-// the hall's letters near the lens, each a glint as the light reaches it
-const r01 = (n) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1
-const PENTA = [74, 76, 78, 81, 83, 86, 88, 90, 93]
-wallOf().forEach((l, n) => {
-  if (l.home || l.dist > 8 || r01(n + 5) > 0.07) return
-  glint(wakeOf(l.dist, l.seed) + 70, PENTA[Math.floor(r01(n + 9) * PENTA.length)], { gain: 0.0035 / (1 + l.dist / 4), decay: 0.6, pan: Math.max(-0.85, Math.min(0.85, l.i / 7)), verb: 0.45 })
-})
+typedA().forEach((ms, i) => stroke(ms, i, A.text[i]))
+sample(S.press, TAP, { gain: 0.07, rate: 0.94, pan: -0.05 })
 air(S.wake, 5200, { gain: 0.006, from: 300, to: 3000 })
-// the send: the letter's pixels up into the envelope, a scatter of light
-// over the harp; sealed, a click and a bell; the phone going out; the
+// the send: the letter's pixels up into the envelope, a breath of air over
+// the harp; sealed, a small tap of it closing; the phone going out; the
 // envelope at the lens and through it, and away into the dark
-shimmer(S.gather[0], S.gather[1], 34)
 air(S.gather[0], S.gather[1] - S.gather[0], { gain: 0.007, from: 1500, to: 8000 })
-key(S.seal[0], { pitch: 3200, body: 600, gain: 0.03 })
-glint(S.seal[0] + 60, 95, { gain: 0.011, decay: 1.2, verb: 0.7 })
-glint(S.seal[0] + 90, 90, { gain: 0.009, decay: 1.4, verb: 0.7, pan: 0.15 })
+sample(S.seal[0], TAP, { gain: 0.035, rate: 1.3 })
 whine(S.crt[0], { gain: 0.014, from: 7500, to: 500, len: 0.36 })
 thump(S.crt[0] + 175, { gain: 0.03, f: 62, len: 0.35 })
 air(S.lens[0], S.lens[1] - S.lens[0] + 40, { gain: 0.045, from: 400, to: 12000, shape: 'rise', q: 1.1 })
 thump(S.wash[0] + 90, { gain: 0.06, f: 46, len: 1.2 })
 air(S.away[0], S.away[1] - S.away[0], { gain: 0.009, from: 6000, to: 500, shape: 'fall' })
-// the week's notes coming in, each a pip where it is; the one on the
-// thursday warmer, and its bell
-;[-0.75, 0.7, -0.6, 0.55, -0.3, -0.8, 0.75, 0.2].forEach((pan, i) => pip(S.others[i], { gain: 0.005, f: 2100 + i * 130, pan }))
-pip(S.kaiIn, { gain: 0.011, f: 1760, pan: 0.45 })
-glint(S.kaiIn + 40, 81, { gain: 0.011, decay: 1.4, pan: 0.45 })
-glint(S.kaiIn + 70, 88, { gain: 0.007, decay: 1.6, pan: 0.45 })
-// the clock: a wooden tick on every eighth as it runs; the stop at nine;
-// `pacific`
-for (let e = 0; S.lapse[0] + e * bt(0.5) < S.lapse[1]; e++) key(S.lapse[0] + e * bt(0.5), { pitch: 1700, body: 300, gain: 0.016, pan: -0.15 })
-key(S.lapse[1], { pitch: 1100, body: 220, gain: 0.04, pan: -0.1 })
-key(S.lapse[1] + 150, { pitch: 2400, body: 480, gain: 0.018 })
-// the lean in, a breath; and the two touching, in the quiet before nine:
-// each one's own note, struck together, as two glasses touch
+// the week's notes and the clock are the music's: the piano ticks it round
+// and stops at nine
+// the lean in, a breath
 air(S.lean[0], S.touch[2] - S.lean[0], { gain: 0.007, from: 300, to: 2400 })
-glint(S.touch[2] - 6, 90, { gain: 0.012, decay: 1.4, pan: -0.08, verb: 0.7 })
-glint(S.touch[2] + 4, 83, { gain: 0.012, decay: 1.4, pan: 0.08, verb: 0.7 })
 // and their light filling the frame and opening out: a wide breath of air,
 // up and away
 air(S.touch[2] + 10, 900, { gain: 0.016, from: 500, to: 6500, q: 0.9, verb: 0.7 })
@@ -597,31 +595,16 @@ air(S.touch[2] + 10, 900, { gain: 0.016, from: 500, to: 6500, q: 0.9, verb: 0.7 
     FXV.L[k] += x * Math.cos(a) * 0.05 * 0.4; FXV.R[k] += x * Math.sin(a) * 0.05 * 0.4
   }
 }
-// it turns over: a breath of air as it goes, and on its edge kai's side
-// coming on, with the pip and the bells kai's note came in with
-{
-  const edge = (S.flip[0] + S.flip[1]) / 2
-  air(edge - 170, 320, { gain: 0.012, from: 1800, to: 6500, q: 1.4 })
-  pip(edge + 8, { gain: 0.011, f: 1760, pan: 0.05 })
-  glint(edge + 40, 81, { gain: 0.011, decay: 1.4, pan: 0.05 })
-  glint(edge + 70, 88, { gain: 0.007, decay: 1.6, pan: 0.05 })
-}
+// it turns over: a breath of air as it goes
+air((S.flip[0] + S.flip[1]) / 2 - 170, 320, { gain: 0.012, from: 1800, to: 6500, q: 1.4 })
 // the letter going back into the panel: the air drawn in after it, gone on
 // the cut
 air(S.rOut - 100, 400, { gain: 0.015, from: 700, to: 7000, shape: 'rise', q: 1.2, verb: 0.3 })
 // the lights that never met, going out, each as a screen goes, from its
-// place, with a bell
-;[[S.lone[0], 88, -0.55], [S.lone[1], 83, 0.45], [S.lone[2], 78, -0.15]].forEach(([ms, m, pan]) => {
-  whine(ms, { gain: 0.006, from: 6000, to: 700, len: 0.24, pan })
-  glint(ms + 30, m, { gain: 0.008, decay: 1.1, pan })
-})
-// the name: a glint for every cell coming on, a few of them
-for (let i = 0; i < 40; i++) {
-  const d = (i / 40) ** 0.8 * (S.lock[1] - S.lock[0]) + r01(i + 70) * 30
-  glint(S.lock[0] + d, 86 + Math.floor(r01(i + 11) * 3) * 2, { gain: 0.0035 + 0.0035 * (1 - i / 40), decay: 0.35, pan: (r01(i + 90) - 0.5) * 1.2, verb: 0.6 })
-}
+// place
+;[[S.lone[0], -0.55], [S.lone[1], 0.45], [S.lone[2], -0.15]].forEach(([ms, pan]) => whine(ms, { gain: 0.006, from: 6000, to: 700, len: 0.24, pan }))
 // the address, typed, at the hand's own pace
-typedUrl().forEach((ms, k) => key(ms, { pitch: 2600 + ((k * 211) % 700), body: 480, gain: 0.03, pan: 0.05 }))
+typedUrl().forEach((ms, k) => stroke(ms, k + 40, 'celestual.us'[k], { gain: 0.028, pan: 0.05 }))
 
 // ── the mix ─────────────────────────────────────────────────────────────────
 // each stem: its level, where it sits, what is taken off it, how much of it

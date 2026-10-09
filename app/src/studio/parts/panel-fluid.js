@@ -7,10 +7,10 @@
 // the flow's velocity on a coarse grid, its pressure solved away so it never
 // piles up, its eddies kept alive (vorticity confinement), and its dye, the
 // light itself, carried along it on a grid of exactly the panel's cells. So
-// a cell of the screen shows the light that has drifted into it, lit as an
-// LCD's cell is: three stripes of red, green and blue, a little uneven in
-// its backlight, and glowing into the dark between the cells (three.js;
-// the glow is postprocessing's mipmap bloom).
+// a cell of the screen shows the light that has drifted into it: as a star,
+// drawn in the panel's own pixels, a point where a little light has come
+// and a sparkle where a lot has, over a faint haze of the light's colour
+// (three.js; the stars' glow is postprocessing's mipmap bloom).
 //
 // It is drawn from `t` and nothing else. The flow is stepped from its start
 // at a fixed rate, the story's own `script` adding light and moving it at
@@ -146,10 +146,14 @@ const FRAG = {
       vec2 v = texture2D(uVelocity, vUv).xy - vec2(R - L, T - B);
       gl_FragColor = vec4(v, 0.0, 1.0);
     }`,
-  // the panel as the camera sees it: every pixel of the frame back to its
-  // place on the panel, its cell, and where in its cell; the cell lit by the
-  // light in it, in three stripes, a little unevenly, and the dark between
-  // the cells left dark
+  // the panel as the camera sees it, a night of the screen's own pixels:
+  // every pixel of the frame back to its place on the panel, its cell, and
+  // where in its cell. A cell is a star waiting for light, each with its own
+  // need of it, so a little light lights only a few and a lot lights most;
+  // the more light has come to it, the bigger it shows, from a point to a
+  // cross to a longer cross to a sparkle, each drawn a pixel of the panel at
+  // a time and twinkling slowly in its own time; mostly the white of a star,
+  // a little of the light's own colour, over a faint haze of that colour
   display: `
     uniform sampler2D uDye;
     uniform vec2 uCells;
@@ -163,48 +167,56 @@ const FRAG = {
     uniform vec3 uInk;
     uniform float uGrid;
     uniform float uGain;
-    uniform float uStripes;
+    uniform float uStar;
+    uniform float uHaze;
+    uniform float uTint;
     uniform float uTop;
     uniform float uTime;
     float hash (vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-    float noise (vec2 p) {
-      vec2 i = floor(p);
-      vec2 f = fract(p);
-      vec2 u = f * f * (3.0 - 2.0 * f);
-      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-    }
+    // a run of the cell's own pixels, [a, b), softened by a frame pixel
+    float run (float v, float a, float b, float w) { return smoothstep(a - w, a + w, v) * (1.0 - smoothstep(b - w, b + w, v)); }
     void main () {
       vec2 frag = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
       vec2 p = uA + (frag - uF) / uZ;
       vec2 g = (p - uOrigin) / uCell;
       vec2 id = floor(g);
       vec2 f = fract(g);
-      // a frame pixel, in cells: the soft edge of a cell's light
+      // the cell's own square, unlit, the dark between the cells left dark
       float px = 1.0 / (uCell * uZ);
       float lit = 1.0 - 1.0 / uCell;
-      float inX = smoothstep(-px * 0.5, px * 0.5, f.x) * (1.0 - smoothstep(lit - px * 0.5, lit + px * 0.5, f.x));
-      float inY = smoothstep(-px * 0.5, px * 0.5, f.y) * (1.0 - smoothstep(lit - px * 0.5, lit + px * 0.5, f.y));
-      float cell = inX * inY;
+      float cell = run(f.x, 0.0, lit, px * 0.5) * run(f.y, 0.0, lit, px * 0.5);
       vec2 tex = (id + uMargin + 0.5) / uCells;
-      vec3 dye = texture2D(uDye, vec2(tex.x, 1.0 - tex.y)).rgb;
-      // its three stripes, red, green and blue, each a third of the lit
-      // part, their edges softened by a frame pixel
-      float s = f.x / lit * 3.0;
-      float w = px / lit * 3.0;
-      vec3 band = vec3(
-        1.0 - smoothstep(1.0 - w, 1.0 + w, s),
-        smoothstep(1.0 - w, 1.0 + w, s) * (1.0 - smoothstep(2.0 - w, 2.0 + w, s)),
-        smoothstep(2.0 - w, 2.0 + w, s)
-      );
-      vec3 sub = mix(vec3(1.0), band * 3.0, uStripes);
-      // the backlight: every cell a little its own, and slow clouds over
-      // the whole panel
-      float own = 0.88 + 0.24 * hash(id + 17.0);
-      float mura = 0.9 + 0.2 * noise(id * 0.035 + vec2(0.0, uTime * 0.02));
-      vec3 light = dye * uGain * sub * own * mura;
+      vec3 dye = max(texture2D(uDye, vec2(tex.x, 1.0 - tex.y)).rgb, 0.0) * uGain;
+      float I = dot(dye, vec3(0.2126, 0.7152, 0.0722));
+      // its star: its own need of light, its own place in the cell, and its
+      // own slow twinkle; and not every cell is a star, so the sky is never
+      // the screen's grid
+      float need = hash(id + 13.0) < 0.62 ? 0.012 + 1.1 * pow(hash(id), 1.6) : 1e9;
+      float over = I - need;
+      vec2 at = vec2(2.0 + floor(3.0 * hash(id + 3.1)), 2.0 + floor(3.0 * hash(id + 5.3)));
+      float tw = 0.5 + 0.5 * sin(uTime * (0.7 + 1.9 * hash(id + 41.3)) + 6.2832 * hash(id + 7.7));
+      float size = over <= 0.0 ? 0.0 : 1.0 + floor(clamp(over / (0.1 + need) * (0.75 + 0.5 * tw), 0.0, 3.99));
+      // where in the cell, in the panel's own pixels, the middle at 3
+      vec2 q = f * uCell - at + 3.0;
+      float w = 0.5 / uZ;
+      float star = run(q.x, 3.0, 4.0, w) * run(q.y, 3.0, 4.0, w);
+      if (size >= 2.0) star = max(star, 0.55 * max(run(q.x, 2.0, 5.0, w) * run(q.y, 3.0, 4.0, w), run(q.x, 3.0, 4.0, w) * run(q.y, 2.0, 5.0, w)));
+      if (size >= 3.0) star = max(star, 0.3 * max(run(q.x, 1.0, 6.0, w) * run(q.y, 3.0, 4.0, w), run(q.x, 3.0, 4.0, w) * run(q.y, 1.0, 6.0, w)));
+      if (size >= 4.0) star = max(star, 0.26 * (run(q.x, 2.0, 3.0, w) + run(q.x, 4.0, 5.0, w)) * (run(q.y, 2.0, 3.0, w) + run(q.y, 4.0, 5.0, w)));
+      float bright = (0.4 + 0.6 * clamp(over * 2.5, 0.0, 1.0)) * (0.72 + 0.28 * tw);
+      vec3 hue = dye / max(1e-4, max(dye.r, max(dye.g, dye.b)));
+      vec3 tint = mix(vec3(1.0, 0.97, 0.93), hue, uTint);
       // under the words at the top of the frame the panel is kept darker
-      float band2 = mix(uTop, 1.0, smoothstep(330.0, 640.0, frag.y));
-      vec3 col = cell * (uInk * uGrid + light * band2);
+      float band = mix(uTop, 1.0, smoothstep(330.0, 640.0, frag.y));
+      // and under the stars a haze of the light, smooth across the cells as
+      // a nebula is, and held down where the light is strong, so it stays a
+      // haze
+      vec2 smooth2 = ((p - uOrigin) / uCell + uMargin) / uCells;
+      vec3 neb = max(texture2D(uDye, vec2(smooth2.x, 1.0 - smooth2.y)).rgb, 0.0) * uGain;
+      float nI = dot(neb, vec3(0.2126, 0.7152, 0.0722));
+      // its colour kept quiet, half way to the grey of starlight
+      neb = mix(neb, vec3(nI), 0.45);
+      vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze + tint * star * bright * uStar) * band;
       gl_FragColor = vec4(col, 1.0);
     }`,
 }
@@ -274,13 +286,13 @@ export class PanelFluid {
       uDye: null, uCells: new THREE.Vector2(cw, ch), uMargin: new THREE.Vector2(cells.margin, cells.margin),
       uOrigin: new THREE.Vector2(cells.x, cells.y), uCell: cells.c, uRes: new THREE.Vector2(w, h),
       uA: new THREE.Vector2(), uF: new THREE.Vector2(), uZ: 1, uInk: new THREE.Vector3(...linear([0x15, 0x17, 0x1b])),
-      uGrid: 1, uGain: 1, uStripes: 0.55, uTop: 0.35, uTime: 0,
+      uGrid: 1, uGain: 1, uStar: 1.3, uHaze: 0.06, uTint: 0.36, uTop: 0.35, uTime: 0,
     })
     this.displayScene = new THREE.Scene()
     const shown = new THREE.Mesh(geo, this.display)
     shown.frustumCulled = false
     this.displayScene.add(shown)
-    this.bloom = new BloomEffect({ mipmapBlur: true, luminanceThreshold: 0.12, luminanceSmoothing: 0.35, intensity: 1.35, radius: 0.72, levels: 7 })
+    this.bloom = new BloomEffect({ mipmapBlur: true, luminanceThreshold: 0.22, luminanceSmoothing: 0.3, intensity: 0.7, radius: 0.55, levels: 6 })
     this.tone = new ToneMappingEffect({ mode: ToneMappingMode.NEUTRAL })
     this.composer = new EffectComposer(this.renderer, { frameBufferType: THREE.HalfFloatType, depthBuffer: false })
     this.composer.setSize(w, h, false)

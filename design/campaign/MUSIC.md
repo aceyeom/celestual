@@ -21,16 +21,16 @@ goes, onto a note that is not home.
 - the hall: the piano's arpeggios as the backlights come on, the strings
   rising with the camera, a cello under the words
 - the send: the piano holds its breath on the key; a harp carries the
-  letter's pixels up into the envelope; a bell as it is sealed; the strings
-  and voices swell as it comes at the lens and break on D as it goes through
+  letter's pixels up into the envelope, and its chord as it is sealed; the
+  strings and voices swell as it comes at the lens and break on D as it goes
+  through
 - the date: the piano ticks the clock round in eighths and stops at nine; a
   cello comes in with the note that comes in on the thursday
 - the reveal: a wide breath of air as the touch's light fills the frame;
   the air of lin's letter coming out of the light at us, from the left as
   it swings out there; a run up the piano, leaning into its
   last two notes, the melody's first, and a harp going up with it into the
-  turn; on the turn, as kai's side comes on to the same pip and bells kai's
-  note came in with on the thursday, the melody sung by everything
+  turn; on the turn, as kai's side comes on, the melody sung by everything
 - `you both find out.`: the cello answers the melody, down to the B the
   next scene is on; the air drawn in after the letter as it goes back into
   the panel, gone on the cut
@@ -45,14 +45,21 @@ Each note is then loosened a little in its time and its weight, as a player
 would, the same way every time the song is made. Each part is played by
 FluidSynth from the MuseScore General soundfont into its own stem, and the
 stems are mixed in Node (a long, dark hall convolved round them) and
-mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. The phone's keys, the
-send, the clock and the lights are written into the same score, on the
-frames they belong to.
+mastered with ffmpeg to -14 LUFS, -1.5 dB true peak. lin's keys and the
+send are real recordings, laid on the frames they belong to: a keystroke a
+letter, each one of twelve taken from one recording of a keyboard, never the
+same one twice running, a little higher or lower and harder or softer each
+time, the space bar heavier; the air the letter moves and the screens going
+out are synthesised. There are no bells.
 
 `LEVELS=1` prints each part's level in each section; `STEMS=<dir>` keeps
 the stems.
 
 ## What it is made from
+
+The keys and the send (`scripts/sounds/`) are recordings from Ion.Sound
+3.0.7 by Denis Ineshin, under the MIT licence; its notice is
+`scripts/sounds/NOTICE.md`.
 
 Every instrument comes from the MuseScore General soundfont (Debian's
 `musescore-general-soundfont`, `/usr/share/sounds/sf3/MuseScore_General_Full.sf3`),
