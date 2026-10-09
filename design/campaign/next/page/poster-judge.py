@@ -1,6 +1,6 @@
 """Weigh a poster: where its visual weight sits and how it balances.
 
-    python3 poster-judge.py <out dir> <poster.png> [poster.png ...]
+    python3 poster-judge.py <out dir> [--ground mean] <poster.png> [poster.png ...]
 
 For each poster, a sheet of diagnostics (the poster with its module grid and
 its weight's centre against the optical centre; the squint; the 3:4 crop the
@@ -10,7 +10,10 @@ written to <out dir>/measures.json. Needs numpy and Pillow.
 Weight is what pulls the eye: a pixel's lightness contrast with the ground,
 raised by its chroma (a saturated colour outweighs a grey of the same
 lightness), read after a squint (a blur of about a twentieth of the width),
-as a designer half closes their eyes.
+as a designer half closes their eyes. The ground is the room's black, for
+posters laid on it; `--ground mean` takes the poster's own mean lightness
+instead, for posters that are light in places, so that what pulls is what
+differs from the whole, dark or light.
 """
 import json
 import sys
@@ -36,14 +39,14 @@ def lab(rgb):
     return L, a, b
 
 
-def weigh(path):
+def weigh(path, ground='black'):
     im = Image.open(path).convert('RGB')
     W, H = im.size
     # measured at 270 px wide: a squint does not need every pixel
     small = im.resize((270, round(270 * H / W)), Image.BOX)
     rgb = np.asarray(small).astype(np.float64)
     L, a, b = lab(rgb)
-    L0 = lab(np.array(GROUND, dtype=np.float64))[0]
+    L0 = L.mean() if ground == 'mean' else lab(np.array(GROUND, dtype=np.float64))[0]
     chroma = np.hypot(a, b)
     w = np.abs(L - L0) / 100 * (1 + 0.8 * np.clip(chroma / 50, 0, 1))
     wi = Image.fromarray(np.uint8(np.clip(w / max(w.max(), 1e-9), 0, 1) * 255))
@@ -132,12 +135,18 @@ def sheet(im, sq, centre, name):
 
 
 def main():
-    out = Path(sys.argv[1])
+    args = sys.argv[1:]
+    ground = 'black'
+    if '--ground' in args:
+        i = args.index('--ground')
+        ground = args[i + 1]
+        del args[i:i + 2]
+    out = Path(args[0])
     out.mkdir(parents=True, exist_ok=True)
     measures = {}
-    for p in sys.argv[2:]:
+    for p in args[1:]:
         name = Path(p).stem
-        im, sq, m, centre = weigh(p)
+        im, sq, m, centre = weigh(p, ground)
         measures[name] = m
         sheet(im, sq, centre, name).save(out / f'{name}-weigh.png')
         print(name, json.dumps(m))

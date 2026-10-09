@@ -21,6 +21,7 @@ const q = new URLSearchParams(location.search)
 try {
   await document.fonts.load('56px "Jersey 10"')
   await document.fonts.load('24px "Geist Mono"')
+  await document.fonts.load('500 80px Newsreader')
   if (q.has('p')) {
     const { POSTERS } = await import('./round-posters.js')
     await POSTERS[q.get('p')](document.getElementById('poster'), { dpr: window.devicePixelRatio })

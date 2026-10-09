@@ -1,54 +1,53 @@
 // ── round, as posters ──────────────────────────────────────────────────────
-// Three posters for Instagram, 1080 by 1350 (4:5). Each is one thing from
-// the film's night filling the frame, in the night's greys, with one small
-// accent in yuna's rose for the letter that closes the round. No headline is
-// laid over a picture: words are only where the film would put them, on lit
-// or mechanical things.
+// Three posters for Instagram, 1080 by 1350 (4:5), drawn the way the films
+// draw a world: lit, then brought down to four tones of one palette by blue
+// noise. They run warm to cool:
 //
-//   board   the night as a station board, every character on its own split
-//           flap module: the line, and under it the four departures, the
-//           last one's lamp lit
-//   bus     the 51B at 5:14 pm, sol at the pole and the woman asleep in the
-//           seat he gave her; the line on the bus's sign, one window across
-//           the street lit
-//   hinge   the film's seam at 7:14 am: yuna, her letter up on the retro grey
-//           screen, looks up at the bus hanging above her, where she stood
-//           the night before
+//   bus      the 51B at 5:14 pm in the film's ambers, sol at the pole and the
+//            woman asleep in the seat he gave her; the line on the bus's
+//            sign, and one window across the street lit in ice
+//   pacific  the minute before nine: Seoul on Sunday afternoon in amber,
+//            turned over above Berkeley on Saturday night in ice, as the
+//            PACIFIC treatment drew them; on the seam, when every mutual is
+//            revealed
+//   sea      two people on a sea wall at dusk, from a photograph, in ice; its
+//            horizon is the seam: nothing happens unless it's mutual
+//   seapair  the sea with the second photograph above the seam, one who
+//            passed by as a blur beside one who stood still: the alternate
 //
-// The board's edges and the face's pixels sit on a grid of 3 px, and the
-// worlds are in the film's 6 px cells, so both stay whole at 1080, 1440 and
-// 2160 wide. Each poster is a function that fills a 1080 by 1350 element at
-// the device's pixel ratio.
+// The bus is in round's 6 px cells, the two cities and the sea in pacific's
+// 3 px ones, so every cell stays whole at 1080, 1440 and 2160 wide. Each
+// poster is a function that fills a 1080 by 1350 element at the device's
+// pixel ratio.
 
 import * as T from './round-time.js'
 import { createRenderer } from './round-gl.js'
 import { PALETTES } from './round-product.js'
 import { blueBytes } from './round-blue.js'
-import { drawCast, MASK_W, MASK_H, PHONE } from './round-cast.js'
-import { drawPhone, drawLockup, LOCKUP_SIZE } from './round-screen.js'
+import { drawCast, MASK_W, MASK_H } from './round-cast.js'
+import { drawLockup, LOCKUP_SIZE } from './round-screen.js'
+import { citiesCells, blueNoise } from './pacific.js'
 
 const PW = 1080
 const PH = 1350
-const NIGHT = PALETTES.night // ink, low, mid, lit
-const ROOM = '#0A0A0A'
 const CHALK = '#F4F1EA'
-const ROSE = '#DF93AF'
-const PLATE_TOP = '#1E1D22'
-const PLATE_BOT = '#151418'
-const SPLIT = '#08070B'
+const INK = '#0A0A0C'
 const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v))
+const load = (src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src })
+const here = (file) => new URL(file, import.meta.url).href
 
 // ── the pieces ──
-function el(parent, tag, cls, css) {
+function el(parent, tag, css, html) {
   const e = document.createElement(tag)
-  if (cls) e.className = cls
   if (css) e.style.cssText = css
+  if (html != null) e.innerHTML = html
   parent.appendChild(e)
   return e
 }
 // a canvas of w by h at (x, y), its pixels the device's
 function pane(parent, x, y, w, h, k) {
-  const cv = el(parent, 'canvas', 'px', `left:${x}px;top:${y}px;width:${w}px;height:${h}px`)
+  const cv = el(parent, 'canvas', `left:${x}px;top:${y}px;width:${w}px;height:${h}px;image-rendering:pixelated`)
   cv.width = Math.round(w * k)
   cv.height = Math.round(h * k)
   const g = cv.getContext('2d')
@@ -56,9 +55,16 @@ function pane(parent, x, y, w, h, k) {
   return { cv, g }
 }
 // the lockup in chalk at whole pixels a cell, its box's top left at (x, y)
-const [LKW, LKH] = LOCKUP_SIZE
+const [, LKH] = LOCKUP_SIZE
 function lockup(g, k, x, y, cell = 2) {
   drawLockup(g, x * k, y * k, cell * k, CHALK)
+}
+// two lines of the caption on a seam, as pacific set them: Newsreader 500 at
+// 80 px, the first standing on the seam and the second hanging from it
+function seamCaption(p, seam, [a, b], [ca, cb]) {
+  const css = 'left:80px;right:30px;font-family:Newsreader,serif;font-weight:500;font-size:80px;line-height:0.94;letter-spacing:-0.022em;white-space:nowrap;font-optical-sizing:auto'
+  el(p, 'div', `${css};bottom:${PH - seam + 18}px;color:${ca}`, a)
+  el(p, 'div', `${css};top:${seam + 14}px;color:${cb}`, b)
 }
 
 // ── the face's own pixels ──
@@ -120,71 +126,24 @@ function blocks(g, k, x, y, px, s, colour) {
     }
   })
 }
-
-// ── split flap modules ──
-// One character on its module: the upper flap over the lower and a split
-// between them, the character's x height centred on the split, drawn in the
-// face's pixels at `s` px each. Mid turn (`fold` 0 to 1, from `prev` to
-// `ch`) the old upper flap falls toward the split, then the new lower one
-// opens from it, as the film's clock does.
-function flap(g, k, x, y, w, h, ch, s, { prev = null, fold = 0, mid = 6, pins = true } = {}) {
-  const sy = y + h / 2
-  const r = Math.round(0.1 * w)
-  const face = (c, top) => {
-    if (!c || c === ' ') return
-    const q = pixels(c)
-    const gx = x + FP * Math.floor((w - q.w * s) / 2 / FP)
-    g.save()
-    g.beginPath()
-    g.rect(x * k, (top ? y : sy) * k, w * k, (h / 2) * k)
-    g.clip()
-    blocks(g, k, gx, sy - mid * s, q, s, CHALK)
-    g.restore()
-  }
-  // a half folded toward the split by `f` (1 flat, 0 edge on), and shaded
-  const half = (top, c, f = 1, dark = 0) => {
-    g.save()
-    g.translate(0, sy * k)
-    g.scale(1, Math.max(0.001, f))
-    g.translate(0, -sy * k)
-    g.fillStyle = top ? PLATE_TOP : PLATE_BOT
-    g.beginPath()
-    if (top) g.roundRect(x * k, y * k, w * k, (h / 2) * k, [r * k, r * k, 0, 0])
-    else g.roundRect(x * k, sy * k, w * k, (h / 2) * k, [0, 0, r * k, r * k])
-    g.fill()
-    face(c, top)
-    if (dark > 0) {
-      g.fillStyle = `rgba(0, 0, 0, ${dark})`
-      g.fillRect(x * k, (top ? y : sy) * k, w * k, (h / 2) * k)
-    }
-    g.restore()
-  }
-  const turning = prev != null && fold > 0 && fold < 1
-  half(true, ch)
-  half(false, turning ? prev : ch)
-  if (turning) {
-    const a = fold * 2
-    if (a < 1) half(true, prev, Math.cos((a * Math.PI) / 2), 0.45 * a)
-    else half(false, ch, Math.sin(((a - 1) * Math.PI) / 2), 0.35 * (2 - a))
-  }
-  // the split, and the pins it turns on
-  g.fillStyle = SPLIT
-  g.fillRect(x * k, (sy - 1) * k, w * k, 2 * k)
-  if (!pins) return
-  g.fillRect((x - 2) * k, (sy - 3) * k, 3 * k, 6 * k)
-  g.fillRect((x + w - 1) * k, (sy - 3) * k, 3 * k, 6 * k)
-}
-// a lamp `n` steps of 3 px wide, its corners cut, as a pixel lamp is round
-function lamp(g, k, x, y, n, colour) {
-  g.fillStyle = colour
-  g.fillRect((x + FP) * k, y * k, (n - 2) * FP * k, n * FP * k)
-  g.fillRect(x * k, (y + FP) * k, n * FP * k, (n - 2) * FP * k)
+// a clock in a corner, as pacific's: the place and the time, then its
+// seconds a little dimmer, in the face's pixels at 2 px each; `y` is the top
+// of its ascenders, and `right` sets it from the right edge instead
+function clock(g, k, x, y, place, time, sec, colour, { right = false } = {}) {
+  const a = pixels(`${place} · ${time} `)
+  const b = pixels(`:${sec}`)
+  const w = (a.w + glyph(' ').adv + b.w) * 2
+  const x0 = right ? x - w : x
+  blocks(g, k, x0, y, a, 2, colour)
+  g.globalAlpha = 0.75
+  blocks(g, k, x0 + (a.w + glyph(' ').adv) * 2, y, b, 2, colour)
+  g.globalAlpha = 1
 }
 
 // ── a sign of lamps ──
 // The face's pixels as lamps `dot` px apart, one lamp a pixel, the unlit
 // ones showing as a real sign's do; lines centred, in a housing with a rim.
-function sign(g, k, x, y, lines, { dot = 6, pad = 3, lead = 2, rim = 1, lit = NIGHT[3], off = '#1D1D1D', face = ROOM, edge = NIGHT[1] } = {}) {
+function sign(g, k, x, y, lines, { dot = 6, pad = 3, lead = 2, rim = 1, lit, off, face, edge }) {
   const runs = lines.map(pixels)
   const cols = Math.max(...runs.map((r) => r.w)) + 2 * pad
   const rows = runs.length * ROWS + (runs.length - 1) * lead + 2 * pad
@@ -208,10 +167,11 @@ function sign(g, k, x, y, lines, { dot = 6, pad = 3, lead = 2, rim = 1, lit = NI
   return { cols, rows, w: cols * dot, h: rows * dot }
 }
 
-// ── worlds, at any framing ──
+// ── round's worlds, at any framing ──
 // A world lit and dithered by its own program into a panel of cells over any
-// window of its half (above the seam too), its tones laid in the night's
-// greys: one canvas pixel a cell.
+// window of its half (above the seam too), its tones laid in a palette: one
+// canvas pixel a cell. A world flooded with a letter's colour is the same
+// tones in that letter's palette, so this is the film's own colouring.
 let shop = null
 function renderer() {
   if (shop) return shop
@@ -228,151 +188,161 @@ function maskFor(R, slot, world, clock, look) {
   drawCast(mask.getContext('2d'), world, clock, look)
   R.setMask(slot, mask)
 }
-function worldCells(world, clock, { cols, rows, crop, look = 0, phone = null, lit = 0, sun = 0 }) {
+function worldCells(world, clock, { cols, rows, crop, palette = 'night', look = 0 }) {
   const R = renderer()
   const target = R.panel(cols, rows)
   target.crop = crop
   maskFor(R, 0, world, clock, look)
-  R.drawWorld(target, 0, { world, clock, flood: 0, palette: 'night', look, phoneRect: phone, phoneLit: lit, sent: -1, sun, lampsOff: T.LAMPS_OFF })
+  R.drawWorld(target, 0, { world, clock, flood: 0, palette: 'night', look, phoneRect: null, phoneLit: 0, sent: -1, sun: 0, lampsOff: T.LAMPS_OFF })
   const px = R.readPanel(target)
   const out = document.createElement('canvas')
   out.width = cols
   out.height = rows
   const g = out.getContext('2d')
   const img = g.createImageData(cols, rows)
-  const tones = NIGHT.map(rgb)
+  const tones = PALETTES[palette].map(rgb)
   for (let i = 0; i < cols * rows; i++) img.data.set([...tones[Math.min(3, Math.round(px[i * 4] / 85))], 255], i * 4)
   g.putImageData(img, 0, 0)
   return out
 }
 
+// ── photographs, brought down the same way ──
+// A part of a photograph over cells, its lightness levelled (`lo` to `hi`,
+// then a gamma), darkened toward the top by `dusk` down to the row `sky`,
+// and laid in four tones of a palette by pacific's blue noise, so it has the
+// two cities' grain. `soften` blurs the photograph's own grain away first,
+// in cells.
+const NOISE = blueNoise()
+async function photoCells(src, [sx, sy, sw, sh], cols, rows, palette, { lo = 0, hi = 1, gamma = 1, dusk = 0, sky = rows, soften = 0 } = {}) {
+  const im = await load(src)
+  const c = document.createElement('canvas')
+  c.width = cols
+  c.height = rows
+  const g = c.getContext('2d', { willReadFrequently: true })
+  g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  // (the film's own grain softened first, so the cells carry the light and
+  // the blue noise is the only grain)
+  g.filter = `blur(${soften}px)`
+  g.drawImage(im, sx, sy, sw, sh, 0, 0, cols, rows)
+  g.filter = 'none'
+  const img = g.getImageData(0, 0, cols, rows)
+  const d = img.data
+  const tones = palette.map(rgb)
+  for (let y = 0; y < rows; y++) {
+    const shade = 1 - dusk * clamp(1 - y / sky)
+    for (let x = 0; x < cols; x++) {
+      const i = (y * cols + x) * 4
+      let L = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255
+      L = Math.pow(clamp((L - lo) / (hi - lo)), gamma) * shade
+      const v = L * 3
+      let lv = Math.floor(v)
+      if (NOISE[(y % 64) * 64 + (x % 64)] / 255 <= v - lv) lv++
+      d.set([...tones[Math.min(3, lv)], 255], i)
+    }
+  }
+  g.putImageData(img, 0, 0)
+  return c
+}
+
 // ── the posters ──
 export const POSTERS = {
-  // the board: the line on modules twice the size, and under it the night's
-  // departures, each letter to the next writer, the last to the first. The
-  // last one's lamp is lit, and in the empty row under it the next 5:14 pm
-  // is turning in: the round begins again
-  async board(p, { dpr: k }) {
-    const { g } = pane(p, 0, 0, PW, PH, k)
-    g.fillStyle = ROOM
-    g.fillRect(0, 0, PW * k, PH * k)
-    // 24 columns of small modules 39 apart and rows 60 apart, from (72, 102);
-    // a large module is two columns by two rows
-    const X = 72
-    const Y = 102
-    const PITCH = 39
-    const ROW = 60
-    const MW = 36
-    const MH = 54
-    const small = (c, r, ch = '', o) => flap(g, k, X + c * PITCH, Y + r * ROW, MW, MH, ch, 3, o)
-    const big = (c, r, ch = '') => flap(g, k, X + c * PITCH, Y + r * ROW, MW + PITCH, MH + ROW, ch, 6)
-    ;['every letter', 'on the wall', 'is to', 'somebody.'].forEach((t, i) => {
-      for (let c = 0; c < 12; c++) big(2 * c, 2 * i, t[c] || '')
-    })
-    // the departures, an empty row before each: the time, whom the letter
-    // was to, and in the last column a lamp
-    const row = (r, text, n, from) => { for (let c = 0; c < n; c++) small(from + c, r, text[c] || '') }
-    const empty = (r) => row(r, '', 23, 0)
-    const deps = [['5:14 pm', 'dear wren'], ['9:14 pm', 'dear pia'], ['1:14 am', 'dear yuna'], ['7:14 am', 'to the one who', 'always stands']]
-    let r = 8
-    deps.forEach(([time, to, more], i) => {
-      empty(r++)
-      for (const [t, d] of [[time, to], ['', more]]) {
-        if (d == null) continue
-        row(r, t, 8, 0)
-        row(r, d, 15, 8)
-        if (t) lamp(g, k, X + 23 * PITCH + 6, Y + r * ROW + 15, 8, i === deps.length - 1 ? ROSE : '#26252B')
-        r++
-      }
-    })
-    // the next, turning in
-    small(0, r, '5', { prev: '', fold: 0.8 })
-    row(r, '', 22, 1)
-    lockup(g, k, X, PH - 72 - 2 * LKH)
-  },
-
-  // the bus: the 51B at 5:14 pm, from behind sol at the pole, the woman asleep
-  // against the glass in the seat he gave her; the line on the sign hung
-  // from the ceiling. One window across the street, above her, is lit rose
+  // the bus: the 51B at 5:14 pm in the film's ambers, from behind sol at the
+  // pole, the woman asleep against the glass in the seat he gave her; the
+  // line on the sign hung from the ceiling. One window across the street,
+  // above her, is lit in another colour
   async bus(p, { dpr: k }) {
     // the half from x 240 and 189 px above the seam, 768 px wide: cells of
     // 4.27 px of it, 6 px of the poster
     const crop = [240, -189, 768, 960]
-    const W = worldCells(0, 340, { cols: 180, rows: 225, crop })
+    const AMBER = PALETTES.amber
+    const W = worldCells(0, 340, { cols: 180, rows: 225, crop, palette: 'amber' })
     // the window: the lit cells joined to one of its cells, within a few
     const wg = W.getContext('2d')
     const img = wg.getImageData(0, 0, W.width, W.height)
-    const ink = rgb(NIGHT[0])
+    const ink = rgb(AMBER[0])
     const lit = (x, y) => { const i = (y * W.width + x) * 4; return img.data[i] !== ink[0] || img.data[i + 1] !== ink[1] || img.data[i + 2] !== ink[2] }
     const seed = [151, 115]
     const seen = new Set()
     const todo = [seed]
+    const accent = rgb(PALETTES.ice[2])
     while (todo.length) {
       const [x, y] = todo.pop()
       const key = y * W.width + x
       if (seen.has(key) || Math.abs(x - seed[0]) > 8 || Math.abs(y - seed[1]) > 8 || !lit(x, y)) continue
       seen.add(key)
-      img.data.set(rgb(ROSE), key * 4)
+      img.data.set(accent, key * 4)
       todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1])
     }
     wg.putImageData(img, 0, 0)
     const { g } = pane(p, 0, 0, PW, PH, k)
     g.drawImage(W, 0, 0, PW * k, PH * k)
-    // the sign, and its hangers up into the dark: one of them on the pole's
-    // own line (x 740 of the half), the other as far the other side
+    // the sign, its lamps amber, and its hangers up into the dark: one of
+    // them on the pole's own line (x 740 of the half), the other as far the
+    // other side
     const sy = 60
-    const s = sign(g, k, 60, sy, ['every letter on the wall', 'is to somebody.'])
+    const s = sign(g, k, 60, sy, ['every letter on the wall', 'is to somebody.'], { lit: AMBER[2], off: '#2A1F11', face: '#120D07', edge: AMBER[1] })
     const pole = Math.round(((740 - crop[0]) / crop[2]) * PW / 6) * 6
-    g.fillStyle = NIGHT[1]
+    g.fillStyle = AMBER[1]
     for (const hx of [2 * (60 + s.w / 2) - pole - 6, pole]) g.fillRect(hx * k, 0, 6 * k, (sy - 6) * k)
     lockup(g, k, 72, PH - 72 - 2 * LKH)
   },
 
-  // the hinge: the film at 7:14 am with the colour held back. yuna's letter
-  // is up on her phone, in the retro grey, its heart in rose, and she looks
-  // up from it at the bus hanging above her in the seconds before it all
-  // begins, where she stood the night before. The seam on the golden section
-  async hinge(p, { dpr: k }) {
-    const f = 640
-    const fr = T.frameAt(f)
-    const cv = document.createElement('canvas')
-    cv.width = T.W * k
-    cv.height = T.H * k
-    const R = createRenderer(cv, { blue: blueBytes(), palettes: PALETTES })
-    const i = fr.link - 1
-    const P = T.PLAN[i]
-    const x = f - T.LINKS[i].start
-    // the sun, as the film brings it with the colour
-    const sun = Math.min(1, Math.max(0, (x - P.flood + 4) / 48))
-    const r = PHONE[fr.bottom.world]
-    maskFor(R, 0, fr.bottom.world, fr.bottom.clock, fr.bottom.look)
-    R.drawWorld(R.halves[0], 0, { world: fr.bottom.world, clock: fr.bottom.clock, flood: 0, palette: 'night', look: fr.bottom.look, phoneRect: r, phoneLit: fr.phone.lit, sent: x >= P.send ? x - P.send : -1, sun })
-    maskFor(R, 1, fr.top.world, fr.top.clock, fr.top.look)
-    R.drawWorld(R.halves[1], 1, { world: fr.top.world, clock: fr.top.clock, flood: 0, palette: 'night', look: fr.top.look, sent: -1 })
-    const pcv = document.createElement('canvas')
-    pcv.width = (r[2] - r[0]) * 2
-    pcv.height = (r[3] - r[1]) * 2
-    drawPhone(pcv.getContext('2d'), pcv.width, pcv.height, { ...fr.phone, colour: 'night', heart: ROSE }, f)
-    R.setPhone(pcv)
-    R.composite({ f, top: 1, bot: 0, pane: false, phone: [r[0], 960 + r[1], r[2], 960 + r[3]] })
-    R.gl.finish()
-    // the frame from 420 px down: the seam 540 px from the top, 0.4 of it
-    const top = 420
+  // the minute: Seoul on Sunday at 12:59 pm turned over above Berkeley on
+  // Saturday at 8:59 pm, each one asleep by a dark phone, a minute before
+  // their two phones turn rose. The 9:16 frame placed again for 4:5: each
+  // half shows 675 px of its world, Seoul's skyline a little nearer its
+  // steps and Berkeley's moon in a gap in the fog, so that both people, both
+  // phones, the tower and the moon stay in it
+  async pacific(p, { dpr: k }) {
+    const SEAM = 675
+    const win = [250, 325]
+    const cells = await citiesCells({ W: PW, H: PH, seam: SEAM, win, t: 41, moon: [250, 470], stars: 520, skyline: 60, moonOver: true })
     const { g } = pane(p, 0, 0, PW, PH, k)
-    g.drawImage(cv, 0, top * k, PW * k, PH * k, 0, 0, PW * k, PH * k)
-    // the clock on the seam, as the film has it: the hour, its colon, 1, 4,
-    // and the meridiem, each plate split on the seam
-    const c = T.clockAt(f)
-    const sy = 960 - top
-    const plate = (px, w, ch) => flap(g, k, px, sy - 42, w, 84, ch, 3, { mid: 5, pins: false })
-    plate(72, 84, String(c.hour))
-    g.fillStyle = CHALK
-    g.fillRect(165 * k, (sy - 15) * k, 9 * k, 9 * k)
-    g.fillRect(165 * k, (sy + 6) * k, 9 * k, 9 * k)
-    plate(180, 57, '1')
-    plate(243, 57, '4')
-    plate(312, 84, c.merid)
-    // the lockup on the phone, under the letter
-    lockup(g, k, Math.round((r[0] + r[2]) / 2 - LKW), PH - 72 - 2 * LKH)
+    g.drawImage(cells, 0, 0, PW * k, PH * k)
+    // the phones, asleep: dark, with a thin rim, as the treatment drew them
+    const phones = [[1080 - 220, SEAM - (870 - win[0])], [540, SEAM + (848 - win[1])]]
+    for (const [x, y] of phones) {
+      g.fillStyle = 'rgba(41, 41, 46, 0.85)'
+      g.fillRect((x - 31.6) * k, (y - 14.6) * k, 63.2 * k, 29.2 * k)
+      g.fillStyle = '#0B0B0E'
+      g.fillRect((x - 30) * k, (y - 13) * k, 60 * k, 26 * k)
+    }
+    // the clocks in the outer corners, and the lockup in the last
+    clock(g, k, 64, 60, 'seoul', 'sun 12:59 pm', '58', PALETTES.amber[0])
+    clock(g, k, PW - 64, PH - 84, 'berkeley', 'sat 8:59 pm', '58', CHALK, { right: true })
+    // (its words on the clock's baseline, 20 cells down its box)
+    lockup(g, k, 64, PH - 64 - 40)
+    seamCaption(p, SEAM, ['every mutual is revealed', 'on saturday at 9pm pacific.'], [INK, CHALK])
+  },
+
+  // the sea: two people on a sea wall at dusk, from behind, a little apart,
+  // looking out; the photograph's horizon is the seam, and on it the line
+  async sea(p, { dpr: k }) {
+    const { g } = pane(p, 0, 0, PW, PH, k)
+    // the sea wall alone: 992 by 1240 of it, its horizon (row 616) at 672
+    const SEAM = 672
+    const cells = await photoCells(here('./photo-sea-wall.jpg'), [107, 0, 992, 1240], PW / 3, PH / 3, PALETTES.ice, { lo: 0.12, hi: 0.85, gamma: 1.3, dusk: 0.4, sky: SEAM / 3, soften: 1.2 })
+    g.drawImage(cells, 0, 0, PW * k, PH * k)
+    // on the wall, which is the last 98 px
+    lockup(g, k, 72, PH - 16 - 2 * LKH)
+    seamCaption(p, SEAM, ['nothing happens', 'unless it\u2019s mutual.'], [INK, CHALK])
+  },
+
+  // the sea, with both photographs: above the seam, one who passed by as a
+  // blur beside one who stood still; below it, the two on the wall. Tried
+  // for the third poster, and kept as the alternate
+  async seapair(p, { dpr: k }) {
+    const ICE = PALETTES.ice
+    const { g } = pane(p, 0, 0, PW, PH, k)
+    const SEAM = 600
+    const top = await photoCells(here('./photo-passing.jpg'), [0, 330, 1160, Math.round((SEAM * 1160) / PW)], PW / 3, SEAM / 3, ICE, { lo: 0.08, hi: 0.95, gamma: 1.3, dusk: 0.3, soften: 1.2 })
+    const bh = PH - SEAM
+    const sh = Math.round((bh * 1206) / PW)
+    const bot = await photoCells(here('./photo-sea-wall.jpg'), [0, 1240 - sh, 1206, sh], PW / 3, bh / 3, ICE, { lo: 0.12, hi: 0.85, gamma: 1.3, dusk: 0.35, sky: Math.round(((616 - (1240 - sh)) * PW) / 1206 / 3), soften: 1.2 })
+    g.drawImage(top, 0, 0, PW * k, SEAM * k)
+    g.drawImage(bot, 0, SEAM * k, PW * k, bh * k)
+    lockup(g, k, 72, PH - 16 - 2 * LKH)
+    seamCaption(p, SEAM, ['nothing happens', 'unless it\u2019s mutual.'], [CHALK, INK])
   },
 }

@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url)
 const { chromium } = require('playwright')
 const [,, outDir = 'posters', ratioArg = '2', ...given] = process.argv
 const DPR = +ratioArg || 2
-const SET = ['bus', 'hinge', 'board']
+const SET = ['bus', 'pacific', 'sea']
 const NAMES = given.length ? given : SET
 const fileOf = (name) => (SET.includes(name) ? `round-poster-${SET.indexOf(name) + 1}-${name}.png` : `${name}.png`)
 const ROOT = new URL('../../../../', import.meta.url).pathname
