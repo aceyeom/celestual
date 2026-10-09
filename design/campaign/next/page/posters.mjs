@@ -1,6 +1,7 @@
 // Photograph round's posters from the bench (posters.html) at a pixel ratio:
 // `node posters.mjs <outdir> [ratio] [name...]`. Ratio 2 makes the 2160 by
-// 2700 masters, 1 the 1080 by 1350 copies. With no names, the three chosen.
+// 2700 masters, 1 the 1080 by 1350 copies. With no names, the three, under
+// their names in the carousel's order.
 import http from 'node:http'
 import { readFile, mkdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -10,7 +11,9 @@ const require = createRequire(import.meta.url)
 const { chromium } = require('playwright')
 const [,, outDir = 'posters', ratioArg = '2', ...given] = process.argv
 const DPR = +ratioArg || 2
-const NAMES = given.length ? given : ['letter', 'wall', 'clock']
+const SET = ['bus', 'hinge', 'board']
+const NAMES = given.length ? given : SET
+const fileOf = (name) => (SET.includes(name) ? `round-poster-${SET.indexOf(name) + 1}-${name}.png` : `${name}.png`)
 const ROOT = new URL('../../../../', import.meta.url).pathname
 const PORT = 8773
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.html': 'text/html', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2' }
@@ -33,8 +36,8 @@ for (const name of NAMES) {
   page.on('pageerror', (e) => console.log('[error]', e.message))
   await page.goto(`http://127.0.0.1:${PORT}/repo/design/campaign/next/page/posters.html?p=${name}`)
   await page.waitForFunction(() => window.__done, null, { timeout: 300000 })
-  await page.locator('#poster').screenshot({ path: join(outDir, `${name}.png`) })
-  console.log('wrote', join(outDir, `${name}.png`))
+  await page.locator('#poster').screenshot({ path: join(outDir, fileOf(name)) })
+  console.log('wrote', join(outDir, fileOf(name)))
   await ctx.close()
 }
 await browser.close()

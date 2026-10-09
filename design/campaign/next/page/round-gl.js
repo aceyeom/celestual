@@ -211,5 +211,5 @@ export function createRenderer(canvas, { blue, palettes, layout = { slots: [[0, 
     return out
   }
 
-  return { gl, halves, sheets, drawWorld, composite, setMask, setCards, setPhone, readPanel, worldProg }
+  return { gl, halves, sheets, panel, drawWorld, composite, setMask, setCards, setPhone, readPanel, worldProg }
 }

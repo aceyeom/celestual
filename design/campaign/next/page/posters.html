@@ -5,55 +5,22 @@
 <script type="importmap">{ "imports": { "/repo/app/src/wall/scenes/kit.js": "/repo/design/campaign/next/page/kit-shim.js" } }</script>
 <link rel="stylesheet" href="/repo/app/public/fonts/faces.css">
 <style>
-  /* the posters are 1080 by 1350 (4:5), a module of 90 (fifteen of the
-     film's 6 px cells) on a 12 by 15 grid; drawn at the device's pixel ratio */
-  :root { --ground: #0A0A0A; --chalk: #F4F1EA; --ash: #9C978E; --m: 90px; }
+  /* the posters are 1080 by 1350 (4:5), drawn at the device's pixel ratio */
   html, body { margin: 0; background: #222; }
-  .poster { position: relative; width: 1080px; height: 1350px; overflow: hidden; background: var(--ground); color: var(--chalk); }
+  .poster { position: relative; width: 1080px; height: 1350px; overflow: hidden; background: #0A0A0A; }
   .poster > * { position: absolute; margin: 0; }
-  .head { font-family: 'Newsreader', serif; font-weight: 500; letter-spacing: -0.022em; line-height: 1; font-optical-sizing: auto; text-wrap: balance; font-kerning: normal; }
-  .head i { font-style: italic; }
-  .mono { font-family: 'Geist Mono', monospace; font-weight: 400; letter-spacing: 0.08em; }
-  .label { font-family: 'Geist Mono', monospace; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; }
-  .pixel { font-family: 'Jersey 10', monospace; }
   canvas { display: block; }
   canvas.px { image-rendering: pixelated; }
 </style>
 <body>
 <div id="poster" class="poster"></div>
 <script type="module">
-// A bench for round's posters, driven by the query: `?p=<name>` draws one
-// poster into #poster for the harness to photograph at its pixel ratio;
-// `?fonts` reports what the faces can do.
+// A bench for round's posters: `?p=<name>` draws one poster into #poster for
+// the harness to photograph at its pixel ratio.
 const q = new URLSearchParams(location.search)
-window.__out = {}
 try {
-  await document.fonts.load('500 100px Newsreader')
-  await document.fonts.load('italic 500 100px Newsreader')
-  await document.fonts.load('40px "Jersey 10"')
+  await document.fonts.load('56px "Jersey 10"')
   await document.fonts.load('24px "Geist Mono"')
-  if (q.has('fonts')) {
-    // Newsreader's optical size axis: the same words at opsz 6 and 72
-    const s = (v) => { const e = document.createElement('span'); e.style.cssText = `font: 500 100px Newsreader; font-variation-settings: 'opsz' ${v}; white-space: nowrap; position: absolute`; e.textContent = 'every letter on the wall'; document.body.appendChild(e); const w = e.getBoundingClientRect().width; e.remove(); return w }
-    const out = { opsz6: s(6), opsz72: s(72) }
-    // Jersey 10: at which sizes its pixels land on whole pixels
-    const c = document.createElement('canvas')
-    c.width = 1200; c.height = 200
-    const g = c.getContext('2d')
-    out.jersey = []
-    for (let px = 8; px <= 120; px += 1) {
-      g.clearRect(0, 0, c.width, c.height)
-      g.fillStyle = '#fff'
-      g.font = `${px}px "Jersey 10"`
-      g.textBaseline = 'alphabetic'
-      g.fillText('every letter on the wall', 4, 150)
-      const d = g.getImageData(0, 0, c.width, c.height).data
-      let part = 0, full = 0
-      for (let i = 3; i < d.length; i += 4) { if (d[i] > 245) full++; else if (d[i] > 10) part++ }
-      out.jersey.push([px, +(part / Math.max(1, full + part)).toFixed(3)])
-    }
-    console.log('fonts ' + JSON.stringify(out))
-  }
   if (q.has('p')) {
     const { POSTERS } = await import('./round-posters.js')
     await POSTERS[q.get('p')](document.getElementById('poster'), { dpr: window.devicePixelRatio })

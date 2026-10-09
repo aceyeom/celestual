@@ -1,281 +1,378 @@
 // ── round, as posters ──────────────────────────────────────────────────────
-// Posters for Instagram, 1080 by 1350 (4:5), drawn from the film's own parts:
-// its frames (round-page.js), its letters as the product draws them
-// (round-screen.js), its clock's plates, the lockup. One module of 90 (fifteen
-// of the film's 6 px cells) makes a 12 by 15 grid with a module's margin all
-// round; every edge sits on the cell grid, so the pictures stay whole cells
-// at every size Instagram shows them. Type: Newsreader for the line, Jersey
-// only on lit things, Geist Mono for the address. Each poster is a function
-// that fills a 1080 by 1350 element at the device's pixel ratio.
+// Three posters for Instagram, 1080 by 1350 (4:5). Each is one thing from
+// the film's night filling the frame, in the night's greys, with one small
+// accent in yuna's rose for the letter that closes the round. No headline is
+// laid over a picture: words are only where the film would put them, on lit
+// or mechanical things.
+//
+//   board   the night as a station board, every character on its own split
+//           flap module: the line, and under it the four departures, the
+//           last one's lamp lit
+//   bus     the 51B at 5:14 pm, sol at the pole and the woman asleep in the
+//           seat he gave her; the line on the bus's sign, one window across
+//           the street lit
+//   hinge   the film's seam at 7:14 am: yuna, her letter up on the retro grey
+//           screen, looks up at the bus hanging above her, where she stood
+//           the night before
+//
+// The board's edges and the face's pixels sit on a grid of 3 px, and the
+// worlds are in the film's 6 px cells, so both stay whole at 1080, 1440 and
+// 2160 wide. Each poster is a function that fills a 1080 by 1350 element at
+// the device's pixel ratio.
 
 import * as T from './round-time.js'
-import { createRound } from './round-page.js'
-import { drawScreen, drawLockup, FACE, LOCKUP_SIZE } from './round-screen.js'
+import { createRenderer } from './round-gl.js'
+import { PALETTES } from './round-product.js'
+import { blueBytes } from './round-blue.js'
+import { drawCast, MASK_W, MASK_H, PHONE } from './round-cast.js'
+import { drawPhone, drawLockup, LOCKUP_SIZE } from './round-screen.js'
 
-export const M = 90
 const PW = 1080
 const PH = 1350
+const NIGHT = PALETTES.night // ink, low, mid, lit
+const ROOM = '#0A0A0A'
 const CHALK = '#F4F1EA'
-const ASH = '#9C978E'
-const GROUND = '#0A0A0A'
+const ROSE = '#DF93AF'
+const PLATE_TOP = '#1E1D22'
+const PLATE_BOT = '#151418'
+const SPLIT = '#08070B'
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
 
 // ── the pieces ──
-function el(parent, tag, cls, css, html) {
+function el(parent, tag, cls, css) {
   const e = document.createElement(tag)
   if (cls) e.className = cls
   if (css) e.style.cssText = css
-  if (html != null) e.innerHTML = html
   parent.appendChild(e)
   return e
 }
 // a canvas of w by h at (x, y), its pixels the device's
-function pane(parent, x, y, w, h, dpr, cls = '') {
-  const cv = el(parent, 'canvas', cls, `left:${x}px;top:${y}px;width:${w}px;height:${h}px`)
-  cv.width = Math.round(w * dpr)
-  cv.height = Math.round(h * dpr)
+function pane(parent, x, y, w, h, k) {
+  const cv = el(parent, 'canvas', 'px', `left:${x}px;top:${y}px;width:${w}px;height:${h}px`)
+  cv.width = Math.round(w * k)
+  cv.height = Math.round(h * k)
   const g = cv.getContext('2d')
   g.imageSmoothingEnabled = false
   return { cv, g }
 }
-
-// the film, a frame at a time, at the device's pixel ratio; with or without
-// the clock on its hinge
-let film = null
-function filmAt(dpr) {
-  if (film && film.dpr === dpr) return film
-  const cv = document.createElement('canvas')
-  cv.width = T.W * dpr
-  cv.height = T.H * dpr
-  const ov = document.createElement('canvas')
-  ov.width = cv.width
-  ov.height = cv.height
-  const round = createRound(cv, ov, { scale: dpr })
-  const out = document.createElement('canvas')
-  out.width = cv.width
-  out.height = cv.height
-  film = { dpr, cv, ov, round, out }
-  return film
-}
-function frame(f, dpr, { clock = true } = {}) {
-  const F = filmAt(dpr)
-  F.round.frame(f)
-  F.round.renderer.gl.finish()
-  const g = F.out.getContext('2d')
-  g.imageSmoothingEnabled = false
-  g.clearRect(0, 0, F.out.width, F.out.height)
-  g.drawImage(F.cv, 0, 0)
-  if (clock) g.drawImage(F.ov, 0, 0)
-  return F.out
-}
-// part of a frame (film px) laid at (x, y) on the poster, a pixel for a pixel
-function crop(parent, src, sx, sy, sw, sh, x, y, dpr) {
-  const { g } = pane(parent, x, y, sw, sh, dpr, 'px')
-  g.drawImage(src, sx * dpr, sy * dpr, sw * dpr, sh * dpr, 0, 0, sw * dpr, sh * dpr)
+// the lockup in chalk at whole pixels a cell, its box's top left at (x, y)
+const [LKW, LKH] = LOCKUP_SIZE
+function lockup(g, k, x, y, cell = 2) {
+  drawLockup(g, x * k, y * k, cell * k, CHALK)
 }
 
-// a letter as it stands on the wall, in its colour or another's; `dim`
-// turns its backlight down, as an unlit screen's is
-function letter(parent, x, y, w, h, dpr, i, colour, dim = 0) {
-  const L = T.LINKS[i]
-  const { g } = pane(parent, x, y, w, h, dpr)
-  g.imageSmoothingEnabled = true
-  drawScreen(g, 0, 0, w * dpr, h * dpr, {
-    colour: colour || L.colour, bat: L.bat, stamp: L.stamp, greet: L.greet,
-    text: T.typed[i].full, full: T.typed[i].full, keys: 'wall',
-  })
-  if (dim > 0) {
-    g.globalCompositeOperation = 'source-atop'
-    g.fillStyle = `rgba(8, 7, 11, ${dim})`
-    g.fillRect(0, 0, w * dpr, h * dpr)
-    g.globalCompositeOperation = 'source-over'
+// ── the face's own pixels ──
+// Jersey 10 draws on a grid of its own pixels, 3 px each at 56 px (measured:
+// every edge of every glyph falls on it, the ink starting at the origin and
+// every advance whole). Each glyph is drawn there once and read back a pixel
+// at a time: twelve rows, from its ascender (ten above the baseline) to its
+// descender (two below).
+const FP = 3
+const ASC = 10
+const ROWS = 12
+const glyphs = new Map()
+function glyph(ch) {
+  if (glyphs.has(ch)) return glyphs.get(ch)
+  const span = 16
+  const c = document.createElement('canvas')
+  c.width = span * FP
+  c.height = (ROWS + 2) * FP
+  const g = c.getContext('2d', { willReadFrequently: true })
+  g.font = '56px "Jersey 10"'
+  g.fillStyle = '#fff'
+  g.textBaseline = 'alphabetic'
+  g.fillText(ch, FP, (ASC + 1) * FP)
+  const d = g.getImageData(0, 0, c.width, c.height).data
+  const rows = []
+  for (let j = 0; j < ROWS; j++) {
+    const r = []
+    for (let i = 0; i < span - 1; i++) r.push(d[(((j + 1) * FP + 1) * c.width + (i + 1) * FP + 1) * 4 + 3] > 127 ? 1 : 0)
+    rows.push(r)
   }
+  let w = 0
+  rows.forEach((r) => r.forEach((v, i) => { if (v) w = Math.max(w, i + 1) }))
+  const out = { rows: rows.map((r) => r.slice(0, w)), w, adv: Math.round(g.measureText(ch).width / FP) }
+  glyphs.set(ch, out)
+  return out
+}
+// a run of text in those pixels, each glyph at its own advance
+function pixels(text) {
+  const gs = [...text].map(glyph)
+  const w = gs.reduce((s, q) => s + q.adv, 0) - 1
+  const rows = Array.from({ length: ROWS }, () => new Array(Math.max(0, w)).fill(0))
+  let x = 0
+  for (const q of gs) {
+    q.rows.forEach((r, j) => r.forEach((v, i) => { if (v) rows[j][x + i] = 1 }))
+    x += q.adv
+  }
+  return { rows, w }
+}
+// pixels drawn as blocks of `s` px from (x, y), a row's runs one rect each
+function blocks(g, k, x, y, px, s, colour) {
+  g.fillStyle = colour
+  px.rows.forEach((r, j) => {
+    for (let i = 0; i < r.length; i++) {
+      if (!r[i]) continue
+      let e = i
+      while (e + 1 < r.length && r[e + 1]) e++
+      g.fillRect((x + i * s) * k, (y + j * s) * k, (e - i + 1) * s * k, s * k)
+      i = e
+    }
+  })
 }
 
-// the lockup, drawn at whole pixels a cell, in chalk (its ink spans rows 2
-// to 30 of 33; `y` is the top of its box)
-function lockup(parent, x, y, dpr, cell = 2) {
-  const [lw, lh] = LOCKUP_SIZE
-  const { g } = pane(parent, x, y, lw * cell, lh * cell, dpr)
-  drawLockup(g, 0, 0, cell * dpr, CHALK)
+// ── split flap modules ──
+// One character on its module: the upper flap over the lower and a split
+// between them, the character's x height centred on the split, drawn in the
+// face's pixels at `s` px each. Mid turn (`fold` 0 to 1, from `prev` to
+// `ch`) the old upper flap falls toward the split, then the new lower one
+// opens from it, as the film's clock does.
+function flap(g, k, x, y, w, h, ch, s, { prev = null, fold = 0, mid = 6, pins = true } = {}) {
+  const sy = y + h / 2
+  const r = Math.round(0.1 * w)
+  const face = (c, top) => {
+    if (!c || c === ' ') return
+    const q = pixels(c)
+    const gx = x + FP * Math.floor((w - q.w * s) / 2 / FP)
+    g.save()
+    g.beginPath()
+    g.rect(x * k, (top ? y : sy) * k, w * k, (h / 2) * k)
+    g.clip()
+    blocks(g, k, gx, sy - mid * s, q, s, CHALK)
+    g.restore()
+  }
+  // a half folded toward the split by `f` (1 flat, 0 edge on), and shaded
+  const half = (top, c, f = 1, dark = 0) => {
+    g.save()
+    g.translate(0, sy * k)
+    g.scale(1, Math.max(0.001, f))
+    g.translate(0, -sy * k)
+    g.fillStyle = top ? PLATE_TOP : PLATE_BOT
+    g.beginPath()
+    if (top) g.roundRect(x * k, y * k, w * k, (h / 2) * k, [r * k, r * k, 0, 0])
+    else g.roundRect(x * k, sy * k, w * k, (h / 2) * k, [0, 0, r * k, r * k])
+    g.fill()
+    face(c, top)
+    if (dark > 0) {
+      g.fillStyle = `rgba(0, 0, 0, ${dark})`
+      g.fillRect(x * k, (top ? y : sy) * k, w * k, (h / 2) * k)
+    }
+    g.restore()
+  }
+  const turning = prev != null && fold > 0 && fold < 1
+  half(true, ch)
+  half(false, turning ? prev : ch)
+  if (turning) {
+    const a = fold * 2
+    if (a < 1) half(true, prev, Math.cos((a * Math.PI) / 2), 0.45 * a)
+    else half(false, ch, Math.sin(((a - 1) * Math.PI) / 2), 0.35 * (2 - a))
+  }
+  // the split, and the pins it turns on
+  g.fillStyle = SPLIT
+  g.fillRect(x * k, (sy - 1) * k, w * k, 2 * k)
+  if (!pins) return
+  g.fillRect((x - 2) * k, (sy - 3) * k, 3 * k, 6 * k)
+  g.fillRect((x + w - 1) * k, (sy - 3) * k, 3 * k, 6 * k)
+}
+// a lamp `n` steps of 3 px wide, its corners cut, as a pixel lamp is round
+function lamp(g, k, x, y, n, colour) {
+  g.fillStyle = colour
+  g.fillRect((x + FP) * k, y * k, (n - 2) * FP * k, n * FP * k)
+  g.fillRect(x * k, (y + FP) * k, n * FP * k, (n - 2) * FP * k)
 }
 
-// the signature every poster shares: the lockup on the bottom margin at the
-// left, the address on its baseline at the right
-function signoff(parent, dpr, { colour = ASH } = {}) {
-  const cell = 2
-  const y = PH - M - 31 * cell
-  lockup(parent, M, y, dpr, cell)
-  // the word's baseline is the lockup's row 21
-  el(parent, 'div', 'mono', `right:${M}px;top:${y + 21 * cell - 19}px;font-size:22px;line-height:22px;color:${colour}`, 'celestual.us')
+// ── a sign of lamps ──
+// The face's pixels as lamps `dot` px apart, one lamp a pixel, the unlit
+// ones showing as a real sign's do; lines centred, in a housing with a rim.
+function sign(g, k, x, y, lines, { dot = 6, pad = 3, lead = 2, rim = 1, lit = NIGHT[3], off = '#1D1D1D', face = ROOM, edge = NIGHT[1] } = {}) {
+  const runs = lines.map(pixels)
+  const cols = Math.max(...runs.map((r) => r.w)) + 2 * pad
+  const rows = runs.length * ROWS + (runs.length - 1) * lead + 2 * pad
+  g.fillStyle = edge
+  g.fillRect((x - rim * dot) * k, (y - rim * dot) * k, (cols + 2 * rim) * dot * k, (rows + 2 * rim) * dot * k)
+  g.fillStyle = face
+  g.fillRect(x * k, y * k, cols * dot * k, rows * dot * k)
+  const on = new Set()
+  runs.forEach((r, li) => {
+    const x0 = pad + Math.floor((cols - 2 * pad - r.w) / 2)
+    const y0 = pad + li * (ROWS + lead)
+    r.rows.forEach((row, j) => row.forEach((v, i) => { if (v) on.add((y0 + j) * cols + x0 + i) }))
+  })
+  const ins = Math.max(1, Math.round(k * dot / 6))
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      g.fillStyle = on.has(j * cols + i) ? lit : off
+      g.fillRect(Math.round((x + i * dot) * k) + ins, Math.round((y + j * dot) * k) + ins, dot * k - 2 * ins, dot * k - 2 * ins)
+    }
+  }
+  return { cols, rows, w: cols * dot, h: rows * dot }
 }
 
-// the line, in the display cut: lowercase, one word in italic at most
-const LINE3 = 'every letter<br>on the wall is<br>to <i>somebody.</i>'
-const LINE2 = 'every letter on the wall<br>is to <i>somebody.</i>'
-// set so its first baseline lands on `base` (measured, not guessed)
-function headline(parent, x, base, size, html, { lh = 1, css = '' } = {}) {
-  const e = el(parent, 'p', 'head', `left:${x}px;top:0;font-size:${size}px;line-height:${lh};${css}`, html)
-  const probe = document.createElement('span')
-  probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline'
-  e.insertBefore(probe, e.firstChild)
-  const b = probe.getBoundingClientRect().top - e.getBoundingClientRect().top
-  probe.remove()
-  e.style.top = `${base - b}px`
-  return e
+// ── worlds, at any framing ──
+// A world lit and dithered by its own program into a panel of cells over any
+// window of its half (above the seam too), its tones laid in the night's
+// greys: one canvas pixel a cell.
+let shop = null
+function renderer() {
+  if (shop) return shop
+  const cv = document.createElement('canvas')
+  cv.width = T.W
+  cv.height = T.H
+  shop = createRenderer(cv, { blue: blueBytes(), palettes: PALETTES })
+  return shop
 }
-
-// a split flap figure plate, as on the film's hinge, w by h at (x, y)
-function plate(g, x, y, w, h, s, text, size, ink = CHALK) {
-  const r = 0.12 * h
-  const half = h / 2
-  g.save()
-  g.fillStyle = '#1E1D22'
-  g.beginPath(); g.roundRect(x, y, w, half, [r, r, 0, 0]); g.fill()
-  g.fillStyle = '#151418'
-  g.beginPath(); g.roundRect(x, y + half, w, half, [0, 0, r, r]); g.fill()
-  g.fillStyle = ink
-  g.font = `400 ${size}px ${FACE}`
-  g.textAlign = 'center'
-  g.textBaseline = 'middle'
-  g.fillText(text, x + w / 2, y + half + 0.06 * size)
-  g.fillStyle = '#08070B'
-  g.fillRect(x, y + half - s, w, 2 * s)
-  g.restore()
+function maskFor(R, slot, world, clock, look) {
+  const mask = document.createElement('canvas')
+  mask.width = MASK_W
+  mask.height = MASK_H
+  drawCast(mask.getContext('2d'), world, clock, look)
+  R.setMask(slot, mask)
 }
-// a time on plates (hour, colon, 1, 4, merid), `h` tall, at (x, y), drawn at
-// device scale `k`; returns its width
-function clockTime(g, x, y, h, k, hour, merid, ink = CHALK) {
-  const size = 1.08 * h
-  const wide = 1.16 * h
-  const narrow = 0.72 * h
-  const gap = 0.07 * h
-  let cx = x
-  plate(g, cx * k, y * k, wide * k, h * k, k, String(hour), size * k, ink)
-  cx += wide + gap
-  g.fillStyle = ink
-  const dot = 0.095 * h
-  g.fillRect((cx + 0.05 * h) * k, (y + 0.31 * h) * k, dot * k, dot * k)
-  g.fillRect((cx + 0.05 * h) * k, (y + 0.6 * h) * k, dot * k, dot * k)
-  cx += 0.24 * h
-  plate(g, cx * k, y * k, narrow * k, h * k, k, '1', size * k, ink)
-  cx += narrow + gap
-  plate(g, cx * k, y * k, narrow * k, h * k, k, '4', size * k, ink)
-  cx += narrow + gap * 1.6
-  plate(g, cx * k, y * k, wide * k, h * k, k, merid, size * k, ink)
-  return cx + wide - x
+function worldCells(world, clock, { cols, rows, crop, look = 0, phone = null, lit = 0, sun = 0 }) {
+  const R = renderer()
+  const target = R.panel(cols, rows)
+  target.crop = crop
+  maskFor(R, 0, world, clock, look)
+  R.drawWorld(target, 0, { world, clock, flood: 0, palette: 'night', look, phoneRect: phone, phoneLit: lit, sent: -1, sun, lampsOff: T.LAMPS_OFF })
+  const px = R.readPanel(target)
+  const out = document.createElement('canvas')
+  out.width = cols
+  out.height = rows
+  const g = out.getContext('2d')
+  const img = g.createImageData(cols, rows)
+  const tones = NIGHT.map(rgb)
+  for (let i = 0; i < cols * rows; i++) img.data.set([...tones[Math.min(3, Math.round(px[i * 4] / 85))], 255], i * 4)
+  g.putImageData(img, 0, 0)
+  return out
 }
 
 // ── the posters ──
-// where a time's figures sit on their plates: their baseline, from the top
-const figureBase = (h) => 0.5 * h + 0.06 * 1.08 * h + 0.3 * 1.08 * h
-
 export const POSTERS = {
-  // the seam: yuna writing to the one who always stands, in rose, and above
-  // her, mirrored, the bus where he stands, a night earlier; the lockup on
-  // her phone, under its screen
-  async seam(p, { dpr }) {
-    const src = frame(630, dpr)
-    crop(p, src, 0, 400, PW, PH, 0, 0, dpr)
-    signoff(p, dpr, { colour: CHALK })
+  // the board: the line on modules twice the size, and under it the night's
+  // departures, each letter to the next writer, the last to the first. The
+  // last one's lamp is lit, and in the empty row under it the next 5:14 pm
+  // is turning in: the round begins again
+  async board(p, { dpr: k }) {
+    const { g } = pane(p, 0, 0, PW, PH, k)
+    g.fillStyle = ROOM
+    g.fillRect(0, 0, PW * k, PH * k)
+    // 24 columns of small modules 39 apart and rows 60 apart, from (72, 102);
+    // a large module is two columns by two rows
+    const X = 72
+    const Y = 102
+    const PITCH = 39
+    const ROW = 60
+    const MW = 36
+    const MH = 54
+    const small = (c, r, ch = '', o) => flap(g, k, X + c * PITCH, Y + r * ROW, MW, MH, ch, 3, o)
+    const big = (c, r, ch = '') => flap(g, k, X + c * PITCH, Y + r * ROW, MW + PITCH, MH + ROW, ch, 6)
+    ;['every letter', 'on the wall', 'is to', 'somebody.'].forEach((t, i) => {
+      for (let c = 0; c < 12; c++) big(2 * c, 2 * i, t[c] || '')
+    })
+    // the departures, an empty row before each: the time, whom the letter
+    // was to, and in the last column a lamp
+    const row = (r, text, n, from) => { for (let c = 0; c < n; c++) small(from + c, r, text[c] || '') }
+    const empty = (r) => row(r, '', 23, 0)
+    const deps = [['5:14 pm', 'dear wren'], ['9:14 pm', 'dear pia'], ['1:14 am', 'dear yuna'], ['7:14 am', 'to the one who', 'always stands']]
+    let r = 8
+    deps.forEach(([time, to, more], i) => {
+      empty(r++)
+      for (const [t, d] of [[time, to], ['', more]]) {
+        if (d == null) continue
+        row(r, t, 8, 0)
+        row(r, d, 15, 8)
+        if (t) lamp(g, k, X + 23 * PITCH + 6, Y + r * ROW + 15, 8, i === deps.length - 1 ? ROSE : '#26252B')
+        r++
+      }
+    })
+    // the next, turning in
+    small(0, r, '5', { prev: '', fold: 0.8 })
+    row(r, '', 22, 1)
+    lockup(g, k, X, PH - 72 - 2 * LKH)
   },
 
-  // the wall, left aligned: the line, and four letters, only the last lit
-  async wallleft(p, { dpr }) {
-    headline(p, M, 180, 96, LINE2, { lh: '90px' })
-    const w = 330, h = 384, gap = 18
-    for (let i = 0; i < 4; i++) letter(p, M + (i % 2) * (w + gap), 360 + Math.floor(i / 2) * (h + gap), w, h, dpr, i, i === 3 ? null : 'night')
-    signoff(p, dpr)
-  },
-
-  // the wall, held on its axis: the line, then the four, three of them with
-  // their backlight down and only the last lit
-  async wall(p, { dpr }) {
-    headline(p, 0, 180, 96, LINE2, { lh: '90px', css: 'width:1080px;text-align:center' })
-    const w = 342, h = 402, gap = 24
-    const x0 = (PW - (2 * w + gap)) / 2
-    for (let i = 0; i < 4; i++) letter(p, x0 + (i % 2) * (w + gap), 330 + Math.floor(i / 2) * (h + gap), w, h, dpr, i, i === 3 ? null : 'night', i === 3 ? 0 : 0.42)
-    signoff(p, dpr)
-  },
-
-  // the wall, one held up: the last letter large and lit, the three before
-  // it small and dark, in the order they went up
-  async wallone(p, { dpr }) {
-    headline(p, M, 180, 96, LINE2, { lh: '90px' })
-    letter(p, M, 360, 540, 630, dpr, 3)
-    const sh = 192
-    for (let i = 0; i < 3; i++) letter(p, M + 540 + 36, 360 + i * (sh + 27), PW - M - (M + 540 + 36), sh, dpr, i, 'night')
-    signoff(p, dpr)
-  },
-
-  // one letter: yuna's, lit, over the bus where he stands
-  async letter(p, { dpr }) {
-    const src = frame(50, dpr, { clock: false })
-    crop(p, src, 0, 960, PW, 960, 0, 390, dpr)
-    headline(p, M, 180, 96, LINE2, { lh: '90px' })
-    letter(p, M, 450, 450, 540, dpr, 3)
-    signoff(p, dpr, { colour: CHALK })
-  },
-
-  // round: the four at their stations on a dial, each to the next, the last
-  // to the first, the line at its centre
-  async round(p, { dpr }) {
-    const cx = 540, cy = 630, R = 372
-    const { g } = pane(p, 0, 0, PW, PH, dpr)
-    g.imageSmoothingEnabled = true
-    g.strokeStyle = 'rgba(244, 241, 234, 0.4)'
-    g.lineWidth = 2 * dpr
-    const gapA = 0.34
-    for (let k = 0; k < 4; k++) {
-      const a0 = -Math.PI / 2 + (k * Math.PI) / 2 + gapA
-      const a1 = a0 + Math.PI / 2 - 2 * gapA
-      g.beginPath(); g.arc(cx * dpr, cy * dpr, R * dpr, a0, a1); g.stroke()
-      const a = (a0 + a1) / 2
-      g.save()
-      g.translate((cx + R * Math.cos(a)) * dpr, (cy + R * Math.sin(a)) * dpr)
-      g.rotate(a + Math.PI / 2)
-      g.beginPath(); g.moveTo(-9 * dpr, -9 * dpr); g.lineTo(0, 0); g.lineTo(-9 * dpr, 9 * dpr)
-      g.strokeStyle = CHALK
-      g.stroke()
-      g.restore()
+  // the bus: the 51B at 5:14 pm, from behind sol at the pole, the woman asleep
+  // against the glass in the seat he gave her; the line on the sign hung
+  // from the ceiling. One window across the street, above her, is lit rose
+  async bus(p, { dpr: k }) {
+    // the half from x 240 and 189 px above the seam, 768 px wide: cells of
+    // 4.27 px of it, 6 px of the poster
+    const crop = [240, -189, 768, 960]
+    const W = worldCells(0, 340, { cols: 180, rows: 225, crop })
+    // the window: the lit cells joined to one of its cells, within a few
+    const wg = W.getContext('2d')
+    const img = wg.getImageData(0, 0, W.width, W.height)
+    const ink = rgb(NIGHT[0])
+    const lit = (x, y) => { const i = (y * W.width + x) * 4; return img.data[i] !== ink[0] || img.data[i + 1] !== ink[1] || img.data[i + 2] !== ink[2] }
+    const seed = [151, 115]
+    const seen = new Set()
+    const todo = [seed]
+    while (todo.length) {
+      const [x, y] = todo.pop()
+      const key = y * W.width + x
+      if (seen.has(key) || Math.abs(x - seed[0]) > 8 || Math.abs(y - seed[1]) > 8 || !lit(x, y)) continue
+      seen.add(key)
+      img.data.set(rgb(ROSE), key * 4)
+      todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1])
     }
-    const at = [[cx, cy - R], [cx + R, cy], [cx, cy + R], [cx - R, cy]]
-    const ph = 54
-    T.LINKS.forEach((L, i) => {
-      const [x, y] = at[i]
-      const [hm, merid] = L.clock.split(' ')
-      const w = 4.04 * ph
-      clockTime(g, x - w / 2, y - ph / 2 - 20, ph, dpr, hm.split(':')[0], merid)
-      const lit = i === T.N - 1
-      const greet = L.greet === 'to the one who always stands' ? 'to the one who<br>always stands' : L.greet
-      headline(p, x - 210, y + 60, 36, greet, { lh: '38px', css: `width:420px;text-align:center;font-style:italic;color:${lit ? '#DF93AF' : CHALK}` })
-    })
-    headline(p, 0, cy - 30, 72, LINE3, { lh: '72px', css: 'width:1080px;text-align:center' })
-    signoff(p, dpr)
+    wg.putImageData(img, 0, 0)
+    const { g } = pane(p, 0, 0, PW, PH, k)
+    g.drawImage(W, 0, 0, PW * k, PH * k)
+    // the sign, and its hangers up into the dark: one of them on the pole's
+    // own line (x 740 of the half), the other as far the other side
+    const sy = 60
+    const s = sign(g, k, 60, sy, ['every letter on the wall', 'is to somebody.'])
+    const pole = Math.round(((740 - crop[0]) / crop[2]) * PW / 6) * 6
+    g.fillStyle = NIGHT[1]
+    for (const hx of [2 * (60 + s.w / 2) - pole - 6, pole]) g.fillRect(hx * k, 0, 6 * k, (sy - 6) * k)
+    lockup(g, k, 72, PH - 72 - 2 * LKH)
   },
 
-  // the contact sheet: the four worlds at once, each writer's phone lit
-  async sheet(p, { dpr }) {
-    const src = frame(700, dpr, { clock: false })
-    crop(p, src, 78, 336, 924, 984, 78, 186, dpr)
-    headline(p, M, 140, 60, 'every letter on the wall is to <i>somebody.</i>')
-    signoff(p, dpr)
-  },
-
-  // the clock: the night as a board, four times, four greetings, then the line
-  async clock(p, { dpr }) {
-    const { g } = pane(p, 0, 0, PW, PH, dpr)
-    g.imageSmoothingEnabled = true
-    const h = 120
-    T.LINKS.forEach((L, i) => {
-      const y = M + i * 2 * M
-      const [hm, merid] = L.clock.split(' ')
-      clockTime(g, M, y, h, dpr, hm.split(':')[0], merid)
-      const lit = i === T.N - 1
-      const greet = L.greet === 'to the one who always stands' ? 'to the one who<br>always stands' : L.greet
-      // each greeting on its figures' baseline (the two line one ends there)
-      headline(p, M + 546, y + figureBase(h) - (lit ? 56 : 0), 52, greet, { lh: '56px', css: `font-style:italic;color:${lit ? '#DF93AF' : CHALK}` })
-    })
-    headline(p, M, 945, 96, LINE2, { lh: '90px' })
-    signoff(p, dpr)
+  // the hinge: the film at 7:14 am with the colour held back. yuna's letter
+  // is up on her phone, in the retro grey, its heart in rose, and she looks
+  // up from it at the bus hanging above her in the seconds before it all
+  // begins, where she stood the night before. The seam on the golden section
+  async hinge(p, { dpr: k }) {
+    const f = 640
+    const fr = T.frameAt(f)
+    const cv = document.createElement('canvas')
+    cv.width = T.W * k
+    cv.height = T.H * k
+    const R = createRenderer(cv, { blue: blueBytes(), palettes: PALETTES })
+    const i = fr.link - 1
+    const P = T.PLAN[i]
+    const x = f - T.LINKS[i].start
+    // the sun, as the film brings it with the colour
+    const sun = Math.min(1, Math.max(0, (x - P.flood + 4) / 48))
+    const r = PHONE[fr.bottom.world]
+    maskFor(R, 0, fr.bottom.world, fr.bottom.clock, fr.bottom.look)
+    R.drawWorld(R.halves[0], 0, { world: fr.bottom.world, clock: fr.bottom.clock, flood: 0, palette: 'night', look: fr.bottom.look, phoneRect: r, phoneLit: fr.phone.lit, sent: x >= P.send ? x - P.send : -1, sun })
+    maskFor(R, 1, fr.top.world, fr.top.clock, fr.top.look)
+    R.drawWorld(R.halves[1], 1, { world: fr.top.world, clock: fr.top.clock, flood: 0, palette: 'night', look: fr.top.look, sent: -1 })
+    const pcv = document.createElement('canvas')
+    pcv.width = (r[2] - r[0]) * 2
+    pcv.height = (r[3] - r[1]) * 2
+    drawPhone(pcv.getContext('2d'), pcv.width, pcv.height, { ...fr.phone, colour: 'night', heart: ROSE }, f)
+    R.setPhone(pcv)
+    R.composite({ f, top: 1, bot: 0, pane: false, phone: [r[0], 960 + r[1], r[2], 960 + r[3]] })
+    R.gl.finish()
+    // the frame from 420 px down: the seam 540 px from the top, 0.4 of it
+    const top = 420
+    const { g } = pane(p, 0, 0, PW, PH, k)
+    g.drawImage(cv, 0, top * k, PW * k, PH * k, 0, 0, PW * k, PH * k)
+    // the clock on the seam, as the film has it: the hour, its colon, 1, 4,
+    // and the meridiem, each plate split on the seam
+    const c = T.clockAt(f)
+    const sy = 960 - top
+    const plate = (px, w, ch) => flap(g, k, px, sy - 42, w, 84, ch, 3, { mid: 5, pins: false })
+    plate(72, 84, String(c.hour))
+    g.fillStyle = CHALK
+    g.fillRect(165 * k, (sy - 15) * k, 9 * k, 9 * k)
+    g.fillRect(165 * k, (sy + 6) * k, 9 * k, 9 * k)
+    plate(180, 57, '1')
+    plate(243, 57, '4')
+    plate(312, 84, c.merid)
+    // the lockup on the phone, under the letter
+    lockup(g, k, Math.round((r[0] + r[2]) / 2 - LKW), PH - 72 - 2 * LKH)
   },
 }

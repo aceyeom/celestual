@@ -74,6 +74,7 @@ export function skinFor(colour) {
 //                          (characters, and how far in, 0 to 1), the caret lit
 //   note                   in place of the words: { glyph, title, text }
 //   keys                   'composer' (colour, clear), 'wall' (options, heart) or none
+//   heart                  the heart's colour, if not the screen's lit
 export function drawScreen(g, x, y, sw, sh, o) {
   const s = skinFor(o.colour)
   const u = sw / 100
@@ -236,7 +237,7 @@ export function drawScreen(g, x, y, sw, sh, o) {
       g.font = `400 ${13.4 * u}px ${FACE}`
       g.textAlign = 'left'
       g.fillText(o.keys === 'wall' ? 'options' : 'colour', kx, my)
-      if (o.keys === 'wall') glyph(g, 'heartO', sw - kx - 8 * u, my - 3.4 * u, 6.8 * u, lit)
+      if (o.keys === 'wall') glyph(g, 'heartO', sw - kx - 8 * u, my - 3.4 * u, 6.8 * u, o.heart || lit)
       else { g.textAlign = 'right'; g.fillText('clear', sw - kx, my) }
     })
   }
@@ -291,6 +292,7 @@ export function drawPhone(g, W, H, p, f) {
     caret: !p.editing && caretOn,
     note: p.mode === 'read' ? { glyph: 'wait', title: 'being read', text: 'it goes up once it passes.' } : null,
     keys: p.mode === 'draft' || p.mode === 'waking' ? 'composer' : p.mode === 'up' ? 'wall' : null,
+    heart: p.heart,
   })
   // the pill under it, until the letter has gone
   const pw = 0.62 * W
