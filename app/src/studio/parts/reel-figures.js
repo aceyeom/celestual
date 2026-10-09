@@ -290,13 +290,17 @@ const SCENES = {
 export function makeFigures(PANEL) {
   const lo = [PANEL.x - PANEL.margin * PANEL.c, PANEL.y - PANEL.margin * PANEL.c]
   // the one who goes, as a picture of its own to be taken apart a cell at
-  // a time
+  // a time. It is read back every frame, so it is drawn on the processor
+  // from the first: a canvas the browser moves there of its own accord after
+  // a few readings draws a hair differently from then on, and a frame would
+  // depend on how it was come to
   let goer = null
   const goerAt = () => {
     if (goer) return goer
     const c = document.createElement('canvas')
     c.width = PANEL.cw
     c.height = PANEL.ch
+    c.getContext('2d', { willReadFrequently: true })
     goer = c
     return goer
   }
