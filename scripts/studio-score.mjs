@@ -578,10 +578,10 @@ air(S.away[0], S.away[1] - S.away[0], { gain: 0.009, from: 6000, to: 500, shape:
 // and stops at nine
 // the lean in, a breath
 air(S.lean[0], S.touch[2] - S.lean[0], { gain: 0.007, from: 300, to: 2400 })
-// and the two coming apart into one flower: a slow breath of air under
-// its opening, as long as it takes to open, soft at both ends
+// and the two lights going out together: a slow breath of air under
+// them as they spread, as long as they take to, soft at both ends
 air(S.touch[2], 1300, { gain: 0.012, from: 300, to: 3000, q: 0.8, verb: 0.75 })
-// lin's letter out of the flower's heart at us: the air it moves, coming
+// lin's letter out of the light at us: the air it moves, coming
 // quickly and falling away, from the left as it swings out there and back
 // to the middle as it comes into the hand
 {
@@ -602,9 +602,9 @@ air(S.touch[2], 1300, { gain: 0.012, from: 300, to: 3000, q: 0.8, verb: 0.75 })
 }
 // it turns over: a breath of air as it goes
 air((S.flip[0] + S.flip[1]) / 2 - 170, 320, { gain: 0.012, from: 1800, to: 6500, q: 1.4 })
-// kai's letter given back to the flower, a pixel at a time: grains of air,
-// each a few thousandths of a second, more of them as more of it goes,
-// their band falling as they go in to the heart, gone on the cut
+// kai's letter melting back into the light: grains of air, each a few
+// thousandths of a second, more of them as more of it goes, their band
+// falling as it goes, gone on the cut
 grains(S.give[0], S.give[1] - S.give[0], { gain: 0.016, from: 7000, to: 1800, n: 150, verb: 0.45 })
 // the lights that never met, going out, each as a screen goes, from its
 // place

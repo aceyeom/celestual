@@ -22,28 +22,32 @@
 //          clock that runs through the week; on the thursday a note comes in
 //          from somewhere; at nine the camera leans in, and the two find
 //          each other, wait, and touch
-//  20      on the touch the two come apart into one flower, and out of its
-//          heart comes lin's letter, at us; it turns over, and on its other
-//          side is kai's, to lin, read for the first time. `it's mutual. /
-//          you both find out.` kai's is given back to the flower a pixel at
-//          a time, and it closes
+//  20      on the touch the two lights go out together from where the
+//          envelopes touched, lin's ice and kai's amber winding into each
+//          other over the whole panel; out of them, warped by them, comes
+//          lin's letter, at us; it turns over, and on its other side is
+//          kai's, to lin, read for the first time. `it's mutual. / you both
+//          find out.` kai's melts back into the light, and its light goes
+//          out with the rest
 //  25      the ones that never meet go out, each as a screen does, their
-//          buds never opened. `if it isn't, / nobody ever knows.`
-//  27.5    `do they still / think about you?`, and left there, over one bud
-//  31.25   the bud opens into the name's star, the name lit a cell at a time
-//          from it, and the address
+//          light going in. `if it isn't, / nobody / ever knows.`
+//  27.5    `do they still / think about / you?`, a low light rising under
+//          it, and left there
+//  31.25   all of the light drawn in to the name's star, the name lit a
+//          cell at a time from it, and the address
 //
-// One layout throughout: the words flush left on one margin in one band at
-// the top, a phone one size in one place under them, everything clear of
-// the platform's own buttons and captions; and one grid, the words' cells,
-// that the panel, the notes on it and the name are all on. The wall is a
-// sheet of the product's own screens drawn in WebGL (wall-gl.js); the
-// letter is the product's own composer (note-screen.jsx), both its sides;
-// the name is drawn a cell at a time (brand.js); the words are the phone's
-// face (pixtype.js); and from the lens on, the dark is a screen with light
-// moving in it as ink in water, a fluid solved on the graphics card in the
-// panel's own cells (panel-fluid.js, PanelGL below), every note a light in
-// it.
+// Each scene sets its words its own way (`WORDS`), all on one grid, the
+// words' cells, that the panel, the notes on it and the name are on too,
+// and everything clear of the platform's own buttons and captions; a phone
+// is one size in one place. The wall is a sheet of the product's own
+// screens drawn in WebGL (wall-gl.js); the letter is the product's own
+// composer (note-screen.jsx), and in the reveal its two sides as they were
+// photographed, drawn in WebGL so the light can move it (reel-card.js); the
+// name is drawn a cell at a time (brand.js); the words are the phone's face
+// (pixtype.js); and from the lens on, the dark is a screen's panel with
+// light spreading in it as ink does in water (reel-aura.js), drawn in the
+// panel's own cells over a fluid solved on the graphics card whose drift is
+// its stars (panel-fluid.js, PanelGL below).
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
@@ -57,9 +61,11 @@ import { WallGL, wallOf, cameraOf, boxOnto, v3, UNIT } from './wall-gl.js'
 import { cellTint, cellOf } from './wall-letters.js'
 import { NoteScreen, PW } from './note-screen.jsx'
 import { PanelFluid, linear } from './panel-fluid.js'
-import { makeBloom } from './reel-bloom.js'
+import { makeAura } from './reel-aura.js'
+import { LetterGL, W as CARD_W } from './reel-card.js'
 import atlasUrl from '../assets/wall-atlas.jpg'
-import blocksUrl from '../assets/kai-face-blocks.png'
+import faceLinUrl from '../assets/reel-face-lin.jpg'
+import faceKaiUrl from '../assets/reel-face-kai.jpg'
 import './reel.css'
 
 export { MS }
@@ -117,10 +123,10 @@ const tone = (col, a) => {
 }
 
 // ── the layout ──────────────────────────────────────────────────────────────
-// The words: the phone's face, lowercase, flush left on one margin, in a
-// band at the top of the frame. The objects: a phone, always this wide and
-// always here, under the words and clear of the platform's buttons on the
-// right and its captions at the foot.
+// The words: the phone's face, lowercase, each scene's set its own way
+// (`WORDS`, below), all of them on one grid and clear of the platform's
+// buttons on the right and its captions at the foot. The objects: a phone,
+// always this wide and always here.
 export const X0 = 80
 export const Y0 = 236
 // a cell of the words, one pixel of the phone's face seven of ours: the
@@ -169,11 +175,19 @@ function lineOf(text, unit = 'word') {
 // column to its last in a few frames, a cell a little before or after its
 // neighbour; and at `to` the line goes the same way, its first column first.
 // No two words alike: each has its own little lateness and its own pace, as
-// a hand's are, the same on every frame
+// a hand's are, the same on every frame. `x` is its left edge, or with
+// `align` its middle or its right edge; wherever that puts it, its left
+// edge is on the grid's nearest cell
 const PAD = 14
-function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x = X0, y = Y0, c = C, color = CHALK, unit = 'word' }) {
+const leftOf = (L, x, align, c) => {
+  const w = L.w * c
+  const left = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x
+  return GX + Math.round((left - GX) / C) * C
+}
+function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x: x0 = X0, y = Y0, c = C, color = CHALK, unit = 'word', align = 'left' }) {
   const ref = useRef(null)
   const L = lineOf(text, unit)
+  const x = leftOf(L, x0, align, c)
   const first = times ? times[0] : from
   const live = t >= first - 40 && t <= to + 400
   useLayoutEffect(() => {
@@ -200,6 +214,74 @@ function CellLine({ t, text, from = 0, times = null, step = 95, to = Infinity, x
   if (!live) return null
   return <canvas ref={ref} className="rl-line" width={Math.ceil(L.w * c + PAD * 2)} height={13 * c + PAD * 2} style={{ left: x - PAD, top: y - PAD }} />
 }
+
+// ── where the words go ──────────────────────────────────────────────────────
+// Each scene its own: the hall's two lines staggered, the first flush left
+// and the second flush right under it; `privately.` twice the size of the
+// line before it; the night's centred under the envelope as it waits; the
+// date's clock large, set in from the sentence it ends; `it's mutual.`
+// large over the letter, centred; the ones that never meet flush right; the
+// question centred in the middle of the frame, its last word large; and
+// the name in the middle. A large line's cells are two of the grid's.
+const Y1 = Y0 + LINE
+const RIGHT = 1000
+const QW = S.qWords
+const WORDS = {
+  wall: [
+    { text: 'a wall of the ones', from: S.lines[0], to: S.linesOut },
+    { text: 'you never told.', from: S.lines[1], to: S.linesOut + 40, x: X0 + 116 * C, y: Y1, align: 'right' },
+  ],
+  send: [
+    { text: 'or send it', from: S.sendIt, to: S.sendOut },
+    { text: 'privately.', from: S.privately, to: S.sendOut + 40, y: Y1, c: 2 * C },
+  ],
+  night: [
+    { text: 'they only read it if', from: S.nLines[0], to: S.nOut, x: 540, y: GY + 179 * C, align: 'center' },
+    { text: 'they send you one.', from: S.nLines[1], to: S.nOut + 40, x: 540, y: GY + 195 * C, align: 'center' },
+  ],
+  date: [
+    { text: 'every mutual is', from: S.dLines[0], to: S.dOut },
+    { text: 'revealed on', from: S.dLines[1], to: S.dOut + 40, y: Y1 },
+  ],
+  mutual: [
+    { text: 'it’s', from: S.said, to: S.rOut, x: 540, c: 2 * C, align: 'center' },
+    { text: 'mutual.', from: S.said + 95, to: S.rOut + 40, x: 540, y: GY + 55 * C, c: 2 * C, align: 'center' },
+    { text: 'you both find out.', from: S.both, to: S.rOut + 80, x: 540, y: GY + 83 * C, align: 'center' },
+  ],
+  ifnot: [
+    { text: 'if it isn’t,', from: S.fLines[0], to: S.fOut, x: RIGHT, align: 'right' },
+    { text: 'nobody', from: S.fLines[1], to: S.fOut + 40, x: RIGHT, y: Y1, align: 'right' },
+    { text: 'ever knows.', from: S.fLines[1] + 95, to: S.fOut + 80, x: RIGHT, y: Y1 + LINE, align: 'right' },
+  ],
+  ask: [
+    { text: 'do they still', times: QW.slice(0, 3), to: S.qOut, x: 540, y: GY + 61 * C, align: 'center' },
+    { text: 'think about', times: [QW[3], QW[4]], to: S.qOut + 40, x: 540, y: GY + 77 * C, align: 'center' },
+    { text: 'you?', times: [QW[5]], to: S.qOut + 80, x: 540, y: GY + 93 * C, c: 2 * C, align: 'center' },
+  ],
+}
+// the date's clock: the day over the time, the time large, and once it has
+// come to nine and stopped, where; set in from the sentence
+const CLOCK = { x: X0 + 14 * C, day: GY + 63 * C, time: GY + 75 * C, where: GY + 101 * C }
+const Words = ({ t, of }) => of.map((l) => <CellLine key={l.text} t={t} {...l} />)
+// a group of lines: how much of it is up at `t`, and the box it covers on
+// the frame, for the panel kept darker under it
+const firstOf = (l) => (l.times ? l.times[0] : l.from || 0)
+const upOf = (of, t) => Math.max(...of.map((l) => u(t, firstOf(l) - 150, firstOf(l) + 200) * (1 - u(t, l.to + 150, l.to + 500))))
+function boxOf(of) {
+  const b = [Infinity, Infinity, -Infinity, -Infinity]
+  for (const l of of) {
+    const c = l.c || C
+    const L = lineOf(l.text)
+    const x = leftOf(L, l.x == null ? X0 : l.x, l.align, c)
+    const y = l.y == null ? Y0 : l.y
+    b[0] = Math.min(b[0], x)
+    b[1] = Math.min(b[1], y)
+    b[2] = Math.max(b[2], x + L.w * c)
+    b[3] = Math.max(b[3], y + 12 * c)
+  }
+  return b
+}
+const shadeOf = (of, t, k = 0.62) => { const up = upOf(of, t); return up > 0 ? [...boxOf(of), k * up] : null }
 
 // the shade under the band of words, where the hall behind them is busy
 const Shade = ({ o }) => (o > 0.003 ? <div className="rl-shade" style={{ opacity: o.toFixed(3) }} /> : null)
@@ -649,10 +731,8 @@ function WallScene({ t, m, times, image }) {
       {off.dot > 0 ? <span className="rl-dot" style={{ left: mid[0] - 7, top: mid[1] - 7, opacity: off.dot.toFixed(3) }} /> : null}
       <canvas ref={fx} className="rl-fx" width="1080" height="1920" />
       <Shade o={shade} />
-      <CellLine t={t} text="a wall of the ones" from={S.lines[0]} to={S.linesOut} />
-      <CellLine t={t} text="you never told." from={S.lines[1]} to={S.linesOut + 40} y={lineAt(1)} />
-      <CellLine t={t} text="or send it" from={S.sendIt} to={S.sendOut} />
-      <CellLine t={t} text="privately." from={S.privately} to={S.sendOut + 40} y={lineAt(1)} />
+      <Words t={t} of={WORDS.wall} />
+      <Words t={t} of={WORDS.send} />
     </div>
   )
 }
@@ -714,15 +794,15 @@ function clockAt(t) {
   const m = Math.round(lerp(9 * 60 + 12, 5 * 1440 + 21 * 60, k))
   const hm = m % 1440
   const h = Math.floor(hm / 60)
-  return `${DAYS[Math.min(5, Math.floor(m / 1440))]} ${((h + 11) % 12) + 1}:${String(hm % 60).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
+  return [DAYS[Math.min(5, Math.floor(m / 1440))], `${((h + 11) % 12) + 1}:${String(hm % 60).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`]
 }
 
-// the two envelopes coming apart at the touch (reel-bloom.js): the cells
-// still on them, white, as the phone draws them, and the ones in flight as
-// pixels, smaller and fainter as they go, their light passing into the
-// panel's cells and out along the petals they draw
+// the two envelopes coming apart at the touch (reel-aura.js): the cells
+// still on them, white, as the phone draws them, and the ones carried out
+// on the spread as pixels, smaller and fainter as they go, their light
+// passing into the panel's cells
 function drawLeaving(g, t, v) {
-  const { remaining, flying } = BLOOM.leavingAt(t)
+  const { remaining, flying } = AURA.leavingAt(t)
   const half = (C * v.z) / 2
   for (const p of remaining || []) {
     const [x, y] = frameOf(v, [p.x, p.y])
@@ -761,7 +841,7 @@ function PanelScene({ t }) {
     // the two, and their touch
     const p = t >= S.lean[0] ? pairAt(t, v.z) : { lin: L_AT, kai: K_AT }
     const touch = t >= S.touch[2] - 12 ? 0.75 * (1 - u(t, S.touch[2] - 12, S.meet)) : 0
-    // from the touch, coming apart into the flower
+    // from the touch, coming apart into the light
     if (t >= S.touch[2] + 6) { drawLeaving(g, t, v); return }
     if (t >= S.kaiIn) {
       const c = crtOn(t, S.kaiIn, 1.3)
@@ -785,17 +865,17 @@ function PanelScene({ t }) {
       drawEnvelope(g, { x, y, cell: C * v.z, tint: A.tint, white: Math.max(touch, 0.12 * b), glow: 0.85 + 0.45 * b })
     }
   })
-  // the clock, and once it has come to nine and stopped, where
-  const clock = t >= S.lapse[1] + 150 ? `${clockAt(t)} pacific` : clockAt(t)
+  // the clock: the day, the time, and once it has come to nine, where
+  const [day, time] = clockAt(t)
   const D = S.dLines[2]
   return (
     <div className="rl-cam">
       <canvas ref={ref} className="rl-panel" width="1080" height="1920" />
-      <CellLine t={t} text="they only read it if" from={S.nLines[0]} to={S.nOut} />
-      <CellLine t={t} text="they send you one." from={S.nLines[1]} to={S.nOut + 40} y={lineAt(1)} />
-      <CellLine t={t} text="every mutual is" from={S.dLines[0]} to={S.dOut} />
-      <CellLine t={t} text="revealed on" from={S.dLines[1]} to={S.dOut + 40} y={lineAt(1)} />
-      <CellLine t={t} text={clock} times={[D, D + 95, D + 190, S.lapse[1] + 150]} to={S.dOut + 80} y={lineAt(2)} />
+      <Words t={t} of={WORDS.night} />
+      <Words t={t} of={WORDS.date} />
+      <CellLine t={t} text={day} times={[D]} to={S.dOut + 80} x={CLOCK.x} y={CLOCK.day} />
+      <CellLine t={t} text={time} times={[D + 95, D + 190]} to={S.dOut + 80} x={CLOCK.x} y={CLOCK.time} c={2 * C} />
+      <CellLine t={t} text="pacific" times={[S.lapse[1] + 150]} to={S.dOut + 120} x={CLOCK.x} y={CLOCK.where} />
     </div>
   )
 }
@@ -815,10 +895,8 @@ function PanelScene({ t }) {
 // and comes nearer.
 const READ_KEYS = { l: { label: 'options' }, r: [{ glyph: 'heartO', label: '0', cls: 'is-heart' }] }
 const LIN_PROPS = { fs: 12.6, fx: true }
-const FACE_A = { fs: 12.6, fx: true, cursor: false, keys: READ_KEYS, top: { name: A.to, dear: true, icon: 'pen', stamp: '10/06/26', bat: 4 } }
-const FACE_B = { fs: 13.4, fx: true, cursor: false, keys: READ_KEYS, top: { name: B.to, dear: true, icon: 'pen', stamp: '10/08/26', bat: 4 } }
-const ALL_A = new Array([...A.text].length).fill(0)
-const ALL_B = new Array([...B.text].length).fill(0)
+export const FACE_A = { fs: 12.6, fx: true, cursor: false, keys: READ_KEYS, top: { name: A.to, dear: true, icon: 'pen', stamp: '10/06/26', bat: 4 } }
+export const FACE_B = { fs: 13.4, fx: true, cursor: false, keys: READ_KEYS, top: { name: B.to, dear: true, icon: 'pen', stamp: '10/08/26', bat: 4 } }
 // where the two were when they touched, at the lean's end, on the panel
 const TOUCHED = (() => {
   const v = leanView(S.meet)
@@ -911,8 +989,8 @@ function drawGleam(g, c) {
 // the moment it is on its edge, and kai's side coming on from that line,
 // white first, as a screen does
 const EDGE = (S.flip[0] + S.flip[1]) / 2
-// the flower's light on the letter's edges, as a thing set in light takes
-// it on its edges (a light wrap): along each edge, the flower's colour
+// the spreading light on the letter's edges, as a thing set in light takes
+// it on its edges (a light wrap): along each edge, the light's colour
 // just outside it, laid a little way in and fading
 const srgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055)
 function drawWrap(o, t, c, k) {
@@ -938,7 +1016,7 @@ function drawWrap(o, t, c, k) {
       const P0 = along(P, Q, i / N)
       const P1 = along(P, Q, (i + 1) / N)
       const M = along(P, Q, (i + 0.5) / N)
-      const L = BLOOM.lightNear(t, ...toPanel(v, [M[0] + nx * 12, M[1] + ny * 12]))
+      const L = AURA.lightNear(t, ...toPanel(v, [M[0] + nx * 12, M[1] + ny * 12]))
       const rgb = L.map((x) => Math.round(255 * srgb(Math.min(1, x * 1.6 * k))))
       if (rgb[0] + rgb[1] + rgb[2] < 4) continue
       const grad = o.createLinearGradient(M[0], M[1], M[0] - nx * 16, M[1] - ny * 16)
@@ -956,53 +1034,66 @@ function drawWrap(o, t, c, k) {
   }
   o.globalCompositeOperation = 'source-over'
 }
-// kai's letter as it is given back: what of it is left, in its own pixels,
-// a block at a time, never a hole eaten in it. The mask is on its glass and
-// a margin round it (reel.css), so the light on the glass's edge is kept,
-// fading as the letter goes, as the light it throws round it does; and how
-// much of it has gone
-const GIVE_M = 30
-let MASK = null
-function maskOf(gv) {
-  if (!MASK) { MASK = document.createElement('canvas'); MASK.width = PW + 2 * GIVE_M; MASK.height = CARD_H + 2 * GIVE_M }
-  const g = MASK.getContext('2d')
-  g.globalCompositeOperation = 'source-over'
-  g.clearRect(0, 0, MASK.width, MASK.height)
-  const bw = PW / gv.NU
-  const bh = CARD_H / gv.NV
-  let gone = 0
-  for (let j = 0; j < gv.NV; j++) for (let i = 0; i < gv.NU; i++) if (gv.gone(i, j)) gone++
-  const left = 1 - gone / (gv.NU * gv.NV)
-  g.fillStyle = `rgba(255,255,255,${left.toFixed(4)})`
-  g.fillRect(0, 0, MASK.width, MASK.height)
-  g.clearRect(GIVE_M, GIVE_M, PW, CARD_H)
-  g.fillStyle = '#FFFFFF'
-  g.fillRect(GIVE_M, GIVE_M, PW, CARD_H)
-  for (let j = 0; j < gv.NV; j++) {
-    for (let i = 0; i < gv.NU; i++) {
-      if (!gv.gone(i, j)) continue
-      const x0 = Math.floor(i * bw)
-      const y0 = Math.floor(j * bh)
-      g.clearRect(GIVE_M + x0, GIVE_M + y0, Math.floor((i + 1) * bw) - x0, Math.floor((j + 1) * bh) - y0)
-    }
+// the letter's light, sRGB: the light it throws round it, and the light
+// kai's melts into
+const srgbOf = (hex) => hexRgb(hex).map((x) => x / 255)
+const HALO_OF = { lin: srgbOf(skinOf(A.tint).glow), kai: srgbOf(skinOf(B.tint).glow) }
+const INTO = mix(skinOf(B.tint).glow, skinOf(B.tint).lit, 0.55)
+// how the light moves the letter at `t`: out of it, its glass and its
+// words swimming into place; a ripple through it as kai's side comes on;
+// still to be read; and as it is given back, drawn out along the flow,
+// outward, and melted into the light, its edges first
+function moveOf(t) {
+  const emerge = 1 - smooth01(u(t, S.swoosh[0], S.swoosh[0] + 700))
+  const ripple = Math.sin(Math.PI * u(t, EDGE + 60, EDGE + 760)) ** 2
+  const give = easeOf('sine.inOut')(u(t, S.give[0], S.give[1]))
+  return {
+    warp: 52 * emerge + 9 * ripple + 140 * give ** 1.3,
+    swirl: 80 * emerge + 6 * ripple + 420 * give ** 1.4,
+    pull: 300 * give ** 1.5,
+    melt: u(t, S.give[0] + 80, S.give[1] - 30),
+    give,
   }
-  return { url: MASK.toDataURL('image/png'), left }
 }
-function LetterScene({ t }) {
+function LetterScene({ t, faces }) {
   const under = useRef(null)
   const over = useRef(null)
+  const glass = useRef(null)
+  const letter = useRef(null)
   const c = cardAt(t)
-  const gv = BLOOM.givingAt(t)
+  useEffect(() => () => { if (letter.current) letter.current.dispose() }, [])
   useLayoutEffect(() => {
+    // the letter itself, one side at a time, the side turned towards us:
+    // kai's drawn as a card's other side is, turned by the angle less a half
+    // turn and its roll the other way, so there is only ever one glass
+    if (!letter.current) letter.current = new LetterGL(glass.current, faces)
+    const turned = c.flip > 90
+    const mv = moveOf(t)
+    // the spread's heart on the letter, in the letter's own px
+    const sp = AURA.spreadAt(t)
+    const [hx, hy] = frameOf(panelView(t), sp.c)
+    const ang = ((turned ? -c.rz : c.rz) * Math.PI) / 180
+    const dx = (hx - c.x) / c.s
+    const dy = (hy - c.y) / c.s
+    letter.current.draw({
+      face: turned ? 'kai' : 'lin',
+      pose: [c.x, c.y, c.s],
+      turn: [c.rx, turned ? c.ry - 180 : c.ry, turned ? -c.rz : c.rz],
+      alpha: c.o,
+      white: turned ? (t >= EDGE ? at([[EDGE, 0.85], [EDGE + 320, 0, 'power2.out']], t) : 0) : c.white,
+      warp: mv.warp, swirl: mv.swirl, pull: mv.pull, melt: mv.melt, flow: sp.flow,
+      out: [CARD_W / 2 + dx * Math.cos(ang) + dy * Math.sin(ang), CARD_H / 2 - dx * Math.sin(ang) + dy * Math.cos(ang)],
+      into: srgbOf(INTO), halo: HALO_OF[turned ? 'kai' : 'lin'], haloA: 1 - mv.give,
+    })
     const g = under.current.getContext('2d')
     g.setTransform(1, 0, 0, 1, 0, 0)
     g.clearRect(0, 0, 1080, 1920)
-    // the two, coming apart into the flower
+    // the two, coming apart into the light
     const v = panelView(t)
     drawLeaving(g, t, v)
     // the light it throws on the dark round it, in its colour, least as it
     // goes over its edge, and less as it is given back
-    const go = 0.5 * c.o * Math.abs(Math.cos((c.flip * Math.PI) / 180)) * (1 - (gv ? gv.arrived : 0))
+    const go = 0.5 * c.o * Math.abs(Math.cos((c.flip * Math.PI) / 180)) * (1 - smooth01(u(t, S.give[0], S.give[1])))
     if (go > 0.005) {
       const r = 760 * (c.s / OBJ_S)
       const col = skinOf(c.flip > 90 ? B.tint : A.tint).glow
@@ -1051,45 +1142,18 @@ function LetterScene({ t }) {
       o.lineTo(...foot)
       o.stroke()
     }
-    // the flower's light on its edges, once it is near enough to be held,
+    // the light on its edges, once it is near enough to be held,
     // least on its edge, and gone as it is given back
     drawWrap(o, t, c, smooth01(u(t, S.swoosh[0] + 300, S.swoosh[0] + 700)) * Math.min(1, edge * 3) * (1 - u(t, S.give[0], S.give[0] + 200)))
-    // and its pixels as they lift off it, each its own colour, smaller and
-    // fainter as it goes into the flower
-    if (gv) {
-      for (const q of gv.flying) {
-        const a = (1 - q.e) ** 1.4
-        if (a <= 0.01) continue
-        const [x, y] = frameOf(v, [q.x, q.y])
-        const w = Math.max(0.8, 9 * (1 - 0.8 * q.e))
-        o.globalAlpha = a
-        o.fillStyle = `rgb(${q.col.map((x) => Math.round(255 * srgb(Math.min(1, x)))).join(',')})`
-        o.fillRect(x - w / 2, y - w / 2, w, w)
-      }
-      o.globalAlpha = 1
-    }
   })
-  const turned = c.flip > 90
-  const back = t >= EDGE ? at([[EDGE, 0.85], [EDGE + 320, 0, 'power2.out']], t) : 0
-  const mask = gv ? maskOf(gv) : null
-  const masked = mask ? { '--give-mask': `url(${mask.url})`, '--give-halo': mask.left.toFixed(4) } : null
   return (
     <div className="rl-cam">
       <canvas ref={under} className="rl-panel" width="1080" height="1920" />
       <Held t={t}>
-        {/* one side at a time, the side turned towards us: kai's drawn as a
-            card's other side is, turned by the angle less a half turn and
-            its roll the other way, so there is only ever one glass to draw */}
-        <div className={`rl-card${mask ? ' is-giving' : ''}`} style={{ opacity: c.o.toFixed(3), transform: `translate(${(c.x - PW / 2).toFixed(2)}px, ${(c.y - CARD_H / 2).toFixed(2)}px) perspective(2600px) rotateX(${c.rx.toFixed(2)}deg) rotateY(${(turned ? c.ry - 180 : c.ry).toFixed(2)}deg) rotateZ(${(turned ? -c.rz : c.rz).toFixed(2)}deg) scale(${c.s.toFixed(4)})`, ...masked }}>
-          {turned
-            ? <NoteScreen key="kai" who={B} t={1e6} times={ALL_B} sendAt={1e9} {...FACE_B} />
-            : <NoteScreen key="lin" who={A} t={1e6} times={ALL_A} sendAt={1e9} {...FACE_A} />}
-          {(turned ? back : c.white) > 0.003 ? <span className="rl-white" style={{ opacity: (turned ? back : c.white).toFixed(3) }} /> : null}
-        </div>
+        <canvas ref={glass} className="rl-glass" width="1080" height="1920" />
         <canvas ref={over} className="rl-fx" width="1080" height="1920" />
       </Held>
-      <CellLine t={t} text="it’s mutual." from={S.said} to={S.rOut} />
-      <CellLine t={t} text="you both find out." from={S.both} to={S.rOut + 40} y={lineAt(1)} />
+      <Words t={t} of={WORDS.mutual} />
     </div>
   )
 }
@@ -1102,9 +1166,11 @@ function LetterScene({ t }) {
 // typed under it. The camera is held, as it always is, and comes to rest
 // for the name, which is never drawn off its grid.
 const LONE = [[27, 111, 'teal', 1], [111, 137, 'lilac', 1.3], [57, 180, 'white', 0.85]].map(([i, j, tint, k], n) => ({ at: envAt(onGrid(i, j)), tint, in: S.ifnot[0] + 60 + n * 90 + rnd(n + 31) * 40, out: S.lone[n], k }))
-const LOCK = { x: X0, y: GY + 120 * C }
+const LOCK = { x: GX + Math.round((540 - (LOCKUP.w * C) / 2 - GX) / C) * C, y: GY + 120 * C }
 // the middle of the mark's star, on the frame
 const STAR = { x: LOCK.x + Math.round((LOCKUP.mark.w * C) / 2), y: LOCK.y + Math.round((LOCKUP.mark.h * C) / 2) }
+// the middle of the question's last word, on the frame
+const YOU = [540, GY + 93 * C + 5 * 2 * C]
 // every cell of the lockup, and the moment it comes on: by its distance
 // from the star, a little unevenly
 let LIT = null
@@ -1151,29 +1217,26 @@ function EndScene({ t }) {
       g.globalAlpha = 1
     }
   })
-  const Q = S.qWords
   return (
     <div className="rl-cam">
       <canvas ref={ref} className="rl-panel" width="1080" height="1920" />
-      <CellLine t={t} text="if it isn’t," from={S.fLines[0]} to={S.fOut} />
-      <CellLine t={t} text="nobody ever knows." from={S.fLines[1]} to={S.fOut + 40} y={lineAt(1)} />
-      <CellLine t={t} text="do they still" times={Q.slice(0, 3)} to={S.qOut} />
-      <CellLine t={t} text="think about you?" times={[Q[3], Q[4], Q[5]]} to={S.qOut + 40} y={lineAt(1)} />
+      <Words t={t} of={WORDS.ifnot} />
+      <Words t={t} of={WORDS.ask} />
       {t >= S.lock[1] ? <Lockup cell={C} className="rl-lock" style={{ left: LOCK.x, top: LOCK.y }} /> : null}
-      <CellLine t={t} text={URL} times={URL_TIMES} unit="char" c={4} y={LOCK.y + LOCKUP.h * C + 56} />
+      <CellLine t={t} text={URL} times={URL_TIMES} unit="char" c={4} x={540} y={LOCK.y + LOCKUP.h * C + 56} align="center" />
     </div>
   )
 }
 
 // ── the light in the panel ──────────────────────────────────────────────────
 // The panel is a screen, and light moves in it (panel-fluid.js). What the
-// story places in it is a flower that opens only at night (reel-bloom.js):
-// every note that waits keeps a closed bud of its own light, the two at
-// nine come apart into one flower, and the letter is held in it and given
-// back to it. The flow under it is quiet: the notes give off a little of
-// their light, three slow currents carry it, and it is the panel's stars,
-// drifting from where they came. Nothing in it rises, and it curls only a
-// little, so nothing in it reads as smoke or flame.
+// story places in it is colour, spreading (reel-aura.js): every note's light
+// goes out round it into the dark, the two at nine go out together over the
+// whole panel, and the letter comes out of it and goes back into it. Under
+// it the flow is quiet: the notes give off a little of their light, three
+// slow currents carry it, and it is the panel's stars, drifting from where
+// they came. Nothing in it rises, and it curls only a little, so nothing in
+// it reads as smoke or flame.
 const TAU = Math.PI * 2
 // a note's light in the flow: its tint's glow, in linear light, as full
 // as `sat` makes it, `k` times
@@ -1221,10 +1284,10 @@ const toPanel = (v, [x, y]) => [v.a[0] + (x - v.f[0]) / v.z, v.a[1] + (y - v.f[1
 const linAt = (t) => (t < S.lean[0] ? L_AT : t < S.meet ? pairAt(t, leanView(t).z).lin : TOUCHED.lin)
 const kaiAt = (t) => (t < S.lean[0] ? K_AT : t < S.meet ? pairAt(t, leanView(t).z).kai : TOUCHED.kai)
 const breath = (t) => Math.sin(((t - S.away[1]) / 1700) * TAU - Math.PI / 2) * 0.5 + 0.5
-// the buds, the flower and the letter's pixels
-const BLOOM = makeBloom({
-  C, PW, CARD_H, ENV_ROWS, MEET, L_AT, K_AT, LENS, OTHERS, LONE, STAR, TOUCHED,
-  REST_AT: [OBJ.x, OBJ.y], cardAt, cardQuad, quadMap, panelView, toPanel, pairAt, linAt, kaiAt, breath,
+// the colours, spreading (reel-aura.js)
+const AURA = makeAura({
+  C, ENV_ROWS, MEET, L_AT, K_AT, LENS, OTHERS, LONE, STAR, TOUCHED, EDGE, YOU,
+  REST_AT: [OBJ.x, OBJ.y], cardAt, panelView, toPanel, linAt, kaiAt, breath,
   flipEase: easeOf('rl.flip'),
   light: (tint) => ({ glow: linear(hexRgb(skinOf(tint).glow)), lit: linear(hexRgb(skinOf(tint).lit)) }),
 })
@@ -1253,8 +1316,8 @@ function flow(fl, t) {
   if (t >= S.away[1] && t < S.touch[2]) fl.ink(...linAt(t), times(ICE, 0.0016), 14)
   if (t >= S.kaiIn + 300 && t < S.touch[2]) fl.ink(...kaiAt(t), times(AMBER, 0.0016), 14)
   for (const o of OTHERS) if (t >= o.ms + 200 && t < S.lapse[1]) fl.ink(...o.at, lightOf(o.tint, 0.0007, 1.2), 12)
-  // the flower's, from the ends of its petals
-  for (const p of BLOOM.tipsAt(t)) if (p.a > 0.01) fl.ink(p.x, p.y, times(p.col, 0.0012 * p.a / 0.55), 18)
+  // and the spreading colours', where they are, a little
+  if (t >= S.touch[2] && t < S.ifnot[0]) for (const q of AURA.inkAt(t)) fl.ink(q.x, q.y, times(q.col, 0.0008 * q.a), 30)
   // the letter going past stirs the light after it, gently
   if (t >= S.swoosh[0] && t < S.swoosh[0] + 700) {
     const v = panelView(t)
@@ -1269,17 +1332,34 @@ function flow(fl, t) {
   if (t >= S.ifnot[0] && t < S.ifnot[0] + 17) fl.fade(0, 0, 0, 0.6)
   // their light, a little, while they are on
   for (const l of LONE) if (t >= l.in + 200 && t < l.out) fl.ink(...l.at, lightOf(l.tint, 0.0007, 1.2), 12)
-  // and the bud under the question, where the star will be
+  // and under the question, where the star will be
   if (t >= S.ask[0] + 600 && t < S.lock[0]) fl.ink(STAR.x, STAR.y, times(ICE.map((c, i) => (c + AMBER[i]) / 2), 0.0008), 14)
 }
+// the panel kept darker under each scene's words, as they are up
+const CLOCK_BOX = [CLOCK.x, CLOCK.day, CLOCK.x + 56 * 2 * C, CLOCK.where + 12 * C]
+function shadeAt(t) {
+  const out = []
+  const push = (b) => { if (b) out.push(b) }
+  if (t < S.date[0]) push(shadeOf(WORDS.night, t))
+  else if (t < S.meet) {
+    push(shadeOf(WORDS.date, t))
+    const up = upOf([{ from: S.dLines[2], to: S.dOut + 120 }], t)
+    if (up > 0) out.push([...CLOCK_BOX, 0.62 * up])
+  } else if (t < S.ifnot[0]) push(shadeOf(WORDS.mutual, t))
+  else if (t < S.ask[0]) push(shadeOf(WORDS.ifnot, t))
+  else push(shadeOf(WORDS.ask, t))
+  return out
+}
 // how the panel is shown: its unlit cells coming up after the lens, the
-// light's strength, and the band under the words kept darker
+// light's strength, and kept darker under the words
 const looksAt = (t) => ({
   grid: at([[S.away[0] + 200, 0], [S.away[1] + 100, 1, 'sine.inOut']], t),
   gain: t < S.name[0] ? 1 : lerp(1, 0.82, u(t, S.name[0], S.lock[1])),
-  top: t >= S.meet && t < S.ifnot[0] ? 0.25 : 0.35,
+  top: 1,
+  shade: shadeAt(t),
   star: 0.85,
-  lightGain: 1,
+  lightGain: 1.25,
+  lightHaze: 0.1,
   time: t / 1000,
 })
 // the panel itself, under every scene from the lens on: one flow for the
@@ -1293,7 +1373,7 @@ function PanelGL({ t }) {
     if (!fluid.current) fluid.current = new PanelFluid(ref.current, { cells: PANEL, script: flow, steps: FLOW_STEPS })
     if (!live) return
     fluid.current.stepTo(t)
-    fluid.current.render(panelView(t), looksAt(t), BLOOM.lightAt(t))
+    fluid.current.render(panelView(t), looksAt(t), AURA.lightAt(t))
   })
   useEffect(() => () => { if (fluid.current) fluid.current.dispose() }, [])
   return <canvas ref={ref} className="rl-gl" width="1080" height="1920" style={live ? undefined : { visibility: 'hidden' }} />
@@ -1321,39 +1401,28 @@ function useAtlas() {
   return img
 }
 
-// kai's face, a block at a time, from the reel's own picture of it (its
-// pixels' colours as it is given back to the flower), loaded before the
-// first frame like the atlas
-let FACE_BLOCKS = null
-function useFaceBlocks() {
-  const [ok, setOk] = useState(!!FACE_BLOCKS)
+// the letter's two faces, photographed (films/reel-faces.jsx), loaded
+// before the first frame like the atlas
+let FACE_IMGS = null
+function useFaces() {
+  const [faces, setFaces] = useState(FACE_IMGS)
   useEffect(() => {
-    if (FACE_BLOCKS) return
-    const i = new Image()
-    i.src = blocksUrl
-    i.decode().then(() => {
-      const c = document.createElement('canvas')
-      c.width = i.width
-      c.height = i.height
-      const g = c.getContext('2d')
-      g.drawImage(i, 0, 0)
-      FACE_BLOCKS = g.getImageData(0, 0, i.width, i.height).data
-      BLOOM.setFace(FACE_BLOCKS)
-      setOk(true)
-    })
+    if (FACE_IMGS) return
+    const load = (src) => { const i = new Image(); i.src = src; return i.decode().then(() => i) }
+    Promise.all([load(faceLinUrl), load(faceKaiUrl)]).then(([lin, kai]) => { FACE_IMGS = { lin, kai }; setFaces(FACE_IMGS) })
   }, [])
-  return ok
+  return faces
 }
 
 export function Reel({ t }) {
   const [ok, setOk] = useState(false)
   const [mA, setMA] = useState(null)
   const atlas = useAtlas()
-  const face = useFaceBlocks()
+  const faces = useFaces()
   useEffect(() => {
     Promise.all(FACES.map((f) => document.fonts.load(f))).then(() => setOk(true))
   }, [])
-  useHold(ok && !!mA && !!atlas && face)
+  useHold(ok && !!mA && !!atlas && !!faces)
   const tA = useMemo(typedA, [])
   const ready = ok && mA
   return (
@@ -1364,7 +1433,7 @@ export function Reel({ t }) {
         {/* each scene owns exactly its own frames, and they cut */}
         {ready && atlas && t < S.night[0] ? <WallScene t={t} m={mA} times={tA} image={atlas} /> : null}
         {ready && t >= S.night[0] && t < S.meet ? <PanelScene t={t} /> : null}
-        {ready && t >= S.meet && t < S.ifnot[0] ? <LetterScene t={t} /> : null}
+        {ready && faces && t >= S.meet && t < S.ifnot[0] ? <LetterScene t={t} faces={faces} /> : null}
         {ready && t >= S.ifnot[0] ? <EndScene t={t} /> : null}
         <Wash t={t} />
       </div>

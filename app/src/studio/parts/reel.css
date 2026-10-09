@@ -47,30 +47,17 @@
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.84) 26%, rgba(0, 0, 0, 0.5) 36%, rgba(0, 0, 0, 0) 50%);
 }
 
-/* the letter, the side of it towards us, in the room's own perspective,
-   and white as it comes on; the light on its glass is drawn over it, on
-   .rl-fx, in plain alpha: a blended layer on a card in 3D left a seam
-   down it */
+/* the letter in the reveal, drawn in WebGL (reel-card.js) from its two
+   faces as they were photographed here (films/reel-faces.jsx): the side of
+   it towards us, in the room's own perspective; the light on its glass is
+   drawn over it, on .rl-fx */
+.rl-glass { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 5; pointer-events: none; }
 .rl-card { position: absolute; left: 0; top: 0; width: 1000px; z-index: 5; transform-origin: 500px 580px; }
-.rl-white { position: absolute; inset: 0; z-index: 50; pointer-events: none; background: #FFFFFF; }
 /* the glass's finest pixels, its moiré, its ghost column and its grain are
    a camera's of a screen held still: on a card that turns and comes nearer
-   they crawl */
+   they crawl, so its photographs are taken without them */
 .rl-card .wl-scr-fx:is(.is-grid, .is-moire, .is-streak, .is-shine, .is-rgb) { display: none; }
 
 /* the panel, alive: the flow's light in the screen's cells, under all the
    rest (panel-fluid.js) */
 .rl-gl { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 0; }
-/* kai's letter given back a block at a time (reel.jsx `maskOf`): the mask
-   on its glass and a margin round it, so the light on the glass's edge is
-   kept and fades with it, and the light it throws on the dark round it
-   fades as it goes; at once, never by a transition, which would run on the
-   clock and not the film's */
-.rl-card .wl-scene-halo, .rl-card .wl-scene-halo-2 { transition: none; }
-.rl-card.is-giving .wl-scr-press {
-  padding: 30px; margin: -30px;
-  -webkit-mask-image: var(--give-mask); mask-image: var(--give-mask);
-  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-}
-.rl-card.is-giving :is(.wl-scene-halo, .wl-scene-halo-2) { opacity: var(--give-halo, 1); }

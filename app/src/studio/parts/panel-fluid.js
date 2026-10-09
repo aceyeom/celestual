@@ -12,8 +12,9 @@
 // and a sparkle where a lot has, over a faint haze of the light's colour
 // (three.js; the stars' glow is postprocessing's mipmap bloom).
 //
-// Over the flow, each frame, the light the story places itself: petals, a
-// flower's heart, pixels in flight, drawn into a layer of the same cells
+// Over the flow, each frame, the light the story places itself: colour
+// spreading from where its sources are, soft hearts, pixels in flight,
+// drawn into a layer of the same cells
 // and shown as each cell's round point of light, dim light cool and grey as
 // the eye sees it at night (`render`'s `light`).
 //
@@ -24,15 +25,19 @@
 import * as THREE from 'three'
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing'
 
-// how many petals and points a frame may hold
-export const MAXP = 96
+// how many sources of colour and points a frame may hold
+export const MAXS = 24
 export const MAXPTS = 8192
-// a petal, as `light.petals` holds it, sixteen numbers: its heart's x, y;
-// its line's angle at the heart; its reach; its widest half width; how far
-// its line turns along it; how much fuller one side is; how much its rim
-// ruffles; the ruffle's phase; its strength; how far out its rim has been
-// drawn (0 to 1); its veil; and its colour (linear) and a spare
-export const PETAL = 16
+// a source of colour, as `light.sources` holds it, sixteen numbers: where it
+// is (x, y, on the panel); how far it has spread; its strength; its colour
+// (linear) and a seed; how far its streaks have flowed outward (they flow
+// in as it goes down) and how far they have turned, both as the story has
+// moved them so far, so a change of pace never jumps them; for a source
+// that is one side of a meeting, the side's direction and how softly it
+// falls off (nought: all round); how bright its spreading front is, how
+// much of its body shows, its own time in seconds, and the scale of its
+// streaks
+export const SOURCE = 16
 
 const VERT = /* glsl */ `
   uniform vec2 texelSize;
@@ -162,52 +167,78 @@ const FRAG = {
       gl_FragColor = vec4(v, 0.0, 1.0);
     }`,
   // the light the story places on the panel this frame, at each cell's
-  // middle: its petals (see `PETAL` below for what each holds) and its
-  // flowers' hearts. A petal is narrow at its heart, widest two thirds out
-  // and round at its end, its rim bright and its veil faint, its line
-  // turning a little along it (`bend`), as a petal unfurling does
+  // middle: colour spreading out over the dark from where its sources are
+  // (see `SOURCE` above for what each holds), as ink spreads in water. Each
+  // has a soft edge that wavers slowly along its length, a brighter band
+  // where it is still spreading into the dark, and inside it, light drawn
+  // out in silky streaks that flow outward (or in) as it goes and turn a
+  // little as they go, along spirals, never along spokes. Where two meet,
+  // each keeps to its own side, and the line between them is the streaks'
+  // own, so the two colours wind into each other; and the hearts, soft
+  // round glows
   light: `
-    uniform sampler2D uPet;
-    uniform int uPetN;
+    uniform sampler2D uSrc;
+    uniform int uSrcN;
     uniform vec2 uLo;
     uniform vec2 uSpan;
     uniform vec4 uHeart[4];
     uniform vec3 uHeartCol[4];
-    float shape (float s) { s = clamp(s, 0.0, 1.0); return pow(s, 0.8) * sqrt(max(0.0, 1.0 - pow(s, 4.0))) / 0.66; }
+    float h31 (vec3 p) { p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
+    float n3 (vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float a = mix(mix(h31(i), h31(i + vec3(1.0, 0.0, 0.0)), f.x), mix(h31(i + vec3(0.0, 1.0, 0.0)), h31(i + vec3(1.0, 1.0, 0.0)), f.x), f.y);
+      float b = mix(mix(h31(i + vec3(0.0, 0.0, 1.0)), h31(i + vec3(1.0, 0.0, 1.0)), f.x), mix(h31(i + vec3(0.0, 1.0, 1.0)), h31(i + vec3(1.0, 1.0, 1.0)), f.x), f.y);
+      return mix(a, b, f.z);
+    }
+    float fbm2 (vec3 p) { return (0.5 * n3(p) + 0.25 * n3(p * 2.03 + vec3(1.7, 9.2, 3.1))) / 0.75; }
+    float fbm3 (vec3 p) { return (0.5 * n3(p) + 0.25 * n3(p * 2.03 + vec3(1.7, 9.2, 3.1)) + 0.125 * n3(p * 4.1 + vec3(8.3, 2.8, 5.5))) / 0.875; }
     void main () {
       vec2 p = uLo + vec2(vUv.x, 1.0 - vUv.y) * uSpan;
       vec3 acc = vec3(0.0);
-      for (int i = 0; i < ${MAXP}; i++) {
-        if (i >= uPetN) break;
-        vec4 A = texelFetch(uPet, ivec2(i * 4, 0), 0);
-        vec4 B = texelFetch(uPet, ivec2(i * 4 + 1, 0), 0);
-        vec4 C = texelFetch(uPet, ivec2(i * 4 + 2, 0), 0);
-        vec4 D = texelFetch(uPet, ivec2(i * 4 + 3, 0), 0);
+      for (int i = 0; i < ${MAXS}; i++) {
+        if (i >= uSrcN) break;
+        vec4 A = texelFetch(uSrc, ivec2(i * 4, 0), 0);
+        vec4 B = texelFetch(uSrc, ivec2(i * 4 + 1, 0), 0);
+        vec4 C = texelFetch(uSrc, ivec2(i * 4 + 2, 0), 0);
+        vec4 D = texelFetch(uSrc, ivec2(i * 4 + 3, 0), 0);
         vec2 d = p - A.xy;
-        float r = length(d) + 1e-4;
-        float L = max(A.w, 1e-3);
-        if (r > L * 1.02 || C.y <= 0.0) continue;
-        float s = r / L;
-        float dd = atan(d.y, d.x) - (A.z + B.y * s);
-        dd -= 6.2831853 * floor((dd + 3.1415927) / 6.2831853);
-        float sn = sin(dd);
-        float along = r * cos(dd);
-        if (along <= 0.0) continue;
-        float lat = abs(r * sn * (1.0 + B.z * sign(sn)));
-        float sc = clamp(s, 0.0, 1.0);
-        float hw = B.x * shape(sc) * (1.0 + B.w * sin(6.2831853 * 2.5 * sc + C.x)) + 0.5;
-        float fill = 1.0 - smoothstep(0.7 * hw, hw, lat);
-        float e = (lat - 0.9 * hw) / (0.06 * hw + 1.2);
-        float rim = exp(-e * e) * step(lat, 1.12 * hw);
-        float tip = 1.0 - smoothstep(0.93, 1.0, s);
-        float foot = smoothstep(0.08, 0.3, s);
-        float drawn = 1.0 - smoothstep(C.z - 0.02, C.z + 0.07, s);
-        float a = (0.13 * fill * C.w * (0.5 + 0.5 * drawn) + rim * (0.38 + 0.62 * drawn) * (0.45 + 0.55 * sc)) * tip * foot;
-        acc += a * C.y * D.rgb;
+        float r = length(d);
+        float R = max(A.z, 1.0);
+        if (r > R * 1.5 || A.w <= 0.0) continue;
+        vec2 ring = d / max(r, 1e-3);
+        float wv = fbm2(vec3(ring * 1.3 + B.w, D.z * 0.12));
+        float Rf = R * (0.8 + 0.4 * wv);
+        // the streaks, in the source's own log-polar space, so they flow out
+        // along it faster the further out they are, as a spreading drop's do,
+        // and turned more the further out, so they lie along spirals
+        float lr = log(r + 36.0);
+        float tw = C.y + 0.55 * lr;
+        vec2 rr = vec2(ring.x * cos(tw) - ring.y * sin(tw), ring.x * sin(tw) + ring.y * cos(tw));
+        vec3 s3 = vec3(rr * 1.5 * D.w + B.w, lr * 2.2 * D.w - C.x);
+        vec3 wq = vec3(fbm2(s3 + vec3(0.0, 0.0, 4.1)), fbm2(s3 + vec3(5.2, 1.3, 0.0)), 0.0);
+        float m = fbm3(s3 + 1.6 * wq);
+        // the streaks: broad soft ones, and through them fine threads where
+        // the flow is drawn thin, as silk's sheen and marbled ink's are
+        float silk = pow(1.0 - abs(2.0 * m - 1.0), 12.0);
+        float veins = 0.1 + 0.6 * smoothstep(0.36, 0.82, m) + 0.5 * silk;
+        // its edge goes further out where its streaks are bright, as ink's
+        // does along its tendrils, so it is never a circle; and the front,
+        // where it is still going out into the dark, is the streaks' ends
+        // lit, never a ring
+        float Re = Rf * (0.8 + 0.4 * m);
+        float body = 1.0 - smoothstep(0.1 * Re, Re, r);
+        float e = (r - 0.88 * Re) / (0.16 * Re + 4.0);
+        float front = exp(-e * e) * D.x * (0.08 + 0.92 * veins * veins);
+        // its side of a meeting: the turned direction, and the streaks, so
+        // the line between the two winds as they do
+        float side = C.w > 0.0 ? smoothstep(-C.w, C.w, dot(rr, vec2(cos(C.z + 0.55 * 3.58), sin(C.z + 0.55 * 3.58))) + 0.7 * (m - 0.5)) : 1.0;
+        acc += A.w * B.rgb * side * (D.y * body * veins + front * (0.55 + 0.45 * veins));
       }
       for (int k = 0; k < 4; k++) {
-        vec2 d = (p - uHeart[k].xy) / max(uHeart[k].z, 1e-3);
-        acc += exp(-dot(d, d)) * uHeart[k].w * uHeartCol[k];
+        vec2 dd = (p - uHeart[k].xy) / max(uHeart[k].z, 1e-3);
+        acc += exp(-dot(dd, dd)) * uHeart[k].w * uHeartCol[k];
       }
       gl_FragColor = vec4(acc, 1.0);
     }`,
@@ -239,9 +270,18 @@ const FRAG = {
     uniform float uTime;
     uniform sampler2D uLight;
     uniform float uLightGain;
+    uniform float uLightHaze;
+    uniform vec4 uShadeA;
+    uniform vec4 uShadeB;
+    uniform vec2 uShadeK;
     float hash (vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     // a run of the cell's own pixels, [a, b), softened by a frame pixel
     float run (float v, float a, float b, float w) { return smoothstep(a - w, a + w, v) * (1.0 - smoothstep(b - w, b + w, v)); }
+    // a box on the frame, its edges softened by s
+    float box (vec2 p, vec4 b, float s) {
+      vec2 k = smoothstep(b.xy - s, b.xy, p) * (1.0 - smoothstep(b.zw, b.zw + s, p));
+      return k.x * k.y;
+    }
     void main () {
       vec2 frag = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
       vec2 p = uA + (frag - uF) / uZ;
@@ -273,8 +313,10 @@ const FRAG = {
       float bright = (0.4 + 0.6 * clamp(over * 2.5, 0.0, 1.0)) * (0.72 + 0.28 * tw);
       vec3 hue = dye / max(1e-4, max(dye.r, max(dye.g, dye.b)));
       vec3 tint = mix(vec3(1.0, 0.97, 0.93), hue, uTint);
-      // under the words at the top of the frame the panel is kept darker
+      // under the words the panel is kept darker: at the top of the frame,
+      // and wherever this frame's words are (its shade)
       float band = mix(uTop, 1.0, smoothstep(330.0, 640.0, frag.y));
+      band *= (1.0 - uShadeK.x * box(frag, uShadeA, 110.0)) * (1.0 - uShadeK.y * box(frag, uShadeB, 110.0));
       // and under the stars a haze of the light, smooth across the cells as
       // a nebula is, and held down where the light is strong, so it stays a
       // haze
@@ -284,20 +326,31 @@ const FRAG = {
       // its colour kept quiet, half way to the grey of starlight
       neb = mix(neb, vec3(nI), 0.45);
       vec3 col = cell * uInk * uGrid + (neb / (1.0 + 1.5 * nI) * uHaze + tint * star * bright * uStar) * band;
-      // the light placed this frame: the cell's own round point of it. Dim
-      // light goes cool and grey, as the eye sees at night (the Purkinje
-      // shift), and bright light keeps its colour, so nothing fades through
-      // brown; the brightest cells catch a cross, as a star does
+      // the light placed this frame: the cell's own round point of it, each
+      // with its own slow shimmer, as light on water has. Dim light goes cool
+      // and grey, as the eye sees at night (the Purkinje shift), and bright
+      // light keeps its colour, so nothing fades through brown; the
+      // brightest cells catch a cross, as a star does
       vec3 L = max(texture2D(uLight, vec2(tex.x, 1.0 - tex.y)).rgb, 0.0) * uLightGain;
+      L *= 0.88 + 0.24 * (0.5 + 0.5 * sin(uTime * (0.9 + 1.7 * hash(id + 17.1)) + 6.2832 * hash(id + 23.9)));
       float Ly = dot(L, vec3(0.2126, 0.7152, 0.0722));
-      float sat = smoothstep(0.01, 0.12, Ly) * 1.2;
-      vec3 cool = Ly * vec3(0.82, 0.92, 1.18);
+      // a warm light keeps its colour only when it is bright: dimmer, it
+      // goes to the grey of starlight sooner than a cool one, as a dim
+      // orange is otherwise brown
+      float warm = clamp((L.r - L.b) / max(1e-4, max(L.r, max(L.g, L.b))), 0.0, 1.0);
+      float sat = smoothstep(0.01, 0.12 + 0.45 * warm, Ly) * 1.2;
+      vec3 cool = Ly * mix(vec3(0.82, 0.92, 1.18), vec3(1.0, 0.98, 0.96), warm);
       L = cool + (L - Ly) * sat + (Ly - cool) * min(1.0, sat);
       float rr = length(f - 0.5);
       float edge = max(0.06, px);
       float pt = 1.0 - smoothstep(0.42 - edge, 0.42 + edge * 0.5, rr);
       float arm = smoothstep(0.55, 1.1, Ly) * 0.5 * max(run(q.x, 1.0, 6.0, w) * run(q.y, 3.0, 4.0, w), run(q.x, 3.0, 4.0, w) * run(q.y, 1.0, 6.0, w));
-      col += (L * pt * 1.3 + mix(L, vec3(Ly), 0.5) * arm) * band;
+      // and between the points, the same light smooth across the cells, low
+      // and a little grey, so it reads as light in the glass and not as dots
+      vec3 Lh = max(texture2D(uLight, vec2(smooth2.x, 1.0 - smooth2.y)).rgb, 0.0) * uLightGain;
+      float Lhy = dot(Lh, vec3(0.2126, 0.7152, 0.0722));
+      Lh = mix(Lh, Lhy * vec3(0.86, 0.94, 1.1), 0.45);
+      col += (L * pt * 1.3 + mix(L, vec3(Ly), 0.5) * arm + Lh * uLightHaze) * band;
       gl_FragColor = vec4(col, 1.0);
     }`,
 }
@@ -391,17 +444,18 @@ export class PanelFluid {
       uA: new THREE.Vector2(), uF: new THREE.Vector2(), uZ: 1, uInk: new THREE.Vector3(...linear([0x15, 0x17, 0x1b])),
       uGrid: 1, uGain: 1, uStar: 1.3, uHaze: 0.06, uTint: 0.36, uTop: 0.35, uTime: 0,
     })
-    // the light placed each frame, a cell a texel: the petals and hearts
-    // drawn over the whole of it, and the pixels in flight added to it
-    this.light = target(this.dyeSize, THREE.NearestFilter)
-    this.petData = new Float32Array(MAXP * PETAL)
-    this.petTex = new THREE.DataTexture(this.petData, MAXP * 4, 1, THREE.RGBAFormat, THREE.FloatType)
-    this.petTex.minFilter = THREE.NearestFilter
-    this.petTex.magFilter = THREE.NearestFilter
-    this.petTex.needsUpdate = true
+    // the light placed each frame, a cell a texel: its sources and hearts
+    // drawn over the whole of it, and the pixels in flight added to it; read
+    // a texel at a time for the points, and smoothly for the light between
+    this.light = target(this.dyeSize, THREE.LinearFilter)
+    this.srcData = new Float32Array(MAXS * SOURCE)
+    this.srcTex = new THREE.DataTexture(this.srcData, MAXS * 4, 1, THREE.RGBAFormat, THREE.FloatType)
+    this.srcTex.minFilter = THREE.NearestFilter
+    this.srcTex.magFilter = THREE.NearestFilter
+    this.srcTex.needsUpdate = true
     const lo = new THREE.Vector2(cells.x - cells.margin * cells.c, cells.y - cells.margin * cells.c)
     this.m.light = mat(FRAG.light, {
-      uPet: this.petTex, uPetN: 0, uLo: lo, uSpan: size,
+      uSrc: this.srcTex, uSrcN: 0, uLo: lo, uSpan: size,
       uHeart: [0, 1, 2, 3].map(() => new THREE.Vector4()), uHeartCol: [0, 1, 2, 3].map(() => new THREE.Vector3()),
     })
     const pts = new THREE.BufferGeometry()
@@ -416,6 +470,10 @@ export class PanelFluid {
     this.pointScene.add(this.points)
     this.display.uniforms.uLight = { value: this.light.texture }
     this.display.uniforms.uLightGain = { value: 1 }
+    this.display.uniforms.uLightHaze = { value: 0 }
+    this.display.uniforms.uShadeA = { value: new THREE.Vector4() }
+    this.display.uniforms.uShadeB = { value: new THREE.Vector4() }
+    this.display.uniforms.uShadeK = { value: new THREE.Vector2() }
     this.displayScene = new THREE.Scene()
     const shown = new THREE.Mesh(geo, this.display)
     shown.frustumCulled = false
@@ -546,19 +604,19 @@ export class PanelFluid {
     }
   }
 
-  // the light placed this frame (`light`: `petals`, PETAL numbers a petal,
-  // and `n` of them; `hearts`, up to four of [x, y, radius, strength, r, g,
-  // b]; `points`, five numbers a point, x, y and its colour, and `m` of
-  // them), drawn into its layer of cells
+  // the light placed this frame (`light`: `sources`, SOURCE numbers a
+  // source, and `n` of them; `hearts`, up to four of [x, y, radius,
+  // strength, r, g, b]; `points`, five numbers a point, x, y and its
+  // colour, and `m` of them), drawn into its layer of cells
   place(light) {
     const r = this.renderer
     const m = this.m.light
-    const n = light ? Math.min(MAXP, light.n || 0) : 0
+    const n = light ? Math.min(MAXS, light.n || 0) : 0
     if (n) {
-      this.petData.set(light.petals.subarray(0, n * PETAL))
-      this.petTex.needsUpdate = true
+      this.srcData.set(light.sources.subarray(0, n * SOURCE))
+      this.srcTex.needsUpdate = true
     }
-    m.uniforms.uPetN.value = n
+    m.uniforms.uSrcN.value = n
     for (let k = 0; k < 4; k++) {
       const h = (light && light.hearts && light.hearts[k]) || [0, 0, 1, 0, 0, 0, 0]
       m.uniforms.uHeart.value[k].set(h[0], h[1], h[2], h[3])
@@ -588,12 +646,19 @@ export class PanelFluid {
   // the frame: the panel through the view `v` (its point `a` at the frame's
   // `f`, `z` times), `grid` how much of its unlit cells show, `gain` the
   // flow's light's strength, `star` its stars', `lightGain` the placed
-  // light's; and the light placed this frame
-  render(v, { grid = 1, gain = 1, time = 0, top = 0.35, star = 1.3, lightGain = 1 } = {}, light = null) {
+  // light's and `lightHaze` the light between its points, `shade` up to two
+  // boxes on the frame kept darker for the words over them ([x0, y0, x1,
+  // y1, how much]); and the light placed this frame
+  render(v, { grid = 1, gain = 1, time = 0, top = 0.35, star = 1.3, lightGain = 1, lightHaze = 0, shade = [] } = {}, light = null) {
     this.place(light)
     const u = this.display.uniforms
     u.uStar.value = star
     u.uLightGain.value = lightGain
+    u.uLightHaze.value = lightHaze
+    const [sa, sb] = [shade[0] || [0, 0, 0, 0, 0], shade[1] || [0, 0, 0, 0, 0]]
+    u.uShadeA.value.set(sa[0], sa[1], sa[2], sa[3])
+    u.uShadeB.value.set(sb[0], sb[1], sb[2], sb[3])
+    u.uShadeK.value.set(sa[4], sb[4])
     u.uDye.value = this.dye.read.texture
     u.uA.value.set(v.a[0], v.a[1])
     u.uF.value.set(v.f[0], v.f[1])
