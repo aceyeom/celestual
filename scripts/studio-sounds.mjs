@@ -89,7 +89,11 @@ const WET = { L: new Float32Array(N), R: new Float32Array(N) }
 const SCENES = [['letter', 0, S.back[0]], ['back', S.back[0], S.back[1]], ['hall', S.back[1], 10000], ['send', 10000, 12500], ['night', 12500, 15000], ['date', 15000, 20000], ['reveal', 20000, 25000], ['ifnot', 25000, 27500], ['ask', 27500, 31250], ['name', 31250, MS]]
 const METER = {}
 const LEVELS = !!process.env.LEVELS
-const SOLO = process.env.SOLO ? process.env.SOLO.split(',') : null
+// only the effects are heard: the drums, the cymbals, the gong, the sea and
+// the keys; the strings, voices, horns, organ, piano, glass and low tone are
+// written below but left out, so the track carries no music of its own
+const EFFECTS = ['keys', 'drum', 'cymbal', 'gong', 'sea', 'bowed']
+const SOLO = process.env.SOLO ? process.env.SOLO.split(',') : EFFECTS
 function add(k, l, r, send, group) {
   if (k < 0 || k >= N || (SOLO && !SOLO.includes(group))) return
   DRY.L[k] += l; DRY.R[k] += r
@@ -338,9 +342,6 @@ function roll(end, lead, gain) {
 // under the last words, the world beginning to rise: the roll, from `maybe`,
 // and a cymbal's swell under the mallets, both cresting on the moment the
 // camera falls back, and a gong's ring played backwards, drawn in to it
-roll(Z, 1800, db(-13))
-play(REC['cymbal-swell'], Z + 30 - crest(REC['cymbal-swell'], CYMBAL), { rate: CYMBAL, gain: db(-11), hp: 300, lp: 11000, send: 0.45, group: 'cymbal' })
-play(REC.gong, Z - 2400, { rev: true, rate: GONG, len: 2400, gain: db(-21), fadeIn: 1400, fadeOut: 12, lp: 4500, send: 0.4, group: 'gong' })
 // the strings, the voices and the horns come in under the typing, so softly
 // they are hardly there, and grow into it with the roll
 hold(basses, Z - 1500, 6800, [35])
@@ -674,7 +675,7 @@ const R = DRY.R.subarray(0, end)
     for (let j = i; j < i + w; j++) e += (L[j] * L[j] + R[j] * R[j]) / 2
     top = Math.max(top, Math.sqrt(e / w))
   }
-  const g = process.env.GAIN ? db(Number(process.env.GAIN)) : db(-11) / top
+  const g = process.env.GAIN ? db(Number(process.env.GAIN)) : db(-20) / top
   if (LEVELS) console.log(`gain: ${(20 * Math.log10(g)).toFixed(1)} dB`)
   for (let i = 0; i < end; i++) { L[i] *= g; R[i] *= g }
 }

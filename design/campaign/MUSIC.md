@@ -61,53 +61,19 @@ the stems.
 
 ## The sounds alone
 
-`celestual-reel-sfx.mp4` is the thirty with the film's sounds and no song
-(`celestual-reel-sfx.wav`, made by `node scripts/studio-sounds.mjs`), for a
-song of someone's own to be laid over it. It is made of instruments played
-and recorded: a concert bass drum and its roll, a suspended cymbal swelled
-under mallets and bowed, a gong, a wine glass, an ocean drum, a pipe
-organ's pedal and a grand piano with its pedal down, from the
-Versilian Community Sample Library, and the strings in their sections, the
-voices and the horns from the MuseScore General SoundFont, as the song's
-are, all of it in a long hall made for it. Only the phone's keys and a low
-tone under the biggest moments, felt more than heard, are synthesised.
-Everything sounds in B, the key the song is in, mostly its open fifth: the
-gong, the drums and the cymbals are played a little slower or faster than
-they were recorded, so that their strongest partials fall on its notes.
-
-- the letter: the phone's keys as the letters land, and under the last
-  words a bass drum's roll and a cymbal's swell growing
-- the fall back to the wall: the roll and the swell land on the bass drum,
-  a gong, the organ's low B and the whole orchestra on B minor, the film's
-  loudest moment; the violins tremble high and a bowed cymbal sings as the
-  backlights come on across the wall
-- lin's letter off the wall: the low strings rise with it
-- send: the key; the wine glass, B, D and F sharp a note at a time as the
-  letter's pixels go into the envelope, gone as the phone goes out; the
-  piano's B as it is sealed
-- the lens: a cymbal swell, the strings trembling up to it and the roll
-  under them, and through it into the dark on the bass drum, a darker gong
-  and the low strings
-- the night: an ocean drum, rising and falling slowly as the sea does
-- the week: the violins trembling high; kai's note, a horn; at nine,
-  nothing
-- the touch: a soft drum and the piano's low B
-- the reveal: everything swells to the moment the letter turns over, B
-  minor with its seventh, with a gong, the drum and the glass on it; the
-  voices lift once more on `it's mutual.`; the sea again; a bowed cymbal as
-  kai's letter melts
-- the ones that never meet: the low strings, and the piano, a note for
-  each light
-- the question: the strings rise under it, the voices from `think`; on
-  `you?` the piano's B minor with a soft gong; then all of it drawn back in,
-  played backwards, to the point the name is lit from
-- the name: the glass, a note at a time, on the strings and the voices,
-  left ringing
-
-Nothing knocks, crackles or whistles, and the address is typed in silence.
-It is set so the fall back to the wall is its loudest moment, its peaks two
-decibels under full scale, which leaves it near -17 LUFS; laid under a
-song, it wants turning down to sit beneath it.
+`celestual-reel-sfx.mp4` is the thirty with the film's sound effects and no
+music (`celestual-reel-sfx.wav`, made by `node scripts/studio-sounds.mjs`),
+for a song of someone's own to be laid over it, kept subtle. It is made of
+recordings from the Versilian Community Sample Library: a concert bass drum
+as the camera falls back to the wall, at the lens, the touch, the reveal
+and the name; a suspended cymbal swelling into the lens and the reveal, and
+bowed as the wall lights and as kai's letter melts; a gong under the big
+moments, played slower so it rings on B; and an ocean drum as the sea. The
+phone's keys are synthesised. Nothing swells under the typing, and nothing
+is musical: the strings, voices, horns, organ, piano and glass the script
+can also write are left out. It is set quietly, its loudest moment near
+-20 dB and the whole near -29 LUFS, so a song laid over it has the room it
+needs.
 
 ## What it is made from
 
