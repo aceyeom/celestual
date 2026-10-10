@@ -494,9 +494,10 @@ const bez = (P, k) => {
 // to lin's letter as it comes away from the wall, and held.
 const LETTER_FROM = [-0.2, -0.3, 3.55]
 const LETTER_TO = [0, -0.02, 3.05]
-// the pull back: from the last letter typed to the move up the hall, and
-// where it ends, from the words' middle
-const ZOOM = [3290, 5650]
+// the pull back: from the last letter typed to the move up the hall
+// (reel-time.js, `back`, so the sound swells on it), and where it ends,
+// from the words' middle
+const ZOOM = S.back
 const ZOOM_TO = { eye: [0.3, 0.6, 16], target: [0, 0.9, 0], fov: 44 }
 CustomEase.create('rl.back', 'M0,0 C0.06,0.02 0.16,1 1,1')
 // the letters the camera rests on: under lin's, and over it

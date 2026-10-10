@@ -14,10 +14,9 @@
 //                                 open half the frame blurs what moves
 //   design/campaign/<id>-60.mp4   the sixty, sharp
 //   design/campaign/<id>-sfx.mp4  the thirty with the film's sounds alone,
-//                                 without the song (studio-score.mjs
-//                                 `FOLEY`, kept beside it as <id>-sfx.wav),
-//                                 for a song of someone's own to be laid
-//                                 over them
+//                                 without the song (studio-sounds.mjs, kept
+//                                 beside it as <id>-sfx.wav), for a song of
+//                                 someone's own to be laid over them
 //
 //   node scripts/studio-reel.mjs celestual-reel [--jobs 2] [--fps 60] [--keep]
 import { spawn, spawnSync } from 'node:child_process'
@@ -89,8 +88,8 @@ const full = spawnSync('ffmpeg', ['-v', 'error', '-y', ...input, '-filter_comple
 if (full.status !== 0) throw new Error('ffmpeg, the sixty')
 // the thirty again, its picture as it is, with the sounds alone under it
 const sfx = join(outDir, `${id}-sfx.wav`)
-const foley = spawnSync('node', ['scripts/studio-score.mjs', sfx], { cwd: root, stdio: 'inherit', env: { ...process.env, FOLEY: '1' } })
-if (foley.status !== 0) throw new Error('studio-score, the sounds alone')
+const alone = spawnSync('node', ['scripts/studio-sounds.mjs', sfx], { cwd: root, stdio: 'inherit' })
+if (alone.status !== 0) throw new Error('studio-sounds, the sounds alone')
 const bare = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', join(outDir, `${id}.mp4`), '-i', sfx, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k', '-shortest', '-movflags', '+faststart', join(outDir, `${id}-sfx.mp4`)], { stdio: 'inherit' })
 if (bare.status !== 0) throw new Error('ffmpeg, the sounds alone')
 if (!args.includes('--keep')) rmSync(scratch, { recursive: true })

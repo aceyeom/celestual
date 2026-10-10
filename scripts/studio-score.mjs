@@ -43,12 +43,9 @@
 //   name      31.25  Bm9 Gmaj7         and left there
 //
 //   node scripts/studio-score.mjs [out.wav]      48 kHz, 16 bit, stereo
-//   FOLEY=1 node scripts/studio-score.mjs <out.wav>
-//                                                the film's sounds alone,
-//                                                without the song, for a song
-//                                                of someone's own to be laid
-//                                                over them (studio-reel.mjs
-//                                                `-sfx.mp4`)
+//
+// The film's sounds alone, without the song, for a song of someone's own to
+// be laid over them, are scripts/studio-sounds.mjs.
 import { spawnSync } from 'node:child_process'
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, mkdtempSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -69,9 +66,6 @@ const sec = (s) => Math.round(s * SR)
 const at = (ms) => Math.round((ms / 1000) * SR)
 const bt = (beats) => beats * BEAT
 const work = mkdtempSync(join(tmpdir(), 'celestual-score-'))
-// the sounds alone: no song, a few more of the picture's moments given a
-// sound of their own, since no music carries them, and nothing pressed
-const FOLEY = !!process.env.FOLEY
 
 // a seeded random, so the song is the same song every time it is made
 let seed = 0x2f6b9e1d
@@ -411,7 +405,7 @@ function writeWav(file, L, R, bits = 32) {
 // each part, played alone, dry: the room and the mix are ours
 const STEMS = {}
 for (const [name, p] of Object.entries(PARTS)) {
-  if (!p.notes.length || FOLEY) continue
+  if (!p.notes.length) continue
   const mid = join(work, `${name}.mid`)
   const wav = join(work, `${name}.wav`)
   writeFileSync(mid, midiOf(p))
@@ -580,20 +574,6 @@ function key(ms, { gain = 0.02, space = false, n = 0, pan = 0 } = {}) {
     return pk(hp(tick * 0.9 + body)) * Math.min(1, i / sec(0.0004))
   }, { gain: g, pan, verb: 0.04 })
 }
-// a knock, soft, as on a door or a chest: a low body whose pitch drops a
-// little as it goes, and the touch of it; low enough to be felt and high
-// enough to be heard on a phone's own speaker
-function knock(ms, { gain = 0.03, f = 190, len = 0.25, pan = 0, verb = 0.35 } = {}) {
-  const lp = lowpass(0.8)
-  let ph = 0
-  lay(ms, sec(len), (i) => {
-    const t = i / SR
-    ph += (TAU * f * (1 - 0.15 * Math.min(1, t / 0.08))) / SR
-    const body = Math.sin(ph) * Math.exp(-t / (len / 4))
-    const hit = lp(rnd(), 2500) * Math.exp(-t / 0.004) * 0.6
-    return (body + hit) * Math.min(1, i / sec(0.002))
-  }, { gain, pan, verb })
-}
 function thump(ms, { gain = 0.05, f = 55, len = 0.5, pan = 0 } = {}) {
   lay(ms, sec(len), (i) => {
     const t = i / SR
@@ -602,9 +582,8 @@ function thump(ms, { gain = 0.05, f = 55, len = 0.5, pan = 0 } = {}) {
 }
 // lin's letter typed on the glass, the phone's keys under it, a click a
 // letter as it lands (the first sentence is there already), under the
-// piano quietly, and with the sounds alone as they are heard in the hand;
-// and send
-const KEYS = FOLEY ? 0.022 : 0.009
+// piano quietly; and send
+const KEYS = 0.009
 {
   const at0 = typedA()
   ;[...A.text].forEach((ch, n) => { if (at0[n] >= 0) key(at0[n], { gain: KEYS, space: ch === ' ', n }) })
@@ -612,7 +591,7 @@ const KEYS = FOLEY ? 0.022 : 0.009
 sample(S.press, TAP, { gain: 0.07, rate: 0.94, pan: -0.05 })
 // a breath of air under the hall as its backlights come on, under the song
 // (alone it is only a hiss)
-if (!FOLEY) air(S.wake, 5200, { gain: 0.006, from: 300, to: 3000 })
+air(S.wake, 5200, { gain: 0.006, from: 300, to: 3000 })
 // the send: the letter's pixels up into the envelope, a breath of air over
 // the harp; sealed, a small tap of it closing; the phone going out; the
 // envelope at the lens and through it, and away into the dark
@@ -658,35 +637,6 @@ grains(S.give[0], S.give[1] - S.give[0], { gain: 0.016, from: 7000, to: 1800, n:
 // the lights that never met, going out, each as a screen goes, from its
 // place
 ;[[S.lone[0], -0.55], [S.lone[1], 0.45], [S.lone[2], -0.15]].forEach(([ms, pan]) => whine(ms, { gain: 0.006, from: 6000, to: 700, len: 0.24, pan }))
-// with no song, the moments it carried are given a sound: the camera's move
-// up the hall's height, and lin's letter coming away from the wall to it,
-// each the air it moves; kai's note coming on, on the thursday, a little to
-// the right where it is; the two touching, low, under the air of it; the
-// one who goes, blown away to the left, a gust and the scratch of the
-// pencil's lines; and the name lit from its star, a shimmer of air as fine
-// as its cells
-if (FOLEY) {
-  air(5650, 2400, { gain: 0.03, from: 250, to: 2000, q: 0.8, verb: 0.6 })
-  air(S.lift[0], 1700, { gain: 0.02, from: 300, to: 3500, verb: 0.5 })
-  air(S.kaiIn, 280, { gain: 0.018, from: 1400, to: 6000, pan: 0.3, verb: 0.4 })
-  thump(S.touch[2], { gain: 0.032, f: 52, len: 1.1 })
-  air(S.lone[0] - 100, 1700, { gain: 0.017, from: 2200, to: 350, pan: -0.45, q: 0.9, verb: 0.5 })
-  grains(S.lone[0] - 60, 1300, { gain: 0.011, from: 4200, to: 2400, n: 260, pan: -0.35, verb: 0.2 })
-  grains(S.lock[0], 1000, { gain: 0.01, from: 9000, to: 5000, n: 70, verb: 0.6 })
-  // the question, a word at a time: each word a soft knock and a breath,
-  // a little more each time; and on `you?` the air drawn in before it, a
-  // deeper knock held under a low one, and a shimmer as it lights
-  S.qWords.slice(0, 5).forEach((ms, i) => {
-    knock(ms, { gain: 0.02 + 0.004 * i, f: 196 - 6 * i, len: 0.26 })
-    thump(ms, { gain: 0.012 + 0.002 * i, f: 62, len: 0.45 })
-    air(ms - 20, 260, { gain: 0.007 + 0.0012 * i, from: 2400, to: 700, shape: 'fall', verb: 0.5 })
-  })
-  const you = S.qWords[5]
-  air(you - 480, 480, { gain: 0.018, from: 300, to: 5000, shape: 'rise', q: 1 })
-  knock(you, { gain: 0.05, f: 146, len: 0.7, verb: 0.6 })
-  thump(you, { gain: 0.045, f: 44, len: 1.8 })
-  grains(you, 1400, { gain: 0.009, from: 8000, to: 4000, n: 90, verb: 0.7 })
-}
 // and the address under the name, typed, a click a letter
 typedUrl().forEach((ms, n) => key(ms, { gain: KEYS * 0.75, n: n + 100 }))
 
@@ -809,20 +759,8 @@ for (let i = 0; i < N; i++) { MUS.L[i] += FX.L[i] * FXG; MUS.R[i] += FX.R[i] * F
 
 // ── the master ──────────────────────────────────────────────────────────────
 // a gentle glue (an RMS compressor, slow), warmth and no added air, tape's
-// soft saturation, the last seconds let go of, and loudnorm in two passes;
-// the sounds alone are not pressed at all: they are set by their loudest
-// moment, four and a half decibels under full scale, so a song laid over
-// them has the room it needs
-if (FOLEY) {
-  let peak = 0
-  for (let i = 0; i < N; i++) peak = Math.max(peak, Math.abs(MUS.L[i]), Math.abs(MUS.R[i]))
-  const g = 10 ** (-4.5 / 20) / Math.max(1e-9, peak)
-  for (let i = 0; i < N; i++) {
-    const fade = Math.min(1, (N - i) / sec(1.4)) * Math.min(1, i / sec(0.01))
-    MUS.L[i] *= g * fade
-    MUS.R[i] *= g * fade
-  }
-} else {
+// soft saturation, the last seconds let go of, and loudnorm in two passes
+{
   let env = 0
   const att = Math.exp(-1 / sec(0.03))
   const rel = Math.exp(-1 / sec(0.25))
@@ -852,12 +790,6 @@ for (let i = 0; i < sec(0.9); i++) { const k = (sec(0.9) - i) / sec(0.9); L[end 
 mkdirSync(dirname(out), { recursive: true })
 const raw = join(work, 'raw.wav')
 writeWav(raw, L, R)
-if (FOLEY) {
-  writeWav(out, L, R, 16)
-  rmSync(work, { recursive: true, force: true })
-  console.log(out.replace(`${root}/`, ''), `${(MS / 1000).toFixed(2)}s`, 'the sounds alone')
-  process.exit(0)
-}
 const probe = spawnSync('ffmpeg', ['-hide_banner', '-i', raw, '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], { encoding: 'utf8' })
 const mm = JSON.parse(probe.stderr.slice(probe.stderr.lastIndexOf('{')))
 const norm = `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${mm.input_i}:measured_TP=${mm.input_tp}:measured_LRA=${mm.input_lra}:measured_thresh=${mm.input_thresh}:offset=${mm.target_offset}:linear=true`

@@ -62,28 +62,63 @@ the stems.
 ## The sounds alone
 
 `celestual-reel-sfx.mp4` is the thirty with the film's sounds and no song
-(`celestual-reel-sfx.wav`, made by `FOLEY=1 node scripts/studio-score.mjs
-<out.wav>`), for a song of someone's own to be laid over it. The same
-sounds on the same frames, and a few more of the picture's moments given a
-sound of their own, since no music carries them: the camera's move up the
-hall and lin's letter coming away from the wall, the air each moves; kai's
-note coming on, on the thursday; the two touching, low, under the air of
-it; the one who goes, a gust and the scratch of the pencil's lines blown to
-the left; and the name lit from its star, a shimmer of air as fine as its
-cells; the phone's keys as the letters are typed, as they are heard in
-the hand; and the question, a word at a time, each word a soft knock and
-a breath, a little more each time, and on `you?` the air drawn in before
-it, a deeper knock held under a low one, and a shimmer as it lights. The
-long breath of air under the hall is left out, since alone it is only a
-hiss. Nothing is pressed: no glue and no saturation, and it is set by its
-loudest moment, the envelope at the lens, four and a half decibels under
-full scale, which leaves it near -26 LUFS, the sounds being few, so a song
-laid over it has the room it needs.
+(`celestual-reel-sfx.wav`, made by `node scripts/studio-sounds.mjs`), for a
+song of someone's own to be laid over it. It is made of instruments played
+and recorded: a concert bass drum and its roll, a suspended cymbal swelled
+under mallets and bowed, a gong, a wine glass, an ocean drum, a pipe
+organ's pedal and a grand piano with its pedal down, from the
+Versilian Community Sample Library, and the strings in their sections, the
+voices and the horns from the MuseScore General SoundFont, as the song's
+are, all of it in a long hall made for it. Only the phone's keys and a low
+tone under the biggest moments, felt more than heard, are synthesised.
+Everything sounds in B, the key the song is in, mostly its open fifth: the
+gong, the drums and the cymbals are played a little slower or faster than
+they were recorded, so that their strongest partials fall on its notes.
+
+- the letter: the phone's keys as the letters land, and under the last
+  words a bass drum's roll and a cymbal's swell growing
+- the fall back to the wall: the roll and the swell land on the bass drum,
+  a gong, the organ's low B and the whole orchestra on B minor, the film's
+  loudest moment; the violins tremble high and a bowed cymbal sings as the
+  backlights come on across the wall
+- lin's letter off the wall: the low strings rise with it
+- send: the key; the wine glass, B, D and F sharp a note at a time as the
+  letter's pixels go into the envelope, gone as the phone goes out; the
+  piano's B as it is sealed
+- the lens: a cymbal swell, the strings trembling up to it and the roll
+  under them, and through it into the dark on the bass drum, a darker gong
+  and the low strings
+- the night: an ocean drum, rising and falling slowly as the sea does
+- the week: the violins trembling high; kai's note, a horn; at nine,
+  nothing
+- the touch: a soft drum and the piano's low B
+- the reveal: everything swells to the moment the letter turns over, B
+  minor with its seventh, with a gong, the drum and the glass on it; the
+  voices lift once more on `it's mutual.`; the sea again; a bowed cymbal as
+  kai's letter melts
+- the ones that never meet: the low strings, and the piano, a note for
+  each light
+- the question: the strings rise under it, the voices from `think`; on
+  `you?` the piano's B minor with a soft gong; then all of it drawn back in,
+  played backwards, to the point the name is lit from
+- the name: the glass, a note at a time, on the strings and the voices,
+  left ringing
+
+Nothing knocks, crackles or whistles, and the address is typed in silence.
+It is set so the fall back to the wall is its loudest moment, its peaks two
+decibels under full scale, which leaves it near -17 LUFS; laid under a
+song, it wants turning down to sit beneath it.
 
 ## What it is made from
 
 The tap (`scripts/sounds/`) is a recording from Ion.Sound 3.0.7 by Denis
 Ineshin, under the MIT licence; its notice is `scripts/sounds/NOTICE.md`.
+
+The recordings in the sounds alone are from the Versilian Community Sample
+Library by Versilian Studios (CC0 1.0; the organ sampled by Simon Dalzell
+of Ivy Audio): only the seconds of each that are used are kept, in
+`scripts/sounds/`, and `scripts/sounds/NOTICE.md` lists each and where it
+is from.
 
 Every instrument comes from the MuseScore General soundfont (Debian's
 `musescore-general-soundfont`, `/usr/share/sounds/sf3/MuseScore_General_Full.sf3`),

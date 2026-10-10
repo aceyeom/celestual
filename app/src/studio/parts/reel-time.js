@@ -55,10 +55,11 @@ export const S = {
   // the glass: the first line already there, then the rest, the hardest
   // words slowest, a held breath before the last
   letter: [0, 3750],
-  // one shot from the letter on: back from the glass along the wall, a few
-  // of its letters read in passing, up the hall's height to a stop, and
-  // lin's letter coming away from the wall to the camera
-  wall: [3750, 10000], wake: 3700, lines: [5625, 6250], linesOut: 8350, lift: [8300, 10000],
+  // one shot from the letter on: back from the glass along the wall (`back`,
+  // from the moment the last letter is typed until the wall is the whole
+  // frame), a few of its letters read in passing, up the hall's height to a
+  // stop, and lin's letter coming away from the wall to the camera
+  wall: [3750, 10000], back: [3290, 5650], wake: 3700, lines: [5625, 6250], linesOut: 8350, lift: [8300, 10000],
   // send it privately: the key; the letter's own pixels gathered into the
   // envelope; sealed; the phone going out behind it to a line and a point;
   // the envelope coming at the lens; its light over everything
