@@ -3,8 +3,8 @@
 `celestual-reel-3.mp4`: 34.7 seconds, 1080 by 1920, 30 frames a second
 (drawn at sixty and mixed down, as the first reel is), sound effects only,
 so a song can be laid over it. `celestual-reel-3-b.mp4` is the same film
-with a cold open of 1.3 seconds in front of it. `assets/poster.jpg` is a
-frame of it.
+with a cold open of 1.3 seconds in front of it. `assets/poster.jpg` is its
+frame at 2.2 seconds.
 
 ## The story
 
