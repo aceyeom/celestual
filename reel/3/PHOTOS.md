@@ -1,24 +1,19 @@
 # the third reel: the photographs
 
-The film reads its photographs from `studio/public/photos/`. To swap a
-photograph, drop a new file over the old one, under the same name, and
-render again (`DESIGN.md`, How it was made). Every photograph is laid on
-the paper as a print and cut in two along the line between the two people
-in it, so each one has to be **two people, side by side, with a clear gap
-or line between them**.
+The film draws its photographs into the panel's cells from
+`app/src/studio/assets/reel3/` on the studio branch (added by
+`studio.patch`). They are never shown as photographs. Each is sampled once
+per LCD cell, quantised to eight levels and lit by the panel
+(`parts/reel3-photo.js`), so a swap is a file drop and a render.
 
-| file | what it is now | what it needs | where the cut is (Reel.tsx) |
-| --- | --- | --- | --- |
-| `roses.jpg` | a hand reaching for roses held out by another hand | two hands, or two people, reaching toward each other and not yet touching; colour | `ROSE_SEAM`: a diagonal from 17% across at the top to 60% at the foot |
-| `dance.jpg` | a couple dancing on a beach, hands joined over the sun | two people facing each other, their join near one vertical line; black and white or colour (it is toned) | `DANCE_SEAM`: straight down at 60% |
-| `sea.jpg` | a couple in the sea at sunset | the two together, close; it fills the whole frame, so at least 1200 px wide and as tall as it can be | none: it is never cut |
+| file | where | what it needs to be |
+| --- | --- | --- |
+| `dance.jpg` | the cover of Owen's playlist in the group chat (22 by 22 cells), then the player's whole art at the end (140 by 140) | two people against a bright sky, their raised hands joined, a light source (the sun) between them; strong silhouettes survive the cells best. The square crop is set in `reel3-time.js` `PHOTOS.dance`, chosen so the sun lands on the cell where the lockup's star appears |
+| `roses.jpg` | the limbo at nine, in grey cells, a hand reaching and roses held out; the bouquet's cells turn rose first when it is mutual | two hands, or a hand and a held thing, reaching and not touching; the bouquet mask is made from its colour (`PHOTOS.roses.bouquet`) |
+| `sea.jpg` | not used in this cut (dropped in review: full-frame it read as a photograph of the two of them) | |
 
-Wanted for a sharper cut (each photograph is now about 1,050 to 1,200 px
-wide and is drawn larger than that):
+The photographs now are about 1,050 to 1,200 px wide. Larger originals
+(2,000 px and up) would give the 140-cell art a finer tone.
 
-1. All three at 2,000 px wide or more.
-2. Portrait (4:5 or taller) for `dance.jpg` and `sea.jpg`.
-3. Photographs the campaign owns or has permission for. The three now in
-   the film were supplied for the brief. Unless they were taken for the
-   campaign, the film needs their photographers' permission before it is
-   posted.
+They were supplied for the brief. Unless they were taken for the campaign,
+the film needs their photographers' permission before it is posted.
