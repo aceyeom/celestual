@@ -31,11 +31,11 @@ Celestual becomes one promise in three forms: **a letter that opens at 11:11, on
 
 **Three numbers decide the company, in this order:**
 
-1. **A host commits** in writing to a night at Gate 0: 25 October, if the lawyer has said yes by then.
+1. **A host commits** in writing to a night at Gate 0, four days after the lawyer's written yes: 25 October if the yes comes on 21 October.
 2. **At least 40% of second people write back** in the pair-letter test.
 3. **At least 15% of finished pairs tap "keep it in an object"** at a real price and leave a contact, if the lawyer allows sign-ups.
 
-If the first fails, the pair test starts the next day. If under 25% write back, the letters aren't a shared ritual, so the locket would be one more photo locket: don't make it. If under 5% tap, keep the letters free and don't make the object. A result between a stop line and its bar gets one extension. If all three pass, the presale after discharge decides whether this is a business.
+If the first fails, the pair test starts the next day. If under 25% write back, the letters aren't a shared ritual, so the locket would be one more photo locket: don't make it. If under 5% tap, keep the letters free and don't make the object. A result between a stop line and its bar gets one extension. If the pair test passes, the presale after discharge decides whether this is a business. The host only decides which test runs first, and the tap bar counts only if the lawyer allowed sign-ups.
 
 **What does not change:** no money taken while you serve, by you or for you; no paid ads until something converts; and every gate written down in advance and held by someone outside the team.
 
@@ -64,7 +64,7 @@ If the first fails, the pair test starts the next day. If under 25% write back, 
 
 - **Celestual's own data** from the production database: counted and checked.
 - **Market, cost and channel research** from web search results. The pages themselves could not be opened by the research tool, so every figure is marked with its source and a confidence level.
-- **Models** of unit economics, cash and the funnel, in code in docs/strategy/model that can be rerun with real quotes.
+- **Models** of unit economics and cash, in code in docs/strategy/model that can be rerun with real quotes. The funnel in the Marketing tab is arithmetic on its assumed rates.
 - **AI panels and critics** who reviewed the ideas from assigned perspectives. They are not people, and their numbers are judgments to be tested.
 - **Concept images** drawn for this plan, not photographs of a made sample.
 
@@ -106,7 +106,7 @@ The highlighted gate on 31 January decides the keepsake. Each phase below is a c
 The goal is to know what you are allowed to do, and whether a host exists, before anyone writes code. This week's actions are the start of this phase.
 
 - [ ] **Get the lawyer's answer in writing and pick the branch** from the table below. With no written answer by the due date, you are in Branch 0 until it arrives; chase the firm every two days. Due Oct 21, 2026
-- [ ] **Fix what isn't true before anything goes public:** post that the team added hearts nobody pressed and that they are gone; hide, don't delete, the 45 letters from the four most active accounts; email the writers of the 21 letters that showed invented hearts; and make every privacy line exactly true, including that letters and emails pass through US services. Done means a stranger could read the site and every post and find nothing invented. Due Oct 18, 2026
+- [ ] **Fix what isn't true before anything goes public:** add a notice on the site, not a social post, that the team added hearts nobody pressed and that they are gone; hide, don't delete, the 45 letters from the four most active accounts; email the writers of the 21 letters that showed invented hearts; and make every privacy line exactly true, including that letters and emails pass through US services. Done means a stranger could read the site and every post and find nothing invented. Due Oct 18, 2026
 - [ ] **Draft six posts for the first test** and hold them until the branch is known. Due Oct 24, 2026
 - [ ] **Give every post its own tracking link** and turn on web analytics, so the Monday sheet shows which post brought each visitor. Due Oct 22, 2026
 - [ ] **Hold Gate 0 at 21:00 KST,** four days after the lawyer's written yes. Has a host promised in writing a group of 60 or more active members, two named contacts, five minutes at the group's own meeting on 9 or 10 November when everyone joins together (the "room moment"), and the reveal on 11 November? And are 3 hosts dated by 20 November? Due Oct 25, 2026
@@ -154,7 +154,7 @@ The goal is a clean answer by 31 January: do second people write back, and do th
 
 - [ ] **Keep posting three times a week,** and push "open together at 11:11 am on Christmas". It is a Friday holiday, so soldiers have their phones. Due Dec 25, 2026
 - [ ] **Keep the priced object question on,** if the lawyer allowed it.
-- [ ] **Ask 20 military couples,** through the 곰신 cafe manager, whether they would keep their letters in an object and which face they prefer. Ask what they would pay only if the lawyer allowed sign-ups.
+- [ ] **Ask 20 military couples,** through the 곰신 cafe manager, whether they would keep their letters in an object and which face they prefer, only if the lawyer allowed product research (question 1.5). Ask what they would pay only if the lawyer allowed sign-ups.
 - [ ] **Only if the lawyer allowed posts about the object, show the two faces and the two finishes as concept renders,** each labelled "concept, not made yet". "Where can I buy" comments pick the face and the finish. Due Jan 15, 2027
 - [ ] **The 11:11 track,** if a host ran a pilot: second nights with the pilot groups in December, and Gate 1 ten days after the third night.
 - [ ] **Write the Korea memo for the 11:11:** consent, age checks, White Day nights. Due Jan 31, 2027
@@ -164,7 +164,7 @@ The goal is a clean answer by 31 January: do second people write back, and do th
 
 The goal is to arrive at discharge with the presale ready to start, without having broken any rule while serving.
 
-- [ ] **Valentine's Day is a Sunday:** pair letters open at 11:11 am, so soldiers can join. Due Feb 14, 2027
+- [ ] **Valentine's Day is a Sunday:** military couples' letters open at 11:11 am, so soldiers can join; the rest open at 11:11 pm. Due Feb 14, 2027
 - [ ] **White Day is a Sunday too,** and it is the day men give, usually something pricier. Due Mar 14, 2027
 - [ ] **Decide what leads in 2027** on 1 March, the day the 11:11 holds its romance gate (Gate 2). If both passed, the line is "it opens at 11:11, only when it's both of you": pairs and the object come first, and the 11:11 runs as seasons. If only the pair test passed, lead with pairs and the object. If only the 11:11 passed, lead with group nights and don't make the object. If neither passed, pause until discharge. Due Mar 1, 2027
 - [ ] **If the keepsake passed and the lawyer allowed sign-ups, ask pair-letter users for consent** to hear about the presale by email. That list is the presale.
@@ -177,14 +177,15 @@ Every date here assumes discharge in early April 2027 and counts from that week.
 
 - [ ] **Week 1: register the business,** a sole proprietorship under simplified VAT, in about two working days. File the online-sales report unless you are exempt, open the SmartStore account, and order the reference samples. Due Apr 9, 2027
 - [ ] **Open the Wadiz waitlist** with the concept renders, labelled as concepts. Invite the people who agreed to hear about the presale to join it themselves; never upload the list. Aim for 400 or more sign-ups before the presale opens. Due Apr 20, 2027
-- [ ] **File the trademark and the locket's design** if they aren't filed yet: the trademark in classes 14 and 35, the design before the presale page goes public. Due Apr 30, 2027
+- [ ] **File the trademark and the locket's design** if they aren't filed yet: the trademark in classes 14 and 35, the design before the presale page goes public, claiming Korea's 12-month grace period for renders already shown on the waitlist page or in posts. Due Apr 30, 2027
 - [ ] **Samples, weeks 1 to 8:** reference samples in week 1, custom samples from two factories ordered by week 4, quotes in Seoul, and a lab test of the chosen finish. Due May 28, 2027
 - [ ] **Approve the golden sample only if it passes:** lead under 0.05% and cadmium under 0.01% in every metal part, nickel-free plating, 500 open-and-close cycles, three 1 m drops, heat and cold, and a 3 to 5 kg pull on the clasp. The golden sample is the one finished piece every later piece must match. Then order 12 more like it: 10 for creators and a pair to film. Due May 28, 2027
 - [ ] **Hold the first in-person 11:11 night** with a group you can reach after discharge, whatever the remote result. Due May 31, 2027
 - [ ] **Build the order step into the pair letter:** photo upload with a crop guide for two faces, the time to set, one line from each person written by hand on the phone, and both people's consent. Done means one test order arrives as one complete row in the order sheet. Due Jun 4, 2027
-- [ ] **Run the presale for four weeks,** from Jun 14, 2027 to Jul 11, 2027, with ten or more updates. If the waitlist is under 250 two weeks before, move it back. Set the Wadiz goal at the stop line, about ₩4.5M or 40 orders, once Wadiz confirms that backers are charged only if the goal is met. No early-bird discount deeper than 10%. The page promises delivery by 8 October 2027.
-- [ ] **Hold the presale gate.** 100 orders or more, about ₩11M at full price, roughly pays back the launch, so continue. 40 to 99: make and ship them, change the price, face or content, and let the shop gate in February decide. Under 40: the goal is missed, nobody is charged, the object stops and the letters stay. Due Jul 18, 2027
+- [ ] **Run the presale for four weeks,** from Jun 14, 2027 to Jul 11, 2027, with ten or more updates. If the waitlist is under 250 two weeks before, move it back once, by up to four weeks, with every later date. If it is still under 250, open with the goal at 40 orders and let the presale gate decide. Set the Wadiz goal at the stop line, about ₩4.5M or 40 orders, once Wadiz confirms that backers are charged only if the goal is met. No early-bird discount deeper than 10%. Before the page goes live, ask Wadiz when it pays out. If it pays about two weeks after the close, the page promises delivery by 8 October 2027; if later, move that date by the same amount.
+- [ ] **Hold the presale gate.** 100 orders or more, about ₩11M at full price, roughly pays back the launch, so continue. Count each order at the 10% early-bird price as three quarters of an order, because the discount comes straight out of the margin. 40 to 99: make and ship them, change the price, face or content, and let the shop gate in February decide. Under 40: the goal is missed, nobody is charged, the object stops and the letters stay. Due Jul 18, 2027
 - [ ] **Order the batch when Wadiz pays out,** for the presale plus two months of shop stock: about 285 lockets in the middle case. Due Jul 30, 2027
+- [ ] **Send every backer their own order link** the day the presale closes, and chase until each order has its photo, time and both handwritten lines, before the batch arrives. Due Aug 31, 2027
 
 ### Phase 5 · August 2027 to February 2028: the first pieces, 11.11 and the shop gate
 
@@ -307,12 +308,12 @@ One is already made: it is sold as a locket, not a watch. The rest are decided b
 
 | Decision | Options | Settled by | When |
 | --- | --- | --- | --- |
-| Price of the pair | ₩119,000 or ₩139,000 | The pair test shows each price at random; compare taps | 31 Jan |
+| Price of the pair | ₩119,000 or ₩139,000 | The pair test shows each price at random, if the lawyer allowed sign-ups; compare taps. Otherwise the Wadiz waitlist decides after discharge | 31 Jan |
 | The face | Watch stopped at your moment, or the needle that points to you | Which one earns more "where can I buy" comments and DMs per 1,000 views | Dec to Jan |
 | The finish | Silver-tone, or hand-patinated brass | The same content test, one post each | Dec to Jan |
 | Size | 34, 36 or 38 mm; 36 mm is the working size | Samples in hand: does the 26 to 30 mm photo window fit two faces? | First samples |
 | Handwriting inside | Laser-engraved handwriting, or a printed line | Legibility on a sample at that size, and its cost | First samples |
-| An entry item | A ₩29,000 to ₩39,000 brass 11:11 charm for Pepero Day, 100 days and friends | A one-question poll of pair-letter users, then the waitlist after discharge | Dec to Jan |
+| An entry item | A ₩29,000 to ₩39,000 brass 11:11 charm for Pepero Day, 100 days and friends | A one-question poll of pair-letter users if the lawyer allowed sign-ups; otherwise the waitlist after discharge | Dec to Jan |
 | The opening time for military couples | 11:11 am on a weekend or holiday | Already decided by phone rules: soldiers can use phones only 18:00 to 21:00 on weekdays and 08:30 to 21:00 on weekends and holidays | Now |
 
 In Branch A there are no samples before discharge. The face and finish posts use the concept renders, each labelled "concept, not made yet", and run only if the lawyer allowed posts about the object. Otherwise these choices wait for the first samples after discharge.
@@ -402,13 +403,13 @@ A boxed locket weighs about 150 to 300 g. Start with Korea Post or convenience-s
 
 **A pair sold through the presale leaves about ₩40,500, and a single about ₩20,000,** after making, the platform fee, shipping, defects and ₩7,000 of content. An order bought with a paid ad costs ₩25,000 to ₩130,000 in Korea. At the plan's ₩45,000, a single loses about ₩18,000 and a pair barely breaks even, so the money comes from free channels or not at all.
 
-**Starting costs about ₩4.0M,** all of it after discharge, and about 104 presale orders at full price pay it back. Each presale order counts at about ₩38,300 here, before content, because the launch budget already pays for the presale's photos, early pieces and tools. A 10% early-bird price moves break-even to about 140 orders.
+**Starting costs about ₩4.0M,** almost all of it after discharge, and about 104 presale orders at full price pay it back. Each presale order counts at about ₩38,300 here, before content and with 55% of orders as pairs, because the launch budget already pays for the presale's photos, early pieces and tools. A 10% early-bird price moves break-even to about 140 orders.
 
 **If 600 orders come in the first year, it earns about ₩17.3M:** 100 presale orders, then about 42 a month in the shop for 12 months, on about ₩68M of revenue. Nobody has measured these orders yet. They need a waitlist rate six times the past one and a shop that sells without ads, so until the presale measures them, plan your time and money on the low case. A company with ₩500M of revenue a year would need about 4,500 orders a year, so growth has to come from an entry item, Kakao gifts and the US, not from the locket alone.
 
 **The money you need, and when:**
 
-- **Before discharge:** only the lawyer's and the accountant's fees. Ask each for a fixed fee in writing first.
+- **Before discharge:** only the lawyer's and the accountant's fees, and the trademark if the lawyer lets you file it early; it then comes out of the April budget. Ask each for a fixed fee in writing first.
 - **April to June 2027:** about ₩3.3M of launch costs, plus about ₩0.5M kept for surprises.
 - **The low point:** about ₩4.2M out of pocket in September 2027, because the first batch also makes two months of shop stock. Keep about ₩5M you can reach from April to December 2027.
 - **If the presale fails:** the loss is the launch money spent, about ₩3.4M.
@@ -445,13 +446,13 @@ Every number here comes from the model in docs/strategy/model, which can be reru
 | Pair, ₩139,000 | ₩40,500 | ₩46,600 | ₩50,600 |
 | Single, ₩79,000 | ₩20,000 | ₩23,400 | ₩25,700 |
 
-Above ₩48M of sales a year, simplified VAT takes about 1.5% of the price, less a small credit: about ₩1,000 from a single and ₩1,700 from a pair. Above ₩104M, general VAT takes about ₩2,500 to ₩2,800 from a single and ₩4,300 to ₩4,900 from a pair.
+Above ₩48M of sales a year, simplified VAT takes about 1.5% of the price, less a small credit: about ₩1,000 from a single and ₩1,700 from a pair. Above ₩104M, general VAT takes about ₩2,500 to ₩3,000 from a single and ₩4,300 to ₩5,300 from a pair.
 
 The cheapest saving is a stock drawer box with a branded sleeve, about ₩5,500 less a unit. The upgrade that shows most is a thin gold flash, or a silver-tone, nickel-free plating, each about ₩2,000 to ₩4,000 more. A full micron of gold would add about ₩15,600 in metal alone.
 
 ### What it costs to start
 
-About ₩4.0M, all of it after discharge. The first batch is not in this list: the presale pays for most of it (see Cash, month by month).
+About ₩4.0M, almost all of it after discharge. The first batch is not in this list: the presale pays for most of it (see Cash, month by month).
 
 | Item | Cost (₩) | When |
 | --- | --- | --- |
@@ -479,7 +480,7 @@ The launch pays for itself at about 104 presale orders at full price, or about 9
 | Middle | 604 | ₩67.6M | ₩17.3M |
 | High | 2,400 | ₩268.8M | ₩71.7M |
 
-- **Low:** the waitlist stays near 150 sign-ups and 10% of them order, so the presale reaches about 25 orders. That misses a goal set at 40, nobody is charged, and the object stops; the launch money spent is the loss. If Wadiz charges backers anyway, the 25 orders are made and shipped, and the loss is about ₩2.4M.
+- **Low:** the waitlist stays near 150 sign-ups and 10% of them order, so the presale reaches about 25 orders. That misses a goal set at 40, nobody is charged, and the object stops; the launch money spent is the loss. If Wadiz charges backers anyway, the 25 orders are made and shipped, and the loss is about ₩3.2M to ₩3.7M, because the case and box minimums must still be bought.
 - **Middle:** about 400 waitlist sign-ups, 15% of them order, and they make 60% of the presale's 100 orders, as Wadiz's data suggests. Then the shop sells about 42 orders a month for 12 months, with no ads.
 - **High:** about 1,000 sign-ups at 20%, 330 presale orders, then about 170 shop orders a month, with paid help for assembly.
 
@@ -503,7 +504,7 @@ Three levers matter most: how many orders come after the presale, what each piec
 
 ### Verdict
 
-Market one story, free first: **it opens at 11:11, only when it's both of you.** Until the presale, every post points to the free pair letter. From April, posts point to the presale waitlist. Nothing is sold before it exists, and nothing is posted before the lawyer's written yes.
+Market one story, free first: **it opens at 11:11, only when it's both of you.** Until the presale, every post points to the free pair letter. After discharge, posts point to the presale waitlist. Nothing is sold before it exists, and nothing is posted before the lawyer's written yes.
 
 Paid ads can't carry this. A Wadiz pre-launch sign-up bought on Instagram costs about ₩7,000 to ₩43,000. If 10 to 15% of sign-ups order, a sign-up is worth about ₩4,000 to ₩6,000 of margin at full price (see the Economics tab), and less at an early-bird price. So the presale list has to come from pair-letter users, communities and the posts themselves; ads are for retargeting people who already know you.
 
@@ -529,7 +530,7 @@ The pair letter builds the brand, the content and the list, but it is a slow pat
 
 ### The content engine
 
-**One rule: every post shows a real moment and ends with one action.** Until April the action is "comment 편지", which sends the pair-letter link by DM. From April it is the presale waitlist.
+**One rule: every post shows a real moment and ends with one action.** Until discharge the action is "comment 편지", which sends the pair-letter link by DM. After discharge it is the presale waitlist.
 
 | Format | What it shows | Its job | What it needs |
 | --- | --- | --- | --- |
@@ -612,8 +613,8 @@ One sheet, filled in every Monday and shared with the gatekeeper. Each line has 
 | Letters started per link tap | 40% | Under 20%: rewrite the first screen |
 | Partners writing back within 7 days | 40% | Under 25% at the 31 January verdict: stop the keepsake; 25 to 40%: extend once. Under 25% after 4 weeks: rewrite the partner's first screen and the reminder |
 | Finished pairs tapping "keep it" and leaving a contact | 15% | Under 5%: the object question has failed. Runs only if the lawyer allowed sign-ups |
-| Waitlist sign-ups per 1,000 views, from April | 3 (0.3%) | Under 1 by the end of May: delay the presale |
-| Wadiz pre-launch sign-ups | 400 or more | Under 250 two weeks before: don't open; keep building the list |
+| Waitlist sign-ups per 1,000 views, after discharge | 3 (0.3%) | Under 1 by the end of May: delay the presale |
+| Wadiz pre-launch sign-ups | 400 or more | Under 250 two weeks before: move the presale back once, by up to four weeks, then open with the goal at 40 |
 | Cost of a paid sign-up | Under ₩3,000, half of what a sign-up earns | Above it: switch the ads off |
 | Defects and returns | Under 5% of orders | Over 8%: pause sales and fix the supplier |
 
@@ -657,7 +658,7 @@ The full rules, including who can see what, safety and the one-person version, a
 
 ### Gates carried over from the turnaround memo
 
-The pair-test bars and the switching rule go to the outside gatekeeper by 16 October and are frozen then; the rest of the gate sheet is frozen on 5 November. Nobody changes a threshold after that.
+Gate 0, the live check, the pair-test bars and the switching rule go to the outside gatekeeper by 16 October and are frozen then; the night gates from the rehearsal on are frozen on 5 November. Nobody changes a threshold after that.
 
 | Gate | When | Passes if | Otherwise |
 | --- | --- | --- | --- |
@@ -668,7 +669,7 @@ The pair-test bars and the switching rule go to the outside gatekeeper by 16 Oct
 | Gate 1: does remote hosting work? | 10 days after the third night | 3 nights of 25 or more; a median 35% of the roster joins; 40% send a sealed pick; half say "do it again" | Median under 25%, or "do it again" under 35%: remote hosting stops, and in person becomes the next test |
 | Gate 2: does the romance work? | 1 Mar 2027 | 650 or more clean "i like you" picks, 10 or more clean pairs, at least 1.5 times as many mutual pairs as random picking would give, with the random count doubled to be safe | "Not proven yet": no romance-led marketing. At 1.2 times random or less, the romantic layer comes off |
 | Is the format real? | June 2027 | Groups rebook without being pitched and run nights without founder help |  |
-| Is it a company? | 13 Dec 2027 | 40 or more groups ran a night, half with no founder help | Below the bar: Celestual is a side project, said out loud |
+| Is it a company? | 13 Dec 2027 | 40 or more groups ran a night, half with no founder help | Below the bar: the 11:11 runs as seasons, not as the company. Celestual is a side project only if the shop gate in February fails too |
 
 "Clean" leaves out the team, the officers, test links and couples who were already together. The first in-person night after discharge runs whatever the remote result, because in person is the real launch and has to be tested before anyone decides the company's fate.
 
@@ -746,8 +747,8 @@ From search results on law.go.kr, easylaw and press reports; medium confidence, 
 | --- | --- | --- |
 | Nothing commercial until discharge | Only research, and the free app if the lawyer confirms it | **The plan.** Every gift peak before April is lost, and nothing else |
 | A genuine non-serving owner | They own and run the shop: decisions, money and work | Not recommended: the brand, the design and the list would all be yours, and the military looks at who really does the work |
-| A company founded by that person | You take shares after incorporation, with no office and no work until discharge | Only if the lawyer confirms passive shares are fine; it saves little |
-| You hold the brand, they license it | The trademark and design are yours, licensed royalty-free until discharge | Untested; ask first |
+| A company founded by that person | You take shares after incorporation, with no office and no work until discharge | Not in this plan: a company that sells while you hold its shares takes money for you |
+| You hold the brand, they license it | The trademark and design are yours, licensed royalty-free until discharge | Not in this plan: a shop selling your brand and design while you serve has the same risk as a non-serving owner |
 
 ### Setting up the business, step by step
 
