@@ -2,7 +2,7 @@
 
 Oct 13, 2026 · @Ace
 
-> Charts and diagrams are in the PDF version, [celestual-turnaround-memo.pdf](./celestual-turnaround-memo.pdf), and in the live doc.
+> Charts and diagrams are in the PDF version, [celestual-turnaround-memo.pdf](./celestual-turnaround-memo.pdf), and in the live doc. The keepsake branch is in [celestual-keepsake-branch.md](./celestual-keepsake-branch.md).
 
 ## The verdict
 
@@ -20,7 +20,7 @@ Until discharge (about April 2027) this is a $0 test, not a launch.
 
 1. **Get a private lawyer's answer** on whether you may run the company at all while serving. Don't ask through your unit unless the lawyer says to.
 2. **Pay the trust debts this week.** Remove the invented hearts, hide the team's 45 letters, and lock the public table that logs who looked up whom. One screenshot of any of them ends any campus plan.
-3. **Find a host (a club officer who will run a night for their group) who commits in writing,** before more than 10 hours of code. Start with Korean student associations and co-ed clubs, aiming at Pepero Day (11.11).
+3. **Find a host (a club officer who will run a night for their group) who commits in writing,** before more than 10 hours of code. Start with Korean student associations and co-ed clubs, aiming at Pepero Day (11.11), the first pilot's hook. At least one of the first three nights should be a non-Korean group, or the test only proves the format for Korean associations. The US calendar follows: the last day of classes, "2.14 at 11:11", formal week, and the senior "last 11:11" in May.
 4. **Only then build the 11:11, version 0:** names only, three kinds of pick, a private reveal, about 28 to 40 of your own hours with Claude writing the code.
 5. **Judge every result against pass-or-stop tests ("gates") written now** and held by someone outside the team:
    - whether nights run from Korea through hosts work (Gate 1), ten days after the third night
@@ -51,6 +51,10 @@ No plan lifts the cap in six months, because the cap is that two people must be 
 If the gates pass, the big version is real: groups that rebook every term, campus-wide 11:11s, Korea's own calendar of confession days (Pepero Day, White Day), and a fall 2027 push with the founders on the ground. Even then, the odds of a durable company are roughly 1 in 10 to 1 in 20.
 
 The 300,000 people who watched a film about an ex are not this plan's customer, and that's fine.
+
+A further branch, a physical keepsake for couples instead of the group night, is weighed against the 11:11 in [Branch: the keepsake](./celestual-keepsake-branch.md).
+
+**The short version of that branch:** the keepsake is the likelier business, but its advantage, revenue, is exactly what a serving founder may be barred from until April. So its core idea, two sealed letters that open together at 11:11, is tested first for free, after Gate 0. The object is sold only once a lawyer says yes, or after discharge.
 
 ## Diagnosis: the marketing worked, the product can't convert it
 
@@ -206,9 +210,9 @@ One page per group night, at an unguessable address, kept fully separate from th
   - Anyone who joins without the night's own link waits in a one-tap approval queue for the host or the operator (the host's second officer, who helps run the night).
   - A join never triggers the old automations: no mutual news, no tags, just a plain reply.
 - **Pick.** Names only, no text, in three kinds:
-  1. *thanks / 고마워요*: signed, up to 10, always delivered
-  2. *closer friends / 친해지고 싶어요*: sealed, up to 3
-  3. *i like you / 좋아해요*: sealed, up to 2
+  1. *thanks*: signed, up to 10, always delivered
+  2. *closer friends*: sealed, up to 3
+  3. *i like you*: sealed, up to 2
 - **Open.** A sealed pick opens only if both people chose the same kind for each other, and the pick screen says so: "it opens only if they picked the same one. pick the one you mean." Picks can be changed or withdrawn until 10:11 pm. Results appear at 11:11 pm local, privately, on the page and by a neutral email, never by DM.
 - **Everyone opens something.** Officers split the joined list so every member receives at least one real, signed thank-you from an officer before 10:11 pm; officers may send up to 40 on their own night. The page never shows a bare zero.
 - **Who can see what.** Members see the directory, never picks. A member can silently mute someone, which also blocks that person's thank-yous; removing someone is left to the operator. The host and operator see counts only. The pick screen says plainly that the two founders could technically read picks until deletion, and every read is logged.
@@ -228,11 +232,11 @@ Keep the name and the pixel-phone look. Change what they promise: not "find out 
 
 | Say | Instead of | Why |
 | --- | --- | --- |
-| "\[group\]'s 11:11" | "Night", "event", "launch" | 11:11 is when people make a wish, and 11.11 is Pepero Day. The time never changes and the date does: "2.14 at 11:11", "the last 11:11" for seniors. It also suits a name about the sky. |
+| "\[group\]'s 11:11" | "Night", "event", "launch" | 11:11 is when people make a wish, and 11.11 is Pepero Day. The time never changes and the date does: "2.14 at 11:11", "the last 11:11" for seniors. It also suits a name about the sky. It isn't Korean: Pepero Day is only the first pilot's hook, and any close group can run one. |
 | "pick them. if they picked you the same way, it opens at 11:11 pm. if not, they're never told." | "find out if it's mutual", "nobody ever knows" | It is exactly true under same-kind matching, and has no product jargon in it. |
 | "it's mutual." on the reveal screen only | "mutual" in any acquisition copy | On Instagram, "mutuals" means followers. |
 | "private", "sealed" | "anonymous" in anything a host sees | Risk chairs read "anonymous" as Yik Yak. |
-| thanks · closer friends · i like you, and 고마워요 · 친해지고 싶어요 · 좋아해요 | "crush", "ping", "dating" | Lead with the unsaid, never with "crush". |
+| thanks · closer friends · i like you (for Korean groups only: 고마워요 · 친해지고 싶어요 · 좋아해요) | "crush", "ping", "dating" | Lead with the unsaid, never with "crush". |
 
 ### The name
 
@@ -288,6 +292,9 @@ Paying people to promote a product with no loop and no night produces exactly th
 | Community colleges | **No** | Commuter, part-time students with little shared social life: the worst shape for a product that needs everyone in the same room. A community-college student with a big following is a creator deal, not an ambassador. |
 | Korean student associations, co-ed K-pop, dance and cultural clubs | **Yes, first, in November** | Mixed-gender, dense, Instagram-native, with a guaranteed weekly meeting and no national office to veto. They already celebrate 11.11 as Pepero Day, and the founders' own network reaches them. |
 | Campus crush or confession pages | **Never as hosts** | They are pile-on machines with no roster and no boundary. |
+|  |  |  |
+|  |  |  |
+|  |  |  |
 
 ### The host engine
 
@@ -298,7 +305,7 @@ Paying people to promote a product with no loop and no night produces exactly th
 5. **The in-room moment is the whole night.** In the first five minutes of the group's meeting, everyone joins with the night's own keyword, posted only in the group chat, and sends one signed thank-you. Sealed picks are made later, alone. The review panel's estimate: a push in the group chat alone gets 10 to 15% of members; five minutes in the room gets 40 to 60%.
 6. **End every night by booking the next one.** The host announces the next date in the group chat, and every result page asks whether you're in another group that should run one. Rebooking and spreading are the two numbers that decide whether this is a company.
 
-**The group card does the posting, not individuals.** "\[group\]'s 11:11 · send 고마워요 to anyone in \[group\]; it opens at 11:11 pm. you can also pick 'closer friends' or 'i like you'. those open only if they picked you the same way. if not, they're never told. the link is in the group chat." The host posts it from their own account, which is herd cover by design: being in says nothing about who you picked. Use "11.11 at 11:11" for the event, not the PEPERO trademark. No individual "I'm in" cards in version 0.
+**The group card does the posting, not individuals.** "\[group\]'s 11:11 · send a thank-you to anyone in \[group\]; it opens at 11:11 pm. you can also pick 'closer friends' or 'i like you'. those open only if they picked you the same way. if not, they're never told. the link is in the group chat." The host posts it from their own account, which is herd cover by design: being in says nothing about who you picked. Use "11.11 at 11:11" for the event, not the PEPERO trademark. No individual "I'm in" cards in version 0.
 
 ## Money: earn nothing, spend almost nothing, ask the lawyer first
 
@@ -522,7 +529,7 @@ This is a disciplined bet, not a sure thing. These are the strongest objections 
 - [ ] Name the outside gatekeeper. Due Oct 16, 2026
 - [ ] Write the host census and an honest hours grid for each founder, and say who owns hosts. Due Oct 16, 2026
 - [ ] Get the written answer from a private lawyer, not through your unit. Due Oct 21, 2026
-- [ ] Decide, in advance, what you'll do if Gate 0 finds no host. Due Oct 25, 2026
+- [ ] Decide, in advance, what you'll do if Gate 0 finds no host. The keepsake branch proposes the rule: no host means the free pair-letter test starts the next day; a host means the pilot runs first and the pair test follows. Write it down and give it to the gatekeeper. Due Oct 25, 2026
 
 **One more question to answer honestly, today:** if the June 2027 bar is missed, do you want Celestual as a company, or as something you made? The plan works for either, but you have to know which one you're running.
 
