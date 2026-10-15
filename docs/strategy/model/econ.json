@@ -1,0 +1,280 @@
+{
+ "locket": 24221,
+ "cogs": {
+  "single": 34421,
+  "pair": 62842
+ },
+ "launch": {
+  "subtotal": 3446000,
+  "contingency": 516900,
+  "total": 3962900
+ },
+ "per_order": {
+  "none/wadiz": {
+   "single": 19954,
+   "pair": 40527
+  },
+  "none/smartstore": {
+   "single": 23406,
+   "pair": 46602
+  },
+  "none/own_site": {
+   "single": 25689,
+   "pair": 50619
+  },
+  "simplified/wadiz": {
+   "single": 18958,
+   "pair": 38788
+  },
+  "simplified/smartstore": {
+   "single": 22410,
+   "pair": 44862
+  },
+  "simplified/own_site": {
+   "single": 24693,
+   "pair": 48880
+  },
+  "general/wadiz": {
+   "single": 17476,
+   "pair": 36180
+  },
+  "general/smartstore": {
+   "single": 20615,
+   "pair": 41702
+  },
+  "general/own_site": {
+   "single": 22690,
+   "pair": 45354
+  }
+ },
+ "waterfall_pair_wadiz": {
+  "kind": "pair",
+  "channel": "wadiz",
+  "price": 139000,
+  "vat": 0,
+  "fee": 15290,
+  "making": 69126,
+  "ship": 3300,
+  "defects": 3756,
+  "content": 7000,
+  "left": 40527
+ },
+ "waterfall_single_wadiz": {
+  "kind": "single",
+  "channel": "wadiz",
+  "price": 79000,
+  "vat": 0,
+  "fee": 8690,
+  "making": 37863,
+  "ship": 3300,
+  "defects": 2193,
+  "content": 7000,
+  "left": 19954
+ },
+ "paid_order": {
+  "single": -18046,
+  "pair": 2527
+ },
+ "before_content_wadiz": 38269,
+ "before_content_smartstore": 43164,
+ "signup_value": {
+  "at15": 5740,
+  "at10": 3827
+ },
+ "breakeven": {
+  "wadiz": 104,
+  "smartstore": 92,
+  "all_singles": 147,
+  "early_bird_10": 140,
+  "early_bird_20": 216,
+  "costs_30_over": 189
+ },
+ "scen": {
+  "low": {
+   "presale": 25,
+   "shop": 0,
+   "orders": 25,
+   "revenue": 0,
+   "profit": -3356000,
+   "note": "under 40 orders: the Wadiz goal is missed, nobody is charged, the object stops"
+  },
+  "middle": {
+   "presale": 100,
+   "shop": 504,
+   "orders": 604,
+   "revenue": 67648000,
+   "contribution": 24873249,
+   "profit": 17310349
+  },
+  "high": {
+   "presale": 330,
+   "shop": 2070,
+   "orders": 2400,
+   "revenue": 268800000,
+   "contribution": 97288161,
+   "profit": 71725261
+  }
+ },
+ "low_if_charged_anyway": -2399271,
+ "orders_for_500M": 4464,
+ "base_profit": 17310349,
+ "tornado": [
+  {
+   "driver": "Orders after the presale",
+   "low": 6787182,
+   "high": 27833517,
+   "note": "half as many, or half again (21 or 63 a month)"
+  },
+  {
+   "driver": "Cost to make each piece",
+   "low": 6876747,
+   "high": 24266460,
+   "note": "30% over the estimates, or 20% under"
+  },
+  {
+   "driver": "Price",
+   "low": 8753965,
+   "high": 25866734,
+   "note": "pair W119k or W159k, single W69k or W89k"
+  },
+  {
+   "driver": "Shop orders bought with paid ads",
+   "low": 10506349,
+   "high": 17310349,
+   "note": "30% at W45,000 each, or none"
+  },
+  {
+   "driver": "Share of orders that are pairs",
+   "low": 13967072,
+   "high": 20653626,
+   "note": "30% or 80%"
+  },
+  {
+   "driver": "Defects and remakes",
+   "low": 14729171,
+   "high": 18048241,
+   "note": "12% or 3%"
+  },
+  {
+   "driver": "VAT",
+   "low": 16027291,
+   "high": 18018570,
+   "note": "general VAT, or none"
+  }
+ ],
+ "cash": [
+  {
+   "month": "2026-10",
+   "net": 0,
+   "cum": 0,
+   "note": "free tests only; the lawyer and accountant are paid separately"
+  },
+  {
+   "month": "2026-11",
+   "net": 0,
+   "cum": 0,
+   "note": ""
+  },
+  {
+   "month": "2026-12",
+   "net": 0,
+   "cum": 0,
+   "note": ""
+  },
+  {
+   "month": "2027-01",
+   "net": 0,
+   "cum": 0,
+   "note": ""
+  },
+  {
+   "month": "2027-02",
+   "net": 0,
+   "cum": 0,
+   "note": ""
+  },
+  {
+   "month": "2027-03",
+   "net": 0,
+   "cum": 0,
+   "note": ""
+  },
+  {
+   "month": "2027-04",
+   "net": -1291000,
+   "cum": -1291000,
+   "note": "discharge: registration, trademark, reference samples, CAD"
+  },
+  {
+   "month": "2027-05",
+   "net": -1145000,
+   "cum": -2436000,
+   "note": "custom samples, lab test, box proof, design"
+  },
+  {
+   "month": "2027-06",
+   "net": -875000,
+   "cum": -3311000,
+   "note": "twelve early pieces, photos; the presale opens"
+  },
+  {
+   "month": "2027-07",
+   "net": 4857696,
+   "cum": 1546696,
+   "note": "the presale pays out; half the first batch is paid up front"
+  },
+  {
+   "month": "2027-08",
+   "net": -5110304,
+   "cum": -3563608,
+   "note": "the batch balance"
+  },
+  {
+   "month": "2027-09",
+   "net": -680288,
+   "cum": -4243896,
+   "note": "presale orders finished in Seoul and shipped"
+  },
+  {
+   "month": "2027-10",
+   "net": 1453861,
+   "cum": -2790035,
+   "note": "the shop sells about 42 orders a month"
+  },
+  {
+   "month": "2027-11",
+   "net": 1453861,
+   "cum": -1336173,
+   "note": "11.11"
+  },
+  {
+   "month": "2027-12",
+   "net": 1453861,
+   "cum": 117688,
+   "note": ""
+  },
+  {
+   "month": "2028-01",
+   "net": 1453861,
+   "cum": 1571549,
+   "note": ""
+  },
+  {
+   "month": "2028-02",
+   "net": 1453861,
+   "cum": 3025410,
+   "note": ""
+  }
+ ],
+ "cash_facts": {
+  "payout": 9968000,
+  "po1": 10130608,
+  "po1_orders": 184,
+  "po1_lockets": 285,
+  "ship_presale": 635288,
+  "shop_month": 1453861,
+  "low": -4243896,
+  "low_month": "2027-09",
+  "launch_spent_by_july": 3356000
+ }
+}
