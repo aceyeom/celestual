@@ -5,9 +5,9 @@
   "generic": {
    "key": "generic",
    "label": "Generic photo pocket watch, bought in and engraved",
-   "locket": 14285,
-   "single": 16985,
-   "pair": 33470,
+   "locket": 16785,
+   "single": 19485,
+   "pair": 38470,
    "parts": {
     "case": 3700.0,
     "finish": 0,
@@ -22,17 +22,17 @@
    "price_single": 45000,
    "price_pair": 79000,
    "per_order_wadiz": {
-    "single": 9832,
-    "pair": 21052
+    "single": 6945,
+    "pair": 15277
    },
-   "before_content_wadiz": 23003,
-   "making_per_order": 28657,
+   "before_content_wadiz": 18528,
+   "making_per_order": 32920,
    "lockets_per_order": 1.55,
    "price_avg": 63700,
-   "shop_per_order": 24975,
-   "launch": 1973400,
-   "breakeven": 86,
-   "first_lot": 142850,
+   "shop_per_order": 20520,
+   "launch": 2548400,
+   "breakeven": 138,
+   "first_lot": 167850,
    "minimum": 10,
    "weeks": 2,
    "wadiz": false
@@ -40,9 +40,9 @@
   "stock_locket": {
    "key": "stock_locket",
    "label": "Stock watch-shaped photo locket from 1688, finished in Seoul",
-   "locket": 17721,
-   "single": 23421,
-   "pair": 44342,
+   "locket": 19721,
+   "single": 25421,
+   "pair": 48342,
    "parts": {
     "case": 3064.7499999999995,
     "finish": 0,
@@ -57,17 +57,17 @@
    "price_single": 79000,
    "price_pair": 139000,
    "per_order_wadiz": {
-    "single": 32658,
-    "pair": 61894
+    "single": 30348,
+    "pair": 57274
    },
-   "before_content_wadiz": 55738,
-   "making_per_order": 38421,
+   "before_content_wadiz": 52157,
+   "making_per_order": 41831,
    "lockets_per_order": 1.55,
    "price_avg": 112000,
-   "shop_per_order": 59145,
-   "launch": 2433400,
-   "breakeven": 44,
-   "first_lot": 177212,
+   "shop_per_order": 55582,
+   "launch": 3008400,
+   "breakeven": 58,
+   "first_lot": 197212,
    "minimum": 10,
    "weeks": 3,
    "wadiz": false
@@ -75,9 +75,9 @@
   "steel_round": {
    "key": "steel_round",
    "label": "Round 316L steel locket with two glass windows, finished in Seoul",
-   "locket": 14441,
-   "single": 20141,
-   "pair": 37782,
+   "locket": 16441,
+   "single": 22141,
+   "pair": 41782,
    "parts": {
     "case": 2960.0,
     "finish": 0,
@@ -92,17 +92,17 @@
    "price_single": 79000,
    "price_pair": 139000,
    "per_order_wadiz": {
-    "single": 36447,
-    "pair": 69471
+    "single": 34137,
+    "pair": 64851
    },
-   "before_content_wadiz": 61610,
-   "making_per_order": 32828,
+   "before_content_wadiz": 58030,
+   "making_per_order": 36238,
    "lockets_per_order": 1.55,
    "price_avg": 112000,
-   "shop_per_order": 64989,
-   "launch": 3100400,
-   "breakeven": 50,
-   "first_lot": 288824,
+   "shop_per_order": 61425,
+   "launch": 3675400,
+   "breakeven": 63,
+   "first_lot": 328824,
    "minimum": 20,
    "weeks": 3,
    "wadiz": true
@@ -110,9 +110,9 @@
   "stock_case": {
    "key": "stock_case",
    "label": "A factory's stock hunter case, empty, your lid lasered on, finished in Seoul",
-   "locket": 21172,
-   "single": 26872,
-   "pair": 51244,
+   "locket": 22672,
+   "single": 28372,
+   "pair": 54244,
    "parts": {
     "case": 5920,
     "finish": 1000,
@@ -127,17 +127,17 @@
    "price_single": 79000,
    "price_pair": 139000,
    "per_order_wadiz": {
-    "single": 28673,
-    "pair": 53923
+    "single": 26940,
+    "pair": 50458
    },
-   "before_content_wadiz": 49560,
-   "making_per_order": 44304,
+   "before_content_wadiz": 46875,
+   "making_per_order": 46861,
    "lockets_per_order": 1.55,
    "price_avg": 112000,
-   "shop_per_order": 52996,
-   "launch": 3422400,
-   "breakeven": 69,
-   "first_lot": 211720,
+   "shop_per_order": 50324,
+   "launch": 3997400,
+   "breakeven": 85,
+   "first_lot": 226720,
    "minimum": 10,
    "weeks": 3,
    "wadiz": true
@@ -289,68 +289,101 @@
     },
     {
      "month": "2027-05",
-     "net": -745000,
-     "cum": -2236000
+     "net": -1245000,
+     "cum": -2736000
     },
     {
      "month": "2027-06",
      "net": -605000,
-     "cum": -2841000
+     "cum": -3341000
     },
     {
      "month": "2027-07",
-     "net": 2502200,
-     "cum": -338800
+     "net": 2246500,
+     "cum": -1094500
     },
     {
      "month": "2027-08",
-     "net": -626520,
-     "cum": -965320
+     "net": -639305,
+     "cum": -1733805
     },
     {
      "month": "2027-09",
-     "net": 1084632,
-     "cum": 119312
+     "net": 977238,
+     "cum": -756567
     },
     {
      "month": "2027-10",
-     "net": 1925832,
-     "cum": 2045144
+     "net": 1813608,
+     "cum": 1057041
     },
     {
      "month": "2027-11",
-     "net": 1925832,
-     "cum": 3970976
+     "net": 1813608,
+     "cum": 2870649
     },
     {
      "month": "2027-12",
-     "net": 1925832,
-     "cum": 5896808
+     "net": 1813608,
+     "cum": 4684257
     },
     {
      "month": "2028-01",
-     "net": 1925832,
-     "cum": 7822640
+     "net": 1813608,
+     "cum": 6497865
     },
     {
      "month": "2028-02",
-     "net": 1925832,
-     "cum": 9748472
+     "net": 1813608,
+     "cum": 8311473
     }
    ],
-   "low": -2841000,
+   "low": -3341000,
    "low_month": "2027-06",
-   "back_above_zero": "2027-09",
+   "back_above_zero": "2027-10",
    "payout": 9968000,
-   "batch": 4430400,
-   "loss_if_presale_fails": 2886000,
-   "loss_if_25_charged": 1647000
+   "batch": 4686100,
+   "cases_before_payout": 1574540,
+   "low_before_payout": -4915540,
+   "loss_if_presale_fails": 3386000,
+   "loss_if_25_charged": 2214125
   }
  },
- "laser": {
-  "cost": 2500000,
-  "saving_per_job": 5700,
-  "payback_jobs": 439,
-  "payback_lockets_two_jobs": 219
+ "checks": {
+  "like_for_like": {
+   "locket": 23772,
+   "single": 33972,
+   "breakeven": 102
+  },
+  "engraving_threshold": 7408,
+  "in_house": {
+   "locket": 16952,
+   "single": 22652,
+   "per_order_wadiz": {
+    "single": 33547,
+    "pair": 63671
+   },
+   "marker": 2500000,
+   "saving_per_order": 10240,
+   "payback_orders": 244
+  },
+  "semi_custom_at_6000": {
+   "locket": 29571,
+   "breakeven": 138,
+   "low": -8958231
+  },
+  "semi_custom_low_at_60": -8231162,
+  "semi_custom_with_marker": {
+   "locket": 17587,
+   "low": -7596583,
+   "low_at_60": -8593383
+  },
+  "stock_low_at_60": -3341000,
+  "stock_with_marker_in_august": {
+   "low": -4233805,
+   "low_month": "2027-08",
+   "back_above_zero": "2027-11",
+   "low_at_60": -5230605
+  }
  }
 }

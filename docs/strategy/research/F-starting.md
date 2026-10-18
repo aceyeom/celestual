@@ -15,13 +15,14 @@ It joins four desk studies run the same day (China marketplaces, Korea, overseas
 1. **Nobody sells our locket.** No marketplace, wholesaler, maker or print-on-demand platform in China, Korea, the US or Europe surfaced a 34 to 38 mm brass hunter-case locket with no movement and a photo under glass. Only antique one-offs exist. (M, an absence across about 30 searches)
 2. **Cheap bodies in the right family do exist, and price is not the problem.** Most list at $1.40 to $4, about ₩2,100 to ₩5,900, far under the ₩24,000 target. The problems are the look, the size and the metal. (M)
 3. **The generic photo pocket watch is the cheapest thing to buy and the wrong thing to sell.** Quartz pocket watches list at $1.42 to $3.90 from 5 to 10 pieces. They are about 45 mm, made of alloy, with the photo on the outer lid, and are sold as groomsmen gifts at $20 to $90 on Etsy and ₩10,000 to ₩50,000 on 11st. (M)
-4. **Pocket-watch factories already sell empty hunter cases for customising**, with laser engraving, and dial printers take orders from 1 to 10 pieces. That is the closest existing manufacturer to our design. Case sizes and metal are not shown, so the samples must prove a small brass case exists. (M for the listings, L for size)
-5. **Wadiz will not take a stock product as the main reward.** Its review policy rules out a reward when "the same product" was already sold or pre-sold through another channel in Korea or abroad. The page must state how the reward is made. A toothbrush found on Taobao at a tenth of the price was ended early in 2019. (M-H)
+4. **The closest existing part is one listing for an empty full-hunter case sold for laser engraving**, and dial printers take orders from 1 to 10 pieces. The listing showed no size, metal, price or minimum, and the China notes think it may be the 45 mm alloy kind. So the start is a test, not a plan: ask factories for a case of 40 mm or less, in low-lead brass or 316L, from 10 pieces. (M for the listing, L for size and metal)
+5. **Wadiz will not take a stock product as the main reward.** Its review policy rules out a reward when "the same product" was already sold or pre-sold through another official channel in Korea or abroad. The page must state how the reward is made. A toothbrush found on Taobao at a tenth of the price was ended early in 2019. Whether a stock case body inside our own lid, dial, photo, engraving, box and letter passes is our reading of the clause, not Wadiz's answer, so ask Wadiz in writing first. (M-H for the rule; untested for a stock case)
 6. **Korea's lead limit for metal jewellery is 0.009% (90 mg/kg)**, not the 0.05% used in the plan until now. The limit comes from the Ministry of Environment's restricted-substance notice under the chemicals law (화평법). It has applied to import since 1 July 2024 and to sale since 1 January 2025. Cadmium of 0.1% or more is banned, and nickel release is held to 0.5 µg/cm² a week. Importer and seller are both liable. (M-H)
 7. **Cheap marketplace jewellery fails those limits often:** 24% of 404 AliExpress and Temu pieces at Incheon customs in 2024, 15% of 172 at Gunsan customs, and 45% of 250 counterfeit accessories in 2025, often by 100 times or more. (H)
-8. **Goods for resale cannot come in under list clearance (목록통관).** That counts as smuggling. They need a formal import declaration under the business number, 8% duty (0% under the Korea–China FTA with origin proof), 10% VAT, and a "Made in China" mark. (H for list clearance, M for the rest)
-9. **Personalisation, not the case, is most of the cost.** Outsourced engraving runs about ₩5,000 to ₩12,000 for a small unique job (Soomgo's average is ₩11,000). A generic 20 to 30 W fiber marker lists at $765 to $2,014, about ₩1.5M to ₩3.5M landed. (L-M)
-10. **Wadiz pays 60 to 80% when the presale's payments complete, and the rest after delivery and refunds.** Limited-edition projects are paid entirely afterwards. (M, from a Wadiz guide video summarised by search)
+8. **Goods for resale cannot come in through the quick customs lane for personal parcels (목록통관).** That counts as smuggling. They need a formal import declaration under the business number, 8% duty, 10% VAT, and a "Made in China" mark. The Korea–China FTA lists 0% only for chains (7117.19-6000) and needs a certificate of origin; an empty watch case may be classed under 9111, so ask a broker. (H for the personal-parcel lane, M for the rest)
+9. **Personalisation, not the case, is most of the cost.** Outsourced engraving runs about ₩5,000 to ₩12,000 for a small unique job by a regional blog, and Soomgo's average is ₩11,000. A generic 20 to 30 W fiber marker lists at $765 to $2,014, about ₩1.5M to ₩3.5M including shipping, duty and VAT. (L-M)
+10. **Wadiz pays 60 to 80% when the funding's payments complete, and the rest after delivery and refunds.** Special-bundle pre-orders and limited editions are paid entirely afterwards, so run the presale as reward funding (펀딩), not as a pre-order (프리오더). (M, from a Wadiz guide video summarised by search)
+11. **On cost, the case barely matters.** Built to the same spec, the stock case costs about the same as the semi-custom case (₩23,800 against ₩24,200 a locket). As specified, with the handwriting printed and a stock box, it is about ₩22,700, under the ₩24,200 target only while outsourced engraving stays at or under about ₩7,400 a job. With an in-house fiber marker it is about ₩17,000. Its real gains are a 10-piece minimum, earlier shipping and less cash out at once. (est., from routes.py)
 
 ## 1. What exists, by form
 
@@ -143,7 +144,7 @@ None showed unit prices. None was confirmed to have a pocket-watch-shaped locket
 | Nickel release | 0.5 µg/cm² a week, reported as the domestic limit | M | https://www.khan.co.kr/article/202203031226001 |
 
 - The limits come from the Ministry of Environment's notice on restricted and prohibited substances under 화평법, cited as 제2022-248 and 2021-295. Whether adult jewellery is also a 안전기준준수대상 생활용품 under 전안법 could not be confirmed. The ministry was reorganised in October 2025, so check which one now publishes the notice. (M)
-- The ban covers manufacture, import, sale, storage and transport, so a sole proprietor who imports and sells is liable twice. No per-model test filing was found; test each material and finish for each supplier lot (est.).
+- The ban covers manufacture, import, sale, storage and transport, so a sole proprietor who imports and sells is liable twice. No per-model test filing was found. Lab-test the first lot of each material and finish from each supplier, keep the supplier's report for every lot, and lab-test one lot in three and any lot after a change of supplier, alloy or plating (est.).
 - Korea's lead limit is stricter than the EU's 0.05%, and its cadmium limit looser than the EU's 0.01%. Free-machining brass holds about 1.8 to 3.7% lead, so "brass" is not safe by default; order it with a stated lead content below 0.009%, and test it. (M)
 - **Failure rates:** Incheon customs, 2024: 96 of 404 AliExpress and Temu pieces at 10 to 700 times the limits. Gunsan customs, 2024: 26 of 172, lead up to 3,812 times, all held. Korea Customs Service, 2025: 112 of 250 counterfeit accessories. Korea Consumer Agency, 2022: 11 of 30 open-market necklaces and earrings. (H) https://www.ajunews.com/view/20240407105331266 ; https://www.taxtimes.co.kr/mobile/article.html?no=266157 ; https://fashionbiz.co.kr/article/221160 ; https://www.khan.co.kr/article/202203031226001
 - **Test prices:** none found. Budget about ₩150,000 to ₩400,000 per material set (est.) and ask KTR, KCL or FITI for "금속 장신구 납·카드뮴 함량 + 니켈 용출 (EN 1811)".
@@ -151,7 +152,7 @@ None showed unit prices. None was confirmed to have a pocket-watch-shaped locket
 ### 2.4 Importing for resale
 
 - List clearance is for personal use only; declaring goods for sale as personal use is treated as smuggling. Use a formal import declaration (일반수입신고) under the business registration number. (H) https://www.taxwatch.co.kr/article/tax/2016/11/03/0029
-- HS 7117.19: 8% duty; the Korea–China FTA lists 0% for 7117.19-6000 with origin proof, and one blog says a certificate is waived at or below $700. VAT 10% on value plus duty. (M) https://treayo.com/en/hs/korea/71171960 ; https://www.tradlinx.com/blog/?p=351
+- HS 7117.19: 8% duty; the Korea–China FTA lists 0% for 7117.19-6000 (chains) with origin proof, and one blog says a certificate is waived at or below $700. VAT 10% on value plus duty. The case's own line was not checked; an empty pocket-watch case may be classed as a watch case (9111) rather than jewellery, so ask a broker for the line and its FTA rate. (M) https://treayo.com/en/hs/korea/71171960 ; https://www.tradlinx.com/blog/?p=351
 - Goods for sale must carry their origin. Finishing in Seoul does not change it, so mark "Made in China" on the tag or box. (M) https://www.customs.go.kr/call/ad/crmcc/selectFaqViewPage.do%3Fmi%3D6822%26cnslKnwlSrno%3D912
 - 1688 buying agents: 5–10% commission plus 4–6% on exchange, ₩700–2,000 per item code, about ₩15,000 a kg with a 2 kg minimum, ₩3,000 inspection per order. AliExpress Choice reaches Korea in about 5–7 days. A customs broker's fee per entry was not found; est. ₩30,000–60,000. (M) https://sellernow.co.kr/post/499583 ; https://tilnote.io/pages/6ace591a1bc5b55a94f2f41e
 
@@ -162,7 +163,7 @@ None showed unit prices. None was confirmed to have a pocket-watch-shaped locket
 | Engraving, outsourced | Soomgo average | ₩11,000 a piece, range ₩2,000–200,000 | M | https://soomgo.com/prices/%EA%B0%81%EC%9D%B8 |
 | Engraving, outsourced | Regional laser shops | ₩5,000–12,000 for a short line; ₩2,000–6,000 each for 100+ repeats | L-M | https://miso.kr/blog/김제-각인-레이저-마킹-비용 |
 | Engraving, outsourced | A Jongno 3-ga jewellery-street workshop with fiber and diode lasers | Quote; bulk work needs a sample first | M | https://kmong.com/gig/718848 |
-| Engraving, in-house | Generic 20–30 W fiber galvo marker | $765–2,014 ex works; est. ₩1.5–3.5M landed | M | https://ko.accio.com/plp/lasermarking |
+| Engraving, in-house | Generic 20–30 W fiber galvo marker | $765–2,014 ex works; est. ₩1.5–3.5M including shipping, duty and VAT | M | https://ko.accio.com/plp/lasermarking |
 | Engraving, in-house | LaserPecker 4 (diode + 2 W infrared) | $1,199–1,399 | M | https://clevercreations.org/laserpecker-4-review/ |
 | Printing | Photo printer, paper, punches, glass domes, UV glue | est. ₩0.3–0.5M for the kit; ₩30–150 a printed insert | est. | |
 | Printing | A4 UV flatbed | $1,099–1,299 | M | https://ko.accio.com/plp/uv평판프린터 |
@@ -175,37 +176,47 @@ None showed unit prices. None was confirmed to have a pocket-watch-shaped locket
 
 ## 4. What each route costs
 
-From [../model/routes.py](../model/routes.py), at the planned prices and the model's fees, shipping, defects and content. VAT excluded; the locket includes every part, the personalisation and import.
+From [../model/routes.py](../model/routes.py), at the planned prices and the model's fees, shipping, defects and content, rerun on 18 Oct 2026 after the outside review. VAT excluded; the locket includes every part, the personalisation, spares, import and checks. The small-lot routes carry ₩3,000 a locket for checks and lab re-tests, and ₩1M for the first round of lab tests (two cases, a chain and a clasp).
 
-| Route | One locket | Single, boxed | Left per presale pair, after content | Launch | Break-even, presale orders | Minimum | Weeks to pieces | Can be the Wadiz reward |
+| Route | One locket | Single, boxed | Left per presale order: single, pair | Launch | Break-even, presale orders | Minimum | Weeks to pieces | Can be the Wadiz reward |
 |---|---|---|---|---|---|---|---|---|
-| Generic photo pocket watch, at ₩45,000 / ₩79,000 | ₩14,285 | ₩16,985 | ₩21,052 | ₩1.97M | 86 | 10 | 2 | No |
-| Stock watch-shaped locket from 1688 | ₩17,721 | ₩23,421 | ₩61,894 | ₩2.43M | 44 | 10 | 3 | No |
-| Round 316L double-glass locket | ₩14,441 | ₩20,141 | ₩69,471 | ₩3.10M | 50 | 20 | 3 | Only with your own mark and dial |
-| **A factory's stock hunter case, empty, your lid lasered on** | **₩21,172** | **₩26,872** | **₩53,923** | **₩3.42M** | **69** | **10** | **3** | **Yes, if stated honestly** |
-| Semi-custom brass case (the plan until now) | ₩24,221 | ₩34,421 | ₩40,527 | ₩3.96M | 104 | 100 | 8 | Yes |
-| Your own case, cast in Jongno | ₩34,028 | ₩44,228 | ₩17,873 | ₩3.64M | 176 | 30 | 14 | Yes |
+| Generic photo pocket watch, at ₩45,000 / ₩79,000 | ₩16,785 | ₩19,485 | ₩6,945 / ₩15,277 | ₩2.55M | 138 | 10 | 2 | No |
+| Stock watch-shaped locket from 1688 | ₩19,721 | ₩25,421 | ₩30,348 / ₩57,274 | ₩3.01M | 58 | 10 | 3 | No |
+| Round 316L double-glass locket | ₩16,441 | ₩22,141 | ₩34,137 / ₩64,851 | ₩3.68M | 63 | 20 | 3 | Only with your own mark and dial |
+| **A factory's stock hunter case, empty, your lid lasered on** | **₩22,672** | **₩28,372** | **₩26,940 / ₩50,458** | **₩4.00M** | **85** | **10, assumed** | **3** | **Probably, if stated honestly; ask Wadiz** |
+| Semi-custom brass case | ₩24,221 | ₩34,421 | ₩19,954 / ₩40,527 | ₩3.96M | 104 | 100 | 8 | Yes |
+| Your own case, cast in Jongno | ₩34,028 | ₩44,228 | ₩8,627 / ₩17,873 | ₩3.64M | 176 | about 30 in the model | 14 | Yes |
 
-- The stock routes use a stock drawer box with a printed sleeve (₩5,700 a single with card, chip, seal and pouch); the semi-custom and cast routes keep the custom box (₩10,200). The box accounts for about ₩4,500 of the gap.
-- **Cash, middle case, with Wadiz paying 70% at the close:** on the semi-custom route the most out at once is about ₩7.2M in September 2027, back above zero in December. On the stock-case route it is about ₩2.8M in June, before the presale, and back above zero in September, because the cases are bought for the orders in hand and reordered in two to three weeks.
-- **If the presale misses its goal:** about ₩3.4M lost on the semi-custom route and ₩2.9M on the stock-case route. If Wadiz charged 25 backers anyway: about ₩1.6M on the stock case, against ₩3.1M on the semi-custom route before its box minimum and ₩3.2M to ₩3.7M with it, as in the Economics tab, because the semi-custom route must still buy 100 cases.
-- **A fiber marker** at about ₩2.5M pays back after about 440 lockets with one engraving each, or 220 with two, against ₩6,000 a job outsourced.
+- **The box:** the stock routes use a stock drawer box with a printed sleeve (₩5,700 a single with card, chip, seal and pouch); the semi-custom and cast routes keep the custom box (₩10,200). That ₩4,500 is an estimate.
+- **Like for like:** built to the semi-custom spec (the handwriting engraved at ₩4,000, the back at ₩3,000, the custom box), the stock case is ₩23,772 a locket and ₩33,972 a boxed single, and break-even is 102. The case itself saves little; the headline gap comes from printing the handwriting and the stock box.
+- **Engraving decides the cost target.** At $4 a case, the stock case passes the semi-custom ₩24,221 only while outsourced engraving is about ₩7,408 a job or less. At ₩6,000 a job it passes only while the case is about $4.95 or less. At Soomgo's ₩11,000 a job it is ₩28,172 a locket and break-even 108.
+- **With an in-house fiber marker** (about ₩300 to ₩500 a job, the handwriting engraved again) the stock case is ₩16,952 a locket and leaves ₩10,240 more per order; a ₩2.5M marker pays back after about 244 orders.
+- **The semi-custom route at outsourced prices** (₩6,000 for each of its two jobs) is ₩29,571 a locket and break-even 138, with a cash low of about ₩9.0M. So that route comes with the fiber marker: with in-house engraving and the marker bought in August, its low is about ₩7.6M, or ₩8.6M at a 60% payout.
+- **Cash, middle case, Wadiz paying 70% about two weeks after the close:** the stock case's month-end low is ₩3.34M in June, but its presale cases (about ₩1.57M with VAT) are paid on the close, before the first payout, so the most out at once is about ₩4.92M in mid-July. It is back above zero in October, or November with the marker bought in August (whose month-end low is then ₩4.23M, or ₩5.23M at a 60% payout). The semi-custom route orders its batch when the payout lands, so it has no mid-July dip; it is ₩7.23M out at the end of September (₩8.23M at a 60% payout) and back above zero in December.
+- **Reserve:** about ₩9M within reach until the stock case passes its gates (it covers the semi-custom fallback with its marker at a 60% payout); after that about ₩5.5M until December.
+- **If the presale misses its goal:** about ₩3.39M lost on the stock-case route and ₩3.36M on the semi-custom route. If Wadiz charged 25 backers anyway: about ₩2.21M on the stock case, against ₩3.11M on the semi-custom route, which must still buy 100 cases; the custom box's minimum would add more and is not in the model.
 
 ## 5. What to ask, after discharge
 
 **To pocket-watch case factories (English, through Alibaba or Made-in-China):**
-- Empty full-hunter case, no movement: the smallest you make between 30 and 40 mm. Crown and bow, hinged front lid with a snap, crystal fitted, back blank for engraving.
-- Brass with lead below 0.009% and cadmium below 0.01% by weight, with a test report for this item, its base metal, plating and solder. Or 316L stainless.
-- Our pattern lasered on the front lid and our mark inside, from our vector file.
-- Prices at 10, 50 and 100; sample price and time; production time; individual bags; commercial invoice with origin.
+- Empty full-hunter case, no movement: the smallest you make between 30 and 40 mm, 38 mm or less preferred. Crown and bow, hinged front lid with a snap, crystal fitted, back blank for engraving.
+- Inside the case, a seat or spacer ring for a printed dial with no movement and a centre post for fixed hands; inside the front lid, a flat recess for a 25 to 30 mm photo under flat glass, with its depth and the gap to the crystal.
+- Brass with lead below 0.009% and cadmium below 0.01% by weight in the base metal, plating and solder, or 316L stainless; a test report for this item covering lead and cadmium content and nickel release (EN 1811).
+- Our pattern lasered on the front lid from our vector file; our mark inside the back cover, not the lid.
+- Measurements and photos with a ruler: diameter, thickness, lid recess, crystal and weight.
+- Prices at 10, 50 and 100; sample price and time; production time; individual bags; commercial invoice with origin, and a Korea–China FTA certificate of origin if they can issue one.
+- The lid pattern stays ours: not sold to others, in a short supply agreement.
 
-**To Guangzhou brass makers (Baoyan, Mimier, Peishang):** do you already have a pocket-watch-shaped photo locket mould, and can you make it in low-lead brass at 30 to 50 pieces with our lid pattern?
+**To Guangzhou brass makers (Baoyan, Mimier, Peishang):** do you already have a pocket-watch-shaped photo locket mould? Can you make it in low-lead brass at 30 to 50 pieces with our lid pattern?
 
-**In Seoul:** a fixed per-job engraving price from a Jongno 3-ga shop for a 34 to 40 mm brass back, with vector files supplied; quotes from two customs brokers for a small formal import; a lab quote for lead, cadmium and nickel release.
+**To Wadiz, in writing:** whether a stock case body carrying our lid, dial, photo, engraving, box and letter can be the main reward, with the lid file and a supply agreement ready.
+
+**In Seoul:** a fixed per-job engraving price from a Jongno 3-ga shop for a 30 to 40 mm brass back, with vector files supplied and a different line on each piece; quotes from two customs brokers for a small formal import, with the HS line and FTA rate for an empty watch case; a lab quote for lead, cadmium and nickel release.
 
 ## 6. What could not be found
 
-- A stock 34 to 38 mm hunter case in brass or silver, with size, metal, price and minimum.
+- A stock 30 to 40 mm hunter case in brass, 316L or silver, with size, metal, price and minimum; the one empty-case listing showed none of them.
+- Whether Wadiz accepts a stock case body inside our own design as the main reward.
 - Item-level prices, ratings, Korea shipping and sample terms for nearly every China listing.
 - Korean wholesale listings with price and minimum, Namdaemun prices, and which Jongno shops now sell dials, hands and domes.
 - Unit prices and mould fees for semi-custom brass lockets at 50 to 300 pieces.
