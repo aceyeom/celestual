@@ -219,27 +219,27 @@
   },
   {
    "month": "2027-07",
-   "net": 4857696,
-   "cum": 1546696,
-   "note": "the presale pays out; half the first batch is paid up front"
+   "net": 1867296,
+   "cum": -1443704,
+   "note": "Wadiz pays 70% of the presale; half the first batch is paid up front"
   },
   {
    "month": "2027-08",
    "net": -5110304,
-   "cum": -3563608,
+   "cum": -6554008,
    "note": "the batch balance"
   },
   {
    "month": "2027-09",
    "net": -680288,
-   "cum": -4243896,
+   "cum": -7234296,
    "note": "presale orders finished in Seoul and shipped"
   },
   {
    "month": "2027-10",
-   "net": 1453861,
+   "net": 4444261,
    "cum": -2790035,
-   "note": "the shop sells about 42 orders a month"
+   "note": "Wadiz pays the rest after delivery; the shop sells about 42 orders a month"
   },
   {
    "month": "2027-11",
@@ -268,12 +268,14 @@
  ],
  "cash_facts": {
   "payout": 9968000,
+  "advance": 6977600,
+  "balance": 2990400,
   "po1": 10130608,
   "po1_orders": 184,
   "po1_lockets": 285,
   "ship_presale": 635288,
   "shop_month": 1453861,
-  "low": -4243896,
+  "low": -7234296,
   "low_month": "2027-09",
   "launch_spent_by_july": 3356000
  }

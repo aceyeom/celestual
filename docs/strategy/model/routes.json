@@ -1,0 +1,356 @@
+{
+ "rate": 1480,
+ "wadiz_advance": 0.7,
+ "routes": {
+  "generic": {
+   "key": "generic",
+   "label": "Generic photo pocket watch, bought in and engraved",
+   "locket": 14285,
+   "single": 16985,
+   "pair": 33470,
+   "parts": {
+    "case": 3700.0,
+    "finish": 0,
+    "dial": 0,
+    "hands": 0,
+    "glass": 0,
+    "photo": 0,
+    "chain": 0,
+    "engrave_back": 8000,
+    "engrave_inside": 0
+   },
+   "price_single": 45000,
+   "price_pair": 79000,
+   "per_order_wadiz": {
+    "single": 9832,
+    "pair": 21052
+   },
+   "before_content_wadiz": 23003,
+   "making_per_order": 28657,
+   "lockets_per_order": 1.55,
+   "price_avg": 63700,
+   "shop_per_order": 24975,
+   "launch": 1973400,
+   "breakeven": 86,
+   "first_lot": 142850,
+   "minimum": 10,
+   "weeks": 2,
+   "wadiz": false
+  },
+  "stock_locket": {
+   "key": "stock_locket",
+   "label": "Stock watch-shaped photo locket from 1688, finished in Seoul",
+   "locket": 17721,
+   "single": 23421,
+   "pair": 44342,
+   "parts": {
+    "case": 3064.7499999999995,
+    "finish": 0,
+    "dial": 200,
+    "hands": 300,
+    "glass": 300,
+    "photo": 200,
+    "chain": 1500,
+    "engrave_back": 8000,
+    "engrave_inside": 0
+   },
+   "price_single": 79000,
+   "price_pair": 139000,
+   "per_order_wadiz": {
+    "single": 32658,
+    "pair": 61894
+   },
+   "before_content_wadiz": 55738,
+   "making_per_order": 38421,
+   "lockets_per_order": 1.55,
+   "price_avg": 112000,
+   "shop_per_order": 59145,
+   "launch": 2433400,
+   "breakeven": 44,
+   "first_lot": 177212,
+   "minimum": 10,
+   "weeks": 3,
+   "wadiz": false
+  },
+  "steel_round": {
+   "key": "steel_round",
+   "label": "Round 316L steel locket with two glass windows, finished in Seoul",
+   "locket": 14441,
+   "single": 20141,
+   "pair": 37782,
+   "parts": {
+    "case": 2960.0,
+    "finish": 0,
+    "dial": 200,
+    "hands": 300,
+    "glass": 0,
+    "photo": 200,
+    "chain": 1500,
+    "engrave_back": 6000,
+    "engrave_inside": 0
+   },
+   "price_single": 79000,
+   "price_pair": 139000,
+   "per_order_wadiz": {
+    "single": 36447,
+    "pair": 69471
+   },
+   "before_content_wadiz": 61610,
+   "making_per_order": 32828,
+   "lockets_per_order": 1.55,
+   "price_avg": 112000,
+   "shop_per_order": 64989,
+   "launch": 3100400,
+   "breakeven": 50,
+   "first_lot": 288824,
+   "minimum": 20,
+   "weeks": 3,
+   "wadiz": true
+  },
+  "stock_case": {
+   "key": "stock_case",
+   "label": "A factory's stock hunter case, empty, your lid lasered on, finished in Seoul",
+   "locket": 21172,
+   "single": 26872,
+   "pair": 51244,
+   "parts": {
+    "case": 5920,
+    "finish": 1000,
+    "dial": 500,
+    "hands": 300,
+    "glass": 500,
+    "photo": 300,
+    "chain": 2000,
+    "engrave_back": 6000,
+    "engrave_inside": 0
+   },
+   "price_single": 79000,
+   "price_pair": 139000,
+   "per_order_wadiz": {
+    "single": 28673,
+    "pair": 53923
+   },
+   "before_content_wadiz": 49560,
+   "making_per_order": 44304,
+   "lockets_per_order": 1.55,
+   "price_avg": 112000,
+   "shop_per_order": 52996,
+   "launch": 3422400,
+   "breakeven": 69,
+   "first_lot": 211720,
+   "minimum": 10,
+   "weeks": 3,
+   "wadiz": true
+  },
+  "semi_custom": {
+   "key": "semi_custom",
+   "label": "Semi-custom brass case from a Chinese factory (the plan until now)",
+   "locket": 24221,
+   "single": 34421,
+   "pair": 62842,
+   "parts": {
+    "case": 7400,
+    "finish": 1500,
+    "dial": 800,
+    "hands": 300,
+    "glass": 500,
+    "photo": 800,
+    "chain": 2000,
+    "engrave_back": 3000,
+    "engrave_inside": 4000
+   },
+   "price_single": 79000,
+   "price_pair": 139000,
+   "per_order_wadiz": {
+    "single": 19954,
+    "pair": 40527
+   },
+   "before_content_wadiz": 38269,
+   "making_per_order": 55058,
+   "lockets_per_order": 1.55,
+   "price_avg": 112000,
+   "shop_per_order": 41759,
+   "launch": 3962900,
+   "breakeven": 104,
+   "first_lot": 2422100,
+   "minimum": 100,
+   "weeks": 8,
+   "wadiz": true
+  },
+  "cast_seoul": {
+   "key": "cast_seoul",
+   "label": "Your own case, lost-wax cast in Jongno",
+   "locket": 34028,
+   "single": 44228,
+   "pair": 82456,
+   "parts": {
+    "case": 17500,
+    "finish": 1500,
+    "dial": 800,
+    "hands": 300,
+    "glass": 500,
+    "photo": 800,
+    "chain": 2000,
+    "engrave_back": 3000,
+    "engrave_inside": 4000
+   },
+   "price_single": 79000,
+   "price_pair": 139000,
+   "per_order_wadiz": {
+    "single": 8627,
+    "pair": 17873
+   },
+   "before_content_wadiz": 20712,
+   "making_per_order": 71779,
+   "lockets_per_order": 1.55,
+   "price_avg": 112000,
+   "shop_per_order": 24285,
+   "launch": 3640900,
+   "breakeven": 176,
+   "first_lot": 1020840,
+   "minimum": 30,
+   "weeks": 14,
+   "wadiz": true
+  }
+ },
+ "cash": {
+  "semi_custom": {
+   "months": [
+    {
+     "month": "2027-04",
+     "net": -1291000,
+     "cum": -1291000
+    },
+    {
+     "month": "2027-05",
+     "net": -1145000,
+     "cum": -2436000
+    },
+    {
+     "month": "2027-06",
+     "net": -875000,
+     "cum": -3311000
+    },
+    {
+     "month": "2027-07",
+     "net": 1867264,
+     "cum": -1443736
+    },
+    {
+     "month": "2027-08",
+     "net": -5110336,
+     "cum": -6554072
+    },
+    {
+     "month": "2027-09",
+     "net": -680290,
+     "cum": -7234362
+    },
+    {
+     "month": "2027-10",
+     "net": 4444278,
+     "cum": -2790084
+    },
+    {
+     "month": "2027-11",
+     "net": 1453878,
+     "cum": -1336206
+    },
+    {
+     "month": "2027-12",
+     "net": 1453878,
+     "cum": 117672
+    },
+    {
+     "month": "2028-01",
+     "net": 1453878,
+     "cum": 1571550
+    },
+    {
+     "month": "2028-02",
+     "net": 1453878,
+     "cum": 3025428
+    }
+   ],
+   "low": -7234362,
+   "low_month": "2027-09",
+   "back_above_zero": "2027-12",
+   "payout": 9968000,
+   "batch": 10130672,
+   "loss_if_presale_fails": 3356000,
+   "loss_if_25_charged": 3108262
+  },
+  "stock_case": {
+   "months": [
+    {
+     "month": "2027-04",
+     "net": -1491000,
+     "cum": -1491000
+    },
+    {
+     "month": "2027-05",
+     "net": -745000,
+     "cum": -2236000
+    },
+    {
+     "month": "2027-06",
+     "net": -605000,
+     "cum": -2841000
+    },
+    {
+     "month": "2027-07",
+     "net": 2502200,
+     "cum": -338800
+    },
+    {
+     "month": "2027-08",
+     "net": -626520,
+     "cum": -965320
+    },
+    {
+     "month": "2027-09",
+     "net": 1084632,
+     "cum": 119312
+    },
+    {
+     "month": "2027-10",
+     "net": 1925832,
+     "cum": 2045144
+    },
+    {
+     "month": "2027-11",
+     "net": 1925832,
+     "cum": 3970976
+    },
+    {
+     "month": "2027-12",
+     "net": 1925832,
+     "cum": 5896808
+    },
+    {
+     "month": "2028-01",
+     "net": 1925832,
+     "cum": 7822640
+    },
+    {
+     "month": "2028-02",
+     "net": 1925832,
+     "cum": 9748472
+    }
+   ],
+   "low": -2841000,
+   "low_month": "2027-06",
+   "back_above_zero": "2027-09",
+   "payout": 9968000,
+   "batch": 4430400,
+   "loss_if_presale_fails": 2886000,
+   "loss_if_25_charged": 1647000
+  }
+ },
+ "laser": {
+  "cost": 2500000,
+  "saving_per_job": 5700,
+  "payback_jobs": 439,
+  "payback_lockets_two_jobs": 219
+ }
+}

@@ -2,7 +2,8 @@
 Writes econ.json next to this file. All money in KRW.
 
 Timeline assumed (the plan, Phase 4 and 5): discharge in early April 2027; samples in April and May;
-the presale on Wadiz from 14 June to 11 July 2027; the payout in late July; the first batch ordered then,
+the presale on Wadiz from 14 June to 11 July 2027; 70% of it paid out in late July and the rest after delivery;
+the first batch ordered then,
 covering the presale plus two months of shop stock; presale orders shipped in late September;
 the shop selling from October 2027. Year 1 = the presale plus the shop's first 12 months.
 """
@@ -12,6 +13,7 @@ import model as m
 B = dict(m.BASE)
 L_SUB, L_CONT, L_TOTAL = m.launch_total()
 TOOLS_MONTH = 45000  # the launch's 'Tools for six months', April to September 2027
+WADIZ_ADVANCE = 0.7  # Wadiz pays 60 to 80% when the presale's payments complete, the rest after delivery and refunds
 
 
 def per_order(a, channel, vat):
@@ -121,10 +123,12 @@ plan = [
     ('2027-04', -(launch_in('2027-04') + TOOLS_MONTH), 'discharge: registration, trademark, reference samples, CAD'),
     ('2027-05', -(launch_in('2027-05') + TOOLS_MONTH), 'custom samples, lab test, box proof, design'),
     ('2027-06', -(launch_in('2027-06') + TOOLS_MONTH), 'twelve early pieces, photos; the presale opens'),
-    ('2027-07', payout - po1 / 2 - TOOLS_MONTH, 'the presale pays out; half the first batch is paid up front'),
+    ('2027-07', WADIZ_ADVANCE * payout - po1 / 2 - TOOLS_MONTH,
+     'Wadiz pays 70% of the presale; half the first batch is paid up front'),
     ('2027-08', -po1 / 2 - TOOLS_MONTH, 'the batch balance'),
     ('2027-09', -ship_presale - TOOLS_MONTH, 'presale orders finished in Seoul and shipped'),
-    ('2027-10', shop_month, 'the shop sells about 42 orders a month'),
+    ('2027-10', (1 - WADIZ_ADVANCE) * payout + shop_month,
+     'Wadiz pays the rest after delivery; the shop sells about 42 orders a month'),
     ('2027-11', shop_month, '11.11'), ('2027-12', shop_month, ''), ('2028-01', shop_month, ''), ('2028-02', shop_month, ''),
 ]
 cum, cash = 0, []
@@ -132,7 +136,8 @@ for mo, net, note in plan:
     cum += net
     cash.append(dict(month=mo, net=round(net), cum=round(cum), note=note))
 out['cash'] = cash
-out['cash_facts'] = dict(payout=round(payout), po1=round(po1), po1_orders=po1_orders,
+out['cash_facts'] = dict(payout=round(payout), advance=round(WADIZ_ADVANCE * payout),
+                         balance=round((1 - WADIZ_ADVANCE) * payout), po1=round(po1), po1_orders=po1_orders,
                          po1_lockets=round(po1_orders * o['lockets']), ship_presale=round(ship_presale),
                          shop_month=round(shop_month), low=min(c['cum'] for c in cash),
                          low_month=min(cash, key=lambda c: c['cum'])['month'],
