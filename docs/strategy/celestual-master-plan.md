@@ -1,6 +1,6 @@
 # Celestual: The Master Plan
 
-Oct 15, 2026 · @Ace
+Oct 15, 2026 · updated Oct 18, 2026 · @Ace
 
 > The keepsake and the 11:11 in one plan, step by step. Charts and diagrams are in the PDF version, [celestual-master-plan.pdf](./celestual-master-plan.pdf), and in the live doc. The images are concept renders made for this plan. The economics model is in [model/](./model/), and the research notes behind every tab are in [research/](./research/). This plan builds on [the turnaround memo](./celestual-turnaround-memo.md) and [the keepsake branch](./celestual-keepsake-branch.md).
 
@@ -9,11 +9,12 @@ Oct 15, 2026 · @Ace
 1. [The plan, step by step](#the-plan-step-by-step)
 2. [The object: what exists, and what we make](#the-object-what-exists-and-what-we-make)
 3. [Making, selling and shipping](#making-selling-and-shipping)
-4. [Economics](#economics)
-5. [Marketing: the whole stack](#marketing-the-whole-stack)
-6. [The 11:11](#the-1111)
-7. [Legal and setup](#legal-and-setup)
-8. [Evidence and sources](#evidence-and-sources)
+4. [Starting small: the first pieces from what already exists](#starting-small-the-first-pieces-from-what-already-exists)
+5. [Economics](#economics)
+6. [Marketing: the whole stack](#marketing-the-whole-stack)
+7. [The 11:11](#the-1111)
+8. [Legal and setup](#legal-and-setup)
+9. [Evidence and sources](#evidence-and-sources)
 
 ## The plan, step by step
 
@@ -53,7 +54,8 @@ If the first fails, the pair test starts the next day. If under 25% write back, 
 | Tab | Open it when | What it holds |
 | --- | --- | --- |
 | The object | Choosing what to make | What already exists, where the gap is, our design in concept images, the spec |
-| Making, selling and shipping | Talking to suppliers, setting up the shop | Suppliers, minimums and lead times, the path from sample to first batch, the store and order system, shipping and returns |
+| Making, selling and shipping | Talking to suppliers, setting up the shop | Suppliers, minimums and lead times, the path from sample to the first pieces, the store and order system, shipping and returns |
+| Starting small | Before the first supplier order, and in the weeks after discharge | What exists to buy in tens, retro or generic, what each route costs, the rules that decide it, the weeks from discharge to shipping, the supplier requests |
 | Economics | Setting prices and deciding how much to risk | What each order earns, the launch budget, break-even, scenarios, cash by month, what moves profit most |
 | Marketing | Planning content and the presale | Audiences, the funnel, the content engine, channels and budgets, the calendar, the tool stack, weekly metrics |
 | The 11:11 | A host says yes | How a night works, its gates, and the engine it shares with pair letters |
@@ -169,35 +171,37 @@ The goal is to arrive at discharge with the presale ready to start, without havi
 - [ ] **Decide what leads in 2027** on 1 March, the day the 11:11 holds its romance gate (Gate 2). If both passed, the line is "it opens at 11:11, only when it's both of you": pairs and the object come first, and the 11:11 runs as seasons. If only the pair test passed, lead with pairs and the object. If only the 11:11 passed, lead with group nights and don't make the object. If neither passed, pause until discharge. Due Mar 1, 2027
 - [ ] **If the keepsake passed and the lawyer allowed sign-ups, ask pair-letter users for consent** to hear about the presale by email. That list is the presale.
 - [ ] **Prepare privately, as far as the lawyer allowed:** the spec, the presale page draft, the ten updates. Nothing goes to a supplier or goes public until discharge.
-- [ ] **Decide where you will live and work after discharge,** and who could learn to finish a locket as a second pair of hands. Due Mar 31, 2027
+- [ ] **Decide where you will live and work after discharge,** and who will finish lockets with you from late July 2027, paid about ₩0.5M to ₩0.8M for the presale run. Due Mar 31, 2027
 
 ### Phase 4 · April to July 2027: discharge, samples and the presale
 
-Every date here assumes discharge in early April 2027 and counts from that week. If yours is later, move every step with it, and start nothing before it, including on final leave. The detail is in the Making, Economics and Marketing tabs.
+Every date here assumes discharge in early April 2027 and counts from that week. If yours is later, move every step with it, and start nothing before it, including on final leave. The detail is in the Starting small, Making, Economics and Marketing tabs.
 
-- [ ] **Week 1: register the business,** a sole proprietorship under simplified VAT, in about two working days. File the online-sales report unless you are exempt, open the SmartStore account, and order the reference samples. Due Apr 9, 2027
-- [ ] **Open the Wadiz waitlist** with the concept renders, labelled as concepts. Invite the people who agreed to hear about the presale to join it themselves; never upload the list. Aim for 400 or more sign-ups before the presale opens. Due Apr 20, 2027
-- [ ] **File the trademark and the locket's design** if they aren't filed yet: the trademark in classes 14 and 35, the design before the presale page goes public, claiming Korea's 12-month grace period for renders already shown on the waitlist page or in posts. Due Apr 30, 2027
-- [ ] **Samples, weeks 1 to 8:** reference samples in week 1, custom samples from two factories ordered by week 4, quotes in Seoul, and a lab test of the chosen finish. Due May 28, 2027
-- [ ] **Approve the golden sample only if it passes:** lead under 0.05% and cadmium under 0.01% in every metal part, nickel-free plating, 500 open-and-close cycles, three 1 m drops, heat and cold, and a 3 to 5 kg pull on the clasp. The golden sample is the one finished piece every later piece must match. Then order 12 more like it: 10 for creators and a pair to film. Due May 28, 2027
-- [ ] **Hold the first in-person 11:11 night** with a group you can reach after discharge, whatever the remote result. Due May 31, 2027
+- [ ] **Week 1: register the business,** a sole proprietorship under simplified VAT, in about two working days. File the online-sales report unless you are exempt, and open the SmartStore account. Then, as in Starting small, send the supplier requests, order the prototype kit and ask Wadiz in writing whether a stock body can be the main reward. Due Apr 9, 2027
+- [ ] **Open the Wadiz waitlist** with the concept renders, labelled as concepts; swap in photos of the prototype, labelled 시제품, once one exists. Invite the people who agreed to hear about the presale to join it themselves; never upload the list. Aim for 400 or more sign-ups before the presale opens. Due Apr 20, 2027
+- [ ] **File the trademark and the design of your lid pattern and dial** if they aren't filed yet: the trademark in classes 14 and 35, the design before the presale page goes public, claiming Korea's 12-month grace period for renders already shown on the waitlist page or in posts. Due Apr 30, 2027
+- [ ] **Hold the first in-person 11:11 night** with a group you can reach after discharge, whatever the remote result. If the sample weeks overrun, move it to after the presale. Due May 31, 2027
+- [ ] **Samples, weeks 1 to 9,** as in Starting small: the prototype kit and the supplier requests in week 1, with two semi-custom quotes; the stock-case gate in week 3; case samples with your lid lasered on in weeks 5 and 6; quotes in Seoul; and the lab gate in weeks 7 to 9. At week 3, if no factory offers a hunter case of 40 mm or less, from 10 pieces, in low-lead brass or 316L steel, use the semi-custom case in the Making tab if about ₩9M is within reach, and move the presale back about three weeks. Otherwise use the round steel locket. If the only problem is lead, go to steel. If the lab fails the case, use the second factory's if it passed, or else order and test a 316L case; if a chain or clasp fails, change its supplier. Due Jun 4, 2027
+- [ ] **Approve the golden sample only if it passes the lab and the wear checks.** The lab: lead at most 0.009% and cadmium under 0.01% in every metal part, nickel release under 0.5 µg/cm² a week, and no nickel under-plate. The wear checks: 500 open-and-close cycles, three 1 m drops, heat and cold, and a 3 to 5 kg pull on the clasp. The golden sample is the one finished piece every later piece must match. Send out the 12 early pieces made like it, from the 20 cases ordered by week 6: 10 for creators and a pair to film. Then submit the project to Wadiz's review with the sample photos, so a no at review still leaves time to move the presale once. Due Jun 4, 2027
 - [ ] **Build the order step into the pair letter:** photo upload with a crop guide for two faces, the time to set, one line from each person written by hand on the phone, and both people's consent. Done means one test order arrives as one complete row in the order sheet. Due Jun 4, 2027
-- [ ] **Run the presale for four weeks,** from Jun 14, 2027 to Jul 11, 2027, with ten or more updates. If the waitlist is under 250 two weeks before, move it back once, by up to four weeks, with every later date. If it is still under 250, open with the goal at 40 orders and let the presale gate decide. Set the Wadiz goal at the stop line, about ₩4.5M or 40 orders, once Wadiz confirms that backers are charged only if the goal is met. No early-bird discount deeper than 10%. Before the page goes live, ask Wadiz when it pays out. If it pays about two weeks after the close, the page promises delivery by 8 October 2027; if later, move that date by the same amount.
-- [ ] **Hold the presale gate.** 100 orders or more, about ₩11M at full price, roughly pays back the launch, so continue. Count each order at the 10% early-bird price as three quarters of an order, because the discount comes straight out of the margin. 40 to 99: make and ship them, change the price, face or content, and let the shop gate in February decide. Under 40: the goal is missed, nobody is charged, the object stops and the letters stay. Due Jul 18, 2027
-- [ ] **Order the batch when Wadiz pays out,** for the presale plus two months of shop stock: about 285 lockets in the middle case. Due Jul 30, 2027
-- [ ] **Send every backer their own order link** the day the presale closes, and chase until each order has its photo, time and both handwritten lines, before the batch arrives. Due Aug 31, 2027
+- [ ] **Run the presale for four weeks,** from Jun 14, 2027 to Jul 11, 2027, with ten or more updates. If the waitlist is under 250 two weeks before, or the samples or the lab slip, move it back once, by up to four weeks, with every later date. If it is still under 250, open with the goal at 40 orders and let the presale gate decide. Set the Wadiz goal at the stop line, about ₩4.5M or 40 orders, once Wadiz confirms that backers are charged only if the goal is met. No early-bird discount deeper than 10%. Run it as reward funding (펀딩) with a goal, not as Wadiz's pre-order type (프리오더): a pre-order needs a special benefit, and its special-bundle and limited-edition versions are paid only afterwards. Wadiz pays 60 to 80% when the funding's payments complete, by its guide, and the rest after delivery; confirm the split before the page goes live. The page says how the locket is made and promises delivery by 10 September 2027, or 8 October on the semi-custom fallback. Sell or pre-sell it nowhere before you submit it.
+- [ ] **If the goal is met, order cases for every presale order** the day after the close, plus 10% spares: about 170 lockets and ₩1.6M in the middle case. This is paid before Wadiz's first payout lands, so you are about ₩4.9M out in mid-July; keep about ₩5.5M within reach until December, as in the Economics tab. Buy the chains, boxes and cards after the payout lands. Send the first cases to the lab the day they arrive; finish orders while you wait, but ship nothing until the result is in. On the semi-custom fallback, order the batch when Wadiz pays out instead, with two months of shop stock: about 285 lockets. Due Jul 12, 2027
+- [ ] **Hold the presale gate on the paid orders, once Wadiz's payments complete.** 100 orders or more, about ₩11M at full price, pays back the stock case's launch (85 orders) and nearly all of the semi-custom case's (104), and shows a shop can follow, so continue. Count each order at the 10% early-bird price as about four fifths of an order on the stock case, or three quarters on the semi-custom case. The discount comes straight out of the margin. 40 to 99: make and ship them, change the price, face or content, and let the shop gate in February decide. Under 40: the goal is missed, nobody is charged, the object stops and the letters stay. Due Jul 18, 2027
+- [ ] **Send every backer their own order link** the day the presale closes, and chase until each order has its photo, time and both handwritten lines, before the cases arrive. Due Jul 31, 2027
 
 ### Phase 5 · August 2027 to February 2028: the first pieces, 11.11 and the shop gate
 
 The goal is a shop that sells 40 or more orders a month without paid ads, or an honest decision to run it as a side project.
 
-- [ ] **Finish the presale orders in Seoul and ship them,** then ask every buyer for a photo review and, with both people's consent, their opening. Keep each photo until the 3-month defect window closes, then delete it. Due Sep 30, 2027
-- [ ] **Open the SmartStore shop** with the batch's shop stock, list it for Naver blog reviews through 리뷰노트, and sign two or three moment partners near training centres on a 15 to 20% code. Due Oct 1, 2027
-- [ ] **Reorder every month, two months ahead,** while the shop sells; a reorder takes 6 to 8 weeks. The first covers December and January. Due Oct 4, 2027
+- [ ] **Buy a fiber marker once Wadiz's first payout has landed and the first presale cases pass the lab,** if the presale has 100 orders or more, or 60 or more with an engraving quote above ₩10,000 a job: a generic 20 to 30 W one, about ₩1.5M to ₩3.5M including shipping, duty and VAT. Each job then costs a few hundred won instead of about ₩6,000, and the handwriting can be engraved inside the lid again. Try it on the spare cases first; the Jongno shop does the presale run. Due Aug 27, 2027
+- [ ] **Finish the presale orders in Seoul and ship them,** about 90 to 150 hours of work for two people, then ask every buyer for a photo review and, with both people's consent, their opening. Keep each photo until the 3-month defect window closes, then delete it. On the semi-custom fallback this moves to late September. Due Aug 31, 2027
+- [ ] **Each month, order the next month's cases** while the shop sells; a reorder takes 2 to 3 weeks, and the first covers October. On the semi-custom fallback, reorder two months ahead, because a reorder takes 6 to 8 weeks. Due Sep 6, 2027
+- [ ] **Open the SmartStore shop** with a month of stock, list it for Naver blog reviews through 리뷰노트, and sign two or three moment partners near training centres on a 15 to 20% code. Due Oct 1, 2027
 - [ ] **Prepare 11.11 with the object on sale:** the first Pepero Day the keepsake can actually be sold. Due Nov 11, 2027
 - [ ] **Add the entry item** if the pair-letter users' poll favoured it: a ₩29,000 to ₩39,000 brass 11:11 charm for 100 days, friends and bags.
 - [ ] **Hold the 11:11's December gate:** did 40 or more groups run a night, half without founder help? Due Dec 13, 2027
 - [ ] **Hold the shop gate:** does the keepsake sell 40 or more orders a month without ads, averaged over October to February? Below both bars, Celestual is a side project, said out loud. Due Feb 29, 2028
+- [ ] **Move to the semi-custom case** once the shop sells 40 orders a month, or once reviews name the stock case as the weak point. It is 36 mm, with an engine-turned lid and the handwriting engraved inside. Pay its 100-piece minimum from sales, not savings.
 - [ ] **Later, only if the shop passed:** apply to Kakao gifts after six months of reviews. Test the US through Etsy with 10 to 20 orders once there are 50 or more Korean reviews, a customs ruling on the tariff code and origin, and a US version of the model. Every US parcel now pays duty, and Etsy's fees plus prepaid shipping can take a single's whole margin, so decide with an accountant which business sells to the US.
 
 ## The object: what exists, and what we make
@@ -212,6 +216,8 @@ So the design has to look different even in a thumbnail:
 - **Hidden:** a colour photo inside, not a black-and-white etching on the lid.
 - **Stopped:** hands fixed at your moment.
 - **Written:** one line of each person's letter, in their own handwriting, inside the lid.
+
+The first pieces start simpler, if the week-3 test finds the case: a stock hunter case of 40 mm or less, preferring 38 mm or less, with your pattern lasered on the lid and the handwriting printed. Closed, it looks like a small pocket watch, so every photo and video shows it open. If no such case exists, the Starting small tab sets out the fallbacks.
 
 Price it in the band where Korean couples already spend. Mid-range couple rings cost ₩100,000 to ₩300,000 each, and people in their 20s call ₩100,000 to ₩130,000 a fitting anniversary gift, and spend about ₩271,600 on each anniversary (2023 survey). Lead with the pair at ₩139,000, next to the $85 to $140 pair price of long-distance bracelets such as Totwoo and Bond Touch.
 
@@ -290,10 +296,12 @@ These are concept renders drawn for this plan, not photographs of a made sample.
 
 **The card** explains why the hands don't move, and holds the chip that opens both letters online, with the QR as a backup.
 
+**The first pieces start simpler.** They use the smallest stock hunter case a factory already makes, if the tests find one, with your pattern lasered on the lid and the two handwritten lines printed around the photo; see Starting small. The spec below is the custom case they grow into.
+
 | Part | Spec | Why |
 | --- | --- | --- |
 | Case | Brass hunter case, 34 to 38 mm, about 30 g, hinged at 9 o'clock | Light enough for a bag; quiet outside, antique inside |
-| Finish | Hand-patinated brass under a clear e-coat (the base cost), or a silver-tone, nickel-free plating of 1 to 2 microns for about ₩2,000 to ₩4,000 more; lead under 0.05% and cadmium under 0.01% in every metal part, tested for nickel release | The content test picks between the two finishes |
+| Finish | Hand-patinated brass under a clear e-coat (the base cost), or a silver-tone, nickel-free plating of 1 to 2 microns for about ₩2,000 to ₩4,000 more; lead at most 0.009%, Korea's limit for metal jewellery, and cadmium under 0.01% in every metal part, tested for nickel release | The content test picks between the two finishes |
 | Dial | Cream, Roman numerals, blued hands glued at the chosen time; no movement | No battery to die, $2 to $5 cheaper, about 3 mm thinner |
 | Photo | The couple's own, trimmed like a photo-booth frame, under domed mineral glass; the window is about 26 to 30 mm, so the crop guide must fit two faces | No printing, no photo moderation, and it can be swapped after a breakup |
 | Inside the lid | One line from each person's letter, laser-engraved in their own handwriting, around the photo. No quote yet; if it isn't legible on a sample, the two lines go on a printed card behind the photo | Joins the free letter to the paid object; a copy can't engrave your partner's sealed words |
@@ -311,8 +319,8 @@ One is already made: it is sold as a locket, not a watch. The rest are decided b
 | Price of the pair | ₩119,000 or ₩139,000 | The pair test shows each price at random, if the lawyer allowed sign-ups; compare taps. Otherwise the Wadiz waitlist decides after discharge | 31 Jan |
 | The face | Watch stopped at your moment, or the needle that points to you | Which one earns more "where can I buy" comments and DMs per 1,000 views | Dec to Jan |
 | The finish | Silver-tone, or hand-patinated brass | The same content test, one post each | Dec to Jan |
-| Size | 34, 36 or 38 mm; 36 mm is the working size | Samples in hand: does the 26 to 30 mm photo window fit two faces? | First samples |
-| Handwriting inside | Laser-engraved handwriting, or a printed line | Legibility on a sample at that size, and its cost | First samples |
+| Size | The smallest stock case between 30 and 40 mm to start, preferring 38 mm or less; 34, 36 or 38 mm when the custom case comes | Case samples in hand: does the photo window fit two faces? About 26 to 30 mm on the custom case | First samples |
+| Handwriting inside | Printed around the photo on the stock case; laser-engraved once you own a fiber marker, or on the custom case | Legibility on a sample at that size, and its cost | First samples |
 | An entry item | A ₩29,000 to ₩39,000 brass 11:11 charm for Pepero Day, 100 days and friends | A one-question poll of pair-letter users if the lawyer allowed sign-ups; otherwise the waitlist after discharge | Dec to Jan |
 | The opening time for military couples | 11:11 am on a weekend or holiday | Already decided by phone rules: soldiers can use phones only 18:00 to 21:00 on weekdays and 08:30 to 21:00 on weekends and holidays | Now |
 
@@ -322,17 +330,18 @@ In Branch A there are no samples before discharge. The face and finish posts use
 
 ### Verdict
 
-Seoul has no pocket-watch case makers, so the first 100 to 300 pieces should use a semi-custom brass case blank from a Chinese factory. Everything personal is done in Seoul: the dial set to the couple's time, the photo, both engravings, the checks and the packing. The label will most likely still say "Made in China", because finishing in Seoul does not usually change where a product is from. Say "finished by hand in Seoul", never "made in Korea", unless customs confirms it.
+Seoul has no pocket-watch case makers, so the case comes from a Chinese factory. Test first the smallest empty hunter case one already sells: bought in tens, with your pattern lasered on the lid, as the Starting small tab sets out. Move to a semi-custom case at 100 to 300 pieces once the shop sells 40 orders a month. Everything personal is done in Seoul: the dial set to the couple's time, the photo, the engraving, the checks and the packing. The label will most likely still say "Made in China", because finishing in Seoul does not usually change where a product is from. Say "finished by hand in Seoul", never "made in Korea", unless customs confirms it.
 
-By estimate, not quote, that costs about ₩34,400 for a single and ₩62,800 for a pair. No supplier has quoted yet, and your own hours on each order are not counted. From the purchase order to 100 sellable pieces takes about eight weeks.
+By estimate, not quote, the stock case costs about ₩28,400 for a boxed single and ₩54,200 for a pair, and arrives 2 to 3 weeks after the order. The semi-custom case costs about ₩34,400 and ₩62,800. Built to the same spec, the two cost about the same, so the stock case's gain is its small minimum and the cash it saves. No supplier has quoted yet, and your own hours on each order are not counted. On the semi-custom case, the purchase order to 100 sellable pieces takes about eight weeks.
 
-Two rules before any order. **Numbers in the order, not "lead-free":** lead under 0.05% by weight in every metal part, cadmium under 0.01%, and nickel-free plating, backed by mill certificates and a lab test. Free-machining and many casting brasses hold 1.8 to 3.7% lead, and brass sold as lead-free can still be over a jewellery limit. **Nothing is ordered before discharge.**
+Two rules before any order. **Numbers in the order, not "lead-free":** lead at most 0.009% by weight in every metal part, Korea's limit for metal jewellery since 2024, cadmium under 0.01%, and nickel-free plating. Back them with the supplier's test report for the item. Then lab-test the first lot of each metal part from each supplier yourself, and one lot in three after that. Free-machining and many casting brasses hold 1.8 to 3.7% lead, and brass sold as lead-free can still be over a jewellery limit. **Nothing is ordered before discharge.**
 
 | Route | Cost per case | Time | Minimum | Verdict |
 | --- | --- | --- | --- | --- |
-| A. Semi-custom brass case from a Chinese factory, finished in Seoul | About $4 to $8 | About 8 weeks from order to 100 pieces | 100 to 300 | **The default** |
+| S. A factory's stock hunter case, bought empty with your lid lasered on, finished in Seoul | About $3 to $6 (estimate) | 2 to 3 weeks from the order | Not shown; ask for 10 | Test first |
+| A. Semi-custom brass case from a Chinese factory, finished in Seoul | About $4 to $8 | About 8 weeks from order to 100 pieces | 100 to 300 | **Next, once the shop sells 40 orders a month** |
 | B. Lost-wax casting in Jongno from your own 3D model | About ₩10,000 to ₩25,000, 2 to 4 times route A | 12 to 16 weeks | No formal minimum | Later, for a shape only you own |
-| C. Stock watch pendants from Alibaba | About $1.50 to $2.50 | 2 to 4 weeks | 10 to 100 | Reference samples only; it looks like the commodity |
+| C. Stock watch pendants from Alibaba | About $1.50 to $2.50 | 2 to 4 weeks | 10 to 100 | Prototypes only: it looks like the commodity, and Wadiz won't take it |
 
 Case prices are listing prices and estimates from search results, not quotes. The first real quotes replace them.
 
@@ -342,27 +351,33 @@ Get at least three quotes for each part. Prices exclude VAT; most are listing pr
 
 | Part | Where | Minimum | Price at 100 | Lead time |
 | --- | --- | --- | --- | --- |
+| Empty hunter case, your lid lasered on | Pocket-watch case factories through Alibaba or Made-in-China | Not shown; ask for 10 | $3 to $6 (estimate) | 2 to 3 weeks, by express |
 | Brass hunter case blank, semi-custom | Factories in Guangzhou or Yiwu through Alibaba or 1688, via a Korean buying agent | 100 to 300 | $4 to $8 | 3 to 5 weeks, plus a week of freight |
-| Reference samples: stock watch pendants and lockets | Alibaba, AliExpress, 1688 | 10 to 100 | $1.50 to $2.50 | 2 to 4 weeks |
+| Prototype kit: stock watch pendants and lockets | Alibaba, AliExpress, 1688 | 10 to 100 | $1.50 to $2.50 | 2 to 4 weeks |
 | Cream Roman dial | A Chinese dial printer, or printed in Seoul | 10 to 50 | $0.30 to $1.00 | 1 to 3 weeks |
 | Fixed hands | Chinese watch-parts suppliers; parts dealers in Jongno 4-ga | About 100 pairs | $0.05 to $0.30 a pair | 1 to 2 weeks |
 | Domed glass, two per piece | China, or craft suppliers in Dongdaemun | 10 to 100 | ₩100 to ₩500 each | Days to 2 weeks |
 | Chain, trigger clasp and rings | The accessory-parts floor of Dongdaemun Jonghap Market | By the pack | ₩1,000 to ₩3,500 a set | Days |
 | Clear coat, or a thin gold flash | Plating shops in Jongno, or the factory | A lot minimum by weight | Coat ₩300 to ₩1,500; gold flash ₩2,000 to ₩4,000 more | 3 to 7 days |
-| Engraving, back and inside the lid | Laser shops in Seoul, or your own fibre laser later (₩2.7M to ₩4.0M) | 1 | ₩2,000 to ₩5,000 a piece for a short line (estimate) | Same day to 3 days |
+| Engraving, back and inside the lid | A Jongno 3-ga laser shop, or your own fiber marker: a generic 20 to 30 W one, about ₩1.5M to ₩3.5M including shipping, duty and VAT | 1 | ₩5,000 to ₩12,000 a job (a regional blog); Soomgo's average ₩11,000; ₩2,000 to ₩6,000 only for 100 or more identical marks | Same day to 3 days |
 | NFC chip (NTAG213) | nowwin, KOREA NFC | 1 | ₩250 to ₩610 | 1 to 7 days |
 | Letter card and envelope | Korean online printers | About 100 | ₩300 to ₩1,000 a set | 3 to 7 days |
 | Wax seal sticker | Sodastamp | 1 | ₩350 to ₩460 | About a week |
 | Drawer box, custom | Packative, Betterbox, Box114 in Seoul; Bangsan market only from about 1,000 | 50 to 100 | ₩8,000 to ₩20,000 | 2 to 4 weeks |
-| Lab tests: lead, cadmium, nickel | KTR, KCL, KATRI, FITI or KOTITI | Per sample | ₩200,000 to ₩1M for the first set (₩500,000 in the launch budget) | 1 to 3 weeks |
+| Drawer box, stock, with a printed sleeve | Seoul packaging wholesalers; the sleeve from an online printer | Not found | About ₩3,500 with the sleeve, by estimate; plain boxes list at ₩640 to ₩1,000 | Days to 2 weeks, by estimate |
+| Lab tests: lead, cadmium, nickel | KTR, KCL, KATRI, FITI or KOTITI | Per sample | ₩150,000 to ₩400,000 per material, by estimate; no lab price was found. On the stock case, the first round, two cases plus a chain and a clasp, is about ₩0.6M to ₩1.6M, so budget ₩1M | 1 to 3 weeks |
 
-Imported parts pay 8% Korean duty and 10% VAT on their landed value, and goods for resale need a formal import declaration whatever their value.
+Imported parts pay 8% Korean duty and 10% VAT on their value including freight. Goods for resale need a formal import declaration whatever their value. Bringing them in through the quick customs lane for personal parcels (목록통관) counts as smuggling. The Korea–China FTA lists 0% for chains. It covers the case only if the case's own line also shows 0% and the factory issues a certificate of origin, so ask the broker which line an empty watch case falls under.
 
-### From sample to the first batch
+### From sample to the first pieces
 
-> *Chart, in the PDF and the live doc: production path · route A, weeks counted from discharge in early April 2027*
+> *Chart, in the PDF and the live doc: the stock-case path · weeks counted from discharge, assumed early April 2027 · lead times from the sourcing research, not quotes*
 
-In the default plan this starts in the week of discharge, early April 2027. The golden sample is approved in week 8, the presale runs from 14 June to 11 July, and the batch is ordered once Wadiz pays out, about two weeks later. With about eight weeks from order to finished pieces, the first pieces reach buyers in late September, and the presale page promises 8 October, two weeks to spare. Allow one extra sample loop of 2 to 3 weeks, and move every later date with it. The plan takes no faster route: ordering before discharge would mean a shop run for you while you serve.
+On the stock case, the gate in week 3 and the lab gate in weeks 7 to 9 decide whether the presale opens on 14 June. Cases are ordered the day after it closes and arrive in 2 to 3 weeks. The first are lab-tested on arrival, and presale orders ship by the end of August against a promise of 10 September. If the samples or the lab slip, the presale moves once, by up to four weeks.
+
+> *Chart, in the PDF and the live doc: production path · the semi-custom fallback, route A, weeks counted from discharge in early April 2027*
+
+The second chart shows the semi-custom case, the fallback, as if started in the week of discharge, early April 2027. Chosen at the week-3 gate instead, it runs two to three weeks later, and the presale and every date below move with it. The golden sample is approved in week 8, the presale runs from 14 June to 11 July, and the batch is ordered once Wadiz pays out, about two weeks later. With about eight weeks from order to finished pieces, the first pieces reach buyers in late September, and the presale page promises 8 October, two weeks to spare. Allow one extra sample loop of 2 to 3 weeks, and move every later date with it. Neither route starts before discharge: ordering earlier would mean a shop run for you while you serve.
 
 ### The operations stack
 
@@ -397,11 +412,199 @@ A boxed locket weighs about 150 to 300 g. Start with Korea Post or convenience-s
 - **Before the first US order,** get a free binding ruling from US Customs on the tariff code (imitation jewellery, 7117.19.90) and on origin.
 - **A US fulfilment and engraving partner** makes sense only past 100 to 200 US orders a month.
 
+## Starting small: the first pieces from what already exists
+
+Nobody makes our locket yet. The closest part on sale is an empty hunter case that pocket-watch factories sell for laser engraving. But no listing showed its size, metal, price or minimum. So the start is a test. Ask for a case of 40 mm or less, in low-lead brass or 316L steel, with your lid pattern lasered on. Buy it in tens and finish it in Seoul. If it exists at the estimated $3 to $6, it keeps the retro design. It also cuts the most cash you need at once, from about ₩7.2M to ₩4.9M. On cost per locket it only just meets the target: it misses above about ₩7,400 an engraving job, or about $4.95 a case. The generic photo pocket watch is cheaper to buy, and the wrong thing to sell.
+
+### The short answer
+
+| Your question | The answer |
+| --- | --- |
+| Is there a manufacturer already? | Not for our locket. No maker, wholesaler or print-on-demand platform sells a small brass hunter-case locket with no movement. The closest lead is one listing for an empty hunter case sold for laser engraving. It showed no size, metal, price or minimum, and it is probably the 45 mm alloy kind, so the week-3 answer may well be no. Working quartz pocket watches sell from 5 to 10 pieces, and Guangzhou brass makers take custom-logo orders from 2 to 30. |
+| In what form? | An empty hunter case: crown, bow, hinged lid, crystal and a blank back, with no movement. The factory lasers your pattern on the lid. Seoul does the rest: your dial set to the couple's time, real hands, the photo, the engraving, the box and the letter. |
+| Retro and customisable, or a generic stopwatch? | Retro and customisable. The generic photo watch is about 45 mm and quartz, with the photo lasered on the outer lid. It sells as a $20 to $90 groomsmen gift. It can carry about ₩45,000, not ₩79,000, and Wadiz won't take it. |
+| Does it meet the cost target? | Only just, on the middle estimates: about ₩22,700 a locket against the ₩24,200 target, the cost the plan's prices were set on. Built to the same spec it is about ₩23,800, so the case itself saves only about ₩450. Most of the gap comes from printing the handwriting instead of engraving it. It misses above about ₩7,400 an engraving job, or about $4.95 a case; Soomgo's engraving average is ₩11,000. Your own fiber laser marker, a small engraving laser, cuts it to about ₩17,000, and the semi-custom case to about ₩17,600: the marker, not the case, is the big saving. |
+| What does it change? | Cash, minimums and time, more than cost. Cases are bought from 10 for the orders in hand, so there is no batch of 285 to pay for. The most cash out at once falls from about ₩7.2M to ₩4.9M, and break-even from 104 presale orders to 85. Presale orders ship in August, not late September. |
+| What could stop it? | Three things. No factory offers a case of 40 mm or less from 10 pieces. The case fails Korea's lead limit. Or Wadiz won't take a stock body as the reward. If lead is the only problem, use a 316L steel case. If no case exists, use the semi-custom case if about ₩9M is within reach, or else a round steel locket. If Wadiz refuses stock bodies, only the semi-custom case is left. |
+
+### What already exists
+
+Six forms come close. Prices are listing prices seen in search results, not quotes. Sizes and metals were rarely shown, so samples decide.
+
+| Form, with examples | Price and minimum | Fits the design? | Verdict |
+| --- | --- | --- | --- |
+| Generic photo pocket watch: [Alibaba engravable pocket watches](https://www.alibaba.com/showroom/engravable-pocket-watch.html), [Etsy groomsmen watches](https://www.etsy.com/listing/4521211614) | $1.42 to $3.90, from 5 to 10; sold at $20 to $90 | No: about 45 mm, alloy, quartz, the photo on the outer lid | Avoid |
+| Watch-shaped photo locket, no movement: a [flip-lid "pocket watch" photo pendant](https://s.1688.com/kq/-C0CFBBB3B1ED.html) on 1688, China's domestic wholesale site; a [Temu zinc-alloy pocket-watch locket](https://www.temu.com/custom-photo-locket-pendant-personalized-vintage-zinc-alloy-pocket-watch-necklace-with-removable-chain-preppy-style-ideal-gift-for-family-and-friends-for-fathers-day-mothers-day-g-601099622575300.html) | About ¥13, or ₩2,700 | The shape, not the size or the metal; often zinc alloy | Prototypes only |
+| Empty hunter case from a pocket-watch factory: [one listing, a full-hunter empty case for laser engraving](https://www.made-in-china.com/products-search/hot-china-products/Custom_Pocket_Watch.html); [dial printers from 1 to 10 pieces](https://www.alibaba.com/showroom/low-moq-watch.html) | Not shown. About $3 to $6 with your lid lasered on, by estimate | Yes, if a 30 to 40 mm size in low-lead brass or 316L exists | **Test first** |
+| Round double-glass locket: [Guangzhou IO Jewelry, 20, 25 and 30 mm](https://iojewelry.en.made-in-china.com/product/eCBmQoNyntVa/China-20mm-25mm-30mm-Different-Size-Round-Glass-Locket-Pendant.html), in 316 steel or gold-plated | $1 to $3, from 20 to 100 | Partly: one window for the dial and one for the photo, but no crown, and a modern look | The fallback if cash is short |
+| Small brass makers: [Baoyan](https://www.made-in-china.com/factory/logo-jewelry.html) from 3 pieces, [Mimier](https://www.made-in-china.com/factory/engravable-jewelry.html) from 2, Peishang from 30 | Not shown | Only if one already has a pocket-watch mould | Ask in week 1 |
+| Print-on-demand and Korean makers: [Printify photo pendants](https://printify.com/custom-necklace/), [ShineOn](https://ecommerce-platforms.com/articles/shineon-print-on-demand-review), [Idus photo lockets](https://www.idus.com/v2/product/bac31000-21a7-45a2-aec7-526cfad42076) | $9 to $27 before shipping; ₩28,000 on Idus | No: flat pendants, small hearts and ovals | Avoid; Idus also bans bought-in (사입) and ODM goods |
+
+For the needle face, [solid brass compass lockets](https://www.alibaba.com/showroom/locket-compass.html) list at $3 to $6 from 100 pieces. But a live needle can't be fixed on a city, so print or engrave the needle on the dial. Custom watch dials from hobby sellers cost $26 to $33 each, more than a whole locket's budget, so the dial is printed in Seoul.
+
+### Retro, customisable or generic: six routes side by side
+
+The stock hunter case is the cheapest route that is retro and customisable in tens. Whether Wadiz accepts it as the main reward is our reading of its rules, not Wadiz's answer, so ask Wadiz before ordering cases.
+
+| Route | Looks like Celestual | Minimum and time | Can be the Wadiz reward |
+| --- | --- | --- | --- |
+| Generic photo pocket watch | No | 10 pieces, 2 weeks | No: the same watch is on sale everywhere |
+| Stock 1688 watch locket | Partly: the shape | 10 pieces, 3 weeks | No: the same item is on sale |
+| **Stock hunter case, your lid lasered on** | **Yes, at 30 to 40 mm, preferring 38 mm or less** | **Not shown; ask for 10. About 3 weeks** | **Probably, if the page says how it is made. Ask Wadiz first** |
+| Round 316L steel locket | Partly: no crown, and a modern look | 20 to 100 pieces, 3 weeks | Only with your own mark and dial, and only if Wadiz accepts a stock body |
+| Semi-custom case, the fallback | Yes: 36 mm, engine-turned | 100 to 300 pieces, 8 weeks | Yes |
+| Your own case, cast in Jongno | Yes: a shape only you own | No formal minimum; about 30 in the model. 12 to 16 weeks | Yes |
+
+- **What you can make your own:** on the generic watch, only its outer lid. On the 1688 and steel lockets, the dial, time, photo and engraving, and your mark on the steel one. On the stock hunter case, everything but its shape: lid, dial, time, photo, engraving, box and letter. The semi-custom and cast cases add the handwriting engraved inside the lid.
+- **Metal and engraving:** the generic watch and the 1688 locket are often zinc alloy, the metal that fails Korea's limits most. Engraving through their plating shows grey. 316L steel is the safest metal and engraves cleanly. The stock hunter case must be low-lead brass or 316L, tested before sale.
+
+### What each route costs
+
+> *Chart, in the PDF and the live doc: docs/strategy/model/routes.py · listing prices and estimates, no supplier has quoted · 18 Oct 2026*
+
+Among the China routes, the case changes the cost by a few thousand won. Engraving, the box and your time are where the money goes. Only the Jongno cast case is dear.
+
+| Route | Single, boxed | Left per presale order: single, pair | Starting cost; break-even |
+| --- | --- | --- | --- |
+| Generic photo pocket watch, at ₩45,000 and ₩79,000, if Wadiz took it | ₩19,500 | ₩6,900 and ₩15,300 | ₩2.5M; 138 orders |
+| Stock 1688 watch locket | ₩25,400 | ₩30,300 and ₩57,300 | ₩3.0M; 58 orders |
+| **Stock hunter case** | **₩28,400** | **₩26,900 and ₩50,500** | **₩4.0M; 85 orders** |
+| Round 316L steel locket | ₩22,100 | ₩34,100 and ₩64,900 | ₩3.7M; 63 orders |
+| Semi-custom case | ₩34,400 | ₩20,000 and ₩40,500 | ₩4.0M; 104 orders |
+| Your own case, cast in Jongno | ₩44,200 | ₩8,600 and ₩17,900 | ₩3.6M; 176 orders |
+
+- **What is left:** the price less making, the Wadiz fee, shipping, defects and ₩7,000 an order for your own posts: props, gifts and tools. No VAT is due, as in the Economics tab. Every route but the generic watch is priced at ₩79,000 and ₩139,000.
+- **Like for like:** built to the semi-custom spec, the stock case costs about ₩23,800 a locket and ₩34,000 a boxed single, against ₩24,200 and ₩34,400. That spec is the handwriting engraved, the custom box and the plan's engraving prices. Break-even is then about 102 orders, against 104.
+- **The box:** the stock routes use a stock drawer box with a printed sleeve. With the card, chip, seal and pouch it costs about ₩5,700 a single, against ₩10,200 for the custom box. That ₩4,500 saving is an estimate, and it sits outside the per-locket figures; the custom box can come with the custom case.
+- **Checks are priced in:** the small-lot routes carry ₩3,000 a locket for checks and lab re-tests, and ₩1M for the first round of lab tests.
+- **What the stock case's ₩4.0M buys:**
+  - April: the prototype kit and printing tools, ₩550,000; case samples by express, ₩300,000; the trademark, ₩546,000; registration, ₩50,000.
+  - May: box samples and a sleeve proof, ₩50,000; the design registration of the lid and dial, ₩150,000; the lab tests, ₩1M.
+  - June: the 12 early pieces, shipped, ₩360,000; photography, ₩200,000.
+  - April to September: tools, ₩270,000.
+  - On top: 15% for surprises, ₩521,400.
+- **Cheapest is not allowed as is:** the 1688 locket can never be the reward, and the steel locket only with your own mark and dial, if Wadiz accepts a stock body.
+- **What decides the cost target:** engraving first. It is ₩6,000 a job in the model. A regional blog puts a short line at ₩5,000 to ₩12,000, and Soomgo's average is ₩11,000. Above about ₩7,400 a job, the stock case misses the target; at ₩11,000, a locket costs about ₩28,200. The case price matters too: the target holds only up to about $4.95 a case, inside the $3 to $6 estimate. At $6 a locket costs about ₩25,900.
+- **Your own fiber marker:** a generic 20 to 30 W engraving laser costs about ₩1.5M to ₩3.5M, including shipping, duty and VAT. Each job then costs a few hundred won, and a locket about ₩17,000. The handwriting can be engraved inside the lid again. The model's ₩2.5M marker pays back after about 245 orders. With its own marker the semi-custom case is about ₩17,600, so the marker, not the case, is the big saving.
+- **When to buy the marker:** once Wadiz's first payout has landed and the first presale cases have passed the lab, if the presale has 100 orders or more, or 60 or more with a quote above ₩10,000 a job. Try it on the spare cases first, and keep the Jongno shop booked for the presale run.
+- **Your time is not in these costs:** about 35 to 60 minutes a locket, so 100 presale orders take 90 to 150 hours. A helper for half those hours costs about ₩0.5M to ₩0.8M at the minimum wage, also outside the model.
+- **Cash:**
+  - The stock case pays for the presale's cases on the close, about two weeks before Wadiz's first payout lands, by our estimate. So it is most out of pocket in mid-July, about ₩4.9M.
+  - That counts only the cases. Buy the chains, boxes, cards and other parts after the payout lands; they take days to two weeks.
+  - The dip grows with the presale, by about ₩160,000 for each 10 orders above 100. Above about 135 orders, ask the factory for a deposit on the close and the balance on shipping.
+  - The semi-custom case orders its batch once the payout lands, and is most out at the end of September, about ₩7.2M.
+  - Keep about ₩9M within reach until the gates pass in early June, then about ₩5.5M until December, as in the Economics tab. The stock case with the marker bought in August needs about ₩5.2M at a 60% payout.
+  - The stock case is back above zero in October, or November with the marker; the semi-custom case in December.
+- **If the presale fails:** about ₩3.4M is lost on either route. If Wadiz charged 25 backers anyway, the loss is about ₩2.2M instead of ₩3.1M, because there is no 100-case minimum to buy. The custom box's minimum would add to the semi-custom loss.
+
+### The rules that decide it
+
+1. **Wadiz won't take a product that is already on sale.** Its review policy rules out a main reward whose identical product was sold or pre-sold before submission through another official channel, in Korea or abroad. The page must also say how the reward is made. In 2019 a toothbrush found on Taobao at a tenth of the price had its funding ended early. Since 2021 Wadiz also checks that the maker planned and developed the item, and checks its appearance. So:
+   - a stock 1688 locket, even engraved, is a prototype, never the reward;
+   - the reward is new where people look: your lid, your dial, the stopped time, the photo, the engraving, the box and the letter;
+   - the page says "case made by a partner factory in China to our lid design; dial printed, hands set, photo fitted, engraving and assembly by hand in Seoul";
+   - nothing is sold or pre-sold anywhere before the Wadiz submission, SmartStore and Instagram included;
+   - whether a stock body passes is our reading, not Wadiz's answer, so ask Wadiz in writing in week 1.
+2. **Korea bans metal jewellery with more than 0.009% lead** (90 mg/kg), for imports since July 2024 and for sales since January 2025. Cadmium of 0.1% or more is banned too, and nickel release is held to 0.5 µg/cm² a week. The lead and cadmium limits are in the environment ministry's restricted-substance notice under the chemicals law (화평법). The ministry was renamed in October 2025, so read the current notice on law.go.kr. The nickel limit is reported by the press; its legal source was not found. The limits bind both the importer and the seller.
+   - That is stricter than the 0.05% this plan used until now, and ordinary brass is far above it.
+   - Cheap marketplace jewellery fails often: 96 of 404 AliExpress and Temu pieces at Incheon customs in 2024, at 10 to 700 times the limits.
+   - So a Korean test lab checks the first lot of each metal part from each supplier before anything is sold. That costs an estimated ₩150,000 to ₩400,000 per material.
+   - After that, keep the supplier's report for every lot. Lab-test one lot in three, and any lot after a change of supplier, alloy or plating. Buy chains and clasps 200 at a time, so they are tested rarely.
+3. **Imports for resale need a formal declaration.** Bringing in goods you sell through the quick customs lane for personal parcels (목록통관) counts as smuggling. Import under the business number and pay 8% duty plus 10% VAT. The Korea–China FTA lists 0% for chains. It covers the case only if the case's own line also shows 0% and the factory issues a certificate of origin. Ask the broker which line an empty watch case falls under. Mark "Made in China" on the tag or the box, and say "finished by hand in Seoul".
+4. **Wadiz pays 60 to 80% when the funding's payments complete,** by its guide, and the rest after the last delivery and the refund process. Run the presale as reward funding (펀딩) with a goal, not as Wadiz's pre-order type (프리오더). A pre-order needs a special benefit, and its special-bundle and limited-edition versions are paid only afterwards. Confirm the split for your project; the model assumes 70%.
+5. **Not Idus or Tumblbug.** Idus bans bought-in (사입) and ODM goods (made to a factory's own design), inspects workshops, and removes sellers who break the rule. Tumblbug bars projects that buy goods to pass on.
+
+### From discharge to the first shipments
+
+Weeks count from discharge, assumed early April 2027. Nothing is ordered before it. The presale stays at 14 June to 11 July only if the samples pass on time. If they slip, move it once, by up to four weeks, as the plan allows. These weeks also hold the business registration, the waitlist push, both IP filings, the first in-person 11:11 night and the order-step build. If they overrun, move the 11:11 night to after the presale first.
+
+> *Chart, in the PDF and the live doc: the stock-case path · weeks counted from discharge, assumed early April 2027 · lead times from the sourcing research, not quotes*
+
+1. **Week 1, by 9 April:**
+   - Send the requests in the next section to five pocket-watch case factories and three Guangzhou brass makers.
+   - Ask two semi-custom case factories for a quote at 100 pieces, so the fallback doesn't start from zero at week 3.
+   - Ask Wadiz in writing whether a stock body can be the main reward: a stock hunter case with your lid, dial, photo and engraving, or a stock round steel locket with your mark, dial and photo. Ask about both in one message, and ask how long its review takes and whether the waitlist page needs it first.
+   - Have the lid file ready, and a draft supply agreement to send the chosen factory. Wadiz has asked makers whose design a factory produces (OEM) for both.
+   - Order a prototype kit: two or three each of four stock bodies, plus real watch hands, glass domes, 25 and 30 mm circle punches and UV glue. The bodies are a generic photo watch to compare against, the 1688 watch locket, a small pendant watch and a 30 mm steel locket. About ₩550,000 with the printing tools.
+   - AliExpress items on 5 to 7 day delivery come first; the rest takes 2 to 4 weeks.
+   - The lid and dial files must be ready. If the lawyer did not allow design work before discharge, add a week.
+2. **Weeks 2 to 4:** build six prototypes as the kit arrives, and time every step. Compare a printed dial with real hands against a fully printed one, try the needle face, and check that two faces fit the photo window. Get a fixed price per job from a Jongno 3-ga engraver, and quotes from two customs brokers for a small formal import. Ask a Korean test lab, KTR, KCL or FITI, for a quote.
+3. **Week 3, the gate, by 23 April:** does any factory offer a hunter case of 40 mm or less from 10 pieces? It must be brass with a stated lead content under 0.009%, or 316L steel. If yes, order samples with your lid lasered on from the best two, about ₩300,000 by express.
+   - If no case exists, use the semi-custom case if you can keep about ₩9M within reach, and move the presale back about three weeks, which uses its one move. Otherwise use the round steel locket.
+   - If the only problem is lead, go to steel: a custom brass case has the same problem.
+4. **Weeks 5 and 6:** the samples arrive. Check the dial seat, the photo recess in the lid, the hinge and the snap. Send one of each, with a chain and a clasp, to the lab. Photos of the real prototype, labelled 시제품, replace the concept renders on the waitlist page.
+   - If Wadiz has said yes, order 20 cases from the better factory, about ₩170,000: 10 for creators, a pair to film, and spares. Ask the factory to confirm they are the same alloy and plating as the sample.
+   - If Wadiz hasn't answered by week 5, chase it. With still no answer by week 6, order the 20 anyway: ₩170,000 is the price of keeping 14 June.
+5. **Weeks 7 to 9, the second gate: the lab result.** The case, chain and clasp must pass.
+   - If the better factory's case fails, use the second factory's if it passed, and reorder the 20 cases from it. If both fail, order and test a 316L case. Move the presale back once, by up to four weeks, if the early pieces can't go out in time.
+   - Build the golden sample, the finished piece every later one must match. Run the plan's wear checks: 500 open-and-close cycles, three 1 m drops, heat and cold, and a 3 to 5 kg pull on the clasp.
+   - Submit the project to Wadiz's review with the sample photos as soon as the lab passes, so a no at review still leaves time to move the presale once.
+6. **Week 9, by 4 June:** approve the golden sample and send out the 12 early pieces.
+7. **The presale, 14 June to 11 July.** If the goal is met, order cases for every presale order on 12 July, plus 10% spares, about ₩1.6M; they arrive in 2 to 3 weeks. Send the first presale cases to the lab the day they arrive. Finish orders while you wait, but ship nothing until the result is in.
+8. **From late July:** personalise the presale orders. That is 90 to 150 hours of work, so the helper you lined up by March starts on day one. Ship by the end of August; the page promises 10 September. Then, each month, order the next month's cases.
+9. **Move to the semi-custom case** once the shop sells 40 orders a month, or once reviews name the stock case as the weak point. It is 36 mm, with an engine-turned lid and the handwriting engraved inside. Pay its 100-piece minimum from sales, not savings.
+
+### What to send suppliers
+
+To pocket-watch case factories, through Alibaba or Made-in-China, in week 1:
+
+```text
+Request for quotation: empty hunter pocket-watch case, no movement
+- Full-hunter case, the smallest you make between 30 and 40 mm (38 mm or less preferred): crown and bow, hinged front lid with a snap, crystal fitted, back left blank
+- Inside the case: a seat or spacer ring for a printed dial with no movement, and a centre post for fixed hands
+- Inside the front lid: a flat recess for a 25 to 30 mm photo under flat or low-domed glass; tell us its depth and the gap to the crystal
+- Material: brass with lead below 0.009% (90 mg/kg) and cadmium below 0.01% by weight (the EU limit), in the base metal, plating and solder; or 316L stainless steel
+- A test report for this item: lead and cadmium content, and nickel release (EN 1811)
+- Our pattern laser-engraved on the front lid, from our vector file; our mark inside the back cover, not the lid
+- Finish: polished brass under clear lacquer, no nickel under-plate
+- Measurements and photos with a ruler: diameter, thickness, lid recess, crystal and weight
+- Prices at 10, 50 and 100 pieces; sample price and time with our engraving; production time
+- Our lid pattern is ours: do not sell it to others, and sign a short supply agreement that says so
+- Individual bags; a commercial invoice stating the country of origin; a Korea-China FTA certificate of origin, if you can issue one
+```
+
+To the Guangzhou brass makers: do you already have a pocket-watch-shaped photo locket mould? Can you make it in brass with lead below 0.009%, at 30 to 50 pieces, with our lid pattern?
+
+In Seoul, in week 2:
+
+```text
+[각인] 황동 또는 316L 스테인리스 회중시계형 펜던트 뒷면 1줄 레이저 각인, 지름 30~40 mm (38 mm 이하 우선), 벡터 파일 제공. 문구는 개당 다름(개별 각인). 10개 / 50개 / 100개 기준 건당 단가와 소요 기간을 알려주세요.
+[시험] 금속 장신구 납·카드뮤 함량 및 니켈 용출(EN 1811) 시험: 케이스 2종, 체인 1종, 고리 1종. 수수료와 기간을 알려주세요.
+[통관] 중국산 금속 장신구 소량 일반수입신고(사업자 통관) 건당 수수료를 알려주세요. 빈 회중시계 케이스(무브먼트 없음)의 HS 분류(7117.19 또는 9111)와 한중 FTA 협정세율도 알려주세요.
+```
+
+### Risks, and what to do
+
+| Risk | The sign | What to do |
+| --- | --- | --- |
+| No small case exists | Week-3 replies offer only 45 mm cases, or zinc alloy | The semi-custom case at 100 pieces if about ₩9M is within reach, moving the presale about three weeks; or the steel locket |
+| Wadiz says no to a stock body | Its answer in weeks 1 to 6, or at review | The semi-custom case if about ₩9M is within reach, and move the presale. The steel locket only if Wadiz's answer allows its body |
+| The case fails the lead test | A lab result over 0.009% | The second factory's case if it passed, or a 316L case; sell nothing from the failed lot |
+| The case can't hold the photo or the dial | The samples in weeks 5 and 6 | Ask the factory for a lid recess and a dial seat; if it can't, the next factory or the steel locket |
+| The presale lot fails the lab | A result over 0.009% in August | Ship nothing from it. Reorder from the second factory, tell backers the new date, and refund anyone who asks |
+| Customs holds a lot for testing | A customs notice, or a lot that is late | Keep the supplier's report and your lab result with the import papers; the promise date has 10 days to spare |
+| A backer finds the case on AliExpress | A comment, a DM, or a question from Wadiz | The page already says where the case is made and what is yours; answer with that, and never deny it. Wadiz has ended projects over this, so have its written view before you submit |
+| Engraving costs more than ₩6,000 a job | The Jongno quote in week 2 | Above about ₩7,400 a job, the stock case misses the cost target. Buy the fiber marker by the rule under "When to buy the marker" |
+| Stock cases vary | Loose hinges, weak snaps, crystals off centre | Check every piece, and buy 10% spares |
+| The work runs slow | Under 8 orders finished a day in the first week; that pace is 7 to 12 hours a day for one person | Two people from the first day. A helper for half the hours costs about ₩0.5M to ₩0.8M at the minimum wage; the promise date has 10 days to spare |
+
+### Sources
+
+Search results read on 18 October 2026, not opened pages. The full notes are in docs/strategy/research/F-starting.md, and the costs come from docs/strategy/model/routes.py.
+
+- Wadiz: [reward review policy](https://www.wadiz.kr/web/wterms/reward_screening_policy) · [fee and settlement policy](https://www.wadiz.io/web/wterms/funding_plan_policy) · [the notice on OEM rewards](https://www.wadiz.io/web/wboard/newsBoardDetail/8145) · [stricter review from 2021, ktnews](https://www.ktnews.com/news/articleView.html?idxno=116087) · [the toothbrush ended early, etnews 2019](https://www.etnews.com/20191118000330)
+- Metal limits: [Korea's 0.009% lead limit, ChemLinked](https://chemical.chemlinked.com/news/chemical-news/korea-delays-the-adoption-of-new-limit-for-lead-in-metal-ornaments) · [Gunsan customs tests, Tax Times](https://www.taxtimes.co.kr/mobile/article.html?no=266157) · [Incheon customs tests, Aju News](https://www.ajunews.com/view/20240407105331266)
+- Import: [the personal-parcel lane for resale counts as smuggling, Taxwatch](https://www.taxwatch.co.kr/article/tax/2016/11/03/0029) · [the FTA rate for 7117.19](https://treayo.com/en/hs/korea/71171960)
+- Other platforms: [Idus selling rules](https://artist-mate.idus.com/e902e67d-24f7-486d-a6c4-6a561aba7b05) · [Tumblbug project rules](https://docs.channel.io/tumblbug/ko/articles/e03eedaa)
+- Personalisation: [engraving prices, Soomgo](https://soomgo.com/prices/%EA%B0%81%EC%9D%B8) · [fiber laser marker listings](https://ko.accio.com/plp/lasermarking) · [engraving plated zinc alloy, Sourcify](https://sourcify.com/blog/how-to-manufacture-engraved-jewelry/)
+
 ## Economics
 
 ### Verdict
 
-**A pair sold through the presale leaves about ₩40,500, and a single about ₩20,000,** after making, the platform fee, shipping, defects and ₩7,000 of content. An order bought with a paid ad costs ₩25,000 to ₩130,000 in Korea. At the plan's ₩45,000, a single loses about ₩18,000 and a pair barely breaks even, so the money comes from free channels or not at all.
+**The plan starts on a stock case,** as in Starting small. There a pair sold through the presale leaves about ₩50,500, and a single about ₩26,900. Starting costs about ₩4.0M, and break-even is about 85 presale orders. The most cash out at once is about ₩4.9M, in mid-July, before Wadiz's first payout. A failed presale loses about ₩3.4M. Cash is back above zero in October, or November if you buy the fiber marker. **The rest of this tab is the semi-custom case, the fallback,** because it needs the most money, so the money you keep covers either.
+
+**On the semi-custom case, a pair sold through the presale leaves about ₩40,500, and a single about ₩20,000,** after making, the platform fee, shipping, defects and ₩7,000 an order for your own posts. An order bought with a paid ad costs ₩25,000 to ₩130,000 in Korea. At the plan's ₩45,000, a single loses about ₩18,000 and a pair barely breaks even, so the money comes from free channels or not at all.
 
 **Starting costs about ₩4.0M,** almost all of it after discharge, and about 104 presale orders at full price pay it back. Each presale order counts at about ₩38,300 here, before content and with 55% of orders as pairs, because the launch budget already pays for the presale's photos, early pieces and tools. A 10% early-bird price moves break-even to about 140 orders.
 
@@ -411,8 +614,8 @@ A boxed locket weighs about 150 to 300 g. Start with Korea Post or convenience-s
 
 - **Before discharge:** only the lawyer's and the accountant's fees, and the trademark if the lawyer lets you file it early; it then comes out of the April budget. Ask each for a fixed fee in writing first.
 - **April to June 2027:** about ₩3.3M of launch costs, plus about ₩0.5M kept for surprises.
-- **The low point:** about ₩4.2M out of pocket in September 2027, because the first batch also makes two months of shop stock. Keep about ₩5M you can reach from April to December 2027.
-- **If the presale fails:** the loss is the launch money spent, about ₩3.4M.
+- **The low point:** about ₩7.2M out of pocket in September 2027 on the semi-custom case. Wadiz holds 30% of the presale until delivery, and the batch also makes two months of shop stock. The batch is ordered once Wadiz's first payout lands. On the stock case, the most out at once is about ₩4.9M, in mid-July, because its cases are paid on the close, before the payout. Keep about ₩9M you can reach until the stock case passes its gates and Wadiz approves the page, in early June 2027. That covers the semi-custom fallback with its fiber marker, even at a 60% payout. After that, about ₩5.5M is enough until December: the stock case with the marker bought in August needs about ₩5.2M at a 60% payout. If the ₩0.5M kept for surprises is spent as well, keep about ₩9.5M and ₩6M.
+- **If the presale fails:** the loss is the launch money spent, about ₩3.4M on either route.
 
 Every number here comes from the model in docs/strategy/model, which can be rerun with real quotes. Costs are the middle estimates of the sourcing research, and no supplier has quoted yet; prices are the planned ones.
 
@@ -439,7 +642,9 @@ Every number here comes from the model in docs/strategy/model, which can be reru
 | **A single, boxed** | **34,421** |
 | **A pair, boxed** | **62,842** |
 
-**What is left per order,** after ₩7,000 of content, with no VAT due (under ₩48M of sales a year):
+Engraving at ₩3,000 and ₩4,000 a job is about what your own fiber marker costs spread over the first batch, or a bulk price. Outsourced unique jobs run ₩5,000 to ₩12,000 each. At ₩6,000 a job, this route's locket is about ₩29,600 and break-even about 138 orders. So the semi-custom case comes with the fiber marker.
+
+**What is left per order,** after ₩7,000 an order for your own posts, with no VAT due (under ₩48M of sales a year):
 
 | Order | Wadiz presale | SmartStore | Own site |
 | --- | --- | --- | --- |
@@ -448,7 +653,7 @@ Every number here comes from the model in docs/strategy/model, which can be reru
 
 Above ₩48M of sales a year, simplified VAT takes about 1.5% of the price, less a small credit: about ₩1,000 from a single and ₩1,700 from a pair. Above ₩104M, general VAT takes about ₩2,500 to ₩3,000 from a single and ₩4,300 to ₩5,300 from a pair.
 
-The cheapest saving is a stock drawer box with a branded sleeve, about ₩5,500 less a unit. The upgrade that shows most is a thin gold flash, or a silver-tone, nickel-free plating, each about ₩2,000 to ₩4,000 more. A full micron of gold would add about ₩15,600 in metal alone.
+The cheapest saving is a stock drawer box with a printed sleeve, by estimate about ₩4,500 less a unit; the stock-case route already uses it. The upgrade that shows most is a thin gold flash, or a silver-tone, nickel-free plating, each about ₩2,000 to ₩4,000 more. A full micron of gold would add about ₩15,600 in metal alone.
 
 ### What it costs to start
 
@@ -457,11 +662,11 @@ About ₩4.0M, almost all of it after discharge. The first batch is not in this 
 | Item | Cost (₩) | When |
 | --- | --- | --- |
 | Reference samples from China, by express | 450,000 | April 2027 |
-| CAD model and 3D-printed fit checks | 200,000 | April; optional, if the stock case needs changes |
+| CAD model and 3D-printed fit checks | 200,000 | April; optional, if the factory's blank needs changes |
 | Trademark, classes 14 and 35, filed yourself | 546,000 | April, unless filed earlier |
 | Registration fees and local tax | 50,000 | April |
 | Custom samples from two suppliers | 300,000 | May |
-| Lab tests for lead, cadmium and nickel | 500,000 | May |
+| Lab tests for lead, cadmium and nickel: the chosen case, a chain and a clasp, at the low end | 500,000 | May |
 | Box proof and foil die | 150,000 | May |
 | Design registration, filed yourself | 150,000 | May, before the presale page goes public |
 | Twelve pieces made ahead of the batch, at sample prices: 10 for creators and a pair to film, shipped | 630,000 | June |
@@ -480,7 +685,7 @@ The launch pays for itself at about 104 presale orders at full price, or about 9
 | Middle | 604 | ₩67.6M | ₩17.3M |
 | High | 2,400 | ₩268.8M | ₩71.7M |
 
-- **Low:** the waitlist stays near 150 sign-ups and 10% of them order, so the presale reaches about 25 orders. That misses a goal set at 40, nobody is charged, and the object stops; the launch money spent is the loss. If Wadiz charges backers anyway, the 25 orders are made and shipped, and the loss is about ₩3.2M to ₩3.7M, because the case and box minimums must still be bought.
+- **Low:** the waitlist stays near 150 sign-ups and 10% of them order, so the presale reaches about 25 orders. That misses a goal set at 40, nobody is charged, and the object stops; the launch money spent is the loss. If Wadiz charges backers anyway, the 25 orders are made and shipped. The loss is then about ₩3.1M, because the 100-case minimum must still be bought, and the custom box's minimum would add more. On the stock case, about ₩2.2M.
 - **Middle:** about 400 waitlist sign-ups, 15% of them order, and they make 60% of the presale's 100 orders, as Wadiz's data suggests. Then the shop sells about 42 orders a month for 12 months, with no ads.
 - **High:** about 1,000 sign-ups at 20%, 330 presale orders, then about 170 shop orders a month, with paid help for assembly.
 
@@ -488,9 +693,9 @@ The first year is the presale plus the shop's first 12 months, October 2027 to S
 
 ### Cash, month by month
 
-> *Chart, in the PDF and the live doc: economics model · middle case: 100 presale orders, Wadiz payout assumed in late July, the first batch paid half up front · discharge assumed in early April 2027*
+> *Chart, in the PDF and the live doc: economics model and routes.py · middle case: 100 presale orders; Wadiz pays 70% about two weeks after the close and the rest after delivery; the semi-custom batch is paid half when the payout lands and half in August · discharge assumed in early April 2027*
 
-The most you have out at once is about ₩4.2M, in September 2027: the launch, then the batch, which also makes two months of shop stock before the shop sells. Cash is back above zero in December 2027 if the shop sells about 42 orders a month. The assumption to check is when Wadiz pays out. The batch waits for the payout, so a late payout delays delivery rather than deepening the low point. If the presale fails, the loss is the launch money spent by then, about ₩3.4M.
+The most you have out at once is about ₩7.2M, in September 2027. By then the launch and the batch are paid, and the batch also makes two months of shop stock. Wadiz holds 30% of the presale until delivery. Cash is back above zero in December 2027 if the shop sells about 42 orders a month. Wadiz pays 60 to 80% when payments complete and the rest after delivery; the model takes 70%, and each 10 points less deepens the low point by about ₩1M. On the stock case, the most out at once is about ₩4.9M, in mid-July: its cases are paid on the close, about two weeks before the first payout. Its cash is back above zero in October. If the presale fails, the loss is the launch money spent by then, about ₩3.4M.
 
 ### What moves the numbers most
 
@@ -574,7 +779,7 @@ Free channels carry the plan; paid ones only amplify what already works. Costs m
 | Micro-creators, 10,000 to 50,000 followers | Trust and niche reach | Gift first; paid Reels about ₩300,000 to ₩2M each; TikTok 30 to 40% cheaper | Presale |
 | Wadiz | The presale | 5.5%, 11% or 14.3% of funds depending on the plan, VAT on the fee included; check the 5% plan still exists | June to July 2027 |
 | Meta ads | Retargeting people who already engaged; never cold sales | About ₩500 to ₩1,300 a click on Reels | Presale only, capped |
-| Naver blog reviews via 리뷰노트 | Search proof for "곰신 선물" and "커플 선물" | Free listing, plus product | After the first batch |
+| Naver blog reviews via 리뷰노트 | Search proof for "곰신 선물" and "커플 선물" | Free listing, plus product | After the presale ships |
 | Naver search ads | People searching for couple gifts | About ₩530 a click on average | The store, after the presale |
 | Kakao gifts (189M gifts sent in 2025) | Korea's default gifting rail | Curated entry; commission unknown | After six months of reviews |
 | SumOne (about 1M daily users) | A couple app as a partner or ad channel, not a rival | To negotiate | After the presale |
@@ -761,10 +966,10 @@ For you, after discharge. Fees marked \* are from memory and need checking on th
 5. **Business bank account** with the registration certificate. Same day.
 6. **Seller accounts:** SmartStore first; download its escrow certificate (구매안전서비스 이용확인증).
 7. **Online-sales filing** (통신판매업 신고) on Gov24, unless exempt because you are under simplified VAT or made fewer than 50 sales last year. Local tax ₩40,500 a year in Seoul; about three working days.
-8. **Lab test** of each material and finish for lead, cadmium and nickel: about ₩200,000 to ₩1M for the first set (₩500,000 in the launch budget)\* at KTR, KCL, KATRI, FITI or KOTITI, one to three weeks.
+8. **Lab test** of each material and finish for lead, cadmium and nickel: about ₩150,000 to ₩400,000 per material at KTR, KCL, KATRI, FITI or KOTITI, by estimate, since no lab price was found; one to three weeks. On the stock case, the first round, two cases plus a chain and a clasp, is about ₩0.6M to ₩1.6M, so budget ₩1M.
 9. **Tax calendar:** simplified VAT is filed once a year on 25 January; income tax by 31 May.
 
-**Cash for setup:** about ₩0.9M to ₩1.4M if you file the IP yourself, before any stock.
+**Cash for setup:** about ₩1.3M to ₩2.3M if you file the IP yourself, before any stock; much of it is the first round of lab tests.
 
 | Tax status | Who | VAT you pay |
 | --- | --- | --- |
@@ -778,11 +983,12 @@ Check these thresholds when you register: a change for 2027 is unconfirmed.
 
 | Rule | What it means for the keepsake | Confidence |
 | --- | --- | --- |
-| Jewellery safety | Adult jewellery needs no KC mark, but must meet limits on lead, cadmium and nickel. Free-machining brass holds 1.8 to 3.7% lead, so the order states numbers: lead under 0.05% by weight, cadmium under 0.01%, nickel-free plating, mill certificates, and a lab test of each finish | Low to medium: from memory, check on safetykorea.kr |
+| Jewellery safety | Metal jewellery may not contain more than 0.009% lead (90 mg/kg) or 0.1% cadmium, under the environment ministry's restricted-substance notice under the chemicals law (화평법); the ministry was renamed in October 2025. Nickel release is reported as held to 0.5 µg/cm² a week, but its legal source was not found. The importer and the seller are both bound, and customs tests and holds failing goods. No KC mark was found to be needed for adult jewellery. Free-machining brass holds 1.8 to 3.7% lead, so the order states numbers: lead at most 0.009%, cadmium under 0.01%, no nickel under-plate, the supplier's test report, and your own lab test of the first lot of each metal part from each supplier, then one lot in three | Medium: customs and press reports of the notice, not the notice itself; read it on law.go.kr |
 | Never for children | Anything marketed to under-13s falls under the stricter children's product law and needs KC certification | Medium |
-| Labels | Product name, material, maker, address, country of origin, date, and care cautions; plus the online product-information table | Medium |
+| Labels | Product name, material, maker, address, country of origin, date, and care cautions; plus the online product-information table | Low: general rules, not confirmed for adult jewellery |
 | Refunds on personalised goods | The 7-day withdrawal right falls away only with a separate notice before payment, an unticked consent box, and real harm to the seller. Allow free cancellation until production starts, take back defects for 3 months, and refund within 3 business days | Medium to high |
 | Presale | State the delivery date clearly; if delivery becomes impossible, tell buyers and refund within 3 business days | Medium |
+| Wadiz's reward rule | The main reward can't be identical to a product already sold or pre-sold through another official channel, in Korea or abroad, and the page must say how it is made. A stock body, a hunter case or a round locket, may pass only as part of a clearly new product: your lid, dial, time, photo, engraving, box and letter. That is our reading, not Wadiz's, so ask before ordering. Sell or pre-sell nothing before you submit. Run reward funding (펀딩) with a goal, not a pre-order (프리오더). Wadiz pays 60 to 80% when payments complete and the rest after delivery; special-bundle and limited-edition pre-orders are paid only afterwards | Medium to high for the rule; untested for a stock body; medium for the payout |
 | Pricing pages | Since February 2025: the total price including shipping up front, no preselected options, no obstacles to cancelling | Medium |
 | The partner's photo | It is the partner's personal data: get their own consent inside the pair-letter flow, delete photos after delivery and a short claims window, and keep the service 19+ in Korea and 18+ elsewhere, asked as a birth year; a minor's purchase can be cancelled | Medium |
 | Messages | Marketing needs opt-in, an "(광고)" label, and separate consent for anything sent between 21:00 and 08:00, so the 11:11 pm email carries no offer. Kakao alerts need a registered business | Medium to high |
@@ -790,6 +996,7 @@ Check these thresholds when you register: a change for 2027 is unconfirmed.
 | Pepero | "빼빼로" is Lotte's trademark. Say "11.11" or "11월 11일" in all marketing | Medium |
 | The NFC card | A passive tag probably needs no radio certification; confirm before ordering | Low |
 | Origin | A case made in China and finished in Seoul most likely still counts as made in China. Say "finished by hand in Seoul", never "made in Korea", unless customs confirms it | Medium |
+| Importing for resale | A formal import declaration under the business number: the quick customs lane for personal parcels (목록통관) counts as smuggling for goods you sell. 8% duty plus 10% VAT. The Korea–China FTA lists 0% for chains; the case gets it only if its own line shows 0% and the factory issues a certificate of origin | High for the personal-parcel lane, medium for the rest |
 
 ## Evidence and sources
 
@@ -801,6 +1008,7 @@ Nothing has been tested on real buyers yet. What exists is research, models and 
 | --- | --- | --- |
 | Celestual's own data | Letters, people and mutuals, counted in the production database for the turnaround memo | Small numbers; past behaviour only |
 | Five research agents, 15 October 2026 | Existing products and prices; making and shipping; Korean law, tax and platform fees; marketing channels and costs; comparable companies | Web pages could not be opened by the research tool, only search results. The shared search budget ran out after about 200 searches, so some items come from the agents' prior knowledge and are flagged. Coupang, Naver Shopping and Kakao gifts were barely covered |
+| Four research agents, 18 October 2026 | What already exists to buy in tens, in China, Korea and abroad; Wadiz, Idus and Tumblbug rules; Korea's metal limits; importing for resale; engraving and printing tools | Search results only, about 145 searches. Sizes, metals and terms of stock items were rarely shown, and Korean wholesale sites were barely indexed |
 | The economics model | Cost per piece, what each order earns, the launch budget, three scenarios, cash by month, sensitivity | Costs are estimates until real quotes arrive; orders are assumptions |
 | Concept renders | The open locket, the faces, the back, actual size, the box, the card, the pair-letter screens | Drawn, not photographed; real samples decide |
 | AI critics and a simulated buyer panel (earlier branch) | The keepsake idea, the checkout gate, and prices the simulated buyers named | Not people; their numbers are judgments |
@@ -810,7 +1018,7 @@ Nothing has been tested on real buyers yet. What exists is research, models and 
 
 1. **The pair test,** by 31 January 2027, once the lawyer allows it: 200 or more pairs from outside the team, 40% or more writing back, and 15% or more tapping the priced object if sign-ups are allowed.
 2. **Quotes and samples,** from discharge: costs within the estimates, and a golden sample that passes the lab and wear tests.
-3. **The presale,** 14 June to 11 July 2027: about 100 orders at full price pays back the launch.
+3. **The presale,** 14 June to 11 July 2027: about 100 orders at full price pays back the launch on the stock case (85), and nearly on the semi-custom case (104).
 
 ### How sure each key number is
 
@@ -824,7 +1032,8 @@ High means an official source or several consistent ones; medium, one credible s
 | Members of the 곰신 cafe | About 608,000 | Medium | Check the cafe page |
 | Spend per anniversary, people in their 20s | ₩271,600 (2023) | High |  |
 | Brass case blank | $4 to $8 | Low | Three factory quotes |
-| Cost of a boxed single and pair | ₩34,400 and ₩62,800, by estimate | Low | Quotes, then samples |
+| A stock hunter case of 30 to 40 mm, preferring 38 mm or less, in low-lead brass or 316L, from 10 pieces | About $3 to $6 with your lid lasered on | Low: one listing title. Size, metal, price and minimum were not shown, and it is probably the 45 mm alloy kind | The week-3 gate, then samples and the lab in weeks 5 to 9 |
+| Cost of a boxed single and pair | ₩28,400 and ₩54,200 on the stock case; ₩34,400 and ₩62,800 on the semi-custom case; by estimate | Low | Quotes, then samples |
 | Wadiz fee | 10% plus VAT on the Basic plan | High | Confirm the plan |
 | Wadiz success with 200+ pre-launch sign-ups | Up to 93% | High (company data), but correlation only, and success means reaching the maker's own goal |  |
 | Sign-ups who become backers | 10 to 20% | Assumption | Measure on the first presale |
@@ -833,17 +1042,24 @@ High means an official source or several consistent ones; medium, one credible s
 | Simplified VAT limits | ₩104M, and no VAT due under ₩48M | High |  |
 | Penalties for name-lending | Up to 2 years or ₩20M; a 2% VAT penalty since 2025 | High |  |
 | Lead in free-machining brass | 1.8 to 3.7% | Medium | Mill certificate and lab test |
-| Jewellery safety rules in Korea | No KC mark; lead, cadmium and nickel limits | Low | safetykorea.kr |
+| Jewellery safety rules in Korea | Lead at most 0.009% and cadmium under 0.1% in metal jewellery; nickel release 0.5 µg/cm² a week, by press reports; no KC mark found | Medium | The environment ministry's current notice on law.go.kr; the ministry was renamed in October 2025 |
 | Trademark cost | About ₩273,000 a class | Low to medium | KIPO's fee page |
 | US duty on Korean-made goods | About 12.5% since 24 July 2026 | Medium | A customs broker |
-| When Wadiz pays out after a campaign | Unknown |  | Ask Wadiz before setting the batch date |
+| When Wadiz pays out after a campaign | 60 to 80% when payments complete, the rest after delivery | Medium: a Wadiz guide video, via search | Confirm the split for your project before the page goes live |
 | Whether Wadiz charges backers only when the goal is met | Unknown |  | Ask Wadiz before setting the goal |
 | Presale orders that come from sign-ups | About 60% | Medium (Wadiz data, correlation) | Measure on the presale |
-| The handwriting ring inside the lid | ₩4,000 a locket | Assumption, no quote | A sample and a quote; a printed card behind the photo if it isn't legible |
+| The handwriting ring inside the lid | Printed around the photo on the stock case; ₩5,000 to ₩12,000 a job at a shop, or about ₩300 to ₩500 with your own marker | Assumption, no quote | A sample and a quote; a printed card behind the photo if it isn't legible |
+| Wadiz takes no product already sold elsewhere | The review policy's identical-product clause | Medium to high | Read the policy page before you submit |
+| Whether Wadiz takes a stock body, a hunter case or a round locket, inside our design as the main reward | Unknown |  | Ask Wadiz in writing, weeks 1 to 3 |
+| Lab test for lead, cadmium and nickel | About ₩150,000 to ₩400,000 per material | Estimate; no price found | Quotes from KTR, KCL or FITI in week 2 |
+| Your time per locket | 35 to 60 minutes; 90 to 150 hours for 100 orders | Estimate; no maker data | Time the six prototypes in weeks 2 to 4 |
+| A stock drawer box with a printed sleeve | About ₩3,500 a single | Estimate; plain boxes list at ₩640 to ₩1,000, and no drawer-box price was found | Box samples and a sleeve proof in May |
+| Engraving a unique line, outsourced | ₩5,000 to ₩12,000 a job (a regional blog); Soomgo's average ₩11,000; ₩2,000 to ₩6,000 only for 100 or more identical marks | Low to medium | A week-2 quote from a Jongno 3-ga shop |
+| Cheap marketplace jewellery failing Korea's limits | 15% and 24% of marketplace pieces (2024); 45% of counterfeit accessories (2025) | High |  |
 
 ### Sources
 
-These came from web search results on 15 October 2026; the pages themselves could not be opened by the research tool, so check a figure on its page before quoting it outside the team. The full research files, with every source, date and confidence level, are in the repository under docs/strategy/research, and the economics model is under docs/strategy/model.
+These came from web search results on 15 and 18 October 2026; the pages themselves could not be opened by the research tool, so check a figure on its page before quoting it outside the team. The full research files, with every source, date and confidence level, are in the repository under docs/strategy/research, and the economics model is under docs/strategy/model.
 
 **Existing products**
 
@@ -874,3 +1090,7 @@ These came from web search results on 15 October 2026; the pages themselves coul
 - [Soldiers' phone hours (Newsis)](https://www.newsis.com/view/NISX20240807_0002841040); [enlistment statistics (data.go.kr)](https://www.data.go.kr/data/15130726/fileData.do); [The Camp's users (etnews)](https://www.etnews.com/20230921000072); [곰신 cafe (Namu Wiki)](https://namu.wiki/w/%EA%B3%B0%EC%8B%A0%EC%B9%B4%ED%8E%98)
 - [Anniversary spending survey (Financial News)](https://www.fnnews.com/news/202303080801390430); [Pepero Day sales (Hankook Ilbo)](https://m.hankookilbo.com/News/Read/Amp/A2025111412440003324); [Kakao gifts in 2025 (Korea Times)](https://www.koreatimes.co.kr/business/companies/20251225/kakaotalk-gifting-service-used-nearly-200-mil-times-this-year)
 - [Wadiz's success data (Asia Economy)](https://view.asiae.co.kr/article/2026052109140473799); [Wadiz fees (help centre)](https://helpcenter.wadiz.kr/hc/ko/articles/25375315142169); [Instagram ad costs in Korea](https://money.luvpp.com/instagram-ads-ctr-cpm-conversion-2026/); [disclosure rules (Fair Trade Commission)](https://www.korea.kr/briefing/pressReleaseView.do?newsId=156764553)
+
+**Starting small**
+
+- The sources are listed at the end of that tab, and the full notes are in docs/strategy/research/F-starting.md.

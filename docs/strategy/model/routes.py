@@ -214,6 +214,7 @@ def cash(r, shop_float_months, advance=WADIZ_ADVANCE, marker_in=None):
         cases = round(PRESALE * s['lockets_per_order'] * 1.1) * (p['case'] + p['finish'] + r['freight_duty']) * 1.1
         june = next(c['cum'] for c in out if c['month'] == '2027-06')
         res.update(cases_before_payout=round(cases), low_before_payout=round(june - cases))
+    res['lowest'] = min(res['low'], res.get('low_before_payout', res['low']))
     return res
 
 
@@ -236,13 +237,22 @@ stock, semi = ROUTES['stock_case'], out['routes']['semi_custom']
 like = summary(variant('stock_case', parts=dict(engrave_back=m.PARTS['engrave_back'],
                                                 engrave_inside=m.PARTS['engrave_inside']),
                        pack_single=dict(m.PACK_SINGLE), pack_pair=dict(m.PACK_PAIR)))
-threshold = stock['parts']['engrave_back'] + (semi['locket'] - out['routes']['stock_case']['locket']) / (1 + stock['scrap'])
+gap = semi['locket'] - out['routes']['stock_case']['locket']
+threshold = stock['parts']['engrave_back'] + gap / (1 + stock['scrap'])
+case_threshold = stock['parts']['case'] / USD + gap / (USD * (1 + stock['scrap']))
+at6 = summary(variant('stock_case', parts=dict(case=6 * USD)))
+at11 = summary(variant('stock_case', parts=dict(engrave_back=11000)))
 inhouse = summary(variant('stock_case', parts=dict(engrave_back=300, engrave_inside=500)))
 semi6 = variant('semi_custom', parts=dict(engrave_back=6000, engrave_inside=6000))
 semi_marker = variant('semi_custom', parts=dict(engrave_back=300, engrave_inside=500))
 out['checks'] = dict(
     like_for_like=dict(locket=like['locket'], single=like['single'], breakeven=like['breakeven']),
     engraving_threshold=round(threshold),
+    # The case price at which the stock case costs as much as the semi-custom locket, and two dearer cases:
+    # a $6 case, and engraving at Soomgo's average of W11,000 a job
+    case_threshold_usd=round(case_threshold, 2),
+    case_at_6_usd=dict(locket=at6['locket'], breakeven=at6['breakeven']),
+    engraving_at_11000=dict(locket=at11['locket'], breakeven=at11['breakeven']),
     in_house=dict(locket=inhouse['locket'], single=inhouse['single'],
                   per_order_wadiz=inhouse['per_order_wadiz'], marker=LASER,
                   saving_per_order=round(inhouse['before_content_wadiz'] - out['routes']['stock_case']['before_content_wadiz']),
@@ -254,10 +264,12 @@ out['checks'] = dict(
     semi_custom_with_marker=dict(locket=summary(semi_marker)['locket'],
                                  low=cash(semi_marker, 2, marker_in='2027-08')['low'],
                                  low_at_60=cash(semi_marker, 2, advance=0.6, marker_in='2027-08')['low']),
-    stock_low_at_60=cash(stock, 1, advance=0.6)['low'],
+    stock_lowest_at_60=cash(stock, 1, advance=0.6)['lowest'],
     stock_with_marker_in_august=dict([(k, v) for k, v in cash(stock, 1, marker_in='2027-08').items()
-                                      if k in ('low', 'low_month', 'back_above_zero')]
-                                     + [('low_at_60', cash(stock, 1, advance=0.6, marker_in='2027-08')['low'])]),
+                                      if k in ('low', 'low_month', 'lowest', 'back_above_zero')]
+                                     + [('lowest_at_60', cash(stock, 1, advance=0.6, marker_in='2027-08')['lowest'])]),
+    # The stock case's mid-July dip grows with the presale: each 10 orders above 100 adds this much in cases
+    dip_per_10_orders=round(out['cash']['stock_case']['cases_before_payout'] / 10),
 )
 
 if __name__ == '__main__':

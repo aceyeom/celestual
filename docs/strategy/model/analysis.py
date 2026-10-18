@@ -76,7 +76,12 @@ out['scen'] = dict(
     high=year1(B, 330, 2070, 1000000, presale_vat='simplified',
                shop_vat=(('simplified', 0.75), ('general', 0.25)), labour=4000),
 )
-out['low_if_charged_anyway'] = round(25 * pre - launch_spent_by('2027-07'))
+# If Wadiz charged 25 backers anyway, the 25 orders are made and shipped, and the rest of the factory's
+# 100-case minimum is bought too
+CASE_MINIMUM = 100
+unused_cases = max(0, CASE_MINIMUM - 25 * m.blended(B, 'wadiz')['lockets'])
+case_landed = (m.PARTS['case'] + m.PARTS['finish']) * (1 + m.SCRAP) + m.FREIGHT_DUTY
+out['low_if_charged_anyway'] = round(25 * pre - launch_spent_by('2027-07') - unused_cases * case_landed * 1.1)
 out['orders_for_500M'] = round(500e6 / m.blended(B, 'wadiz')['price'])
 
 # Sensitivity of the middle case's year-1 profit, one assumption at a time

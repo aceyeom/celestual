@@ -277,6 +277,7 @@
    "back_above_zero": "2027-12",
    "payout": 9968000,
    "batch": 10130672,
+   "lowest": -7234362,
    "loss_if_presale_fails": 3356000,
    "loss_if_25_charged": 3108262
   },
@@ -345,6 +346,7 @@
    "batch": 4686100,
    "cases_before_payout": 1574540,
    "low_before_payout": -4915540,
+   "lowest": -4915540,
    "loss_if_presale_fails": 3386000,
    "loss_if_25_charged": 2214125
   }
@@ -356,6 +358,15 @@
    "breakeven": 102
   },
   "engraving_threshold": 7408,
+  "case_threshold_usd": 4.95,
+  "case_at_6_usd": {
+   "locket": 25928,
+   "breakeven": 97
+  },
+  "engraving_at_11000": {
+   "locket": 28172,
+   "breakeven": 108
+  },
   "in_house": {
    "locket": 16952,
    "single": 22652,
@@ -378,12 +389,14 @@
    "low": -7596583,
    "low_at_60": -8593383
   },
-  "stock_low_at_60": -3341000,
+  "stock_lowest_at_60": -4915540,
   "stock_with_marker_in_august": {
    "low": -4233805,
    "low_month": "2027-08",
    "back_above_zero": "2027-11",
-   "low_at_60": -5230605
-  }
+   "lowest": -4915540,
+   "lowest_at_60": -5230605
+  },
+  "dip_per_10_orders": 157454
  }
 }
