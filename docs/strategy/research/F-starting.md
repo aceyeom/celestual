@@ -188,7 +188,7 @@ From [../model/routes.py](../model/routes.py), at the planned prices and the mod
 
 - The stock routes use a stock drawer box with a printed sleeve (₩5,700 a single with card, chip, seal and pouch); the semi-custom and cast routes keep the custom box (₩10,200). The box accounts for about ₩4,500 of the gap.
 - **Cash, middle case, with Wadiz paying 70% at the close:** on the semi-custom route the most out at once is about ₩7.2M in September 2027, back above zero in December. On the stock-case route it is about ₩2.8M in June, before the presale, and back above zero in September, because the cases are bought for the orders in hand and reordered in two to three weeks.
-- **If the presale misses its goal:** about ₩3.4M lost on the semi-custom route and ₩2.9M on the stock-case route. If Wadiz charged 25 backers anyway: about ₩3.1M and ₩1.6M, because the semi-custom route must still buy 100 cases.
+- **If the presale misses its goal:** about ₩3.4M lost on the semi-custom route and ₩2.9M on the stock-case route. If Wadiz charged 25 backers anyway: about ₩1.6M on the stock case, against ₩3.1M on the semi-custom route before its box minimum and ₩3.2M to ₩3.7M with it, as in the Economics tab, because the semi-custom route must still buy 100 cases.
 - **A fiber marker** at about ₩2.5M pays back after about 440 lockets with one engraving each, or 220 with two, against ₩6,000 a job outsourced.
 
 ## 5. What to ask, after discharge
