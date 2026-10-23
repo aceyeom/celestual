@@ -1,0 +1,252 @@
+<title>무한매수법 백테스트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: stacked analytical dashboard — summary tiles, two equity charts, yearly table */
+  :root{
+    --bg:#f3f4f7; --surface:#ffffff; --surface-2:#eceef2;
+    --ink:#171a21; --ink-2:#565d6b; --muted:#8a92a1; --line:#dcdfe6;
+    --strat:#1f6fd6;      /* 무한매수 (blue) */
+    --hold:#e07a1a;       /* 단순보유 (orange) */
+    --good:#1f9d57; --bad:#d63b48;
+    --grid:rgba(23,26,33,.08);
+    --sans:"IBM Plex Sans KR", system-ui, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0e1016; --surface:#171b24; --surface-2:#1f2531;
+    --ink:#eaecf1; --ink-2:#a7afbe; --muted:#6b7483; --line:#2a313e;
+    --strat:#5aa0f2; --hold:#f2a24e; --good:#4cc281; --bad:#f06673;
+    --grid:rgba(234,236,241,.10); color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0e1016; --surface:#171b24; --surface-2:#1f2531;
+    --ink:#eaecf1; --ink-2:#a7afbe; --muted:#6b7483; --line:#2a313e;
+    --strat:#5aa0f2; --hold:#f2a24e; --good:#4cc281; --bad:#f06673;
+    --grid:rgba(234,236,241,.10); color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));
+    padding-block:32px 56px}
+  header .eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-weight:600}
+  h1{font-size:clamp(1.5rem,4.2vw,2.1rem);font-weight:700;margin:.3rem 0 .15rem;
+    text-wrap:balance;letter-spacing:-.01em}
+  .sub{color:var(--ink-2);font-size:.95rem;max-width:62ch}
+  .verdict{margin-top:18px;padding:16px 18px;background:var(--surface);
+    border:1px solid var(--line);border-left:3px solid var(--strat);border-radius:10px;
+    font-size:.95rem;color:var(--ink-2)}
+  .verdict b{color:var(--ink)}
+  h2{font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;margin:38px 0 14px}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .tile .k{font-size:.74rem;color:var(--muted);font-weight:500;display:flex;gap:6px;align-items:center}
+  .tile .v{font-family:var(--mono);font-size:1.5rem;font-weight:600;margin-top:8px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .tile .c{font-size:.76rem;color:var(--ink-2);margin-top:3px;font-family:var(--mono)}
+  .dot{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px 10px;margin-bottom:16px}
+  .chead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .chead h3{font-size:1.02rem;font-weight:600;margin:0}
+  .chead .meta{font-size:.78rem;color:var(--muted);font-family:var(--mono)}
+  .legend{display:flex;gap:16px;font-size:.8rem;color:var(--ink-2);margin:2px 0 6px}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .chartbox{position:relative;width:100%;min-width:0}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .axis{fill:var(--muted);font-family:var(--mono);font-size:11px}
+  .gridline{stroke:var(--grid);stroke-width:1}
+  .tip{position:absolute;pointer-events:none;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:.78rem;
+    font-family:var(--mono);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.14);
+    opacity:0;transition:opacity .08s;z-index:5;white-space:nowrap}
+  .tip .td{color:var(--muted);margin-bottom:4px}
+  .tip .tr{display:flex;justify-content:space-between;gap:14px}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  .tscroll{overflow-x:auto}
+  th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);
+    font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  th{color:var(--muted);font-weight:600;font-size:.76rem;letter-spacing:.04em;font-family:var(--sans)}
+  td:first-child,th:first-child{text-align:left;font-family:var(--sans)}
+  tbody tr:last-child td{border-bottom:none}
+  .note{font-size:.8rem;color:var(--muted);margin-top:10px;max-width:70ch}
+  .caveat{margin-top:30px;font-size:.82rem;color:var(--ink-2);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .caveat b{color:var(--ink)}
+  @media(max-width:720px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">나무증권 무한매수법 · 5년 백테스트</div>
+    <h1>무한매수법 vs 단순 보유</h1>
+    <p class="sub">3배 레버리지 ETF(TQQQ·UPRO)에 무한매수법을 2021-10-01 ~ 2026-10-02 구간(거래일 1,256일)에 적용한 일 단위 시뮬레이션. 같은 구간 단순 매수·보유와 비교.</p>
+    <div class="verdict">이 5년 구간에서 무한매수법은 <b>보유보다 수익률이 훨씬 낮았지만</b>, 변동성과 최대낙폭은 더 작았습니다. 2022년 급락은 일부 방어했으나(TQQQ −62% vs −79%), 2023~2026년 강세장에서 +10%마다 익절·이탈을 반복해 큰 상승을 대부분 놓쳤습니다. — <b>"덜 벌고 덜 잃는"</b> 전략.</div>
+  </header>
+
+  <h2>TQQQ 요약 (시작 자본 = 100)</h2>
+  <div class="tiles" id="tiles-tqqq"></div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="chead">
+      <h3>TQQQ — 자산 추이 (로그 스케일)</h3>
+      <span class="meta">QQQ 실측 일봉에서 3배 재구성</span>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--strat)"></i>무한매수</span>
+      <span><i class="dot" style="background:var(--hold)"></i>단순 보유</span>
+    </div>
+    <div class="chartbox"><div id="tip-tqqq" class="tip"></div></div>
+  </div>
+
+  <h2>UPRO 요약 (시작 자본 = 100)</h2>
+  <div class="tiles" id="tiles-upro"></div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="chead">
+      <h3>UPRO — 자산 추이 (로그 스케일)</h3>
+      <span class="meta">SPY 실측 일봉에서 3배 재구성</span>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--strat)"></i>무한매수</span>
+      <span><i class="dot" style="background:var(--hold)"></i>단순 보유</span>
+    </div>
+    <div class="chartbox"><div id="tip-upro" class="tip"></div></div>
+  </div>
+
+  <h2>연도별 수익률</h2>
+  <div class="card tscroll">
+    <table>
+      <thead><tr><th>연도</th><th>TQQQ 무한매수</th><th>TQQQ 보유</th><th>UPRO 무한매수</th><th>UPRO 보유</th></tr></thead>
+      <tbody id="yearbody"></tbody>
+    </table>
+    <p class="note">2022년만 보유를 앞섰습니다(낙폭 방어). 나머지 해는 모두 보유에 뒤졌습니다.</p>
+  </div>
+
+  <div class="caveat">
+    <b>가정·한계</b> — 레버리지 ETF 시세는 QQQ·SPY 실측 일봉에서 재구성(운용보수+2배 차입 금융비용 반영; 복원된 2022/2023 연수익률이 실제와 거의 일치). 계좌는 종목별 100등분, "1%=40만원"은 등분 의미로만 사용(환율 미반영 → 수익률 %는 환율 무관). 실시간 시세 API 차단으로 UDOW(다우 3배)는 제외. 수수료·세금·슬리피지 미반영. RSI 조건은 신규 진입에만 적용. 결과는 이 특정 5년 구간(급락 후 사상 최고가 마감)에 크게 의존하며, 다른 구간에서는 달라질 수 있습니다.
+  </div>
+</div>
+
+<script>
+const FMT = (n,d=1)=>n.toFixed(d);
+const SUMMARY = {
+  TQQQ:{strat:{tot:23.0,cagr:4.2,mdd:-66.1,fin:123.0}, hold:{tot:156.4,cagr:20.7,mdd:-81.8,fin:256.4}},
+  UPRO:{strat:{tot:19.3,cagr:3.6,mdd:-51.0,fin:119.3}, hold:{tot:123.4,cagr:17.4,mdd:-65.0,fin:223.4}},
+};
+const YEARS = [
+  ["2021(4Q)", 3.1, 30.7, 2.4, 28.3],
+  ["2022", -61.8, -79.2, -42.0, -58.5],
+  ["2023", 97.5, 193.9, 49.4, 61.9],
+  ["2024", 16.2, 56.2, 8.8, 58.2],
+  ["2025", 18.8, 33.5, 14.1, 27.4],
+  ["2026(~10월)", 14.6, 53.9, 8.4, 28.7],
+];
+
+function signCls(v){return v>=0?'pos':'neg';}
+function signStr(v,d=1){return (v>=0?'+':'')+FMT(v,d);}
+
+function tiles(id, tkr){
+  const s=SUMMARY[tkr], el=document.getElementById(id);
+  const cards=[
+    {k:'무한매수 총수익률',dot:'var(--strat)',v:signStr(s.strat.tot)+'%',vcls:signCls(s.strat.tot),c:'최종 '+FMT(s.strat.fin,1)+' · CAGR '+signStr(s.strat.cagr)+'%'},
+    {k:'단순보유 총수익률',dot:'var(--hold)',v:signStr(s.hold.tot)+'%',vcls:signCls(s.hold.tot),c:'최종 '+FMT(s.hold.fin,1)+' · CAGR '+signStr(s.hold.cagr)+'%'},
+    {k:'무한매수 최대낙폭',dot:'var(--strat)',v:FMT(s.strat.mdd,1)+'%',vcls:'neg',c:'변동성 방어'},
+    {k:'단순보유 최대낙폭',dot:'var(--hold)',v:FMT(s.hold.mdd,1)+'%',vcls:'neg',c:'레버리지 민낯'},
+  ];
+  el.innerHTML = cards.map(c=>`<div class="tile"><div class="k"><i class="dot" style="background:${c.dot}"></i>${c.k}</div><div class="v ${c.vcls}">${c.v}</div><div class="c">${c.c}</div></div>`).join('');
+}
+tiles('tiles-tqqq','TQQQ'); tiles('tiles-upro','UPRO');
+
+const yb=document.getElementById('yearbody');
+yb.innerHTML = YEARS.map(r=>`<tr><td>${r[0]}</td>`+r.slice(1).map(v=>`<td class="${signCls(v)}">${signStr(v)}%</td>`).join('')+`</tr>`).join('');
+
+// ---- charts ----
+const W=940,H=320,M={t:14,r:16,b:28,l:40};
+const PW=W-M.l-M.r, PH=H-M.t-M.b;
+const yMin=15,yMax=280;
+const ly=v=>Math.log10(v);
+const Y=v=>M.t+PH*(1-(ly(v)-ly(yMin))/(ly(yMax)-ly(yMin)));
+const yticks=[20,40,80,160,280];
+
+function buildChart(data, keyS, keyH, svgId, tipId){
+  const t0=new Date(data[0].d).getTime(), t1=new Date(data[data.length-1].d).getTime();
+  const X=ts=>M.l+PW*((ts-t0)/(t1-t0));
+  const pts=data.map(p=>({x:X(new Date(p.d).getTime()), s:p[keyS], h:p[keyH], d:p.d}));
+  const line=sel=>pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+','+Y(p[sel]).toFixed(1)).join(' ');
+  const yearTicks=[2022,2023,2024,2025,2026].map(y=>({x:X(new Date(y+'-01-01').getTime()),label:y}));
+
+  let g='';
+  yticks.forEach(v=>{const y=Y(v).toFixed(1);
+    g+=`<line class="gridline" x1="${M.l}" y1="${y}" x2="${W-M.r}" y2="${y}"/>`;
+    g+=`<text class="axis" x="${M.l-8}" y="${y}" text-anchor="end" dominant-baseline="middle">${v}</text>`;});
+  yearTicks.forEach(t=>{g+=`<text class="axis" x="${t.x.toFixed(1)}" y="${H-8}" text-anchor="middle">${t.label}</text>`;});
+  // baseline at 100
+  g+=`<line class="gridline" x1="${M.l}" y1="${Y(100)}" x2="${W-M.r}" y2="${Y(100)}" stroke-dasharray="3 4"/>`;
+
+  const svg=`<svg viewBox="0 0 ${W} ${H}" id="${svgId}" role="img" aria-label="자산 추이 차트">
+    ${g}
+    <path d="${line('h')}" fill="none" stroke="var(--hold)" stroke-width="2" stroke-linejoin="round"/>
+    <path d="${line('s')}" fill="none" stroke="var(--strat)" stroke-width="2" stroke-linejoin="round"/>
+    <line id="${svgId}-cx" x1="0" y1="${M.t}" x2="0" y2="${M.t+PH}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
+    <circle id="${svgId}-ds" r="4" fill="var(--strat)" opacity="0"/>
+    <circle id="${svgId}-dh" r="4" fill="var(--hold)" opacity="0"/>
+    <rect x="${M.l}" y="${M.t}" width="${PW}" height="${PH}" fill="transparent" id="${svgId}-hit"/>
+  </svg>`;
+  return {svg, pts, tipId, svgId};
+}
+
+function wire(ch){
+  const svg=document.getElementById(ch.svgId);
+  const box=svg.parentElement;
+  const tip=document.getElementById(ch.tipId);
+  const cx=document.getElementById(ch.svgId+'-cx');
+  const ds=document.getElementById(ch.svgId+'-ds');
+  const dh=document.getElementById(ch.svgId+'-dh');
+  const hit=document.getElementById(ch.svgId+'-hit');
+  function move(ev){
+    const r=svg.getBoundingClientRect();
+    const px=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
+    const sx=px*(W/r.width);
+    let best=0,bd=1e9;
+    ch.pts.forEach((p,i)=>{const d=Math.abs(p.x-sx);if(d<bd){bd=d;best=i;}});
+    const p=ch.pts[best];
+    const scrX=p.x*(r.width/W);
+    cx.setAttribute('x1',p.x);cx.setAttribute('x2',p.x);cx.setAttribute('opacity','1');
+    ds.setAttribute('cx',p.x);ds.setAttribute('cy',Y(p.s));ds.setAttribute('opacity','1');
+    dh.setAttribute('cx',p.x);dh.setAttribute('cy',Y(p.h));dh.setAttribute('opacity','1');
+    tip.style.opacity='1';
+    tip.innerHTML=`<div class="td">${p.d}</div>`+
+      `<div class="tr"><span style="color:var(--strat)">무한매수</span><span>${FMT(p.s,1)}</span></div>`+
+      `<div class="tr"><span style="color:var(--hold)">보유</span><span>${FMT(p.h,1)}</span></div>`;
+    const tw=tip.offsetWidth;
+    let left=scrX+12; if(left+tw>r.width) left=scrX-tw-12; if(left<0) left=4;
+    tip.style.left=left+'px'; tip.style.top='8px';
+  }
+  function leave(){cx.setAttribute('opacity','0');ds.setAttribute('opacity','0');dh.setAttribute('opacity','0');tip.style.opacity='0';}
+  hit.addEventListener('mousemove',move);
+  hit.addEventListener('mouseleave',leave);
+  svg.addEventListener('touchstart',move,{passive:true});
+  svg.addEventListener('touchmove',move,{passive:true});
+  svg.addEventListener('touchend',leave);
+}
+
+fetch('./chartdata.json').then(r=>r.json()).then(data=>{
+  const c1=buildChart(data,'ts','th','svgT','tip-tqqq');
+  document.getElementById('tip-tqqq').parentElement.insertAdjacentHTML('afterbegin',c1.svg);
+  wire(c1);
+  const c2=buildChart(data,'us','uh','svgU','tip-upro');
+  document.getElementById('tip-upro').parentElement.insertAdjacentHTML('afterbegin',c2.svg);
+  wire(c2);
+}).catch(e=>{
+  document.querySelectorAll('.chartbox').forEach(b=>b.insertAdjacentHTML('afterbegin','<p class="note">차트 데이터를 불러오지 못했습니다.</p>'));
+});
+</script>
